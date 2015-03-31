@@ -1,0 +1,30 @@
+# Java binary class files
+*.class
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.ear
+*.war
+
+# virtual machine crash logs
+hs_err_pid*
+
+# maven target directories
+target/
+
+# IDE files
+.project
+.classpath
+.settings
+.idea
+*.ipr
+*.iml
+*.iws
+nb-configuration.xml
+
+# KDE
+.directory
+

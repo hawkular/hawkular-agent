@@ -1,0 +1,86 @@
+<!--
+
+    Copyright 2015 Red Hat, Inc. and/or its affiliates
+    and other contributors as indicated by the @author tags.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:org.hawkular.agent.monitor:monitor:1.0"
+           xmlns="urn:org.hawkular.agent.monitor:monitor:1.0"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified"
+           version="1.0">
+
+  <!-- The subsystem root element -->
+  <xs:element name="subsystem" type="subsystemType"/>
+
+  <xs:complexType name="subsystemType">
+    <xs:all>
+      <xs:element name="storage-adapter" type="storageType"     minOccurs="1" maxOccurs="1"/>
+      <xs:element name="diagnostics"     type="diagnosticsType" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="metric-set"      type="metricSetType"   minOccurs="0" maxOccurs="unbounded"/>
+    </xs:all>
+    <xs:attribute name="enabled"             type="xs:boolean"/>
+    <xs:attribute name="metricsApiJndiName"  type="xs:string"/>
+    <xs:attribute name="numSchedulerThreads" type="xs:int"/>
+  </xs:complexType>
+
+  <!-- storage adapter configuration -->
+  <xs:complexType name="storageType">
+    <xs:attribute name="type"     type="adapterType" default="hawkular"/>
+    <xs:attribute name="url"      type="xs:string"   use="required"/>
+    <xs:attribute name="user"     type="xs:string"/>
+    <xs:attribute name="password" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:simpleType name="adapterType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="hawkular"/>
+      <xs:enumeration value="metrics"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- diagnostics configuration -->
+  <xs:complexType name="diagnosticsType">
+    <xs:attribute name="enabled"   type="xs:boolean"/>
+    <xs:attribute name="interval"  type="xs:int"/>
+    <xs:attribute name="timeUnits" type="timeUnitsType"/>
+  </xs:complexType>
+
+  <!-- definition of individual metrics -->
+  <xs:complexType name="metricSetType">
+    <xs:sequence>
+      <xs:element name="metric" type="metricType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"    type="xs:string" use="required"/>
+    <xs:attribute name="enabled" type="xs:boolean"/>
+  </xs:complexType>
+
+  <xs:complexType name="metricType">
+    <xs:attribute name="name"      type="xs:string" use="required"/>
+    <xs:attribute name="resource"  type="xs:string" use="required"/>
+    <xs:attribute name="attribute" type="xs:string" use="required"/>
+    <xs:attribute name="interval"  type="xs:int"/>
+    <xs:attribute name="timeUnits" type="timeUnitsType"/>
+  </xs:complexType>
+
+  <xs:simpleType name="timeUnitsType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="milliseconds"/>
+      <xs:enumeration value="seconds"/>
+      <xs:enumeration value="minutes"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

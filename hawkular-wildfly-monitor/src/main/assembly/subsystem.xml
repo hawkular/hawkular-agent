@@ -1,0 +1,66 @@
+<!--
+
+    Copyright 2015 Red Hat, Inc. and/or its affiliates
+    and other contributors as indicated by the @author tags.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<subsystem xmlns="urn:org.hawkular.agent.monitor:monitor:1.0"
+           enabled="true"
+           metricsApiJndiName="java:global/hawkular/agent/monitor/metrics"
+           numSchedulerThreads="2">
+
+  <storage-adapter type="HAWKULAR"
+                   url="http://localhost:8080/hawkular-metrics/metrics" />
+
+  <diagnostics enabled="true"
+               reportTo="LOG"
+               interval="1"
+               timeUnits="minutes"/>
+
+  <metric-set name="platform.memory" enabled="true">
+    <metric name="heap.used"
+            interval="15"
+            timeUnits="seconds"
+            resource="/core-service=platform-mbean/type=memory"
+            attribute="heap-memory-usage#used" />
+
+    <metric name="heap.committed"
+            interval="1"
+            timeUnits="minutes"
+            resource="/core-service=platform-mbean/type=memory"
+            attribute="heap-memory-usage#committed" />
+
+    <metric name="non-heap.used"
+            interval="15"
+            timeUnits="seconds"
+            resource="/core-service=platform-mbean/type=memory"
+            attribute="non-heap-memory-usage#used" />
+
+    <metric name="non-heap.committed"
+            interval="1"
+            timeUnits="minutes"
+            resource="/core-service=platform-mbean/type=memory"
+            attribute="non-heap-memory-usage#committed" />
+  </metric-set>
+
+  <metric-set name="platform.threading" enabled="true">
+    <metric name="thread-count"
+            interval="2"
+            timeUnits="minutes"
+            resource="/core-service=platform-mbean/type=threading"
+            attribute="thread-count" />
+  </metric-set>
+
+</subsystem>
