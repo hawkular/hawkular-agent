@@ -17,7 +17,9 @@
 package org.hawkular.agent.monitor.scheduler.storage;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.http.HttpResponse;
@@ -32,8 +34,8 @@ import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.SelfIdentifiers;
-import org.hawkular.metrics.client.common.Batcher;
-import org.hawkular.metrics.client.common.SingleMetric;
+
+import com.google.gson.Gson;
 
 public class HawkularStorageAdapter implements StorageAdapter {
 
@@ -83,22 +85,44 @@ public class HawkularStorageAdapter implements StorageAdapter {
             }
             url.append(tenantId).append("/metrics/numeric/data");
 
-            List<SingleMetric> metrics = new ArrayList<>();
-
+            // get list of data points (where each data point item consists of a map with timestamp and value)
+            // make sure to keep data from each kind of metric in their own list
+            Map<String, List<Map<String, Number>>> allMetrics = new HashMap<>();
+            List<Map<String, Number>> data;
             for (DataPoint datapoint : datapoints) {
                 Task task = datapoint.getTask();
                 String key = keyResolution.resolve(task);
-                metrics.add(new SingleMetric(key, datapoint.getTimestamp(), datapoint.getValue()));
+                data = allMetrics.get(key);
+                if (data == null) {
+                    data = new ArrayList<>();
+                    allMetrics.put(key, data);
+                }
+                long timestamp = datapoint.getTimestamp();
+                double value = datapoint.getValue();
+                Map<String, Number> timestampAndValue = new HashMap<>(2);
+                timestampAndValue.put("timestamp", timestamp);
+                timestampAndValue.put("value", value);
+                data.add(timestampAndValue);
             }
 
+            List<Map<String, Object>> fullMessageObject = new ArrayList<>();
+            for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allMetrics.entrySet()) {
+                Map<String, Object> metricKeyAndData = new HashMap<>(2);
+                metricKeyAndData.put("id", metricEntry.getKey());
+                metricKeyAndData.put("data", metricEntry.getValue());
+                fullMessageObject.add(metricKeyAndData);
+            }
+
+            String jsonPayload = new Gson().toJson(fullMessageObject);
+
             request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(Batcher.metricListToJson(metrics), ContentType.APPLICATION_JSON));
+            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
             HttpResponse httpResponse = httpclient.execute(request);
             StatusLine statusLine = httpResponse.getStatusLine();
 
             if (statusLine.getStatusCode() != 200) {
-                throw new Exception("HTTP Status [" + statusLine.getStatusCode() + "]: "
-                        + statusLine.getReasonPhrase());
+                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
+                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
             }
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreData(t, datapoints);
