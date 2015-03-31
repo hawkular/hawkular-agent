@@ -20,6 +20,7 @@ import java.util.Set;
 
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.service.SelfIdentifiers;
 
 public interface StorageAdapter {
     /**
@@ -42,4 +43,9 @@ public interface StorageAdapter {
      * @param diag the object used to track internal diagnostic data for the storage adapter
      */
     void setDiagnostics(Diagnostics diag);
+
+    /**
+     * @param selfId helps identify where we are hosted
+     */
+    void setSelfIdentifiers(SelfIdentifiers selfId);
 }

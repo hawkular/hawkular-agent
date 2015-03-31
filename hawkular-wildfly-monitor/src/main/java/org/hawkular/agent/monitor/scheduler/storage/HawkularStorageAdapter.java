@@ -24,21 +24,24 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
+import org.hawkular.agent.monitor.service.SelfIdentifiers;
 import org.hawkular.metrics.client.common.Batcher;
 import org.hawkular.metrics.client.common.SingleMetric;
 
 public class HawkularStorageAdapter implements StorageAdapter {
 
-    private SchedulerConfiguration config;
-    private Diagnostics diagnostics;
     private final HttpClient httpclient;
     private final KeyResolution keyResolution;
+    private SchedulerConfiguration config;
+    private Diagnostics diagnostics;
+    private SelfIdentifiers selfId;
 
     public HawkularStorageAdapter() {
         this.httpclient = new DefaultHttpClient();
@@ -61,9 +64,25 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
+    public void setSelfIdentifiers(SelfIdentifiers selfId) {
+        this.selfId = selfId;
+    }
+
+    @Override
     public void store(Set<DataPoint> datapoints) {
-        HttpPost post = new HttpPost(config.getStorageAdapterConfig().url);
+        if (datapoints == null || datapoints.isEmpty()) {
+            return; // nothing to do
+        }
+
+        HttpPost request = null;
         try {
+            String tenantId = this.selfId.getFullIdentifier();
+            StringBuilder url = new StringBuilder(config.getStorageAdapterConfig().url);
+            if (!url.toString().endsWith("/")) {
+                url.append("/");
+            }
+            url.append(tenantId).append("/metrics/numeric/data");
+
             List<SingleMetric> metrics = new ArrayList<>();
 
             for (DataPoint datapoint : datapoints) {
@@ -72,26 +91,23 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 metrics.add(new SingleMetric(key, datapoint.getTimestamp(), datapoint.getValue()));
             }
 
-            if (metrics.size() > 0) {
-                post.setHeader("Content-Type", "application/json;charset=utf-8");
-                post.setEntity(new StringEntity(Batcher.metricListToJson(metrics)));
+            request = new HttpPost(url.toString());
+            request.setEntity(new StringEntity(Batcher.metricListToJson(metrics), ContentType.APPLICATION_JSON));
+            HttpResponse httpResponse = httpclient.execute(request);
+            StatusLine statusLine = httpResponse.getStatusLine();
 
-                HttpResponse httpResponse = httpclient.execute(post);
-                StatusLine statusLine = httpResponse.getStatusLine();
-
-                if (statusLine.getStatusCode() != 200) {
-                    throw new Exception("HTTP Status " + statusLine.getStatusCode() + ": " + statusLine);
-                }
-
-
+            if (statusLine.getStatusCode() != 200) {
+                throw new Exception("HTTP Status [" + statusLine.getStatusCode() + "]: "
+                        + statusLine.getReasonPhrase());
             }
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreData(t, datapoints);
             diagnostics.getStorageErrorRate().mark(1);
         }
         finally {
-            post.releaseConnection();
+            if (request != null) {
+                request.releaseConnection();
+            }
         }
-
     }
 }

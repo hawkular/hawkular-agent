@@ -82,6 +82,7 @@ public class SchedulerService {
 
         this.storageAdapter.setSchedulerConfiguration(configuration);
         this.storageAdapter.setDiagnostics(diagnostics);
+        this.storageAdapter.setSelfIdentifiers(selfId);
 
         switch (configuration.getDiagnosticsConfig().reportTo) {
             case LOG: {
