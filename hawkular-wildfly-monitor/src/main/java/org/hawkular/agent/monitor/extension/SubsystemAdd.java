@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.scheduler.storage.MetricStorage;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.OperationContext;
@@ -83,12 +84,12 @@ public class SubsystemAdd extends AbstractAddStepHandler {
         service.addDependencies(svcBuilder);
 
         // bind the metrics API to JNDI so other apps can use it, and prepare to build the binder service
-        String jndiObject = new String("dummy");
+        MetricStorage jndiObject = service.getMetricStorageProxy();
         String jndiName = configuration.metricsJndi;
         ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(jndiName);
         BinderService binderService = new BinderService(bindInfo.getBindName());
         ManagedReferenceFactory valueMRF = new ImmediateManagedReferenceFactory(jndiObject);
-        String jndiObjectClassName = jndiObject.getClass().getName();
+        String jndiObjectClassName = MetricStorage.class.getName();
         ServiceName binderServiceName = bindInfo.getBinderServiceName();
         ServiceBuilder<?> binderBuilder = target
                 .addService(binderServiceName, binderService)

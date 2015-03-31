@@ -16,8 +16,6 @@
  */
 package org.hawkular.agent.monitor.log;
 
-import java.util.Set;
-
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 import org.jboss.logging.annotations.Cause;
@@ -65,7 +63,7 @@ public interface MsgLogger {
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10008, value = "Failed to store metric data: %s")
-    void errorFailedToStoreData(@Cause Throwable t, Set<?> dataPoints);
+    void errorFailedToStoreData(@Cause Throwable t, String data);
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10009, value = "Starting scheduler")

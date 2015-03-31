@@ -16,10 +16,6 @@
  */
 package org.hawkular.agent.monitor.scheduler.storage;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.http.HttpResponse;
@@ -34,8 +30,6 @@ import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.SelfIdentifiers;
-
-import com.google.gson.Gson;
 
 public class HawkularStorageAdapter implements StorageAdapter {
 
@@ -71,11 +65,33 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
+    public MetricDataPayloadBuilder getMetricDataPayloadBuilder() {
+        return new HawkularMetricDataPayloadBuilder();
+    }
+
+    @Override
     public void store(Set<DataPoint> datapoints) {
         if (datapoints == null || datapoints.isEmpty()) {
             return; // nothing to do
         }
 
+        MetricDataPayloadBuilder payloadBuilder = getMetricDataPayloadBuilder();
+        for (DataPoint datapoint : datapoints) {
+            Task task = datapoint.getTask();
+            String key = keyResolution.resolve(task);
+            long timestamp = datapoint.getTimestamp();
+            double value = datapoint.getValue();
+            payloadBuilder.addDataPoint(key, timestamp, value);
+        }
+
+        store(payloadBuilder);
+
+        return;
+    }
+
+    @Override
+    public void store(MetricDataPayloadBuilder payloadBuilder) {
+        String jsonPayload = null;
         HttpPost request = null;
         try {
             String tenantId = this.selfId.getFullIdentifier();
@@ -84,36 +100,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 url.append("/");
             }
             url.append(tenantId).append("/metrics/numeric/data");
-
-            // get list of data points (where each data point item consists of a map with timestamp and value)
-            // make sure to keep data from each kind of metric in their own list
-            Map<String, List<Map<String, Number>>> allMetrics = new HashMap<>();
-            List<Map<String, Number>> data;
-            for (DataPoint datapoint : datapoints) {
-                Task task = datapoint.getTask();
-                String key = keyResolution.resolve(task);
-                data = allMetrics.get(key);
-                if (data == null) {
-                    data = new ArrayList<>();
-                    allMetrics.put(key, data);
-                }
-                long timestamp = datapoint.getTimestamp();
-                double value = datapoint.getValue();
-                Map<String, Number> timestampAndValue = new HashMap<>(2);
-                timestampAndValue.put("timestamp", timestamp);
-                timestampAndValue.put("value", value);
-                data.add(timestampAndValue);
-            }
-
-            List<Map<String, Object>> fullMessageObject = new ArrayList<>();
-            for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allMetrics.entrySet()) {
-                Map<String, Object> metricKeyAndData = new HashMap<>(2);
-                metricKeyAndData.put("id", metricEntry.getKey());
-                metricKeyAndData.put("data", metricEntry.getValue());
-                fullMessageObject.add(metricKeyAndData);
-            }
-
-            String jsonPayload = new Gson().toJson(fullMessageObject);
+            jsonPayload = payloadBuilder.toPayload();
 
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
@@ -125,10 +112,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
                         + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
             }
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreData(t, datapoints);
+            MsgLogger.LOG.errorFailedToStoreData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
-        }
-        finally {
+        } finally {
             if (request != null) {
                 request.releaseConnection();
             }

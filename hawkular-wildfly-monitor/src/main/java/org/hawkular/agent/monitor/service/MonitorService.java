@@ -31,6 +31,7 @@ import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.ResourceRef;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
+import org.hawkular.agent.monitor.scheduler.storage.MetricStorageProxy;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.jboss.as.controller.ControlledProcessState;
@@ -62,10 +63,18 @@ public class MonitorService implements Service<MonitorService> {
 
     private SchedulerConfiguration schedulerConfig;
     private SchedulerService schedulerService;
+    private final MetricStorageProxy metricStorageProxy = new MetricStorageProxy();
 
     @Override
     public MonitorService getValue() {
         return this;
+    }
+
+    /**
+     * @return the proxy that can be used by others for storing ad-hoc metric data
+     */
+    public MetricStorageProxy getMetricStorageProxy() {
+        return metricStorageProxy;
     }
 
     /**
@@ -181,15 +190,14 @@ public class MonitorService implements Service<MonitorService> {
         String nodeName = System.getProperty("jboss.node.name");
         SelfIdentifiers id = new SelfIdentifiers(hostName, serverName, nodeName);
 
-        schedulerService = new SchedulerService(schedulerConfig,
-                new ModelControllerClientFactory() {
-                    @Override
-                    public ModelControllerClient createClient() {
-                        return getManagementControllerClient();
-                    }
-                },
-                id);
+        ModelControllerClientFactory mccFactory = new ModelControllerClientFactory() {
+            @Override
+            public ModelControllerClient createClient() {
+                return getManagementControllerClient();
+            }
+        };
 
+        schedulerService = new SchedulerService(schedulerConfig, mccFactory, id, getMetricStorageProxy());
         schedulerService.start();
     }
 

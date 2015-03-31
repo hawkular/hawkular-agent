@@ -36,6 +36,7 @@ import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.scheduler.storage.BufferedStorageDispatcher;
 import org.hawkular.agent.monitor.scheduler.storage.HawkularMetricsStorageAdapter;
 import org.hawkular.agent.monitor.scheduler.storage.HawkularStorageAdapter;
+import org.hawkular.agent.monitor.scheduler.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.scheduler.storage.StorageAdapter;
 import org.hawkular.agent.monitor.service.SelfIdentifiers;
 import org.hawkular.dmrclient.Address;
@@ -59,7 +60,7 @@ public class SchedulerService {
     private boolean started = false;
 
     public SchedulerService(SchedulerConfiguration configuration, ModelControllerClientFactory clientFactory,
-            SelfIdentifiers selfId) {
+            SelfIdentifiers selfId, MetricStorageProxy metricStorageProxy) {
 
         this.selfId = selfId;
         final MetricRegistry metricRegistry = new MetricRegistry();
@@ -110,6 +111,10 @@ public class SchedulerService {
         this.completionHandler = new BufferedStorageDispatcher(configuration, storageAdapter, diagnostics);
         this.scheduler = new IntervalBasedScheduler(clientFactory, diagnostics, configuration.getSchedulerThreads());
         this.schedulerConfig = configuration;
+
+        if (metricStorageProxy != null) {
+            metricStorageProxy.setStorageAdapter(storageAdapter);
+        }
     }
 
     private Diagnostics createDiagnostics(final MetricRegistry metrics) {

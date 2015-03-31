@@ -22,7 +22,7 @@ import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.service.SelfIdentifiers;
 
-public interface StorageAdapter {
+public interface StorageAdapter extends MetricStorage {
     /**
      * Stores the given collected metric data points.
      * @param datapoints the data to be stored
