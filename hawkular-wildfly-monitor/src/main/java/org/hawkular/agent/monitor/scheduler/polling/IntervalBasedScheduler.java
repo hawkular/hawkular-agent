@@ -120,14 +120,15 @@ public class IntervalBasedScheduler implements Scheduler {
             try (JBossASClient client = new JBossASClient(clientFactory.createClient())) {
 
                 // execute request
-                Timer.Context requestContext = diagnostics.getRequestTimer().time();
+                Timer.Context requestContext = diagnostics.getDMRRequestTimer().time();
                 ModelNode response = client.execute(operation);
-                long durationMs = requestContext.stop() / 1000000;
+                long durationNanos = requestContext.stop();
+                long durationMs = TimeUnit.NANOSECONDS.convert(durationNanos, TimeUnit.MILLISECONDS);
 
                 if (JBossASClient.isSuccess(response)) {
 
                     if (durationMs > group.getInterval().millis()) {
-                        diagnostics.getDelayedRate().mark(1);
+                        diagnostics.getDMRDelayedRate().mark(1);
                     }
 
                     List<Property> stepResults = JBossASClient.getResults(response).asPropertyList();
@@ -156,12 +157,12 @@ public class IntervalBasedScheduler implements Scheduler {
                     }
 
                 } else {
-                    diagnostics.getErrorRate().mark(1);
+                    diagnostics.getDMRErrorRate().mark(1);
                     completionHandler.onFailed(new RuntimeException(JBossASClient.getFailureDescription(response)));
                 }
 
             } catch (Throwable e) {
-                diagnostics.getErrorRate().mark(1);
+                diagnostics.getDMRErrorRate().mark(1);
                 completionHandler.onFailed(e);
             }
         }

@@ -26,35 +26,35 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 
 public class DiagnosticsImpl implements Diagnostics {
-    private final Timer requestTimer;
-    private final Meter delayCounter;
-    private final Meter taskErrorCounter;
+    private final Timer dmrRequestTimer;
+    private final Meter dmrDelayCounter;
+    private final Meter dmrErrorCounter;
     private final Meter storageError;
     private final Counter storageBuffer;
     private final Meter metricRate;
 
     public DiagnosticsImpl(MetricRegistry metrics, ServerIdentifiers selfId) {
-        requestTimer = metrics.timer(name(selfId + ".diagnostics.dmr-request-timer"));
-        delayCounter = metrics.meter(name(selfId + ".diagnostics.task-delay-rate"));
-        taskErrorCounter = metrics.meter(name(selfId + ".diagnostics.task-error-rate"));
+        dmrRequestTimer = metrics.timer(name(selfId + ".diagnostics.dmr-request-timer"));
+        dmrDelayCounter = metrics.meter(name(selfId + ".diagnostics.dmr-delay-rate"));
+        dmrErrorCounter = metrics.meter(name(selfId + ".diagnostics.dmr-error-rate"));
         storageError = metrics.meter(name(selfId + ".diagnostics.storage-error-rate"));
         storageBuffer = metrics.counter(name(selfId + ".diagnostics.storage-buffer-size"));
         metricRate = metrics.meter(name(selfId + ".diagnostics.metric-rate"));
     }
 
     @Override
-    public Timer getRequestTimer() {
-        return requestTimer;
+    public Timer getDMRRequestTimer() {
+        return dmrRequestTimer;
     }
 
     @Override
-    public Meter getDelayedRate() {
-        return delayCounter;
+    public Meter getDMRDelayedRate() {
+        return dmrDelayCounter;
     }
 
     @Override
-    public Meter getErrorRate() {
-        return taskErrorCounter;
+    public Meter getDMRErrorRate() {
+        return dmrErrorCounter;
     }
 
     @Override

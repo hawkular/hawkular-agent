@@ -24,10 +24,33 @@ import com.codahale.metrics.Timer;
  * Provides diagnostic metrics for the scheduler itself.
  */
 public interface Diagnostics {
-    Timer getRequestTimer();
-    Meter getErrorRate();
-    Meter getDelayedRate();
+    /**
+     * @return time it takes to execute DMR requests
+     */
+    Timer getDMRRequestTimer();
+
+    /**
+     * @return tracks the number of DMR failures
+     */
+    Meter getDMRErrorRate();
+
+    /**
+     * @return tracks how many DMR requests missed their intervals
+     */
+    Meter getDMRDelayedRate();
+
+    /**
+     * @return tracks how many errors occurred while trying to store metrics
+     */
     Meter getStorageErrorRate();
+
+    /**
+     * @return tracks the size of the buffer that holds metrics waiting to get stored
+     */
     Counter getStorageBufferSize();
+
+    /**
+     * @return tracks the number of metrics that have been stored
+     */
     Meter getMetricRate();
 }
