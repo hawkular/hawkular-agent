@@ -119,31 +119,47 @@ public class JBossLoggingReporter extends ScheduledReporter {
             SortedMap<String, Histogram> histograms,
             SortedMap<String, Meter> meters,
             SortedMap<String, Timer> timers) {
+
+        if (!loggerProxy.isEnabled()) {
+            return;
+        }
+
+        StringBuilder logMessage = new StringBuilder("DIAGNOSTICS:\n==========\n");
+
         for (Entry<String, Gauge> entry : gauges.entrySet()) {
-            logGauge(entry.getKey(), entry.getValue());
+            logMessage.append(logGauge(entry.getKey(), entry.getValue()));
+            logMessage.append("\n");
         }
 
         for (Entry<String, Counter> entry : counters.entrySet()) {
-            logCounter(entry.getKey(), entry.getValue());
+            logMessage.append(logCounter(entry.getKey(), entry.getValue()));
+            logMessage.append("\n");
         }
 
         for (Entry<String, Histogram> entry : histograms.entrySet()) {
-            logHistogram(entry.getKey(), entry.getValue());
+            logMessage.append(logHistogram(entry.getKey(), entry.getValue()));
+            logMessage.append("\n");
         }
 
         for (Entry<String, Meter> entry : meters.entrySet()) {
-            logMeter(entry.getKey(), entry.getValue());
+            logMessage.append(logMeter(entry.getKey(), entry.getValue()));
+            logMessage.append("\n");
         }
 
         for (Entry<String, Timer> entry : timers.entrySet()) {
-            logTimer(entry.getKey(), entry.getValue());
+            logMessage.append(logTimer(entry.getKey(), entry.getValue()));
+            logMessage.append("\n");
         }
+
+        logMessage.append("==========");
+
+        loggerProxy.log(logMessage.toString());
     }
 
-    private void logTimer(String name, Timer timer) {
+    private String logTimer(String name, Timer timer) {
         final Snapshot snapshot = timer.getSnapshot();
-        loggerProxy.log(
-                "type=TIMER, name=[%s], count=[%d], min=[%f], max=[%f], mean=[%f], stddev=[%f], median=[%f], " +
+        return String.format(
+                "%s: type=[timer], count=[%d], min=[%f], max=[%f], mean=[%f], stddev=[%f], median=[%f], " +
                         "p75=[%f], p95=[%f], p98=[%f], p99=[%f], p999=[%f], mean_rate=[%f], m1=[%f], m5=[%f], " +
                         "m15=[%f], rate_unit=[%s], duration_unit=[%s]",
                 name,
@@ -166,9 +182,9 @@ public class JBossLoggingReporter extends ScheduledReporter {
                 getDurationUnit());
     }
 
-    private void logMeter(String name, Meter meter) {
-        loggerProxy.log(
-                "type=METER, name=[%s], count=[%d], mean_rate=[%f], m1=[%f], m5=[%f], m15=[%f], rate_unit=[%s]",
+    private String logMeter(String name, Meter meter) {
+        return String.format(
+                "%s: type=[meter], count=[%d], mean_rate=[%f], m1=[%f], m5=[%f], m15=[%f], rate_unit=[%s]",
                 name,
                 meter.getCount(),
                 convertRate(meter.getMeanRate()),
@@ -178,10 +194,10 @@ public class JBossLoggingReporter extends ScheduledReporter {
                 getRateUnit());
     }
 
-    private void logHistogram(String name, Histogram histogram) {
+    private String logHistogram(String name, Histogram histogram) {
         final Snapshot snapshot = histogram.getSnapshot();
-        loggerProxy.log(
-                "type=HISTOGRAM, name=[%s], count=[%d], min=[%d], max=[%d], mean=[%f], stddev=[%f], " +
+        return String.format(
+                "%s: type=[histogram], count=[%d], min=[%d], max=[%d], mean=[%f], stddev=[%f], " +
                         "median=[%f], p75=[%f], p95=[%f], p98=[%f], p99=[%f], p999=[%f]",
                 name,
                 histogram.getCount(),
@@ -197,12 +213,12 @@ public class JBossLoggingReporter extends ScheduledReporter {
                 snapshot.get999thPercentile());
     }
 
-    private void logCounter(String name, Counter counter) {
-        loggerProxy.log("type=COUNTER, name=[%s], count=[%d]", name, counter.getCount());
+    private String logCounter(String name, Counter counter) {
+        return String.format("%s: type=[counter], count=[%d]", name, counter.getCount());
     }
 
-    private void logGauge(String name, Gauge gauge) {
-        loggerProxy.log("type=GAUGE, name=[%s], value=[%s]", name, gauge.getValue());
+    private String logGauge(String name, Gauge gauge) {
+        return String.format("%s: type=[gauge], value=[%s]", name, gauge.getValue());
     }
 
     @Override
@@ -218,6 +234,8 @@ public class JBossLoggingReporter extends ScheduledReporter {
         }
 
         abstract void log(String format, Object... arguments);
+
+        abstract boolean isEnabled();
     }
 
     private static class DebugLoggerProxy extends LoggerProxy {
@@ -228,6 +246,11 @@ public class JBossLoggingReporter extends ScheduledReporter {
         @Override
         public void log(String format, Object... arguments) {
             logger.debugf(format, arguments);
+        }
+
+        @Override
+        boolean isEnabled() {
+            return logger.isDebugEnabled();
         }
     }
 
@@ -241,6 +264,10 @@ public class JBossLoggingReporter extends ScheduledReporter {
             logger.tracef(format, arguments);
         }
 
+        @Override
+        boolean isEnabled() {
+            return logger.isTraceEnabled();
+        }
     }
 
     private static class InfoLoggerProxy extends LoggerProxy {
@@ -252,6 +279,10 @@ public class JBossLoggingReporter extends ScheduledReporter {
         public void log(String format, Object... arguments) {
             logger.infof(format, arguments);
         }
+
+        @Override
+        boolean isEnabled() {
+            return logger.isInfoEnabled();
+        }
     }
 }
-
