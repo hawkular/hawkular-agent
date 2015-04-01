@@ -29,7 +29,7 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
-import org.hawkular.agent.monitor.service.SelfIdentifiers;
+import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 public class HawkularMetricsStorageAdapter implements StorageAdapter {
 
@@ -37,7 +37,7 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
     private final KeyResolution keyResolution;
     private SchedulerConfiguration config;
     private Diagnostics diagnostics;
-    private SelfIdentifiers selfId;
+    private ServerIdentifiers selfId;
 
     public HawkularMetricsStorageAdapter() {
         this.httpclient = new DefaultHttpClient();
@@ -60,7 +60,7 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void setSelfIdentifiers(SelfIdentifiers selfId) {
+    public void setSelfIdentifiers(ServerIdentifiers selfId) {
         this.selfId = selfId;
     }
 

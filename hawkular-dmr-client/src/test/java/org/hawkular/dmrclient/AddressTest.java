@@ -89,4 +89,43 @@ public class AddressTest extends Address {
         assert addr.getAddressNode().asList().get(0).get("parent").asString().equals("");
         assert addr.getAddressNode().asList().get(1).get("child").asString().equals("");
     }
+
+    @Test
+    public void testIncompleteAddress() {
+        try {
+            Address.root().add("one");
+            assert false : "The address is unbalanced and should not have been constructed";
+        } catch (IllegalArgumentException expected) {
+        }
+
+        try {
+            new Address("one");
+            assert false : "The address is unbalanced and should not have been constructed";
+        } catch (IllegalArgumentException expected) {
+        }
+
+        try {
+            Address.root().add("one", "two", "three");
+            assert false : "The address is unbalanced and should not have been constructed";
+        } catch (IllegalArgumentException expected) {
+        }
+
+        try {
+            new Address("one", "two", "three");
+            assert false : "The address is unbalanced and should not have been constructed";
+        } catch (IllegalArgumentException expected) {
+        }
+    }
+
+    @Test
+    public void testToAddressPathString() {
+        Address addr = Address.root().add("one", "two");
+        assert addr.toAddressPathString().equals("/one=two") : addr.toAddressPathString();
+
+        addr = Address.root().add("one", "two", "three", "four");
+        assert addr.toAddressPathString().equals("/one=two/three=four") : addr.toAddressPathString();
+
+        addr = Address.root().add("one", "two", "three", "four", "5", "6");
+        assert addr.toAddressPathString().equals("/one=two/three=four/5=6") : addr.toAddressPathString();
+    }
 }

@@ -18,39 +18,39 @@ package org.hawkular.agent.monitor.service;
 
 import org.junit.Test;
 
-public class SelfIdentifiersTest {
+public class ServerIdentifiersTest {
 
     @Test
     public void testGetFullIdentifier() {
-        SelfIdentifiers id = new SelfIdentifiers("one", "two", "three");
+        ServerIdentifiers id = new ServerIdentifiers("one", "two", "three");
         assert id.toString().equals("one.two.three");
 
-        id = new SelfIdentifiers(null, "two", "three");
+        id = new ServerIdentifiers(null, "two", "three");
         assert id.toString().equals("two.three");
 
-        id = new SelfIdentifiers(null, null, "three");
+        id = new ServerIdentifiers(null, null, "three");
         assert id.toString().equals("three");
 
-        id = new SelfIdentifiers(null, null, null);
+        id = new ServerIdentifiers(null, null, null);
         assert id.toString().equals("");
 
-        id = new SelfIdentifiers("", "two", "three");
+        id = new ServerIdentifiers("", "two", "three");
         assert id.toString().equals("two.three");
 
-        id = new SelfIdentifiers("", "", "three");
+        id = new ServerIdentifiers("", "", "three");
         assert id.toString().equals("three");
 
-        id = new SelfIdentifiers("", "", "");
+        id = new ServerIdentifiers("", "", "");
         assert id.toString().equals("");
 
         // if server name and node name are the same, only one is added to the full ID
-        id = new SelfIdentifiers("one", "two", "two");
+        id = new ServerIdentifiers("one", "two", "two");
         assert id.toString().equals("one.two");
 
-        id = new SelfIdentifiers("", "two", "two");
+        id = new ServerIdentifiers("", "two", "two");
         assert id.toString().equals("two");
 
-        id = new SelfIdentifiers(null, "two", "two");
+        id = new ServerIdentifiers(null, "two", "two");
         assert id.toString().equals("two");
     }
 

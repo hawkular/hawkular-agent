@@ -188,7 +188,7 @@ public class MonitorService implements Service<MonitorService> {
         String hostName = (isDomainMode) ? getRootAttribute("host") : "";
         String serverName = getRootAttribute("name");
         String nodeName = System.getProperty("jboss.node.name");
-        SelfIdentifiers id = new SelfIdentifiers(hostName, serverName, nodeName);
+        ServerIdentifiers id = new ServerIdentifiers(hostName, serverName, nodeName);
 
         ModelControllerClientFactory mccFactory = new ModelControllerClientFactory() {
             @Override

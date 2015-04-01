@@ -38,7 +38,7 @@ import org.hawkular.agent.monitor.scheduler.storage.HawkularMetricsStorageAdapte
 import org.hawkular.agent.monitor.scheduler.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.scheduler.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.scheduler.storage.StorageAdapter;
-import org.hawkular.agent.monitor.service.SelfIdentifiers;
+import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.dmrclient.Address;
 import org.jboss.logging.Logger;
 
@@ -56,11 +56,11 @@ public class SchedulerService {
     private final Diagnostics diagnostics;
     private final ScheduledReporter diagnosticsReporter;
     private final BufferedStorageDispatcher completionHandler;
-    private final SelfIdentifiers selfId;
+    private final ServerIdentifiers selfId;
     private boolean started = false;
 
     public SchedulerService(SchedulerConfiguration configuration, ModelControllerClientFactory clientFactory,
-            SelfIdentifiers selfId, MetricStorageProxy metricStorageProxy) {
+            ServerIdentifiers selfId, MetricStorageProxy metricStorageProxy) {
 
         this.selfId = selfId;
         final MetricRegistry metricRegistry = new MetricRegistry();
@@ -172,8 +172,8 @@ public class SchedulerService {
                 attribute = attribute.substring(0, i);
             }
 
-            String host = this.selfId.getLocalHost();
-            String server = this.selfId.getLocalServer();
+            String host = this.selfId.getHost();
+            String server = this.selfId.getServer();
 
             tasks.add(new Task(host, server, Address.parse(ref.getAddress()), attribute, subref, ref.getInterval()));
         }

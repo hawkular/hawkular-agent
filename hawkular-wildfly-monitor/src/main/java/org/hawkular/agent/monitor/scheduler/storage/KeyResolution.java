@@ -17,20 +17,27 @@
 package org.hawkular.agent.monitor.scheduler.storage;
 
 import org.hawkular.agent.monitor.scheduler.polling.Task;
+import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 /**
  * Resolve data input attributes to final metric (storage) names.
  */
 public class KeyResolution {
+
     public String resolve(Task task) {
-        if (task.getHost() != null && !task.getHost().equals("")) {
-            // domain
-            return task.getHost() + "." + task.getServer() + "." + task.getAttribute();
-        }
-        else {
-            // standalone
-            return task.getServer() + "." + task.getAttribute();
+
+        // build the key to be of the format "[host.]server.address[.subref]"
+        StringBuilder key = new StringBuilder();
+
+        ServerIdentifiers taskId = new ServerIdentifiers(task.getHost(), task.getServer(), null);
+        key.append(taskId.getFullIdentifier());
+
+        key.append(".").append(task.getAddress().toAddressPathString());
+
+        if (task.getSubref() != null && !task.getSubref().isEmpty()) {
+            key.append(".").append(task.getSubref());
         }
 
+        return key.toString();
     }
 }

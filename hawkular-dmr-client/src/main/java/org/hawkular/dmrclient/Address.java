@@ -17,8 +17,10 @@
 package org.hawkular.dmrclient;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.Property;
 
 /**
  * Identifies a managed resource.
@@ -91,6 +93,37 @@ public class Address implements Cloneable {
     public Address add(String type, String name) {
         addressNode.add(type, name);
         return this;
+    }
+
+    /**
+     * Returns the address as a flattened string that is compatible with
+     * the DMR CLI address paths.
+     *
+     * For example, an Address whose ModelNode representation is:
+     *
+     *    [
+     *     ("one" => "two"),
+     *     ("three" => "four")
+     *    ]
+     *
+     * will have a flat string of
+     *
+     *    /one=two/three=four
+     *
+     * @return flattened address path string
+     */
+    public String toAddressPathString() {
+        StringBuilder str = new StringBuilder();
+        List<Property> parts = addressNode.asPropertyList();
+        for (Property part : parts) {
+            String name = part.getName();
+            String value = part.getValue().asString();
+            str.append("/")
+                    .append(name)
+                    .append("=")
+                    .append(value);
+        }
+        return str.toString();
     }
 
     @Override

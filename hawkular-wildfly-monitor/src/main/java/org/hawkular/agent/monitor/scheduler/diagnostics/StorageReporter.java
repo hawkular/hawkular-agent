@@ -31,7 +31,7 @@ import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.scheduler.storage.DataPoint;
 import org.hawkular.agent.monitor.scheduler.storage.StorageAdapter;
-import org.hawkular.agent.monitor.service.SelfIdentifiers;
+import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.dmrclient.Address;
 import org.jboss.as.controller.PathAddress;
 
@@ -51,7 +51,7 @@ public class StorageReporter extends ScheduledReporter {
     private final Locale locale;
     private final Clock clock;
     private final DateFormat dateFormat;
-    private final SelfIdentifiers selfId;
+    private final ServerIdentifiers selfId;
 
     private StorageReporter(MetricRegistry registry,
             Locale locale,
@@ -61,7 +61,7 @@ public class StorageReporter extends ScheduledReporter {
             TimeUnit durationUnit,
             MetricFilter filter,
             StorageAdapter storageAdapter,
-            SelfIdentifiers selfId) {
+            ServerIdentifiers selfId) {
 
         super(registry, "storage-reporter", filter, rateUnit, durationUnit);
         this.locale = locale;
@@ -84,8 +84,8 @@ public class StorageReporter extends ScheduledReporter {
         Interval interval = new Interval(diagConfig.interval, diagConfig.timeUnits);
         String pathStr = PathAddress.pathAddress(SubsystemDefinition.INSTANCE.getPathElement()).toCLIStyleString();
         Address ourAddr = Address.parse(pathStr);
-        String localHost = selfId.getLocalHost();
-        String localServer = selfId.getLocalServer();
+        String localHost = selfId.getHost();
+        String localServer = selfId.getServer();
 
         if (!gauges.isEmpty()) {
             Set<DataPoint> samples = new HashSet<>(gauges.size());
@@ -128,14 +128,14 @@ public class StorageReporter extends ScheduledReporter {
         }
     }
 
-    public static Builder forRegistry(MetricRegistry registry, StorageAdapter storageAdapter, SelfIdentifiers selfId) {
+    public static Builder forRegistry(MetricRegistry registry, StorageAdapter storageAdapter, ServerIdentifiers selfId) {
         return new Builder(registry, storageAdapter, selfId);
     }
 
     public static class Builder {
         private final MetricRegistry registry;
         private final StorageAdapter storageAdapter;
-        private final SelfIdentifiers sid;
+        private final ServerIdentifiers sid;
         private Locale locale;
         private Clock clock;
         private TimeZone timeZone;
@@ -143,7 +143,7 @@ public class StorageReporter extends ScheduledReporter {
         private TimeUnit durationUnit;
         private MetricFilter filter;
 
-        private Builder(MetricRegistry registry, StorageAdapter storageAdapter, SelfIdentifiers selfId) {
+        private Builder(MetricRegistry registry, StorageAdapter storageAdapter, ServerIdentifiers selfId) {
             this.registry = registry;
             this.storageAdapter = storageAdapter;
             this.sid = selfId;

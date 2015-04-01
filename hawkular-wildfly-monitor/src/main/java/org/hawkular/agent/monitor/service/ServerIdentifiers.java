@@ -18,38 +18,47 @@ package org.hawkular.agent.monitor.service;
 
 import java.util.ArrayList;
 
-public class SelfIdentifiers {
-    private final String localHost;
-    private final String localServer;
+/**
+ * Identification strings used to identify a Wildfly server.
+ */
+public class ServerIdentifiers {
+    private final String host;
+    private final String server;
     private final String nodeName;
 
-    public SelfIdentifiers(String localHost, String localServer, String nodeName) {
-        this.localHost = (localHost != null) ? localHost : "";
-        this.localServer = (localServer != null) ? localServer : "";
+    public ServerIdentifiers(String host, String server, String nodeName) {
+        this.host = (host != null) ? host : "";
+        this.server = (server != null) ? server : "";
         this.nodeName = (nodeName != null) ? nodeName : "";
     }
 
-    public String getLocalHost() {
-        return localHost;
+    public String getHost() {
+        return host;
     }
 
-    public String getLocalServer() {
-        return localServer;
+    public String getServer() {
+        return server;
     }
 
     public String getNodeName() {
         return nodeName;
     }
 
+    /**
+     * Returns a concatenation of host, server, and node name. Host will be omitted
+     * if its empty and node name will be omitted if its empty or is the same as server.
+     *
+     * @return [host.]server[.nodeName]
+     */
     public String getFullIdentifier() {
         ArrayList<String> ids = new ArrayList<>();
-        if (!localHost.isEmpty()) {
-            ids.add(localHost);
+        if (!host.isEmpty()) {
+            ids.add(host);
         }
-        if (!localServer.isEmpty()) {
-            ids.add(localServer);
+        if (!server.isEmpty()) {
+            ids.add(server);
         }
-        if (!nodeName.isEmpty() && !nodeName.equals(localServer)) {
+        if (!nodeName.isEmpty() && !nodeName.equals(server)) {
             ids.add(nodeName);
         }
         StringBuilder fullId = new StringBuilder();

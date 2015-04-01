@@ -20,7 +20,7 @@ import java.util.Set;
 
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
-import org.hawkular.agent.monitor.service.SelfIdentifiers;
+import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 public interface StorageAdapter extends MetricStorage {
     /**
@@ -47,5 +47,5 @@ public interface StorageAdapter extends MetricStorage {
     /**
      * @param selfId helps identify where we are hosted
      */
-    void setSelfIdentifiers(SelfIdentifiers selfId);
+    void setSelfIdentifiers(ServerIdentifiers selfId);
 }
