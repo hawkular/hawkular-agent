@@ -128,7 +128,8 @@ public class StorageReporter extends ScheduledReporter {
         }
     }
 
-    public static Builder forRegistry(MetricRegistry registry, StorageAdapter storageAdapter, ServerIdentifiers selfId) {
+    public static Builder forRegistry(MetricRegistry registry, StorageAdapter storageAdapter,
+            ServerIdentifiers selfId) {
         return new Builder(registry, storageAdapter, selfId);
     }
 
