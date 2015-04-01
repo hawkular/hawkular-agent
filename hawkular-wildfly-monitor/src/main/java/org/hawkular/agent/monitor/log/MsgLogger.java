@@ -53,9 +53,9 @@ public interface MsgLogger {
     @Message(id = 10005, value = "No diagnostics configuration - diagnostics will be disabled")
     void infoNoDiagnosticsConfig();
 
-    @LogMessage(level = Level.WARN)
-    @Message(id = 10006, value = "There are no enabled metric sets; disabling subsystem since there is nothing to do")
-    void warnNoEnabledMetricsConfigured();
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10006, value = "There are no enabled metric sets")
+    void infoNoEnabledMetricsConfigured();
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10007, value = "A metric collection failed")

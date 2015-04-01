@@ -84,51 +84,66 @@ public class SubsystemAdd extends AbstractAddStepHandler {
         service.addDependencies(svcBuilder);
 
         // bind the metrics API to JNDI so other apps can use it, and prepare to build the binder service
-        MetricStorage jndiObject = service.getMetricStorageProxy();
-        String jndiName = configuration.metricsJndi;
-        ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(jndiName);
-        BinderService binderService = new BinderService(bindInfo.getBindName());
-        ManagedReferenceFactory valueMRF = new ImmediateManagedReferenceFactory(jndiObject);
-        String jndiObjectClassName = MetricStorage.class.getName();
-        ServiceName binderServiceName = bindInfo.getBinderServiceName();
-        ServiceBuilder<?> binderBuilder = target
-                .addService(binderServiceName, binderService)
-                .addInjection(binderService.getManagedObjectInjector(), valueMRF)
-                .setInitialMode(ServiceController.Mode.ACTIVE)
-                .addDependency(bindInfo.getParentContextServiceName(), ServiceBasedNamingStore.class,
-                        binderService.getNamingStoreInjector())
-                .addListener(new AbstractServiceListener<Object>() {
-                    public void transition(final ServiceController<? extends Object> controller,
-                            final ServiceController.Transition transition) {
-                        switch (transition) {
-                            case STARTING_to_UP: {
-                                MsgLogger.LOG.infoBindJndiResource(jndiName, jndiObjectClassName);
-                                break;
-                            }
-                            case START_REQUESTED_to_DOWN: {
-                                MsgLogger.LOG.infoUnbindJndiResource(jndiName);
-                                break;
-                            }
-                            case REMOVING_to_REMOVED: {
-                                MsgLogger.LOG.infoUnbindJndiResource(jndiName);
-                                break;
-                            }
-                            default:
-                                break;
-                        }
-                    }
-                });
+        String metricsJndiName = configuration.metricsJndi;
+        boolean bindMetricsJndi = (metricsJndiName == null || metricsJndiName.isEmpty()) ? false : true;
+        if (bindMetricsJndi) {
+            MetricStorage metricsJndiObject = service.getMetricStorageProxy();
+            ContextNames.BindInfo metricsBindInfo = ContextNames.bindInfoFor(metricsJndiName);
+            BinderService metricsBinderService = new BinderService(metricsBindInfo.getBindName());
+            ManagedReferenceFactory metricsValueMRF = new ImmediateManagedReferenceFactory(metricsJndiObject);
+            String metricsJndiObjectClassName = MetricStorage.class.getName();
+            ServiceName metricsBinderServiceName = metricsBindInfo.getBinderServiceName();
+            ServiceBuilder<?> metricsBinderBuilder = target
+                    .addService(metricsBinderServiceName, metricsBinderService)
+                    .addInjection(metricsBinderService.getManagedObjectInjector(), metricsValueMRF)
+                    .setInitialMode(ServiceController.Mode.ACTIVE)
+                    .addDependency(metricsBindInfo.getParentContextServiceName(),
+                            ServiceBasedNamingStore.class,
+                            metricsBinderService.getNamingStoreInjector())
+                    .addListener(new JndiBindListener(metricsJndiName, metricsJndiObjectClassName));
 
-        // our monitor service will depend on the binder service
-        svcBuilder.addDependency(binderServiceName);
+            // our monitor service will depend on the binder service
+            svcBuilder.addDependency(metricsBinderServiceName);
 
-        // install the monitor service and the binder service
+            // install the binder service
+            ServiceController<?> metricsBinderController = metricsBinderBuilder.install();
+            newControllers.add(metricsBinderController);
+        }
+
+        // install the monitor service
         ServiceController<MonitorService> svcController = svcBuilder.install();
         newControllers.add(svcController);
 
-        ServiceController<?> binderController = binderBuilder.install();
-        newControllers.add(binderController);
-
         return;
+    }
+
+    private final class JndiBindListener extends AbstractServiceListener<Object> {
+        private final String jndiName;
+        private final String jndiObjectClassName;
+
+        public JndiBindListener(String jndiName, String jndiObjectClassName) {
+            this.jndiName = jndiName;
+            this.jndiObjectClassName = jndiObjectClassName;
+        }
+
+        public void transition(final ServiceController<? extends Object> controller,
+                final ServiceController.Transition transition) {
+            switch (transition) {
+                case STARTING_to_UP: {
+                    MsgLogger.LOG.infoBindJndiResource(jndiName, jndiObjectClassName);
+                    break;
+                }
+                case START_REQUESTED_to_DOWN: {
+                    MsgLogger.LOG.infoUnbindJndiResource(jndiName);
+                    break;
+                }
+                case REMOVING_to_REMOVED: {
+                    MsgLogger.LOG.infoUnbindJndiResource(jndiName);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
     }
 }
