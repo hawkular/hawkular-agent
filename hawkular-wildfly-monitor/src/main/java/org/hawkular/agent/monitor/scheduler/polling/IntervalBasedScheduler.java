@@ -123,7 +123,7 @@ public class IntervalBasedScheduler implements Scheduler {
                 Timer.Context requestContext = diagnostics.getDMRRequestTimer().time();
                 ModelNode response = client.execute(operation);
                 long durationNanos = requestContext.stop();
-                long durationMs = TimeUnit.NANOSECONDS.convert(durationNanos, TimeUnit.MILLISECONDS);
+                long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
 
                 if (JBossASClient.isSuccess(response)) {
 
