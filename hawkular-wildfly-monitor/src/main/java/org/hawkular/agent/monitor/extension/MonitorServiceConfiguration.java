@@ -44,8 +44,7 @@ public class MonitorServiceConfiguration {
         determineDiagnosticsConfig(config, context);
         boolean hasEnabledMetrics = determineMetricSets(config, context);
         if (!hasEnabledMetrics) {
-            MsgLogger.LOG.warnNoEnabledMetricsConfigured();
-            subsystemEnabled = false; // no sense enabling subsystem if there is nothing to be monitored
+            MsgLogger.LOG.infoNoEnabledMetricsConfigured();
         }
         return;
     }
