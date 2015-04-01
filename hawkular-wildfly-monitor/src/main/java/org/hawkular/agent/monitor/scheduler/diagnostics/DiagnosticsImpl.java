@@ -18,6 +18,8 @@ package org.hawkular.agent.monitor.scheduler.diagnostics;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+import org.hawkular.agent.monitor.service.ServerIdentifiers;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
@@ -29,13 +31,15 @@ public class DiagnosticsImpl implements Diagnostics {
     private final Meter taskErrorCounter;
     private final Meter storageError;
     private final Counter storageBuffer;
+    private final Meter metricRate;
 
-    public DiagnosticsImpl(MetricRegistry metrics) {
-        requestTimer = metrics.timer(name("dmr-request-timer"));
-        delayCounter = metrics.meter(name("task-delay-rate"));
-        taskErrorCounter = metrics.meter(name("task-error-rate"));
-        storageError = metrics.meter(name("storage-error-rate"));
-        storageBuffer = metrics.counter(name("storage-buffer-size"));
+    public DiagnosticsImpl(MetricRegistry metrics, ServerIdentifiers selfId) {
+        requestTimer = metrics.timer(name(selfId + ".diagnostics.dmr-request-timer"));
+        delayCounter = metrics.meter(name(selfId + ".diagnostics.task-delay-rate"));
+        taskErrorCounter = metrics.meter(name(selfId + ".diagnostics.task-error-rate"));
+        storageError = metrics.meter(name(selfId + ".diagnostics.storage-error-rate"));
+        storageBuffer = metrics.counter(name(selfId + ".diagnostics.storage-buffer-size"));
+        metricRate = metrics.meter(name(selfId + ".diagnostics.metric-rate"));
     }
 
     @Override
@@ -61,5 +65,10 @@ public class DiagnosticsImpl implements Diagnostics {
     @Override
     public Counter getStorageBufferSize() {
         return storageBuffer;
+    }
+
+    @Override
+    public Meter getMetricRate() {
+        return metricRate;
     }
 }

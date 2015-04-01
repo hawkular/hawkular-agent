@@ -100,7 +100,7 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
                 url.append("/");
             }
             url.append(tenantId).append("/metrics/numeric/data");
-            jsonPayload = payloadBuilder.toPayload();
+            jsonPayload = payloadBuilder.toPayload().toString();
 
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
@@ -111,6 +111,10 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
                 throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
                         + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
             }
+
+            // looks like everything stored successfully
+            diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);

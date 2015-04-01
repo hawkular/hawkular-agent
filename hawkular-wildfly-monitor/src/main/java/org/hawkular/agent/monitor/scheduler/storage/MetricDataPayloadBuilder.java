@@ -32,5 +32,10 @@ public interface MetricDataPayloadBuilder {
     /**
      * @return the payload in a format suitable for the storage adapter.
      */
-    String toPayload();
+    Object toPayload();
+
+    /**
+     * @return the number of data points that were {@link #addDataPoint(String, long, double) added} to the payload
+     */
+    int getNumberDataPoints();
 }

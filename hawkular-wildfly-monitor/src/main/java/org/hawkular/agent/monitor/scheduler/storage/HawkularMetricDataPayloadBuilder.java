@@ -33,6 +33,9 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
     // key is metric ID, value is list of data points where a data point is a map with timestamp and value
     private Map<String, List<Map<String, Number>>> allMetrics = new HashMap<>();
 
+    // a running count of the number of data points that have been added
+    private int count = 0;
+
     @Override
     public void addDataPoint(String key, long timestamp, double value) {
         List<Map<String, Number>> data = allMetrics.get(key);
@@ -45,6 +48,7 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
         timestampAndValue.put("timestamp", timestamp);
         timestampAndValue.put("value", value);
         data.add(timestampAndValue);
+        count++;
     }
 
     public List<Map<String, Object>> toObjectPayload() {
@@ -62,5 +66,10 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
     public String toPayload() {
         String jsonPayload = new Gson().toJson(toObjectPayload());
         return jsonPayload;
+    }
+
+    @Override
+    public int getNumberDataPoints() {
+        return count;
     }
 }

@@ -27,7 +27,7 @@ public interface Diagnostics {
     Timer getRequestTimer();
     Meter getErrorRate();
     Meter getDelayedRate();
-
     Meter getStorageErrorRate();
     Counter getStorageBufferSize();
+    Meter getMetricRate();
 }

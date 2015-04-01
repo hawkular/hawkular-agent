@@ -118,7 +118,7 @@ public class SchedulerService {
     }
 
     private Diagnostics createDiagnostics(final MetricRegistry metrics) {
-        return new DiagnosticsImpl(metrics);
+        return new DiagnosticsImpl(metrics, selfId);
     }
 
     public void start() {
