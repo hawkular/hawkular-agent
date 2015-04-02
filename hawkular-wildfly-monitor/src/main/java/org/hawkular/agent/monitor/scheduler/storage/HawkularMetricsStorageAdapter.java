@@ -25,6 +25,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
@@ -65,7 +66,7 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public MetricDataPayloadBuilder getMetricDataPayloadBuilder() {
+    public MetricDataPayloadBuilder createMetricDataPayloadBuilder() {
         return new HawkularMetricDataPayloadBuilder();
     }
 
@@ -75,7 +76,7 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
             return; // nothing to do
         }
 
-        MetricDataPayloadBuilder payloadBuilder = getMetricDataPayloadBuilder();
+        MetricDataPayloadBuilder payloadBuilder = createMetricDataPayloadBuilder();
         for (DataPoint datapoint : datapoints) {
             Task task = datapoint.getTask();
             String key = keyResolution.resolve(task);
@@ -91,22 +92,44 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
 
     @Override
     public void store(MetricDataPayloadBuilder payloadBuilder) {
-        String jsonPayload = null;
+        MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
+        String jsonPayload = "?";
         HttpPost request = null;
+
         try {
-            String tenantId = this.selfId.getFullIdentifier();
-            StringBuilder url = new StringBuilder(config.getStorageAdapterConfig().url);
-            if (!url.toString().endsWith("/")) {
-                url.append("/");
-            }
-            url.append(tenantId).append("/metrics/numeric/data");
+            // get the payload in JSON format
             jsonPayload = payloadBuilder.toPayload().toString();
 
+            // build the REST URL...
+
+            // 1. start with the protocol, host, and port of the URL
+            StringBuilder url = new StringBuilder(storageAdapterConfig.url);
+            ensureEndsWithSlash(url);
+
+            // 2. add any rest context path that is needed
+            if (storageAdapterConfig.restContext != null) {
+                if (storageAdapterConfig.restContext.startsWith("/")) {
+                    url.append(storageAdapterConfig.restContext.substring(1));
+                } else {
+                    url.append(storageAdapterConfig.restContext);
+                }
+                ensureEndsWithSlash(url);
+            }
+
+            // 3. the REST URL requires the tenant ID next in the path
+            String tenantId = this.selfId.getFullIdentifier();
+            url.append(tenantId);
+
+            // 4. now the final portion of the REST context
+            url.append("/metrics/numeric/data");
+
+            // now send the REST request
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
             HttpResponse httpResponse = httpclient.execute(request);
             StatusLine statusLine = httpResponse.getStatusLine();
 
+            // HTTP status of 200 means success; anything else is an error
             if (statusLine.getStatusCode() != 200) {
                 throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
                         + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
@@ -122,6 +145,12 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
             if (request != null) {
                 request.releaseConnection();
             }
+        }
+    }
+
+    private void ensureEndsWithSlash(StringBuilder str) {
+        if (str.length() == 0 || str.charAt(str.length() - 1) != '/') {
+            str.append('/');
         }
     }
 }

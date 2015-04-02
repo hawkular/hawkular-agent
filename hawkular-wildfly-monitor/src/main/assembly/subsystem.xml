@@ -21,8 +21,10 @@
            metricsApiJndiName="java:global/hawkular/agent/monitor/metrics"
            numSchedulerThreads="2">
 
-  <storage-adapter type="METRICS"
-                   url="http://localhost:8080/hawkular-metrics/" />
+  <storage-adapter type="HAWKULAR"
+                   url="http://localhost:8080"
+                   context="/hawkular-bus/message/"
+                   restContext="/hawkular-metrics/" />
 
   <diagnostics enabled="true"
                reportTo="LOG"

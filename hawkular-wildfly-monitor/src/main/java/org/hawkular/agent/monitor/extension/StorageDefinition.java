@@ -37,13 +37,40 @@ public class StorageDefinition extends PersistentResourceDefinition {
 
     static final String STORAGE_ADAPTER = "storage-adapter";
 
-    static final SimpleAttributeDefinition URL = new SimpleAttributeDefinitionBuilder("url", ModelType.STRING)
+    static final SimpleAttributeDefinition TYPE = new SimpleAttributeDefinitionBuilder("type",
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode(SchedulerConfiguration.StorageReportTo.HAWKULAR.name()))
+            .setValidator(EnumValidator.create(SchedulerConfiguration.StorageReportTo.class, false, true))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    static final SimpleAttributeDefinition URL = new SimpleAttributeDefinitionBuilder("url",
+            ModelType.STRING)
             .setAllowNull(false)
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition USER = new SimpleAttributeDefinitionBuilder("user", ModelType.STRING)
+    static final SimpleAttributeDefinition CONTEXT = new SimpleAttributeDefinitionBuilder("context",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode("/hawkular-bus/"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    static final SimpleAttributeDefinition REST_CONTEXT = new SimpleAttributeDefinitionBuilder("restContext",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode("/hawkular-metrics/"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    static final SimpleAttributeDefinition USER = new SimpleAttributeDefinitionBuilder("user",
+            ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
@@ -56,17 +83,8 @@ public class StorageDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition TYPE = new SimpleAttributeDefinitionBuilder("type",
-            ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.StorageReportTo.HAWKULAR.name()))
-            .setValidator(EnumValidator.create(SchedulerConfiguration.StorageReportTo.class, false, true))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
     static final AttributeDefinition[] ATTRIBUTES = {
-            URL, USER, PASSWORD, TYPE
+            TYPE, URL, CONTEXT, REST_CONTEXT, USER, PASSWORD
     };
 
     private StorageDefinition() {

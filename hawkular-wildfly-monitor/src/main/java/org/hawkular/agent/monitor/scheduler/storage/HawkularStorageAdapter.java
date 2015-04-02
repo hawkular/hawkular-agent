@@ -16,31 +16,25 @@
  */
 package org.hawkular.agent.monitor.scheduler.storage;
 
+import java.net.URL;
 import java.util.Set;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
+import org.hawkular.bus.restclient.RestClient;
 
 public class HawkularStorageAdapter implements StorageAdapter {
 
-    private final HttpClient httpclient;
     private final KeyResolution keyResolution;
     private SchedulerConfiguration config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
 
     public HawkularStorageAdapter() {
-        this.httpclient = new DefaultHttpClient();
         this.keyResolution = new KeyResolution();
     }
 
@@ -65,8 +59,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public MetricDataPayloadBuilder getMetricDataPayloadBuilder() {
-        return new HawkularMetricDataPayloadBuilder();
+    public MetricDataPayloadBuilder createMetricDataPayloadBuilder() {
+        return new HawkularDataPayloadBuilder();
     }
 
     @Override
@@ -75,7 +69,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             return; // nothing to do
         }
 
-        MetricDataPayloadBuilder payloadBuilder = getMetricDataPayloadBuilder();
+        MetricDataPayloadBuilder payloadBuilder = createMetricDataPayloadBuilder();
         for (DataPoint datapoint : datapoints) {
             Task task = datapoint.getTask();
             String key = keyResolution.resolve(task);
@@ -91,37 +85,58 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public void store(MetricDataPayloadBuilder payloadBuilder) {
+
+        String tenantId = this.selfId.getFullIdentifier();
+        ((HawkularDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
+
+        // for now, we need to send it twice:
+        // 1) directly to metrics for storage
+        // 2) on the message bus for further processing
+
+        // send to metrics
+        HawkularMetricsStorageAdapter metricsAdapter = new HawkularMetricsStorageAdapter();
+        metricsAdapter.setDiagnostics(diagnostics);
+        metricsAdapter.setSchedulerConfiguration(getSchedulerConfiguration());
+        metricsAdapter.setSelfIdentifiers(selfId);
+        metricsAdapter.store(((HawkularDataPayloadBuilder) payloadBuilder).toHawkularMetricsDataPayloadBuilder());
+
+        // send to bus
         String jsonPayload = null;
-        HttpPost request = null;
         try {
-            String tenantId = this.selfId.getFullIdentifier();
-            StringBuilder url = new StringBuilder(config.getStorageAdapterConfig().url);
-            if (!url.toString().endsWith("/")) {
-                url.append("/");
+            // build the URL to the bus interface
+            MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
+            StringBuilder urlStr = new StringBuilder(storageAdapterConfig.url);
+            ensureEndsWithSlash(urlStr);
+            if (storageAdapterConfig.context != null) {
+                if (storageAdapterConfig.context.startsWith("/")) {
+                    urlStr.append(storageAdapterConfig.context.substring(1));
+                } else {
+                    urlStr.append(storageAdapterConfig.context);
+                }
+                ensureEndsWithSlash(urlStr);
             }
-            url.append(tenantId).append("/metrics/numeric/data");
+            URL url = new URL(urlStr.toString());
+
+            // build the bus client
+            RestClient busClient = new RestClient(url);
+
+            // send the message to the bus
             jsonPayload = payloadBuilder.toPayload().toString();
-
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
-
-            if (statusLine.getStatusCode() != 200) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
-            }
+            busClient.postTopicMessage("HawkularMetricData", jsonPayload, null);
 
             // looks like everything stored successfully
-            diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
+            // the metrics storage adapter already did this, so don't duplicate the stats here
+            //diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
 
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
+        }
+    }
+
+    private void ensureEndsWithSlash(StringBuilder str) {
+        if (str.length() == 0 || str.charAt(str.length() - 1) != '/') {
+            str.append('/');
         }
     }
 }

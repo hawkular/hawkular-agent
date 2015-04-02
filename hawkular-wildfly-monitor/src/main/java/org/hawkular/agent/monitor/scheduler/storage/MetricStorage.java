@@ -21,7 +21,7 @@ public interface MetricStorage {
      * @return a builder object suitable for wrapping metric data in a proper payload
      * message format to be sent to the storage backend.
      */
-    MetricDataPayloadBuilder getMetricDataPayloadBuilder();
+    MetricDataPayloadBuilder createMetricDataPayloadBuilder();
 
     /**
      * Stores the metric data found in the given builder.

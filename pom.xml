@@ -39,6 +39,9 @@
   </modules>
 
   <properties>
+    <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
+    <version.org.hawkular.bus>1.0.0-SNAPSHOT</version.org.hawkular.bus>
+    <version.org.hawkular.metrics>0.3.0-SNAPSHOT</version.org.hawkular.metrics>
     <version.org.jboss.msc>1.2.2.Final</version.org.jboss.msc>
     <version.org.jboss.jboss-dmr>1.2.0.Final</version.org.jboss.jboss-dmr>
   </properties>
@@ -50,6 +53,30 @@
       <!-- - Do not declare <scope> (exception: import) or <optional>: a child module will declare scope/optional itself. -->
       <!-- - Always extract the version as a property. -->
       <!-- - A element's inner order is <groupId>, <artifactId>, [<type>,] [<classifier>,] <version> -->
+
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${version.com.google.code.gson}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.dropwizard.metrics</groupId>
+        <artifactId>metrics-core</artifactId>
+        <version>${version.io.dropwizard.metrics}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.bus</groupId>
+        <artifactId>hawkular-bus-rest-client</artifactId>
+        <version>${version.org.hawkular.bus}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.metrics</groupId>
+        <artifactId>clients-common</artifactId>
+        <version>${version.org.hawkular.metrics}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.jboss.msc</groupId>

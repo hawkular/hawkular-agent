@@ -20,6 +20,7 @@
   <resources>
     <resource-root path="clients-common.jar"/>
     <resource-root path="gson.jar"/>
+    <resource-root path="hawkular-bus-rest-client.jar"/>
     <resource-root path="hawkular-dmr-client.jar"/>
     <resource-root path="hawkular-monitor.jar"/>
     <resource-root path="metrics-core.jar"/>

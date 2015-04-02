@@ -31,11 +31,11 @@ public class MetricStorageProxy implements MetricStorage {
     }
 
     @Override
-    public MetricDataPayloadBuilder getMetricDataPayloadBuilder() {
+    public MetricDataPayloadBuilder createMetricDataPayloadBuilder() {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
-        return storageAdapter.getMetricDataPayloadBuilder();
+        return storageAdapter.createMetricDataPayloadBuilder();
     }
 
     @Override

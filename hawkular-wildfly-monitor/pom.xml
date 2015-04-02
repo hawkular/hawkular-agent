@@ -36,9 +36,6 @@
   <packaging>jar</packaging>
 
   <properties>
-    <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
-    <version.org.hawkular.metrics>0.3.0-SNAPSHOT</version.org.hawkular.metrics>
-
     <!-- used to replace the variables in module.xml -->
     <moduleName>org.hawkular.agent.monitor</moduleName>
     <moduleDir>org/hawkular/agent/monitor</moduleDir>
@@ -48,13 +45,11 @@
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>${version.com.google.code.gson}</version>
     </dependency>
 
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
-      <version>${version.io.dropwizard.metrics}</version>
     </dependency>
 
     <dependency>
@@ -76,9 +71,19 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.bus</groupId>
+      <artifactId>hawkular-bus-rest-client</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.metrics</groupId>
       <artifactId>clients-common</artifactId>
-      <version>${version.org.hawkular.metrics}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>

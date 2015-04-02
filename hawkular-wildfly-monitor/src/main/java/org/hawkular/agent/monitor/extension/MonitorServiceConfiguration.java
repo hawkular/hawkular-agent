@@ -129,6 +129,8 @@ public class MonitorServiceConfiguration {
         ModelNode storageAdapterConfig = asPropertyList.get(0).getValue();
 
         storageAdapter.url = getString(storageAdapterConfig, context, StorageDefinition.URL);
+        storageAdapter.context = getString(storageAdapterConfig, context, StorageDefinition.CONTEXT);
+        storageAdapter.restContext = getString(storageAdapterConfig, context, StorageDefinition.REST_CONTEXT);
         storageAdapter.user = getString(storageAdapterConfig, context, StorageDefinition.USER);
         storageAdapter.password = getString(storageAdapterConfig, context, StorageDefinition.PASSWORD);
         String typeStr = getString(storageAdapterConfig, context, StorageDefinition.TYPE);
@@ -162,6 +164,8 @@ public class MonitorServiceConfiguration {
     public class StorageAdapter {
         public SchedulerConfiguration.StorageReportTo type;
         public String url;
+        public String context;
+        public String restContext;
         public String user;
         public String password;
     }
