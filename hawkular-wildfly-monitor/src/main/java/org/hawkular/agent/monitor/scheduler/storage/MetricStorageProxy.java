@@ -16,6 +16,9 @@
  */
 package org.hawkular.agent.monitor.scheduler.storage;
 
+import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
+import org.hawkular.agent.monitor.api.MetricStorage;
+
 /**
  * A proxy that delegates to a {@link StorageAdapter}.
  */

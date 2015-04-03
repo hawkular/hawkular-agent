@@ -49,10 +49,10 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition METRICS_JNDI = new SimpleAttributeDefinitionBuilder("metricsApiJndiName",
+    static final SimpleAttributeDefinition API_JNDI = new SimpleAttributeDefinitionBuilder("apiJndiName",
             ModelType.STRING)
             .setAllowNull(true)
-            .setDefaultValue(new ModelNode("java:global/hawkular/agent/monitor/metrics"))
+            .setDefaultValue(new ModelNode("java:global/hawkular/agent/monitor/api"))
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
@@ -66,7 +66,7 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED, METRICS_JNDI, NUM_SCHEDULER_THREADS
+            ENABLED, API_JNDI, NUM_SCHEDULER_THREADS
     };
 
     // OPERATIONS

@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.metrics.client.common.SingleMetric;
 
 import com.google.gson.Gson;

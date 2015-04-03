@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.scheduler.storage;
 
 import java.util.Set;
 
+import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;

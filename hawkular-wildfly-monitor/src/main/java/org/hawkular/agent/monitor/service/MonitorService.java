@@ -22,6 +22,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+import org.hawkular.agent.monitor.api.HawkularMonitorContext;
+import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Metric;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricSet;
@@ -63,6 +65,7 @@ public class MonitorService implements Service<MonitorService> {
 
     private SchedulerConfiguration schedulerConfig;
     private SchedulerService schedulerService;
+
     private final MetricStorageProxy metricStorageProxy = new MetricStorageProxy();
 
     @Override
@@ -71,10 +74,10 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * @return the proxy that can be used by others for storing ad-hoc metric data
+     * @return the context that can be used by others for storing ad-hoc monitoring data
      */
-    public MetricStorageProxy getMetricStorageProxy() {
-        return metricStorageProxy;
+    public HawkularMonitorContext getHawkularMonitorContext() {
+        return new HawkularMonitorContextImpl(metricStorageProxy);
     }
 
     /**
@@ -197,7 +200,7 @@ public class MonitorService implements Service<MonitorService> {
             }
         };
 
-        schedulerService = new SchedulerService(schedulerConfig, mccFactory, id, getMetricStorageProxy());
+        schedulerService = new SchedulerService(schedulerConfig, mccFactory, id, metricStorageProxy);
         schedulerService.start();
     }
 

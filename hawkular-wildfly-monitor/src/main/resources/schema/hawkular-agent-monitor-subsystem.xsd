@@ -33,7 +33,7 @@
       <xs:element name="metric-set"      type="metricSetType"   minOccurs="0" maxOccurs="unbounded"/>
     </xs:all>
     <xs:attribute name="enabled"             type="xs:boolean"/>
-    <xs:attribute name="metricsApiJndiName"  type="xs:string"/>
+    <xs:attribute name="apiJndiName"         type="xs:string"/>
     <xs:attribute name="numSchedulerThreads" type="xs:int"/>
   </xs:complexType>
 

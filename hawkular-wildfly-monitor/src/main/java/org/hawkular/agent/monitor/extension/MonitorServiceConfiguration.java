@@ -32,7 +32,7 @@ import org.jboss.dmr.Property;
 public class MonitorServiceConfiguration {
 
     public boolean subsystemEnabled;
-    public String metricsJndi;
+    public String apiJndi;
     public int numSchedulerThreads;
     public StorageAdapter storageAdapter = new StorageAdapter();
     public Diagnostics diagnostics = new Diagnostics();
@@ -139,7 +139,7 @@ public class MonitorServiceConfiguration {
 
     private void determineGlobalConfig(ModelNode config, OperationContext context) throws OperationFailedException {
         subsystemEnabled = getBoolean(config, context, SubsystemDefinition.ENABLED);
-        metricsJndi = getString(config, context, SubsystemDefinition.METRICS_JNDI);
+        apiJndi = getString(config, context, SubsystemDefinition.API_JNDI);
         numSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_SCHEDULER_THREADS);
     }
 

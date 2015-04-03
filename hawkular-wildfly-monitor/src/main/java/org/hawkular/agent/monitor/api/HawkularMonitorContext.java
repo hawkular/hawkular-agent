@@ -14,19 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.storage;
+package org.hawkular.agent.monitor.api;
 
-public interface MetricStorage {
-    /**
-     * @return a builder object suitable for wrapping metric data in a proper payload
-     * message format to be sent to the storage backend.
-     */
-    MetricDataPayloadBuilder createMetricDataPayloadBuilder();
-
-    /**
-     * Stores the metric data found in the given builder.
-     *
-     * @param payloadBuilder contains the metric data to store
-     */
-    void store(MetricDataPayloadBuilder payloadBuilder);
+public interface HawkularMonitorContext {
+    MetricStorage getMetricStorage();
 }

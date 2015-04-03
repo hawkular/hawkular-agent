@@ -19,8 +19,8 @@ package org.hawkular.agent.monitor.extension;
 import java.util.Arrays;
 import java.util.List;
 
+import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.storage.MetricStorage;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.OperationContext;
@@ -83,31 +83,31 @@ public class SubsystemAdd extends AbstractAddStepHandler {
         svcBuilder.setInitialMode(ServiceController.Mode.ACTIVE);
         service.addDependencies(svcBuilder);
 
-        // bind the metrics API to JNDI so other apps can use it, and prepare to build the binder service
-        String metricsJndiName = configuration.metricsJndi;
-        boolean bindMetricsJndi = (metricsJndiName == null || metricsJndiName.isEmpty()) ? false : true;
-        if (bindMetricsJndi) {
-            MetricStorage metricsJndiObject = service.getMetricStorageProxy();
-            ContextNames.BindInfo metricsBindInfo = ContextNames.bindInfoFor(metricsJndiName);
-            BinderService metricsBinderService = new BinderService(metricsBindInfo.getBindName());
-            ManagedReferenceFactory metricsValueMRF = new ImmediateManagedReferenceFactory(metricsJndiObject);
-            String metricsJndiObjectClassName = MetricStorage.class.getName();
-            ServiceName metricsBinderServiceName = metricsBindInfo.getBinderServiceName();
-            ServiceBuilder<?> metricsBinderBuilder = target
-                    .addService(metricsBinderServiceName, metricsBinderService)
-                    .addInjection(metricsBinderService.getManagedObjectInjector(), metricsValueMRF)
+        // bind the API to JNDI so other apps can use it, and prepare to build the binder service
+        String jndiName = configuration.apiJndi;
+        boolean bindJndi = (jndiName == null || jndiName.isEmpty()) ? false : true;
+        if (bindJndi) {
+            Object jndiObject = service.getHawkularMonitorContext();
+            ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(jndiName);
+            BinderService binderService = new BinderService(bindInfo.getBindName());
+            ManagedReferenceFactory valueMRF = new ImmediateManagedReferenceFactory(jndiObject);
+            String jndiObjectClassName = HawkularMonitorContext.class.getName();
+            ServiceName binderServiceName = bindInfo.getBinderServiceName();
+            ServiceBuilder<?> binderBuilder = target
+                    .addService(binderServiceName, binderService)
+                    .addInjection(binderService.getManagedObjectInjector(), valueMRF)
                     .setInitialMode(ServiceController.Mode.ACTIVE)
-                    .addDependency(metricsBindInfo.getParentContextServiceName(),
+                    .addDependency(bindInfo.getParentContextServiceName(),
                             ServiceBasedNamingStore.class,
-                            metricsBinderService.getNamingStoreInjector())
-                    .addListener(new JndiBindListener(metricsJndiName, metricsJndiObjectClassName));
+                            binderService.getNamingStoreInjector())
+                    .addListener(new JndiBindListener(jndiName, jndiObjectClassName));
 
             // our monitor service will depend on the binder service
-            svcBuilder.addDependency(metricsBinderServiceName);
+            svcBuilder.addDependency(binderServiceName);
 
             // install the binder service
-            ServiceController<?> metricsBinderController = metricsBinderBuilder.install();
-            newControllers.add(metricsBinderController);
+            ServiceController<?> binderController = binderBuilder.install();
+            newControllers.add(binderController);
         }
 
         // install the monitor service

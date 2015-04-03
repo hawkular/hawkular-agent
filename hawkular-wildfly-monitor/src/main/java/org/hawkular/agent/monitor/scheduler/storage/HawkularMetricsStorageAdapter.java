@@ -25,6 +25,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;

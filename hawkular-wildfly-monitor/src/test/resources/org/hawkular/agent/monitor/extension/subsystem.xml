@@ -18,7 +18,7 @@
 -->
 <subsystem xmlns="urn:org.hawkular.agent.monitor:monitor:1.0"
            enabled="true"
-           metricsApiJndiName="java:global/hawkular/agent/monitor/metrics"
+           apiJndiName="java:global/hawkular/agent/monitor/api"
            numSchedulerThreads="2">
 
   <storage-adapter type="HAWKULAR"
