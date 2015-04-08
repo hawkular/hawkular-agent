@@ -22,23 +22,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
+import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
+import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
+import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.ResourceRef;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
-import org.hawkular.agent.monitor.scheduler.diagnostics.DiagnosticsImpl;
-import org.hawkular.agent.monitor.scheduler.diagnostics.JBossLoggingReporter;
-import org.hawkular.agent.monitor.scheduler.diagnostics.JBossLoggingReporter.LoggingLevel;
-import org.hawkular.agent.monitor.scheduler.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.scheduler.polling.IntervalBasedScheduler;
 import org.hawkular.agent.monitor.scheduler.polling.Scheduler;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
-import org.hawkular.agent.monitor.scheduler.storage.BufferedStorageDispatcher;
-import org.hawkular.agent.monitor.scheduler.storage.HawkularMetricsStorageAdapter;
-import org.hawkular.agent.monitor.scheduler.storage.HawkularStorageAdapter;
-import org.hawkular.agent.monitor.scheduler.storage.MetricStorageProxy;
-import org.hawkular.agent.monitor.scheduler.storage.StorageAdapter;
+import org.hawkular.agent.monitor.scheduler.polling.Task.Type;
+import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
+import org.hawkular.agent.monitor.scheduler.polling.dmr.DMRTask;
+import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricsDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
+import org.hawkular.agent.monitor.storage.HawkularMetricsStorageAdapter;
+import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
+import org.hawkular.agent.monitor.storage.MetricStorageProxy;
+import org.hawkular.agent.monitor.storage.MetricsBufferedStorageDispatcher;
+import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
 import org.jboss.logging.Logger;
 
@@ -46,26 +50,40 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 
 /**
- * The core service that schedules metric collections and stores the data to its storage adapter.
+ * The core service that schedules tasks and stores the data resulting from those tasks to its storage adapter.
  */
 public class SchedulerService {
 
-    private final StorageAdapter storageAdapter;
     private final SchedulerConfiguration schedulerConfig;
-    private final Scheduler scheduler;
-    private final Diagnostics diagnostics;
-    private final ScheduledReporter diagnosticsReporter;
-    private final BufferedStorageDispatcher completionHandler;
     private final ServerIdentifiers selfId;
+    private final ModelControllerClientFactory mccFactory;
+    private final Diagnostics diagnostics;
+    private final StorageAdapter storageAdapter;
+    private final Scheduler scheduler;
+    private final ScheduledReporter diagnosticsReporter;
+    private final MetricsBufferedStorageDispatcher metricsCompletionHandler;
+
     private boolean started = false;
 
-    public SchedulerService(SchedulerConfiguration configuration, ModelControllerClientFactory clientFactory,
-            ServerIdentifiers selfId, MetricStorageProxy metricStorageProxy) {
+    public SchedulerService(
+            SchedulerConfiguration configuration,
+            ServerIdentifiers selfId,
+            MetricStorageProxy metricStorageProxy,
+            ModelControllerClientFactory mccFactory) {
 
+        this.schedulerConfig = configuration;
+
+        // for those tasks that require a DMR client, this factory can  provide those clients
+        this.mccFactory = mccFactory;
+
+        // this helps identify where we are running
         this.selfId = selfId;
-        final MetricRegistry metricRegistry = new MetricRegistry();
-        this.diagnostics = createDiagnostics(metricRegistry);
 
+        // build the diagnostics object that will be used to track our own performance
+        final MetricRegistry metricRegistry = new MetricRegistry();
+        this.diagnostics = new DiagnosticsImpl(metricRegistry, selfId);
+
+        // determine what our backend storage should be and create its associated adapter
         switch (configuration.getStorageAdapterConfig().type) {
             case HAWKULAR: {
                 this.storageAdapter = new HawkularStorageAdapter();
@@ -85,6 +103,7 @@ public class SchedulerService {
         this.storageAdapter.setDiagnostics(diagnostics);
         this.storageAdapter.setSelfIdentifiers(selfId);
 
+        // determine where we are to store our own diagnostic reports
         switch (configuration.getDiagnosticsConfig().reportTo) {
             case LOG: {
                 this.diagnosticsReporter = JBossLoggingReporter.forRegistry(metricRegistry)
@@ -108,17 +127,29 @@ public class SchedulerService {
             }
         }
 
-        this.completionHandler = new BufferedStorageDispatcher(configuration, storageAdapter, diagnostics);
-        this.scheduler = new IntervalBasedScheduler(clientFactory, diagnostics, configuration.getSchedulerThreads());
-        this.schedulerConfig = configuration;
+        // create the scheduler itself
+        this.metricsCompletionHandler = new MetricsBufferedStorageDispatcher(configuration, storageAdapter,
+                diagnostics);
+        this.scheduler = new IntervalBasedScheduler(this);
 
-        if (metricStorageProxy != null) {
-            metricStorageProxy.setStorageAdapter(storageAdapter);
-        }
+        // provide our storage adapater to the proxy - allows external apps to use it to store its own metrics
+        metricStorageProxy.setStorageAdapter(storageAdapter);
     }
 
-    private Diagnostics createDiagnostics(final MetricRegistry metrics) {
-        return new DiagnosticsImpl(metrics, selfId);
+    public SchedulerConfiguration getSchedulerConfiguration() {
+        return this.schedulerConfig;
+    }
+
+    public ServerIdentifiers getSelfIdentifiers() {
+        return this.selfId;
+    }
+
+    public ModelControllerClientFactory getModelControllerClientFactory() {
+        return this.mccFactory;
+    }
+
+    public Diagnostics getDiagnostics() {
+        return this.diagnostics;
     }
 
     public void start() {
@@ -130,8 +161,8 @@ public class SchedulerService {
 
         // turn ResourceRef into Tasks
         List<Task> tasks = createTasks(schedulerConfig.getResourceRefs());
-        this.completionHandler.start();
-        this.scheduler.schedule(tasks, completionHandler);
+        this.metricsCompletionHandler.start();
+        this.scheduler.schedule(tasks);
 
         if (this.schedulerConfig.getDiagnosticsConfig().enabled) {
             diagnosticsReporter.start(this.schedulerConfig.getDiagnosticsConfig().interval,
@@ -148,7 +179,7 @@ public class SchedulerService {
 
         MsgLogger.LOG.infoStoppingScheduler();
 
-        this.completionHandler.shutdown();
+        this.metricsCompletionHandler.shutdown();
         this.scheduler.shutdown();
         this.diagnosticsReporter.stop();
 
@@ -157,6 +188,27 @@ public class SchedulerService {
         }
 
         started = false;
+    }
+
+    public Runnable getTaskGroupRunnable(TaskGroup group) {
+        switch (group.getType()) {
+            case METRIC: {
+                if (DMRTask.class.equals(group.getClassKind())) {
+                    return new MetricsDMRTaskGroupRunnable(group, metricsCompletionHandler, getDiagnostics(),
+                            getModelControllerClientFactory());
+                } else {
+                    throw new UnsupportedOperationException("Unsupported group kind: " + group);
+                }
+            }
+
+            case AVAIL: {
+                throw new UnsupportedOperationException("Unsupported group type: " + group);
+            }
+
+            default: {
+                throw new IllegalArgumentException("Bad group type [" + group + "]. Please report this bug.");
+            }
+        }
     }
 
     private List<Task> createTasks(List<ResourceRef> resourceRefs) {
@@ -175,7 +227,8 @@ public class SchedulerService {
             String host = this.selfId.getHost();
             String server = this.selfId.getServer();
 
-            tasks.add(new Task(host, server, Address.parse(ref.getAddress()), attribute, subref, ref.getInterval()));
+            tasks.add(new DMRTask(Type.METRIC, ref.getInterval(), host, server, Address.parse(ref.getAddress()),
+                    attribute, subref));
         }
         return tasks;
     }

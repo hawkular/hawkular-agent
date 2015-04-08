@@ -14,24 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.storage;
+package org.hawkular.agent.monitor.storage;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
-import org.hawkular.agent.monitor.scheduler.polling.Scheduler;
+import org.hawkular.agent.monitor.scheduler.polling.MetricsCompletionHandler;
 import org.jboss.logging.Logger;
 
 /**
  * Buffers collected metric data and eventually stores them in a storage adapter.
  */
-public class BufferedStorageDispatcher implements Scheduler.CompletionHandler {
-    private static final Logger LOGGER = Logger.getLogger(BufferedStorageDispatcher.class);
+public class MetricsBufferedStorageDispatcher implements MetricsCompletionHandler {
+    private static final Logger LOGGER = Logger.getLogger(MetricsBufferedStorageDispatcher.class);
 
     private static final int MAX_BATCH_SIZE = 24; // TODO make configurable
     private static final int BUFFER_SIZE = 100; // TODO make configurable
@@ -41,7 +41,7 @@ public class BufferedStorageDispatcher implements Scheduler.CompletionHandler {
     private final BlockingQueue<DataPoint> queue;
     private final Worker worker;
 
-    public BufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
+    public MetricsBufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
             Diagnostics diagnostics) {
         this.config = config;
         this.storageAdapter = storageAdapter;
@@ -62,7 +62,7 @@ public class BufferedStorageDispatcher implements Scheduler.CompletionHandler {
     public void onCompleted(DataPoint sample) {
         if (queue.remainingCapacity() > 0) {
             LOGGER.debugf("Metric collected: [%s]->[%f]", sample.getTask(), sample.getValue());
-            diagnostics.getStorageBufferSize().inc();
+            diagnostics.getMetricsStorageBufferSize().inc();
             queue.add(sample);
         }
         else {
@@ -92,7 +92,7 @@ public class BufferedStorageDispatcher implements Scheduler.CompletionHandler {
                     queue.drainTo(samples, MAX_BATCH_SIZE);
                     samples.add(sample);
 
-                    diagnostics.getStorageBufferSize().dec(samples.size());
+                    diagnostics.getMetricsStorageBufferSize().dec(samples.size());
 
                     // dispatch
                     storageAdapter.store(samples);

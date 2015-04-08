@@ -18,32 +18,20 @@ package org.hawkular.agent.monitor.scheduler.polling;
 
 import java.util.List;
 
-import org.hawkular.agent.monitor.scheduler.storage.DataPoint;
-
 /**
  * Performs the actual work collecting the data from the monitored resources.
  */
 public interface Scheduler {
     /**
-     * Submit metric collection tasks to the scheduler. The completion handler
-     * will be called when the metrics either were successfully collected
-     * or they failed to be collected.
+     * Submit tasks to the scheduler. The completion handler
+     * will be called when the tasks are either successful or a failure occurred.
      *
-     * @param operations metric collection tasks
-     * @param completionHandler callback when metric collection attempt has completed
+     * @param tasks
      */
-    void schedule(List<Task> operations, CompletionHandler completionHandler);
+    void schedule(List<Task> tasks);
 
     /**
-     * Shuts down the scheduler. No more metrics will be collected after this returns.
+     * Shuts down the scheduler. No more tasks will be executed after this returns.
      */
     void shutdown();
-
-    /**
-     * Callback for completed collection tasks.
-     */
-    interface CompletionHandler {
-        void onCompleted(DataPoint sample);
-        void onFailed(Throwable e);
-    }
 }

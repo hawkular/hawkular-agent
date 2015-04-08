@@ -16,34 +16,11 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling;
 
-import org.hawkular.agent.monitor.scheduler.config.Interval;
-
 /**
- * A task that can define an interval for periodic execution.
+ * Generates a unique key for the data that a task collects.
  */
-public interface Task {
+public interface KeyGenerator {
 
-    enum Type {
-        /** The task is for collecting a metric data. */
-        METRIC,
-
-        /** The task is for collecting availability data. */
-        AVAIL
-    }
-
-    /**
-     * @return indicates the purpose of the task
-     */
-    Type getType();
-
-    /**
-     * @return the object that generates the key for the tasks collected data.
-     */
-    KeyGenerator getKeyGenerator();
-
-    /**
-     * @return how often the task should be executed.
-     */
-    Interval getInterval();
+    String generateKey(Task task);
 
 }

@@ -16,25 +16,7 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling;
 
-import org.hawkular.dmrclient.JBossASClient;
-import org.jboss.dmr.ModelNode;
-
-/**
- * Given a task group of metric collection tasks, creates a batch operation
- * to read the attributes.
- */
-public class ReadAttributeOperationBuilder {
-    public ModelNode createOperation(final TaskGroup group) {
-        if (group.isEmpty()) {
-            throw new IllegalArgumentException("Empty groups are not allowed");
-        }
-
-        ModelNode[] readOps = new ModelNode[group.size()];
-        int i = 0;
-        for (Task task : group) {
-            readOps[i++] = JBossASClient.createReadAttributeRequest(task.getAttribute(), task.getAddress());
-        }
-
-        return JBossASClient.createBatchRequest(readOps);
-    }
+public interface CompletionHandler<T> {
+    void onCompleted(T results);
+    void onFailed(Throwable e);
 }

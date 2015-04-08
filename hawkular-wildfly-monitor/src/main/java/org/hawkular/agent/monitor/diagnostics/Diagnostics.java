@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.diagnostics;
+package org.hawkular.agent.monitor.diagnostics;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -40,14 +40,14 @@ public interface Diagnostics {
     Meter getDMRDelayedRate();
 
     /**
-     * @return tracks how many errors occurred while trying to store metrics
+     * @return tracks how many errors occurred while trying to store data
      */
     Meter getStorageErrorRate();
 
     /**
      * @return tracks the size of the buffer that holds metrics waiting to get stored
      */
-    Counter getStorageBufferSize();
+    Counter getMetricsStorageBufferSize();
 
     /**
      * @return tracks the number of metrics that have been stored

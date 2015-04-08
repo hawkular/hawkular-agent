@@ -14,28 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.storage;
+package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
+import org.hawkular.agent.monitor.scheduler.polling.KeyGenerator;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 /**
  * Resolve data input attributes to final metric (storage) names.
  */
-public class KeyResolution {
+public class DMRKeyGenerator implements KeyGenerator {
 
-    public String resolve(Task task) {
+    @Override
+    public String generateKey(Task task) {
+
+        DMRTask dmrTask = (DMRTask) task;
 
         // build the key to be of the format "[host.]server.address[.subref]"
         StringBuilder key = new StringBuilder();
 
-        ServerIdentifiers taskId = new ServerIdentifiers(task.getHost(), task.getServer(), null);
+        ServerIdentifiers taskId = new ServerIdentifiers(dmrTask.getHost(), dmrTask.getServer(), null);
         key.append(taskId.getFullIdentifier());
 
-        key.append(".").append(task.getAddress().toAddressPathString());
+        key.append(".").append(dmrTask.getAddress().toAddressPathString());
 
-        if (task.getSubref() != null && !task.getSubref().isEmpty()) {
-            key.append(".").append(task.getSubref());
+        if (dmrTask.getSubref() != null && !dmrTask.getSubref().isEmpty()) {
+            key.append(".").append(dmrTask.getSubref());
         }
 
         return key.toString();

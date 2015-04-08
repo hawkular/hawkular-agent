@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.storage;
+package org.hawkular.agent.monitor.storage;
 
 import java.util.Set;
 
 import org.hawkular.agent.monitor.api.MetricStorage;
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 public interface StorageAdapter extends MetricStorage {

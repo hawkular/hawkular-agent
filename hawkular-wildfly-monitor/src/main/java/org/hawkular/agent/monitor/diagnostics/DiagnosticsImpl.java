@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.diagnostics;
+package org.hawkular.agent.monitor.diagnostics;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -30,7 +30,7 @@ public class DiagnosticsImpl implements Diagnostics {
     private final Meter dmrDelayCounter;
     private final Meter dmrErrorCounter;
     private final Meter storageError;
-    private final Counter storageBuffer;
+    private final Counter metricsStorageBuffer;
     private final Meter metricRate;
 
     public DiagnosticsImpl(MetricRegistry metrics, ServerIdentifiers selfId) {
@@ -38,7 +38,7 @@ public class DiagnosticsImpl implements Diagnostics {
         dmrDelayCounter = metrics.meter(name(selfId + ".diagnostics.dmr-delay-rate"));
         dmrErrorCounter = metrics.meter(name(selfId + ".diagnostics.dmr-error-rate"));
         storageError = metrics.meter(name(selfId + ".diagnostics.storage-error-rate"));
-        storageBuffer = metrics.counter(name(selfId + ".diagnostics.storage-buffer-size"));
+        metricsStorageBuffer = metrics.counter(name(selfId + ".diagnostics.metrics-storage-buffer-size"));
         metricRate = metrics.meter(name(selfId + ".diagnostics.metric-rate"));
     }
 
@@ -63,8 +63,8 @@ public class DiagnosticsImpl implements Diagnostics {
     }
 
     @Override
-    public Counter getStorageBufferSize() {
-        return storageBuffer;
+    public Counter getMetricsStorageBufferSize() {
+        return metricsStorageBuffer;
     }
 
     @Override

@@ -33,7 +33,7 @@ import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.ResourceRef;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.storage.MetricStorageProxy;
+import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.jboss.as.controller.ControlledProcessState;
@@ -200,7 +200,7 @@ public class MonitorService implements Service<MonitorService> {
             }
         };
 
-        schedulerService = new SchedulerService(schedulerConfig, mccFactory, id, metricStorageProxy);
+        schedulerService = new SchedulerService(schedulerConfig, id, metricStorageProxy, mccFactory);
         schedulerService.start();
     }
 

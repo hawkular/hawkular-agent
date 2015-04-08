@@ -19,21 +19,70 @@ package org.hawkular.agent.monitor.scheduler.polling;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.hawkular.agent.monitor.scheduler.config.Interval;
+import org.hawkular.agent.monitor.scheduler.polling.Task.Type;
 
 /**
- * Creates task groups based on task intervals.
+ * Creates task groups based on task intervals. Groups are ensured
+ * to only have the same types and same kinds.
  */
-public class IntervalGrouping implements TaskGrouping {
+public class IntervalGrouping {
 
-    @Override
-    public List<TaskGroup> apply(final List<Task> tasks) {
+    public List<TaskGroup> separateIntoGroups(final List<Task> allTasks) {
 
-        if (tasks == null || tasks.isEmpty()) {
+        if (allTasks == null || allTasks.isEmpty()) {
             return Collections.emptyList();
         }
+
+        List<TaskGroup> allGroups = new ArrayList<>();
+
+        Map<Class<?>, List<Task>> tasksByClass = separateByTaskClass(allTasks);
+        for (List<Task> tasksOfSingleClass : tasksByClass.values()) {
+            Map<Type, List<Task>> tasksByType = separateByTaskType(tasksOfSingleClass);
+            for (List<Task> tasksOfSingleType : tasksByType.values()) {
+                List<TaskGroup> groupsOfSingleType = groupSimilarTasks(tasksOfSingleType);
+                allGroups.addAll(groupsOfSingleType);
+            }
+        }
+
+        return allGroups;
+    }
+
+    private Map<Class<?>, List<Task>> separateByTaskClass(List<Task> allTasks) {
+        Map<Class<?>, List<Task>> tasksMap = new HashMap<>();
+
+        for (Task singleTask : allTasks) {
+            List<Task> tasksOfSingleClass = tasksMap.get(singleTask.getClass());
+            if (tasksOfSingleClass == null) {
+                tasksOfSingleClass = new ArrayList<Task>();
+                tasksMap.put(singleTask.getClass(), tasksOfSingleClass);
+            }
+            tasksOfSingleClass.add(singleTask);
+        }
+
+        return tasksMap;
+    }
+
+    private Map<Type, List<Task>> separateByTaskType(List<Task> allTasks) {
+        Map<Type, List<Task>> tasksMap = new HashMap<>();
+
+        for (Task singleTask : allTasks) {
+            List<Task> tasksOfSingleType = tasksMap.get(singleTask.getType());
+            if (tasksOfSingleType == null) {
+                tasksOfSingleType = new ArrayList<Task>();
+                tasksMap.put(singleTask.getType(), tasksOfSingleType);
+            }
+            tasksOfSingleType.add(singleTask);
+        }
+
+        return tasksMap;
+    }
+
+    private List<TaskGroup> groupSimilarTasks(final List<Task> tasks) {
 
         // sort the tasks in order of their intervals
         Collections.sort(tasks, new Comparator<Task>() {
@@ -50,13 +99,13 @@ public class IntervalGrouping implements TaskGrouping {
         groups.add(taskGroup);
 
         for (Task task : tasks) {
-            if(!task.getInterval().equals(interval)) {
+            if (!task.getInterval().equals(interval)) {
                 // new group
                 interval = task.getInterval();
                 groups.add(new TaskGroup(task.getInterval()));
             }
 
-            groups.get(groups.size()-1).addTask(task);
+            groups.get(groups.size() - 1).addTask(task);
         }
 
         return groups;

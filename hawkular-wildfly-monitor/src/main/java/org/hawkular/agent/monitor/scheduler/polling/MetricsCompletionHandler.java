@@ -16,19 +16,10 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling;
 
-import java.util.List;
+import org.hawkular.agent.monitor.storage.DataPoint;
 
 /**
- * Groups tasks.
+ * Callback for completed tasks that took metric collections.
  */
-public interface TaskGrouping {
-    /**
-     * Groups the given tasks and returns the task groups.
-     * The implementations of this interface determine the algorithm
-     * for grouping tasks.
-     *
-     * @param tasks the tasks to group
-     * @return the task groups containing the given tasks
-     */
-    List<TaskGroup> apply(List<Task> tasks);
+public interface MetricsCompletionHandler extends CompletionHandler<DataPoint> {
 }

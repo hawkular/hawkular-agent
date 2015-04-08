@@ -26,55 +26,49 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
-import org.hawkular.agent.monitor.scheduler.storage.DataPoint;
+import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.service.ThreadFactoryGenerator;
-import org.hawkular.dmrclient.JBossASClient;
-import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.Property;
 import org.jboss.logging.Logger;
-
-import com.codahale.metrics.Timer;
 
 public class IntervalBasedScheduler implements Scheduler {
 
     private static final Logger LOGGER = Logger.getLogger(IntervalBasedScheduler.class);
 
+    private final SchedulerService schedulerService;
     private final ScheduledExecutorService executorService;
     private final List<ScheduledFuture<?>> jobs;
-    private final ModelControllerClientFactory clientFactory;
-    private final Diagnostics diagnostics;
 
     private boolean started = false;
 
-    public IntervalBasedScheduler(ModelControllerClientFactory clientFactory, Diagnostics diagnostics, int poolSize) {
-        this.clientFactory = clientFactory;
-        this.diagnostics = diagnostics;
+    public IntervalBasedScheduler(SchedulerService schedulerService) {
+        this.schedulerService = schedulerService;
 
         ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true, "Hawkular-Monitor-Scheduler");
-        this.executorService = Executors.newScheduledThreadPool(poolSize, threadFactory);
+        this.executorService = Executors.newScheduledThreadPool(schedulerService.getSchedulerConfiguration()
+                .getSchedulerThreads(), threadFactory);
 
         this.jobs = new LinkedList<>();
 
     }
 
     @Override
-    public void schedule(List<Task> tasks, final CompletionHandler completionHandler) {
+    public void schedule(List<Task> tasks) {
         if (this.started) {
             return; // already running
         }
 
         // optimize task groups
-        List<TaskGroup> groups = new IntervalGrouping().apply(tasks);
+        List<TaskGroup> groups = new IntervalGrouping().separateIntoGroups(tasks);
 
         LOGGER.debugf("Scheduling [%d] tasks in [%d] task groups", tasks.size(), groups.size());
 
-        // schedule IO
+        // schedule
         for (TaskGroup group : groups) {
-            jobs.add(executorService.scheduleWithFixedDelay(new IO(group, completionHandler), group.getOffsetMillis(),
-                    group.getInterval().millis(), MILLISECONDS));
+            jobs.add(executorService.scheduleWithFixedDelay(
+                    schedulerService.getTaskGroupRunnable(group),
+                    group.getOffsetMillis(),
+                    group.getInterval().millis(),
+                    MILLISECONDS));
         }
 
         this.started = true;
@@ -94,77 +88,9 @@ public class IntervalBasedScheduler implements Scheduler {
             executorService.awaitTermination(5, TimeUnit.SECONDS);
 
         } catch (InterruptedException ie) {
-            // Preserve interrupt status
-            Thread.currentThread().interrupt();
+            Thread.currentThread().interrupt(); // Preserve interrupt status
         } finally {
             this.started = false;
-        }
-    }
-
-    private class IO implements Runnable {
-
-        private final TaskGroup group;
-        private final CompletionHandler completionHandler;
-        private final ModelNode operation;
-
-        private IO(TaskGroup group, CompletionHandler completionHandler) {
-            this.group = group;
-            this.completionHandler = completionHandler;
-
-            // for the IO lifetime the operation is immutable and can be re-used
-            this.operation = new ReadAttributeOperationBuilder().createOperation(group);
-        }
-
-        @Override
-        public void run() {
-            try (JBossASClient client = new JBossASClient(clientFactory.createClient())) {
-
-                // execute request
-                Timer.Context requestContext = diagnostics.getDMRRequestTimer().time();
-                ModelNode response = client.execute(operation);
-                long durationNanos = requestContext.stop();
-                long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
-
-                if (JBossASClient.isSuccess(response)) {
-
-                    if (durationMs > group.getInterval().millis()) {
-                        diagnostics.getDMRDelayedRate().mark(1);
-                    }
-
-                    List<Property> stepResults = JBossASClient.getResults(response).asPropertyList();
-
-                    if (stepResults.size() != group.size()) {
-                        MsgLogger.LOG.warnBatchResultsDoNotMatchRequests(group.size(), stepResults.size());
-                    }
-
-                    int i = 0;
-                    for (Property step : stepResults) {
-                        Task task = group.getTask(i);
-
-                        // deconstruct model node
-                        ModelNode data = step.getValue();
-                        ModelNode dataResult = JBossASClient.getResults(data);
-                        Double value = null;
-                        if (task.getSubref() != null) {
-                            value = dataResult.get(task.getSubref()).asDouble();
-                        }
-                        else {
-                            value = dataResult.asDouble();
-                        }
-
-                        completionHandler.onCompleted(new DataPoint(task, value));
-                        i++;
-                    }
-
-                } else {
-                    diagnostics.getDMRErrorRate().mark(1);
-                    completionHandler.onFailed(new RuntimeException(JBossASClient.getFailureDescription(response)));
-                }
-
-            } catch (Throwable e) {
-                diagnostics.getDMRErrorRate().mark(1);
-                completionHandler.onFailed(e);
-            }
         }
     }
 }

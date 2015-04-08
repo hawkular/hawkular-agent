@@ -14,29 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.storage;
+package org.hawkular.agent.monitor.storage;
 
 import java.net.URL;
 import java.util.Set;
 
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.bus.restclient.RestClient;
 
 public class HawkularStorageAdapter implements StorageAdapter {
 
-    private final KeyResolution keyResolution;
     private SchedulerConfiguration config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
 
     public HawkularStorageAdapter() {
-        this.keyResolution = new KeyResolution();
     }
 
     @Override
@@ -73,7 +71,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         MetricDataPayloadBuilder payloadBuilder = createMetricDataPayloadBuilder();
         for (DataPoint datapoint : datapoints) {
             Task task = datapoint.getTask();
-            String key = keyResolution.resolve(task);
+            String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
             double value = datapoint.getValue();
             payloadBuilder.addDataPoint(key, timestamp, value);

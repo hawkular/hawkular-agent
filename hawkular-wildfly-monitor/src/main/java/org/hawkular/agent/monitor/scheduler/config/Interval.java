@@ -48,6 +48,35 @@ public class Interval{
     }
 
     @Override
+    public int hashCode() {
+        int result = 1;
+        result = 31 * result + val;
+        result = 31 * result + unit.hashCode();
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (!(obj instanceof Interval)) {
+            return false;
+        }
+        Interval other = (Interval) obj;
+        if (unit != other.unit) {
+            return false;
+        }
+        if (val != other.val) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public String toString() {
         return "Interval[" + this.val + " " + this.unit.name() + "]";
     }

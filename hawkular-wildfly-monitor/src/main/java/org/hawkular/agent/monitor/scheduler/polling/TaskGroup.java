@@ -22,9 +22,17 @@ import java.util.LinkedList;
 import java.util.UUID;
 
 import org.hawkular.agent.monitor.scheduler.config.Interval;
+import org.hawkular.agent.monitor.scheduler.polling.Task.Type;
 
 /**
- * A group of metric collection tasks that have the same interval.
+ * A group of tasks that have the same interval.
+ *
+ * A group must have tasks of the same {@link Type} - in other words,
+ * you can't have a group with some tasks that collect {@link Type#METRIC metrics}
+ * and some that collect {@link Type#AVAIL availability}.
+ *
+ * You also can't have a task group that has different kinds of tasks (that is,
+ * they all must extend from the same Task implementation class).
  */
 public class TaskGroup implements Iterable<Task> {
 
@@ -32,6 +40,8 @@ public class TaskGroup implements Iterable<Task> {
     private final Interval interval; // impacts thread scheduling
     private final long offsetMillis;
     private final LinkedList<Task> tasks;
+    private Type type;
+    private Class<? extends Task> clazzKind;
 
     public TaskGroup(final Interval interval) {
         this.offsetMillis = 0; // don't wait to collect the first time
@@ -40,23 +50,30 @@ public class TaskGroup implements Iterable<Task> {
         this.tasks = new LinkedList<>();
     }
 
+    /**
+     * @return the type of tasks in the group; will be <code>null</code> if group is empty
+     */
+    public Type getType() {
+        return type;
+    }
+
+    /**
+     * @return the class of tasks in the group; will be <code>null</code> if group is empty
+     */
+    public Class<? extends Task> getClassKind() {
+        return clazzKind;
+    }
+
     public void addTask(Task task) {
-        verifyInterval(task);
+        verify(task);
         tasks.add(task);
     }
 
-    public boolean addTasks(final Collection<? extends Task> collection) {
-        for (Task t : collection) {
-            verifyInterval(t);
+    public boolean addTasks(final Collection<Task> collection) {
+        for (Task task : collection) {
+            verify(task);
         }
         return tasks.addAll(collection);
-    }
-
-    private void verifyInterval(final Task task) {
-        if (task.getInterval() != interval) {
-            throw new IllegalArgumentException("Wrong interval: Expected [" + interval + "], but got ["
-                    + task.getInterval() + "]");
-        }
     }
 
     public int size() {
@@ -86,5 +103,47 @@ public class TaskGroup implements Iterable<Task> {
 
     public Task getTask(int i) {
         return tasks.get(i);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder("TaskGroup: ");
+        str.append("id=[").append(id).append("]");
+        str.append(", type=[").append(type).append("]");
+        str.append(", classKind=[").append(clazzKind).append("]");
+        str.append(", interval=[").append(interval).append("]");
+        str.append(", size=[").append(size()).append("]");
+        return str.toString();
+    }
+
+    protected void verify(final Task task) {
+        verifyInterval(task);
+        verifyType(task);
+        verifyClassKind(task);
+    }
+
+    private void verifyInterval(final Task task) {
+        if (!task.getInterval().equals(interval)) {
+            throw new IllegalArgumentException("Wrong interval: Expected [" + interval + "], but got ["
+                    + task.getInterval() + "]");
+        }
+    }
+
+    private void verifyType(final Task task) {
+        if (this.type == null) {
+            this.type = task.getType();
+        } else if (task.getType() != type) {
+            throw new IllegalArgumentException("Wrong type: Expected [" + this.type + "], but got ["
+                    + task.getType() + "]");
+        }
+    }
+
+    private void verifyClassKind(final Task task) {
+        if (this.clazzKind == null) {
+            this.clazzKind = task.getClass();
+        } else if (!this.clazzKind.isInstance(task)) {
+            throw new IllegalArgumentException("Wrong kind: Expected [" + this.clazzKind + "], but got ["
+                    + task.getClass() + "]");
+        }
     }
 }
