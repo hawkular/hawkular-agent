@@ -35,9 +35,11 @@ import org.hawkular.agent.monitor.scheduler.polling.Scheduler;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.scheduler.polling.Task.Type;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
+import org.hawkular.agent.monitor.scheduler.polling.dmr.AvailDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.DMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
+import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.HawkularMetricsStorageAdapter;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
@@ -58,10 +60,12 @@ public class SchedulerService {
     private final ServerIdentifiers selfId;
     private final ModelControllerClientFactory mccFactory;
     private final Diagnostics diagnostics;
+    private final ScheduledReporter diagnosticsReporter;
     private final StorageAdapter storageAdapter;
     private final Scheduler metricScheduler;
-    private final ScheduledReporter diagnosticsReporter;
+    private final Scheduler availScheduler;
     private final MetricBufferedStorageDispatcher metricCompletionHandler;
+    private final AvailBufferedStorageDispatcher availCompletionHandler;
 
     private boolean started = false;
 
@@ -127,10 +131,14 @@ public class SchedulerService {
             }
         }
 
-        // create the scheduler itself
+        // create the schedulers - we use two: one for metric collections and one for avail checks
         this.metricCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
                 diagnostics);
-        this.metricScheduler = new IntervalBasedScheduler(this);
+        this.metricScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Metrics");
+
+        this.availCompletionHandler = new AvailBufferedStorageDispatcher(configuration, storageAdapter,
+                diagnostics);
+        this.availScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Avail");
 
         // provide our storage adapater to the proxy - allows external apps to use it to store its own metrics
         metricStorageProxy.setStorageAdapter(storageAdapter);
@@ -159,10 +167,15 @@ public class SchedulerService {
 
         MsgLogger.LOG.infoStartingScheduler();
 
-        // turn ResourceRef into Tasks
-        List<Task> tasks = createTasks(schedulerConfig.getResourceRefs());
+        // turn metric DMR refs into Tasks and schedule them now
+        List<Task> metricTasks = createDMRTasks(schedulerConfig.getDMRMetricsToBeCollected(), Type.METRIC);
         this.metricCompletionHandler.start();
-        this.metricScheduler.schedule(tasks);
+        this.metricScheduler.schedule(metricTasks);
+
+        // turn avail DMR refs into Tasks and schedule them now
+        List<Task> availTasks = createDMRTasks(schedulerConfig.getDMRAvailsToBeChecked(), Type.AVAIL);
+        this.availCompletionHandler.start();
+        this.availScheduler.schedule(availTasks);
 
         if (this.schedulerConfig.getDiagnosticsConfig().enabled) {
             diagnosticsReporter.start(this.schedulerConfig.getDiagnosticsConfig().interval,
@@ -174,15 +187,23 @@ public class SchedulerService {
 
     public void stop() {
         if (!started) {
-            return; // already started
+            return; // already stopped
         }
 
         MsgLogger.LOG.infoStoppingScheduler();
 
+        // stop completion handlers
         this.metricCompletionHandler.shutdown();
+        this.availCompletionHandler.shutdown();
+
+        // stop the schedulers
         this.metricScheduler.shutdown();
+        this.availScheduler.shutdown();
+
+        // stop diagnostic reporting
         this.diagnosticsReporter.stop();
 
+        // spit out a final diagnostics report
         if (this.schedulerConfig.getDiagnosticsConfig().enabled) {
             this.diagnosticsReporter.report();
         }
@@ -197,12 +218,17 @@ public class SchedulerService {
                     return new MetricDMRTaskGroupRunnable(group, metricCompletionHandler, getDiagnostics(),
                             getModelControllerClientFactory());
                 } else {
-                    throw new UnsupportedOperationException("Unsupported group kind: " + group);
+                    throw new UnsupportedOperationException("Unsupported metric group kind: " + group);
                 }
             }
 
             case AVAIL: {
-                throw new UnsupportedOperationException("Unsupported group type: " + group);
+                if (DMRTask.class.equals(group.getClassKind())) {
+                    return new AvailDMRTaskGroupRunnable(group, availCompletionHandler, getDiagnostics(),
+                            getModelControllerClientFactory());
+                } else {
+                    throw new UnsupportedOperationException("Unsupported avail group kind: " + group);
+                }
             }
 
             default: {
@@ -211,25 +237,31 @@ public class SchedulerService {
         }
     }
 
-    private List<Task> createTasks(List<DMRPropertyReference> resourceRefs) {
+    private List<Task> createDMRTasks(List<DMRPropertyReference> refs, Type taskType) {
         List<Task> tasks = new ArrayList<>();
-        for (DMRPropertyReference ref : resourceRefs) {
+        for (DMRPropertyReference ref : refs) {
 
             // parse sub references (complex attribute support)
             String attribute = ref.getAttribute();
             String subref = null;
-            int i = attribute.indexOf("#");
-            if (i > 0) {
-                subref = attribute.substring(i + 1, attribute.length());
-                attribute = attribute.substring(0, i);
+
+            if (attribute != null) {
+                int i = attribute.indexOf("#");
+                if (i > 0) {
+                    subref = attribute.substring(i + 1, attribute.length());
+                    attribute = attribute.substring(0, i);
+                }
+            } else if (taskType == Type.METRIC) {
+                throw new IllegalArgumentException("Metric references must include a DMR attribute name: " + ref);
             }
 
             String host = this.selfId.getHost();
             String server = this.selfId.getServer();
 
-            tasks.add(new DMRTask(Type.METRIC, ref.getInterval(), host, server, Address.parse(ref.getAddress()),
+            tasks.add(new DMRTask(taskType, ref.getInterval(), host, server, Address.parse(ref.getAddress()),
                     attribute, subref));
         }
+
         return tasks;
     }
 }

@@ -57,23 +57,31 @@ public interface MsgLogger {
     @Message(id = 10006, value = "There are no enabled metric sets")
     void infoNoEnabledMetricsConfigured();
 
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10007, value = "There are no enabled availability check sets")
+    void infoNoEnabledAvailsConfigured();
+
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10007, value = "A metric collection failed")
+    @Message(id = 10008, value = "A metric collection failed")
     void errorMetricCollectionFailed(@Cause Throwable t);
 
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10008, value = "Failed to store metric data: %s")
+    @Message(id = 10009, value = "An availability check failed")
+    void errorAvailCheckFailed(@Cause Throwable t);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10010, value = "Failed to store metric data: %s")
     void errorFailedToStoreData(@Cause Throwable t, String data);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10009, value = "Starting scheduler")
+    @Message(id = 10011, value = "Starting scheduler")
     void infoStartingScheduler();
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10010, value = "Stopping scheduler")
+    @Message(id = 10012, value = "Stopping scheduler")
     void infoStoppingScheduler();
 
     @LogMessage(level = Level.WARN)
-    @Message(id = 10011, value = "Batch operation requested [%d] values but received [%d]")
+    @Message(id = 10013, value = "Batch operation requested [%d] values but received [%d]")
     void warnBatchResultsDoNotMatchRequests(int expectedCound, int actualCount);
 }

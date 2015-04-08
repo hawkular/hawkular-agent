@@ -16,10 +16,10 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling;
 
-import org.hawkular.agent.monitor.storage.MetricDataPoint;
+import org.hawkular.agent.monitor.storage.AvailDataPoint;
 
 /**
- * Callback for completed tasks that took metric collections.
+ * Callback for completed tasks that checked for availability.
  */
-public interface MetricCompletionHandler extends CompletionHandler<MetricDataPoint> {
+public interface AvailCompletionHandler extends CompletionHandler<AvailDataPoint> {
 }

@@ -40,10 +40,10 @@ public class IntervalBasedScheduler implements Scheduler {
 
     private boolean started = false;
 
-    public IntervalBasedScheduler(SchedulerService schedulerService) {
+    public IntervalBasedScheduler(SchedulerService schedulerService, String name) {
         this.schedulerService = schedulerService;
 
-        ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true, "Hawkular-Monitor-Scheduler");
+        ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true, name);
         this.executorService = Executors.newScheduledThreadPool(schedulerService.getSchedulerConfiguration()
                 .getSchedulerThreads(), threadFactory);
 

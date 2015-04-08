@@ -50,7 +50,17 @@ public interface Diagnostics {
     Counter getMetricsStorageBufferSize();
 
     /**
+     * @return tracks the size of the buffer that holds availability statuses waiting to get stored
+     */
+    Counter getAvailStorageBufferSize();
+
+    /**
      * @return tracks the number of metrics that have been stored
      */
     Meter getMetricRate();
+
+    /**
+     * @return tracks the number of availability statuses that have been stored
+     */
+    Meter getAvailRate();
 }

@@ -63,13 +63,13 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void store(Set<DataPoint> datapoints) {
+    public void storeMetrics(Set<MetricDataPoint> datapoints) {
         if (datapoints == null || datapoints.isEmpty()) {
             return; // nothing to do
         }
 
         MetricDataPayloadBuilder payloadBuilder = createMetricDataPayloadBuilder();
-        for (DataPoint datapoint : datapoints) {
+        for (MetricDataPoint datapoint : datapoints) {
             Task task = datapoint.getTask();
             String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
@@ -80,6 +80,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
         store(payloadBuilder);
 
         return;
+    }
+
+    @Override
+    public void storeAvails(Set<AvailDataPoint> datapoints) {
+        // TODO implement me!
+        diagnostics.getAvailRate().mark(datapoints.size());
     }
 
     @Override

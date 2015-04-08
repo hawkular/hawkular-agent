@@ -14,12 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.polling;
+package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.storage.MetricDataPoint;
+import java.util.Arrays;
 
-/**
- * Callback for completed tasks that took metric collections.
- */
-public interface MetricCompletionHandler extends CompletionHandler<MetricDataPoint> {
+import org.jboss.as.controller.AbstractAddStepHandler;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.dmr.ModelNode;
+
+public class DMRAvailSetAdd extends AbstractAddStepHandler {
+
+    public static final DMRAvailSetAdd INSTANCE = new DMRAvailSetAdd();
+
+    private DMRAvailSetAdd() {
+    }
+
+    @Override
+    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
+        this.attributes = Arrays.asList(DMRAvailSetDefinition.ATTRIBUTES);
+        super.populateModel(operation, model);
+    }
 }

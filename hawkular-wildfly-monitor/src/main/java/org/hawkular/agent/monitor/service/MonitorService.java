@@ -25,8 +25,10 @@ import java.util.concurrent.ThreadFactory;
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Metric;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricSet;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AvailDMR;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AvailSetDMR;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricDMR;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricSetDMR;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
@@ -97,11 +99,22 @@ public class MonitorService implements Service<MonitorService> {
         schedulerConfig.setDiagnosticsConfig(config.diagnostics);
         schedulerConfig.setStorageAdapterConfig(config.storageAdapter);
         schedulerConfig.setSchedulerThreads(config.numSchedulerThreads);
-        for (MetricSet metricSet : config.metricSets.values()) {
-            for (Metric metric : metricSet.metrics.values()) {
+
+        // get all the metrics to be collected from DMR resources
+        for (MetricSetDMR metricSet : config.metricSetDmrMap.values()) {
+            for (MetricDMR metric : metricSet.metricDmrMap.values()) {
                 Interval interval = new Interval(metric.interval, metric.timeUnits);
                 DMRPropertyReference ref = new DMRPropertyReference(metric.resource, metric.attribute, interval);
-                schedulerConfig.addResourceRef(ref);
+                schedulerConfig.addMetricToBeCollected(ref);
+            }
+        }
+
+        // get all the availabilities that need to be checked from DMR resources
+        for (AvailSetDMR availSet : config.availSetDmrMap.values()) {
+            for (AvailDMR avail : availSet.availDmrMap.values()) {
+                Interval interval = new Interval(avail.interval, avail.timeUnits);
+                DMRPropertyReference ref = new DMRPropertyReference(avail.resource, avail.attribute, interval);
+                schedulerConfig.addAvailToBeChecked(ref);
             }
         }
     }

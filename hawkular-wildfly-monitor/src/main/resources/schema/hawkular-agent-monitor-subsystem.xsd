@@ -31,6 +31,7 @@
       <xs:element name="storage-adapter" type="storageType"      minOccurs="1" maxOccurs="1"/>
       <xs:element name="diagnostics"     type="diagnosticsType"  minOccurs="1" maxOccurs="1"/>
       <xs:element name="metric-set-dmr"  type="metricSetDmrType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="avail-set-dmr"   type="availSetDmrType"  minOccurs="0" maxOccurs="unbounded"/>
     </xs:all>
     <xs:attribute name="enabled"             type="xs:boolean"/>
     <xs:attribute name="apiJndiName"         type="xs:string"/>
@@ -74,6 +75,23 @@
     <xs:attribute name="name"      type="xs:string" use="required"/>
     <xs:attribute name="resource"  type="xs:string" use="required"/>
     <xs:attribute name="attribute" type="xs:string" use="required"/>
+    <xs:attribute name="interval"  type="xs:int"/>
+    <xs:attribute name="timeUnits" type="timeUnitsType"/>
+  </xs:complexType>
+
+  <!-- definition of sets of DMR availability checks -->
+  <xs:complexType name="availSetDmrType">
+    <xs:sequence>
+      <xs:element name="avail-dmr" type="availDmrType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"    type="xs:string" use="required"/>
+    <xs:attribute name="enabled" type="xs:boolean"/>
+  </xs:complexType>
+
+  <xs:complexType name="availDmrType">
+    <xs:attribute name="name"      type="xs:string" use="required"/>
+    <xs:attribute name="resource"  type="xs:string" use="required"/>
+    <xs:attribute name="attribute" type="xs:string" use="optional"/> <!-- if not specified, existence of resource is used for availability status -->
     <xs:attribute name="interval"  type="xs:int"/>
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
   </xs:complexType>

@@ -21,42 +21,46 @@ import java.util.Date;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 
 /**
- * Metric data that was collected.
+ * Availability check data that was collected.
  */
-public class DataPoint {
+public class AvailDataPoint {
+    public static enum Avail {
+        UP,
+        DOWN
+    }
     private Task task;
     private long timestamp;
-    private double value;
+    private Avail value;
 
-    public DataPoint(Task task, double value) {
+    public AvailDataPoint(Task task, Avail value) {
         this.task = task;
         this.timestamp = System.currentTimeMillis();
         this.value = value;
     }
 
     /**
-     * @return Identifies the metric that was collected.
+     * @return object that identifies the property that was used to check availability
      */
     public Task getTask() {
         return task;
     }
 
     /**
-     * @return when the metric was collected
+     * @return when the availability was checked
      */
     public long getTimestamp() {
         return timestamp;
     }
 
     /**
-     * @return the actual data that was collected
+     * @return the actual availability status
      */
-    public double getValue() {
+    public Avail getValue() {
         return value;
     }
 
     @Override
     public String toString() {
-        return "DataPoint: task=[" + task + "], timestamp=[" + new Date(timestamp) + "], value=[" + value + "]";
+        return "AvailDataPoint: task=[" + task + "], timestamp=[" + new Date(timestamp) + "], value=[" + value + "]";
     }
 }

@@ -24,29 +24,29 @@ import java.util.concurrent.BlockingQueue;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
+import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
 import org.jboss.logging.Logger;
 
 /**
- * Buffers collected metric data and eventually stores them in a storage adapter.
+ * Buffers availability check data and eventually stores them in a storage adapter.
  */
-public class MetricBufferedStorageDispatcher implements MetricCompletionHandler {
-    private static final Logger LOGGER = Logger.getLogger(MetricBufferedStorageDispatcher.class);
+public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
+    private static final Logger LOGGER = Logger.getLogger(AvailBufferedStorageDispatcher.class);
 
     private static final int MAX_BATCH_SIZE = 24; // TODO make configurable
     private static final int BUFFER_SIZE = 100; // TODO make configurable
     private final SchedulerConfiguration config;
     private final StorageAdapter storageAdapter;
     private final Diagnostics diagnostics;
-    private final BlockingQueue<MetricDataPoint> queue;
+    private final BlockingQueue<AvailDataPoint> queue;
     private final Worker worker;
 
-    public MetricBufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
+    public AvailBufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
             Diagnostics diagnostics) {
         this.config = config;
         this.storageAdapter = storageAdapter;
         this.diagnostics = diagnostics;
-        this.queue = new ArrayBlockingQueue<MetricDataPoint>(BUFFER_SIZE);
+        this.queue = new ArrayBlockingQueue<AvailDataPoint>(BUFFER_SIZE);
         this.worker = new Worker(queue);
     }
 
@@ -59,10 +59,10 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
     }
 
     @Override
-    public void onCompleted(MetricDataPoint sample) {
+    public void onCompleted(AvailDataPoint sample) {
         if (queue.remainingCapacity() > 0) {
-            LOGGER.debugf("Metric collected: [%s]->[%f]", sample.getTask(), sample.getValue());
-            diagnostics.getMetricsStorageBufferSize().inc();
+            LOGGER.debugf("Availability checked: [%s]->[%s]", sample.getTask(), sample.getValue());
+            diagnostics.getAvailStorageBufferSize().inc();
             queue.add(sample);
         }
         else {
@@ -72,14 +72,14 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
 
     @Override
     public void onFailed(Throwable e) {
-        MsgLogger.LOG.errorMetricCollectionFailed(e);
+        MsgLogger.LOG.errorAvailCheckFailed(e);
     }
 
     public class Worker extends Thread {
-        private final BlockingQueue<MetricDataPoint> queue;
+        private final BlockingQueue<AvailDataPoint> queue;
         private boolean keepRunning = true;
 
-        public Worker(BlockingQueue<MetricDataPoint> queue) {
+        public Worker(BlockingQueue<AvailDataPoint> queue) {
             this.queue = queue;
         }
 
@@ -87,15 +87,15 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
             try {
                 while (keepRunning) {
                     // batch processing
-                    MetricDataPoint sample = queue.take();
-                    Set<MetricDataPoint> samples = new HashSet<>();
+                    AvailDataPoint sample = queue.take();
+                    Set<AvailDataPoint> samples = new HashSet<>();
                     queue.drainTo(samples, MAX_BATCH_SIZE);
                     samples.add(sample);
 
-                    diagnostics.getMetricsStorageBufferSize().dec(samples.size());
+                    diagnostics.getAvailStorageBufferSize().dec(samples.size());
 
                     // dispatch
-                    storageAdapter.storeMetrics(samples);
+                    storageAdapter.storeAvails(samples);
                 }
             } catch (InterruptedException ie) {
             }

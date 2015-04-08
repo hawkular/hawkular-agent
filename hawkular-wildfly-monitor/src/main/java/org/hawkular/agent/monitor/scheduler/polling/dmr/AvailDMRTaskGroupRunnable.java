@@ -22,24 +22,24 @@ import java.util.concurrent.TimeUnit;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
+import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
-import org.hawkular.agent.monitor.storage.MetricDataPoint;
+import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 
 import com.codahale.metrics.Timer;
 
-public class MetricDMRTaskGroupRunnable implements Runnable {
+public class AvailDMRTaskGroupRunnable implements Runnable {
 
     private final TaskGroup group;
-    private final MetricCompletionHandler completionHandler;
+    private final AvailCompletionHandler completionHandler;
     private final Diagnostics diagnostics;
     private final ModelControllerClientFactory mccFactory;
     private final ModelNode operation;
 
-    public MetricDMRTaskGroupRunnable(TaskGroup group, MetricCompletionHandler completionHandler,
+    public AvailDMRTaskGroupRunnable(TaskGroup group, AvailCompletionHandler completionHandler,
             Diagnostics diagnostics, ModelControllerClientFactory mccFactory) {
         this.group = group;
         this.completionHandler = completionHandler;
@@ -79,15 +79,16 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
                     // deconstruct model node
                     ModelNode data = step.getValue();
                     ModelNode dataResult = JBossASClient.getResults(data);
-                    Double value = null;
+                    String value = null;
                     if (task.getSubref() != null) {
-                        value = dataResult.get(task.getSubref()).asDouble();
+                        value = dataResult.get(task.getSubref()).asString();
                     }
                     else {
-                        value = dataResult.asDouble();
+                        value = dataResult.asString();
                     }
 
-                    completionHandler.onCompleted(new MetricDataPoint(task, value));
+                    // TODO we need to somehow convert value to avail of UP or DOWN
+                    completionHandler.onCompleted(new AvailDataPoint(task, AvailDataPoint.Avail.UP));
                     i++;
                 }
 

@@ -34,7 +34,13 @@ public class ReadAttributeOperationBuilder {
         int i = 0;
         for (Task task : group) {
             DMRTask dmrTask = (DMRTask) task;
-            readOps[i++] = JBossASClient.createReadAttributeRequest(dmrTask.getAttribute(), dmrTask.getAddress());
+
+            // TODO: we probably want to refactor this "==null" condition into its own class
+            if (dmrTask.getAttribute() != null) {
+                readOps[i++] = JBossASClient.createReadAttributeRequest(dmrTask.getAttribute(), dmrTask.getAddress());
+            } else {
+                readOps[i++] = JBossASClient.createRequest(JBossASClient.READ_RESOURCE, dmrTask.getAddress());
+            }
         }
 
         return JBossASClient.createBatchRequest(readOps);

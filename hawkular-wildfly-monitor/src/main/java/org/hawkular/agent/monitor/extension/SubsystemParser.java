@@ -60,6 +60,14 @@ public class SubsystemParser implements XMLStreamConstants, XMLElementReader<Lis
                                             .addAttributes(DMRMetricDefinition.ATTRIBUTES)
                                     )
                             )
+                            .addChild(builder(DMRAvailSetDefinition.INSTANCE)
+                                    .setXmlElementName(DMRAvailSetDefinition.AVAIL_SET)
+                                    .addAttributes(DMRAvailSetDefinition.ATTRIBUTES)
+                                    .addChild(builder(DMRAvailDefinition.INSTANCE)
+                                            .setXmlElementName(DMRAvailDefinition.AVAIL)
+                                            .addAttributes(DMRAvailDefinition.ATTRIBUTES)
+                                    )
+                            )
                             .build();
         } catch (Throwable t) {
             System.err.println("CANNOT INITIALIZE PARSER: " + SubsystemParser.class);

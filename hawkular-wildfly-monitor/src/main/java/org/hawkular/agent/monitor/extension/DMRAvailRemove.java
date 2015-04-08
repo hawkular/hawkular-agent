@@ -14,12 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.polling;
+package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.storage.MetricDataPoint;
+import org.jboss.as.controller.AbstractRemoveStepHandler;
 
-/**
- * Callback for completed tasks that took metric collections.
- */
-public interface MetricCompletionHandler extends CompletionHandler<MetricDataPoint> {
+public class DMRAvailRemove extends AbstractRemoveStepHandler {
+
+    public static final DMRAvailRemove INSTANCE = new DMRAvailRemove();
+
+    private DMRAvailRemove() {
+    }
 }

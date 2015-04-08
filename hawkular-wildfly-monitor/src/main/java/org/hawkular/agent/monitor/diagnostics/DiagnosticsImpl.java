@@ -32,6 +32,8 @@ public class DiagnosticsImpl implements Diagnostics {
     private final Meter storageError;
     private final Counter metricsStorageBuffer;
     private final Meter metricRate;
+    private final Counter availStorageBuffer;
+    private final Meter availRate;
 
     public DiagnosticsImpl(MetricRegistry metrics, ServerIdentifiers selfId) {
         dmrRequestTimer = metrics.timer(name(selfId + ".diagnostics.dmr-request-timer"));
@@ -40,6 +42,8 @@ public class DiagnosticsImpl implements Diagnostics {
         storageError = metrics.meter(name(selfId + ".diagnostics.storage-error-rate"));
         metricsStorageBuffer = metrics.counter(name(selfId + ".diagnostics.metrics-storage-buffer-size"));
         metricRate = metrics.meter(name(selfId + ".diagnostics.metric-rate"));
+        availStorageBuffer = metrics.counter(name(selfId + ".diagnostics.avail-storage-buffer-size"));
+        availRate = metrics.meter(name(selfId + ".diagnostics.avail-rate"));
     }
 
     @Override
@@ -70,5 +74,15 @@ public class DiagnosticsImpl implements Diagnostics {
     @Override
     public Meter getMetricRate() {
         return metricRate;
+    }
+
+    @Override
+    public Counter getAvailStorageBufferSize() {
+        return availStorageBuffer;
+    }
+
+    @Override
+    public Meter getAvailRate() {
+        return availRate;
     }
 }

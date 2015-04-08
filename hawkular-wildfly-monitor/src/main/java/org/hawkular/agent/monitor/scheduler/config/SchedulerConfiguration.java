@@ -34,18 +34,28 @@ public class SchedulerConfiguration {
         METRICS // stores metrics to just a Hawkular-Metrics standalone system
     }
 
-    private final List<DMRPropertyReference> resourceRefs = new ArrayList<>();
+    private final List<DMRPropertyReference> dmrMetricsToBeCollected = new ArrayList<>();
+    private final List<DMRPropertyReference> dmrAvailsToBeChecked = new ArrayList<>();
+
     private int schedulerThreads = 2;
 
     private MonitorServiceConfiguration.StorageAdapter storageAdapterConfig;
     private MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
 
-    public List<DMRPropertyReference> getResourceRefs() {
-        return Collections.unmodifiableList(resourceRefs);
+    public List<DMRPropertyReference> getDMRMetricsToBeCollected() {
+        return Collections.unmodifiableList(dmrMetricsToBeCollected);
     }
 
-    public void addResourceRef(DMRPropertyReference ref) {
-        resourceRefs.add(ref);
+    public List<DMRPropertyReference> getDMRAvailsToBeChecked() {
+        return Collections.unmodifiableList(dmrAvailsToBeChecked);
+    }
+
+    public void addMetricToBeCollected(DMRPropertyReference ref) {
+        dmrMetricsToBeCollected.add(ref);
+    }
+
+    public void addAvailToBeChecked(DMRPropertyReference ref) {
+        dmrAvailsToBeChecked.add(ref);
     }
 
     public int getSchedulerThreads() {

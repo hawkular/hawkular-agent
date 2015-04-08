@@ -40,6 +40,7 @@ public class DMRPropertyReference extends MonitoredPropertyReference {
 
     @Override
     public String toString() {
-        return "DMRResourceRef[address=" + address + ", attrib=" + attribute + ", interval=" + getInterval() + "]";
+        return "DMRPropertyReference[address=" + address + ", attrib=" + attribute + ", interval=" + getInterval()
+                + "]";
     }
 }

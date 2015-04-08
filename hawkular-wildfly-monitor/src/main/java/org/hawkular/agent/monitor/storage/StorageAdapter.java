@@ -28,7 +28,13 @@ public interface StorageAdapter extends MetricStorage {
      * Stores the given collected metric data points.
      * @param datapoints the data to be stored
      */
-    void store(Set<DataPoint> datapoints);
+    void storeMetrics(Set<MetricDataPoint> datapoints);
+
+    /**
+     * Stores the given availability check data points.
+     * @param datapoints the data to be stored
+     */
+    void storeAvails(Set<AvailDataPoint> datapoints);
 
     /**
      * @return the configuration used by this adapter

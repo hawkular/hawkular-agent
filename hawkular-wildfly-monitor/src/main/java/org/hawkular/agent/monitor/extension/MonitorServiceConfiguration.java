@@ -36,37 +36,44 @@ public class MonitorServiceConfiguration {
     public int numSchedulerThreads;
     public StorageAdapter storageAdapter = new StorageAdapter();
     public Diagnostics diagnostics = new Diagnostics();
-    public Map<String, MetricSet> metricSets = new HashMap<>();
+    public Map<String, MetricSetDMR> metricSetDmrMap = new HashMap<>();
+    public Map<String, AvailSetDMR> availSetDmrMap = new HashMap<>();
 
     public MonitorServiceConfiguration(ModelNode config, OperationContext context) throws OperationFailedException {
         determineGlobalConfig(config, context);
         determineStorageAdapterConfig(config, context);
         determineDiagnosticsConfig(config, context);
-        boolean hasEnabledMetrics = determineMetricSets(config, context);
+
+        boolean hasEnabledMetrics = determineMetricSetDmr(config, context);
         if (!hasEnabledMetrics) {
             MsgLogger.LOG.infoNoEnabledMetricsConfigured();
+        }
+
+        boolean hasEnabledAvails = determineAvailSetDmr(config, context);
+        if (!hasEnabledAvails) {
+            MsgLogger.LOG.infoNoEnabledAvailsConfigured();
         }
         return;
     }
 
-    private boolean determineMetricSets(ModelNode config, OperationContext context) throws OperationFailedException {
+    private boolean determineMetricSetDmr(ModelNode config, OperationContext context) throws OperationFailedException {
         boolean hasEnabledMetrics = false;
 
         if (config.hasDefined(DMRMetricSetDefinition.METRIC_SET)) {
             List<Property> metricSetsList = config.get(DMRMetricSetDefinition.METRIC_SET).asPropertyList();
             for (Property metricSetProperty : metricSetsList) {
-                MetricSet metricSet = new MetricSet();
+                MetricSetDMR metricSet = new MetricSetDMR();
                 String metricSetName = metricSetProperty.getName();
-                metricSets.put(metricSetName, metricSet);
+                metricSetDmrMap.put(metricSetName, metricSet);
                 metricSet.name = metricSetName;
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
                 metricSet.enabled = getBoolean(metricSetValueNode, context, DMRMetricSetDefinition.ENABLED);
                 if (metricSetValueNode.hasDefined(DMRMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(DMRMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
-                        Metric metric = new Metric();
+                        MetricDMR metric = new MetricDMR();
                         String metricName = metricProperty.getName();
-                        metricSet.metrics.put(metricName, metric);
+                        metricSet.metricDmrMap.put(metricName, metric);
                         metric.name = metricName;
                         ModelNode metricValueNode = metricProperty.getValue();
                         metric.resource = getString(metricValueNode, context, DMRMetricDefinition.RESOURCE);
@@ -75,7 +82,7 @@ public class MonitorServiceConfiguration {
                         String metricTimeUnitsStr = getString(metricValueNode, context, DMRMetricDefinition.TIME_UNITS);
                         metric.timeUnits = TimeUnit.valueOf(metricTimeUnitsStr.toUpperCase());
                     }
-                    if (metricSet.enabled && !metricSet.metrics.isEmpty()) {
+                    if (metricSet.enabled && !metricSet.metricDmrMap.isEmpty()) {
                         hasEnabledMetrics = true;
                     }
                 }
@@ -83,6 +90,42 @@ public class MonitorServiceConfiguration {
         }
 
         return hasEnabledMetrics;
+    }
+
+    private boolean determineAvailSetDmr(ModelNode config, OperationContext context) throws OperationFailedException {
+        boolean hasEnabledAvails = false;
+
+        if (config.hasDefined(DMRAvailSetDefinition.AVAIL_SET)) {
+            List<Property> availSetsList = config.get(DMRAvailSetDefinition.AVAIL_SET).asPropertyList();
+            for (Property availSetProperty : availSetsList) {
+                AvailSetDMR availSet = new AvailSetDMR();
+                String availSetName = availSetProperty.getName();
+                availSetDmrMap.put(availSetName, availSet);
+                availSet.name = availSetName;
+                ModelNode availSetValueNode = availSetProperty.getValue();
+                availSet.enabled = getBoolean(availSetValueNode, context, DMRAvailSetDefinition.ENABLED);
+                if (availSetValueNode.hasDefined(DMRAvailDefinition.AVAIL)) {
+                    List<Property> availsList = availSetValueNode.get(DMRAvailDefinition.AVAIL).asPropertyList();
+                    for (Property availProperty : availsList) {
+                        AvailDMR avail = new AvailDMR();
+                        String availName = availProperty.getName();
+                        availSet.availDmrMap.put(availName, avail);
+                        avail.name = availName;
+                        ModelNode availValueNode = availProperty.getValue();
+                        avail.resource = getString(availValueNode, context, DMRAvailDefinition.RESOURCE);
+                        avail.attribute = getString(availValueNode, context, DMRAvailDefinition.ATTRIBUTE);
+                        avail.interval = getInt(availValueNode, context, DMRAvailDefinition.INTERVAL);
+                        String availTimeUnitsStr = getString(availValueNode, context, DMRAvailDefinition.TIME_UNITS);
+                        avail.timeUnits = TimeUnit.valueOf(availTimeUnitsStr.toUpperCase());
+                    }
+                    if (availSet.enabled && !availSet.availDmrMap.isEmpty()) {
+                        hasEnabledAvails = true;
+                    }
+                }
+            }
+        }
+
+        return hasEnabledAvails;
     }
 
     private void determineDiagnosticsConfig(ModelNode config, OperationContext context)
@@ -177,7 +220,7 @@ public class MonitorServiceConfiguration {
         public TimeUnit timeUnits;
     }
 
-    public class Metric {
+    public class MetricDMR {
         public String name;
         public String resource;
         public String attribute;
@@ -185,9 +228,23 @@ public class MonitorServiceConfiguration {
         public TimeUnit timeUnits;
     }
 
-    public class MetricSet {
+    public class MetricSetDMR {
         public String name;
         public boolean enabled;
-        public Map<String, Metric> metrics = new HashMap<>();
+        public Map<String, MetricDMR> metricDmrMap = new HashMap<>();
+    }
+
+    public class AvailDMR {
+        public String name;
+        public String resource;
+        public String attribute;
+        public int interval;
+        public TimeUnit timeUnits;
+    }
+
+    public class AvailSetDMR {
+        public String name;
+        public boolean enabled;
+        public Map<String, AvailDMR> availDmrMap = new HashMap<>();
     }
 }
