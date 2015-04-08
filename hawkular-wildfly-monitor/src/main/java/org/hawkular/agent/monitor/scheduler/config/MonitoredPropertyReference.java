@@ -20,7 +20,7 @@ package org.hawkular.agent.monitor.scheduler.config;
  * A reference to a resource's monitored property.
  * This represents a single monitored property or attribute, not a resource as an entire entity.
  */
-public class MonitoredPropertyReference {
+public abstract class MonitoredPropertyReference {
 
     private final Interval interval;
 
