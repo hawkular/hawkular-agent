@@ -28,9 +28,9 @@
 
   <xs:complexType name="subsystemType">
     <xs:all>
-      <xs:element name="storage-adapter" type="storageType"     minOccurs="1" maxOccurs="1"/>
-      <xs:element name="diagnostics"     type="diagnosticsType" minOccurs="1" maxOccurs="1"/>
-      <xs:element name="metric-set"      type="metricSetType"   minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="storage-adapter" type="storageType"      minOccurs="1" maxOccurs="1"/>
+      <xs:element name="diagnostics"     type="diagnosticsType"  minOccurs="1" maxOccurs="1"/>
+      <xs:element name="metric-set-dmr"  type="metricSetDmrType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:all>
     <xs:attribute name="enabled"             type="xs:boolean"/>
     <xs:attribute name="apiJndiName"         type="xs:string"/>
@@ -61,16 +61,16 @@
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
   </xs:complexType>
 
-  <!-- definition of individual metrics -->
-  <xs:complexType name="metricSetType">
+  <!-- definition of sets of DMR metrics -->
+  <xs:complexType name="metricSetDmrType">
     <xs:sequence>
-      <xs:element name="metric" type="metricType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="metric-dmr" type="metricDmrType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name"    type="xs:string" use="required"/>
     <xs:attribute name="enabled" type="xs:boolean"/>
   </xs:complexType>
 
-  <xs:complexType name="metricType">
+  <xs:complexType name="metricDmrType">
     <xs:attribute name="name"      type="xs:string" use="required"/>
     <xs:attribute name="resource"  type="xs:string" use="required"/>
     <xs:attribute name="attribute" type="xs:string" use="required"/>

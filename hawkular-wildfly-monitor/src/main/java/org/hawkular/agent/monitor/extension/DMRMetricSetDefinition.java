@@ -29,11 +29,11 @@ import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelType;
 
-public class MetricSetDefinition extends PersistentResourceDefinition {
+public class DMRMetricSetDefinition extends PersistentResourceDefinition {
 
-    public static final MetricSetDefinition INSTANCE = new MetricSetDefinition();
+    public static final DMRMetricSetDefinition INSTANCE = new DMRMetricSetDefinition();
 
-    static final String METRIC_SET = "metric-set";
+    static final String METRIC_SET = "metric-set-dmr";
 
     static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
             ModelType.BOOLEAN)
@@ -47,11 +47,11 @@ public class MetricSetDefinition extends PersistentResourceDefinition {
             ENABLED
     };
 
-    private MetricSetDefinition() {
+    private DMRMetricSetDefinition() {
         super(PathElement.pathElement(METRIC_SET),
                 SubsystemExtension.getResourceDescriptionResolver(METRIC_SET),
-                MetricSetAdd.INSTANCE,
-                MetricSetRemove.INSTANCE,
+                DMRMetricSetAdd.INSTANCE,
+                DMRMetricSetRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
@@ -63,6 +63,6 @@ public class MetricSetDefinition extends PersistentResourceDefinition {
 
     @Override
     protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(MetricDefinition.INSTANCE);
+        return Arrays.asList(DMRMetricDefinition.INSTANCE);
     }
 }

@@ -31,38 +31,38 @@
                interval="1"
                timeUnits="minutes"/>
 
-  <metric-set name="platform.memory" enabled="true">
-    <metric name="heap.used"
-            interval="15"
-            timeUnits="seconds"
-            resource="/core-service=platform-mbean/type=memory"
-            attribute="heap-memory-usage#used" />
+  <metric-set-dmr name="platform.memory" enabled="true">
+    <metric-dmr name="heap.used"
+                interval="15"
+                timeUnits="seconds"
+                resource="/core-service=platform-mbean/type=memory"
+                attribute="heap-memory-usage#used" />
 
-    <metric name="heap.committed"
-            interval="1"
-            timeUnits="minutes"
-            resource="/core-service=platform-mbean/type=memory"
-            attribute="heap-memory-usage#committed" />
+    <metric-dmr name="heap.committed"
+                interval="1"
+                timeUnits="minutes"
+                resource="/core-service=platform-mbean/type=memory"
+                attribute="heap-memory-usage#committed" />
 
-    <metric name="non-heap.used"
-            interval="15"
-            timeUnits="seconds"
-            resource="/core-service=platform-mbean/type=memory"
-            attribute="non-heap-memory-usage#used" />
+    <metric-dmr name="non-heap.used"
+                interval="15"
+                timeUnits="seconds"
+                resource="/core-service=platform-mbean/type=memory"
+                attribute="non-heap-memory-usage#used" />
 
-    <metric name="non-heap.committed"
-            interval="1"
-            timeUnits="minutes"
-            resource="/core-service=platform-mbean/type=memory"
-            attribute="non-heap-memory-usage#committed" />
-  </metric-set>
+    <metric-dmr name="non-heap.committed"
+                interval="1"
+                timeUnits="minutes"
+                resource="/core-service=platform-mbean/type=memory"
+                attribute="non-heap-memory-usage#committed" />
+  </metric-set-dmr>
 
-  <metric-set name="platform.threading" enabled="true">
-    <metric name="thread-count"
-            interval="2"
-            timeUnits="minutes"
-            resource="/core-service=platform-mbean/type=threading"
-            attribute="thread-count" />
-  </metric-set>
+  <metric-set-dmr name="platform.threading" enabled="true">
+    <metric-dmr name="thread-count"
+                interval="2"
+                timeUnits="minutes"
+                resource="/core-service=platform-mbean/type=threading"
+                attribute="thread-count" />
+  </metric-set-dmr>
 
 </subsystem>

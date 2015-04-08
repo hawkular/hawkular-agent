@@ -31,11 +31,11 @@ import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
-public class MetricDefinition extends PersistentResourceDefinition {
+public class DMRMetricDefinition extends PersistentResourceDefinition {
 
-    public static final MetricDefinition INSTANCE = new MetricDefinition();
+    public static final DMRMetricDefinition INSTANCE = new DMRMetricDefinition();
 
-    static final String METRIC = "metric";
+    static final String METRIC = "metric-dmr";
 
     static final SimpleAttributeDefinition RESOURCE = new SimpleAttributeDefinitionBuilder("resource",
             ModelType.STRING)
@@ -76,11 +76,11 @@ public class MetricDefinition extends PersistentResourceDefinition {
             TIME_UNITS
     };
 
-    private MetricDefinition() {
+    private DMRMetricDefinition() {
         super(PathElement.pathElement(METRIC),
-                SubsystemExtension.getResourceDescriptionResolver(MetricSetDefinition.METRIC_SET, METRIC),
-                MetricAdd.INSTANCE,
-                MetricRemove.INSTANCE,
+                SubsystemExtension.getResourceDescriptionResolver(DMRMetricSetDefinition.METRIC_SET, METRIC),
+                DMRMetricAdd.INSTANCE,
+                DMRMetricRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }

@@ -52,27 +52,27 @@ public class MonitorServiceConfiguration {
     private boolean determineMetricSets(ModelNode config, OperationContext context) throws OperationFailedException {
         boolean hasEnabledMetrics = false;
 
-        if (config.hasDefined(MetricSetDefinition.METRIC_SET)) {
-            List<Property> metricSetsList = config.get(MetricSetDefinition.METRIC_SET).asPropertyList();
+        if (config.hasDefined(DMRMetricSetDefinition.METRIC_SET)) {
+            List<Property> metricSetsList = config.get(DMRMetricSetDefinition.METRIC_SET).asPropertyList();
             for (Property metricSetProperty : metricSetsList) {
                 MetricSet metricSet = new MetricSet();
                 String metricSetName = metricSetProperty.getName();
                 metricSets.put(metricSetName, metricSet);
                 metricSet.name = metricSetName;
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
-                metricSet.enabled = getBoolean(metricSetValueNode, context, MetricSetDefinition.ENABLED);
-                if (metricSetValueNode.hasDefined(MetricDefinition.METRIC)) {
-                    List<Property> metricsList = metricSetValueNode.get(MetricDefinition.METRIC).asPropertyList();
+                metricSet.enabled = getBoolean(metricSetValueNode, context, DMRMetricSetDefinition.ENABLED);
+                if (metricSetValueNode.hasDefined(DMRMetricDefinition.METRIC)) {
+                    List<Property> metricsList = metricSetValueNode.get(DMRMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
                         Metric metric = new Metric();
                         String metricName = metricProperty.getName();
                         metricSet.metrics.put(metricName, metric);
                         metric.name = metricName;
                         ModelNode metricValueNode = metricProperty.getValue();
-                        metric.resource = getString(metricValueNode, context, MetricDefinition.RESOURCE);
-                        metric.attribute = getString(metricValueNode, context, MetricDefinition.ATTRIBUTE);
-                        metric.interval = getInt(metricValueNode, context, MetricDefinition.INTERVAL);
-                        String metricTimeUnitsStr = getString(metricValueNode, context, MetricDefinition.TIME_UNITS);
+                        metric.resource = getString(metricValueNode, context, DMRMetricDefinition.RESOURCE);
+                        metric.attribute = getString(metricValueNode, context, DMRMetricDefinition.ATTRIBUTE);
+                        metric.interval = getInt(metricValueNode, context, DMRMetricDefinition.INTERVAL);
+                        String metricTimeUnitsStr = getString(metricValueNode, context, DMRMetricDefinition.TIME_UNITS);
                         metric.timeUnits = TimeUnit.valueOf(metricTimeUnitsStr.toUpperCase());
                     }
                     if (metricSet.enabled && !metricSet.metrics.isEmpty()) {

@@ -18,10 +18,10 @@ package org.hawkular.agent.monitor.extension;
 
 import org.jboss.as.controller.AbstractRemoveStepHandler;
 
-public class MetricRemove extends AbstractRemoveStepHandler {
+public class DMRMetricRemove extends AbstractRemoveStepHandler {
 
-    public static final MetricRemove INSTANCE = new MetricRemove();
+    public static final DMRMetricRemove INSTANCE = new DMRMetricRemove();
 
-    private MetricRemove() {
+    private DMRMetricRemove() {
     }
 }

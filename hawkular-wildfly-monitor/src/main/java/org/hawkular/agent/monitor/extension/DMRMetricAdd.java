@@ -16,12 +16,22 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.jboss.as.controller.AbstractRemoveStepHandler;
+import java.util.Arrays;
 
-public class MetricSetRemove extends AbstractRemoveStepHandler {
+import org.jboss.as.controller.AbstractAddStepHandler;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.dmr.ModelNode;
 
-    public static final MetricSetRemove INSTANCE = new MetricSetRemove();
+public class DMRMetricAdd extends AbstractAddStepHandler {
 
-    private MetricSetRemove() {
+    public static final DMRMetricAdd INSTANCE = new DMRMetricAdd();
+
+    private DMRMetricAdd() {
+    }
+
+    @Override
+    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
+        this.attributes = Arrays.asList(DMRMetricDefinition.ATTRIBUTES);
+        super.populateModel(operation, model);
     }
 }
