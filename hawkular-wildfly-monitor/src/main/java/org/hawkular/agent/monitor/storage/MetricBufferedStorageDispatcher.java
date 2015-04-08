@@ -24,14 +24,14 @@ import java.util.concurrent.BlockingQueue;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.polling.MetricsCompletionHandler;
+import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
 import org.jboss.logging.Logger;
 
 /**
  * Buffers collected metric data and eventually stores them in a storage adapter.
  */
-public class MetricsBufferedStorageDispatcher implements MetricsCompletionHandler {
-    private static final Logger LOGGER = Logger.getLogger(MetricsBufferedStorageDispatcher.class);
+public class MetricBufferedStorageDispatcher implements MetricCompletionHandler {
+    private static final Logger LOGGER = Logger.getLogger(MetricBufferedStorageDispatcher.class);
 
     private static final int MAX_BATCH_SIZE = 24; // TODO make configurable
     private static final int BUFFER_SIZE = 100; // TODO make configurable
@@ -41,7 +41,7 @@ public class MetricsBufferedStorageDispatcher implements MetricsCompletionHandle
     private final BlockingQueue<DataPoint> queue;
     private final Worker worker;
 
-    public MetricsBufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
+    public MetricBufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
             Diagnostics diagnostics) {
         this.config = config;
         this.storageAdapter = storageAdapter;

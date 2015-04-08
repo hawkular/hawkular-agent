@@ -21,5 +21,5 @@ import org.hawkular.agent.monitor.storage.DataPoint;
 /**
  * Callback for completed tasks that took metric collections.
  */
-public interface MetricsCompletionHandler extends CompletionHandler<DataPoint> {
+public interface MetricCompletionHandler extends CompletionHandler<DataPoint> {
 }

@@ -36,12 +36,12 @@ import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.scheduler.polling.Task.Type;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.DMRTask;
-import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricsDMRTaskGroupRunnable;
+import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.HawkularMetricsStorageAdapter;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
-import org.hawkular.agent.monitor.storage.MetricsBufferedStorageDispatcher;
+import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
 import org.jboss.logging.Logger;
@@ -61,7 +61,7 @@ public class SchedulerService {
     private final StorageAdapter storageAdapter;
     private final Scheduler scheduler;
     private final ScheduledReporter diagnosticsReporter;
-    private final MetricsBufferedStorageDispatcher metricsCompletionHandler;
+    private final MetricBufferedStorageDispatcher metricsCompletionHandler;
 
     private boolean started = false;
 
@@ -128,7 +128,7 @@ public class SchedulerService {
         }
 
         // create the scheduler itself
-        this.metricsCompletionHandler = new MetricsBufferedStorageDispatcher(configuration, storageAdapter,
+        this.metricsCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
                 diagnostics);
         this.scheduler = new IntervalBasedScheduler(this);
 
@@ -194,7 +194,7 @@ public class SchedulerService {
         switch (group.getType()) {
             case METRIC: {
                 if (DMRTask.class.equals(group.getClassKind())) {
-                    return new MetricsDMRTaskGroupRunnable(group, metricsCompletionHandler, getDiagnostics(),
+                    return new MetricDMRTaskGroupRunnable(group, metricsCompletionHandler, getDiagnostics(),
                             getModelControllerClientFactory());
                 } else {
                     throw new UnsupportedOperationException("Unsupported group kind: " + group);

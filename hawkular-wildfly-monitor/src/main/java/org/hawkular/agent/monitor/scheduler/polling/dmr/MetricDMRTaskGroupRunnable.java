@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.scheduler.polling.MetricsCompletionHandler;
+import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.storage.DataPoint;
 import org.hawkular.dmrclient.JBossASClient;
@@ -31,15 +31,15 @@ import org.jboss.dmr.Property;
 
 import com.codahale.metrics.Timer;
 
-public class MetricsDMRTaskGroupRunnable implements Runnable {
+public class MetricDMRTaskGroupRunnable implements Runnable {
 
     private final TaskGroup group;
-    private final MetricsCompletionHandler completionHandler;
+    private final MetricCompletionHandler completionHandler;
     private final Diagnostics diagnostics;
     private final ModelControllerClientFactory mccFactory;
     private final ModelNode operation;
 
-    public MetricsDMRTaskGroupRunnable(TaskGroup group, MetricsCompletionHandler completionHandler,
+    public MetricDMRTaskGroupRunnable(TaskGroup group, MetricCompletionHandler completionHandler,
             Diagnostics diagnostics, ModelControllerClientFactory mccFactory) {
         this.group = group;
         this.completionHandler = completionHandler;
