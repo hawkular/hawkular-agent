@@ -28,7 +28,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.config.ResourceRef;
+import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.IntervalBasedScheduler;
 import org.hawkular.agent.monitor.scheduler.polling.Scheduler;
@@ -40,8 +40,8 @@ import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnab
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.HawkularMetricsStorageAdapter;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
-import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
+import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
 import org.jboss.logging.Logger;
@@ -59,9 +59,9 @@ public class SchedulerService {
     private final ModelControllerClientFactory mccFactory;
     private final Diagnostics diagnostics;
     private final StorageAdapter storageAdapter;
-    private final Scheduler scheduler;
+    private final Scheduler metricScheduler;
     private final ScheduledReporter diagnosticsReporter;
-    private final MetricBufferedStorageDispatcher metricsCompletionHandler;
+    private final MetricBufferedStorageDispatcher metricCompletionHandler;
 
     private boolean started = false;
 
@@ -128,9 +128,9 @@ public class SchedulerService {
         }
 
         // create the scheduler itself
-        this.metricsCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
+        this.metricCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
                 diagnostics);
-        this.scheduler = new IntervalBasedScheduler(this);
+        this.metricScheduler = new IntervalBasedScheduler(this);
 
         // provide our storage adapater to the proxy - allows external apps to use it to store its own metrics
         metricStorageProxy.setStorageAdapter(storageAdapter);
@@ -161,8 +161,8 @@ public class SchedulerService {
 
         // turn ResourceRef into Tasks
         List<Task> tasks = createTasks(schedulerConfig.getResourceRefs());
-        this.metricsCompletionHandler.start();
-        this.scheduler.schedule(tasks);
+        this.metricCompletionHandler.start();
+        this.metricScheduler.schedule(tasks);
 
         if (this.schedulerConfig.getDiagnosticsConfig().enabled) {
             diagnosticsReporter.start(this.schedulerConfig.getDiagnosticsConfig().interval,
@@ -179,8 +179,8 @@ public class SchedulerService {
 
         MsgLogger.LOG.infoStoppingScheduler();
 
-        this.metricsCompletionHandler.shutdown();
-        this.scheduler.shutdown();
+        this.metricCompletionHandler.shutdown();
+        this.metricScheduler.shutdown();
         this.diagnosticsReporter.stop();
 
         if (this.schedulerConfig.getDiagnosticsConfig().enabled) {
@@ -194,7 +194,7 @@ public class SchedulerService {
         switch (group.getType()) {
             case METRIC: {
                 if (DMRTask.class.equals(group.getClassKind())) {
-                    return new MetricDMRTaskGroupRunnable(group, metricsCompletionHandler, getDiagnostics(),
+                    return new MetricDMRTaskGroupRunnable(group, metricCompletionHandler, getDiagnostics(),
                             getModelControllerClientFactory());
                 } else {
                     throw new UnsupportedOperationException("Unsupported group kind: " + group);
@@ -211,9 +211,9 @@ public class SchedulerService {
         }
     }
 
-    private List<Task> createTasks(List<ResourceRef> resourceRefs) {
+    private List<Task> createTasks(List<DMRPropertyReference> resourceRefs) {
         List<Task> tasks = new ArrayList<>();
-        for (ResourceRef ref : resourceRefs) {
+        for (DMRPropertyReference ref : resourceRefs) {
 
             // parse sub references (complex attribute support)
             String attribute = ref.getAttribute();

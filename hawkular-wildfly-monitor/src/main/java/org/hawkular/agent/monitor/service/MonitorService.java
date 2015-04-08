@@ -30,8 +30,8 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricSe
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
+import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
-import org.hawkular.agent.monitor.scheduler.config.ResourceRef;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.dmrclient.Address;
@@ -100,7 +100,7 @@ public class MonitorService implements Service<MonitorService> {
         for (MetricSet metricSet : config.metricSets.values()) {
             for (Metric metric : metricSet.metrics.values()) {
                 Interval interval = new Interval(metric.interval, metric.timeUnits);
-                ResourceRef ref = new ResourceRef(metric.resource, metric.attribute, interval);
+                DMRPropertyReference ref = new DMRPropertyReference(metric.resource, metric.attribute, interval);
                 schedulerConfig.addResourceRef(ref);
             }
         }

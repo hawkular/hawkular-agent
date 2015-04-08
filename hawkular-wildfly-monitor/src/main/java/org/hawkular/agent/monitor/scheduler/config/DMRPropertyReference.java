@@ -17,18 +17,17 @@
 package org.hawkular.agent.monitor.scheduler.config;
 
 /**
- * A resource reference that is to be monitored.
+ * A DMR resource reference that is to be monitored.
  */
-public class ResourceRef {
+public class DMRPropertyReference extends MonitoredPropertyReference {
 
     private final String address;
     private final String attribute;
-    private final Interval interval;
 
-    public ResourceRef(final String address, final String attribute, final Interval interval) {
+    public DMRPropertyReference(final String address, final String attribute, final Interval interval) {
+        super(interval);
         this.address = address;
         this.attribute = attribute;
-        this.interval = interval;
     }
 
     public String getAddress() {
@@ -39,12 +38,8 @@ public class ResourceRef {
         return attribute;
     }
 
-    public Interval getInterval() {
-        return interval;
-    }
-
     @Override
     public String toString() {
-        return "ResourceRef[" + address + ":" + attribute + ", " + interval + "]";
+        return "DMRResourceRef[address=" + address + ", attrib=" + attribute + ", interval=" + getInterval() + "]";
     }
 }

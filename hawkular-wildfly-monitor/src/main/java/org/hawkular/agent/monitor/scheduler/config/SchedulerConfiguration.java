@@ -34,17 +34,17 @@ public class SchedulerConfiguration {
         METRICS // stores metrics to just a Hawkular-Metrics standalone system
     }
 
-    private final List<ResourceRef> resourceRefs = new ArrayList<>();
+    private final List<DMRPropertyReference> resourceRefs = new ArrayList<>();
     private int schedulerThreads = 2;
 
     private MonitorServiceConfiguration.StorageAdapter storageAdapterConfig;
     private MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
 
-    public List<ResourceRef> getResourceRefs() {
+    public List<DMRPropertyReference> getResourceRefs() {
         return Collections.unmodifiableList(resourceRefs);
     }
 
-    public void addResourceRef(ResourceRef ref) {
+    public void addResourceRef(DMRPropertyReference ref) {
         resourceRefs.add(ref);
     }
 
