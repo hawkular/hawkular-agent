@@ -28,15 +28,16 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.IntervalBasedScheduler;
 import org.hawkular.agent.monitor.scheduler.polling.Scheduler;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
-import org.hawkular.agent.monitor.scheduler.polling.Task.Type;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
+import org.hawkular.agent.monitor.scheduler.polling.dmr.AvailDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.AvailDMRTaskGroupRunnable;
-import org.hawkular.agent.monitor.scheduler.polling.dmr.DMRTask;
+import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
@@ -168,12 +169,12 @@ public class SchedulerService {
         MsgLogger.LOG.infoStartingScheduler();
 
         // turn metric DMR refs into Tasks and schedule them now
-        List<Task> metricTasks = createDMRTasks(schedulerConfig.getDMRMetricsToBeCollected(), Type.METRIC);
+        List<Task> metricTasks = createMetricDMRTasks(schedulerConfig.getDMRMetricsToBeCollected());
         this.metricCompletionHandler.start();
         this.metricScheduler.schedule(metricTasks);
 
         // turn avail DMR refs into Tasks and schedule them now
-        List<Task> availTasks = createDMRTasks(schedulerConfig.getDMRAvailsToBeChecked(), Type.AVAIL);
+        List<Task> availTasks = createAvailDMRTasks(schedulerConfig.getDMRAvailsToBeChecked());
         this.availCompletionHandler.start();
         this.availScheduler.schedule(availTasks);
 
@@ -214,7 +215,7 @@ public class SchedulerService {
     public Runnable getTaskGroupRunnable(TaskGroup group) {
         switch (group.getType()) {
             case METRIC: {
-                if (DMRTask.class.equals(group.getClassKind())) {
+                if (MetricDMRTask.class.equals(group.getClassKind())) {
                     return new MetricDMRTaskGroupRunnable(group, metricCompletionHandler, getDiagnostics(),
                             getModelControllerClientFactory());
                 } else {
@@ -223,7 +224,7 @@ public class SchedulerService {
             }
 
             case AVAIL: {
-                if (DMRTask.class.equals(group.getClassKind())) {
+                if (AvailDMRTask.class.equals(group.getClassKind())) {
                     return new AvailDMRTaskGroupRunnable(group, availCompletionHandler, getDiagnostics(),
                             getModelControllerClientFactory());
                 } else {
@@ -237,7 +238,7 @@ public class SchedulerService {
         }
     }
 
-    private List<Task> createDMRTasks(List<DMRPropertyReference> refs, Type taskType) {
+    private List<Task> createMetricDMRTasks(List<DMRPropertyReference> refs) {
         List<Task> tasks = new ArrayList<>();
         for (DMRPropertyReference ref : refs) {
 
@@ -251,15 +252,39 @@ public class SchedulerService {
                     subref = attribute.substring(i + 1, attribute.length());
                     attribute = attribute.substring(0, i);
                 }
-            } else if (taskType == Type.METRIC) {
-                throw new IllegalArgumentException("Metric references must include a DMR attribute name: " + ref);
             }
 
             String host = this.selfId.getHost();
             String server = this.selfId.getServer();
 
-            tasks.add(new DMRTask(taskType, ref.getInterval(), host, server, Address.parse(ref.getAddress()),
-                    attribute, subref));
+            tasks.add(new MetricDMRTask(ref.getInterval(), host, server, Address.parse(ref.getAddress()), attribute,
+                    subref));
+        }
+
+        return tasks;
+    }
+
+    private List<Task> createAvailDMRTasks(List<AvailDMRPropertyReference> refs) {
+        List<Task> tasks = new ArrayList<>();
+        for (AvailDMRPropertyReference ref : refs) {
+
+            // parse sub references (complex attribute support)
+            String attribute = ref.getAttribute();
+            String subref = null;
+
+            if (attribute != null) {
+                int i = attribute.indexOf("#");
+                if (i > 0) {
+                    subref = attribute.substring(i + 1, attribute.length());
+                    attribute = attribute.substring(0, i);
+                }
+            }
+
+            String host = this.selfId.getHost();
+            String server = this.selfId.getServer();
+
+            tasks.add(new AvailDMRTask(ref.getInterval(), host, server, Address.parse(ref.getAddress()),
+                    attribute, subref, ref.getUpRegex()));
         }
 
         return tasks;

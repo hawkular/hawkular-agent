@@ -32,6 +32,7 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricSe
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
+import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
@@ -113,7 +114,8 @@ public class MonitorService implements Service<MonitorService> {
         for (AvailSetDMR availSet : config.availSetDmrMap.values()) {
             for (AvailDMR avail : availSet.availDmrMap.values()) {
                 Interval interval = new Interval(avail.interval, avail.timeUnits);
-                DMRPropertyReference ref = new DMRPropertyReference(avail.resource, avail.attribute, interval);
+                AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.resource, avail.attribute,
+                        interval, avail.upRegex);
                 schedulerConfig.addAvailToBeChecked(ref);
             }
         }

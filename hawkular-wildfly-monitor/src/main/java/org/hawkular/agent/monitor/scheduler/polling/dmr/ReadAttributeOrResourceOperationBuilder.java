@@ -22,19 +22,26 @@ import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
 
 /**
- * Given a task group of DMR tasks, creates a batch operation to read the attributes.
+ * Given a task group of DMR tasks, creates a batch operations to read the attributes for those
+ * tasks that have an attribute defined and to read a resource for those tasks that have no
+ * attribute defined (the latter is just a way to confirm the resource exists).
  */
-public class ReadAttributeOperationBuilder {
+public class ReadAttributeOrResourceOperationBuilder {
     public ModelNode createOperation(final TaskGroup group) {
         if (group.isEmpty()) {
             throw new IllegalArgumentException("Empty groups are not allowed");
         }
 
-        ModelNode[] readOps = new ModelNode[group.size()];
         int i = 0;
+        ModelNode[] readOps = new ModelNode[group.size()];
         for (Task task : group) {
             DMRTask dmrTask = (DMRTask) task;
-            readOps[i++] = JBossASClient.createReadAttributeRequest(dmrTask.getAttribute(), dmrTask.getAddress());
+
+            if (dmrTask.getAttribute() != null) {
+                readOps[i++] = JBossASClient.createReadAttributeRequest(dmrTask.getAttribute(), dmrTask.getAddress());
+            } else {
+                readOps[i++] = JBossASClient.createRequest(JBossASClient.READ_RESOURCE, dmrTask.getAddress());
+            }
         }
 
         return JBossASClient.createBatchRequest(readOps);

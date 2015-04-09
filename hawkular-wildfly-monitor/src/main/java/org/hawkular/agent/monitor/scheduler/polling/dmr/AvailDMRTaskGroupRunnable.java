@@ -25,6 +25,7 @@ import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
+import org.hawkular.agent.monitor.storage.AvailDataPoint.Avail;
 import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
@@ -47,7 +48,7 @@ public class AvailDMRTaskGroupRunnable implements Runnable {
         this.mccFactory = mccFactory;
 
         // for the lifetime of this runnable, the operation is immutable and can be re-used
-        this.operation = new ReadAttributeOperationBuilder().createOperation(group);
+        this.operation = new ReadAttributeOrResourceOperationBuilder().createOperation(group);
     }
 
     @Override
@@ -74,21 +75,43 @@ public class AvailDMRTaskGroupRunnable implements Runnable {
 
                 int i = 0;
                 for (Property step : stepResults) {
-                    DMRTask task = (DMRTask) group.getTask(i);
-
-                    // deconstruct model node
+                    AvailDataPoint.Avail avail;
+                    AvailDMRTask task = (AvailDMRTask) group.getTask(i);
                     ModelNode data = step.getValue();
-                    ModelNode dataResult = JBossASClient.getResults(data);
-                    String value = null;
-                    if (task.getSubref() != null) {
-                        value = dataResult.get(task.getSubref()).asString();
-                    }
-                    else {
-                        value = dataResult.asString();
+
+                    if (task.getAttribute() == null) {
+                        // step operation didn't read any attribute, it just read the resource to see if it exists
+                        boolean exists = JBossASClient.isSuccess(data);
+                        avail = (exists) ? Avail.UP : Avail.DOWN;
+                    } else {
+                        // step operation read attribute; need to see what avail that attrib value corresponds to
+                        ModelNode dataResult = JBossASClient.getResults(data);
+                        String value;
+                        if (task.getSubref() != null) {
+                            value = dataResult.get(task.getSubref()).asString();
+                        }
+                        else {
+                            value = dataResult.asString();
+                        }
+
+                        if (value == null) {
+                            value = "";
+                        }
+
+                        String upRegex = task.getUpRegex();
+                        if (upRegex == null) {
+                            try {
+                                Integer valueAsNumber = new Integer(value);
+                                avail = (valueAsNumber.intValue() == 0) ? Avail.DOWN : Avail.UP;
+                            } catch (Exception e) {
+                                avail = (value.matches("(?i)(UP|OK)")) ? Avail.UP : Avail.DOWN;
+                            }
+                        } else {
+                            avail = (value.matches(upRegex)) ? Avail.UP : Avail.DOWN;
+                        }
                     }
 
-                    // TODO we need to somehow convert value to avail of UP or DOWN
-                    completionHandler.onCompleted(new AvailDataPoint(task, AvailDataPoint.Avail.UP));
+                    completionHandler.onCompleted(new AvailDataPoint(task, avail));
                     i++;
                 }
 

@@ -27,8 +27,10 @@ import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.bus.restclient.RestClient;
+import org.jboss.logging.Logger;
 
 public class HawkularStorageAdapter implements StorageAdapter {
+    private static final Logger LOGGER = Logger.getLogger(HawkularStorageAdapter.class);
 
     private SchedulerConfiguration config;
     private Diagnostics diagnostics;

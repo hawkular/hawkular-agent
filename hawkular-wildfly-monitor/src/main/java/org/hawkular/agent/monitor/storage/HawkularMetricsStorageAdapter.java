@@ -32,8 +32,10 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
+import org.jboss.logging.Logger;
 
 public class HawkularMetricsStorageAdapter implements StorageAdapter {
+    private static final Logger LOGGER = Logger.getLogger(HawkularMetricsStorageAdapter.class);
 
     private final HttpClient httpclient;
     private SchedulerConfiguration config;
@@ -93,7 +95,6 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
     public void storeAvails(Set<AvailDataPoint> datapoints) {
         // TODO implement me!
         diagnostics.getAvailRate().mark(datapoints.size());
-        System.out.println(datapoints);
     }
 
     @Override

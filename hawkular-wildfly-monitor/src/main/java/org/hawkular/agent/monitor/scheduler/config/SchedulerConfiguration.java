@@ -35,7 +35,7 @@ public class SchedulerConfiguration {
     }
 
     private final List<DMRPropertyReference> dmrMetricsToBeCollected = new ArrayList<>();
-    private final List<DMRPropertyReference> dmrAvailsToBeChecked = new ArrayList<>();
+    private final List<AvailDMRPropertyReference> dmrAvailsToBeChecked = new ArrayList<>();
 
     private int schedulerThreads = 2;
 
@@ -46,7 +46,7 @@ public class SchedulerConfiguration {
         return Collections.unmodifiableList(dmrMetricsToBeCollected);
     }
 
-    public List<DMRPropertyReference> getDMRAvailsToBeChecked() {
+    public List<AvailDMRPropertyReference> getDMRAvailsToBeChecked() {
         return Collections.unmodifiableList(dmrAvailsToBeChecked);
     }
 
@@ -54,7 +54,7 @@ public class SchedulerConfiguration {
         dmrMetricsToBeCollected.add(ref);
     }
 
-    public void addAvailToBeChecked(DMRPropertyReference ref) {
+    public void addAvailToBeChecked(AvailDMRPropertyReference ref) {
         dmrAvailsToBeChecked.add(ref);
     }
 

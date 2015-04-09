@@ -117,6 +117,7 @@ public class MonitorServiceConfiguration {
                         avail.interval = getInt(availValueNode, context, DMRAvailDefinition.INTERVAL);
                         String availTimeUnitsStr = getString(availValueNode, context, DMRAvailDefinition.TIME_UNITS);
                         avail.timeUnits = TimeUnit.valueOf(availTimeUnitsStr.toUpperCase());
+                        avail.upRegex = getString(availValueNode, context, DMRAvailDefinition.UP_REGEX);
                     }
                     if (availSet.enabled && !availSet.availDmrMap.isEmpty()) {
                         hasEnabledAvails = true;
@@ -240,6 +241,7 @@ public class MonitorServiceConfiguration {
         public String attribute;
         public int interval;
         public TimeUnit timeUnits;
+        public String upRegex;
     }
 
     public class AvailSetDMR {

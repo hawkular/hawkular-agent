@@ -51,6 +51,13 @@ public class DMRAvailDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    static final SimpleAttributeDefinition UP_REGEX = new SimpleAttributeDefinitionBuilder("upRegex",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     static final SimpleAttributeDefinition INTERVAL = new SimpleAttributeDefinitionBuilder("interval",
             ModelType.INT)
             .setAllowNull(true)
@@ -72,6 +79,7 @@ public class DMRAvailDefinition extends PersistentResourceDefinition {
     static final AttributeDefinition[] ATTRIBUTES = {
             RESOURCE,
             ATTRIBUTE,
+            UP_REGEX,
             INTERVAL,
             TIME_UNITS
     };

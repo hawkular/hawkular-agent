@@ -70,7 +70,8 @@
                interval="30"
                timeUnits="seconds"
                resource="/"
-               attribute="server-state" />
+               attribute="server-state"
+               upRegex="run.*" />
 
     <avail-dmr name="hawkular-bus-broker"
                interval="1"
