@@ -22,56 +22,73 @@ import java.util.List;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
+import org.hawkular.metrics.client.common.SingleMetric;
 
 import com.google.gson.Gson;
 
 /**
- * Allows one to build up a payload request to send to metric storage by adding
- * data points one by one. After all data points are added, you can get the payload in
- * either an {@link #toObjectPayload() object} format or a {@link #toPayload() JSON} format.
+ * Allows one to build up a payload request to send to Hawkular by adding
+ * data points one by one.
  */
 public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilder {
 
-    // key is metric ID, value is list of data points where a data point is a map with timestamp and value
-    private Map<String, List<Map<String, Number>>> allMetrics = new HashMap<>();
+    private HawkularMetricsMetricDataPayloadBuilder metricsPayloadBuilder =
+            new HawkularMetricsMetricDataPayloadBuilder();
+    private String tenantId = null;
 
-    // a running count of the number of data points that have been added
-    private int count = 0;
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public HawkularMetricsMetricDataPayloadBuilder toHawkularMetricsMetricDataPayloadBuilder() {
+        return metricsPayloadBuilder;
+    }
 
     @Override
     public void addDataPoint(String key, long timestamp, double value) {
-        List<Map<String, Number>> data = allMetrics.get(key);
-        if (data == null) {
-            // we haven't seen this metric ID before, create a new list of data points
-            data = new ArrayList<Map<String, Number>>();
-            allMetrics.put(key, data);
-        }
-        Map<String, Number> timestampAndValue = new HashMap<>(2);
-        timestampAndValue.put("timestamp", timestamp);
-        timestampAndValue.put("value", value);
-        data.add(timestampAndValue);
-        count++;
-    }
-
-    public List<Map<String, Object>> toObjectPayload() {
-        List<Map<String, Object>> fullMessageObject = new ArrayList<>();
-        for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allMetrics.entrySet()) {
-            Map<String, Object> metricKeyAndData = new HashMap<>(2);
-            metricKeyAndData.put("id", metricEntry.getKey());
-            metricKeyAndData.put("data", metricEntry.getValue());
-            fullMessageObject.add(metricKeyAndData);
-        }
-        return fullMessageObject;
-    }
-
-    @Override
-    public String toPayload() {
-        String jsonPayload = new Gson().toJson(toObjectPayload());
-        return jsonPayload;
+        // delegate
+        metricsPayloadBuilder.addDataPoint(key, timestamp, value);
     }
 
     @Override
     public int getNumberDataPoints() {
-        return count;
+        return metricsPayloadBuilder.getNumberDataPoints();
+    }
+
+    @Override
+    public String toPayload() {
+        String jsonPayload = new Gson().toJson(toMessageBusObject());
+        return jsonPayload;
+    }
+
+    public Map<String, Object> toMessageBusObject() {
+        if (tenantId == null) {
+            throw new IllegalStateException("Do not know the tenant ID");
+        }
+
+        List<SingleMetric> singleMetrics = new ArrayList<>();
+
+        // list of maps where map is keyed on metric ID ("id") and value is "data"
+        // where "data" is another List<Map<String, Number>> that is the list of metric data.
+        // That inner map is keyed on either "timestamp" or "value" (both are Numbers).
+        List<Map<String, Object>> allMetrics = metricsPayloadBuilder.toObjectPayload();
+        for (Map<String, Object> metric : allMetrics) {
+            String metricId = (String) metric.get("id");
+            List<Map<String, Number>> metricListData = (List<Map<String, Number>>) metric.get("data");
+            for (Map<String, Number> singleMetricData : metricListData) {
+                long timestamp = singleMetricData.get("timestamp").longValue();
+                double value = singleMetricData.get("value").doubleValue();
+                singleMetrics.add(new SingleMetric(metricId, timestamp, value));
+            }
+        }
+
+        Map<String, Object> data = new HashMap<>(2);
+        data.put("tenantId", tenantId);
+        data.put("data", singleMetrics);
+
+        Map<String, Object> outerBusObject = new HashMap<>(1);
+        outerBusObject.put("metricData", data);
+
+        return outerBusObject;
     }
 }

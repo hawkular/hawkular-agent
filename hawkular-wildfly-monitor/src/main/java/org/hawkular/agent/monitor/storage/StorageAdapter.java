@@ -18,12 +18,13 @@ package org.hawkular.agent.monitor.storage;
 
 import java.util.Set;
 
+import org.hawkular.agent.monitor.api.AvailStorage;
 import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
-public interface StorageAdapter extends MetricStorage {
+public interface StorageAdapter extends MetricStorage, AvailStorage {
     /**
      * Stores the given collected metric data points.
      * @param datapoints the data to be stored

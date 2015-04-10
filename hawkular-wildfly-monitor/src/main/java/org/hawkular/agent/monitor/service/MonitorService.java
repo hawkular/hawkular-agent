@@ -36,6 +36,7 @@ import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
+import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
@@ -70,6 +71,7 @@ public class MonitorService implements Service<MonitorService> {
     private SchedulerService schedulerService;
 
     private final MetricStorageProxy metricStorageProxy = new MetricStorageProxy();
+    private final AvailStorageProxy availStorageProxy = new AvailStorageProxy();
 
     @Override
     public MonitorService getValue() {
@@ -80,7 +82,7 @@ public class MonitorService implements Service<MonitorService> {
      * @return the context that can be used by others for storing ad-hoc monitoring data
      */
     public HawkularMonitorContext getHawkularMonitorContext() {
-        return new HawkularMonitorContextImpl(metricStorageProxy);
+        return new HawkularMonitorContextImpl(metricStorageProxy, availStorageProxy);
     }
 
     /**

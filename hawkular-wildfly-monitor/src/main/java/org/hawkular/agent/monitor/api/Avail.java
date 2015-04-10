@@ -16,24 +16,7 @@
  */
 package org.hawkular.agent.monitor.api;
 
-public class HawkularMonitorContextImpl implements HawkularMonitorContext {
-
-    private final MetricStorage metricStorage;
-    private final AvailStorage availStorage;
-
-    public HawkularMonitorContextImpl(MetricStorage metricStorage, AvailStorage availStorage) {
-        this.metricStorage = metricStorage;
-        this.availStorage = availStorage;
-
-    }
-
-    @Override
-    public MetricStorage getMetricStorage() {
-        return this.metricStorage;
-    }
-
-    @Override
-    public AvailStorage getAvailStorage() {
-        return this.availStorage;
-    }
+public enum Avail {
+    UP,
+    DOWN
 }

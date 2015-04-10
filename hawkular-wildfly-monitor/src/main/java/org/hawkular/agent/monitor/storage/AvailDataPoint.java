@@ -18,16 +18,13 @@ package org.hawkular.agent.monitor.storage;
 
 import java.util.Date;
 
+import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 
 /**
  * Availability check data that was collected.
  */
 public class AvailDataPoint {
-    public static enum Avail {
-        UP,
-        DOWN
-    }
     private Task task;
     private long timestamp;
     private Avail value;

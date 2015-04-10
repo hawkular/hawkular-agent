@@ -71,17 +71,21 @@ public interface MsgLogger {
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10010, value = "Failed to store metric data: %s")
-    void errorFailedToStoreData(@Cause Throwable t, String data);
+    void errorFailedToStoreMetricData(@Cause Throwable t, String data);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10011, value = "Failed to store avail data: %s")
+    void errorFailedToStoreAvailData(@Cause Throwable t, String data);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10011, value = "Starting scheduler")
+    @Message(id = 10012, value = "Starting scheduler")
     void infoStartingScheduler();
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10012, value = "Stopping scheduler")
+    @Message(id = 10013, value = "Stopping scheduler")
     void infoStoppingScheduler();
 
     @LogMessage(level = Level.WARN)
-    @Message(id = 10013, value = "Batch operation requested [%d] values but received [%d]")
+    @Message(id = 10014, value = "Batch operation requested [%d] values but received [%d]")
     void warnBatchResultsDoNotMatchRequests(int expectedCound, int actualCount);
 }

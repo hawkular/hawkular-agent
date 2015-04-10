@@ -26,7 +26,7 @@ public class MetricDataPayloadBuilderTest {
 
     @Test
     public void testEmpty() {
-        HawkularMetricDataPayloadBuilder builder = new HawkularMetricDataPayloadBuilder();
+        HawkularMetricsMetricDataPayloadBuilder builder = new HawkularMetricsMetricDataPayloadBuilder();
         Assert.assertEquals(0, builder.toObjectPayload().size());
         Assert.assertEquals("[]", builder.toPayload());
     }
@@ -37,7 +37,7 @@ public class MetricDataPayloadBuilderTest {
         List<Map<String, Object>> objectPayload;
         Map<String, Object> dataListById;
 
-        HawkularMetricDataPayloadBuilder builder = new HawkularMetricDataPayloadBuilder();
+        HawkularMetricsMetricDataPayloadBuilder builder = new HawkularMetricsMetricDataPayloadBuilder();
         builder.addDataPoint("one", 12345, 1.2);
         objectPayload = builder.toObjectPayload();
         Assert.assertEquals(1, objectPayload.size());
@@ -72,7 +72,7 @@ public class MetricDataPayloadBuilderTest {
         Map<String, Object> oneDataListById;
         Map<String, Object> twoDataListById;
 
-        HawkularMetricDataPayloadBuilder builder = new HawkularMetricDataPayloadBuilder();
+        HawkularMetricsMetricDataPayloadBuilder builder = new HawkularMetricsMetricDataPayloadBuilder();
         builder.addDataPoint("one", 12345, 1.2);
         builder.addDataPoint("two", 45678, 11.22);
         builder.addDataPoint("one", 56789, 9.8);

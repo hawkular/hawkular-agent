@@ -19,13 +19,13 @@ package org.hawkular.agent.monitor.scheduler.polling.dmr;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
-import org.hawkular.agent.monitor.storage.AvailDataPoint.Avail;
 import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
@@ -75,7 +75,7 @@ public class AvailDMRTaskGroupRunnable implements Runnable {
 
                 int i = 0;
                 for (Property step : stepResults) {
-                    AvailDataPoint.Avail avail;
+                    Avail avail;
                     AvailDMRTask task = (AvailDMRTask) group.getTask(i);
                     ModelNode data = step.getValue();
 

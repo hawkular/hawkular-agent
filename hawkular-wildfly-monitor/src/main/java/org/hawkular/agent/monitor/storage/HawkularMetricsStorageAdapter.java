@@ -25,6 +25,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.hawkular.agent.monitor.api.Avail;
+import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
@@ -68,7 +70,12 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
 
     @Override
     public MetricDataPayloadBuilder createMetricDataPayloadBuilder() {
-        return new HawkularMetricDataPayloadBuilder();
+        return new HawkularMetricsMetricDataPayloadBuilder();
+    }
+
+    @Override
+    public AvailDataPayloadBuilder createAvailDataPayloadBuilder() {
+        return new HawkularMetricsAvailDataPayloadBuilder();
     }
 
     @Override
@@ -89,12 +96,6 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
         store(payloadBuilder);
 
         return;
-    }
-
-    @Override
-    public void storeAvails(Set<AvailDataPoint> datapoints) {
-        // TODO implement me!
-        diagnostics.getAvailRate().mark(datapoints.size());
     }
 
     @Override
@@ -146,7 +147,85 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
             diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreData(t, jsonPayload);
+            MsgLogger.LOG.errorFailedToStoreMetricData(t, jsonPayload);
+            diagnostics.getStorageErrorRate().mark(1);
+        } finally {
+            if (request != null) {
+                request.releaseConnection();
+            }
+        }
+    }
+
+    @Override
+    public void storeAvails(Set<AvailDataPoint> datapoints) {
+        if (datapoints == null || datapoints.isEmpty()) {
+            return; // nothing to do
+        }
+
+        AvailDataPayloadBuilder payloadBuilder = createAvailDataPayloadBuilder();
+        for (AvailDataPoint datapoint : datapoints) {
+            Task task = datapoint.getTask();
+            String key = task.getKeyGenerator().generateKey(task);
+            long timestamp = datapoint.getTimestamp();
+            Avail value = datapoint.getValue();
+            payloadBuilder.addDataPoint(key, timestamp, value);
+        }
+
+        store(payloadBuilder);
+
+        return;
+    }
+
+    @Override
+    public void store(AvailDataPayloadBuilder payloadBuilder) {
+        MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
+        String jsonPayload = "?";
+        HttpPost request = null;
+
+        try {
+            // get the payload in JSON format
+            jsonPayload = payloadBuilder.toPayload().toString();
+
+            // build the REST URL...
+
+            // 1. start with the protocol, host, and port of the URL
+            StringBuilder url = new StringBuilder(storageAdapterConfig.url);
+            ensureEndsWithSlash(url);
+
+            // 2. add any rest context path that is needed
+            if (storageAdapterConfig.restContext != null) {
+                if (storageAdapterConfig.restContext.startsWith("/")) {
+                    url.append(storageAdapterConfig.restContext.substring(1));
+                } else {
+                    url.append(storageAdapterConfig.restContext);
+                }
+                ensureEndsWithSlash(url);
+            }
+
+            // 3. the REST URL requires the tenant ID next in the path
+            String tenantId = this.selfId.getFullIdentifier();
+            url.append(tenantId);
+
+            // 4. now the final portion of the REST context
+            url.append("/metrics/availability/data");
+
+            // now send the REST request
+            request = new HttpPost(url.toString());
+            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
+            HttpResponse httpResponse = httpclient.execute(request);
+            StatusLine statusLine = httpResponse.getStatusLine();
+
+            // HTTP status of 200 means success; anything else is an error
+            if (statusLine.getStatusCode() != 200) {
+                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
+                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            }
+
+            // looks like everything stored successfully
+            diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
+
+        } catch (Throwable t) {
+            MsgLogger.LOG.errorFailedToStoreAvailData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
         } finally {
             if (request != null) {

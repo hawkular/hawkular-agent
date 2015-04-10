@@ -16,24 +16,17 @@
  */
 package org.hawkular.agent.monitor.api;
 
-public class HawkularMonitorContextImpl implements HawkularMonitorContext {
+public interface AvailStorage {
+    /**
+     * @return a builder object suitable for wrapping availability data in a proper payload
+     * message format to be sent to the storage backend.
+     */
+    AvailDataPayloadBuilder createAvailDataPayloadBuilder();
 
-    private final MetricStorage metricStorage;
-    private final AvailStorage availStorage;
-
-    public HawkularMonitorContextImpl(MetricStorage metricStorage, AvailStorage availStorage) {
-        this.metricStorage = metricStorage;
-        this.availStorage = availStorage;
-
-    }
-
-    @Override
-    public MetricStorage getMetricStorage() {
-        return this.metricStorage;
-    }
-
-    @Override
-    public AvailStorage getAvailStorage() {
-        return this.availStorage;
-    }
+    /**
+     * Stores the availability data found in the given builder.
+     *
+     * @param payloadBuilder contains the availability data to store
+     */
+    void store(AvailDataPayloadBuilder payloadBuilder);
 }

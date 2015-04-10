@@ -19,6 +19,8 @@ package org.hawkular.agent.monitor.storage;
 import java.net.URL;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.api.Avail;
+import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
@@ -61,7 +63,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public MetricDataPayloadBuilder createMetricDataPayloadBuilder() {
-        return new HawkularDataPayloadBuilder();
+        return new HawkularMetricDataPayloadBuilder();
+    }
+
+    @Override
+    public AvailDataPayloadBuilder createAvailDataPayloadBuilder() {
+        return new HawkularAvailDataPayloadBuilder();
     }
 
     @Override
@@ -85,16 +92,10 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeAvails(Set<AvailDataPoint> datapoints) {
-        // TODO implement me!
-        diagnostics.getAvailRate().mark(datapoints.size());
-    }
-
-    @Override
     public void store(MetricDataPayloadBuilder payloadBuilder) {
 
         String tenantId = this.selfId.getFullIdentifier();
-        ((HawkularDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
+        ((HawkularMetricDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
 
         // for now, we need to send it twice:
         // 1) directly to metrics for storage
@@ -105,7 +106,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         metricsAdapter.setDiagnostics(diagnostics);
         metricsAdapter.setSchedulerConfiguration(getSchedulerConfiguration());
         metricsAdapter.setSelfIdentifiers(selfId);
-        metricsAdapter.store(((HawkularDataPayloadBuilder) payloadBuilder).toHawkularMetricsDataPayloadBuilder());
+        metricsAdapter.store(((HawkularMetricDataPayloadBuilder) payloadBuilder)
+                .toHawkularMetricsMetricDataPayloadBuilder());
 
         // send to bus
         String jsonPayload = null;
@@ -136,7 +138,79 @@ public class HawkularStorageAdapter implements StorageAdapter {
             //diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreData(t, jsonPayload);
+            MsgLogger.LOG.errorFailedToStoreMetricData(t, jsonPayload);
+            diagnostics.getStorageErrorRate().mark(1);
+        }
+    }
+
+    @Override
+    public void storeAvails(Set<AvailDataPoint> datapoints) {
+        if (datapoints == null || datapoints.isEmpty()) {
+            return; // nothing to do
+        }
+
+        AvailDataPayloadBuilder payloadBuilder = createAvailDataPayloadBuilder();
+        for (AvailDataPoint datapoint : datapoints) {
+            Task task = datapoint.getTask();
+            String key = task.getKeyGenerator().generateKey(task);
+            long timestamp = datapoint.getTimestamp();
+            Avail value = datapoint.getValue();
+            payloadBuilder.addDataPoint(key, timestamp, value);
+        }
+
+        store(payloadBuilder);
+
+        return;
+    }
+
+    @Override
+    public void store(AvailDataPayloadBuilder payloadBuilder) {
+
+        String tenantId = this.selfId.getFullIdentifier();
+        ((HawkularAvailDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
+
+        // for now, we need to send it twice:
+        // 1) directly to h-metrics for storage
+        // 2) on the message bus for further processing
+
+        // send to h-metrics
+        HawkularMetricsStorageAdapter metricsAdapter = new HawkularMetricsStorageAdapter();
+        metricsAdapter.setDiagnostics(diagnostics);
+        metricsAdapter.setSchedulerConfiguration(getSchedulerConfiguration());
+        metricsAdapter.setSelfIdentifiers(selfId);
+        metricsAdapter.store(((HawkularAvailDataPayloadBuilder) payloadBuilder)
+                .toHawkularMetricsAvailDataPayloadBuilder());
+
+        // send to bus
+        String jsonPayload = null;
+        try {
+            // build the URL to the bus interface
+            MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
+            StringBuilder urlStr = new StringBuilder(storageAdapterConfig.url);
+            ensureEndsWithSlash(urlStr);
+            if (storageAdapterConfig.context != null) {
+                if (storageAdapterConfig.context.startsWith("/")) {
+                    urlStr.append(storageAdapterConfig.context.substring(1));
+                } else {
+                    urlStr.append(storageAdapterConfig.context);
+                }
+                ensureEndsWithSlash(urlStr);
+            }
+            URL url = new URL(urlStr.toString());
+
+            // build the bus client
+            RestClient busClient = new RestClient(url);
+
+            // send the message to the bus
+            jsonPayload = payloadBuilder.toPayload().toString();
+            busClient.postTopicMessage("HawkularMetricData", jsonPayload, null);
+
+            // looks like everything stored successfully
+            // the metrics storage adapter already did this, so don't duplicate the stats here
+            //diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
+
+        } catch (Throwable t) {
+            MsgLogger.LOG.errorFailedToStoreAvailData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
         }
     }
