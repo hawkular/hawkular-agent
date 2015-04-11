@@ -113,6 +113,10 @@ public class Address implements Cloneable {
      * @return flattened address path string
      */
     public String toAddressPathString() {
+        if (!addressNode.isDefined()) {
+            return "/";
+        }
+
         StringBuilder str = new StringBuilder();
         List<Property> parts = addressNode.asPropertyList();
         for (Property part : parts) {

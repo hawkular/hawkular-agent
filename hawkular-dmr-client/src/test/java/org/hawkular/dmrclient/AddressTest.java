@@ -119,7 +119,10 @@ public class AddressTest extends Address {
 
     @Test
     public void testToAddressPathString() {
-        Address addr = Address.root().add("one", "two");
+        Address addr = Address.root();
+        assert addr.toAddressPathString().equals("/") : addr.toAddressPathString();
+
+        addr = Address.root().add("one", "two");
         assert addr.toAddressPathString().equals("/one=two") : addr.toAddressPathString();
 
         addr = Address.root().add("one", "two", "three", "four");

@@ -49,7 +49,7 @@ public class HawkularMetricsAvailDataPayloadBuilder implements AvailDataPayloadB
         }
         Map<String, Object> timestampAndValue = new HashMap<>(2);
         timestampAndValue.put("timestamp", new Long(timestamp));
-        timestampAndValue.put("value", value);
+        timestampAndValue.put("value", String.valueOf(value.getNumericValue()));
         data.add(timestampAndValue);
         count++;
     }

@@ -77,7 +77,7 @@ public class HawkularAvailDataPayloadBuilder implements AvailDataPayloadBuilder 
             List<Map<String, Object>> availListData = (List<Map<String, Object>>) avail.get("data");
             for (Map<String, Object> singleAvailData : availListData) {
                 long timestamp = ((Long) singleAvailData.get("timestamp")).longValue();
-                Avail value = (Avail) singleAvailData.get("value");
+                String value = (String) singleAvailData.get("value");
                 availabilityList.add(new Availability(availId, timestamp, value.toString()));
             }
         }

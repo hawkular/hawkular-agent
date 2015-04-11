@@ -17,6 +17,30 @@
 package org.hawkular.agent.monitor.api;
 
 public enum Avail {
-    UP,
-    DOWN
+    UP(0),
+    DOWN(1),
+    UNKNOWN(2);
+
+    private final int numericValue;
+
+    private Avail(int v) {
+        numericValue = v;
+    }
+
+    public int getNumericValue() {
+        return this.numericValue;
+    }
+
+    public static Avail fromNumericValue(int val) {
+        switch (val) {
+            case 0:
+                return UP;
+            case 1:
+                return DOWN;
+            case 2:
+                return UNKNOWN;
+            default:
+                throw new IllegalArgumentException("No avail type with numeric value of [" + val + "]");
+        }
+    }
 }
