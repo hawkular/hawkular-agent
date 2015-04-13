@@ -104,6 +104,9 @@ public class MonitorService implements Service<MonitorService> {
         schedulerConfig.setMetricSchedulerThreads(config.numMetricSchedulerThreads);
         schedulerConfig.setAvailSchedulerThreads(config.numAvailSchedulerThreads);
 
+        // get all the managed resources
+        schedulerConfig.setManagedResources(config.managedResourcesMap);
+
         // get all the metrics to be collected from DMR resources
         for (MetricSetDMR metricSet : config.metricSetDmrMap.values()) {
             for (MetricDMR metric : metricSet.metricDmrMap.values()) {

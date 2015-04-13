@@ -67,11 +67,15 @@
   </metric-set-dmr>
 
   <managed-resources>
-    <remote-dmr name="local"
+    <remote-dmr name="our-local"
                 host="localhost"
+                port="9990" />
+
+    <remote-dmr name="another-remote"
+                host="somehost"
                 port="9990"
-                username="admin"
-                password="admin" />
+                username="adminUser"
+                password="adminPass" />
   </managed-resources>
 
   <avail-set-dmr name="server-availabilities" enabled="true">

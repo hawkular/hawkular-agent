@@ -18,9 +18,12 @@ package org.hawkular.agent.monitor.scheduler.config;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ManagedResource;
 
 public class SchedulerConfiguration {
 
@@ -34,6 +37,7 @@ public class SchedulerConfiguration {
         METRICS // stores metrics to just a Hawkular-Metrics standalone system
     }
 
+    private final Map<String, ManagedResource> managedResourcesMap = new HashMap<>();
     private final List<DMRPropertyReference> dmrMetricsToBeCollected = new ArrayList<>();
     private final List<AvailDMRPropertyReference> dmrAvailsToBeChecked = new ArrayList<>();
 
@@ -89,6 +93,14 @@ public class SchedulerConfiguration {
 
     public void setDiagnosticsConfig(MonitorServiceConfiguration.Diagnostics config) {
         this.diagnosticsConfig = config;
+    }
+
+    public void setManagedResources(Map<String, ManagedResource> managedResourcesMap) {
+        this.managedResourcesMap.putAll(managedResourcesMap);
+    }
+
+    public Map<String, ManagedResource> getManagedResources() {
+        return Collections.unmodifiableMap(this.managedResourcesMap);
     }
 }
 

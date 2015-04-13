@@ -40,11 +40,13 @@ public class MonitorServiceConfiguration {
     public Diagnostics diagnostics = new Diagnostics();
     public Map<String, MetricSetDMR> metricSetDmrMap = new HashMap<>();
     public Map<String, AvailSetDMR> availSetDmrMap = new HashMap<>();
+    public Map<String, ManagedResource> managedResourcesMap = new HashMap<>();
 
     public MonitorServiceConfiguration(ModelNode config, OperationContext context) throws OperationFailedException {
         determineGlobalConfig(config, context);
         determineStorageAdapterConfig(config, context);
         determineDiagnosticsConfig(config, context);
+        determineManagedResources(config, context);
 
         boolean hasEnabledMetrics = determineMetricSetDmr(config, context);
         if (!hasEnabledMetrics) {
@@ -191,6 +193,39 @@ public class MonitorServiceConfiguration {
         numDmrSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_DMR_SCHEDULER_THREADS);
     }
 
+    private void determineManagedResources(ModelNode config, OperationContext context) throws OperationFailedException {
+        if (config.hasDefined(ManagedResourcesDefinition.MANAGED_RESOURCES)) {
+            List<Property> asPropertyList = config.get(ManagedResourcesDefinition.MANAGED_RESOURCES).asPropertyList();
+            if (asPropertyList.size() > 1) {
+                throw new IllegalArgumentException("Too many <managed-resources>: " + config.toJSONString(true));
+            }
+
+            ModelNode managedResourcesValueNode = asPropertyList.get(0).getValue();
+
+            if (managedResourcesValueNode.hasDefined(RemoteDMRDefinition.REMOTE_DMR)) {
+                List<Property> remoteDMRsList = managedResourcesValueNode.get(RemoteDMRDefinition.REMOTE_DMR)
+                        .asPropertyList();
+                for (Property remoteDMRProperty : remoteDMRsList) {
+                    String name = remoteDMRProperty.getName();
+                    ModelNode remoteDMRValueNode = remoteDMRProperty.getValue();
+                    String host = getString(remoteDMRValueNode, context, RemoteDMRDefinition.HOST);
+                    int port = getInt(remoteDMRValueNode, context, RemoteDMRDefinition.PORT);
+                    String username = getString(remoteDMRValueNode, context, RemoteDMRDefinition.USERNAME);
+                    String password = getString(remoteDMRValueNode, context, RemoteDMRDefinition.PASSWORD);
+                    RemoteDMRManagedResource res = new RemoteDMRManagedResource();
+                    res.name = name;
+                    res.host = host;
+                    res.port = port;
+                    res.username = username;
+                    res.password = password;
+                    managedResourcesMap.put(name, res);
+                }
+            }
+
+            // TODO get remote JMX entries now
+        }
+    }
+
     private boolean getBoolean(ModelNode modelNode, OperationContext context, SimpleAttributeDefinition attrib)
             throws OperationFailedException {
         ModelNode value = attrib.resolveModelAttribute(context, modelNode);
@@ -252,5 +287,16 @@ public class MonitorServiceConfiguration {
         public String name;
         public boolean enabled;
         public Map<String, AvailDMR> availDmrMap = new HashMap<>();
+    }
+
+    public class ManagedResource {
+        public String name;
+    }
+
+    public class RemoteDMRManagedResource extends ManagedResource {
+        public String host;
+        public int port;
+        public String username;
+        public String password;
     }
 }
