@@ -203,7 +203,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // send the message to the bus
             jsonPayload = payloadBuilder.toPayload().toString();
-            busClient.postTopicMessage("HawkularMetricData", jsonPayload, null);
+            busClient.postTopicMessage("HawkularAvailData", jsonPayload, null);
 
             // looks like everything stored successfully
             // the metrics storage adapter already did this, so don't duplicate the stats here
