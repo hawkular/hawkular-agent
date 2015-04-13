@@ -135,11 +135,13 @@ public class SchedulerService {
         // create the schedulers - we use two: one for metric collections and one for avail checks
         this.metricCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
                 diagnostics);
-        this.metricScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Metrics");
+        this.metricScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Metrics",
+                configuration.getMetricSchedulerThreads());
 
         this.availCompletionHandler = new AvailBufferedStorageDispatcher(configuration, storageAdapter,
                 diagnostics);
-        this.availScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Avail");
+        this.availScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Avail",
+                configuration.getAvailSchedulerThreads());
 
         // provide our storage adapater to the proxy - allows external apps to use it to store its own metrics
         metricStorageProxy.setStorageAdapter(storageAdapter);

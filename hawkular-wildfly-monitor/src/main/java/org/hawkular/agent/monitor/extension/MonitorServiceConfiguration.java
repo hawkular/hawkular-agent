@@ -33,7 +33,9 @@ public class MonitorServiceConfiguration {
 
     public boolean subsystemEnabled;
     public String apiJndi;
-    public int numSchedulerThreads;
+    public int numMetricSchedulerThreads;
+    public int numAvailSchedulerThreads;
+    public int numDmrSchedulerThreads;
     public StorageAdapter storageAdapter = new StorageAdapter();
     public Diagnostics diagnostics = new Diagnostics();
     public Map<String, MetricSetDMR> metricSetDmrMap = new HashMap<>();
@@ -184,7 +186,9 @@ public class MonitorServiceConfiguration {
     private void determineGlobalConfig(ModelNode config, OperationContext context) throws OperationFailedException {
         subsystemEnabled = getBoolean(config, context, SubsystemDefinition.ENABLED);
         apiJndi = getString(config, context, SubsystemDefinition.API_JNDI);
-        numSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_SCHEDULER_THREADS);
+        numMetricSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_METRIC_SCHEDULER_THREADS);
+        numAvailSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_AVAIL_SCHEDULER_THREADS);
+        numDmrSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_DMR_SCHEDULER_THREADS);
     }
 
     private boolean getBoolean(ModelNode modelNode, OperationContext context, SimpleAttributeDefinition attrib)

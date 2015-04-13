@@ -101,7 +101,8 @@ public class MonitorService implements Service<MonitorService> {
         this.schedulerConfig = new SchedulerConfiguration();
         schedulerConfig.setDiagnosticsConfig(config.diagnostics);
         schedulerConfig.setStorageAdapterConfig(config.storageAdapter);
-        schedulerConfig.setSchedulerThreads(config.numSchedulerThreads);
+        schedulerConfig.setMetricSchedulerThreads(config.numMetricSchedulerThreads);
+        schedulerConfig.setAvailSchedulerThreads(config.numAvailSchedulerThreads);
 
         // get all the metrics to be collected from DMR resources
         for (MetricSetDMR metricSet : config.metricSetDmrMap.values()) {
@@ -241,7 +242,7 @@ public class MonitorService implements Service<MonitorService> {
      */
     private ExecutorService getManagementClientExecutor() {
         if (managementClientExecutor == null) {
-            final int numThreadsInPool = this.configuration.numSchedulerThreads; // same as scheduler
+            final int numThreadsInPool = this.configuration.numDmrSchedulerThreads;
             final ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
                     "Hawkular-Monitor-MgmtClient");
             managementClientExecutor = Executors.newFixedThreadPool(numThreadsInPool, threadFactory);

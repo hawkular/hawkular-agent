@@ -19,7 +19,8 @@
 <subsystem xmlns="urn:org.hawkular.agent.monitor:monitor:1.0"
            enabled="true"
            apiJndiName="java:global/hawkular/agent/monitor/api"
-           numSchedulerThreads="2">
+           numMetricSchedulerThreads="3"
+           numAvailSchedulerThreads="3">
 
   <storage-adapter type="HAWKULAR"
                    url="http://localhost:8080"

@@ -37,7 +37,8 @@ public class SchedulerConfiguration {
     private final List<DMRPropertyReference> dmrMetricsToBeCollected = new ArrayList<>();
     private final List<AvailDMRPropertyReference> dmrAvailsToBeChecked = new ArrayList<>();
 
-    private int schedulerThreads = 2;
+    private int metricSchedulerThreads = 2;
+    private int availSchedulerThreads = 2;
 
     private MonitorServiceConfiguration.StorageAdapter storageAdapterConfig;
     private MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
@@ -58,12 +59,20 @@ public class SchedulerConfiguration {
         dmrAvailsToBeChecked.add(ref);
     }
 
-    public int getSchedulerThreads() {
-        return schedulerThreads;
+    public int getMetricSchedulerThreads() {
+        return metricSchedulerThreads;
     }
 
-    public void setSchedulerThreads(int schedulerThreads) {
-        this.schedulerThreads = schedulerThreads;
+    public void setMetricSchedulerThreads(int schedulerThreads) {
+        this.metricSchedulerThreads = schedulerThreads;
+    }
+
+    public int getAvailSchedulerThreads() {
+        return availSchedulerThreads;
+    }
+
+    public void setAvailSchedulerThreads(int schedulerThreads) {
+        this.availSchedulerThreads = schedulerThreads;
     }
 
     public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfig() {

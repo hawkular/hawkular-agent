@@ -40,12 +40,11 @@ public class IntervalBasedScheduler implements Scheduler {
 
     private boolean started = false;
 
-    public IntervalBasedScheduler(SchedulerService schedulerService, String name) {
+    public IntervalBasedScheduler(SchedulerService schedulerService, String name, int schedulerThreads) {
         this.schedulerService = schedulerService;
 
         ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true, name);
-        this.executorService = Executors.newScheduledThreadPool(schedulerService.getSchedulerConfiguration()
-                .getSchedulerThreads(), threadFactory);
+        this.executorService = Executors.newScheduledThreadPool(schedulerThreads, threadFactory);
 
         this.jobs = new LinkedList<>();
 

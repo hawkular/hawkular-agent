@@ -57,16 +57,32 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition NUM_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
-            "numSchedulerThreads", ModelType.INT)
+    static final SimpleAttributeDefinition NUM_METRIC_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
+            "numMetricSchedulerThreads", ModelType.INT)
             .setAllowNull(true)
             .setDefaultValue(new ModelNode(2))
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    static final SimpleAttributeDefinition NUM_AVAIL_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
+            "numAvailSchedulerThreads", ModelType.INT)
+            .setAllowNull(true)
+            .setDefaultValue(new ModelNode(2))
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    static final SimpleAttributeDefinition NUM_DMR_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
+            "numDmrSchedulerThreads", ModelType.INT)
+            .setAllowNull(true)
+            .setDefaultValue(new ModelNode(4))
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED, API_JNDI, NUM_SCHEDULER_THREADS
+            ENABLED, API_JNDI, NUM_METRIC_SCHEDULER_THREADS, NUM_AVAIL_SCHEDULER_THREADS, NUM_DMR_SCHEDULER_THREADS
     };
 
     // OPERATIONS
