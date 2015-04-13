@@ -28,10 +28,11 @@
 
   <xs:complexType name="subsystemType">
     <xs:all>
-      <xs:element name="storage-adapter" type="storageType"      minOccurs="1" maxOccurs="1"/>
-      <xs:element name="diagnostics"     type="diagnosticsType"  minOccurs="1" maxOccurs="1"/>
-      <xs:element name="metric-set-dmr"  type="metricSetDmrType" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="avail-set-dmr"   type="availSetDmrType"  minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="storage-adapter"   type="storageType"          minOccurs="1" maxOccurs="1"/>
+      <xs:element name="diagnostics"       type="diagnosticsType"      minOccurs="1" maxOccurs="1"/>
+      <xs:element name="managed-resources" type="managedResourcesType" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="metric-set-dmr"    type="metricSetDmrType"     minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="avail-set-dmr"     type="availSetDmrType"      minOccurs="0" maxOccurs="unbounded"/>
     </xs:all>
     <xs:attribute name="enabled"                   type="xs:boolean"/>
     <xs:attribute name="apiJndiName"               type="xs:string"/>
@@ -62,6 +63,21 @@
     <xs:attribute name="enabled"   type="xs:boolean"/>
     <xs:attribute name="interval"  type="xs:int"/>
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
+  </xs:complexType>
+
+  <!-- definition of managed resources -->
+  <xs:complexType name="managedResourcesType">
+    <xs:all>
+      <xs:element name="remote-dmr" type="remoteDmrType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:all>
+  </xs:complexType>
+
+  <xs:complexType name="remoteDmrType">
+    <xs:attribute name="name"     type="xs:string" use="required"/>
+    <xs:attribute name="host"     type="xs:string" use="required"/>
+    <xs:attribute name="port"     type="xs:int"    use="required"/>
+    <xs:attribute name="username" type="xs:string"/>
+    <xs:attribute name="password" type="xs:string"/>
   </xs:complexType>
 
   <!-- definition of sets of DMR metrics -->
