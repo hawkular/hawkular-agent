@@ -38,8 +38,8 @@ public class SchedulerConfiguration {
     }
 
     private final Map<String, ManagedResource> managedResourcesMap = new HashMap<>();
-    private final List<DMRPropertyReference> dmrMetricsToBeCollected = new ArrayList<>();
-    private final List<AvailDMRPropertyReference> dmrAvailsToBeChecked = new ArrayList<>();
+    private final Map<DMREndpoint, List<DMRPropertyReference>> dmrMetricsToBeCollected = new HashMap<>();
+    private final Map<DMREndpoint, List<AvailDMRPropertyReference>> dmrAvailsToBeChecked = new HashMap<>();
 
     private int metricSchedulerThreads = 2;
     private int availSchedulerThreads = 2;
@@ -47,20 +47,32 @@ public class SchedulerConfiguration {
     private MonitorServiceConfiguration.StorageAdapter storageAdapterConfig;
     private MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
 
-    public List<DMRPropertyReference> getDMRMetricsToBeCollected() {
-        return Collections.unmodifiableList(dmrMetricsToBeCollected);
+    public Map<DMREndpoint, List<DMRPropertyReference>> getDMRMetricsToBeCollected() {
+        return Collections.unmodifiableMap(dmrMetricsToBeCollected);
     }
 
-    public List<AvailDMRPropertyReference> getDMRAvailsToBeChecked() {
-        return Collections.unmodifiableList(dmrAvailsToBeChecked);
+    public Map<DMREndpoint, List<AvailDMRPropertyReference>> getDMRAvailsToBeChecked() {
+        return Collections.unmodifiableMap(dmrAvailsToBeChecked);
     }
 
-    public void addMetricToBeCollected(DMRPropertyReference ref) {
-        dmrMetricsToBeCollected.add(ref);
+    public void addMetricToBeCollected(DMREndpoint endpoint, DMRPropertyReference ref) {
+        List<DMRPropertyReference> map = dmrMetricsToBeCollected.get(endpoint);
+        if (map == null) {
+            map = new ArrayList<DMRPropertyReference>();
+            dmrMetricsToBeCollected.put(endpoint, map);
+        }
+
+        map.add(ref);
     }
 
-    public void addAvailToBeChecked(AvailDMRPropertyReference ref) {
-        dmrAvailsToBeChecked.add(ref);
+    public void addAvailToBeChecked(DMREndpoint endpoint, AvailDMRPropertyReference ref) {
+        List<AvailDMRPropertyReference> map = dmrAvailsToBeChecked.get(endpoint);
+        if (map == null) {
+            map = new ArrayList<AvailDMRPropertyReference>();
+            dmrAvailsToBeChecked.put(endpoint, map);
+        }
+
+        map.add(ref);
     }
 
     public int getMetricSchedulerThreads() {

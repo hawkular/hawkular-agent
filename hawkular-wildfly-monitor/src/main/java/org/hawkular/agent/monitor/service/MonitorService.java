@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.service;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -27,12 +28,16 @@ import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AvailDMR;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AvailSetDMR;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.LocalDMRManagedResource;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ManagedResource;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricDMR;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricSetDMR;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.RemoteDMRManagedResource;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
@@ -103,26 +108,58 @@ public class MonitorService implements Service<MonitorService> {
         schedulerConfig.setStorageAdapterConfig(config.storageAdapter);
         schedulerConfig.setMetricSchedulerThreads(config.numMetricSchedulerThreads);
         schedulerConfig.setAvailSchedulerThreads(config.numAvailSchedulerThreads);
-
-        // get all the managed resources
         schedulerConfig.setManagedResources(config.managedResourcesMap);
 
-        // get all the metrics to be collected from DMR resources
-        for (MetricSetDMR metricSet : config.metricSetDmrMap.values()) {
-            for (MetricDMR metric : metricSet.metricDmrMap.values()) {
-                Interval interval = new Interval(metric.interval, metric.timeUnits);
-                DMRPropertyReference ref = new DMRPropertyReference(metric.resource, metric.attribute, interval);
-                schedulerConfig.addMetricToBeCollected(ref);
+        // for each managed resource, add their metrics and avails
+        for (ManagedResource managedResource : config.managedResourcesMap.values()) {
+            if (managedResource instanceof RemoteDMRManagedResource) {
+                RemoteDMRManagedResource dmrResource = (RemoteDMRManagedResource) managedResource;
+                DMREndpoint dmrEndpoint = new DMREndpoint(dmrResource.name, dmrResource.host, dmrResource.port,
+                        dmrResource.username, dmrResource.password);
+                List<String> dmrMetricSets = dmrResource.metricSets;
+                List<String> dmrAvailSets = dmrResource.availSets;
+                addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, dmrMetricSets, dmrAvailSets);
+            } else if (managedResource instanceof LocalDMRManagedResource) {
+                LocalDMRManagedResource dmrResource = (LocalDMRManagedResource) managedResource;
+                DMREndpoint dmrEndpoint = new DMREndpoint(dmrResource.name, null, 0, null, null);
+                List<String> dmrMetricSets = dmrResource.metricSets;
+                List<String> dmrAvailSets = dmrResource.availSets;
+                addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, dmrMetricSets, dmrAvailSets);
+            } else {
+                throw new IllegalArgumentException("An invalid managed resource type was found. [" + managedResource
+                        + "] Please report this bug.");
+            }
+        }
+    }
+
+    private void addDMRMetricsAndAvails(MonitorServiceConfiguration config, ManagedResource managedResource,
+            DMREndpoint dmrEndpoint, List<String> dmrMetricSets, List<String> dmrAvailSets) {
+
+        for (String metricSetName : dmrMetricSets) {
+            MetricSetDMR metricSet = config.metricSetDmrMap.get(metricSetName);
+            if (metricSet != null) {
+                for (MetricDMR metric : metricSet.metricDmrMap.values()) {
+                    Interval interval = new Interval(metric.interval, metric.timeUnits);
+                    DMRPropertyReference ref = new DMRPropertyReference(metric.resource, metric.attribute,
+                            interval);
+                    schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
+                }
+            } else {
+                MsgLogger.LOG.warnMetricSetDoesNotExist(managedResource.name, metricSetName);
             }
         }
 
-        // get all the availabilities that need to be checked from DMR resources
-        for (AvailSetDMR availSet : config.availSetDmrMap.values()) {
-            for (AvailDMR avail : availSet.availDmrMap.values()) {
-                Interval interval = new Interval(avail.interval, avail.timeUnits);
-                AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.resource, avail.attribute,
-                        interval, avail.upRegex);
-                schedulerConfig.addAvailToBeChecked(ref);
+        for (String availSetName : dmrAvailSets) {
+            AvailSetDMR availSet = config.availSetDmrMap.get(availSetName);
+            if (availSet != null) {
+                for (AvailDMR avail : availSet.availDmrMap.values()) {
+                    Interval interval = new Interval(avail.interval, avail.timeUnits);
+                    AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.resource,
+                            avail.attribute, interval, avail.upRegex);
+                    schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
+                }
+            } else {
+                MsgLogger.LOG.warnAvailSetDoesNotExist(managedResource.name, availSetName);
             }
         }
     }

@@ -69,15 +69,23 @@
   <xs:complexType name="managedResourcesType">
     <xs:all>
       <xs:element name="remote-dmr" type="remoteDmrType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="local-dmr"  type="localDmrType"  minOccurs="0" maxOccurs="1"/>
     </xs:all>
   </xs:complexType>
 
   <xs:complexType name="remoteDmrType">
-    <xs:attribute name="name"     type="xs:string" use="required"/>
-    <xs:attribute name="host"     type="xs:string" use="required"/>
-    <xs:attribute name="port"     type="xs:int"    use="required"/>
-    <xs:attribute name="username" type="xs:string"/>
-    <xs:attribute name="password" type="xs:string"/>
+    <xs:attribute name="name"       type="xs:string" use="required"/>
+    <xs:attribute name="host"       type="xs:string" use="required"/>
+    <xs:attribute name="port"       type="xs:int"    use="required"/>
+    <xs:attribute name="username"   type="xs:string"/>
+    <xs:attribute name="password"   type="xs:string"/>
+    <xs:attribute name="metricSets" type="xs:string"/>
+    <xs:attribute name="availSets"  type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="localDmrType">
+    <xs:attribute name="metricSets" type="xs:string"/>
+    <xs:attribute name="availSets"  type="xs:string"/>
   </xs:complexType>
 
   <!-- definition of sets of DMR metrics -->

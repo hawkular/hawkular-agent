@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
+import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.dmrclient.Address;
 
@@ -25,6 +26,7 @@ import org.hawkular.dmrclient.Address;
 public class MetricDMRTask extends DMRTask {
 
     public MetricDMRTask(
+            DMREndpoint endpoint,
             Interval interval,
             String host,
             String server,
@@ -32,7 +34,7 @@ public class MetricDMRTask extends DMRTask {
             String attribute,
             String subref) {
 
-        super(Type.METRIC, interval, host, server, address, attribute, subref);
+        super(endpoint, Type.METRIC, interval, host, server, address, attribute, subref);
     }
 
     @Override

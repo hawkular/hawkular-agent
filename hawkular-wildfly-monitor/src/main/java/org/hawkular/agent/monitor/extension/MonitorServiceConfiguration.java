@@ -16,6 +16,9 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +32,9 @@ import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 
+/**
+ * This represents the monitor service extension's XML configuration in a more consumable form.
+ */
 public class MonitorServiceConfiguration {
 
     public boolean subsystemEnabled;
@@ -46,7 +52,6 @@ public class MonitorServiceConfiguration {
         determineGlobalConfig(config, context);
         determineStorageAdapterConfig(config, context);
         determineDiagnosticsConfig(config, context);
-        determineManagedResources(config, context);
 
         boolean hasEnabledMetrics = determineMetricSetDmr(config, context);
         if (!hasEnabledMetrics) {
@@ -57,6 +62,10 @@ public class MonitorServiceConfiguration {
         if (!hasEnabledAvails) {
             MsgLogger.LOG.infoNoEnabledAvailsConfigured();
         }
+
+        // make sure to call this AFTER the metric sets and avail sets have been determined
+        determineManagedResources(config, context);
+
         return;
     }
 
@@ -68,6 +77,9 @@ public class MonitorServiceConfiguration {
             for (Property metricSetProperty : metricSetsList) {
                 MetricSetDMR metricSet = new MetricSetDMR();
                 String metricSetName = metricSetProperty.getName();
+                if (metricSetName.indexOf(',') > -1) {
+                    MsgLogger.LOG.warnCommaInName(metricSetName);
+                }
                 metricSetDmrMap.put(metricSetName, metricSet);
                 metricSet.name = metricSetName;
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
@@ -104,6 +116,9 @@ public class MonitorServiceConfiguration {
             for (Property availSetProperty : availSetsList) {
                 AvailSetDMR availSet = new AvailSetDMR();
                 String availSetName = availSetProperty.getName();
+                if (availSetName.indexOf(',') > -1) {
+                    MsgLogger.LOG.warnCommaInName(availSetName);
+                }
                 availSetDmrMap.put(availSetName, availSet);
                 availSet.name = availSetName;
                 ModelNode availSetValueNode = availSetProperty.getValue();
@@ -197,7 +212,8 @@ public class MonitorServiceConfiguration {
         if (config.hasDefined(ManagedResourcesDefinition.MANAGED_RESOURCES)) {
             List<Property> asPropertyList = config.get(ManagedResourcesDefinition.MANAGED_RESOURCES).asPropertyList();
             if (asPropertyList.size() > 1) {
-                throw new IllegalArgumentException("Too many <managed-resources>: " + config.toJSONString(true));
+                throw new IllegalArgumentException("Can only have one <managed-resources>: "
+                        + config.toJSONString(true));
             }
 
             ModelNode managedResourcesValueNode = asPropertyList.get(0).getValue();
@@ -212,14 +228,67 @@ public class MonitorServiceConfiguration {
                     int port = getInt(remoteDMRValueNode, context, RemoteDMRDefinition.PORT);
                     String username = getString(remoteDMRValueNode, context, RemoteDMRDefinition.USERNAME);
                     String password = getString(remoteDMRValueNode, context, RemoteDMRDefinition.PASSWORD);
+                    List<String> metricSets = getListFromString(remoteDMRValueNode, context,
+                            RemoteDMRDefinition.METRIC_SETS);
+                    List<String> availSets = getListFromString(remoteDMRValueNode, context,
+                            RemoteDMRDefinition.AVAIL_SETS);
+
+                    // verify that the metric sets and avail sets exist
+                    for (String metricSetName : metricSets) {
+                        if (!metricSetDmrMap.containsKey(metricSetName)) {
+                            MsgLogger.LOG.warnMetricSetDoesNotExist(name, metricSetName);
+                        }
+                    }
+                    for (String availSetName : availSets) {
+                        if (!availSetDmrMap.containsKey(availSetName)) {
+                            MsgLogger.LOG.warnAvailSetDoesNotExist(name, availSetName);
+                        }
+                    }
+
                     RemoteDMRManagedResource res = new RemoteDMRManagedResource();
                     res.name = name;
                     res.host = host;
                     res.port = port;
                     res.username = username;
                     res.password = password;
+                    res.metricSets.addAll(metricSets);
+                    res.availSets.addAll(availSets);
                     managedResourcesMap.put(name, res);
                 }
+            }
+
+            if (managedResourcesValueNode.hasDefined(LocalDMRDefinition.LOCAL_DMR)) {
+                List<Property> localDMRsList = managedResourcesValueNode.get(LocalDMRDefinition.LOCAL_DMR)
+                        .asPropertyList();
+                if (localDMRsList.size() > 1) {
+                    throw new IllegalArgumentException("Can only have one <local-dmr>: " + config.toJSONString(true));
+                }
+
+                Property localDMRProperty = localDMRsList.get(0);
+                String name = localDMRProperty.getName();
+                ModelNode localDMRValueNode = localDMRProperty.getValue();
+                List<String> metricSets = getListFromString(localDMRValueNode, context,
+                        LocalDMRDefinition.METRIC_SETS);
+                List<String> availSets = getListFromString(localDMRValueNode, context,
+                        LocalDMRDefinition.AVAIL_SETS);
+
+                // verify that the metric sets and avail sets exist
+                for (String metricSetName : metricSets) {
+                    if (!metricSetDmrMap.containsKey(metricSetName)) {
+                        MsgLogger.LOG.warnMetricSetDoesNotExist(name, metricSetName);
+                    }
+                }
+                for (String availSetName : availSets) {
+                    if (!availSetDmrMap.containsKey(availSetName)) {
+                        MsgLogger.LOG.warnAvailSetDoesNotExist(name, availSetName);
+                    }
+                }
+
+                LocalDMRManagedResource res = new LocalDMRManagedResource();
+                res.name = name;
+                res.metricSets.addAll(metricSets);
+                res.availSets.addAll(availSets);
+                managedResourcesMap.put(name, res);
             }
 
             // TODO get remote JMX entries now
@@ -242,6 +311,19 @@ public class MonitorServiceConfiguration {
             throws OperationFailedException {
         ModelNode value = attrib.resolveModelAttribute(context, modelNode);
         return (value.isDefined()) ? value.asInt() : 0;
+    }
+
+    private List<String> getListFromString(ModelNode modelNode, OperationContext context,
+            SimpleAttributeDefinition attrib)
+            throws OperationFailedException {
+        ModelNode value = attrib.resolveModelAttribute(context, modelNode);
+        if (value.isDefined()) {
+            String commaSeparatedList = value.asString();
+            String[] array = commaSeparatedList.split(",");
+            return Arrays.asList(array);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     public class StorageAdapter {
@@ -291,6 +373,11 @@ public class MonitorServiceConfiguration {
 
     public class ManagedResource {
         public String name;
+        public List<String> metricSets = new ArrayList<>();
+        public List<String> availSets = new ArrayList<>();
+    }
+
+    public class LocalDMRManagedResource extends ManagedResource {
     }
 
     public class RemoteDMRManagedResource extends ManagedResource {

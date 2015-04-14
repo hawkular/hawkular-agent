@@ -20,6 +20,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
@@ -29,6 +30,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.IntervalBasedScheduler;
@@ -240,53 +242,60 @@ public class SchedulerService {
         }
     }
 
-    private List<Task> createMetricDMRTasks(List<DMRPropertyReference> refs) {
+    private List<Task> createMetricDMRTasks(Map<DMREndpoint, List<DMRPropertyReference>> map) {
         List<Task> tasks = new ArrayList<>();
-        for (DMRPropertyReference ref : refs) {
 
-            // parse sub references (complex attribute support)
-            String attribute = ref.getAttribute();
-            String subref = null;
+        for (Map.Entry<DMREndpoint, List<DMRPropertyReference>> entry : map.entrySet()) {
+            DMREndpoint dmrEndpoint = entry.getKey();
+            for (DMRPropertyReference ref : entry.getValue()) {
+                // parse sub references (complex attribute support)
+                String attribute = ref.getAttribute();
+                String subref = null;
 
-            if (attribute != null) {
-                int i = attribute.indexOf("#");
-                if (i > 0) {
-                    subref = attribute.substring(i + 1, attribute.length());
-                    attribute = attribute.substring(0, i);
+                if (attribute != null) {
+                    int i = attribute.indexOf("#");
+                    if (i > 0) {
+                        subref = attribute.substring(i + 1, attribute.length());
+                        attribute = attribute.substring(0, i);
+                    }
                 }
+
+                String host = this.selfId.getHost();
+                String server = this.selfId.getServer();
+
+                tasks.add(new MetricDMRTask(dmrEndpoint, ref.getInterval(), host, server,
+                        Address.parse(ref.getAddress()), attribute, subref));
             }
-
-            String host = this.selfId.getHost();
-            String server = this.selfId.getServer();
-
-            tasks.add(new MetricDMRTask(ref.getInterval(), host, server, Address.parse(ref.getAddress()), attribute,
-                    subref));
         }
 
         return tasks;
     }
 
-    private List<Task> createAvailDMRTasks(List<AvailDMRPropertyReference> refs) {
+    private List<Task> createAvailDMRTasks(Map<DMREndpoint, List<AvailDMRPropertyReference>> map) {
         List<Task> tasks = new ArrayList<>();
-        for (AvailDMRPropertyReference ref : refs) {
 
-            // parse sub references (complex attribute support)
-            String attribute = ref.getAttribute();
-            String subref = null;
+        for (Map.Entry<DMREndpoint, List<AvailDMRPropertyReference>> entry : map.entrySet()) {
+            DMREndpoint dmrEndpoint = entry.getKey();
+            for (AvailDMRPropertyReference ref : entry.getValue()) {
 
-            if (attribute != null) {
-                int i = attribute.indexOf("#");
-                if (i > 0) {
-                    subref = attribute.substring(i + 1, attribute.length());
-                    attribute = attribute.substring(0, i);
+                // parse sub references (complex attribute support)
+                String attribute = ref.getAttribute();
+                String subref = null;
+
+                if (attribute != null) {
+                    int i = attribute.indexOf("#");
+                    if (i > 0) {
+                        subref = attribute.substring(i + 1, attribute.length());
+                        attribute = attribute.substring(0, i);
+                    }
                 }
+
+                String host = this.selfId.getHost();
+                String server = this.selfId.getServer();
+
+                tasks.add(new AvailDMRTask(dmrEndpoint, ref.getInterval(), host, server,
+                        Address.parse(ref.getAddress()), attribute, subref, ref.getUpRegex()));
             }
-
-            String host = this.selfId.getHost();
-            String server = this.selfId.getServer();
-
-            tasks.add(new AvailDMRTask(ref.getInterval(), host, server, Address.parse(ref.getAddress()),
-                    attribute, subref, ref.getUpRegex()));
         }
 
         return tasks;

@@ -28,39 +28,11 @@ import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelType;
 
-public class RemoteDMRDefinition extends PersistentResourceDefinition {
+public class LocalDMRDefinition extends PersistentResourceDefinition {
 
-    public static final RemoteDMRDefinition INSTANCE = new RemoteDMRDefinition();
+    public static final LocalDMRDefinition INSTANCE = new LocalDMRDefinition();
 
-    static final String REMOTE_DMR = "remote-dmr";
-
-    static final SimpleAttributeDefinition HOST = new SimpleAttributeDefinitionBuilder("host",
-            ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition PORT = new SimpleAttributeDefinitionBuilder("port",
-            ModelType.INT)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition USERNAME = new SimpleAttributeDefinitionBuilder("username",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition PASSWORD = new SimpleAttributeDefinitionBuilder("password",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+    static final String LOCAL_DMR = "local-dmr";
 
     static final SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder("metricSets",
             ModelType.STRING)
@@ -77,15 +49,15 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            HOST, PORT, USERNAME, PASSWORD, METRIC_SETS, AVAIL_SETS
+            METRIC_SETS, AVAIL_SETS
     };
 
-    private RemoteDMRDefinition() {
-        super(PathElement.pathElement(REMOTE_DMR),
+    private LocalDMRDefinition() {
+        super(PathElement.pathElement(LOCAL_DMR, "_self"),
                 SubsystemExtension.getResourceDescriptionResolver(ManagedResourcesDefinition.MANAGED_RESOURCES,
-                        REMOTE_DMR),
-                RemoteDMRAdd.INSTANCE,
-                RemoteDMRRemove.INSTANCE,
+                        LOCAL_DMR),
+                LocalDMRAdd.INSTANCE,
+                LocalDMRRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }

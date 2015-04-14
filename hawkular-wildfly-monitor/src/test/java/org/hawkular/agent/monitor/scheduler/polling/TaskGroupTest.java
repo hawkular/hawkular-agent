@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.polling.Task.Type;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.DMRTask;
@@ -123,7 +124,8 @@ public class TaskGroupTest {
     }
 
     private static DMRTask createDMRTask(Type type, int duration) {
-        return new DMRTask(type, interval(duration), "a", "b", Address.root(), "c", null);
+        DMREndpoint endpoint = new DMREndpoint("_self", null, 0, null, null);
+        return new DMRTask(endpoint, type, interval(duration), "a", "b", Address.root(), "c", null);
     }
 
     private class TestTask implements Task {

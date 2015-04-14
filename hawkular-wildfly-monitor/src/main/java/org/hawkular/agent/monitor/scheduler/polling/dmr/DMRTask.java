@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
+import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.polling.KeyGenerator;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
@@ -26,6 +27,7 @@ import org.hawkular.dmrclient.Address;
  */
 public class DMRTask implements Task {
 
+    private final DMREndpoint endpoint;
     private final Type type;
     private final String host;
     private final String server;
@@ -35,6 +37,7 @@ public class DMRTask implements Task {
     private final Interval interval;
 
     public DMRTask(
+            DMREndpoint endpoint,
             Type type,
             Interval interval,
             String host,
@@ -43,6 +46,7 @@ public class DMRTask implements Task {
             String attribute,
             String subref) {
 
+        this.endpoint = endpoint;
         this.type = type;
         this.interval = interval;
         this.host = host;
@@ -50,6 +54,10 @@ public class DMRTask implements Task {
         this.address = address;
         this.attribute = attribute;
         this.subref = subref;
+    }
+
+    public DMREndpoint getEndpoint() {
+        return endpoint;
     }
 
     @Override
@@ -90,7 +98,8 @@ public class DMRTask implements Task {
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder("DMRTask: ");
-        str.append("type=[").append(type).append("]");
+        str.append("endpoint=[").append(endpoint).append("]");
+        str.append(", type=[").append(type).append("]");
         str.append(", interval=[").append(interval).append("]");
         str.append(", address=[").append(address).append("]");
         str.append(", attribute=[").append(attribute).append("]");

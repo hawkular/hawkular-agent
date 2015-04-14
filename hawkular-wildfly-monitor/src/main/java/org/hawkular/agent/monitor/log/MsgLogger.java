@@ -88,4 +88,16 @@ public interface MsgLogger {
     @LogMessage(level = Level.WARN)
     @Message(id = 10014, value = "Batch operation requested [%d] values but received [%d]")
     void warnBatchResultsDoNotMatchRequests(int expectedCound, int actualCount);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10015, value = "Comma in name! This will interfere with comma-separators in lists. [%s]")
+    void warnCommaInName(String name);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10016, value = "The managed resource [%s] wants to use an unknown metric set [%s]")
+    void warnMetricSetDoesNotExist(String resourceName, String metricSetName);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10017, value = "The managed resource [%s] wants to use an unknown avail set [%s]")
+    void warnAvailSetDoesNotExist(String resourceName, String availSetName);
 }

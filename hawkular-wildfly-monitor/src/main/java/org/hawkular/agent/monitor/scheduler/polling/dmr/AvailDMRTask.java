@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
+import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.dmrclient.Address;
 
@@ -27,6 +28,7 @@ public class AvailDMRTask extends DMRTask {
     private final String upRegex;
 
     public AvailDMRTask(
+            DMREndpoint endpoint,
             Interval interval,
             String host,
             String server,
@@ -35,7 +37,7 @@ public class AvailDMRTask extends DMRTask {
             String subref,
             String upRegex) {
 
-        super(Type.AVAIL, interval, host, server, address, attribute, subref);
+        super(endpoint, Type.AVAIL, interval, host, server, address, attribute, subref);
         this.upRegex = upRegex;
     }
 
