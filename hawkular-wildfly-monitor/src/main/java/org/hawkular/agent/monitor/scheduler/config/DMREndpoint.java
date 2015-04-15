@@ -26,6 +26,13 @@ public class DMREndpoint extends MonitoredEndpoint {
     private final String username;
     private final String password;
 
+    /**
+     * Constructor to represent the endpoint to our local Wildfly instance (the one we are running inside of). 
+     */
+    public DMREndpoint() {
+        this("_self", null, 0, null, null);
+    }
+
     public DMREndpoint(String name, String host, int port, String username, String password) {
         super(name);
         this.host = host;

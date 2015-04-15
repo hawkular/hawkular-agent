@@ -88,7 +88,7 @@ public class StorageReporter extends ScheduledReporter {
         String localHost = selfId.getHost();
         String localServer = selfId.getServer();
 
-        DMREndpoint localDmrEndpoint = new DMREndpoint("_self", null, 0, null, null);
+        DMREndpoint localDmrEndpoint = new DMREndpoint();
 
         if (!gauges.isEmpty()) {
             Set<MetricDataPoint> samples = new HashSet<>(gauges.size());

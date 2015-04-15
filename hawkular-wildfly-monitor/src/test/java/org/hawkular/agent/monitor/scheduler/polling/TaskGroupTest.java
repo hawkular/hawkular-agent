@@ -124,7 +124,7 @@ public class TaskGroupTest {
     }
 
     private static DMRTask createDMRTask(Type type, int duration) {
-        DMREndpoint endpoint = new DMREndpoint("_self", null, 0, null, null);
+        DMREndpoint endpoint = new DMREndpoint();
         return new DMRTask(endpoint, type, interval(duration), "a", "b", Address.root(), "c", null);
     }
 
