@@ -18,30 +18,21 @@ package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
 import org.hawkular.agent.monitor.scheduler.polling.KeyGenerator;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 /**
- * Resolve data input attributes to final metric (storage) names.
+ * Resolve data input attributes to final storage name.
  */
 public class DMRKeyGenerator implements KeyGenerator {
 
     @Override
     public String generateKey(Task task) {
-
         DMRTask dmrTask = (DMRTask) task;
-
-        // build the key to be of the format "[host.]server.address[.subref]"
         StringBuilder key = new StringBuilder();
-
-        ServerIdentifiers taskId = new ServerIdentifiers(dmrTask.getHost(), dmrTask.getServer(), null);
-        key.append(taskId.getFullIdentifier());
-
+        key.append(dmrTask.getEndpoint().getServerIdentifiers().getFullIdentifier());
         key.append(".").append(dmrTask.getAddress().toAddressPathString());
-
         if (dmrTask.getSubref() != null && !dmrTask.getSubref().isEmpty()) {
             key.append(".").append(dmrTask.getSubref());
         }
-
         return key.toString();
     }
 }

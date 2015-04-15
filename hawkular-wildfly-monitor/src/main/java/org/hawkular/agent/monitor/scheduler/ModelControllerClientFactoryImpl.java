@@ -26,6 +26,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.RealmCallback;
 
+import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
@@ -33,30 +34,28 @@ import org.jboss.as.controller.client.ModelControllerClient;
  */
 public class ModelControllerClientFactoryImpl implements ModelControllerClientFactory  {
 
-    private final String host;
-    private final int port;
-    private final String username;
-    private final String password;
+    private final DMREndpoint defaultEndpoint;
 
-    public ModelControllerClientFactoryImpl(String host, int port, String username, String password) {
-        this.host = host;
-        this.port = port;
-        this.username = username;
-        this.password = password;
+    public ModelControllerClientFactoryImpl(DMREndpoint endpoint) {
+        this.defaultEndpoint = endpoint;
     }
 
     @Override
     public ModelControllerClient createClient() {
+        return createClient(defaultEndpoint);
+    }
+
+    protected ModelControllerClient createClient(final DMREndpoint endpoint) {
 
         final CallbackHandler callbackHandler = new CallbackHandler() {
             public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
                 for (Callback current : callbacks) {
                     if (current instanceof NameCallback) {
                         NameCallback ncb = (NameCallback) current;
-                        ncb.setName(username);
+                        ncb.setName(endpoint.getUsername());
                     } else if (current instanceof PasswordCallback) {
                         PasswordCallback pcb = (PasswordCallback) current;
-                        pcb.setPassword(password.toCharArray());
+                        pcb.setPassword(endpoint.getPassword().toCharArray());
                     } else if (current instanceof RealmCallback) {
                         RealmCallback rcb = (RealmCallback) current;
                         rcb.setText(rcb.getDefaultText());
@@ -68,7 +67,8 @@ public class ModelControllerClientFactoryImpl implements ModelControllerClientFa
         };
 
         try {
-            return ModelControllerClient.Factory.create(InetAddress.getByName(host), port, callbackHandler);
+            InetAddress inetAddr = InetAddress.getByName(endpoint.getHost());
+            return ModelControllerClient.Factory.create(inetAddr, endpoint.getPort(), callbackHandler);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create management client", e);
         }

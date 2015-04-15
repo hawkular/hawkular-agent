@@ -61,13 +61,34 @@ public class IntervalBasedScheduler implements Scheduler {
 
         LOGGER.debugf("Scheduling [%d] tasks in [%d] task groups", tasks.size(), groups.size());
 
+        if (LOGGER.isTraceEnabled()) {
+            StringBuilder str = new StringBuilder("SCHEDULED TASKS\n");
+            for (TaskGroup group : groups) {
+                str.append(String.format("TASK GROUP: size=[%d], id=[%s], type=[%s], %s, kind=[%s]\n",
+                                         group.size(),
+                                         group.getId(),
+                                         group.getType(),
+                                         group.getInterval(),
+                                         group.getKind().getId()));
+                int i=0;
+                for (Task task : group) {
+                    str.append(String.format("    TASK #%d: %s\n", i++, task));
+                }
+            }
+            LOGGER.trace(str);
+        }
+
         // schedule
         for (TaskGroup group : groups) {
-            jobs.add(executorService.scheduleWithFixedDelay(
-                    schedulerService.getTaskGroupRunnable(group),
-                    group.getOffsetMillis(),
-                    group.getInterval().millis(),
-                    MILLISECONDS));
+            if (!group.isEmpty()) {
+                jobs.add(executorService.scheduleWithFixedDelay(
+                        schedulerService.getTaskGroupRunnable(group),
+                        group.getOffsetMillis(),
+                        group.getInterval().millis(),
+                        MILLISECONDS));
+            } else {
+                LOGGER.debugf("Group [%s] is empty. Nothing to schedule", group);
+            }
         }
 
         this.started = true;

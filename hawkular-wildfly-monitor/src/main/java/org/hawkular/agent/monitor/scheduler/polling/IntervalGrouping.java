@@ -40,9 +40,9 @@ public class IntervalGrouping {
 
         List<TaskGroup> allGroups = new ArrayList<>();
 
-        Map<Class<?>, List<Task>> tasksByClass = separateByTaskClass(allTasks);
-        for (List<Task> tasksOfSingleClass : tasksByClass.values()) {
-            Map<Type, List<Task>> tasksByType = separateByTaskType(tasksOfSingleClass);
+        Map<String, List<Task>> tasksByKind = separateByTaskKind(allTasks);
+        for (List<Task> tasksOfSingleKind : tasksByKind.values()) {
+            Map<Type, List<Task>> tasksByType = separateByTaskType(tasksOfSingleKind);
             for (List<Task> tasksOfSingleType : tasksByType.values()) {
                 List<TaskGroup> groupsOfSingleType = groupSimilarTasks(tasksOfSingleType);
                 allGroups.addAll(groupsOfSingleType);
@@ -52,16 +52,16 @@ public class IntervalGrouping {
         return allGroups;
     }
 
-    private Map<Class<?>, List<Task>> separateByTaskClass(List<Task> allTasks) {
-        Map<Class<?>, List<Task>> tasksMap = new HashMap<>();
+    private Map<String, List<Task>> separateByTaskKind(List<Task> allTasks) {
+        Map<String, List<Task>> tasksMap = new HashMap<>();
 
         for (Task singleTask : allTasks) {
-            List<Task> tasksOfSingleClass = tasksMap.get(singleTask.getClass());
-            if (tasksOfSingleClass == null) {
-                tasksOfSingleClass = new ArrayList<Task>();
-                tasksMap.put(singleTask.getClass(), tasksOfSingleClass);
+            List<Task> tasksOfSingleKind = tasksMap.get(singleTask.getKind().getId());
+            if (tasksOfSingleKind == null) {
+                tasksOfSingleKind = new ArrayList<Task>();
+                tasksMap.put(singleTask.getKind().getId(), tasksOfSingleKind);
             }
-            tasksOfSingleClass.add(singleTask);
+            tasksOfSingleKind.add(singleTask);
         }
 
         return tasksMap;

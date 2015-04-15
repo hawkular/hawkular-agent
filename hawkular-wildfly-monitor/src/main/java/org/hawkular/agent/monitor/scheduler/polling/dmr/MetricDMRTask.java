@@ -26,15 +26,13 @@ import org.hawkular.dmrclient.Address;
 public class MetricDMRTask extends DMRTask {
 
     public MetricDMRTask(
-            DMREndpoint endpoint,
             Interval interval,
-            String host,
-            String server,
+            DMREndpoint endpoint,
             Address address,
             String attribute,
             String subref) {
 
-        super(endpoint, Type.METRIC, interval, host, server, address, attribute, subref);
+        super(Type.METRIC, interval, endpoint, address, attribute, subref);
     }
 
     @Override

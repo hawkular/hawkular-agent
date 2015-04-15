@@ -28,16 +28,14 @@ public class AvailDMRTask extends DMRTask {
     private final String upRegex;
 
     public AvailDMRTask(
-            DMREndpoint endpoint,
             Interval interval,
-            String host,
-            String server,
+            DMREndpoint endpoint,
             Address address,
             String attribute,
             String subref,
             String upRegex) {
 
-        super(endpoint, Type.AVAIL, interval, host, server, address, attribute, subref);
+        super(Type.AVAIL, interval, endpoint, address, attribute, subref);
         this.upRegex = upRegex;
     }
 

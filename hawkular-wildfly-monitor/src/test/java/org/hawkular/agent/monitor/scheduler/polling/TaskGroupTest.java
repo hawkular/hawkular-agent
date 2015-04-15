@@ -22,8 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
+import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.polling.Task.Type;
+import org.hawkular.agent.monitor.scheduler.polling.dmr.AvailDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.DMRTask;
+import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
+import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.dmrclient.Address;
 import org.junit.Assert;
 import org.junit.Test;
@@ -35,12 +39,12 @@ public class TaskGroupTest {
         TaskGroup group = new TaskGroup(interval(1));
         Assert.assertEquals(0, group.size());
         Assert.assertNull(group.getType());
-        Assert.assertNull(group.getClassKind());
+        Assert.assertNull(group.getKind());
 
         group.addTask(new TestTask(Type.METRIC, 1));
         Assert.assertEquals(1, group.size());
         Assert.assertEquals(Type.METRIC, group.getType());
-        Assert.assertEquals(TestTask.class, group.getClassKind());
+        Assert.assertNotNull(group.getKind());
 
         try {
             group.addTask(new TestTask(Type.AVAIL, 1));
@@ -119,13 +123,100 @@ public class TaskGroupTest {
         Assert.assertEquals(8, groups.size());
     }
 
+    @Test
+    public void testDMRGroupWithDifferentKinds() {
+        List<Task> allTasks = new ArrayList<Task>();
+        List<TaskGroup> groups;
+
+        // the task "kind" is the same - same task class, type, and endpoint - so only one group
+        allTasks.clear();
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
+        groups = new IntervalGrouping().separateIntoGroups(allTasks);
+        Assert.assertEquals(1, groups.size());
+        Assert.assertEquals(2, groups.get(0).size());
+
+        // the task "kind" is the same (name of endpoint and password doesn't matter even if different) - so 1 group
+        allTasks.clear();
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("nONE", "h", 1, "u", "pONE")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("nTWO", "h", 1, "u", "pTWO")));
+        groups = new IntervalGrouping().separateIntoGroups(allTasks);
+        Assert.assertEquals(1, groups.size());
+        Assert.assertEquals(2, groups.get(0).size());
+
+        // the task "kind" is the same, but interval is different, so two groups
+        allTasks.clear();
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 2, new DMREndpoint("n", "h", 1, "u", "p")));
+        groups = new IntervalGrouping().separateIntoGroups(allTasks);
+        Assert.assertEquals(2, groups.size());
+        Assert.assertEquals(1, groups.get(0).size());
+        Assert.assertEquals(1, groups.get(1).size());
+
+        // the task "kind" is different (type is different), so two groups
+        allTasks.clear();
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.AVAIL, 1, new DMREndpoint("n", "h", 1, "u", "p")));
+        groups = new IntervalGrouping().separateIntoGroups(allTasks);
+        Assert.assertEquals(2, groups.size());
+        Assert.assertEquals(1, groups.get(0).size());
+        Assert.assertEquals(1, groups.get(1).size());
+
+        // the task "kind" is different (endpoint host is different), so two groups
+        allTasks.clear();
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hONE", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hTWO", 1, "u", "p")));
+        groups = new IntervalGrouping().separateIntoGroups(allTasks);
+        Assert.assertEquals(2, groups.size());
+        Assert.assertEquals(1, groups.get(0).size());
+        Assert.assertEquals(1, groups.get(1).size());
+
+        // the task "kind" is different (endpoint port is different), so two groups
+        allTasks.clear();
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 2, "u", "p")));
+        groups = new IntervalGrouping().separateIntoGroups(allTasks);
+        Assert.assertEquals(2, groups.size());
+        Assert.assertEquals(1, groups.get(0).size());
+        Assert.assertEquals(1, groups.get(1).size());
+
+        // the task "kind" is different (endpoint username is different), so two groups
+        allTasks.clear();
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "uONE", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "uTWO", "p")));
+        groups = new IntervalGrouping().separateIntoGroups(allTasks);
+        Assert.assertEquals(2, groups.size());
+        Assert.assertEquals(1, groups.get(0).size());
+        Assert.assertEquals(1, groups.get(1).size());
+
+        // just make sure we can handle groups with more than 1 task in them
+        allTasks.clear();
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hONE", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hONE", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hTWO", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hTWO", 1, "u", "p")));
+        groups = new IntervalGrouping().separateIntoGroups(allTasks);
+        Assert.assertEquals(2, groups.size());
+        Assert.assertEquals(2, groups.get(0).size());
+        Assert.assertEquals(2, groups.get(1).size());
+
+    }
+
     private static Interval interval(int duration) {
         return new Interval(duration, TimeUnit.SECONDS);
     }
 
     private static DMRTask createDMRTask(Type type, int duration) {
-        DMREndpoint endpoint = new DMREndpoint();
-        return new DMRTask(endpoint, type, interval(duration), "a", "b", Address.root(), "c", null);
+        DMREndpoint endpoint = new LocalDMREndpoint("_self", new ServerIdentifiers("x", "y", "z"));
+        return createDMRTask(type, duration, endpoint);
+    }
+
+    private static DMRTask createDMRTask(Type type, int duration, DMREndpoint endpoint) {
+        if (type == Type.METRIC) {
+            return new MetricDMRTask(interval(duration), endpoint, Address.root(), "c", null);
+        } else {
+            return new AvailDMRTask(interval(duration), endpoint, Address.root(), "c", null, null);
+        }
     }
 
     private class TestTask implements Task {
@@ -150,6 +241,16 @@ public class TaskGroupTest {
         @Override
         public KeyGenerator getKeyGenerator() {
             return null;
+        }
+
+        @Override
+        public Kind getKind() {
+            return new Kind() {
+                @Override
+                public String getId() {
+                    return TestTask.class.getName();
+                }
+            };
         }
     }
 }

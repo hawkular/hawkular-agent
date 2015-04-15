@@ -40,11 +40,10 @@ import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
+import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
-import org.hawkular.dmrclient.Address;
-import org.hawkular.dmrclient.CoreJBossASClient;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
@@ -121,7 +120,7 @@ public class MonitorService implements Service<MonitorService> {
                 addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, dmrMetricSets, dmrAvailSets);
             } else if (managedResource instanceof LocalDMRManagedResource) {
                 LocalDMRManagedResource dmrResource = (LocalDMRManagedResource) managedResource;
-                DMREndpoint dmrEndpoint = new DMREndpoint(dmrResource.name, null, 0, null, null);
+                LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrResource.name, createLocalClientFactory());
                 List<String> dmrMetricSets = dmrResource.metricSets;
                 List<String> dmrAvailSets = dmrResource.availSets;
                 addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, dmrMetricSets, dmrAvailSets);
@@ -138,11 +137,13 @@ public class MonitorService implements Service<MonitorService> {
         for (String metricSetName : dmrMetricSets) {
             MetricSetDMR metricSet = config.metricSetDmrMap.get(metricSetName);
             if (metricSet != null) {
-                for (MetricDMR metric : metricSet.metricDmrMap.values()) {
-                    Interval interval = new Interval(metric.interval, metric.timeUnits);
-                    DMRPropertyReference ref = new DMRPropertyReference(metric.resource, metric.attribute,
-                            interval);
-                    schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
+                if (metricSet.enabled) {
+                    for (MetricDMR metric : metricSet.metricDmrMap.values()) {
+                        Interval interval = new Interval(metric.interval, metric.timeUnits);
+                        DMRPropertyReference ref = new DMRPropertyReference(metric.resource, metric.attribute,
+                                interval);
+                        schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
+                    }
                 }
             } else {
                 MsgLogger.LOG.warnMetricSetDoesNotExist(managedResource.name, metricSetName);
@@ -152,11 +153,13 @@ public class MonitorService implements Service<MonitorService> {
         for (String availSetName : dmrAvailSets) {
             AvailSetDMR availSet = config.availSetDmrMap.get(availSetName);
             if (availSet != null) {
-                for (AvailDMR avail : availSet.availDmrMap.values()) {
-                    Interval interval = new Interval(avail.interval, avail.timeUnits);
-                    AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.resource,
-                            avail.attribute, interval, avail.upRegex);
-                    schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
+                if (availSet.enabled) {
+                    for (AvailDMR avail : availSet.availDmrMap.values()) {
+                        Interval interval = new Interval(avail.interval, avail.timeUnits);
+                        AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.resource,
+                                avail.attribute, interval, avail.upRegex);
+                        schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
+                    }
                 }
             } else {
                 MsgLogger.LOG.warnAvailSetDoesNotExist(managedResource.name, availSetName);
@@ -244,29 +247,34 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     private void startScheduler() {
-        // Get the server name from the runtime model
-        boolean isDomainMode = getRootAttribute("launch-type").equalsIgnoreCase("domain");
-        String hostName = (isDomainMode) ? getRootAttribute("host") : "";
-        String serverName = getRootAttribute("name");
-        String nodeName = System.getProperty("jboss.node.name");
-        ServerIdentifiers id = new ServerIdentifiers(hostName, serverName, nodeName);
+        ModelControllerClientFactory mccFactory = createLocalClientFactory();
+        LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
+        ServerIdentifiers id = localDMREndpoint.getServerIdentifiers();
+        schedulerService = new SchedulerService(schedulerConfig, id, metricStorageProxy, createLocalClientFactory());
+        schedulerService.start();
+    }
 
+    /**
+     * Create a factory that will create ModelControllerClient objects that talk
+     * to the WildFly server we are running in.
+     *
+     * @return factory to create intra-VM clients
+     */
+    private ModelControllerClientFactory createLocalClientFactory() {
         ModelControllerClientFactory mccFactory = new ModelControllerClientFactory() {
             @Override
             public ModelControllerClient createClient() {
                 return getManagementControllerClient();
             }
         };
-
-        schedulerService = new SchedulerService(schedulerConfig, id, metricStorageProxy, mccFactory);
-        schedulerService.start();
+        return mccFactory;
     }
 
     /**
-     * Returns a client that can be used to talk to the management interface of the app server.
-     * Make sure you close this when you are done with it.
+     * Returns a client that can be used to talk to the management interface of the app server this
+     * service is running in.
      *
-     * Use this with the DMR clients (JBossASClient and its subclasses) for more strongly-typed management API.
+     * Make sure you close this when you are done with it.
      *
      * @return client
      */
@@ -289,20 +297,5 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         return managementClientExecutor;
-    }
-
-    /**
-     * Returns the value of an attribute of the main root resource of the app server.
-     *
-     * @param attributeName root resource's attribute whose value is to be returned
-     *
-     * @return root resource attribute value
-     */
-    private String getRootAttribute(String attributeName) {
-        try (CoreJBossASClient client = new CoreJBossASClient(getManagementControllerClient())) {
-            return client.getStringAttribute(attributeName, Address.root());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }

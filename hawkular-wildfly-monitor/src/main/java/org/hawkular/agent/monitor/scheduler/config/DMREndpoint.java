@@ -16,6 +16,14 @@
  */
 package org.hawkular.agent.monitor.scheduler.config;
 
+import java.util.Properties;
+
+import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactoryImpl;
+import org.hawkular.agent.monitor.service.ServerIdentifiers;
+import org.hawkular.dmrclient.Address;
+import org.hawkular.dmrclient.CoreJBossASClient;
+
 /**
  * Represents a remote endpoint that can process DMR requests.
  */
@@ -25,13 +33,7 @@ public class DMREndpoint extends MonitoredEndpoint {
     private final int port;
     private final String username;
     private final String password;
-
-    /**
-     * Constructor to represent the endpoint to our local Wildfly instance (the one we are running inside of). 
-     */
-    public DMREndpoint() {
-        this("_self", null, 0, null, null);
-    }
+    private ServerIdentifiers serverId;
 
     public DMREndpoint(String name, String host, int port, String username, String password) {
         super(name);
@@ -57,8 +59,41 @@ public class DMREndpoint extends MonitoredEndpoint {
         return password;
     }
 
+    /**
+     * Returns the server identification, connecting to the endpoint if it
+     * has not been obtained yet. This will be null if the endpoint could not
+     * be connected to or the identification could not be obtained for some reason.
+     *
+     * @return the endpoint's identification
+     *
+     * @see #getServerIdentifiers()
+     */
+    public ServerIdentifiers getServerIdentifiers() {
+        if (this.serverId == null) {
+            try (CoreJBossASClient client = new CoreJBossASClient(getModelControllerClientFactory().createClient())) {
+                Address rootResource = Address.root();
+                boolean isDomainMode = client.getStringAttribute("launch-type", rootResource)
+                        .equalsIgnoreCase("domain");
+                String hostName = (isDomainMode) ? client.getStringAttribute("host", rootResource) : null;
+                String serverName = client.getStringAttribute("name", rootResource);
+                Properties sysprops = client.getSystemProperties();
+                String nodeName = sysprops.getProperty("jboss.node.name");
+                this.serverId = new ServerIdentifiers(hostName, serverName, nodeName);
+            } catch (Exception e) {
+                // we can't get the IDs; do nothing and return null
+            }
+        }
+
+        return this.serverId;
+    }
+
+    protected ModelControllerClientFactory getModelControllerClientFactory() {
+        return new ModelControllerClientFactoryImpl(this);
+    }
+
     @Override
     public String toString() {
-        return "DMREndpoint[name=" + getName() + ", host=" + host + ", port=" + port + ", username=" + username + "]";
+        return "DMREndpoint[name=" + getName() + ", host=" + host + ", port=" + port + ", username=" + username
+                + ", serverId=" + serverId + "]";
     }
 }

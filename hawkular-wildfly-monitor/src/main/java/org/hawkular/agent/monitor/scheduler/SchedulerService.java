@@ -32,6 +32,7 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.IntervalBasedScheduler;
 import org.hawkular.agent.monitor.scheduler.polling.Scheduler;
@@ -39,6 +40,7 @@ import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.AvailDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.AvailDMRTaskGroupRunnable;
+import org.hawkular.agent.monitor.scheduler.polling.dmr.DMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
@@ -61,7 +63,7 @@ public class SchedulerService {
 
     private final SchedulerConfiguration schedulerConfig;
     private final ServerIdentifiers selfId;
-    private final ModelControllerClientFactory mccFactory;
+    private final ModelControllerClientFactory localDMRClientFactory;
     private final Diagnostics diagnostics;
     private final ScheduledReporter diagnosticsReporter;
     private final StorageAdapter storageAdapter;
@@ -76,12 +78,12 @@ public class SchedulerService {
             SchedulerConfiguration configuration,
             ServerIdentifiers selfId,
             MetricStorageProxy metricStorageProxy,
-            ModelControllerClientFactory mccFactory) {
+            ModelControllerClientFactory localDMRClientFactory) {
 
         this.schedulerConfig = configuration;
 
-        // for those tasks that require a DMR client, this factory can  provide those clients
-        this.mccFactory = mccFactory;
+        // for those tasks that require a DMR client to our own WildFly server, this factory can provide those clients
+        this.localDMRClientFactory = localDMRClientFactory;
 
         // this helps identify where we are running
         this.selfId = selfId;
@@ -157,10 +159,6 @@ public class SchedulerService {
         return this.selfId;
     }
 
-    public ModelControllerClientFactory getModelControllerClientFactory() {
-        return this.mccFactory;
-    }
-
     public Diagnostics getDiagnostics() {
         return this.diagnostics;
     }
@@ -219,25 +217,43 @@ public class SchedulerService {
     public Runnable getTaskGroupRunnable(TaskGroup group) {
         switch (group.getType()) {
             case METRIC: {
-                if (MetricDMRTask.class.equals(group.getClassKind())) {
-                    return new MetricDMRTaskGroupRunnable(group, metricCompletionHandler, getDiagnostics(),
-                            getModelControllerClientFactory());
+                // we are guaranteed the first task is the same kind as all the rest
+                Task firstTask = group.getTask(0);
+                if (DMRTask.class.isInstance(firstTask)) {
+                    // we are guaranteed that all tasks in a group refer to the same endpoint
+                    DMREndpoint endpoint = ((DMRTask) firstTask).getEndpoint();
+                    ModelControllerClientFactory factory;
+                    if (endpoint instanceof LocalDMREndpoint) {
+                        factory = this.localDMRClientFactory;
+                    } else {
+                        factory = new ModelControllerClientFactoryImpl(endpoint);
+                    }
+                    return new MetricDMRTaskGroupRunnable(group, metricCompletionHandler, getDiagnostics(), factory);
                 } else {
-                    throw new UnsupportedOperationException("Unsupported metric group kind: " + group);
+                    throw new UnsupportedOperationException("Unsupported metric group: " + group);
                 }
             }
 
             case AVAIL: {
-                if (AvailDMRTask.class.equals(group.getClassKind())) {
-                    return new AvailDMRTaskGroupRunnable(group, availCompletionHandler, getDiagnostics(),
-                            getModelControllerClientFactory());
+                // we are guaranteed the first task is the same kind as all the rest
+                Task firstTask = group.getTask(0);
+                if (DMRTask.class.isInstance(firstTask)) {
+                    // we are guaranteed that all tasks in a group refer to the same endpoint
+                    DMREndpoint endpoint = ((DMRTask) firstTask).getEndpoint();
+                    ModelControllerClientFactory factory;
+                    if (endpoint instanceof LocalDMREndpoint) {
+                        factory = this.localDMRClientFactory;
+                    } else {
+                        factory = new ModelControllerClientFactoryImpl(endpoint);
+                    }
+                    return new AvailDMRTaskGroupRunnable(group, availCompletionHandler, getDiagnostics(), factory);
                 } else {
-                    throw new UnsupportedOperationException("Unsupported avail group kind: " + group);
+                    throw new UnsupportedOperationException("Unsupported avail group: " + group);
                 }
             }
 
             default: {
-                throw new IllegalArgumentException("Bad group type [" + group + "]. Please report this bug.");
+                throw new IllegalArgumentException("Bad group [" + group + "]. Please report this bug.");
             }
         }
     }
@@ -260,11 +276,8 @@ public class SchedulerService {
                     }
                 }
 
-                String host = this.selfId.getHost();
-                String server = this.selfId.getServer();
-
-                tasks.add(new MetricDMRTask(dmrEndpoint, ref.getInterval(), host, server,
-                        Address.parse(ref.getAddress()), attribute, subref));
+                tasks.add(new MetricDMRTask(ref.getInterval(), dmrEndpoint, Address.parse(ref.getAddress()),
+                        attribute, subref));
             }
         }
 
@@ -290,11 +303,8 @@ public class SchedulerService {
                     }
                 }
 
-                String host = this.selfId.getHost();
-                String server = this.selfId.getServer();
-
-                tasks.add(new AvailDMRTask(dmrEndpoint, ref.getInterval(), host, server,
-                        Address.parse(ref.getAddress()), attribute, subref, ref.getUpRegex()));
+                tasks.add(new AvailDMRTask(ref.getInterval(), dmrEndpoint, Address.parse(ref.getAddress()), attribute,
+                        subref, ref.getUpRegex()));
             }
         }
 

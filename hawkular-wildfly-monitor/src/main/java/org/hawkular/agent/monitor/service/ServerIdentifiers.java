@@ -32,14 +32,27 @@ public class ServerIdentifiers {
         this.nodeName = (nodeName != null) ? nodeName : "";
     }
 
+    /**
+     * @return The host name of the WildFly application server, if known.
+     *         The host name is only meaningful if the WildFly instance is running in domain mode.
+     *         It comes from the DMR attribute "host" in the "/" DMR root resource.
+     */
     public String getHost() {
         return host;
     }
 
+    /**
+     * @return The server name of the WildFly application server, if known.
+     *         It comes from the DMR attribute "name" in the "/" DMR root resource.
+     */
     public String getServer() {
         return server;
     }
 
+    /**
+     * @return The node name of the WildFly application server, if known.
+     *         It comes from the WildFly's system property "jboss.node.name".
+     */
     public String getNodeName() {
         return nodeName;
     }

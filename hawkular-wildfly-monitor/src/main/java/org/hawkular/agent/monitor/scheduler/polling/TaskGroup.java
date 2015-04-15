@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.UUID;
 
 import org.hawkular.agent.monitor.scheduler.config.Interval;
+import org.hawkular.agent.monitor.scheduler.polling.Task.Kind;
 import org.hawkular.agent.monitor.scheduler.polling.Task.Type;
 
 /**
@@ -41,7 +42,7 @@ public class TaskGroup implements Iterable<Task> {
     private final long offsetMillis;
     private final LinkedList<Task> tasks;
     private Type type;
-    private Class<? extends Task> clazzKind;
+    private Kind kind;
 
     public TaskGroup(final Interval interval) {
         this.offsetMillis = 0; // don't wait to collect the first time
@@ -58,10 +59,10 @@ public class TaskGroup implements Iterable<Task> {
     }
 
     /**
-     * @return the class of tasks in the group; will be <code>null</code> if group is empty
+     * @return the kind of tasks in the group; will be <code>null</code> if group is empty
      */
-    public Class<? extends Task> getClassKind() {
-        return clazzKind;
+    public Kind getKind() {
+        return kind;
     }
 
     public void addTask(Task task) {
@@ -110,7 +111,6 @@ public class TaskGroup implements Iterable<Task> {
         StringBuilder str = new StringBuilder("TaskGroup: ");
         str.append("id=[").append(id).append("]");
         str.append(", type=[").append(type).append("]");
-        str.append(", classKind=[").append(clazzKind).append("]");
         str.append(", interval=[").append(interval).append("]");
         str.append(", size=[").append(size()).append("]");
         return str.toString();
@@ -139,11 +139,10 @@ public class TaskGroup implements Iterable<Task> {
     }
 
     private void verifyClassKind(final Task task) {
-        if (this.clazzKind == null) {
-            this.clazzKind = task.getClass();
-        } else if (!this.clazzKind.isInstance(task)) {
-            throw new IllegalArgumentException("Wrong kind: Expected [" + this.clazzKind + "], but got ["
-                    + task.getClass() + "]");
+        if (this.kind == null) {
+            this.kind = task.getKind();
+        } else if (!this.kind.isSameKind(task)) {
+            throw new IllegalArgumentException("Wrong kind. Cannot add to group: " + task);
         }
     }
 }

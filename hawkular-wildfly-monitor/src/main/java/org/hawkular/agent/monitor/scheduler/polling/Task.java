@@ -31,19 +31,35 @@ public interface Task {
         AVAIL
     }
 
+    interface Kind {
+        String getId();
+
+        default boolean isSameKind(Task compareTo) {
+            if (compareTo == null) {
+                return false;
+            }
+            return getId().equals(compareTo.getKind().getId());
+        }
+    }
+
     /**
      * @return indicates the purpose of the task
      */
     Type getType();
 
     /**
-     * @return the object that generates the key for the tasks collected data.
+     * @return a comparable that indicates the kind of task this is.
      */
-    KeyGenerator getKeyGenerator();
+    Kind getKind();
 
     /**
      * @return how often the task should be executed.
      */
     Interval getInterval();
+
+    /**
+     * @return the object that generates the key for the tasks collected data.
+     */
+    KeyGenerator getKeyGenerator();
 
 }

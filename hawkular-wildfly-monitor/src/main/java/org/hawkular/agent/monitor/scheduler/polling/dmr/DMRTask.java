@@ -25,44 +25,64 @@ import org.hawkular.dmrclient.Address;
 /**
  * Represents a task that is to be executed on a DMR resource with an absolute address within a domain.
  */
-public class DMRTask implements Task {
+public abstract class DMRTask implements Task {
+
+    private final class DMRTaskKind implements Kind {
+        private final String id;
+
+        private DMRTaskKind(DMRTask us) {
+            StringBuilder idBuilder = new StringBuilder();
+            idBuilder.append(us.getClass().getName()).append(":");
+            idBuilder.append(us.getType()).append(":");
+            idBuilder.append(us.getEndpoint().getHost()).append(":");
+            idBuilder.append(us.getEndpoint().getPort()).append(":");
+            idBuilder.append(us.getEndpoint().getUsername());
+            id = idBuilder.toString();
+        }
+
+        @Override
+        public String getId() {
+            return id;
+        }
+    }
 
     private final DMREndpoint endpoint;
     private final Type type;
-    private final String host;
-    private final String server;
     private final Address address;
     private final String attribute;
     private final String subref;
     private final Interval interval;
 
     public DMRTask(
-            DMREndpoint endpoint,
             Type type,
             Interval interval,
-            String host,
-            String server,
+            DMREndpoint endpoint,
             Address address,
             String attribute,
             String subref) {
 
-        this.endpoint = endpoint;
+        if (type == null) {
+            throw new IllegalArgumentException("type cannot be null");
+        }
+
+        if (interval == null) {
+            throw new IllegalArgumentException("interval cannot be null");
+        }
+
+        if (endpoint == null) {
+            throw new IllegalArgumentException("endpoint cannot be null");
+        }
+
+        if (address == null) {
+            throw new IllegalArgumentException("address cannot be null");
+        }
+
         this.type = type;
         this.interval = interval;
-        this.host = host;
-        this.server = server;
+        this.endpoint = endpoint;
         this.address = address;
         this.attribute = attribute;
         this.subref = subref;
-    }
-
-    public DMREndpoint getEndpoint() {
-        return endpoint;
-    }
-
-    @Override
-    public Type getType() {
-        return type;
     }
 
     @Override
@@ -71,8 +91,22 @@ public class DMRTask implements Task {
     }
 
     @Override
+    public Type getType() {
+        return type;
+    }
+
+    @Override
     public Interval getInterval() {
         return interval;
+    }
+
+    @Override
+    public Kind getKind() {
+        return new DMRTaskKind(this);
+    }
+
+    public DMREndpoint getEndpoint() {
+        return endpoint;
     }
 
     public Address getAddress() {
@@ -87,14 +121,6 @@ public class DMRTask implements Task {
         return subref;
     }
 
-    public String getHost() {
-        return host;
-    }
-
-    public String getServer() {
-        return server;
-    }
-
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder("DMRTask: ");
@@ -104,8 +130,7 @@ public class DMRTask implements Task {
         str.append(", address=[").append(address).append("]");
         str.append(", attribute=[").append(attribute).append("]");
         str.append(", subref=[").append(subref).append("]");
-        str.append(", host=[").append(host).append("]");
-        str.append(", server=[").append(server).append("]");
+        str.append(", kind=[").append(getKind().getId()).append("]");
         return str.toString();
     }
 }
