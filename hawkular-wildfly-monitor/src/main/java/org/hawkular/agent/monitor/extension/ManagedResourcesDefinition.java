@@ -50,6 +50,6 @@ public class ManagedResourcesDefinition extends PersistentResourceDefinition {
 
     @Override
     protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(RemoteDMRDefinition.INSTANCE);
+        return Arrays.asList(LocalDMRDefinition.INSTANCE, RemoteDMRDefinition.INSTANCE);
     }
 }

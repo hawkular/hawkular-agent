@@ -67,9 +67,6 @@
   </metric-set-dmr>
 
   <managed-resources>
-    <local-dmr metricSets="platform.memory"
-               availSets="server-availabilities" />
-
     <remote-dmr name="our-local"
                 host="localhost"
                 port="9990"
@@ -81,6 +78,10 @@
                 port="9990"
                 username="adminUser"
                 password="adminPass" />
+
+    <local-dmr metricSets="platform.memory"
+               availSets="server-availabilities" />
+
   </managed-resources>
 
   <avail-set-dmr name="server-availabilities" enabled="true">

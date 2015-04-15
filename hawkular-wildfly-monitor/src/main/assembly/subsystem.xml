@@ -67,9 +67,6 @@
   </metric-set-dmr>
 
   <managed-resources>
-    <local-dmr metricSets="platform.memory"
-               availSets="server-availabilities" />
-
     <remote-dmr name="local"
                 host="localhost"
                 port="9990"
@@ -77,6 +74,10 @@
                 password="admin"
                 metricSets="platform.memory,platform.threading"
                 availSets="server-availabilities,hawkular-bus-broker" />
+
+    <local-dmr metricSets="platform.memory"
+               availSets="server-availabilities" />
+
   </managed-resources>
 
   <avail-set-dmr name="server-availabilities" enabled="true">
