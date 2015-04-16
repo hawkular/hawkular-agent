@@ -80,6 +80,7 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
         private boolean keepRunning = true;
 
         public Worker(BlockingQueue<MetricDataPoint> queue) {
+            super("Hawkular-Monitor-Storage-Dispatcher-Metric");
             this.queue = queue;
         }
 

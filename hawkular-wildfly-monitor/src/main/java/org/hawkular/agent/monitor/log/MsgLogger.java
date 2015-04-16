@@ -100,4 +100,8 @@ public interface MsgLogger {
     @LogMessage(level = Level.WARN)
     @Message(id = 10017, value = "The managed resource [%s] wants to use an unknown avail set [%s]")
     void warnAvailSetDoesNotExist(String resourceName, String availSetName);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10018, value = "Cannot obtain server identifiers for [%s]: %s")
+    void warnCannotObtainServerIdentifiersForDMREndpoint(String endpoint, String errorString);
 }

@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.scheduler.config;
 
 import java.util.Properties;
 
+import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactoryImpl;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
@@ -64,7 +65,7 @@ public class DMREndpoint extends MonitoredEndpoint {
      * has not been obtained yet. This will be null if the endpoint could not
      * be connected to or the identification could not be obtained for some reason.
      *
-     * @return the endpoint's identification
+     * @return the endpoint's identification, or null if unable to determine
      *
      * @see #getServerIdentifiers()
      */
@@ -80,7 +81,7 @@ public class DMREndpoint extends MonitoredEndpoint {
                 String nodeName = sysprops.getProperty("jboss.node.name");
                 this.serverId = new ServerIdentifiers(hostName, serverName, nodeName);
             } catch (Exception e) {
-                // we can't get the IDs; do nothing and return null
+                MsgLogger.LOG.warnCannotObtainServerIdentifiersForDMREndpoint(this.toString(), e.toString());
             }
         }
 

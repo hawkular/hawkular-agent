@@ -80,6 +80,7 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
         private boolean keepRunning = true;
 
         public Worker(BlockingQueue<AvailDataPoint> queue) {
+            super("Hawkular-Monitor-Storage-Dispatcher-Avail");
             this.queue = queue;
         }
 
