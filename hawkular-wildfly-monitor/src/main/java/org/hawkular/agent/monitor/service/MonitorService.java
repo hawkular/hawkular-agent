@@ -111,22 +111,26 @@ public class MonitorService implements Service<MonitorService> {
 
         // for each managed resource, add their metrics and avails
         for (ManagedResource managedResource : config.managedResourcesMap.values()) {
-            if (managedResource instanceof RemoteDMRManagedResource) {
-                RemoteDMRManagedResource dmrResource = (RemoteDMRManagedResource) managedResource;
-                DMREndpoint dmrEndpoint = new DMREndpoint(dmrResource.name, dmrResource.host, dmrResource.port,
-                        dmrResource.username, dmrResource.password);
-                List<String> dmrMetricSets = dmrResource.metricSets;
-                List<String> dmrAvailSets = dmrResource.availSets;
-                addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, dmrMetricSets, dmrAvailSets);
-            } else if (managedResource instanceof LocalDMRManagedResource) {
-                LocalDMRManagedResource dmrResource = (LocalDMRManagedResource) managedResource;
-                LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrResource.name, createLocalClientFactory());
-                List<String> dmrMetricSets = dmrResource.metricSets;
-                List<String> dmrAvailSets = dmrResource.availSets;
-                addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, dmrMetricSets, dmrAvailSets);
+            if (!managedResource.enabled) {
+                MsgLogger.LOG.infoManagedResourceDisabled(managedResource.name);
             } else {
-                throw new IllegalArgumentException("An invalid managed resource type was found. [" + managedResource
-                        + "] Please report this bug.");
+                List<String> metricSets = managedResource.metricSets;
+                List<String> availSets = managedResource.availSets;
+
+                if (managedResource instanceof RemoteDMRManagedResource) {
+                    RemoteDMRManagedResource dmrResource = (RemoteDMRManagedResource) managedResource;
+                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrResource.name, dmrResource.host, dmrResource.port,
+                            dmrResource.username, dmrResource.password);
+                    addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, metricSets, availSets);
+                } else if (managedResource instanceof LocalDMRManagedResource) {
+                    LocalDMRManagedResource dmrResource = (LocalDMRManagedResource) managedResource;
+                    LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrResource.name, createLocalClientFactory());
+                    addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, metricSets, availSets);
+                } else {
+                    throw new IllegalArgumentException("An invalid managed resource type was found. ["
+                            + managedResource
+                            + "] Please report this bug.");
+                }
             }
         }
     }

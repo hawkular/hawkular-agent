@@ -224,6 +224,7 @@ public class MonitorServiceConfiguration {
                 for (Property remoteDMRProperty : remoteDMRsList) {
                     String name = remoteDMRProperty.getName();
                     ModelNode remoteDMRValueNode = remoteDMRProperty.getValue();
+                    boolean enabled = getBoolean(remoteDMRValueNode, context, RemoteDMRDefinition.ENABLED);
                     String host = getString(remoteDMRValueNode, context, RemoteDMRDefinition.HOST);
                     int port = getInt(remoteDMRValueNode, context, RemoteDMRDefinition.PORT);
                     String username = getString(remoteDMRValueNode, context, RemoteDMRDefinition.USERNAME);
@@ -247,6 +248,7 @@ public class MonitorServiceConfiguration {
 
                     RemoteDMRManagedResource res = new RemoteDMRManagedResource();
                     res.name = name;
+                    res.enabled = enabled;
                     res.host = host;
                     res.port = port;
                     res.username = username;
@@ -267,6 +269,7 @@ public class MonitorServiceConfiguration {
                 Property localDMRProperty = localDMRsList.get(0);
                 String name = localDMRProperty.getName();
                 ModelNode localDMRValueNode = localDMRProperty.getValue();
+                boolean enabled = getBoolean(localDMRValueNode, context, LocalDMRDefinition.ENABLED);
                 List<String> metricSets = getListFromString(localDMRValueNode, context,
                         LocalDMRDefinition.METRIC_SETS);
                 List<String> availSets = getListFromString(localDMRValueNode, context,
@@ -286,6 +289,7 @@ public class MonitorServiceConfiguration {
 
                 LocalDMRManagedResource res = new LocalDMRManagedResource();
                 res.name = name;
+                res.enabled = enabled;
                 res.metricSets.addAll(metricSets);
                 res.availSets.addAll(availSets);
                 managedResourcesMap.put(name, res);
@@ -373,6 +377,7 @@ public class MonitorServiceConfiguration {
 
     public class ManagedResource {
         public String name;
+        public boolean enabled;
         public List<String> metricSets = new ArrayList<>();
         public List<String> availSets = new ArrayList<>();
     }

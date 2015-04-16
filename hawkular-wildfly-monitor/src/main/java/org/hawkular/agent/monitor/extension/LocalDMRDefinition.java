@@ -34,6 +34,14 @@ public class LocalDMRDefinition extends PersistentResourceDefinition {
 
     static final String LOCAL_DMR = "local-dmr";
 
+    static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
+            ModelType.BOOLEAN)
+            .setAllowNull(false)
+            //WHY DOES THIS CAUSE TEST TO FAIL? .setDefaultValue(new ModelNode(true))
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     static final SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder("metricSets",
             ModelType.STRING)
             .setAllowNull(true)
@@ -49,7 +57,7 @@ public class LocalDMRDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            METRIC_SETS, AVAIL_SETS
+            ENABLED, METRIC_SETS, AVAIL_SETS
     };
 
     private LocalDMRDefinition() {

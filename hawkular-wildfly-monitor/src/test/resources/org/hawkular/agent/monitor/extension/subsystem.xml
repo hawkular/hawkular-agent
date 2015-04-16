@@ -68,18 +68,21 @@
 
   <managed-resources>
     <remote-dmr name="our-local"
+                enabled="true"
                 host="localhost"
                 port="9990"
                 metricSets="platform.memory,platform.threading"
                 availSets="server-availabilities" />
 
     <remote-dmr name="another-remote"
+                enabled="false"
                 host="somehost"
                 port="9990"
                 username="adminUser"
                 password="adminPass" />
 
-    <local-dmr metricSets="platform.memory"
+    <local-dmr enabled="true"
+               metricSets="platform.memory"
                availSets="server-availabilities" />
 
   </managed-resources>

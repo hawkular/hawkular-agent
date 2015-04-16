@@ -34,6 +34,14 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
 
     static final String REMOTE_DMR = "remote-dmr";
 
+    static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
+            ModelType.BOOLEAN)
+            .setAllowNull(false)
+            //WHY DOES THIS CAUSE TEST TO FAIL? .setDefaultValue(new ModelNode(true))
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     static final SimpleAttributeDefinition HOST = new SimpleAttributeDefinitionBuilder("host",
             ModelType.STRING)
             .setAllowNull(false)
@@ -77,7 +85,7 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            HOST, PORT, USERNAME, PASSWORD, METRIC_SETS, AVAIL_SETS
+            ENABLED, HOST, PORT, USERNAME, PASSWORD, METRIC_SETS, AVAIL_SETS
     };
 
     private RemoteDMRDefinition() {
