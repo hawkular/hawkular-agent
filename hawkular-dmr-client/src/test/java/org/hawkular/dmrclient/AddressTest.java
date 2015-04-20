@@ -16,9 +16,39 @@
  */
 package org.hawkular.dmrclient;
 
+import org.jboss.dmr.ModelNode;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class AddressTest extends Address {
+    @Test
+    public void testAddressFromModelNode() {
+        ModelNode node;
+
+        Assert.assertEquals("/", Address.fromModelNode(new ModelNode()).toAddressPathString());
+
+        StringBuilder addrStr = new StringBuilder();
+        addrStr.append("[");
+        addrStr.append("(\"deployment\" => \"my-app.ear\"),\n");
+        addrStr.append("(\"subdeployment\" => \"my-webapp.war\"),\n");
+        addrStr.append("(\"subsystem\" => \"undertow\")");
+        addrStr.append("]");
+        node = ModelNode.fromString(addrStr.toString());
+        Assert.assertEquals("/deployment=my-app.ear/subdeployment=my-webapp.war/subsystem=undertow",
+                Address.fromModelNode(node).toAddressPathString());
+
+        String addrWrapper = String.format("{ \"one\" => \"1\", \"address\" => %s, \"two\" => \"2\" }", addrStr);
+        node = ModelNode.fromString(addrWrapper.toString());
+        Assert.assertEquals("/deployment=my-app.ear/subdeployment=my-webapp.war/subsystem=undertow",
+                Address.fromModelNodeWrapper(node, "address").toAddressPathString());
+
+        try {
+            Address.fromModelNode(new ModelNode("not-an-address"));
+            Assert.fail("Should not have been able to use a non-address ModelNode");
+        } catch (IllegalArgumentException expected) {
+        }
+    }
+
     @Test
     public void testRootAddress() {
         Address addr = Address.root();

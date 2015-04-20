@@ -23,17 +23,28 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 
 /**
- * Identifies a managed resource.
+ * Identifies a managed resource in the DMR hierarchy.
  *
  * @author John Mazzitelli
  */
 public class Address implements Cloneable {
     private ModelNode addressNode;
 
+    /**
+     * Returns the root address which is denoted as the flat address string of "/".
+     *
+     * @return root address
+     */
     public static Address root() {
         return new Address();
     }
 
+    /**
+     * Parses a flat address string that has the syntax "/type1=name/type2=name/.../typeN=nameN".
+     *
+     * @param addressStr flat address string
+     * @return address
+     */
     public static Address parse(String addressStr) {
         Address address = root();
 
@@ -61,19 +72,93 @@ public class Address implements Cloneable {
         return address;
     }
 
+    /**
+     * Obtains the address from the given ModelNode which is assumed to be a property list that
+     * contains all the address parts and only the address parts.
+     *
+     * @param node address node
+     * @return the address
+     */
+    public static Address fromModelNode(ModelNode node) {
+        // Rather than just store node as this.addressNode, we want to make sure it can be used as a valid address.
+        // This also builds our own instance of ModelNode rather than use the one the caller gave us.
+        Address address = Address.root();
+
+        // if the node is not defined, this simply represents the root address
+        if (!node.isDefined()) {
+            return address;
+        }
+
+        try {
+            List<Property> addressList = node.asPropertyList();
+            for (Property addressProperty : addressList) {
+                String resourceType = addressProperty.getName();
+                String resourceName = addressProperty.getValue().asString();
+                address.add(resourceType, resourceName);
+            }
+            return address;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Node cannot be used as an address: " + node.toJSONString(true));
+        }
+    }
+
+    /**
+     * Obtains an address property list from the given ModelNode wrapper. The given haystack must have a
+     * key whose value is the same as needle. The value of that named property must itself be a property list
+     * containing all address parts (and only address parts).
+     *
+     * @param haystack the wrapper ModelNode that contains a property whose value is an address property list.
+     * @param needle the name of the property in the given wrapper ModelNode whose value is the address property list.
+     * @return the found address
+     *
+     * @throws IllegalArgumentException there is no address property list in the wrapper node with the given name.
+     *
+     * @see #fromModelNode(ModelNode)
+     */
+
+    public static Address fromModelNodeWrapper(ModelNode haystack, String needle) {
+        if (haystack.hasDefined(needle)) {
+            return fromModelNode(haystack.get(needle));
+        }
+
+        throw new IllegalArgumentException("There is no address under the key [" + needle + "] in the node: "
+                + haystack.toJSONString(true));
+    }
+
+    /**
+     * Creates a {@link #root()} address.
+     */
     public Address() {
         addressNode = new ModelNode();
     }
 
+    /**
+     * Creates an address with the given parts. See {@link #add(String...)}.
+     *
+     * @param addressParts the type/name parts of an address.
+     */
     public Address(String... addressParts) {
         this();
         add(addressParts);
     }
 
+    /**
+     * Returns this address as a ModelNode.
+     *
+     * @return the address ModelNode representation
+     */
     public ModelNode getAddressNode() {
         return addressNode;
     }
 
+    /**
+     * Given an address, this appends the given address parts to it. This lets you build up
+     * addresses in a step-wise fashion.
+     *
+     * @param addressParts new address parts to add to the address.
+     *
+     * @return this address (which now has the new address parts appended).
+     */
     public Address add(String... addressParts) {
         if (addressParts != null) {
             if ((addressParts.length % 2) != 0) {
@@ -90,6 +175,15 @@ public class Address implements Cloneable {
         return this;
     }
 
+    /**
+     * Adds a single level to this address. For example, if this address is currently "/a=b"
+     * and this method is called with type=x and name=y this address will now be "/a=b/x=y".
+     *
+     * @param type the new address part's type
+     * @param name the new address part's name
+     *
+     * @return this address with the new address part added to it
+     */
     public Address add(String type, String name) {
         addressNode.add(type, name);
         return this;
