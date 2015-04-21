@@ -90,7 +90,7 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
 
     private RemoteDMRDefinition() {
         super(PathElement.pathElement(REMOTE_DMR),
-                SubsystemExtension.getResourceDescriptionResolver(ManagedResourcesDefinition.MANAGED_RESOURCES,
+                SubsystemExtension.getResourceDescriptionResolver(ManagedServersDefinition.MANAGED_SERVERS,
                         REMOTE_DMR),
                 RemoteDMRAdd.INSTANCE,
                 RemoteDMRRemove.INSTANCE,

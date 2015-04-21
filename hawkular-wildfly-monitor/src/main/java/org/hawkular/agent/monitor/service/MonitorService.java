@@ -28,11 +28,11 @@ import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AvailDMR;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AvailSetDMR;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.LocalDMRManagedResource;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ManagedResource;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.LocalDMRManagedServer;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ManagedServer;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricDMR;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricSetDMR;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.RemoteDMRManagedResource;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
@@ -107,35 +107,35 @@ public class MonitorService implements Service<MonitorService> {
         schedulerConfig.setStorageAdapterConfig(config.storageAdapter);
         schedulerConfig.setMetricSchedulerThreads(config.numMetricSchedulerThreads);
         schedulerConfig.setAvailSchedulerThreads(config.numAvailSchedulerThreads);
-        schedulerConfig.setManagedResources(config.managedResourcesMap);
+        schedulerConfig.setManagedServers(config.managedServersMap);
 
-        // for each managed resource, add their metrics and avails
-        for (ManagedResource managedResource : config.managedResourcesMap.values()) {
-            if (!managedResource.enabled) {
-                MsgLogger.LOG.infoManagedResourceDisabled(managedResource.name);
+        // for each managed server, add their metrics and avails
+        for (ManagedServer managedServer : config.managedServersMap.values()) {
+            if (!managedServer.enabled) {
+                MsgLogger.LOG.infoManagedServerDisabled(managedServer.name);
             } else {
-                List<String> metricSets = managedResource.metricSets;
-                List<String> availSets = managedResource.availSets;
+                List<String> metricSets = managedServer.metricSets;
+                List<String> availSets = managedServer.availSets;
 
-                if (managedResource instanceof RemoteDMRManagedResource) {
-                    RemoteDMRManagedResource dmrResource = (RemoteDMRManagedResource) managedResource;
-                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrResource.name, dmrResource.host, dmrResource.port,
-                            dmrResource.username, dmrResource.password);
-                    addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, metricSets, availSets);
-                } else if (managedResource instanceof LocalDMRManagedResource) {
-                    LocalDMRManagedResource dmrResource = (LocalDMRManagedResource) managedResource;
-                    LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrResource.name, createLocalClientFactory());
-                    addDMRMetricsAndAvails(config, managedResource, dmrEndpoint, metricSets, availSets);
+                if (managedServer instanceof RemoteDMRManagedServer) {
+                    RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
+                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.name, dmrServer.host, dmrServer.port,
+                            dmrServer.username, dmrServer.password);
+                    addDMRMetricsAndAvails(config, managedServer, dmrEndpoint, metricSets, availSets);
+                } else if (managedServer instanceof LocalDMRManagedServer) {
+                    LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
+                    LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.name, createLocalClientFactory());
+                    addDMRMetricsAndAvails(config, managedServer, dmrEndpoint, metricSets, availSets);
                 } else {
-                    throw new IllegalArgumentException("An invalid managed resource type was found. ["
-                            + managedResource
+                    throw new IllegalArgumentException("An invalid managed server type was found. ["
+                            + managedServer
                             + "] Please report this bug.");
                 }
             }
         }
     }
 
-    private void addDMRMetricsAndAvails(MonitorServiceConfiguration config, ManagedResource managedResource,
+    private void addDMRMetricsAndAvails(MonitorServiceConfiguration config, ManagedServer managedServer,
             DMREndpoint dmrEndpoint, List<String> dmrMetricSets, List<String> dmrAvailSets) {
 
         for (String metricSetName : dmrMetricSets) {
@@ -150,7 +150,7 @@ public class MonitorService implements Service<MonitorService> {
                     }
                 }
             } else {
-                MsgLogger.LOG.warnMetricSetDoesNotExist(managedResource.name, metricSetName);
+                MsgLogger.LOG.warnMetricSetDoesNotExist(managedServer.name, metricSetName);
             }
         }
 
@@ -166,7 +166,7 @@ public class MonitorService implements Service<MonitorService> {
                     }
                 }
             } else {
-                MsgLogger.LOG.warnAvailSetDoesNotExist(managedResource.name, availSetName);
+                MsgLogger.LOG.warnAvailSetDoesNotExist(managedServer.name, availSetName);
             }
         }
     }

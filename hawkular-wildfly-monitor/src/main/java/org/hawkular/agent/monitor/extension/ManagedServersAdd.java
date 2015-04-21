@@ -16,12 +16,22 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.jboss.as.controller.AbstractRemoveStepHandler;
+import java.util.Arrays;
 
-public class ManagedResourcesRemove extends AbstractRemoveStepHandler {
+import org.jboss.as.controller.AbstractAddStepHandler;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.dmr.ModelNode;
 
-    public static final ManagedResourcesRemove INSTANCE = new ManagedResourcesRemove();
+public class ManagedServersAdd extends AbstractAddStepHandler {
 
-    private ManagedResourcesRemove() {
+    public static final ManagedServersAdd INSTANCE = new ManagedServersAdd();
+
+    private ManagedServersAdd() {
+    }
+
+    @Override
+    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
+        this.attributes = Arrays.asList(ManagedServersDefinition.ATTRIBUTES);
+        super.populateModel(operation, model);
     }
 }

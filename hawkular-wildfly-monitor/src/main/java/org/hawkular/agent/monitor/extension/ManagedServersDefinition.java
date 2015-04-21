@@ -25,20 +25,20 @@ import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class ManagedResourcesDefinition extends PersistentResourceDefinition {
+public class ManagedServersDefinition extends PersistentResourceDefinition {
 
-    public static final ManagedResourcesDefinition INSTANCE = new ManagedResourcesDefinition();
+    public static final ManagedServersDefinition INSTANCE = new ManagedServersDefinition();
 
-    static final String MANAGED_RESOURCES = "managed-resources";
+    static final String MANAGED_SERVERS = "managed-servers";
 
     static final AttributeDefinition[] ATTRIBUTES = {
     };
 
-    private ManagedResourcesDefinition() {
-        super(PathElement.pathElement(MANAGED_RESOURCES, "default"),
-                SubsystemExtension.getResourceDescriptionResolver(MANAGED_RESOURCES),
-                ManagedResourcesAdd.INSTANCE,
-                ManagedResourcesRemove.INSTANCE,
+    private ManagedServersDefinition() {
+        super(PathElement.pathElement(MANAGED_SERVERS, "default"),
+                SubsystemExtension.getResourceDescriptionResolver(MANAGED_SERVERS),
+                ManagedServersAdd.INSTANCE,
+                ManagedServersRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }

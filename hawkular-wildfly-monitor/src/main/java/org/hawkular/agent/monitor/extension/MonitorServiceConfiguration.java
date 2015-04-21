@@ -46,7 +46,7 @@ public class MonitorServiceConfiguration {
     public Diagnostics diagnostics = new Diagnostics();
     public Map<String, MetricSetDMR> metricSetDmrMap = new HashMap<>();
     public Map<String, AvailSetDMR> availSetDmrMap = new HashMap<>();
-    public Map<String, ManagedResource> managedResourcesMap = new HashMap<>();
+    public Map<String, ManagedServer> managedServersMap = new HashMap<>();
 
     public MonitorServiceConfiguration(ModelNode config, OperationContext context) throws OperationFailedException {
         determineGlobalConfig(config, context);
@@ -64,7 +64,7 @@ public class MonitorServiceConfiguration {
         }
 
         // make sure to call this AFTER the metric sets and avail sets have been determined
-        determineManagedResources(config, context);
+        determineManagedServers(config, context);
 
         return;
     }
@@ -208,18 +208,18 @@ public class MonitorServiceConfiguration {
         numDmrSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_DMR_SCHEDULER_THREADS);
     }
 
-    private void determineManagedResources(ModelNode config, OperationContext context) throws OperationFailedException {
-        if (config.hasDefined(ManagedResourcesDefinition.MANAGED_RESOURCES)) {
-            List<Property> asPropertyList = config.get(ManagedResourcesDefinition.MANAGED_RESOURCES).asPropertyList();
+    private void determineManagedServers(ModelNode config, OperationContext context) throws OperationFailedException {
+        if (config.hasDefined(ManagedServersDefinition.MANAGED_SERVERS)) {
+            List<Property> asPropertyList = config.get(ManagedServersDefinition.MANAGED_SERVERS).asPropertyList();
             if (asPropertyList.size() > 1) {
                 throw new IllegalArgumentException("Can only have one <managed-resources>: "
                         + config.toJSONString(true));
             }
 
-            ModelNode managedResourcesValueNode = asPropertyList.get(0).getValue();
+            ModelNode managedServersValueNode = asPropertyList.get(0).getValue();
 
-            if (managedResourcesValueNode.hasDefined(RemoteDMRDefinition.REMOTE_DMR)) {
-                List<Property> remoteDMRsList = managedResourcesValueNode.get(RemoteDMRDefinition.REMOTE_DMR)
+            if (managedServersValueNode.hasDefined(RemoteDMRDefinition.REMOTE_DMR)) {
+                List<Property> remoteDMRsList = managedServersValueNode.get(RemoteDMRDefinition.REMOTE_DMR)
                         .asPropertyList();
                 for (Property remoteDMRProperty : remoteDMRsList) {
                     String name = remoteDMRProperty.getName();
@@ -246,7 +246,7 @@ public class MonitorServiceConfiguration {
                         }
                     }
 
-                    RemoteDMRManagedResource res = new RemoteDMRManagedResource();
+                    RemoteDMRManagedServer res = new RemoteDMRManagedServer();
                     res.name = name;
                     res.enabled = enabled;
                     res.host = host;
@@ -255,12 +255,12 @@ public class MonitorServiceConfiguration {
                     res.password = password;
                     res.metricSets.addAll(metricSets);
                     res.availSets.addAll(availSets);
-                    managedResourcesMap.put(name, res);
+                    managedServersMap.put(name, res);
                 }
             }
 
-            if (managedResourcesValueNode.hasDefined(LocalDMRDefinition.LOCAL_DMR)) {
-                List<Property> localDMRsList = managedResourcesValueNode.get(LocalDMRDefinition.LOCAL_DMR)
+            if (managedServersValueNode.hasDefined(LocalDMRDefinition.LOCAL_DMR)) {
+                List<Property> localDMRsList = managedServersValueNode.get(LocalDMRDefinition.LOCAL_DMR)
                         .asPropertyList();
                 if (localDMRsList.size() > 1) {
                     throw new IllegalArgumentException("Can only have one <local-dmr>: " + config.toJSONString(true));
@@ -287,12 +287,12 @@ public class MonitorServiceConfiguration {
                     }
                 }
 
-                LocalDMRManagedResource res = new LocalDMRManagedResource();
+                LocalDMRManagedServer res = new LocalDMRManagedServer();
                 res.name = name;
                 res.enabled = enabled;
                 res.metricSets.addAll(metricSets);
                 res.availSets.addAll(availSets);
-                managedResourcesMap.put(name, res);
+                managedServersMap.put(name, res);
             }
 
             // TODO get remote JMX entries now
@@ -375,17 +375,17 @@ public class MonitorServiceConfiguration {
         public Map<String, AvailDMR> availDmrMap = new HashMap<>();
     }
 
-    public class ManagedResource {
+    public class ManagedServer {
         public String name;
         public boolean enabled;
         public List<String> metricSets = new ArrayList<>();
         public List<String> availSets = new ArrayList<>();
     }
 
-    public class LocalDMRManagedResource extends ManagedResource {
+    public class LocalDMRManagedServer extends ManagedServer {
     }
 
-    public class RemoteDMRManagedResource extends ManagedResource {
+    public class RemoteDMRManagedServer extends ManagedServer {
         public String host;
         public int port;
         public String username;

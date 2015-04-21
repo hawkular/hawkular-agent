@@ -66,7 +66,7 @@
                 attribute="thread-count" />
   </metric-set-dmr>
 
-  <managed-resources>
+  <managed-servers>
     <remote-dmr name="our-local"
                 enabled="true"
                 host="localhost"
@@ -85,7 +85,7 @@
                metricSets="platform.memory"
                availSets="server-availabilities" />
 
-  </managed-resources>
+  </managed-servers>
 
   <avail-set-dmr name="server-availabilities" enabled="true">
     <avail-dmr name="app-server"

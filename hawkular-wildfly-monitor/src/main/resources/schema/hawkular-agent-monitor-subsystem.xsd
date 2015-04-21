@@ -30,7 +30,7 @@
     <xs:all>
       <xs:element name="storage-adapter"   type="storageType"          minOccurs="1" maxOccurs="1"/>
       <xs:element name="diagnostics"       type="diagnosticsType"      minOccurs="1" maxOccurs="1"/>
-      <xs:element name="managed-resources" type="managedResourcesType" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="managed-servers"   type="managedServersType"   minOccurs="1" maxOccurs="1"/>
       <xs:element name="metric-set-dmr"    type="metricSetDmrType"     minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="avail-set-dmr"     type="availSetDmrType"      minOccurs="0" maxOccurs="unbounded"/>
     </xs:all>
@@ -65,8 +65,8 @@
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
   </xs:complexType>
 
-  <!-- definition of managed resources -->
-  <xs:complexType name="managedResourcesType">
+  <!-- definition of managed servers -->
+  <xs:complexType name="managedServersType">
     <xs:all>
       <xs:element name="remote-dmr" type="remoteDmrType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="local-dmr"  type="localDmrType"  minOccurs="0" maxOccurs="1"/>

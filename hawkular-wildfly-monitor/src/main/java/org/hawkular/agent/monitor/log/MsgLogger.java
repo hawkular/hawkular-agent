@@ -106,6 +106,6 @@ public interface MsgLogger {
     void warnCannotObtainServerIdentifiersForDMREndpoint(String endpoint, String errorString);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10019, value = "Managed resource [%s] is disabled. It will not be monitored.")
-    void infoManagedResourceDisabled(String name);
+    @Message(id = 10019, value = "Managed server [%s] is disabled. It will not be monitored.")
+    void infoManagedServerDisabled(String name);
 }
