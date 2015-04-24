@@ -37,7 +37,7 @@ public class DMRAvailDefinition extends PersistentResourceDefinition {
 
     static final String AVAIL = "avail-dmr";
 
-    static final SimpleAttributeDefinition RESOURCE = new SimpleAttributeDefinitionBuilder("resource",
+    static final SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
             ModelType.STRING)
             .setAllowNull(false)
             .setAllowExpression(true)
@@ -77,7 +77,7 @@ public class DMRAvailDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            RESOURCE,
+            PATH,
             ATTRIBUTE,
             UP_REGEX,
             INTERVAL,

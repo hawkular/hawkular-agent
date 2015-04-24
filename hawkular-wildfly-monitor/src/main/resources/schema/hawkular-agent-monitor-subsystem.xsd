@@ -28,11 +28,12 @@
 
   <xs:complexType name="subsystemType">
     <xs:all>
-      <xs:element name="storage-adapter"   type="storageType"          minOccurs="1" maxOccurs="1"/>
-      <xs:element name="diagnostics"       type="diagnosticsType"      minOccurs="1" maxOccurs="1"/>
-      <xs:element name="managed-servers"   type="managedServersType"   minOccurs="1" maxOccurs="1"/>
-      <xs:element name="metric-set-dmr"    type="metricSetDmrType"     minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="avail-set-dmr"     type="availSetDmrType"      minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="storage-adapter"       type="storageType"            minOccurs="1" maxOccurs="1"/>
+      <xs:element name="diagnostics"           type="diagnosticsType"        minOccurs="1" maxOccurs="1"/>
+      <xs:element name="managed-servers"       type="managedServersType"     minOccurs="1" maxOccurs="1"/>
+      <xs:element name="resource-type-set-dmr" type="resourceTypeSetDmrType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="metric-set-dmr"        type="metricSetDmrType"       minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="avail-set-dmr"         type="availSetDmrType"        minOccurs="0" maxOccurs="unbounded"/>
     </xs:all>
     <xs:attribute name="enabled"                   type="xs:boolean"/>
     <xs:attribute name="apiJndiName"               type="xs:string"/>
@@ -65,6 +66,23 @@
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
   </xs:complexType>
 
+  <!-- definition of sets of resource types -->
+  <xs:complexType name="resourceTypeSetDmrType">
+    <xs:sequence>
+      <xs:element name="resource-type-dmr" type="resourceTypeDmrType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"    type="xs:string" use="required"/>
+    <xs:attribute name="enabled" type="xs:boolean"/>
+  </xs:complexType>
+
+  <xs:complexType name="resourceTypeDmrType">
+    <xs:attribute name="name"       type="xs:string" use="required"/>
+    <xs:attribute name="path"       type="xs:string" use="required"/>
+    <xs:attribute name="parent"     type="xs:string"/>
+    <xs:attribute name="metricSets" type="xs:string"/>
+    <xs:attribute name="availSets"  type="xs:string"/>
+  </xs:complexType>
+
   <!-- definition of managed servers -->
   <xs:complexType name="managedServersType">
     <xs:all>
@@ -74,18 +92,16 @@
   </xs:complexType>
 
   <xs:complexType name="remoteDmrType">
-    <xs:attribute name="name"       type="xs:string" use="required"/>
-    <xs:attribute name="host"       type="xs:string" use="required"/>
-    <xs:attribute name="port"       type="xs:int"    use="required"/>
-    <xs:attribute name="username"   type="xs:string"/>
-    <xs:attribute name="password"   type="xs:string"/>
-    <xs:attribute name="metricSets" type="xs:string"/>
-    <xs:attribute name="availSets"  type="xs:string"/>
+    <xs:attribute name="name"             type="xs:string" use="required"/>
+    <xs:attribute name="host"             type="xs:string" use="required"/>
+    <xs:attribute name="port"             type="xs:int"    use="required"/>
+    <xs:attribute name="username"         type="xs:string"/>
+    <xs:attribute name="password"         type="xs:string"/>
+    <xs:attribute name="resourceTypeSets" type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="localDmrType">
-    <xs:attribute name="metricSets" type="xs:string"/>
-    <xs:attribute name="availSets"  type="xs:string"/>
+    <xs:attribute name="resourceTypeSets" type="xs:string"/>
   </xs:complexType>
 
   <!-- definition of sets of DMR metrics -->
@@ -99,8 +115,9 @@
 
   <xs:complexType name="metricDmrType">
     <xs:attribute name="name"      type="xs:string" use="required"/>
-    <xs:attribute name="resource"  type="xs:string" use="required"/>
+    <xs:attribute name="path"      type="xs:string" use="required"/>
     <xs:attribute name="attribute" type="xs:string" use="required"/>
+    <xs:attribute name="enabled"   type="xs:boolean"/>
     <xs:attribute name="interval"  type="xs:int"/>
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
   </xs:complexType>
@@ -116,11 +133,12 @@
 
   <xs:complexType name="availDmrType">
     <xs:attribute name="name"      type="xs:string" use="required"/>
-    <xs:attribute name="resource"  type="xs:string" use="required"/>
-    <xs:attribute name="attribute" type="xs:string" use="optional"/> <!-- if not specified, existence of resource is used for availability status -->
-    <xs:attribute name="upRegex"   type="xs:string"/>
+    <xs:attribute name="path"      type="xs:string" use="required"/>
+    <xs:attribute name="attribute" type="xs:string" use="optional"/> <!-- if not specified, existence of resource at path is used for availability status -->
+    <xs:attribute name="enabled" type="xs:boolean"/>
     <xs:attribute name="interval"  type="xs:int"/>
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
+    <xs:attribute name="upRegex"   type="xs:string"/>
   </xs:complexType>
 
   <xs:simpleType name="timeUnitsType">

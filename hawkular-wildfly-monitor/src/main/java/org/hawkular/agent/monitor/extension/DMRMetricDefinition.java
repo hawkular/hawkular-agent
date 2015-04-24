@@ -37,7 +37,7 @@ public class DMRMetricDefinition extends PersistentResourceDefinition {
 
     static final String METRIC = "metric-dmr";
 
-    static final SimpleAttributeDefinition RESOURCE = new SimpleAttributeDefinitionBuilder("resource",
+    static final SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
             ModelType.STRING)
             .setAllowNull(false)
             .setAllowExpression(true)
@@ -70,7 +70,7 @@ public class DMRMetricDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            RESOURCE,
+            PATH,
             ATTRIBUTE,
             INTERVAL,
             TIME_UNITS

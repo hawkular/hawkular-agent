@@ -144,7 +144,7 @@ public class MonitorService implements Service<MonitorService> {
                 if (metricSet.enabled) {
                     for (MetricDMR metric : metricSet.metricDmrMap.values()) {
                         Interval interval = new Interval(metric.interval, metric.timeUnits);
-                        DMRPropertyReference ref = new DMRPropertyReference(metric.resource, metric.attribute,
+                        DMRPropertyReference ref = new DMRPropertyReference(metric.path, metric.attribute,
                                 interval);
                         schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
                     }
@@ -160,7 +160,7 @@ public class MonitorService implements Service<MonitorService> {
                 if (availSet.enabled) {
                     for (AvailDMR avail : availSet.availDmrMap.values()) {
                         Interval interval = new Interval(avail.interval, avail.timeUnits);
-                        AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.resource,
+                        AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.path,
                                 avail.attribute, interval, avail.upRegex);
                         schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
                     }

@@ -92,7 +92,7 @@ public class MonitorServiceConfiguration {
                         metricSet.metricDmrMap.put(metricName, metric);
                         metric.name = metricName;
                         ModelNode metricValueNode = metricProperty.getValue();
-                        metric.resource = getString(metricValueNode, context, DMRMetricDefinition.RESOURCE);
+                        metric.path = getString(metricValueNode, context, DMRMetricDefinition.PATH);
                         metric.attribute = getString(metricValueNode, context, DMRMetricDefinition.ATTRIBUTE);
                         metric.interval = getInt(metricValueNode, context, DMRMetricDefinition.INTERVAL);
                         String metricTimeUnitsStr = getString(metricValueNode, context, DMRMetricDefinition.TIME_UNITS);
@@ -131,7 +131,7 @@ public class MonitorServiceConfiguration {
                         availSet.availDmrMap.put(availName, avail);
                         avail.name = availName;
                         ModelNode availValueNode = availProperty.getValue();
-                        avail.resource = getString(availValueNode, context, DMRAvailDefinition.RESOURCE);
+                        avail.path = getString(availValueNode, context, DMRAvailDefinition.PATH);
                         avail.attribute = getString(availValueNode, context, DMRAvailDefinition.ATTRIBUTE);
                         avail.interval = getInt(availValueNode, context, DMRAvailDefinition.INTERVAL);
                         String availTimeUnitsStr = getString(availValueNode, context, DMRAvailDefinition.TIME_UNITS);
@@ -348,7 +348,7 @@ public class MonitorServiceConfiguration {
 
     public class MetricDMR {
         public String name;
-        public String resource;
+        public String path;
         public String attribute;
         public int interval;
         public TimeUnit timeUnits;
@@ -362,7 +362,7 @@ public class MonitorServiceConfiguration {
 
     public class AvailDMR {
         public String name;
-        public String resource;
+        public String path;
         public String attribute;
         public int interval;
         public TimeUnit timeUnits;
