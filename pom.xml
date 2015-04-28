@@ -28,7 +28,7 @@
 
   <groupId>org.hawkular.agent</groupId>
   <artifactId>hawkular-agent-parent</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Hawkular Agent Parent</name>
   <inceptionYear>2015</inceptionYear>
@@ -40,7 +40,7 @@
 
   <properties>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
-    <version.org.hawkular.bus>1.0.0-SNAPSHOT</version.org.hawkular.bus>
+    <version.org.hawkular.bus>0.0.1-SNAPSHOT</version.org.hawkular.bus>
     <version.org.hawkular.metrics>0.3.0-SNAPSHOT</version.org.hawkular.metrics>
     <version.org.jboss.msc>1.2.2.Final</version.org.jboss.msc>
     <version.org.jboss.jboss-dmr>1.2.0.Final</version.org.jboss.jboss-dmr>
