@@ -70,7 +70,7 @@ public class ResourceTypeManager {
         // flattened list of types, all sets are collapsed into one
         Map<String, ResourceTypeDMR> allResourceTypes = new HashMap<>();
 
-        // add all resource types as vertices in the graph 
+        // add all resource types as vertices in the graph
         for (ResourceTypeSetDMR rTypeSet : resourceTypeSetDMRMap.values()) {
             for (ResourceTypeDMR rType : rTypeSet.resourceTypeDmrMap.values()) {
                 if (null != allResourceTypes.put(rType.name, rType)) {
@@ -84,7 +84,7 @@ public class ResourceTypeManager {
             }
         }
 
-        // now add the parent hierarchy to the graph 
+        // now add the parent hierarchy to the graph
         for (ResourceTypeSetDMR rTypeSet : resourceTypeSetDMRMap.values()) {
             for (ResourceTypeDMR rType : rTypeSet.resourceTypeDmrMap.values()) {
                 for (String parent : rType.parents) {

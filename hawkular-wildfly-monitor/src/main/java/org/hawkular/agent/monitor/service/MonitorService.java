@@ -218,7 +218,8 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
-    private void addDMRResources(ManagedServer managedServer, DMREndpoint dmrEndpoint, List<String> dmrResourceTypeSets) {
+    private void addDMRResources(ManagedServer managedServer, DMREndpoint dmrEndpoint,
+            List<String> dmrResourceTypeSets) {
         for (String resourceTypeSetName : dmrResourceTypeSets) {
             ResourceTypeSetDMR resourceTypeSet = this.configuration.resourceTypeSetDmrMap.get(resourceTypeSetName);
             if (resourceTypeSet != null) {
