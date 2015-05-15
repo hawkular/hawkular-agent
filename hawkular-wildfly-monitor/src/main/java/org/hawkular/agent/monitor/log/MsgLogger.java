@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.log;
 
+import java.util.List;
+
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 import org.jboss.logging.annotations.Cause;
@@ -94,12 +96,12 @@ public interface MsgLogger {
     void warnCommaInName(String name);
 
     @LogMessage(level = Level.WARN)
-    @Message(id = 10016, value = "The managed resource [%s] wants to use an unknown metric set [%s]")
-    void warnMetricSetDoesNotExist(String resourceName, String metricSetName);
+    @Message(id = 10016, value = "The resource type [%s] wants to use an unknown metric set [%s]")
+    void warnMetricSetDoesNotExist(String resourceTypeName, String metricSetName);
 
     @LogMessage(level = Level.WARN)
-    @Message(id = 10017, value = "The managed resource [%s] wants to use an unknown avail set [%s]")
-    void warnAvailSetDoesNotExist(String resourceName, String availSetName);
+    @Message(id = 10017, value = "The resource type [%s] wants to use an unknown avail set [%s]")
+    void warnAvailSetDoesNotExist(String resourceTypeName, String availSetName);
 
     @LogMessage(level = Level.WARN)
     @Message(id = 10018, value = "Cannot obtain server identifiers for [%s]: %s")
@@ -108,4 +110,17 @@ public interface MsgLogger {
     @LogMessage(level = Level.INFO)
     @Message(id = 10019, value = "Managed server [%s] is disabled. It will not be monitored.")
     void infoManagedServerDisabled(String name);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10020, value = "The managed server [%s] wants to use an unknown resource type set [%s]")
+    void warnResourceTypeSetDoesNotExist(String managedServerName, String resourceTypeSetName);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10021, value = "There are no enabled resource type sets")
+    void infoNoEnabledResourceTypesConfigured();
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10022, value = "Resource type [%s] is disabled - all if its child types will also be disabled: %s")
+    void infoDisablingResourceTypes(Object disabledType, List<?> toBeDisabled);
+
 }

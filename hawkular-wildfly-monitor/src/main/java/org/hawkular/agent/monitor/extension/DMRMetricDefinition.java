@@ -69,11 +69,20 @@ public class DMRMetricDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    static final SimpleAttributeDefinition METRIC_UNITS = new SimpleAttributeDefinitionBuilder("metricUnits",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setValidator(MeasurementUnitValidator.ANY_OPTIONAL)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     static final AttributeDefinition[] ATTRIBUTES = {
             PATH,
             ATTRIBUTE,
             INTERVAL,
-            TIME_UNITS
+            TIME_UNITS,
+            METRIC_UNITS
     };
 
     private DMRMetricDefinition() {

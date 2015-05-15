@@ -39,6 +39,9 @@
     <!-- used to replace the variables in module.xml -->
     <moduleName>org.hawkular.agent.monitor</moduleName>
     <moduleDir>org/hawkular/agent/monitor</moduleDir>
+
+    <version.org.hawkular.inventory>0.0.1-SNAPSHOT</version.org.hawkular.inventory>
+    <version.org.jgrapht>0.9.1</version.org.jgrapht>
   </properties>
 
   <dependencies>
@@ -76,6 +79,18 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>inventory-api</artifactId>
+      <version>${version.org.hawkular.inventory}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>inventory-bus-api</artifactId>
+      <version>${version.org.hawkular.inventory}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.metrics</groupId>
       <artifactId>clients-common</artifactId>
     </dependency>
@@ -84,6 +99,12 @@
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jgrapht</groupId>
+      <artifactId>jgrapht-core</artifactId>
+      <version>${version.org.jgrapht}</version>
     </dependency>
 
     <dependency>

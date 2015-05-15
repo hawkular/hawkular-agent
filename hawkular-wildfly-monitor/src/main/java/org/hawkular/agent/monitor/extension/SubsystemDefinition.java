@@ -126,6 +126,7 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
                 StorageDefinition.INSTANCE,
                 DiagnosticsDefinition.INSTANCE,
                 ManagedServersDefinition.INSTANCE,
+                DMRResourceTypeSetDefinition.INSTANCE,
                 DMRMetricSetDefinition.INSTANCE,
                 DMRAvailSetDefinition.INSTANCE);
     }

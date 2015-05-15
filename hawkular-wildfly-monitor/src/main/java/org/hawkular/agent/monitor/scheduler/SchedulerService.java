@@ -45,6 +45,7 @@ import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
+import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.HawkularMetricsStorageAdapter;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
@@ -78,6 +79,7 @@ public class SchedulerService {
             SchedulerConfiguration configuration,
             ServerIdentifiers selfId,
             MetricStorageProxy metricStorageProxy,
+            AvailStorageProxy availStorageProxy,
             ModelControllerClientFactory localDMRClientFactory) {
 
         this.schedulerConfig = configuration;
@@ -147,8 +149,9 @@ public class SchedulerService {
         this.availScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Scheduler-Avail",
                 configuration.getAvailSchedulerThreads());
 
-        // provide our storage adapater to the proxy - allows external apps to use it to store its own metrics
+        // provide our storage adapater to the proxies - allows external apps to use them to store its own data
         metricStorageProxy.setStorageAdapter(storageAdapter);
+        availStorageProxy.setStorageAdapter(storageAdapter);
     }
 
     public SchedulerConfiguration getSchedulerConfiguration() {

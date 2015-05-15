@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
@@ -28,11 +29,11 @@ import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelType;
 
-public class LocalDMRDefinition extends PersistentResourceDefinition {
+public class DMRResourceTypeSetDefinition extends PersistentResourceDefinition {
 
-    public static final LocalDMRDefinition INSTANCE = new LocalDMRDefinition();
+    public static final DMRResourceTypeSetDefinition INSTANCE = new DMRResourceTypeSetDefinition();
 
-    static final String LOCAL_DMR = "local-dmr";
+    static final String RESOURCE_TYPE_SET = "resource-type-set-dmr";
 
     static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
             ModelType.BOOLEAN)
@@ -42,24 +43,15 @@ public class LocalDMRDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder(
-            "resourceTypeSets",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
     static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED, RESOURCE_TYPE_SETS
+            ENABLED
     };
 
-    private LocalDMRDefinition() {
-        super(PathElement.pathElement(LOCAL_DMR, "_self"),
-                SubsystemExtension.getResourceDescriptionResolver(ManagedServersDefinition.MANAGED_SERVERS,
-                        LOCAL_DMR),
-                LocalDMRAdd.INSTANCE,
-                LocalDMRRemove.INSTANCE,
+    private DMRResourceTypeSetDefinition() {
+        super(PathElement.pathElement(RESOURCE_TYPE_SET),
+                SubsystemExtension.getResourceDescriptionResolver(RESOURCE_TYPE_SET),
+                DMRResourceTypeSetAdd.INSTANCE,
+                DMRResourceTypeSetRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
@@ -67,5 +59,10 @@ public class LocalDMRDefinition extends PersistentResourceDefinition {
     @Override
     public Collection<AttributeDefinition> getAttributes() {
         return Arrays.asList(ATTRIBUTES);
+    }
+
+    @Override
+    protected List<? extends PersistentResourceDefinition> getChildren() {
+        return Arrays.asList(DMRResourceTypeDefinition.INSTANCE);
     }
 }

@@ -28,22 +28,34 @@ import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelType;
 
-public class LocalDMRDefinition extends PersistentResourceDefinition {
+public class DMRResourceTypeDefinition extends PersistentResourceDefinition {
 
-    public static final LocalDMRDefinition INSTANCE = new LocalDMRDefinition();
+    public static final DMRResourceTypeDefinition INSTANCE = new DMRResourceTypeDefinition();
 
-    static final String LOCAL_DMR = "local-dmr";
+    static final String RESOURCE_TYPE = "resource-type-dmr";
 
-    static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
-            ModelType.BOOLEAN)
+    static final SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
+            ModelType.STRING)
             .setAllowNull(false)
-            //WHY DOES THIS CAUSE TEST TO FAIL? .setDefaultValue(new ModelNode(true))
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder(
-            "resourceTypeSets",
+    static final SimpleAttributeDefinition PARENTS = new SimpleAttributeDefinitionBuilder("parents",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    static final SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder("metricSets",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    static final SimpleAttributeDefinition AVAIL_SETS = new SimpleAttributeDefinitionBuilder("availSets",
             ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
@@ -51,15 +63,18 @@ public class LocalDMRDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED, RESOURCE_TYPE_SETS
+            PATH,
+            PARENTS,
+            METRIC_SETS,
+            AVAIL_SETS
     };
 
-    private LocalDMRDefinition() {
-        super(PathElement.pathElement(LOCAL_DMR, "_self"),
-                SubsystemExtension.getResourceDescriptionResolver(ManagedServersDefinition.MANAGED_SERVERS,
-                        LOCAL_DMR),
-                LocalDMRAdd.INSTANCE,
-                LocalDMRRemove.INSTANCE,
+    private DMRResourceTypeDefinition() {
+        super(PathElement.pathElement(RESOURCE_TYPE),
+                SubsystemExtension.getResourceDescriptionResolver(DMRResourceTypeSetDefinition.RESOURCE_TYPE_SET,
+                        RESOURCE_TYPE),
+                DMRResourceTypeAdd.INSTANCE,
+                DMRResourceTypeRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }

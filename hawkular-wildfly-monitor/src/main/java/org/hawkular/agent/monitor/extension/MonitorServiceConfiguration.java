@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +30,7 @@ import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.SimpleAttributeDefinition;
+import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 
@@ -46,6 +48,7 @@ public class MonitorServiceConfiguration {
     public Diagnostics diagnostics = new Diagnostics();
     public Map<String, MetricSetDMR> metricSetDmrMap = new HashMap<>();
     public Map<String, AvailSetDMR> availSetDmrMap = new HashMap<>();
+    public Map<String, ResourceTypeSetDMR> resourceTypeSetDmrMap = new HashMap<>();
     public Map<String, ManagedServer> managedServersMap = new HashMap<>();
 
     public MonitorServiceConfiguration(ModelNode config, OperationContext context) throws OperationFailedException {
@@ -64,6 +67,12 @@ public class MonitorServiceConfiguration {
         }
 
         // make sure to call this AFTER the metric sets and avail sets have been determined
+        boolean hasEnabledResourceTypes = determineResourceTypeSetDmr(config, context);
+        if (!hasEnabledResourceTypes) {
+            MsgLogger.LOG.infoNoEnabledResourceTypesConfigured();
+        }
+
+        // make sure to call this AFTER the resource type sets have been determined
         determineManagedServers(config, context);
 
         return;
@@ -94,6 +103,12 @@ public class MonitorServiceConfiguration {
                         ModelNode metricValueNode = metricProperty.getValue();
                         metric.path = getString(metricValueNode, context, DMRMetricDefinition.PATH);
                         metric.attribute = getString(metricValueNode, context, DMRMetricDefinition.ATTRIBUTE);
+                        String metricUnitsStr = getString(metricValueNode, context, DMRMetricDefinition.METRIC_UNITS);
+                        if (metricUnitsStr == null) {
+                            metric.metricUnits = MeasurementUnit.NONE;
+                        } else {
+                            metric.metricUnits = MeasurementUnit.valueOf(metricUnitsStr.toUpperCase(Locale.ENGLISH));
+                        }
                         metric.interval = getInt(metricValueNode, context, DMRMetricDefinition.INTERVAL);
                         String metricTimeUnitsStr = getString(metricValueNode, context, DMRMetricDefinition.TIME_UNITS);
                         metric.timeUnits = TimeUnit.valueOf(metricTimeUnitsStr.toUpperCase());
@@ -208,6 +223,69 @@ public class MonitorServiceConfiguration {
         numDmrSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_DMR_SCHEDULER_THREADS);
     }
 
+    private boolean determineResourceTypeSetDmr(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+        boolean hasEnabledResourceTypes = false;
+
+        if (config.hasDefined(DMRResourceTypeSetDefinition.RESOURCE_TYPE_SET)) {
+            List<Property> resourceTypeSetsList = config.get(DMRResourceTypeSetDefinition.RESOURCE_TYPE_SET)
+                    .asPropertyList();
+            for (Property resourceTypeSetProperty : resourceTypeSetsList) {
+                ResourceTypeSetDMR resourceTypeSet = new ResourceTypeSetDMR();
+                String resourceTypeSetName = resourceTypeSetProperty.getName();
+                if (resourceTypeSetName.indexOf(',') > -1) {
+                    MsgLogger.LOG.warnCommaInName(resourceTypeSetName);
+                }
+                resourceTypeSetDmrMap.put(resourceTypeSetName, resourceTypeSet);
+                resourceTypeSet.name = resourceTypeSetName;
+                ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
+                resourceTypeSet.enabled = getBoolean(resourceTypeSetValueNode, context,
+                        DMRResourceTypeSetDefinition.ENABLED);
+                if (resourceTypeSetValueNode.hasDefined(DMRResourceTypeDefinition.RESOURCE_TYPE)) {
+                    List<Property> resourceTypesList = resourceTypeSetValueNode.get(
+                            DMRResourceTypeDefinition.RESOURCE_TYPE).asPropertyList();
+                    for (Property resourceTypeProperty : resourceTypesList) {
+                        ModelNode resourceTypeValueNode = resourceTypeProperty.getValue();
+
+                        ResourceTypeDMR resourceType = new ResourceTypeDMR();
+                        String resourceTypeName = resourceTypeProperty.getName();
+                        resourceTypeSet.resourceTypeDmrMap.put(resourceTypeName, resourceType);
+                        resourceType.name = resourceTypeName;
+                        resourceType.path = getString(resourceTypeValueNode, context, DMRResourceTypeDefinition.PATH);
+                        resourceType.parents = getListFromString(resourceTypeValueNode, context,
+                                DMRResourceTypeDefinition.PARENTS);
+
+                        List<String> metricSets = getListFromString(resourceTypeValueNode, context,
+                                DMRResourceTypeDefinition.METRIC_SETS);
+                        List<String> availSets = getListFromString(resourceTypeValueNode, context,
+                                DMRResourceTypeDefinition.AVAIL_SETS);
+
+                        // verify that the metric sets and avail sets exist
+                        for (String metricSetName : metricSets) {
+                            if (!metricSetDmrMap.containsKey(metricSetName)) {
+                                MsgLogger.LOG.warnMetricSetDoesNotExist(resourceTypeName, metricSetName);
+                            }
+                        }
+                        for (String availSetName : availSets) {
+                            if (!availSetDmrMap.containsKey(availSetName)) {
+                                MsgLogger.LOG.warnAvailSetDoesNotExist(resourceTypeName, availSetName);
+                            }
+                        }
+
+                        resourceType.metricSets = metricSets;
+                        resourceType.availSets = availSets;
+                    }
+
+                    if (resourceTypeSet.enabled && !resourceTypeSet.resourceTypeDmrMap.isEmpty()) {
+                        hasEnabledResourceTypes = true;
+                    }
+                }
+            }
+        }
+
+        return hasEnabledResourceTypes;
+    }
+
     private void determineManagedServers(ModelNode config, OperationContext context) throws OperationFailedException {
         if (config.hasDefined(ManagedServersDefinition.MANAGED_SERVERS)) {
             List<Property> asPropertyList = config.get(ManagedServersDefinition.MANAGED_SERVERS).asPropertyList();
@@ -229,20 +307,13 @@ public class MonitorServiceConfiguration {
                     int port = getInt(remoteDMRValueNode, context, RemoteDMRDefinition.PORT);
                     String username = getString(remoteDMRValueNode, context, RemoteDMRDefinition.USERNAME);
                     String password = getString(remoteDMRValueNode, context, RemoteDMRDefinition.PASSWORD);
-                    List<String> metricSets = getListFromString(remoteDMRValueNode, context,
-                            RemoteDMRDefinition.METRIC_SETS);
-                    List<String> availSets = getListFromString(remoteDMRValueNode, context,
-                            RemoteDMRDefinition.AVAIL_SETS);
+                    List<String> resourceTypeSets = getListFromString(remoteDMRValueNode, context,
+                            RemoteDMRDefinition.RESOURCE_TYPE_SETS);
 
-                    // verify that the metric sets and avail sets exist
-                    for (String metricSetName : metricSets) {
-                        if (!metricSetDmrMap.containsKey(metricSetName)) {
-                            MsgLogger.LOG.warnMetricSetDoesNotExist(name, metricSetName);
-                        }
-                    }
-                    for (String availSetName : availSets) {
-                        if (!availSetDmrMap.containsKey(availSetName)) {
-                            MsgLogger.LOG.warnAvailSetDoesNotExist(name, availSetName);
+                    // verify that the resource type sets exist
+                    for (String resourceTypeSetName : resourceTypeSets) {
+                        if (!resourceTypeSetDmrMap.containsKey(resourceTypeSetName)) {
+                            MsgLogger.LOG.warnResourceTypeSetDoesNotExist(name, resourceTypeSetName);
                         }
                     }
 
@@ -253,8 +324,7 @@ public class MonitorServiceConfiguration {
                     res.port = port;
                     res.username = username;
                     res.password = password;
-                    res.metricSets.addAll(metricSets);
-                    res.availSets.addAll(availSets);
+                    res.resourceTypeSets.addAll(resourceTypeSets);
                     managedServersMap.put(name, res);
                 }
             }
@@ -270,28 +340,20 @@ public class MonitorServiceConfiguration {
                 String name = localDMRProperty.getName();
                 ModelNode localDMRValueNode = localDMRProperty.getValue();
                 boolean enabled = getBoolean(localDMRValueNode, context, LocalDMRDefinition.ENABLED);
-                List<String> metricSets = getListFromString(localDMRValueNode, context,
-                        LocalDMRDefinition.METRIC_SETS);
-                List<String> availSets = getListFromString(localDMRValueNode, context,
-                        LocalDMRDefinition.AVAIL_SETS);
+                List<String> resourceTypeSets = getListFromString(localDMRValueNode, context,
+                        LocalDMRDefinition.RESOURCE_TYPE_SETS);
 
                 // verify that the metric sets and avail sets exist
-                for (String metricSetName : metricSets) {
-                    if (!metricSetDmrMap.containsKey(metricSetName)) {
-                        MsgLogger.LOG.warnMetricSetDoesNotExist(name, metricSetName);
-                    }
-                }
-                for (String availSetName : availSets) {
-                    if (!availSetDmrMap.containsKey(availSetName)) {
-                        MsgLogger.LOG.warnAvailSetDoesNotExist(name, availSetName);
+                for (String resourceTypeSetName : resourceTypeSets) {
+                    if (!resourceTypeSetDmrMap.containsKey(resourceTypeSetName)) {
+                        MsgLogger.LOG.warnResourceTypeSetDoesNotExist(name, resourceTypeSetName);
                     }
                 }
 
                 LocalDMRManagedServer res = new LocalDMRManagedServer();
                 res.name = name;
                 res.enabled = enabled;
-                res.metricSets.addAll(metricSets);
-                res.availSets.addAll(availSets);
+                res.resourceTypeSets.addAll(resourceTypeSets);
                 managedServersMap.put(name, res);
             }
 
@@ -318,8 +380,7 @@ public class MonitorServiceConfiguration {
     }
 
     private List<String> getListFromString(ModelNode modelNode, OperationContext context,
-            SimpleAttributeDefinition attrib)
-            throws OperationFailedException {
+            SimpleAttributeDefinition attrib) throws OperationFailedException {
         ModelNode value = attrib.resolveModelAttribute(context, modelNode);
         if (value.isDefined()) {
             String commaSeparatedList = value.asString();
@@ -330,7 +391,7 @@ public class MonitorServiceConfiguration {
         }
     }
 
-    public class StorageAdapter {
+    public static class StorageAdapter {
         public SchedulerConfiguration.StorageReportTo type;
         public String url;
         public String context;
@@ -339,28 +400,29 @@ public class MonitorServiceConfiguration {
         public String password;
     }
 
-    public class Diagnostics {
+    public static class Diagnostics {
         public SchedulerConfiguration.DiagnosticsReportTo reportTo;
         public boolean enabled;
         public int interval;
         public TimeUnit timeUnits;
     }
 
-    public class MetricDMR {
+    public static class MetricDMR {
         public String name;
         public String path;
         public String attribute;
         public int interval;
         public TimeUnit timeUnits;
+        public MeasurementUnit metricUnits;
     }
 
-    public class MetricSetDMR {
+    public static class MetricSetDMR {
         public String name;
         public boolean enabled;
         public Map<String, MetricDMR> metricDmrMap = new HashMap<>();
     }
 
-    public class AvailDMR {
+    public static class AvailDMR {
         public String name;
         public String path;
         public String attribute;
@@ -369,26 +431,80 @@ public class MonitorServiceConfiguration {
         public String upRegex;
     }
 
-    public class AvailSetDMR {
+    public static class AvailSetDMR {
         public String name;
         public boolean enabled;
         public Map<String, AvailDMR> availDmrMap = new HashMap<>();
     }
 
-    public class ManagedServer {
+    public static class ResourceTypeDMR extends NamedObject {
         public String name;
-        public boolean enabled;
+        public String path;
+        public List<String> parents;
         public List<String> metricSets = new ArrayList<>();
         public List<String> availSets = new ArrayList<>();
+
+        @Override
+        public String getName() {
+            return name;
+        }
     }
 
-    public class LocalDMRManagedServer extends ManagedServer {
+    public static class ResourceTypeSetDMR {
+        public String name;
+        public boolean enabled;
+        public Map<String, ResourceTypeDMR> resourceTypeDmrMap = new HashMap<>();
     }
 
-    public class RemoteDMRManagedServer extends ManagedServer {
+    public static class ManagedServer {
+        public String name;
+        public boolean enabled;
+        public List<String> resourceTypeSets = new ArrayList<>();
+    }
+
+    public static class LocalDMRManagedServer extends ManagedServer {
+    }
+
+    public static class RemoteDMRManagedServer extends ManagedServer {
         public String host;
         public int port;
         public String username;
         public String password;
+    }
+
+    public abstract static class NamedObject {
+        public abstract String getName();
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+
+            if (obj == null) {
+                return false;
+            }
+
+            if (!(obj instanceof NamedObject)) {
+                return false;
+            }
+            String thisName = getName();
+            String thatName = ((NamedObject) obj).getName();
+            if (thisName == null) {
+                return thatName == null;
+            }
+            return thisName.equals(thatName);
+        }
+
+        @Override
+        public int hashCode() {
+            String n = getName();
+            return (n != null) ? n.hashCode() : 0;
+        }
+
+        @Override
+        public String toString() {
+            return getName();
+        }
     }
 }

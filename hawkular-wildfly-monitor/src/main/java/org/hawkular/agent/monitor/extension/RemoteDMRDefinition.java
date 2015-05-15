@@ -70,14 +70,8 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder("metricSets",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition AVAIL_SETS = new SimpleAttributeDefinitionBuilder("availSets",
+    static final SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder(
+            "resourceTypeSets",
             ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
@@ -85,7 +79,7 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED, HOST, PORT, USERNAME, PASSWORD, METRIC_SETS, AVAIL_SETS
+            ENABLED, HOST, PORT, USERNAME, PASSWORD, RESOURCE_TYPE_SETS
     };
 
     private RemoteDMRDefinition() {
