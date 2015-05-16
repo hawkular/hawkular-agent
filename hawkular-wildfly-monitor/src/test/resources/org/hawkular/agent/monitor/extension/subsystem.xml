@@ -52,6 +52,7 @@
 
   <resource-type-set-dmr name="Main" enabled="true">
     <resource-type-dmr name="WildFly Server"
+                       resourceNameTemplate="WildFly Server"
                        path="/"
                        metricSets="WildFly Memory Metrics"
                        availSets="Server Availability" />

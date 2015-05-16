@@ -41,6 +41,13 @@ public class DMRResourceTypeDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    static final SimpleAttributeDefinition RESOURCE_NAME_TEMPLATE = new SimpleAttributeDefinitionBuilder(
+            "resourceNameTemplate", ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     static final SimpleAttributeDefinition PARENTS = new SimpleAttributeDefinitionBuilder("parents",
             ModelType.STRING)
             .setAllowNull(true)
@@ -63,6 +70,7 @@ public class DMRResourceTypeDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
+            RESOURCE_NAME_TEMPLATE,
             PATH,
             PARENTS,
             METRIC_SETS,

@@ -17,30 +17,59 @@
 package org.hawkular.agent.monitor.inventory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ResourceTypeDMR;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ResourceTypeSetDMR;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
-public class ResourceTypeManager {
+public class ResourceTypeManager<T extends ResourceType, S extends ResourceTypeSet<T>> {
 
-    private final Map<String, ResourceTypeSetDMR> resourceTypeSetDMRMap;
-    private final DirectedGraph<ResourceTypeDMR, DefaultEdge> resourceTypesGraphDMR;
+    private final Map<Name, S> resourceTypeSetMap;
+    private final DirectedGraph<T, DefaultEdge> resourceTypesGraph;
 
-    public ResourceTypeManager(Map<String, ResourceTypeSetDMR> resourceTypeSetDMRMap) {
-        this.resourceTypeSetDMRMap = resourceTypeSetDMRMap;
-        this.resourceTypesGraphDMR = new SimpleDirectedGraph<ResourceTypeDMR, DefaultEdge>(DefaultEdge.class);
+    /**
+     * Adds the given types to the manager, building a graph to represent the type hierarchy.
+     *
+     * @param resourceTypeSetMap a full set of types to use
+     * @throws IllegalStateException if types are missing (e.g. a type needs a parent but the parent is missing)
+     */
+    public ResourceTypeManager(Map<Name, S> resourceTypeSetMap) throws IllegalStateException {
+        this(resourceTypeSetMap, null);
+    }
 
-        prepareResourceTypesDMR();
+    /**
+     * Adds the given types to the manager, building a graph to represent the type hierarchy.
+     *
+     * @param resourceTypeSetMap a full set of types
+     * @param setsToUse optional set of type names that the manager to care about - it will ignore others it finds.
+     *                  If null, then the full set is used (by "full set" it means the resourceTypeSetMap param).
+     * @throws IllegalStateException if types are missing (e.g. a type needs a parent but the parent is missing)
+     */
+    public ResourceTypeManager(Map<Name, S> resourceTypeSetMap, Collection<Name> setsToUse)
+            throws IllegalStateException {
+        // If setsToUse is null, that means we need to use all the ones in the incoming map.
+        // If setsToUse is not null, just use those named sets and ignore the others.
+        if (setsToUse == null) {
+            this.resourceTypeSetMap = new HashMap<>(resourceTypeSetMap);
+        } else {
+            this.resourceTypeSetMap = new HashMap<>(setsToUse.size());
+            for (Name setToUse : setsToUse) {
+                if (resourceTypeSetMap.containsKey(setToUse)) {
+                    this.resourceTypeSetMap.put(setToUse, resourceTypeSetMap.get(setToUse));
+                }
+            }
+        }
+
+        this.resourceTypesGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
+        prepareGraph();
     }
 
     /**
@@ -49,70 +78,80 @@ public class ResourceTypeManager {
      *
      * @return resource type hierarchy as a graph
      */
-    public DirectedGraph<ResourceTypeDMR, DefaultEdge> getResourceTypesGraphDMR() {
-        return resourceTypesGraphDMR;
+    public DirectedGraph<T, DefaultEdge> getResourceTypesGraph() {
+        return resourceTypesGraph;
     }
 
-    public Set<ResourceTypeDMR> getRootResourceTypesDMR() {
-        Set<ResourceTypeDMR> roots = new HashSet<>();
-        Set<ResourceTypeDMR> allTypes = resourceTypesGraphDMR.vertexSet();
-        for (ResourceTypeDMR type : allTypes) {
-            if (resourceTypesGraphDMR.outgoingEdgesOf(type).isEmpty()) {
+    /**
+     * Returns resource types that are at the top of the hierarchy (that is, they do not have any parent types).
+     *
+     * @return root types
+     */
+    public Set<T> getRootResourceTypes() {
+        Set<T> roots = new HashSet<>();
+        Set<T> allTypes = resourceTypesGraph.vertexSet();
+        for (T type : allTypes) {
+            if (resourceTypesGraph.outgoingEdgesOf(type).isEmpty()) {
                 roots.add(type);
             }
         }
         return roots;
     }
 
-    private void prepareResourceTypesDMR() {
-        List<ResourceTypeDMR> disabledTypes = new ArrayList<>();
+    /**
+     * Prepares the graph.
+     *
+     * @throws IllegalStateException if there are missing types
+     */
+    private void prepareGraph() throws IllegalStateException {
+        List<T> disabledTypes = new ArrayList<>();
 
         // flattened list of types, all sets are collapsed into one
-        Map<String, ResourceTypeDMR> allResourceTypes = new HashMap<>();
+        Map<Name, T> allResourceTypes = new HashMap<>();
 
         // add all resource types as vertices in the graph
-        for (ResourceTypeSetDMR rTypeSet : resourceTypeSetDMRMap.values()) {
-            for (ResourceTypeDMR rType : rTypeSet.resourceTypeDmrMap.values()) {
-                if (null != allResourceTypes.put(rType.name, rType)) {
-                    throw new IllegalStateException("Multiple resource types have the same name: " + rType.name);
+        for (S rTypeSet : resourceTypeSetMap.values()) {
+            for (T rType : rTypeSet.getResourceTypeMap().values()) {
+                if (null != allResourceTypes.put(rType.getName(), rType)) {
+                    throw new IllegalStateException("Multiple resource types have the same name: " + rType.getName());
                 }
-                resourceTypesGraphDMR.addVertex(rType);
+                resourceTypesGraph.addVertex(rType);
 
-                if (!rTypeSet.enabled) {
+                if (!rTypeSet.isEnabled()) {
                     disabledTypes.add(rType);
                 }
             }
         }
 
         // now add the parent hierarchy to the graph
-        for (ResourceTypeSetDMR rTypeSet : resourceTypeSetDMRMap.values()) {
-            for (ResourceTypeDMR rType : rTypeSet.resourceTypeDmrMap.values()) {
-                for (String parent : rType.parents) {
-                    ResourceTypeDMR parentResourceType = allResourceTypes.get(parent);
+        for (S rTypeSet : resourceTypeSetMap.values()) {
+            for (T rType : rTypeSet.getResourceTypeMap().values()) {
+                for (Name parent : rType.getParents()) {
+                    T parentResourceType = allResourceTypes.get(parent);
                     if (parentResourceType == null) {
-                        throw new IllegalStateException("Resource type [" + rType.name
+                        throw new IllegalStateException("Resource type [" + rType.getName()
                                 + "] has an unknown parent [" + parent + "]");
                     }
-                    resourceTypesGraphDMR.addEdge(rType, parentResourceType);
+                    resourceTypesGraph.addEdge(rType, parentResourceType);
                 }
             }
         }
 
         // now strip all disabled types - if a type has an ancestor that is disabled, it too will be disabled
-        List<ResourceTypeDMR> toBeDisabled = new ArrayList<>();
-        for (ResourceTypeDMR disabledType : disabledTypes) {
+        List<T> toBeDisabled = new ArrayList<>();
+        for (T disabledType : disabledTypes) {
             toBeDisabled.add(disabledType);
-            getDeepChildrenListDMR(disabledType, toBeDisabled);
+            getDeepChildrenList(disabledType, toBeDisabled);
             MsgLogger.LOG.infoDisablingResourceTypes(disabledType, toBeDisabled);
         }
-        resourceTypesGraphDMR.removeAllVertices(toBeDisabled);
+        resourceTypesGraph.removeAllVertices(toBeDisabled);
     }
 
-    private void getDeepChildrenListDMR(ResourceTypeDMR resourceTypeDMR, List<ResourceTypeDMR> children) {
-        List<ResourceTypeDMR> directChildren = Graphs.predecessorListOf(resourceTypesGraphDMR, resourceTypeDMR);
+    private void getDeepChildrenList(T resourceType, List<T> children) {
+        List<T> directChildren = Graphs.predecessorListOf(resourceTypesGraph, resourceType);
         children.addAll(directChildren);
-        for (ResourceTypeDMR child : directChildren) {
-            getDeepChildrenListDMR(child, children);
+        for (T child : directChildren) {
+            getDeepChildrenList(child, children);
         }
     }
 }

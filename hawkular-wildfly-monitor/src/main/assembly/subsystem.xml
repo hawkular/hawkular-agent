@@ -425,6 +425,7 @@
 
   <resource-type-set-dmr name="Main" enabled="true">
     <resource-type-dmr name="WildFly Server"
+                       resourceNameTemplate="WildFly Server"
                        path="/"
                        metricSets="WildFly Memory Metrics,WildFly Threading Metrics"
                        availSets="Server Availability" />
@@ -432,56 +433,65 @@
 
   <resource-type-set-dmr name="Hawkular" enabled="true">
     <resource-type-dmr name="Bus Broker"
+                       resourceNameTemplate="Bus Broker"
                        path="/subsystem=hawkular-bus-broker"
                        parents="WildFly Server"/>
   </resource-type-set-dmr>
 
   <resource-type-set-dmr name="Deployment" enabled="true">
-    <resource-type-dmr name="Deployment [%2]"
+    <resource-type-dmr name="Deployment"
+                       resourceNameTemplate="Deployment [%2]"
                        path="/deployment=*"
                        parents="WildFly Server"
                        metricSets="Undertow Metrics"
                        availSets="Deployment Status" />
 
-    <resource-type-dmr name="SubDeployment [%2]"
+    <resource-type-dmr name="SubDeployment"
+                       resourceNameTemplate="SubDeployment [%2]"
                        path="/subdeployment=*"
                        parents="Deployment"
                        metricSets="Undertow Metrics" />
   </resource-type-set-dmr>
 
   <resource-type-set-dmr name="Web Component" enabled="true">
-    <resource-type-dmr name="Servlet [%4]"
+    <resource-type-dmr name="Servlet"
+                       resourceNameTemplate="Servlet [%4]"
                        path="/subsystem=undertow/servlet=*"
                        parents="Deployment,SubDeployment"
                        metricSets="Servlet Metrics" />
   </resource-type-set-dmr>
 
   <resource-type-set-dmr name="EJB" enabled="true">
-    <resource-type-dmr name="Singleton EJB [%4]"
+    <resource-type-dmr name="Singleton EJB"
+                       resourceNameTemplate="Singleton EJB [%4]"
                        path="/subsystem=ejb3/singleton-bean=*"
                        parents="Deployment,SubDeployment"
                        metricSets="Singleton EJB Metrics" />
 
-    <resource-type-dmr name="Message Driven EJB [%4]"
+    <resource-type-dmr name="Message Driven EJB"
+                       resourceNameTemplate="Message Driven EJB [%4]"
                        path="/subsystem=ejb3/message-driven-bean=*"
                        parents="Deployment,SubDeployment"
                        metricSets="Message Driven EJB Metrics" />
 
-    <resource-type-dmr name="Stateless Session EJB [%4]"
+    <resource-type-dmr name="Stateless Session EJB"
+                       resourceNameTemplate="Stateless Session EJB [%4]"
                        path="/subsystem=ejb3/stateless-session-bean=*"
                        parents="Deployment,SubDeployment"
                        metricSets="Stateless Session EJB Metrics" />
   </resource-type-set-dmr>
 
   <resource-type-set-dmr name="Datasource" enabled="true">
-    <resource-type-dmr name="Datasource [%4]"
+    <resource-type-dmr name="Datasource"
+                       resourceNameTemplate="Datasource [%4]"
                        path="/subsystem=datasources/data-source=*"
                        parents="WildFly Server"
                        metricSets="Datasource Pool Metrics,Datasource JDBC Metrics" />
   </resource-type-set-dmr>
 
   <resource-type-set-dmr name="Transaction Manager" enabled="true">
-    <resource-type-dmr name="Transaction Manager [%2]"
+    <resource-type-dmr name="Transaction Manager"
+                       resourceNameTemplate="Transaction Manager [%2]"
                        path="/subsystem=transactions"
                        parents="WildFly Server"
                        metricSets="Transactions Metrics" />

@@ -26,17 +26,21 @@ import java.util.concurrent.ThreadFactory;
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AvailDMR;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AvailSetDMR;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.LocalDMRManagedServer;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ManagedServer;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricDMR;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.MetricSetDMR;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.RemoteDMRManagedServer;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ResourceTypeDMR;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ResourceTypeSetDMR;
+import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
+import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
+import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
+import org.hawkular.agent.monitor.inventory.dmr.DMRDiscovery;
+import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
+import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
+import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
+import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
+import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
+import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactoryImpl;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
@@ -193,21 +197,22 @@ public class MonitorService implements Service<MonitorService> {
         schedulerConfig.setAvailSchedulerThreads(this.configuration.numAvailSchedulerThreads);
         schedulerConfig.setManagedServers(this.configuration.managedServersMap);
 
-        // for each managed server, add their metrics and avails
+        // process each managed server
         for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
-            if (!managedServer.enabled) {
-                MsgLogger.LOG.infoManagedServerDisabled(managedServer.name);
+            if (!managedServer.isEnabled()) {
+                MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
             } else {
-                List<String> resourceTypeSets = managedServer.resourceTypeSets;
+                List<Name> resourceTypeSets = managedServer.getResourceTypeSets();
 
                 if (managedServer instanceof RemoteDMRManagedServer) {
                     RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
-                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.name, dmrServer.host, dmrServer.port,
-                            dmrServer.username, dmrServer.password);
+                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(), dmrServer.getHost(),
+                            dmrServer.getPort(), dmrServer.getUsername(), dmrServer.getPassword());
                     addDMRResources(managedServer, dmrEndpoint, resourceTypeSets);
                 } else if (managedServer instanceof LocalDMRManagedServer) {
                     LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
-                    LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.name, createLocalClientFactory());
+                    LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.getName().toString(),
+                            createLocalClientFactory());
                     addDMRResources(managedServer, dmrEndpoint, resourceTypeSets);
                 } else {
                     throw new IllegalArgumentException("An invalid managed server type was found. ["
@@ -219,53 +224,49 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     private void addDMRResources(ManagedServer managedServer, DMREndpoint dmrEndpoint,
-            List<String> dmrResourceTypeSets) {
-        for (String resourceTypeSetName : dmrResourceTypeSets) {
-            ResourceTypeSetDMR resourceTypeSet = this.configuration.resourceTypeSetDmrMap.get(resourceTypeSetName);
-            if (resourceTypeSet != null) {
-                if (resourceTypeSet.enabled) {
-                    for (ResourceTypeDMR resourceType : resourceTypeSet.resourceTypeDmrMap.values()) {
-                        //String a = resourceType.path;
-                    }
-                }
-            } else {
-                MsgLogger.LOG.warnResourceTypeSetDoesNotExist(managedServer.name, resourceTypeSetName);
-            }
+            List<Name> dmrResourceTypeSets) {
+
+        ModelControllerClientFactory factory;
+        if (dmrEndpoint instanceof LocalDMREndpoint) {
+            factory = createLocalClientFactory();
+        } else {
+            factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
         }
+
+        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
+        rtm = new ResourceTypeManager<>(this.configuration.dmrResourceTypeSetMap, dmrResourceTypeSets);
+        DMRDiscovery discovery = new DMRDiscovery(rtm, dmrEndpoint, factory);
+        discovery.discoveryRoots();
     }
 
     private void addDMRMetricsAndAvails(ManagedServer managedServer, DMREndpoint dmrEndpoint,
-            List<String> dmrMetricSets, List<String> dmrAvailSets) {
+            List<Name> dmrMetricSets, List<Name> dmrAvailSets) {
 
-        for (String metricSetName : dmrMetricSets) {
-            MetricSetDMR metricSet = this.configuration.metricSetDmrMap.get(metricSetName);
+        for (Name metricSetName : dmrMetricSets) {
+            DMRMetricTypeSet metricSet = this.configuration.dmrMetricTypeSetMap.get(metricSetName);
             if (metricSet != null) {
-                if (metricSet.enabled) {
-                    for (MetricDMR metric : metricSet.metricDmrMap.values()) {
-                        Interval interval = new Interval(metric.interval, metric.timeUnits);
-                        DMRPropertyReference ref = new DMRPropertyReference(metric.path, metric.attribute,
+                if (metricSet.isEnabled()) {
+                    for (DMRMetricType metric : metricSet.getMetricTypeMap().values()) {
+                        Interval interval = new Interval(metric.getInterval(), metric.getTimeUnits());
+                        DMRPropertyReference ref = new DMRPropertyReference(metric.getPath(), metric.getAttribute(),
                                 interval);
                         schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
                     }
                 }
-            } else {
-                MsgLogger.LOG.warnMetricSetDoesNotExist(managedServer.name, metricSetName);
             }
         }
 
-        for (String availSetName : dmrAvailSets) {
-            AvailSetDMR availSet = this.configuration.availSetDmrMap.get(availSetName);
+        for (Name availSetName : dmrAvailSets) {
+            DMRAvailTypeSet availSet = this.configuration.dmrAvailTypeSetMap.get(availSetName);
             if (availSet != null) {
-                if (availSet.enabled) {
-                    for (AvailDMR avail : availSet.availDmrMap.values()) {
-                        Interval interval = new Interval(avail.interval, avail.timeUnits);
-                        AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.path,
-                                avail.attribute, interval, avail.upRegex);
+                if (availSet.isEnabled()) {
+                    for (DMRAvailType avail : availSet.getAvailTypeMap().values()) {
+                        Interval interval = new Interval(avail.getInterval(), avail.getTimeUnits());
+                        AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.getPath(),
+                                avail.getAttribute(), interval, avail.getUpRegex());
                         schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
                     }
                 }
-            } else {
-                MsgLogger.LOG.warnAvailSetDoesNotExist(managedServer.name, availSetName);
             }
         }
     }

@@ -76,11 +76,12 @@
   </xs:complexType>
 
   <xs:complexType name="resourceTypeDmrType">
-    <xs:attribute name="name"       type="xs:string" use="required"/>
-    <xs:attribute name="path"       type="xs:string" use="required"/>
-    <xs:attribute name="parents"    type="xs:string"/>
-    <xs:attribute name="metricSets" type="xs:string"/>
-    <xs:attribute name="availSets"  type="xs:string"/>
+    <xs:attribute name="name"                 type="xs:string" use="required"/>
+    <xs:attribute name="resourceNameTemplate" type="xs:string" use="required"/>
+    <xs:attribute name="path"                 type="xs:string" use="required"/>
+    <xs:attribute name="parents"              type="xs:string"/>
+    <xs:attribute name="metricSets"           type="xs:string"/>
+    <xs:attribute name="availSets"            type="xs:string"/>
   </xs:complexType>
 
   <!-- definition of managed servers -->

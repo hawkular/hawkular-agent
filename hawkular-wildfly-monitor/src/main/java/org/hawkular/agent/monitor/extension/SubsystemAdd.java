@@ -59,7 +59,8 @@ public class SubsystemAdd extends AbstractAddStepHandler {
             throws OperationFailedException {
 
         ModelNode subsystemConfig = Resource.Tools.readModel(context.readResource(PathAddress.EMPTY_ADDRESS));
-        MonitorServiceConfiguration configuration = new MonitorServiceConfiguration(subsystemConfig, context);
+        MonitorServiceConfiguration configuration = new MonitorServiceConfigurationBuilder(subsystemConfig, context)
+                .build();
 
         if (!configuration.subsystemEnabled) {
             MsgLogger.LOG.infoSubsystemDisabled();

@@ -24,6 +24,7 @@
     <resource-root path="hawkular-dmr-client.jar"/>
     <resource-root path="hawkular-monitor.jar"/>
     <resource-root path="metrics-core.jar"/>
+    <resource-root path="jgrapht-core.jar"/>
   </resources>
 
   <dependencies>
