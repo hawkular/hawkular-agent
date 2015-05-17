@@ -152,8 +152,8 @@ public class Address implements Cloneable {
     }
 
     /**
-     * Given an address, this appends the given address parts to it. This lets you build up
-     * addresses in a step-wise fashion.
+     * Appends the given address parts to this address.
+     * This lets you build up addresses in a step-wise fashion.
      *
      * @param addressParts new address parts to add to the address.
      *
@@ -190,6 +190,41 @@ public class Address implements Cloneable {
     }
 
     /**
+     * Appends the given address to this address.
+     * This lets you build up addresses in a step-wise fashion.
+     *
+     * @param address new address to appen to this address.
+     *
+     * @return this address (which now has the new address appended).
+     */
+    public Address add(Address address) {
+        // if address is null or is the root address then there is nothing to append
+        if (address == null || address.isRoot()) {
+            return this;
+        }
+
+        // if we are the root address then the given address just is our new address,
+        // otherwise, append all parts from "address" to us.
+        if (isRoot()) {
+            this.addressNode = address.addressNode.clone();
+        } else {
+            List<Property> parts = address.addressNode.asPropertyList();
+            for (Property part : parts) {
+                this.addressNode.add(part);
+            }
+        }
+
+        return this;
+    }
+
+    /**
+     * @return true if this address represents the root address ("/").
+     */
+    public boolean isRoot() {
+        return !addressNode.isDefined();
+    }
+
+    /**
      * Returns the address as a flattened string that is compatible with
      * the DMR CLI address paths.
      *
@@ -207,7 +242,7 @@ public class Address implements Cloneable {
      * @return flattened address path string
      */
     public String toAddressPathString() {
-        if (!addressNode.isDefined()) {
+        if (isRoot()) {
             return "/";
         }
 

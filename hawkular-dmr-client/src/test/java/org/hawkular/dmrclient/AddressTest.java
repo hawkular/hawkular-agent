@@ -22,6 +22,29 @@ import org.junit.Test;
 
 public class AddressTest extends Address {
     @Test
+    public void testAddAddress() {
+        Address addrA = Address.parse("/one=two");
+        Address addrB = Address.parse("/three=four");
+        Address addrAB = addrA.add(addrB);
+        Assert.assertEquals("/one=two/three=four", addrAB.toAddressPathString());
+
+        addrA = Address.parse("/one=two/three=four");
+        addrB = Address.parse("/five=six/seven=eight");
+        addrAB = addrA.add(addrB);
+        Assert.assertEquals("/one=two/three=four/five=six/seven=eight", addrAB.toAddressPathString());
+
+        addrA = Address.parse("/one=two/three=four");
+        addrB = Address.root();
+        addrAB = addrA.add(addrB);
+        Assert.assertEquals("/one=two/three=four", addrAB.toAddressPathString());
+
+        addrA = Address.root();
+        addrB = Address.parse("/one=two/three=four");
+        addrAB = addrA.add(addrB);
+        Assert.assertEquals("/one=two/three=four", addrAB.toAddressPathString());
+    }
+
+    @Test
     public void testAddressFromModelNode() {
         ModelNode node;
 
