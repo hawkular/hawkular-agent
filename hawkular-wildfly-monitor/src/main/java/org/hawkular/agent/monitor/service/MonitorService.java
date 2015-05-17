@@ -236,7 +236,7 @@ public class MonitorService implements Service<MonitorService> {
         ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
         rtm = new ResourceTypeManager<>(this.configuration.dmrResourceTypeSetMap, dmrResourceTypeSets);
         DMRDiscovery discovery = new DMRDiscovery(rtm, dmrEndpoint, factory);
-        discovery.discoveryRoots();
+        discovery.discoverAllResources();
     }
 
     private void addDMRMetricsAndAvails(ManagedServer managedServer, DMREndpoint dmrEndpoint,

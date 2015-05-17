@@ -17,11 +17,18 @@
 package org.hawkular.agent.monitor.inventory.dmr;
 
 import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.dmrclient.Address;
 
 public class DMRResource extends Resource<DMRResourceType> {
 
-    public DMRResource(String name, DMRResourceType type) {
+    private final Address address;
+
+    public DMRResource(String name, DMRResourceType type, Address address) {
         super(name, type);
+        this.address = address;
     }
 
+    public Address getAddress() {
+        return address;
+    }
 }

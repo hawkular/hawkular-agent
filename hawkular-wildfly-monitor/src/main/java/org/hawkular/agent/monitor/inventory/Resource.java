@@ -20,12 +20,13 @@ public abstract class Resource<T extends ResourceType> extends NamedObject {
 
     private final T resourceType;
 
-    public Resource(String name, T type) {
+    public Resource(String name, T resourceType) {
         super(name);
-        resourceType = type;
+        this.resourceType = resourceType;
     }
 
     public T getResourceType() {
         return resourceType;
     }
+
 }
