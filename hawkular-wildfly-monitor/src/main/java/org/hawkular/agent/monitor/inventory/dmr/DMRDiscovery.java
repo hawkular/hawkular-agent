@@ -74,7 +74,6 @@ public class DMRDiscovery {
      * The graph is nothing more than a tree with parent resources at the top of the tree and
      * children at the bottom (that is to say, a resource will have an outgoing edge to its parent
      * and incoming edges from its children).
-     * @return 
      *
      * @return tree graph of all discovered resources
      *
@@ -155,13 +154,10 @@ public class DMRDiscovery {
 
             // append some indents based on depth of resource in tree
             DMRResource parent = resource.getParent();
-            int depth = 0;
-            do {
-                if (depth++ > 0) {
-                    graphString.append("...");
-                }
+            while (parent != null) {
+                graphString.append("...");
                 parent = parent.getParent();
-            } while (parent != null);
+            }
 
             // append resource to string
             graphString.append(resource).append("\n");
