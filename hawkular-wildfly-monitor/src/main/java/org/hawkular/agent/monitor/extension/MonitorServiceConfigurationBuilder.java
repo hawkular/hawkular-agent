@@ -219,6 +219,14 @@ public class MonitorServiceConfigurationBuilder {
         theConfig.numMetricSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_METRIC_SCHEDULER_THREADS);
         theConfig.numAvailSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_AVAIL_SCHEDULER_THREADS);
         theConfig.numDmrSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_DMR_SCHEDULER_THREADS);
+        theConfig.metricDispatcherBufferSize = getInt(config, context,
+                SubsystemDefinition.METRIC_DISPATCHER_BUFFER_SIZE);
+        theConfig.metricDispatcherMaxBatchSize = getInt(config, context,
+                SubsystemDefinition.METRIC_DISPATCHER_MAX_BATCH_SIZE);
+        theConfig.availDispatcherBufferSize = getInt(config, context,
+                SubsystemDefinition.AVAIL_DISPATCHER_BUFFER_SIZE);
+        theConfig.availDispatcherMaxBatchSize = getInt(config, context,
+                SubsystemDefinition.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
     }
 
     private boolean determineResourceTypeSetDmr(ModelNode config, OperationContext context)

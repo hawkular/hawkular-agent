@@ -36,11 +36,25 @@ public class SchedulerConfiguration {
         METRICS // stores metrics to just a Hawkular-Metrics standalone system
     }
 
+    public static final int DEFAULT_NUM_METRIC_SCHEDULER_THREADS = 2;
+    public static final int DEFAULT_NUM_AVAIL_SCHEDULER_THREADS = 2;
+
+    public static final int DEFAULT_METRIC_DISPATCHER_BUFFER_SIZE = 1000;
+    public static final int DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE = 100;
+    public static final int DEFAULT_AVAIL_DISPATCHER_BUFFER_SIZE = 500;
+    public static final int DEFAULT_AVAIL_DISPATCHER_MAX_BATCH_SIZE = 50;
+
+    private int metricSchedulerThreads = DEFAULT_NUM_METRIC_SCHEDULER_THREADS;
+    private int availSchedulerThreads = DEFAULT_NUM_AVAIL_SCHEDULER_THREADS;
+
+    private int metricDispatcherBufferSize = DEFAULT_METRIC_DISPATCHER_BUFFER_SIZE;
+    private int metricDispatcherMaxBatchSize = DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE;
+
+    private int availDispatcherBufferSize = DEFAULT_AVAIL_DISPATCHER_BUFFER_SIZE;
+    private int availDispatcherMaxBatchSize = DEFAULT_AVAIL_DISPATCHER_MAX_BATCH_SIZE;
+
     private final Map<DMREndpoint, List<DMRPropertyReference>> dmrMetricsToBeCollected = new HashMap<>();
     private final Map<DMREndpoint, List<AvailDMRPropertyReference>> dmrAvailsToBeChecked = new HashMap<>();
-
-    private int metricSchedulerThreads = 2;
-    private int availSchedulerThreads = 2;
 
     private MonitorServiceConfiguration.StorageAdapter storageAdapterConfig;
     private MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
@@ -87,6 +101,38 @@ public class SchedulerConfiguration {
 
     public void setAvailSchedulerThreads(int schedulerThreads) {
         this.availSchedulerThreads = schedulerThreads;
+    }
+
+    public int getMetricDispatcherBufferSize() {
+        return metricDispatcherBufferSize;
+    }
+
+    public void setMetricDispatcherBufferSize(int metricDispatcherBufferSize) {
+        this.metricDispatcherBufferSize = metricDispatcherBufferSize;
+    }
+
+    public int getMetricDispatcherMaxBatchSize() {
+        return metricDispatcherMaxBatchSize;
+    }
+
+    public void setMetricDispatcherMaxBatchSize(int metricDispatcherMaxBatchSize) {
+        this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
+    }
+
+    public int getAvailDispatcherBufferSize() {
+        return availDispatcherBufferSize;
+    }
+
+    public void setAvailDispatcherBufferSize(int availDispatcherBufferSize) {
+        this.availDispatcherBufferSize = availDispatcherBufferSize;
+    }
+
+    public int getAvailDispatcherMaxBatchSize() {
+        return availDispatcherMaxBatchSize;
+    }
+
+    public void setAvailDispatcherMaxBatchSize(int availDispatcherMaxBatchSize) {
+        this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
     }
 
     public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfig() {

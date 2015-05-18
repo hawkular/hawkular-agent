@@ -38,6 +38,10 @@ public class MonitorServiceConfiguration {
     public int numMetricSchedulerThreads;
     public int numAvailSchedulerThreads;
     public int numDmrSchedulerThreads;
+    public int metricDispatcherBufferSize;
+    public int metricDispatcherMaxBatchSize;
+    public int availDispatcherBufferSize;
+    public int availDispatcherMaxBatchSize;
     public StorageAdapter storageAdapter = new StorageAdapter();
     public Diagnostics diagnostics = new Diagnostics();
     public Map<Name, DMRMetricTypeSet> dmrMetricTypeSetMap = new HashMap<>();

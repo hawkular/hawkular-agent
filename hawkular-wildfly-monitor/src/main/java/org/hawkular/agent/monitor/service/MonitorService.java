@@ -59,6 +59,9 @@ import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.server.ServerEnvironment;
 import org.jboss.as.server.ServerEnvironmentService;
 import org.jboss.as.server.Services;
+import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.ModelType;
+import org.jboss.logging.Logger;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.StartContext;
@@ -70,6 +73,8 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 public class MonitorService implements Service<MonitorService> {
+
+    private static final Logger LOG = Logger.getLogger(MonitorService.class);
 
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
@@ -254,6 +259,10 @@ public class MonitorService implements Service<MonitorService> {
         schedulerConfig.setStorageAdapterConfig(this.configuration.storageAdapter);
         schedulerConfig.setMetricSchedulerThreads(this.configuration.numMetricSchedulerThreads);
         schedulerConfig.setAvailSchedulerThreads(this.configuration.numAvailSchedulerThreads);
+        schedulerConfig.setMetricDispatcherBufferSize(this.configuration.metricDispatcherBufferSize);
+        schedulerConfig.setMetricDispatcherMaxBatchSize(this.configuration.metricDispatcherMaxBatchSize);
+        schedulerConfig.setAvailDispatcherBufferSize(this.configuration.availDispatcherBufferSize);
+        schedulerConfig.setAvailDispatcherMaxBatchSize(this.configuration.availDispatcherMaxBatchSize);
 
         // process each managed server
         for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
@@ -315,7 +324,6 @@ public class MonitorService implements Service<MonitorService> {
     private void addDMRMetricsAndAvails(DMRResource resource) {
 
         DMREndpoint dmrEndpoint = resource.getEndpoint();
-        Address resourceAddress = resource.getAddress();
         List<Name> dmrMetricSets = resource.getResourceType().getMetricSets();
         List<Name> dmrAvailSets = resource.getResourceType().getAvailSets();
 
@@ -325,10 +333,13 @@ public class MonitorService implements Service<MonitorService> {
                 if (metricSet.isEnabled()) {
                     for (DMRMetricType metric : metricSet.getMetricTypeMap().values()) {
                         Interval interval = new Interval(metric.getInterval(), metric.getTimeUnits());
-                        Address metricAddress = resourceAddress.clone().add(Address.parse(metric.getPath()));
-                        DMRPropertyReference ref = new DMRPropertyReference(metricAddress, metric.getAttribute(),
-                                interval);
-                        schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
+                        Address relativeAddress = Address.parse(metric.getPath());
+                        Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
+                        if (fullAddress != null) {
+                            DMRPropertyReference ref = new DMRPropertyReference(fullAddress,
+                                    metric.getAttribute(), interval);
+                            schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
+                        }
                     }
                 }
             }
@@ -340,13 +351,57 @@ public class MonitorService implements Service<MonitorService> {
                 if (availSet.isEnabled()) {
                     for (DMRAvailType avail : availSet.getAvailTypeMap().values()) {
                         Interval interval = new Interval(avail.getInterval(), avail.getTimeUnits());
-                        Address availAddress = resourceAddress.clone().add(Address.parse(avail.getPath()));
-                        AvailDMRPropertyReference ref = new AvailDMRPropertyReference(availAddress,
-                                avail.getAttribute(), interval, avail.getUpRegex());
-                        schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
+                        Address relativeAddress = Address.parse(avail.getPath());
+                        Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
+                        if (fullAddress != null) {
+                            AvailDMRPropertyReference ref = new AvailDMRPropertyReference(fullAddress,
+                                    avail.getAttribute(), interval, avail.getUpRegex());
+                            schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
+                        }
                     }
                 }
             }
         }
+    }
+
+    private Address getFullAddressOfChild(DMRResource parentResource, Address childRelativePath) {
+        // Some metrics/avails are collected from child resources. But sometimes resources
+        // don't have those child resources (e.g. ear deployments don't have an undertow subsystem).
+        // This means those metrics/avails cannot be collected (i.e. they are optional).
+        // We don't want to fail with errors in this case; we just want to ignore those metrics/avails
+        // since they don't exist.
+        // If the child does exist (by examining the parent resource's model), then this method
+        // will return the full address to that child resource.
+
+        Address fullAddress = null;
+        if (childRelativePath.isRoot()) {
+            fullAddress = parentResource.getAddress(); // there really is no child; it is the resource itself
+        } else {
+            boolean childResourceExists = false;
+            String[] addressParts = childRelativePath.toAddressParts();
+            if (addressParts.length > 2) {
+                // we didn't query the parent's model for recursive data - so we only know direct children.
+                // if a metric/avail gets data from grandchildren or deeper, we don't know if it exists,
+                // so just assume it does.
+                childResourceExists = true;
+                LOG.tracef("Cannot test long child path [%s] under resource [%s] "
+                        + "for existence so it will be assumed to exist", childRelativePath, parentResource);
+            } else {
+                ModelNode haystackNode = parentResource.getModelNode().get(addressParts[0]);
+                if (haystackNode.getType() != ModelType.UNDEFINED) {
+                    final List<ModelNode> haystackList = haystackNode.asList();
+                    for (ModelNode needleNode : haystackList) {
+                        if (needleNode.has(addressParts[1])) {
+                            childResourceExists = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (childResourceExists) {
+                fullAddress = parentResource.getAddress().clone().add(childRelativePath);
+            }
+        }
+        return fullAddress;
     }
 }

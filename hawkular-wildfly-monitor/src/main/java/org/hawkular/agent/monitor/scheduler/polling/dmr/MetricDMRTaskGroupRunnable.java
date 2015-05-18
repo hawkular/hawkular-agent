@@ -27,6 +27,7 @@ import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 
 import com.codahale.metrics.Timer;
@@ -52,13 +53,13 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
 
     @Override
     public void run() {
-        try (JBossASClient client = new JBossASClient(mccFactory.createClient())) {
+        try (final JBossASClient client = new JBossASClient(mccFactory.createClient())) {
 
             // execute request
-            Timer.Context requestContext = diagnostics.getDMRRequestTimer().time();
-            ModelNode response = client.execute(operation);
-            long durationNanos = requestContext.stop();
-            long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
+            final Timer.Context requestContext = diagnostics.getDMRRequestTimer().time();
+            final ModelNode response = client.execute(operation);
+            final long durationNanos = requestContext.stop();
+            final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
 
             if (JBossASClient.isSuccess(response)) {
 
@@ -66,7 +67,7 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
                     diagnostics.getDMRDelayedRate().mark(1);
                 }
 
-                List<Property> stepResults = JBossASClient.getResults(response).asPropertyList();
+                final List<Property> stepResults = JBossASClient.getResults(response).asPropertyList();
 
                 if (stepResults.size() != group.size()) {
                     MsgLogger.LOG.warnBatchResultsDoNotMatchRequests(group.size(), stepResults.size());
@@ -74,21 +75,16 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
 
                 int i = 0;
                 for (Property step : stepResults) {
-                    DMRTask task = (DMRTask) group.getTask(i);
+                    final DMRTask task = (DMRTask) group.getTask(i++);
 
                     // deconstruct model node
-                    ModelNode data = step.getValue();
-                    ModelNode dataResult = JBossASClient.getResults(data);
-                    Double value = null;
-                    if (task.getSubref() != null) {
-                        value = dataResult.get(task.getSubref()).asDouble();
+                    final ModelNode stepData = step.getValue();
+                    final ModelNode result = JBossASClient.getResults(stepData);
+                    final ModelNode valueNode = (task.getSubref() == null) ? result : result.get(task.getSubref());
+                    if (valueNode.getType() != ModelType.UNDEFINED) {
+                        Double value = valueNode.asDouble();
+                        completionHandler.onCompleted(new MetricDataPoint(task, value));
                     }
-                    else {
-                        value = dataResult.asDouble();
-                    }
-
-                    completionHandler.onCompleted(new MetricDataPoint(task, value));
-                    i++;
                 }
 
             } else {

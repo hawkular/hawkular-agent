@@ -20,7 +20,11 @@
            enabled="true"
            apiJndiName="java:global/hawkular/agent/monitor/api"
            numMetricSchedulerThreads="3"
-           numAvailSchedulerThreads="3">
+           numAvailSchedulerThreads="3"
+           metricDispatcherBufferSize="201"
+           metricDispatcherMaxBatchSize="51"
+           availDispatcherBufferSize="101"
+           availDispatcherMaxBatchSize="26">
 
   <diagnostics enabled="true"
                reportTo="LOG"

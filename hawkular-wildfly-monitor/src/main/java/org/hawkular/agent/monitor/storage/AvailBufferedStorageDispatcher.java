@@ -33,8 +33,8 @@ import org.jboss.logging.Logger;
 public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
     private static final Logger LOGGER = Logger.getLogger(AvailBufferedStorageDispatcher.class);
 
-    private static final int MAX_BATCH_SIZE = 24; // TODO make configurable
-    private static final int BUFFER_SIZE = 100; // TODO make configurable
+    private final int maxBatchSize;
+    private final int bufferSize;
     private final SchedulerConfiguration config;
     private final StorageAdapter storageAdapter;
     private final Diagnostics diagnostics;
@@ -44,9 +44,11 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
     public AvailBufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
             Diagnostics diagnostics) {
         this.config = config;
+        this.maxBatchSize = config.getAvailDispatcherMaxBatchSize();
+        this.bufferSize = config.getAvailDispatcherBufferSize();
         this.storageAdapter = storageAdapter;
         this.diagnostics = diagnostics;
-        this.queue = new ArrayBlockingQueue<AvailDataPoint>(BUFFER_SIZE);
+        this.queue = new ArrayBlockingQueue<AvailDataPoint>(bufferSize);
         this.worker = new Worker(queue);
     }
 
@@ -66,7 +68,7 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
             queue.add(sample);
         }
         else {
-            throw new RuntimeException("buffer capacity exceeded");
+            throw new RuntimeException("Avail dispatcher buffer capacity has been exceeded [" + bufferSize + "]");
         }
     }
 
@@ -90,7 +92,7 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
                     // batch processing
                     AvailDataPoint sample = queue.take();
                     Set<AvailDataPoint> samples = new HashSet<>();
-                    queue.drainTo(samples, MAX_BATCH_SIZE);
+                    queue.drainTo(samples, maxBatchSize);
                     samples.add(sample);
 
                     diagnostics.getAvailStorageBufferSize().dec(samples.size());

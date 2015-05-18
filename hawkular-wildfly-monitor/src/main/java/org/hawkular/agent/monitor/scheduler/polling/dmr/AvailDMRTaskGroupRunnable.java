@@ -28,6 +28,7 @@ import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 
 import com.codahale.metrics.Timer;
@@ -76,24 +77,21 @@ public class AvailDMRTaskGroupRunnable implements Runnable {
                 int i = 0;
                 for (Property step : stepResults) {
                     Avail avail;
-                    AvailDMRTask task = (AvailDMRTask) group.getTask(i);
-                    ModelNode data = step.getValue();
+                    AvailDMRTask task = (AvailDMRTask) group.getTask(i++);
+                    ModelNode stepData = step.getValue();
 
                     if (task.getAttribute() == null) {
                         // step operation didn't read any attribute, it just read the resource to see if it exists
-                        boolean exists = JBossASClient.isSuccess(data);
+                        boolean exists = JBossASClient.isSuccess(stepData);
                         avail = (exists) ? Avail.UP : Avail.DOWN;
                     } else {
                         // step operation read attribute; need to see what avail that attrib value corresponds to
-                        ModelNode dataResult = JBossASClient.getResults(data);
-                        String value;
-                        if (task.getSubref() != null) {
-                            value = dataResult.get(task.getSubref()).asString();
+                        final ModelNode result = JBossASClient.getResults(stepData);
+                        final ModelNode valueNode = (task.getSubref() == null) ? result : result.get(task.getSubref());
+                        String value = null;
+                        if (valueNode.getType() != ModelType.UNDEFINED) {
+                            value = valueNode.asString();
                         }
-                        else {
-                            value = dataResult.asString();
-                        }
-
                         if (value == null) {
                             value = "";
                         }
@@ -112,7 +110,6 @@ public class AvailDMRTaskGroupRunnable implements Runnable {
                     }
 
                     completionHandler.onCompleted(new AvailDataPoint(task, avail));
-                    i++;
                 }
 
             } else {

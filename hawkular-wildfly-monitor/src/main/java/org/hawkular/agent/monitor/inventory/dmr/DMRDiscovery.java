@@ -28,6 +28,7 @@ import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
+import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
@@ -113,7 +114,7 @@ public class DMRDiscovery {
                 resources = new HashMap<>();
                 List<ModelNode> list = results.asList();
                 for (ModelNode item : list) {
-                    resources.put(Address.fromModelNodeWrapper(item, "address"), item);
+                    resources.put(Address.fromModelNodeWrapper(item, "address"), JBossASClient.getResults(item));
                 }
             } else {
                 throw new IllegalStateException("Invalid type - please report this bug: " + results.getType()
@@ -122,7 +123,8 @@ public class DMRDiscovery {
 
             for (Map.Entry<Address, ModelNode> entry : resources.entrySet()) {
                 String resourceName = generateResourceName(type, entry.getKey());
-                DMRResource resource = new DMRResource(dmrEndpoint, resourceName, type, parent, entry.getKey());
+                DMRResource resource = new DMRResource(dmrEndpoint, resourceName, type, parent, entry.getKey(),
+                        entry.getValue());
                 LOG.debugf("Discovered [%s]", resource);
 
                 this.resourcesGraph.addVertex(resource);

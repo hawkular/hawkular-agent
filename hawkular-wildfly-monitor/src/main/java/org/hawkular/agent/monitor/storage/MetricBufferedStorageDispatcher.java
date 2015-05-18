@@ -33,8 +33,8 @@ import org.jboss.logging.Logger;
 public class MetricBufferedStorageDispatcher implements MetricCompletionHandler {
     private static final Logger LOGGER = Logger.getLogger(MetricBufferedStorageDispatcher.class);
 
-    private static final int MAX_BATCH_SIZE = 24; // TODO make configurable
-    private static final int BUFFER_SIZE = 100; // TODO make configurable
+    private final int maxBatchSize;
+    private final int bufferSize;
     private final SchedulerConfiguration config;
     private final StorageAdapter storageAdapter;
     private final Diagnostics diagnostics;
@@ -44,9 +44,11 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
     public MetricBufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
             Diagnostics diagnostics) {
         this.config = config;
+        this.maxBatchSize = config.getMetricDispatcherMaxBatchSize();
+        this.bufferSize = config.getMetricDispatcherBufferSize();
         this.storageAdapter = storageAdapter;
         this.diagnostics = diagnostics;
-        this.queue = new ArrayBlockingQueue<MetricDataPoint>(BUFFER_SIZE);
+        this.queue = new ArrayBlockingQueue<MetricDataPoint>(bufferSize);
         this.worker = new Worker(queue);
     }
 
@@ -66,7 +68,7 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
             queue.add(sample);
         }
         else {
-            throw new RuntimeException("buffer capacity exceeded");
+            throw new RuntimeException("Metric dispatcher buffer capacity has been exceeded [" + bufferSize + "]");
         }
     }
 
@@ -90,7 +92,7 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
                     // batch processing
                     MetricDataPoint sample = queue.take();
                     Set<MetricDataPoint> samples = new HashSet<>();
-                    queue.drainTo(samples, MAX_BATCH_SIZE);
+                    queue.drainTo(samples, maxBatchSize);
                     samples.add(sample);
 
                     diagnostics.getMetricsStorageBufferSize().dec(samples.size());
