@@ -22,6 +22,24 @@ import org.junit.Test;
 
 public class AddressTest extends Address {
     @Test
+    public void testGetAddressParts() {
+        Address addr = Address.parse("/");
+        Assert.assertEquals(0, addr.toAddressParts().length);
+
+        addr = Address.parse("/one=two");
+        Assert.assertEquals(2, addr.toAddressParts().length);
+        Assert.assertEquals("one", addr.toAddressParts()[0]);
+        Assert.assertEquals("two", addr.toAddressParts()[1]);
+
+        addr = Address.parse("/one=two/three=four");
+        Assert.assertEquals(4, addr.toAddressParts().length);
+        Assert.assertEquals("one", addr.toAddressParts()[0]);
+        Assert.assertEquals("two", addr.toAddressParts()[1]);
+        Assert.assertEquals("three", addr.toAddressParts()[2]);
+        Assert.assertEquals("four", addr.toAddressParts()[3]);
+    }
+
+    @Test
     public void testAddAddress() {
         Address addrA = Address.parse("/one=two");
         Address addrB = Address.parse("/three=four");

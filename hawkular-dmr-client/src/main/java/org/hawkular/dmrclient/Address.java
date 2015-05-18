@@ -225,6 +225,27 @@ public class Address implements Cloneable {
     }
 
     /**
+     * @return returns the address split into its individual parts.
+     *         e.g. "/one=two" will return a 2-element array {"one", "two"}.
+     */
+    public String[] toAddressParts() {
+        if (isRoot()) {
+            return new String[0];
+        }
+
+        List<Property> properties = addressNode.asPropertyList();
+        String[] parts = new String[properties.size() * 2];
+        int i = 0;
+        for (Property property : properties) {
+            String name = property.getName();
+            String value = property.getValue().asString();
+            parts[i++] = name;
+            parts[i++] = value;
+        }
+        return parts;
+    }
+
+    /**
      * Returns the address as a flattened string that is compatible with
      * the DMR CLI address paths.
      *
@@ -251,10 +272,7 @@ public class Address implements Cloneable {
         for (Property part : parts) {
             String name = part.getName();
             String value = part.getValue().asString();
-            str.append("/")
-                    .append(name)
-                    .append("=")
-                    .append(value);
+            str.append("/").append(name).append("=").append(value);
         }
         return str.toString();
     }
