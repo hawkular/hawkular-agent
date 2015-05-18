@@ -16,27 +16,36 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class Resource<T extends ResourceType> extends NamedObject {
+import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
+
+public abstract class Resource<T extends ResourceType, E extends MonitoredEndpoint> extends NamedObject {
 
     private final T resourceType;
-    private final Resource<?> parent;
+    private final Resource<?, ?> parent;
+    private final E endpoint;
 
-    public <P extends Resource<?>> Resource(String name, T resourceType, P parent) {
+    public <P extends Resource<?, ?>> Resource(E endpoint, String name, T resourceType, P parent) {
         super(name);
+        this.endpoint = endpoint;
         this.resourceType = resourceType;
         this.parent = parent;
+    }
+
+    public E getEndpoint() {
+        return endpoint;
     }
 
     public T getResourceType() {
         return resourceType;
     }
 
-    public <P extends Resource<?>> P getParent() {
+    public <P extends Resource<?, ?>> P getParent() {
         return (P) parent;
     }
 
     @Override
     public String toString() {
-        return String.format("%s=[type=%s]", super.toString(), this.resourceType);
+        return String.format("%s=[type=%s][endpoint=%s]",
+                super.toString(), this.resourceType, this.endpoint.getName());
     }
 }

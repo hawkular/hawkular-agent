@@ -16,21 +16,23 @@
  */
 package org.hawkular.agent.monitor.scheduler.config;
 
+import org.hawkular.dmrclient.Address;
+
 /**
  * A DMR resource reference that is to be monitored.
  */
 public class DMRPropertyReference extends MonitoredPropertyReference {
 
-    private final String address;
+    private final Address address;
     private final String attribute;
 
-    public DMRPropertyReference(final String address, final String attribute, final Interval interval) {
+    public DMRPropertyReference(final Address address, final String attribute, final Interval interval) {
         super(interval);
         this.address = address;
         this.attribute = attribute;
     }
 
-    public String getAddress() {
+    public Address getAddress() {
         return address;
     }
 

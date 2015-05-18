@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.scheduler.config;
 
+import org.hawkular.dmrclient.Address;
+
 /**
  * A DMR resource reference that is to be checked for availability.
  */
@@ -23,7 +25,7 @@ public class AvailDMRPropertyReference extends DMRPropertyReference {
 
     private final String upRegex;
 
-    public AvailDMRPropertyReference(final String address, final String attribute, final Interval interval,
+    public AvailDMRPropertyReference(final Address address, final String attribute, final Interval interval,
             final String upRegex) {
         super(address, attribute, interval);
         this.upRegex = upRegex;

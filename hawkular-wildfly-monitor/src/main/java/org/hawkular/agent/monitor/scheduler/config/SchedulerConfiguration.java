@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.Name;
 
 public class SchedulerConfiguration {
 
@@ -38,7 +36,6 @@ public class SchedulerConfiguration {
         METRICS // stores metrics to just a Hawkular-Metrics standalone system
     }
 
-    private final Map<Name, ManagedServer> managedServersMap = new HashMap<>();
     private final Map<DMREndpoint, List<DMRPropertyReference>> dmrMetricsToBeCollected = new HashMap<>();
     private final Map<DMREndpoint, List<AvailDMRPropertyReference>> dmrAvailsToBeChecked = new HashMap<>();
 
@@ -106,14 +103,6 @@ public class SchedulerConfiguration {
 
     public void setDiagnosticsConfig(MonitorServiceConfiguration.Diagnostics config) {
         this.diagnosticsConfig = config;
-    }
-
-    public void setManagedServers(Map<Name, ManagedServer> managedServersMap) {
-        this.managedServersMap.putAll(managedServersMap);
-    }
-
-    public Map<Name, ManagedServer> getManagedServers() {
-        return Collections.unmodifiableMap(this.managedServersMap);
     }
 }
 

@@ -122,7 +122,7 @@ public class DMRDiscovery {
 
             for (Map.Entry<Address, ModelNode> entry : resources.entrySet()) {
                 String resourceName = generateResourceName(type, entry.getKey());
-                DMRResource resource = new DMRResource(resourceName, type, parent, entry.getKey());
+                DMRResource resource = new DMRResource(dmrEndpoint, resourceName, type, parent, entry.getKey());
                 LOG.debugf("Discovered [%s]", resource);
 
                 this.resourcesGraph.addVertex(resource);

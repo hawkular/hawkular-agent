@@ -34,6 +34,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRDiscovery;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
+import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
@@ -50,6 +51,7 @@ import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
+import org.hawkular.dmrclient.Address;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
@@ -63,6 +65,9 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.traverse.DepthFirstIterator;
 
 public class MonitorService implements Service<MonitorService> {
 
@@ -189,101 +194,6 @@ public class MonitorService implements Service<MonitorService> {
         started = false;
     }
 
-    private void prepareSchedulerConfig() {
-        this.schedulerConfig = new SchedulerConfiguration();
-        schedulerConfig.setDiagnosticsConfig(this.configuration.diagnostics);
-        schedulerConfig.setStorageAdapterConfig(this.configuration.storageAdapter);
-        schedulerConfig.setMetricSchedulerThreads(this.configuration.numMetricSchedulerThreads);
-        schedulerConfig.setAvailSchedulerThreads(this.configuration.numAvailSchedulerThreads);
-        schedulerConfig.setManagedServers(this.configuration.managedServersMap);
-
-        // process each managed server
-        for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
-            if (!managedServer.isEnabled()) {
-                MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
-            } else {
-                List<Name> resourceTypeSets = managedServer.getResourceTypeSets();
-
-                if (managedServer instanceof RemoteDMRManagedServer) {
-                    RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
-                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(), dmrServer.getHost(),
-                            dmrServer.getPort(), dmrServer.getUsername(), dmrServer.getPassword());
-                    addDMRResources(managedServer, dmrEndpoint, resourceTypeSets);
-                } else if (managedServer instanceof LocalDMRManagedServer) {
-                    LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
-                    LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.getName().toString(),
-                            createLocalClientFactory());
-                    addDMRResources(managedServer, dmrEndpoint, resourceTypeSets);
-                } else {
-                    throw new IllegalArgumentException("An invalid managed server type was found. ["
-                            + managedServer
-                            + "] Please report this bug.");
-                }
-            }
-        }
-    }
-
-    private void addDMRResources(ManagedServer managedServer, DMREndpoint dmrEndpoint,
-            List<Name> dmrResourceTypeSets) {
-
-        ModelControllerClientFactory factory;
-        if (dmrEndpoint instanceof LocalDMREndpoint) {
-            factory = createLocalClientFactory();
-        } else {
-            factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
-        }
-
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
-        rtm = new ResourceTypeManager<>(this.configuration.dmrResourceTypeSetMap, dmrResourceTypeSets);
-        DMRDiscovery discovery = new DMRDiscovery(dmrEndpoint, rtm, factory);
-        try {
-            discovery.discoverAllResources();
-        } catch (Exception e) {
-            MsgLogger.LOG.errorDiscoveryFailed(e, dmrEndpoint);
-        }
-    }
-
-    private void addDMRMetricsAndAvails(ManagedServer managedServer, DMREndpoint dmrEndpoint,
-            List<Name> dmrMetricSets, List<Name> dmrAvailSets) {
-
-        for (Name metricSetName : dmrMetricSets) {
-            DMRMetricTypeSet metricSet = this.configuration.dmrMetricTypeSetMap.get(metricSetName);
-            if (metricSet != null) {
-                if (metricSet.isEnabled()) {
-                    for (DMRMetricType metric : metricSet.getMetricTypeMap().values()) {
-                        Interval interval = new Interval(metric.getInterval(), metric.getTimeUnits());
-                        DMRPropertyReference ref = new DMRPropertyReference(metric.getPath(), metric.getAttribute(),
-                                interval);
-                        schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
-                    }
-                }
-            }
-        }
-
-        for (Name availSetName : dmrAvailSets) {
-            DMRAvailTypeSet availSet = this.configuration.dmrAvailTypeSetMap.get(availSetName);
-            if (availSet != null) {
-                if (availSet.isEnabled()) {
-                    for (DMRAvailType avail : availSet.getAvailTypeMap().values()) {
-                        Interval interval = new Interval(avail.getInterval(), avail.getTimeUnits());
-                        AvailDMRPropertyReference ref = new AvailDMRPropertyReference(avail.getPath(),
-                                avail.getAttribute(), interval, avail.getUpRegex());
-                        schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
-                    }
-                }
-            }
-        }
-    }
-
-    private void startScheduler() {
-        ModelControllerClientFactory mccFactory = createLocalClientFactory();
-        LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
-        ServerIdentifiers id = localDMREndpoint.getServerIdentifiers();
-        schedulerService = new SchedulerService(schedulerConfig, id, metricStorageProxy, availStorageProxy,
-                createLocalClientFactory());
-        schedulerService.start();
-    }
-
     /**
      * Create a factory that will create ModelControllerClient objects that talk
      * to the WildFly server we are running in.
@@ -327,5 +237,116 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         return managementClientExecutor;
+    }
+
+    private void startScheduler() {
+        ModelControllerClientFactory mccFactory = createLocalClientFactory();
+        LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
+        ServerIdentifiers id = localDMREndpoint.getServerIdentifiers();
+        schedulerService = new SchedulerService(schedulerConfig, id, metricStorageProxy, availStorageProxy,
+                createLocalClientFactory());
+        schedulerService.start();
+    }
+
+    private void prepareSchedulerConfig() {
+        this.schedulerConfig = new SchedulerConfiguration();
+        schedulerConfig.setDiagnosticsConfig(this.configuration.diagnostics);
+        schedulerConfig.setStorageAdapterConfig(this.configuration.storageAdapter);
+        schedulerConfig.setMetricSchedulerThreads(this.configuration.numMetricSchedulerThreads);
+        schedulerConfig.setAvailSchedulerThreads(this.configuration.numAvailSchedulerThreads);
+
+        // process each managed server
+        for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
+            if (!managedServer.isEnabled()) {
+                MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
+            } else {
+                List<Name> resourceTypeSets = managedServer.getResourceTypeSets();
+
+                if (managedServer instanceof RemoteDMRManagedServer) {
+                    RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
+                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(), dmrServer.getHost(),
+                            dmrServer.getPort(), dmrServer.getUsername(), dmrServer.getPassword());
+                    addDMRResources(managedServer, dmrEndpoint, resourceTypeSets);
+                } else if (managedServer instanceof LocalDMRManagedServer) {
+                    LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
+                    LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.getName().toString(),
+                            createLocalClientFactory());
+                    addDMRResources(managedServer, dmrEndpoint, resourceTypeSets);
+                } else {
+                    throw new IllegalArgumentException("An invalid managed server type was found. ["
+                            + managedServer
+                            + "] Please report this bug.");
+                }
+            }
+        }
+    }
+
+    private void addDMRResources(ManagedServer managedServer, DMREndpoint dmrEndpoint,
+            List<Name> dmrResourceTypeSets) {
+
+        // determine the client to use to connect to the managed server
+        ModelControllerClientFactory factory;
+        if (dmrEndpoint instanceof LocalDMREndpoint) {
+            factory = createLocalClientFactory();
+        } else {
+            factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
+        }
+
+        // discover resources of the configured resource types
+        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
+        rtm = new ResourceTypeManager<>(this.configuration.dmrResourceTypeSetMap, dmrResourceTypeSets);
+        DMRDiscovery discovery = new DMRDiscovery(dmrEndpoint, rtm, factory);
+        DirectedGraph<DMRResource, DefaultEdge> resourcesGraph;
+        try {
+            resourcesGraph = discovery.discoverAllResources();
+        } catch (Exception e) {
+            MsgLogger.LOG.errorDiscoveryFailed(e, dmrEndpoint);
+            return; // no sense continuing since we don't have any resources
+        }
+
+        // now that we have our resources discovered, we can schedule their metric and avail collections
+        DepthFirstIterator<DMRResource, DefaultEdge> iter = new DepthFirstIterator<>(resourcesGraph);
+        while (iter.hasNext()) {
+            DMRResource resource = iter.next();
+            addDMRMetricsAndAvails(resource);
+        }
+    }
+
+    private void addDMRMetricsAndAvails(DMRResource resource) {
+
+        DMREndpoint dmrEndpoint = resource.getEndpoint();
+        Address resourceAddress = resource.getAddress();
+        List<Name> dmrMetricSets = resource.getResourceType().getMetricSets();
+        List<Name> dmrAvailSets = resource.getResourceType().getAvailSets();
+
+        for (Name metricSetName : dmrMetricSets) {
+            DMRMetricTypeSet metricSet = this.configuration.dmrMetricTypeSetMap.get(metricSetName);
+            if (metricSet != null) {
+                if (metricSet.isEnabled()) {
+                    for (DMRMetricType metric : metricSet.getMetricTypeMap().values()) {
+                        Interval interval = new Interval(metric.getInterval(), metric.getTimeUnits());
+                        Address metricAddress = resourceAddress.clone().add(Address.parse(metric.getPath()));
+                        DMRPropertyReference ref = new DMRPropertyReference(metricAddress, metric.getAttribute(),
+                                interval);
+                        schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
+                    }
+                }
+            }
+        }
+
+        for (Name availSetName : dmrAvailSets) {
+            DMRAvailTypeSet availSet = this.configuration.dmrAvailTypeSetMap.get(availSetName);
+            if (availSet != null) {
+                if (availSet.isEnabled()) {
+                    for (DMRAvailType avail : availSet.getAvailTypeMap().values()) {
+                        Interval interval = new Interval(avail.getInterval(), avail.getTimeUnits());
+                        Address availAddress = resourceAddress.clone().add(Address.parse(avail.getPath()));
+                        AvailDMRPropertyReference ref = new AvailDMRPropertyReference(availAddress,
+                                avail.getAttribute(), interval, avail.getUpRegex());
+                        schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
+                    }
+                }
+            }
+        }
     }
 }

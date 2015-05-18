@@ -51,7 +51,6 @@ import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
-import org.hawkular.dmrclient.Address;
 import org.jboss.logging.Logger;
 
 import com.codahale.metrics.MetricRegistry;
@@ -279,8 +278,7 @@ public class SchedulerService {
                     }
                 }
 
-                tasks.add(new MetricDMRTask(ref.getInterval(), dmrEndpoint, Address.parse(ref.getAddress()),
-                        attribute, subref));
+                tasks.add(new MetricDMRTask(ref.getInterval(), dmrEndpoint, ref.getAddress(), attribute, subref));
             }
         }
 
@@ -306,8 +304,8 @@ public class SchedulerService {
                     }
                 }
 
-                tasks.add(new AvailDMRTask(ref.getInterval(), dmrEndpoint, Address.parse(ref.getAddress()), attribute,
-                        subref, ref.getUpRegex()));
+                tasks.add(new AvailDMRTask(ref.getInterval(), dmrEndpoint, ref.getAddress(), attribute, subref,
+                        ref.getUpRegex()));
             }
         }
 
