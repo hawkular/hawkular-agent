@@ -23,12 +23,17 @@ public class DMRResource extends Resource<DMRResourceType> {
 
     private final Address address;
 
-    public DMRResource(String name, DMRResourceType type, Address address) {
-        super(name, type);
+    public DMRResource(String name, DMRResourceType type, DMRResource parent, Address address) {
+        super(name, type, parent);
         this.address = address;
     }
 
     public Address getAddress() {
         return address;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s[address=%s]", super.toString(), this.address);
     }
 }

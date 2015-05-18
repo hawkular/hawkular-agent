@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.log;
 
 import java.util.List;
 
+import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 import org.jboss.logging.annotations.Cause;
@@ -122,5 +123,9 @@ public interface MsgLogger {
     @LogMessage(level = Level.INFO)
     @Message(id = 10022, value = "Resource type [%s] is disabled - all if its child types will also be disabled: %s")
     void infoDisablingResourceTypes(Object disabledType, List<?> toBeDisabled);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10023, value = "Discovery failed while probing endpoint [%s]")
+    void errorDiscoveryFailed(@Cause Exception e, MonitoredEndpoint endpoint);
 
 }

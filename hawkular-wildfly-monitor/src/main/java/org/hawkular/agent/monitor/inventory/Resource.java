@@ -19,14 +19,24 @@ package org.hawkular.agent.monitor.inventory;
 public abstract class Resource<T extends ResourceType> extends NamedObject {
 
     private final T resourceType;
+    private final Resource<?> parent;
 
-    public Resource(String name, T resourceType) {
+    public <P extends Resource<?>> Resource(String name, T resourceType, P parent) {
         super(name);
         this.resourceType = resourceType;
+        this.parent = parent;
     }
 
     public T getResourceType() {
         return resourceType;
     }
 
+    public <P extends Resource<?>> P getParent() {
+        return (P) parent;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s=[type=%s]", super.toString(), this.resourceType);
+    }
 }

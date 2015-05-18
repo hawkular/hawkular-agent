@@ -77,12 +77,14 @@ public class AddressTest extends Address {
         Address addr = Address.root();
         assert addr != null;
         assert addr.equals(Address.root());
-        assert addr.toString().equals("undefined");
+        assert addr.getAddressNode().toString().equals("undefined");
+        assert addr.toString().equals("/");
 
         Address addr2 = Address.root().add("one", "two");
         assert addr2 != null;
         assert !addr2.equals(addr);
         assert addr2.getAddressNode().asList().get(0).get("one").asString().equals("two");
+        assert addr2.toString().equals("/one=two");
     }
 
     @Test

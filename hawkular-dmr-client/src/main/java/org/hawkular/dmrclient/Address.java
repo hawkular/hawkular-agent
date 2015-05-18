@@ -268,7 +268,7 @@ public class Address implements Cloneable {
 
     @Override
     public String toString() {
-        return addressNode.asString();
+        return toAddressPathString();
     }
 
     @Override

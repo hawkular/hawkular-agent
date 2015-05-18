@@ -447,7 +447,7 @@
                        availSets="Deployment Status" />
 
     <resource-type-dmr name="SubDeployment"
-                       resourceNameTemplate="SubDeployment [%2]"
+                       resourceNameTemplate="SubDeployment [%-]"
                        path="/subdeployment=*"
                        parents="Deployment"
                        metricSets="Undertow Metrics" />
@@ -455,7 +455,7 @@
 
   <resource-type-set-dmr name="Web Component" enabled="true">
     <resource-type-dmr name="Servlet"
-                       resourceNameTemplate="Servlet [%4]"
+                       resourceNameTemplate="Servlet [%-]"
                        path="/subsystem=undertow/servlet=*"
                        parents="Deployment,SubDeployment"
                        metricSets="Servlet Metrics" />
@@ -463,19 +463,19 @@
 
   <resource-type-set-dmr name="EJB" enabled="true">
     <resource-type-dmr name="Singleton EJB"
-                       resourceNameTemplate="Singleton EJB [%4]"
+                       resourceNameTemplate="Singleton EJB [%-]"
                        path="/subsystem=ejb3/singleton-bean=*"
                        parents="Deployment,SubDeployment"
                        metricSets="Singleton EJB Metrics" />
 
     <resource-type-dmr name="Message Driven EJB"
-                       resourceNameTemplate="Message Driven EJB [%4]"
+                       resourceNameTemplate="Message Driven EJB [%-]"
                        path="/subsystem=ejb3/message-driven-bean=*"
                        parents="Deployment,SubDeployment"
                        metricSets="Message Driven EJB Metrics" />
 
     <resource-type-dmr name="Stateless Session EJB"
-                       resourceNameTemplate="Stateless Session EJB [%4]"
+                       resourceNameTemplate="Stateless Session EJB [%-]"
                        path="/subsystem=ejb3/stateless-session-bean=*"
                        parents="Deployment,SubDeployment"
                        metricSets="Stateless Session EJB Metrics" />
@@ -483,7 +483,7 @@
 
   <resource-type-set-dmr name="Datasource" enabled="true">
     <resource-type-dmr name="Datasource"
-                       resourceNameTemplate="Datasource [%4]"
+                       resourceNameTemplate="Datasource [%-]"
                        path="/subsystem=datasources/data-source=*"
                        parents="WildFly Server"
                        metricSets="Datasource Pool Metrics,Datasource JDBC Metrics" />
@@ -491,7 +491,7 @@
 
   <resource-type-set-dmr name="Transaction Manager" enabled="true">
     <resource-type-dmr name="Transaction Manager"
-                       resourceNameTemplate="Transaction Manager [%2]"
+                       resourceNameTemplate="Transaction Manager"
                        path="/subsystem=transactions"
                        parents="WildFly Server"
                        metricSets="Transactions Metrics" />
