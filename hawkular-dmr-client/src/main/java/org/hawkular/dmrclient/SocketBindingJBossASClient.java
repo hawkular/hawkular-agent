@@ -81,7 +81,6 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * If a socket binding with the given name already exists, this method does nothing.
      *
      * @param socketBindingName the name of the socket binding to be created with the given port
-     * @param sysPropName the name of the system property whose value is to be the port number
      * @param port the default port number if the sysPropName is not defined
      * @throws Exception
      */

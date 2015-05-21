@@ -100,16 +100,17 @@ public class InfinispanJBossASClient extends JBossASClient {
      * Returns a ModelNode that can be used to create a local cache. Callers are free to tweak the
      * request that is returned, if they so choose, before asking the client to execute the request.
      *
-     * @param localCacheName
+     * @param cacheContainerName cache container name
+     * @param localCacheName cache name
      * @param transactionMode if null, defaults to "NONE"
      * @param evictionStrategy if null, defaults to "LRU"
      * @param evictionMaxEntries if null, defaults to 50000
-     * @param expirationLifespan if null, defaults to -1
+     * @param expirationLifeSpan if null, defaults to -1
      * @param expirationMaxIdle if null, defaults to 100000
      * @param isolationLevel if null, defaults to REPEATABLE_READ (currently ignored)
      *
      * @return the request that can be used to create the local cache
-     * @Throws IllegalArgumentException if cacheContainerName does not correspond to a defined container
+     * @throws IllegalArgumentException if cacheContainerName does not correspond to a defined container
      */
     public ModelNode createNewLocalCacheRequest(String cacheContainerName, String localCacheName,
             String transactionMode, String evictionStrategy, Long evictionMaxEntries, Long expirationLifeSpan,
