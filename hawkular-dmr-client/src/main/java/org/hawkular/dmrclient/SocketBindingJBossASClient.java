@@ -57,6 +57,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      *
      * @param socketBindingName the name of the socket binding to look for
      * @return true if there is an existing socket binding in the standard group
+     * @throws Exception any error
      */
     public boolean isStandardSocketBinding(String socketBindingName) throws Exception {
         return isSocketBinding(STANDARD_SOCKETS, socketBindingName);
@@ -68,6 +69,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingGroupName the name of the socket binding group in which to look for the named socket binding
      * @param socketBindingName the name of the socket binding to look for
      * @return true if there is an existing socket binding in the given group
+     * @throws Exception any error
      */
     public boolean isSocketBinding(String socketBindingGroupName, String socketBindingName) throws Exception {
         Address addr = Address.root().add(SOCKET_BINDING_GROUP, socketBindingGroupName);
@@ -81,9 +83,8 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * If a socket binding with the given name already exists, this method does nothing.
      *
      * @param socketBindingName the name of the socket binding to be created with the given port
-     * @param sysPropName the name of the system property whose value is to be the port number
      * @param port the default port number if the sysPropName is not defined
-     * @throws Exception
+     * @throws Exception any error
      */
     public void addStandardSocketBinding(String socketBindingName, int port) throws Exception {
         addStandardSocketBinding(socketBindingName, null, port);
@@ -97,7 +98,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingName the name of the socket binding to be created with the given port
      * @param sysPropName the name of the system property whose value is to be the port number
      * @param port the default port number if the sysPropName is not defined
-     * @throws Exception
+     * @throws Exception any error
      */
     public void addStandardSocketBinding(String socketBindingName, String sysPropName, int port) throws Exception {
         addSocketBinding(STANDARD_SOCKETS, socketBindingName, sysPropName, port);
@@ -110,7 +111,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingGroupName the name of the socket binding group in which to create the named socket binding
      * @param socketBindingName the name of the socket binding to be created with the given port
      * @param port the port number
-     * @throws Exception
+     * @throws Exception any error
      */
     public void addSocketBinding(String socketBindingGroupName, String socketBindingName, int port) throws Exception {
         addSocketBinding(socketBindingGroupName, socketBindingName, null, port);
@@ -127,7 +128,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingName the name of the socket binding to be created with the given port
      * @param sysPropName the name of the system property whose value is to be the port number
      * @param port the default port number if the sysPropName is not defined
-     * @throws Exception
+     * @throws Exception any error
      */
     public void addSocketBinding(String socketBindingGroupName, String socketBindingName, String sysPropName, int port)
         throws Exception {
@@ -163,7 +164,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * {@link #JBOSS_SYSPROP_PORT_OFFSET} system property.
      *
      * @param offset the new port offset
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setStandardPortOffset(int offset) throws Exception {
         setPortOffset(STANDARD_SOCKETS, JBOSS_SYSPROP_PORT_OFFSET, offset);
@@ -179,7 +180,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingGroupName name of the socket binding group whose port offset is to be set
      * @param sysPropName the name of the system property whose value is to be the port offset
      * @param offset the default port offset if the sysPropName is not defined
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setPortOffset(String socketBindingGroupName, String sysPropName, int offset) throws Exception {
         String offsetValue;
@@ -203,7 +204,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      *
      * @param socketBindingName the name of the standard socket binding whose port is to be set
      * @param port the new port number
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setStandardSocketBindingPort(String socketBindingName, int port) throws Exception {
         setStandardSocketBindingPortExpression(socketBindingName, null, port);
@@ -217,7 +218,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingName the name of the standard socket binding whose port is to be set
      * @param sysPropName the name of the system property whose value is to be the port number
      * @param port the default port number if the sysPropName is not defined
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setStandardSocketBindingPortExpression(String socketBindingName, String sysPropName, int port)
         throws Exception {
@@ -230,7 +231,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingGroupName the name of the socket binding group that has the named socket binding
      * @param socketBindingName the name of the socket binding whose port is to be set
      * @param port the new port number
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setSocketBindingPort(String socketBindingGroupName, String socketBindingName, int port)
         throws Exception {
@@ -246,7 +247,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingName the name of the socket binding whose port is to be set
      * @param sysPropName the name of the system property whose value is to be the port number
      * @param port the default port number if the sysPropName is not defined
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setSocketBindingPortExpression(String socketBindingGroupName, String socketBindingName,
         String sysPropName, int port) throws Exception {
@@ -273,7 +274,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      *
      * @param socketBindingName the name of the standard socket binding whose interface is to be set
      * @param interfaceName the new interface name
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setStandardSocketBindingInterface(String socketBindingName, String interfaceName) throws Exception {
         setStandardSocketBindingInterfaceExpression(socketBindingName, null, interfaceName);
@@ -287,7 +288,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingName the name of the standard socket binding whose interface is to be set
      * @param sysPropName the name of the system property whose value is to be the interface name
      * @param interfaceName the default interface name if the sysPropName is not defined
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setStandardSocketBindingInterfaceExpression(String socketBindingName, String sysPropName,
         String interfaceName) throws Exception {
@@ -300,7 +301,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingGroupName the name of the socket binding group that has the named socket binding
      * @param socketBindingName the name of the socket binding whose interface is to be set
      * @param interfaceName the new interface name
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setSocketBindingPort(String socketBindingGroupName, String socketBindingName, String interfaceName)
         throws Exception {
@@ -316,7 +317,7 @@ public class SocketBindingJBossASClient extends JBossASClient {
      * @param socketBindingName the name of the socket binding whose interface is to be set
      * @param sysPropName the name of the system property whose value is to be the interface name
      * @param interfaceName the default interface name if the sysPropName is not defined
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setSocketBindingInterfaceExpression(String socketBindingGroupName, String socketBindingName,
         String sysPropName, String interfaceName) throws Exception {

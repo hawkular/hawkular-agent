@@ -41,6 +41,7 @@ public class WebJBossASClient extends JBossASClient {
      * the server is just starting up and its web subsystem has not even initialized yet.
      *
      * @return true if the web subsystem is ready
+     * @throws Exception any error
      */
     public boolean isWebSubsystem() throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_WEB);
@@ -55,7 +56,7 @@ public class WebJBossASClient extends JBossASClient {
      * you need to enable this setting.
      *
      * @param enableFlag true if the welcome screen at the root context should be enabled; false otherwise
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setEnableWelcomeRoot(boolean enableFlag) throws Exception {
         final Address address = Address.root().add(SUBSYSTEM, SUBSYSTEM_WEB, VIRTUAL_SERVER, DEFAULT_HOST);
@@ -72,6 +73,7 @@ public class WebJBossASClient extends JBossASClient {
      *
      * @param name the name to check
      * @return true if there is a connector with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isConnector(String name) throws Exception {
         final Address address = Address.root().add(SUBSYSTEM, SUBSYSTEM_WEB, CONNECTOR, name);
@@ -83,6 +85,7 @@ public class WebJBossASClient extends JBossASClient {
      *
      * @param name the name of the connector whose node is to be returned
      * @return the node if there is a connector with the given name already in existence, null otherwise
+     * @throws Exception any error
      */
     public ModelNode getConnector(String name) throws Exception {
         final Address address = Address.root().add(SUBSYSTEM, SUBSYSTEM_WEB, CONNECTOR, name);
@@ -110,7 +113,7 @@ public class WebJBossASClient extends JBossASClient {
      * Removes the given web connector.
      *
      * @param doomedConnectorName the name of the web connector to remove.
-     * @throws Exception
+     * @throws Exception any error
      */
     public void removeConnector(String doomedConnectorName) throws Exception {
         final Address address = Address.root().add(SUBSYSTEM, SUBSYSTEM_WEB, CONNECTOR, doomedConnectorName);
@@ -123,9 +126,9 @@ public class WebJBossASClient extends JBossASClient {
     /**
      * Add a new web connector, which may be a secure SSL connector (HTTPS) or not (HTTP).
      *
-     * @param name
-     * @param connectorConfig
-     * @throws Exception
+     * @param name name of new connector to add
+     * @param connectorConfig the connector's configuration
+     * @throws Exception any error
      */
     public void addConnector(String name, ConnectorConfiguration connectorConfig) throws Exception {
         ModelNode fullRequest;

@@ -51,7 +51,7 @@ public class CoreJBossASClient extends JBossASClient {
      *
      * @param enableFlag true if the admin console enabled and visible;
      *                   false if you want to prohibit all access to the admin console
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setEnableAdminConsole(boolean enableFlag) throws Exception {
         final Address address = Address.root()
@@ -93,7 +93,7 @@ public class CoreJBossASClient extends JBossASClient {
      * JVM of the AS instance that the client is talking to.
      *
      * @return the AS JVM's system properties
-     * @throws Exception
+     * @throws Exception any error
      */
     public Properties getSystemProperties() throws Exception {
         final String[] address = { CORE_SERVICE, PLATFORM_MBEAN, "type", "runtime" };
@@ -177,7 +177,7 @@ public class CoreJBossASClient extends JBossASClient {
     /**
      * Enabled or disables the default deployment scanner.
      * @param enabled the new status to be set
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setAppServerDefaultDeploymentScanEnabled(boolean enabled) throws Exception {
         final String[] addressArr = { SUBSYSTEM, DEPLOYMENT_SCANNER, SCANNER, "default" };
@@ -195,7 +195,7 @@ public class CoreJBossASClient extends JBossASClient {
      * Returns the location where the default deployment scanner is pointing to.
      * This is where EARs, WARs and the like are deployed to.
      * @return the default deployments directory - null if there is no deployment scanner
-     * @throws Exception
+     * @throws Exception any error
      */
     public String getAppServerDefaultDeploymentDir() throws Exception {
         final String[] addressArr = { SUBSYSTEM, DEPLOYMENT_SCANNER, SCANNER, "default" };
@@ -234,7 +234,7 @@ public class CoreJBossASClient extends JBossASClient {
      * Sets the interval of the default deployment scanner. If the value is
      * less than 1 millisecond, the scanner will scan only one time at server startup.
      * @param millis number of milliseconds to periodically scan the deployment directory
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setAppServerDefaultDeploymentScanInterval(long millis) throws Exception {
         final String[] addressArr = { SUBSYSTEM, DEPLOYMENT_SCANNER, SCANNER, "default" };
@@ -252,7 +252,7 @@ public class CoreJBossASClient extends JBossASClient {
      * Sets the deployment timeout of the default deployment scanner. If a deployment
      * takes longer than this value, it will fail.
      * @param secs number of seconds the app server will wait for a deployment to finish
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setAppServerDefaultDeploymentTimeout(long secs) throws Exception {
         final String[] addressArr = { SUBSYSTEM, DEPLOYMENT_SCANNER, SCANNER, "default" };
@@ -269,9 +269,9 @@ public class CoreJBossASClient extends JBossASClient {
     /**
      * Set a runtime system property in the JVM that is managed by JBossAS.
      *
-     * @param name
-     * @param value
-     * @throws Exception
+     * @param name system property name to set
+     * @param value the new value of the system property
+     * @throws Exception any error
      */
     public void setSystemProperty(String name, String value) throws Exception {
         final ModelNode request = createRequest(ADD, Address.root().add(SYSTEM_PROPERTY, name));
@@ -286,7 +286,7 @@ public class CoreJBossASClient extends JBossASClient {
      * Adds a new module extension to the core system.
      *
      * @param name the name of the new module extension
-     * @throws Exception
+     * @throws Exception any error
      */
     public void addExtension(String name) throws Exception {
         // /extension=<name>/:add(module=<name>)
@@ -304,7 +304,7 @@ public class CoreJBossASClient extends JBossASClient {
      *
      * @param name the name of the extension to check
      * @return true if the extension already exists; false if not
-     * @throws Exception
+     * @throws Exception any error
      */
     public boolean isExtension(String name) throws Exception {
         return null != readResource(Address.root().add(EXTENSION, name));
@@ -314,7 +314,7 @@ public class CoreJBossASClient extends JBossASClient {
      * Adds a new subsystem to the core system.
      *
      * @param name the name of the new subsystem
-     * @throws Exception
+     * @throws Exception any error
      */
     public void addSubsystem(String name) throws Exception {
         addSubsystem(name, null);
@@ -326,7 +326,7 @@ public class CoreJBossASClient extends JBossASClient {
      *
      * @param name the name of the new subsystem
      * @param settings a node with some additional settings used to initialize the subsystem
-     * @throws Exception
+     * @throws Exception any error
      */
     public void addSubsystem(String name, ModelNode settings) throws Exception {
         // /subsystem=<name>:add()
@@ -343,7 +343,7 @@ public class CoreJBossASClient extends JBossASClient {
      *
      * @param name the name of the subsystem to check
      * @return true if the subsystem already exists; false if not
-     * @throws Exception
+     * @throws Exception any error
      */
     public boolean isSubsystem(String name) throws Exception {
         return null != readResource(Address.root().add(SUBSYSTEM, name));
@@ -358,7 +358,7 @@ public class CoreJBossASClient extends JBossASClient {
      * will probably shutdown the connection. You will need to throw away this object and rebuild
      * another one with a newly reconnected {@link #getModelControllerClient() client}.
      *
-     * @throws Exception
+     * @throws Exception any error
      */
     public void reload() throws Exception {
         reload(false);
@@ -375,7 +375,7 @@ public class CoreJBossASClient extends JBossASClient {
      *
      * @param adminOnly if <code>true</code>, reloads the server in admin-only mode
      *
-     * @throws Exception
+     * @throws Exception any error
      */
     public void reload(boolean adminOnly) throws Exception {
         final ModelNode request = createRequest("reload", Address.root());
@@ -399,7 +399,7 @@ public class CoreJBossASClient extends JBossASClient {
      * will shutdown the connection. You will need to throw away this object and rebuild
      * another one with a newly reconnected {@link #getModelControllerClient() client}.
      *
-     * @throws Exception
+     * @throws Exception any error
      */
     public void restart() throws Exception {
         shutdown(true);
@@ -418,7 +418,7 @@ public class CoreJBossASClient extends JBossASClient {
      * another one with a newly reconnected {@link #getModelControllerClient() client}.
      *
      * @param restart if true, the JVM will be restarted
-     * @throws Exception
+     * @throws Exception any error
      */
     public void shutdown(boolean restart) throws Exception {
         final ModelNode request = createRequest("shutdown", Address.root());

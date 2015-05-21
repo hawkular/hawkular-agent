@@ -40,6 +40,7 @@ public class DeploymentJBossASClient extends JBossASClient {
      *
      * @param name the deployment name to check
      * @return true if there is a deployment with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isDeployment(String name) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM_DEPLOYMENT, name);
@@ -89,7 +90,7 @@ public class DeploymentJBossASClient extends JBossASClient {
      * @param name the name of the deployment
      * @return the path where the deployment is found
      *
-     * @throws Exception
+     * @throws Exception any error
      */
     public String getDeploymentPath(String name) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM_DEPLOYMENT, name);

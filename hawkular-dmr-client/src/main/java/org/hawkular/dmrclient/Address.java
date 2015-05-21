@@ -252,8 +252,8 @@ public class Address implements Cloneable {
      * For example, an Address whose ModelNode representation is:
      *
      *    [
-     *     ("one" => "two"),
-     *     ("three" => "four")
+     *     ("one" =&gt; "two"),
+     *     ("three" =&gt; "four")
      *    ]
      *
      * will have a flat string of

@@ -49,7 +49,7 @@ public class DatasourceJBossASClient extends JBossASClient {
      * (XA or non-XA) exists with the given name, it will be removed.
      *
      * @param name the name of the datasource to remove
-     * @throws Exception
+     * @throws Exception any error
      */
     public void removeDatasource(String name) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES);
@@ -114,6 +114,7 @@ public class DatasourceJBossASClient extends JBossASClient {
      *
      * @param jdbcDriverName the name to check
      * @return true if there is a JDBC driver with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isJDBCDriver(String jdbcDriverName) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES);
@@ -126,6 +127,7 @@ public class DatasourceJBossASClient extends JBossASClient {
      *
      * @param datasourceName the name to check
      * @return true if there is a datasource with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isDatasource(String datasourceName) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES);
@@ -138,6 +140,7 @@ public class DatasourceJBossASClient extends JBossASClient {
      *
      * @param datasourceName the name to check
      * @return true if there is a XA datasource with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isXADatasource(String datasourceName) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES);
@@ -193,21 +196,22 @@ public class DatasourceJBossASClient extends JBossASClient {
      * Callers are free to tweak the datasource request that is returned,
      * if they so choose, before asking the client to execute the request.
      *
-     * @param name
-     * @param blockingTimeoutWaitMillis
-     * @param connectionUrlExpression
-     * @param driverName
-     * @param exceptionSorterClassName
-     * @param idleTimeoutMinutes
+     * @param name the name of the datasource
+     * @param blockingTimeoutWaitMillis see datasource documentation for meaning of this setting
+     * @param connectionUrlExpression see datasource documentation for meaning of this setting
+     * @param driverName see datasource documentation for meaning of this setting
+     * @param exceptionSorterClassName see datasource documentation for meaning of this setting
+     * @param idleTimeoutMinutes see datasource documentation for meaning of this setting
      * @param jta true if this DS should support transactions; false if not
-     * @param minPoolSize
-     * @param maxPoolSize
-     * @param preparedStatementCacheSize
-     * @param securityDomain
-     * @param staleConnectionCheckerClassName
-     * @param transactionIsolation
-     * @param validConnectionCheckerClassName
-     * @param connectionProperties
+     * @param minPoolSize see datasource documentation for meaning of this setting
+     * @param maxPoolSize see datasource documentation for meaning of this setting
+     * @param preparedStatementCacheSize see datasource documentation for meaning of this setting
+     * @param securityDomain see datasource documentation for meaning of this setting
+     * @param staleConnectionCheckerClassName see datasource documentation for meaning of this setting
+     * @param transactionIsolation see datasource documentation for meaning of this setting
+     * @param validConnectionCheckerClassName see datasource documentation for meaning of this setting
+     * @param validateOnMatch see datasource documentation for meaning of this setting
+     * @param connectionProperties see datasource documentation for meaning of this setting
      *
      * @return the request that can be used to create the datasource
      */
@@ -323,23 +327,23 @@ public class DatasourceJBossASClient extends JBossASClient {
      * Callers are free to tweek the datasource request that is returned,
      * if they so choose, before asking the client to execute the request.
      *
-     * @param name
-     * @param blockingTimeoutWaitMillis
-     * @param driverName
-     * @param xaDataSourceClass
-     * @param exceptionSorterClassName
-     * @param idleTimeoutMinutes
-     * @param minPoolSize
-     * @param maxPoolSize
+     * @param name name of the XA datasource
+     * @param blockingTimeoutWaitMillis see datasource documentation for meaning of this setting
+     * @param driverName see datasource documentation for meaning of this setting
+     * @param xaDataSourceClass see datasource documentation for meaning of this setting
+     * @param exceptionSorterClassName see datasource documentation for meaning of this setting
+     * @param idleTimeoutMinutes see datasource documentation for meaning of this setting
+     * @param minPoolSize see datasource documentation for meaning of this setting
+     * @param maxPoolSize see datasource documentation for meaning of this setting
      * @param noRecovery optional, left unset if null
      * @param noTxSeparatePool optional, left unset if null
-     * @param preparedStatementCacheSize
+     * @param preparedStatementCacheSize see datasource documentation for meaning of this setting
      * @param recoveryPluginClassName optional, left unset if null
-     * @param securityDomain
+     * @param securityDomain see datasource documentation for meaning of this setting
      * @param staleConnectionCheckerClassName optional, left unset if null
-     * @param transactionIsolation
-     * @param validConnectionCheckerClassName
-     * @param xaDatasourceProperties
+     * @param transactionIsolation see datasource documentation for meaning of this setting
+     * @param validConnectionCheckerClassName see datasource documentation for meaning of this setting
+     * @param xaDatasourceProperties see datasource documentation for meaning of this setting
      *
      * @return the request that can be used to create the XA datasource
      */

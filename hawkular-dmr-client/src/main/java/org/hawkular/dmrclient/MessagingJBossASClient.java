@@ -42,6 +42,7 @@ public class MessagingJBossASClient extends JBossASClient {
      *
      * @param queueName the name to check
      * @return true if there is a queue with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isQueue(String queueName) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_MESSAGING, HORNETQ_SERVER, "default");
