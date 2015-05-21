@@ -112,12 +112,11 @@ public class InfinispanJBossASClient extends JBossASClient {
      * @param isolationLevel if null, defaults to REPEATABLE_READ (currently ignored)
      *
      * @return the request that can be used to create the local cache
-     * @throws IllegalArgumentException if cacheContainerName does not correspond to a defined container
-     * @throws Exception any error
+     * @throws Exception if cacheContainerName does not correspond to a defined container or any other error
      */
     public ModelNode createNewLocalCacheRequest(String cacheContainerName, String localCacheName,
             String transactionMode, String evictionStrategy, Long evictionMaxEntries, Long expirationLifeSpan,
-            Long expirationMaxIdle, String isolationLevel) throws Exception, IllegalArgumentException {
+            Long expirationMaxIdle, String isolationLevel) throws Exception {
 
         if (!isCacheContainer(cacheContainerName)) {
             throw new IllegalArgumentException("cache-container does not exist [" + cacheContainerName + "]");
