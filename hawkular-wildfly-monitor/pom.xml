@@ -192,7 +192,7 @@
         <configuration>
           <moduleZip>${project.build.directory}/${project.build.finalName}-module.zip</moduleZip>
           <jbossHome>${org.hawkular.wildfly.home}</jbossHome>
-          <modulesHome>modules/system/layers/base</modulesHome>
+          <modulesHome>modules</modulesHome>
           <serverConfig>standalone/configuration/standalone.xml</serverConfig>
           <subsystem>${project.basedir}/src/main/assembly/subsystem.xml</subsystem>
           <profiles>
