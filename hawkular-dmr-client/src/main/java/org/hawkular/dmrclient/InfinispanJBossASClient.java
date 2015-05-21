@@ -40,6 +40,7 @@ public class InfinispanJBossASClient extends JBossASClient {
      *
      * @param cacheContainerName the name to check
      * @return true if there is a cache container with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isCacheContainer(String cacheContainerName) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_INFINISPAN);
@@ -53,6 +54,7 @@ public class InfinispanJBossASClient extends JBossASClient {
      * @param cacheContainerName the parent container
      * @param localCacheName the name to check
      * @return true if there is a local cache with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isLocalCache(String cacheContainerName, String localCacheName) throws Exception {
         if (!isCacheContainer(cacheContainerName)) {
@@ -69,7 +71,7 @@ public class InfinispanJBossASClient extends JBossASClient {
      * subsequent cache configuration. Callers are free to tweak the request that is returned,
      * if they so choose, before asking the client to execute the request.
      * <p>
-     * The JNDI name will be java:jboss/infinispan/<cacheContainerName>
+     * The JNDI name will be java:jboss/infinispan/&lt;cacheContainerName&gt;
      * </p>
      *
      * @param name the name of the cache container
@@ -111,10 +113,11 @@ public class InfinispanJBossASClient extends JBossASClient {
      *
      * @return the request that can be used to create the local cache
      * @throws IllegalArgumentException if cacheContainerName does not correspond to a defined container
+     * @throws Exception any error
      */
     public ModelNode createNewLocalCacheRequest(String cacheContainerName, String localCacheName,
             String transactionMode, String evictionStrategy, Long evictionMaxEntries, Long expirationLifeSpan,
-            Long expirationMaxIdle, String isolationLevel) throws Exception {
+            Long expirationMaxIdle, String isolationLevel) throws Exception, IllegalArgumentException {
 
         if (!isCacheContainer(cacheContainerName)) {
             throw new IllegalArgumentException("cache-container does not exist [" + cacheContainerName + "]");

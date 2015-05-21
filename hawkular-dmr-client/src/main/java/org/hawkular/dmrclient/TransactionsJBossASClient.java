@@ -35,7 +35,7 @@ public class TransactionsJBossASClient extends JBossASClient {
     /**
      * Sets the default transaction timeout.
      * @param timeoutSecs the new default transaction timeout, in seconds.
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setDefaultTransactionTimeout(int timeoutSecs) throws Exception {
         final Address address = Address.root().add(SUBSYSTEM, TRANSACTIONS);

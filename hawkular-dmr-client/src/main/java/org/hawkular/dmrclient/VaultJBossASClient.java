@@ -37,6 +37,7 @@ public class VaultJBossASClient extends JBossASClient {
      * Checks to see if there is already a vault configured.
      *
      * @return true if the vault is already configured
+     * @throws Exception any error
      */
     public boolean isVault() throws Exception {
         Address addr = Address.root().add(CORE_SERVICE, VAULT);
@@ -55,7 +56,7 @@ public class VaultJBossASClient extends JBossASClient {
      * vault class.
      *
      * @return vault configured class
-     * @throws Exception
+     * @throws Exception any error
      */
     public String getVaultClass() throws Exception {
         Address addr = Address.root().add(CORE_SERVICE, VAULT);

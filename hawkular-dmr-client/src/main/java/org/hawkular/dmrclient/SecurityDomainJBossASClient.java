@@ -61,6 +61,7 @@ public class SecurityDomainJBossASClient extends JBossASClient {
      *
      * @param securityDomainName the name to check
      * @return true if there is a security domain with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isSecurityDomain(String securityDomainName) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_SECURITY);
@@ -384,7 +385,7 @@ public class SecurityDomainJBossASClient extends JBossASClient {
     /**
      * send a :flush-cache operation to the passed security domain
      * @param domain simple name of the domain
-     * @throws Exception
+     * @throws Exception any error
      */
     public void flushSecurityDomainCache(String domain) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_SECURITY, SECURITY_DOMAIN, domain);
@@ -400,7 +401,7 @@ public class SecurityDomainJBossASClient extends JBossASClient {
      * @param domainName Name of the security domain
      * @param moduleName Name of the Login module - wich usually is it FQCN
      * @return True if the module is present
-     * @throws Exception
+     * @throws Exception any error
      */
     public boolean securityDomainHasLoginModule(String domainName, String moduleName) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_SECURITY, SECURITY_DOMAIN, domainName);
@@ -418,7 +419,7 @@ public class SecurityDomainJBossASClient extends JBossASClient {
         /**
          * @param loginModuleFQCN fully qualified class name to be set as the login-module "code".
          * @param flag constant, one of required|requisite|sufficient|optional
-         * @param moduleOptionProperties map of propName->propValue mappings to to bet as module options
+         * @param moduleOptionProperties map of propName/propValue mappings to be as module options
          */
         public LoginModuleRequest(String loginModuleFQCN, AppConfigurationEntry.LoginModuleControlFlag flag,
                 Map<String, String> moduleOptionProperties) {

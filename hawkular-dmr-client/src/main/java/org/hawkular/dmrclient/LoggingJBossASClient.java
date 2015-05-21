@@ -39,6 +39,7 @@ public class LoggingJBossASClient extends JBossASClient {
      *
      * @param loggerName the name to check (this is also known as the category name)
      * @return true if there is a logger/category with the given name already in existence
+     * @throws Exception any error
      */
     public boolean isLogger(String loggerName) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, LOGGING, LOGGER, loggerName);
@@ -63,7 +64,7 @@ public class LoggingJBossASClient extends JBossASClient {
      *
      * @param loggerName the logger name (this is also known as the category name)
      * @param level the new level of the logger (e.g. DEBUG, INFO, ERROR, etc.)
-     * @throws Exception
+     * @throws Exception any error
      */
     public void setLoggerLevel(String loggerName, String level) throws Exception {
 

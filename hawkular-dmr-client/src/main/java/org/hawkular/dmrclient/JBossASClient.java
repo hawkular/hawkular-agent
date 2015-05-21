@@ -60,7 +60,6 @@ public class JBossASClient implements AutoCloseable {
 
     /**
      * Constructs a new JBoss AS Client that talks to the model through the provided client.
-     * <p/>
      * Note that the caller is responsible to correctly close the client instance!!!
      *
      * @param client the client to use
@@ -276,9 +275,9 @@ public class JBossASClient implements AutoCloseable {
     /**
      * Convienence method that executes the request.
      *
-     * @param request
-     * @return results
-     * @throws Exception
+     * @param request request to execute
+     * @return results results of execution
+     * @throws Exception any error
      */
     public ModelNode execute(ModelNode request) throws Exception {
         ModelControllerClient mcc = getModelControllerClient();
@@ -290,7 +289,7 @@ public class JBossASClient implements AutoCloseable {
      * This will not return an exception if the address points to a non-existent resource, rather,
      * it will just return null. You can use this as a test for resource existence.
      *
-     * @param addr
+     * @param addr the address of the resource
      * @return the found item or null if not found
      * @throws Exception if some error prevented the lookup from even happening
      */
@@ -304,7 +303,7 @@ public class JBossASClient implements AutoCloseable {
      * This will not return an exception if the address points to a non-existent resource, rather,
      * it will just return null. You can use this as a test for resource existence.
      *
-     * @param addr
+     * @param addr the address of the resource
      * @param recursive if true, return all child data within the resource node
      * @return the found item or null if not found
      * @throws Exception if some error prevented the lookup from even happening
@@ -325,7 +324,7 @@ public class JBossASClient implements AutoCloseable {
      * Removes the resource at the given address.
      *
      * @param doomedAddr the address of the resource to remove
-     * @throws Exception
+     * @throws Exception any error
      */
     public void remove(Address doomedAddr) throws Exception {
         final ModelNode request = createRequest(REMOVE, doomedAddr);
@@ -384,9 +383,9 @@ public class JBossASClient implements AutoCloseable {
      * can pass in the address for the datasource subsystem, and ask to look in the data-source
      * node list (the haystack) and return the named datasource (the needle).
      *
-     * @param addr
-     * @param haystack
-     * @param needle
+     * @param addr resource address
+     * @param haystack the collection
+     * @param needle the item to find in the collection
      * @return the found item or null if not found
      * @throws Exception if the lookup fails for some reason
      */
