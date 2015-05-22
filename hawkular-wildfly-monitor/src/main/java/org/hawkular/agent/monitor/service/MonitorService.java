@@ -54,6 +54,7 @@ import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
+import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.dmrclient.Address;
@@ -332,15 +333,18 @@ public class MonitorService implements Service<MonitorService> {
         im.discoverResources();
 
         // Resources have been discovered; let's tell inventory about them and their type metadata
-        BreadthFirstIterator<DMRResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
-        while (bIter.hasNext()) {
-            DMRResource resource = bIter.next();
-            Collection<DMRMetricType> dmrMetricSets = new HashSet<>();
-            Collection<DMRAvailType> dmrAvailSets = new HashSet<>();
-            im.retrieveMetricAndAvailTypesForResourceType(resource.getResourceType(), dmrMetricSets, dmrAvailSets);
-            LOG.errorf("Inventorying resource type [%s], resource [%s], metricTypes [%s], availTypes=[%s]",
-                    resource.getResourceType(), resource, dmrMetricSets, dmrAvailSets);
+        // Don't do this if we aren't hooked into a full Hawkular environment.
+        if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+            BreadthFirstIterator<DMRResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
+            while (bIter.hasNext()) {
+                DMRResource resource = bIter.next();
+                Collection<DMRMetricType> dmrMetricSets = new HashSet<>();
+                Collection<DMRAvailType> dmrAvailSets = new HashSet<>();
+                im.retrieveMetricAndAvailTypesForResourceType(resource.getResourceType(), dmrMetricSets, dmrAvailSets);
+                LOG.errorf("Inventorying resource type [%s], resource [%s], metricTypes [%s], availTypes=[%s]",
+                        resource.getResourceType(), resource, dmrMetricSets, dmrAvailSets);
 
+            }
         }
 
         // now that we have our resources discovered, we can schedule their metric and avail collections
