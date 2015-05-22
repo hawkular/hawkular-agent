@@ -25,15 +25,17 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.jgrapht.DirectedGraph;
-import org.jgrapht.Graphs;
+import org.jgrapht.alg.DirectedNeighborIndex;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.graph.ListenableDirectedGraph;
+import org.jgrapht.traverse.BreadthFirstIterator;
+import org.jgrapht.traverse.DepthFirstIterator;
 
 public class ResourceTypeManager<T extends ResourceType, S extends ResourceTypeSet<T>> {
 
     private final Map<Name, S> resourceTypeSetMap;
-    private final DirectedGraph<T, DefaultEdge> resourceTypesGraph;
+    private final ListenableDirectedGraph<T, DefaultEdge> resourceTypesGraph;
+    private final DirectedNeighborIndex<T, DefaultEdge> index;
 
     /**
      * Adds the given types to the manager, building a graph to represent the type hierarchy.
@@ -68,18 +70,39 @@ public class ResourceTypeManager<T extends ResourceType, S extends ResourceTypeS
             }
         }
 
-        this.resourceTypesGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
+        this.resourceTypesGraph = new ListenableDirectedGraph<>(DefaultEdge.class);
+        this.index = new DirectedNeighborIndex<>(this.resourceTypesGraph);
+        this.resourceTypesGraph.addGraphListener(index);
+
         prepareGraph();
     }
 
     /**
-     * Returns the resource type hierarchy. The graph is directed with outgoing edges pointing
-     * to parents. If a graph vertex has an incoming edge, that means it is a parent of a child type.
-     *
-     * @return resource type hierarchy as a graph
+     * @return the internal graph of the resource types being managed. Use with caution, changes to this graph
+     *         are backed by this manager.
      */
-    public DirectedGraph<T, DefaultEdge> getResourceTypesGraph() {
-        return resourceTypesGraph;
+    public ListenableDirectedGraph<T, DefaultEdge> getResourceTypesGraph() {
+        return this.resourceTypesGraph;
+    }
+
+    /**
+     * Returns an iterator that let's you walk the tree of resource types breadth-first.
+     * Do NOT modify the resource type graph while iterating.
+     *
+     * @return an iterator that iterates the resource type graph breadth-first
+     */
+    public BreadthFirstIterator<T, DefaultEdge> getBreadthFirstIterator() {
+        return new BreadthFirstIterator<T, DefaultEdge>(this.resourceTypesGraph);
+    }
+
+    /**
+     * Returns an iterator that let's you walk the tree of resource types depth-first.
+     * Do NOT modify the resource type graph while iterating.
+     *
+     * @return an iterator that iterates the resource type graph depth-first
+     */
+    public DepthFirstIterator<T, DefaultEdge> getDepthFirstIterator() {
+        return new DepthFirstIterator<T, DefaultEdge>(this.resourceTypesGraph);
     }
 
     /**
@@ -91,11 +114,44 @@ public class ResourceTypeManager<T extends ResourceType, S extends ResourceTypeS
         Set<T> roots = new HashSet<>();
         Set<T> allTypes = resourceTypesGraph.vertexSet();
         for (T type : allTypes) {
-            if (resourceTypesGraph.outgoingEdgesOf(type).isEmpty()) {
+            if (index.successorsOf(type).isEmpty()) {
                 roots.add(type);
             }
         }
         return roots;
+    }
+
+    /**
+     * Returns the direct child types of the given resource type.
+     *
+     * @param resourceType the type whose children are to be returned
+     *
+     * @return the direct children of the given resource type
+     */
+    public Set<T> getChildren(T resourceType) {
+        Set<T> directChildren = index.predecessorsOf(resourceType);
+        return directChildren;
+    }
+
+    /**
+     * Returns the direct parent types of the given resource type.
+     *
+     * @param resourceType the type whose parents are to be returned
+     *
+     * @return the direct parents of the given resource type
+     */
+    public Set<T> getParents(T resourceType) {
+        Set<T> directParents = index.successorsOf(resourceType);
+        return directParents;
+    }
+
+    /**
+     * Returns an unordered set of all resource types currently being managed.
+     *
+     * @return all resource types
+     */
+    public Set<T> getAllResourceTypes() {
+        return this.resourceTypesGraph.vertexSet();
     }
 
     /**
@@ -148,7 +204,7 @@ public class ResourceTypeManager<T extends ResourceType, S extends ResourceTypeS
     }
 
     private void getDeepChildrenList(T resourceType, List<T> children) {
-        List<T> directChildren = Graphs.predecessorListOf(resourceTypesGraph, resourceType);
+        Set<T> directChildren = getChildren(resourceType);
         children.addAll(directChildren);
         for (T child : directChildren) {
             getDeepChildrenList(child, children);

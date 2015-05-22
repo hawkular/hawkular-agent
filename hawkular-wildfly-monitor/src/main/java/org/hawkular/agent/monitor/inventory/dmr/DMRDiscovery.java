@@ -23,9 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
+import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
@@ -34,10 +33,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 import org.jboss.logging.Logger;
-import org.jgrapht.DirectedGraph;
-import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 /**
@@ -46,28 +42,21 @@ import org.jgrapht.traverse.DepthFirstIterator;
 public class DMRDiscovery {
     private static final Logger LOG = Logger.getLogger(DMRDiscovery.class);
 
-    private final ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> resourceTypeManager;
-    private final DMREndpoint dmrEndpoint;
+    private final DMRInventoryManager inventoryManager;
     private final ModelControllerClientFactory clientFactory;
-    private final DirectedGraph<DMRResource, DefaultEdge> resourcesGraph;
 
     /**
-     * Creates the discovery object for the given server endpoint. Only resources of the given types
+     * Creates the discovery object for the given inventory manager. Only resources of known types
      * will be discovered. To connect to and query the server endpoint, the given client factory will
      * be used to create clients.
      *
-     * @param dmrEndpoint the endpoint of the server to be queried
-     * @param rtm the types to be discovered
+     * @param im the inventory manager that holds information about the server to be queried and
+     *           the known types to be discovered
      * @param clientFactory will create clients used to communicate with the endpoint
      */
-    public DMRDiscovery(DMREndpoint dmrEndpoint, ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm,
-            ModelControllerClientFactory clientFactory) {
-        this.resourceTypeManager = rtm;
-        this.dmrEndpoint = dmrEndpoint;
+    public DMRDiscovery(DMRInventoryManager im, ModelControllerClientFactory clientFactory) {
+        this.inventoryManager = im;
         this.clientFactory = clientFactory;
-        this.resourcesGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
-
-        LOG.tracef("Endpoint [%s] resource type graph -> %s", dmrEndpoint, rtm.getResourceTypesGraph());
     }
 
     /**
@@ -76,24 +65,26 @@ public class DMRDiscovery {
      * children at the bottom (that is to say, a resource will have an outgoing edge to its parent
      * and incoming edges from its children).
      *
-     * @return tree graph of all discovered resources
+     * @param resourceManager tree graph where all discovered resources will be stored
      *
      * @throws Exception if discovery failed
      */
-    public DirectedGraph<DMRResource, DefaultEdge> discoverAllResources() throws Exception {
+    public void discoverAllResources(ResourceManager<DMRResource> resourceManager) throws Exception {
         try (ModelControllerClient mcc = clientFactory.createClient()) {
-            Set<DMRResourceType> rootTypes = this.resourceTypeManager.getRootResourceTypes();
+            Set<DMRResourceType> rootTypes = this.inventoryManager.getResourceTypeManager().getRootResourceTypes();
             for (DMRResourceType rootType : rootTypes) {
-                discoverChildrenOfResourceType(null, rootType, mcc);
+                discoverChildrenOfResourceType(null, rootType, mcc, resourceManager);
             }
-            logTreeGraph("Discovered resources", resourcesGraph);
-            return resourcesGraph;
+            logTreeGraph("Discovered resources", resourceManager);
+            return;
         } catch (Exception e) {
-            throw new Exception("Failed to execute discovery for endpoint [" + this.dmrEndpoint + "]", e);
+            throw new Exception("Failed to execute discovery for endpoint [" + this.inventoryManager.getEndpoint()
+                    + "]", e);
         }
     }
 
-    private void discoverChildrenOfResourceType(DMRResource parent, DMRResourceType type, ModelControllerClient mcc) {
+    private void discoverChildrenOfResourceType(DMRResource parent, DMRResourceType type, ModelControllerClient mcc,
+            ResourceManager<DMRResource> resourceManager) {
         try {
             Map<Address, ModelNode> resources;
 
@@ -123,34 +114,30 @@ public class DMRDiscovery {
 
             for (Map.Entry<Address, ModelNode> entry : resources.entrySet()) {
                 String resourceName = generateResourceName(type, entry.getKey());
-                DMRResource resource = new DMRResource(dmrEndpoint, resourceName, type, parent, entry.getKey(),
-                        entry.getValue());
+                DMRResource resource = new DMRResource(this.inventoryManager.getEndpoint(), resourceName, type,
+                        parent, entry.getKey(), entry.getValue());
                 LOG.debugf("Discovered [%s]", resource);
 
-                this.resourcesGraph.addVertex(resource);
-                if (parent != null) {
-                    this.resourcesGraph.addEdge(resource, parent);
-                }
+                resourceManager.addResource(resource);
 
                 // recursively discover children of child types
-                List<DMRResourceType> childTypes = Graphs.predecessorListOf(
-                        this.resourceTypeManager.getResourceTypesGraph(), type);
+                Set<DMRResourceType> childTypes = this.inventoryManager.getResourceTypeManager().getChildren(type);
                 for (DMRResourceType childType : childTypes) {
-                    discoverChildrenOfResourceType(resource, childType, mcc);
+                    discoverChildrenOfResourceType(resource, childType, mcc, resourceManager);
                 }
             }
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to discover resources in [%s]", this.dmrEndpoint);
+            LOG.errorf(e, "Failed to discover resources in [%s]", this.inventoryManager.getEndpoint());
         }
     }
 
-    private void logTreeGraph(String logMsg, DirectedGraph<DMRResource, DefaultEdge> graph) {
+    private void logTreeGraph(String logMsg, ResourceManager<DMRResource> resourceManager) {
         if (!LOG.isDebugEnabled()) {
             return;
         }
 
         StringBuilder graphString = new StringBuilder();
-        DepthFirstIterator<DMRResource, DefaultEdge> iter = new DepthFirstIterator<>(graph);
+        DepthFirstIterator<DMRResource, DefaultEdge> iter = resourceManager.getDepthFirstIterator();
         while (iter.hasNext()) {
             DMRResource resource = iter.next();
 

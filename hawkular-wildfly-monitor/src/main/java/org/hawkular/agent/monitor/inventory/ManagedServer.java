@@ -16,8 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
 
 public abstract class ManagedServer extends NamedObject {
 
@@ -26,7 +26,7 @@ public abstract class ManagedServer extends NamedObject {
     }
 
     private boolean enabled;
-    private List<Name> resourceTypeSets = new ArrayList<>();
+    private Collection<Name> resourceTypeSets = new HashSet<>();
 
     public boolean isEnabled() {
         return enabled;
@@ -36,11 +36,11 @@ public abstract class ManagedServer extends NamedObject {
         this.enabled = enabled;
     }
 
-    public List<Name> getResourceTypeSets() {
+    public Collection<Name> getResourceTypeSets() {
         return resourceTypeSets;
     }
 
-    public void setResourceTypeSets(List<Name> resourceTypeSets) {
+    public void setResourceTypeSets(Collection<Name> resourceTypeSets) {
         this.resourceTypeSets = resourceTypeSets;
     }
 

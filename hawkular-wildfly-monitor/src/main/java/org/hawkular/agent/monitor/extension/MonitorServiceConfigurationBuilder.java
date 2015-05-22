@@ -295,7 +295,7 @@ public class MonitorServiceConfigurationBuilder {
             try {
                 ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
                 rtm = new ResourceTypeManager<>(theConfig.dmrResourceTypeSetMap);
-                if (!rtm.getResourceTypesGraph().vertexSet().isEmpty()) {
+                if (!rtm.getAllResourceTypes().isEmpty()) {
                     hasEnabledResourceTypes = true;
                 }
             } catch (Exception e) {

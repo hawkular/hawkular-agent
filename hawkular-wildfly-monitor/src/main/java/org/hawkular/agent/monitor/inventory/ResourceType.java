@@ -16,8 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
 
 public abstract class ResourceType extends NamedObject {
     public ResourceType(String name) {
@@ -25,9 +25,9 @@ public abstract class ResourceType extends NamedObject {
     }
 
     private String resourceNameTemplate;
-    private List<Name> parents;
-    private List<Name> metricSets = new ArrayList<>();
-    private List<Name> availSets = new ArrayList<>();
+    private Collection<Name> parents;
+    private Collection<Name> metricSets = new HashSet<>();
+    private Collection<Name> availSets = new HashSet<>();
 
     public String getResourceNameTemplate() {
         return resourceNameTemplate;
@@ -37,27 +37,27 @@ public abstract class ResourceType extends NamedObject {
         this.resourceNameTemplate = resourceNameTemplate;
     }
 
-    public List<Name> getParents() {
+    public Collection<Name> getParents() {
         return parents;
     }
 
-    public void setParents(List<Name> parents) {
+    public void setParents(Collection<Name> parents) {
         this.parents = parents;
     }
 
-    public List<Name> getMetricSets() {
+    public Collection<Name> getMetricSets() {
         return metricSets;
     }
 
-    public void setMetricSets(List<Name> metricSets) {
+    public void setMetricSets(Collection<Name> metricSets) {
         this.metricSets = metricSets;
     }
 
-    public List<Name> getAvailSets() {
+    public Collection<Name> getAvailSets() {
         return availSets;
     }
 
-    public void setAvailSets(List<Name> availSets) {
+    public void setAvailSets(Collection<Name> availSets) {
         this.availSets = availSets;
     }
 

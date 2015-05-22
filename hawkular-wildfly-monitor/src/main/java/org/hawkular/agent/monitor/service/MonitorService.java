@@ -18,6 +18,8 @@ package org.hawkular.agent.monitor.service;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,12 +28,15 @@ import java.util.concurrent.ThreadFactory;
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.inventory.MetricTypeManager;
 import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
-import org.hawkular.agent.monitor.inventory.dmr.DMRDiscovery;
+import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
@@ -68,8 +73,8 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 public class MonitorService implements Service<MonitorService> {
@@ -269,7 +274,7 @@ public class MonitorService implements Service<MonitorService> {
             if (!managedServer.isEnabled()) {
                 MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
             } else {
-                List<Name> resourceTypeSets = managedServer.getResourceTypeSets();
+                Collection<Name> resourceTypeSets = managedServer.getResourceTypeSets();
 
                 if (managedServer instanceof RemoteDMRManagedServer) {
                     RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
@@ -291,75 +296,87 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     private void addDMRResources(ManagedServer managedServer, DMREndpoint dmrEndpoint,
-            List<Name> dmrResourceTypeSets) {
+            Collection<Name> dmrResourceTypeSets) {
 
         // determine the client to use to connect to the managed server
         ModelControllerClientFactory factory;
-        if (dmrEndpoint instanceof LocalDMREndpoint) {
+l        if (dmrEndpoint instanceof LocalDMREndpoint) {
             factory = createLocalClientFactory();
         } else {
             factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
         }
 
-        // discover resources of the configured resource types
+        // Build our inventory manager
+        // First build our resource type manager.
         ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
         rtm = new ResourceTypeManager<>(this.configuration.dmrResourceTypeSetMap, dmrResourceTypeSets);
-        DMRDiscovery discovery = new DMRDiscovery(dmrEndpoint, rtm, factory);
-        DirectedGraph<DMRResource, DefaultEdge> resourcesGraph;
-        try {
-            resourcesGraph = discovery.discoverAllResources();
-        } catch (Exception e) {
-            MsgLogger.LOG.errorDiscoveryFailed(e, dmrEndpoint);
-            return; // no sense continuing since we don't have any resources
+
+        // Now tell metric/avail managers what metric and avail types we need to use for the resource types
+        MetricTypeManager<DMRMetricType, DMRMetricTypeSet> mtm = new MetricTypeManager<>();
+        AvailTypeManager<DMRAvailType, DMRAvailTypeSet> atm = new AvailTypeManager<>();
+        BreadthFirstIterator<DMRResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
+        while (resourceTypeIter.hasNext()) {
+            DMRResourceType type = resourceTypeIter.next();
+            Collection<Name> metricSetsToUse = type.getMetricSets();
+            Collection<Name> availSetsToUse = type.getAvailSets();
+            mtm.addMetricTypes(this.configuration.dmrMetricTypeSetMap, metricSetsToUse);
+            atm.addAvailTypes(this.configuration.dmrAvailTypeSetMap, availSetsToUse);
+        }
+
+        // Create our empty resource manager - this will be filled in during discovery with our resources
+        ResourceManager<DMRResource> resourceManager = new ResourceManager<>();
+
+        // Now we can build our inventory manager and discover our resources
+        DMRInventoryManager im;
+        im = new DMRInventoryManager(rtm, mtm, atm, resourceManager, managedServer, dmrEndpoint, factory);
+        im.discoverResources();
+
+        // Resources have been discovered; let's tell inventory about them and their type metadata
+        BreadthFirstIterator<DMRResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
+        while (bIter.hasNext()) {
+            DMRResource resource = bIter.next();
+            Collection<DMRMetricType> dmrMetricSets = new HashSet<>();
+            Collection<DMRAvailType> dmrAvailSets = new HashSet<>();
+            im.retrieveMetricAndAvailTypesForResourceType(resource.getResourceType(), dmrMetricSets, dmrAvailSets);
+            LOG.errorf("Inventorying resource type [%s], resource [%s], metricTypes [%s], availTypes=[%s]",
+                    resource.getResourceType(), resource, dmrMetricSets, dmrAvailSets);
+
         }
 
         // now that we have our resources discovered, we can schedule their metric and avail collections
-        DepthFirstIterator<DMRResource, DefaultEdge> iter = new DepthFirstIterator<>(resourcesGraph);
-        while (iter.hasNext()) {
-            DMRResource resource = iter.next();
-            addDMRMetricsAndAvails(resource);
+        DepthFirstIterator<DMRResource, DefaultEdge> dIter = resourceManager.getDepthFirstIterator();
+        while (dIter.hasNext()) {
+            DMRResource resource = dIter.next();
+            addDMRMetricsAndAvails(resource, im);
         }
+
     }
 
-    private void addDMRMetricsAndAvails(DMRResource resource) {
+    private void addDMRMetricsAndAvails(DMRResource resource, DMRInventoryManager im) {
 
         DMREndpoint dmrEndpoint = resource.getEndpoint();
-        List<Name> dmrMetricSets = resource.getResourceType().getMetricSets();
-        List<Name> dmrAvailSets = resource.getResourceType().getAvailSets();
+        Collection<DMRMetricType> dmrMetricTypes = new HashSet<>();
+        Collection<DMRAvailType> dmrAvailTypes = new HashSet<>();
+        im.retrieveMetricAndAvailTypesForResourceType(resource.getResourceType(), dmrMetricTypes, dmrAvailTypes);
 
-        for (Name metricSetName : dmrMetricSets) {
-            DMRMetricTypeSet metricSet = this.configuration.dmrMetricTypeSetMap.get(metricSetName);
-            if (metricSet != null) {
-                if (metricSet.isEnabled()) {
-                    for (DMRMetricType metric : metricSet.getMetricTypeMap().values()) {
-                        Interval interval = new Interval(metric.getInterval(), metric.getTimeUnits());
-                        Address relativeAddress = Address.parse(metric.getPath());
-                        Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
-                        if (fullAddress != null) {
-                            DMRPropertyReference ref = new DMRPropertyReference(fullAddress,
-                                    metric.getAttribute(), interval);
-                            schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
-                        }
-                    }
-                }
+        for (DMRMetricType metric : dmrMetricTypes) {
+            Interval interval = new Interval(metric.getInterval(), metric.getTimeUnits());
+            Address relativeAddress = Address.parse(metric.getPath());
+            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
+            if (fullAddress != null) {
+                DMRPropertyReference ref = new DMRPropertyReference(fullAddress, metric.getAttribute(), interval);
+                schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
             }
         }
 
-        for (Name availSetName : dmrAvailSets) {
-            DMRAvailTypeSet availSet = this.configuration.dmrAvailTypeSetMap.get(availSetName);
-            if (availSet != null) {
-                if (availSet.isEnabled()) {
-                    for (DMRAvailType avail : availSet.getAvailTypeMap().values()) {
-                        Interval interval = new Interval(avail.getInterval(), avail.getTimeUnits());
-                        Address relativeAddress = Address.parse(avail.getPath());
-                        Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
-                        if (fullAddress != null) {
-                            AvailDMRPropertyReference ref = new AvailDMRPropertyReference(fullAddress,
-                                    avail.getAttribute(), interval, avail.getUpRegex());
-                            schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
-                        }
-                    }
-                }
+        for (DMRAvailType avail : dmrAvailTypes) {
+            Interval interval = new Interval(avail.getInterval(), avail.getTimeUnits());
+            Address relativeAddress = Address.parse(avail.getPath());
+            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
+            if (fullAddress != null) {
+                AvailDMRPropertyReference ref = new AvailDMRPropertyReference(fullAddress, avail.getAttribute(),
+                        interval, avail.getUpRegex());
+                schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
             }
         }
     }
