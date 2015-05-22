@@ -116,11 +116,11 @@ public class HawkularStorageAdapter implements StorageAdapter {
             MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
             StringBuilder urlStr = new StringBuilder(storageAdapterConfig.url);
             ensureEndsWithSlash(urlStr);
-            if (storageAdapterConfig.context != null) {
-                if (storageAdapterConfig.context.startsWith("/")) {
-                    urlStr.append(storageAdapterConfig.context.substring(1));
+            if (storageAdapterConfig.busContext != null) {
+                if (storageAdapterConfig.busContext.startsWith("/")) {
+                    urlStr.append(storageAdapterConfig.busContext.substring(1));
                 } else {
-                    urlStr.append(storageAdapterConfig.context);
+                    urlStr.append(storageAdapterConfig.busContext);
                 }
                 ensureEndsWithSlash(urlStr);
             }
@@ -188,11 +188,11 @@ public class HawkularStorageAdapter implements StorageAdapter {
             MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
             StringBuilder urlStr = new StringBuilder(storageAdapterConfig.url);
             ensureEndsWithSlash(urlStr);
-            if (storageAdapterConfig.context != null) {
-                if (storageAdapterConfig.context.startsWith("/")) {
-                    urlStr.append(storageAdapterConfig.context.substring(1));
+            if (storageAdapterConfig.busContext != null) {
+                if (storageAdapterConfig.busContext.startsWith("/")) {
+                    urlStr.append(storageAdapterConfig.busContext.substring(1));
                 } else {
-                    urlStr.append(storageAdapterConfig.context);
+                    urlStr.append(storageAdapterConfig.busContext);
                 }
                 ensureEndsWithSlash(urlStr);
             }

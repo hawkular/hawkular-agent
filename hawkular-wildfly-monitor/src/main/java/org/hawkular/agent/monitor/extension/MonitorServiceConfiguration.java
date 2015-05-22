@@ -52,8 +52,9 @@ public class MonitorServiceConfiguration {
     public static class StorageAdapter {
         public SchedulerConfiguration.StorageReportTo type;
         public String url;
-        public String context;
-        public String restContext;
+        public String busContext;
+        public String inventoryContext;
+        public String metricsContext;
         public String user;
         public String password;
     }

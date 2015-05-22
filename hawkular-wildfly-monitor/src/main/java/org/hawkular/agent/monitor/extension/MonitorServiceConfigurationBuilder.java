@@ -205,8 +205,12 @@ public class MonitorServiceConfigurationBuilder {
         ModelNode storageAdapterConfig = asPropertyList.get(0).getValue();
 
         theConfig.storageAdapter.url = getString(storageAdapterConfig, context, StorageDefinition.URL);
-        theConfig.storageAdapter.context = getString(storageAdapterConfig, context, StorageDefinition.CONTEXT);
-        theConfig.storageAdapter.restContext = getString(storageAdapterConfig, context, StorageDefinition.REST_CONTEXT);
+        theConfig.storageAdapter.busContext = getString(storageAdapterConfig, context,
+                StorageDefinition.BUS_CONTEXT);
+        theConfig.storageAdapter.inventoryContext = getString(storageAdapterConfig, context,
+                StorageDefinition.INVENTORY_CONTEXT);
+        theConfig.storageAdapter.metricsContext = getString(storageAdapterConfig, context,
+                StorageDefinition.METRICS_CONTEXT);
         theConfig.storageAdapter.user = getString(storageAdapterConfig, context, StorageDefinition.USER);
         theConfig.storageAdapter.password = getString(storageAdapterConfig, context, StorageDefinition.PASSWORD);
         String typeStr = getString(storageAdapterConfig, context, StorageDefinition.TYPE);

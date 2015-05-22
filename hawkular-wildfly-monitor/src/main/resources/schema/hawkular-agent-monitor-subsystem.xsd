@@ -48,12 +48,13 @@
 
   <!-- storage adapter configuration -->
   <xs:complexType name="storageType">
-    <xs:attribute name="type"        type="adapterType" default="hawkular"/>
-    <xs:attribute name="url"         type="xs:string"   use="required"/>
-    <xs:attribute name="context"     type="xs:string"/>
-    <xs:attribute name="restContext" type="xs:string"/>
-    <xs:attribute name="user"        type="xs:string"/>
-    <xs:attribute name="password"    type="xs:string"/>
+    <xs:attribute name="type"             type="adapterType" default="hawkular"/>
+    <xs:attribute name="url"              type="xs:string"   use="required"/>
+    <xs:attribute name="busContext"       type="xs:string"/>
+    <xs:attribute name="inventoryContext" type="xs:string"/>
+    <xs:attribute name="metricsContext"   type="xs:string"/>
+    <xs:attribute name="user"             type="xs:string"/>
+    <xs:attribute name="password"         type="xs:string"/>
   </xs:complexType>
 
   <xs:simpleType name="adapterType">

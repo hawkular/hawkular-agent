@@ -29,8 +29,9 @@
 
   <storage-adapter type="HAWKULAR"
                    url="http://localhost:8080"
-                   context="/hawkular-bus/message/"
-                   restContext="/hawkular-metrics/" />
+                   busContext="/hawkular-bus/message/"
+                   inventoryContext="/hawkular-inventory/"
+                   metricsContext="/hawkular-metrics/" />
 
   <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
     <metric-dmr name="Heap Used"

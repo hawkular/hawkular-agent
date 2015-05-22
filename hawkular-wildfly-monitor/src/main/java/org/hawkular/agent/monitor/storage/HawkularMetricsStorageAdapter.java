@@ -115,11 +115,11 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
             ensureEndsWithSlash(url);
 
             // 2. add any rest context path that is needed
-            if (storageAdapterConfig.restContext != null) {
-                if (storageAdapterConfig.restContext.startsWith("/")) {
-                    url.append(storageAdapterConfig.restContext.substring(1));
+            if (storageAdapterConfig.metricsContext != null) {
+                if (storageAdapterConfig.metricsContext.startsWith("/")) {
+                    url.append(storageAdapterConfig.metricsContext.substring(1));
                 } else {
-                    url.append(storageAdapterConfig.restContext);
+                    url.append(storageAdapterConfig.metricsContext);
                 }
                 ensureEndsWithSlash(url);
             }
@@ -193,11 +193,11 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
             ensureEndsWithSlash(url);
 
             // 2. add any rest context path that is needed
-            if (storageAdapterConfig.restContext != null) {
-                if (storageAdapterConfig.restContext.startsWith("/")) {
-                    url.append(storageAdapterConfig.restContext.substring(1));
+            if (storageAdapterConfig.metricsContext != null) {
+                if (storageAdapterConfig.metricsContext.startsWith("/")) {
+                    url.append(storageAdapterConfig.metricsContext.substring(1));
                 } else {
-                    url.append(storageAdapterConfig.restContext);
+                    url.append(storageAdapterConfig.metricsContext);
                 }
                 ensureEndsWithSlash(url);
             }

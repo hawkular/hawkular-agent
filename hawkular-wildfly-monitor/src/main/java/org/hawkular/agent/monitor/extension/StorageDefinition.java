@@ -53,15 +53,24 @@ public class StorageDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition CONTEXT = new SimpleAttributeDefinitionBuilder("context",
+    static final SimpleAttributeDefinition BUS_CONTEXT = new SimpleAttributeDefinitionBuilder("busContext",
             ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
-            .setDefaultValue(new ModelNode("/hawkular-bus/"))
+            .setDefaultValue(new ModelNode("/hawkular-bus/message/"))
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition REST_CONTEXT = new SimpleAttributeDefinitionBuilder("restContext",
+    static final SimpleAttributeDefinition INVENTORY_CONTEXT = new SimpleAttributeDefinitionBuilder(
+            "inventoryContext",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode("/hawkular-inventory/"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    static final SimpleAttributeDefinition METRICS_CONTEXT = new SimpleAttributeDefinitionBuilder("metricsContext",
             ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
@@ -84,7 +93,7 @@ public class StorageDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            TYPE, URL, CONTEXT, REST_CONTEXT, USER, PASSWORD
+            TYPE, URL, BUS_CONTEXT, INVENTORY_CONTEXT, METRICS_CONTEXT, USER, PASSWORD
     };
 
     private StorageDefinition() {
