@@ -350,8 +350,9 @@ public class MonitorService implements Service<MonitorService> {
                 Collection<DMRMetricType> dmrMetricSets = new HashSet<>();
                 Collection<DMRAvailType> dmrAvailSets = new HashSet<>();
                 im.retrieveMetricAndAvailTypesForResourceType(resource.getResourceType(), dmrMetricSets, dmrAvailSets);
-                LOG.errorf("Inventorying resource type [%s], resource [%s], metricTypes [%s], availTypes=[%s]",
-                        resourceType, resource, dmrMetricSets, dmrAvailSets);
+                LOG.errorf("Inventorying resource type [%s], metricTypes [%s], availTypes=[%s], "
+                        + "resource [%s], metrics [%s], avails [%s]", resourceType, dmrMetricSets, dmrAvailSets,
+                        resource, resource.getMetrics(), resource.getAvails());
             }
 
             // schedule collections
