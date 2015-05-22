@@ -16,15 +16,25 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.Collection;
+import java.util.HashSet;
+
 import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
 
-public abstract class Resource<T extends ResourceType, E extends MonitoredEndpoint> extends NamedObject {
+public abstract class Resource< //
+T extends ResourceType, //
+E extends MonitoredEndpoint, //
+M extends MetricInstance<?, ?>, //
+A extends AvailInstance<?, ?>>
+        extends NamedObject {
 
     private final T resourceType;
-    private final Resource<?, ?> parent;
+    private final Resource<?, ?, ?, ?> parent;
     private final E endpoint;
+    private final Collection<M> metrics = new HashSet<M>();
+    private final Collection<A> avails = new HashSet<A>();
 
-    public <P extends Resource<?, ?>> Resource(E endpoint, String name, T resourceType, P parent) {
+    public <P extends Resource<?, ?, ?, ?>> Resource(E endpoint, String name, T resourceType, P parent) {
         super(name);
         this.endpoint = endpoint;
         this.resourceType = resourceType;
@@ -39,8 +49,16 @@ public abstract class Resource<T extends ResourceType, E extends MonitoredEndpoi
         return resourceType;
     }
 
-    public <P extends Resource<?, ?>> P getParent() {
+    public <P extends Resource<?, ?, ?, ?>> P getParent() {
         return (P) parent;
+    }
+
+    public Collection<M> getMetrics() {
+        return metrics;
+    }
+
+    public Collection<A> getAvails() {
+        return avails;
     }
 
     @Override

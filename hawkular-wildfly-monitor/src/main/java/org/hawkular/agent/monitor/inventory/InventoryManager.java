@@ -40,7 +40,7 @@ MT extends MetricType, //
 MTS extends MetricTypeSet<MT>, //
 AT extends AvailType, //
 ATS extends AvailTypeSet<AT>, //
-R extends Resource<?, ?>, //
+R extends Resource<?, ?, ?, ?>, //
 ME extends MonitoredEndpoint> {
 
     private final ResourceTypeManager<RT, RTS> resourceTypeManager;

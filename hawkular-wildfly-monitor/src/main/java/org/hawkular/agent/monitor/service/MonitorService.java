@@ -34,9 +34,11 @@ import org.hawkular.agent.monitor.inventory.MetricTypeManager;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
+import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
+import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
@@ -76,7 +78,6 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.BreadthFirstIterator;
-import org.jgrapht.traverse.DepthFirstIterator;
 
 public class MonitorService implements Service<MonitorService> {
 
@@ -332,55 +333,68 @@ public class MonitorService implements Service<MonitorService> {
         im = new DMRInventoryManager(rtm, mtm, atm, resourceManager, managedServer, dmrEndpoint, factory);
         im.discoverResources();
 
-        // Resources have been discovered; let's tell inventory about them and their type metadata
-        // Don't do this if we aren't hooked into a full Hawkular environment.
-        if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
-            BreadthFirstIterator<DMRResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
-            while (bIter.hasNext()) {
-                DMRResource resource = bIter.next();
+        // now that we have our resources discovered, we need to do the following:
+        // - finish fleshing our the resource by adding their metrics and avail checks
+        // - add the resource and its metadata to inventory if applicable
+        // - schedule the metric collections and avail checks
+        BreadthFirstIterator<DMRResource, DefaultEdge> bIter = resourceManager.getBreadthFirstIterator();
+        while (bIter.hasNext()) {
+            DMRResource resource = bIter.next();
+
+            // flesh out the resource by adding its metrics and avails
+            addDMRMetricsAndAvails(resource, im);
+
+            // if we are participating in a full hawkular environment, add resource and its metadata to inventory
+            if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+                DMRResourceType resourceType = resource.getResourceType();
                 Collection<DMRMetricType> dmrMetricSets = new HashSet<>();
                 Collection<DMRAvailType> dmrAvailSets = new HashSet<>();
                 im.retrieveMetricAndAvailTypesForResourceType(resource.getResourceType(), dmrMetricSets, dmrAvailSets);
                 LOG.errorf("Inventorying resource type [%s], resource [%s], metricTypes [%s], availTypes=[%s]",
-                        resource.getResourceType(), resource, dmrMetricSets, dmrAvailSets);
+                        resourceType, resource, dmrMetricSets, dmrAvailSets);
+            }
 
+            // schedule collections
+            Collection<DMRMetricInstance> metricsToBeCollected = resource.getMetrics();
+            for (DMRMetricInstance metricToBeCollected : metricsToBeCollected) {
+                schedulerConfig.addMetricToBeCollected(resource.getEndpoint(), metricToBeCollected.getProperty());
+            }
+
+            Collection<DMRAvailInstance> availsToBeCollected = resource.getAvails();
+            for (DMRAvailInstance availToBeCollected : availsToBeCollected) {
+                schedulerConfig.addAvailToBeChecked(resource.getEndpoint(), availToBeCollected.getProperty());
             }
         }
-
-        // now that we have our resources discovered, we can schedule their metric and avail collections
-        DepthFirstIterator<DMRResource, DefaultEdge> dIter = resourceManager.getDepthFirstIterator();
-        while (dIter.hasNext()) {
-            DMRResource resource = dIter.next();
-            addDMRMetricsAndAvails(resource, im);
-        }
-
     }
 
     private void addDMRMetricsAndAvails(DMRResource resource, DMRInventoryManager im) {
 
-        DMREndpoint dmrEndpoint = resource.getEndpoint();
         Collection<DMRMetricType> dmrMetricTypes = new HashSet<>();
         Collection<DMRAvailType> dmrAvailTypes = new HashSet<>();
         im.retrieveMetricAndAvailTypesForResourceType(resource.getResourceType(), dmrMetricTypes, dmrAvailTypes);
 
-        for (DMRMetricType metric : dmrMetricTypes) {
-            Interval interval = new Interval(metric.getInterval(), metric.getTimeUnits());
-            Address relativeAddress = Address.parse(metric.getPath());
+        for (DMRMetricType metricType : dmrMetricTypes) {
+            Interval interval = new Interval(metricType.getInterval(), metricType.getTimeUnits());
+            Address relativeAddress = Address.parse(metricType.getPath());
             Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
             if (fullAddress != null) {
-                DMRPropertyReference ref = new DMRPropertyReference(fullAddress, metric.getAttribute(), interval);
-                schedulerConfig.addMetricToBeCollected(dmrEndpoint, ref);
+                DMRPropertyReference prop = new DMRPropertyReference(fullAddress, metricType.getAttribute(), interval);
+                DMRMetricInstance metricInstance = new DMRMetricInstance(String.format("%s:M:%s", resource.getName(),
+                        metricType.getName()), metricType, prop);
+                resource.getMetrics().add(metricInstance);
             }
         }
 
-        for (DMRAvailType avail : dmrAvailTypes) {
-            Interval interval = new Interval(avail.getInterval(), avail.getTimeUnits());
-            Address relativeAddress = Address.parse(avail.getPath());
+        for (DMRAvailType availType : dmrAvailTypes) {
+            Interval interval = new Interval(availType.getInterval(), availType.getTimeUnits());
+            Address relativeAddress = Address.parse(availType.getPath());
             Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
             if (fullAddress != null) {
-                AvailDMRPropertyReference ref = new AvailDMRPropertyReference(fullAddress, avail.getAttribute(),
-                        interval, avail.getUpRegex());
-                schedulerConfig.addAvailToBeChecked(dmrEndpoint, ref);
+                AvailDMRPropertyReference prop = new AvailDMRPropertyReference(fullAddress, availType.getAttribute(),
+                        interval, availType.getUpRegex());
+                DMRAvailInstance availInstance = new DMRAvailInstance(String.format("%s:A:%s", resource.getName(),
+                        availType.getName()), availType, prop);
+                resource.getAvails().add(availInstance);
             }
         }
     }
