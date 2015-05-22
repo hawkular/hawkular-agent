@@ -300,7 +300,7 @@ public class MonitorService implements Service<MonitorService> {
 
         // determine the client to use to connect to the managed server
         ModelControllerClientFactory factory;
-l        if (dmrEndpoint instanceof LocalDMREndpoint) {
+        if (dmrEndpoint instanceof LocalDMREndpoint) {
             factory = createLocalClientFactory();
         } else {
             factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
