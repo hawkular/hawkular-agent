@@ -32,6 +32,7 @@
                timeUnits="minutes"/>
 
   <storage-adapter type="HAWKULAR"
+                   tenantId="test"
                    url="http://localhost:8080"
                    busContext="/hawkular-bus/message/"
                    inventoryContext="/hawkular-inventory/"

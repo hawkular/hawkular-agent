@@ -48,7 +48,8 @@
 
   <!-- storage adapter configuration -->
   <xs:complexType name="storageType">
-    <xs:attribute name="type"             type="adapterType" default="hawkular"/>
+    <xs:attribute name="type"             type="adapterType" default="HAWKULAR"/>
+    <xs:attribute name="tenantId"         type="xs:string"   use="required"/>
     <xs:attribute name="url"              type="xs:string"   use="required"/>
     <xs:attribute name="busContext"       type="xs:string"/>
     <xs:attribute name="inventoryContext" type="xs:string"/>
@@ -59,8 +60,8 @@
 
   <xs:simpleType name="adapterType">
     <xs:restriction base="xs:string">
-      <xs:enumeration value="hawkular"/>
-      <xs:enumeration value="metrics"/>
+      <xs:enumeration value="HAWKULAR"/>
+      <xs:enumeration value="METRICS"/>
     </xs:restriction>
   </xs:simpleType>
 

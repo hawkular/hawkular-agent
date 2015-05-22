@@ -46,6 +46,14 @@ public class StorageDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    static final SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenantId",
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode("test"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     static final SimpleAttributeDefinition URL = new SimpleAttributeDefinitionBuilder("url",
             ModelType.STRING)
             .setAllowNull(false)
@@ -93,7 +101,7 @@ public class StorageDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            TYPE, URL, BUS_CONTEXT, INVENTORY_CONTEXT, METRICS_CONTEXT, USER, PASSWORD
+            TYPE, TENANT_ID, URL, BUS_CONTEXT, INVENTORY_CONTEXT, METRICS_CONTEXT, USER, PASSWORD
     };
 
     private StorageDefinition() {
