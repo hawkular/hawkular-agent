@@ -46,6 +46,20 @@ public class StorageDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    static final SimpleAttributeDefinition USERNAME = new SimpleAttributeDefinitionBuilder("username",
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    static final SimpleAttributeDefinition PASSWORD = new SimpleAttributeDefinitionBuilder("password",
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     static final SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenantId",
             ModelType.STRING)
             .setAllowNull(false)
@@ -86,22 +100,8 @@ public class StorageDefinition extends PersistentResourceDefinition {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    static final SimpleAttributeDefinition USER = new SimpleAttributeDefinitionBuilder("user",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition PASSWORD = new SimpleAttributeDefinitionBuilder("password",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
     static final AttributeDefinition[] ATTRIBUTES = {
-            TYPE, TENANT_ID, URL, BUS_CONTEXT, INVENTORY_CONTEXT, METRICS_CONTEXT, USER, PASSWORD
+            TYPE, USERNAME, PASSWORD, TENANT_ID, URL, BUS_CONTEXT, INVENTORY_CONTEXT, METRICS_CONTEXT
     };
 
     private StorageDefinition() {

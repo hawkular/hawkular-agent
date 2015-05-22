@@ -212,7 +212,7 @@ public class MonitorServiceConfigurationBuilder {
                 StorageDefinition.INVENTORY_CONTEXT);
         theConfig.storageAdapter.metricsContext = getString(storageAdapterConfig, context,
                 StorageDefinition.METRICS_CONTEXT);
-        theConfig.storageAdapter.user = getString(storageAdapterConfig, context, StorageDefinition.USER);
+        theConfig.storageAdapter.username = getString(storageAdapterConfig, context, StorageDefinition.USERNAME);
         theConfig.storageAdapter.password = getString(storageAdapterConfig, context, StorageDefinition.PASSWORD);
         String typeStr = getString(storageAdapterConfig, context, StorageDefinition.TYPE);
         theConfig.storageAdapter.type = SchedulerConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());

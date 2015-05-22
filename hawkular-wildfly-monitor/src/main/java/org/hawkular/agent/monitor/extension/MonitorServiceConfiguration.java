@@ -51,13 +51,13 @@ public class MonitorServiceConfiguration {
 
     public static class StorageAdapter {
         public SchedulerConfiguration.StorageReportTo type;
+        public String username;
+        public String password;
         public String tenantId;
         public String url;
         public String busContext;
         public String inventoryContext;
         public String metricsContext;
-        public String user;
-        public String password;
     }
 
     public static class Diagnostics {
