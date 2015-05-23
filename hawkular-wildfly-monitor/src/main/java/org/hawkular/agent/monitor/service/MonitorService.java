@@ -19,7 +19,6 @@ package org.hawkular.agent.monitor.service;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,6 +26,7 @@ import java.util.concurrent.ThreadFactory;
 
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
+import org.hawkular.agent.monitor.api.InventoryDataPayloadBuilder;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
@@ -58,6 +58,7 @@ import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
+import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.dmrclient.Address;
 import org.jboss.as.controller.ControlledProcessState;
@@ -99,6 +100,7 @@ public class MonitorService implements Service<MonitorService> {
 
     private final MetricStorageProxy metricStorageProxy = new MetricStorageProxy();
     private final AvailStorageProxy availStorageProxy = new AvailStorageProxy();
+    private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
 
     @Override
     public MonitorService getValue() {
@@ -109,7 +111,7 @@ public class MonitorService implements Service<MonitorService> {
      * @return the context that can be used by others for storing ad-hoc monitoring data
      */
     public HawkularMonitorContext getHawkularMonitorContext() {
-        return new HawkularMonitorContextImpl(metricStorageProxy, availStorageProxy);
+        return new HawkularMonitorContextImpl(metricStorageProxy, availStorageProxy, inventoryStorageProxy);
     }
 
     /**
@@ -256,7 +258,7 @@ public class MonitorService implements Service<MonitorService> {
         LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
         ServerIdentifiers id = localDMREndpoint.getServerIdentifiers();
         schedulerService = new SchedulerService(schedulerConfig, id, metricStorageProxy, availStorageProxy,
-                createLocalClientFactory());
+                inventoryStorageProxy, createLocalClientFactory());
         schedulerService.start();
     }
 
@@ -346,13 +348,11 @@ public class MonitorService implements Service<MonitorService> {
 
             // if we are participating in a full hawkular environment, add resource and its metadata to inventory
             if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
-                DMRResourceType resourceType = resource.getResourceType();
-                Collection<DMRMetricType> dmrMetricSets = new HashSet<>();
-                Collection<DMRAvailType> dmrAvailSets = new HashSet<>();
-                im.retrieveMetricAndAvailTypesForResourceType(resource.getResourceType(), dmrMetricSets, dmrAvailSets);
-                LOG.errorf("Inventorying resource type [%s], metricTypes [%s], availTypes=[%s], "
-                        + "resource [%s], metrics [%s], avails [%s]", resourceType, dmrMetricSets, dmrAvailSets,
-                        resource, resource.getMetrics(), resource.getAvails());
+                // TODO store resource and resource type data to inventory
+                InventoryDataPayloadBuilder payloadBuilder = inventoryStorageProxy.createInventoryDataPayloadBuilder();
+                payloadBuilder.addResourceType(resource.getResourceType());
+                payloadBuilder.addResource(resource);
+                inventoryStorageProxy.store(payloadBuilder);
             }
 
             // schedule collections
@@ -370,11 +370,9 @@ public class MonitorService implements Service<MonitorService> {
 
     private void addDMRMetricsAndAvails(DMRResource resource, DMRInventoryManager im) {
 
-        Collection<DMRMetricType> dmrMetricTypes = new HashSet<>();
-        Collection<DMRAvailType> dmrAvailTypes = new HashSet<>();
-        im.retrieveMetricAndAvailTypesForResourceType(resource.getResourceType(), dmrMetricTypes, dmrAvailTypes);
+        im.populateMetricAndAvailTypesForResourceType(resource.getResourceType());
 
-        for (DMRMetricType metricType : dmrMetricTypes) {
+        for (DMRMetricType metricType : resource.getResourceType().getMetricTypes()) {
             Interval interval = new Interval(metricType.getInterval(), metricType.getTimeUnits());
             Address relativeAddress = Address.parse(metricType.getPath());
             Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
@@ -386,7 +384,7 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
 
-        for (DMRAvailType availType : dmrAvailTypes) {
+        for (DMRAvailType availType : resource.getResourceType().getAvailTypes()) {
             Interval interval = new Interval(availType.getInterval(), availType.getTimeUnits());
             Address relativeAddress = Address.parse(availType.getPath());
             Address fullAddress = getFullAddressOfChild(resource, relativeAddress);

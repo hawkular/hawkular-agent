@@ -34,7 +34,7 @@ import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
  * @author John Mazzitelli
  */
 public abstract class InventoryManager< //
-RT extends ResourceType, //
+RT extends ResourceType<MT, AT>, //
 RTS extends ResourceTypeSet<RT>, //
 MT extends MetricType, //
 MTS extends MetricTypeSet<MT>, //
@@ -89,29 +89,29 @@ ME extends MonitoredEndpoint> {
     }
 
     /**
-     * Given a resource type, this will store its metric types and avail types in the given sets.
+     * Given a resource type, this will fill in its metric types and avail types.
      *
      * @param resourceType the type whose metric and avail types are to be retrieved
-     * @param metricTypes the collection where the resource type's metric types will be stored
-     * @param availTypes the collection where the resource type's avail types will be stored
      */
-    public void retrieveMetricAndAvailTypesForResourceType(RT resourceType, Collection<MT> metricTypes,
-            Collection<AT> availTypes) {
+    public void populateMetricAndAvailTypesForResourceType(RT resourceType) {
 
-        Collection<Name> metricSetNames = resourceType.getMetricSets();
-        Collection<Name> availSetNames = resourceType.getAvailSets();
-
-        for (Name metricSetName : metricSetNames) {
-            MTS metricSet = getMetricTypeManager().getMetricSet(metricSetName);
-            if (metricSet != null) {
-                metricTypes.addAll(metricSet.getMetricTypeMap().values());
+        Collection<MT> metricTypes = resourceType.getMetricTypes();
+        if (metricTypes.isEmpty()) {
+            for (Name metricSetName : resourceType.getMetricSets()) {
+                MTS metricSet = getMetricTypeManager().getMetricSet(metricSetName);
+                if (metricSet != null) {
+                    metricTypes.addAll(metricSet.getMetricTypeMap().values());
+                }
             }
         }
 
-        for (Name availSetName : availSetNames) {
-            ATS availSet = getAvailTypeManager().getAvailSet(availSetName);
-            if (availSet != null) {
-                availTypes.addAll(availSet.getAvailTypeMap().values());
+        Collection<AT> availTypes = resourceType.getAvailTypes();
+        if (availTypes.isEmpty()) {
+            for (Name availSetName : resourceType.getAvailSets()) {
+                ATS availSet = getAvailTypeManager().getAvailSet(availSetName);
+                if (availSet != null) {
+                    availTypes.addAll(availSet.getAvailTypeMap().values());
+                }
             }
         }
     }

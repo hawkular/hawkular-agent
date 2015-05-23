@@ -14,22 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.inventory.dmr;
+package org.hawkular.agent.monitor.api;
 
+import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 
-public class DMRResourceType extends ResourceType<DMRMetricType, DMRAvailType> {
-    public DMRResourceType(String name) {
-        super(name);
-    }
+public interface InventoryDataPayloadBuilder {
 
-    private String path;
+    void addResourceType(ResourceType<?, ?> resourceType);
 
-    public String getPath() {
-        return path;
-    }
+    void addResource(Resource<?, ?, ?, ?> resource);
 
-    public void setPath(String path) {
-        this.path = path;
-    }
+    /**
+     * @return the payload in a format suitable for the storage adapter.
+     */
+    Object toPayload();
+
 }

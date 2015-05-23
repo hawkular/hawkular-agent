@@ -32,27 +32,27 @@ import com.google.gson.Gson;
  */
 public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilder {
 
-    private HawkularMetricsMetricDataPayloadBuilder metricsPayloadBuilder =
-            new HawkularMetricsMetricDataPayloadBuilder();
+    private MetricsOnlyMetricDataPayloadBuilder metricsOnlyMetricPayloadBuilder =
+            new MetricsOnlyMetricDataPayloadBuilder();
     private String tenantId = null;
 
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
     }
 
-    public HawkularMetricsMetricDataPayloadBuilder toHawkularMetricsMetricDataPayloadBuilder() {
-        return metricsPayloadBuilder;
+    public MetricsOnlyMetricDataPayloadBuilder toMetricsOnlyMetricDataPayloadBuilder() {
+        return metricsOnlyMetricPayloadBuilder;
     }
 
     @Override
     public void addDataPoint(String key, long timestamp, double value) {
         // delegate
-        metricsPayloadBuilder.addDataPoint(key, timestamp, value);
+        metricsOnlyMetricPayloadBuilder.addDataPoint(key, timestamp, value);
     }
 
     @Override
     public int getNumberDataPoints() {
-        return metricsPayloadBuilder.getNumberDataPoints();
+        return metricsOnlyMetricPayloadBuilder.getNumberDataPoints();
     }
 
     @Override
@@ -71,7 +71,7 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
         // list of maps where map is keyed on metric ID ("id") and value is "data"
         // where "data" is another List<Map<String, Number>> that is the list of metric data.
         // That inner map is keyed on either "timestamp" or "value" (both are Numbers).
-        List<Map<String, Object>> allMetrics = metricsPayloadBuilder.toObjectPayload();
+        List<Map<String, Object>> allMetrics = metricsOnlyMetricPayloadBuilder.toObjectPayload();
         for (Map<String, Object> metric : allMetrics) {
             String metricId = (String) metric.get("id");
             List<Map<String, Number>> metricListData = (List<Map<String, Number>>) metric.get("data");

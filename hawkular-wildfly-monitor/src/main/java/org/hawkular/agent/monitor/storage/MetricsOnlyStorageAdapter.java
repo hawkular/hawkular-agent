@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.net.MalformedURLException;
 import java.util.Set;
 
 import org.apache.http.HttpResponse;
@@ -27,24 +28,27 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
+import org.hawkular.agent.monitor.api.InventoryDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.jboss.logging.Logger;
 
-public class HawkularMetricsStorageAdapter implements StorageAdapter {
-    private static final Logger LOGGER = Logger.getLogger(HawkularMetricsStorageAdapter.class);
+public class MetricsOnlyStorageAdapter implements StorageAdapter {
+    private static final Logger LOGGER = Logger.getLogger(MetricsOnlyStorageAdapter.class);
 
     private final HttpClient httpclient;
     private SchedulerConfiguration config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
 
-    public HawkularMetricsStorageAdapter() {
+    public MetricsOnlyStorageAdapter() {
         this.httpclient = new DefaultHttpClient();
     }
 
@@ -70,12 +74,17 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
 
     @Override
     public MetricDataPayloadBuilder createMetricDataPayloadBuilder() {
-        return new HawkularMetricsMetricDataPayloadBuilder();
+        return new MetricsOnlyMetricDataPayloadBuilder();
     }
 
     @Override
     public AvailDataPayloadBuilder createAvailDataPayloadBuilder() {
-        return new HawkularMetricsAvailDataPayloadBuilder();
+        return new MetricsOnlyAvailDataPayloadBuilder();
+    }
+
+    @Override
+    public InventoryDataPayloadBuilder createInventoryDataPayloadBuilder() {
+        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 
     @Override
@@ -109,26 +118,14 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
             jsonPayload = payloadBuilder.toPayload().toString();
 
             // build the REST URL...
+            // start with the protocol, host, and port, plus context
+            StringBuilder url = getContextUrlString(storageAdapterConfig.metricsContext);
 
-            // 1. start with the protocol, host, and port of the URL
-            StringBuilder url = new StringBuilder(storageAdapterConfig.url);
-            ensureEndsWithSlash(url);
-
-            // 2. add any rest context path that is needed
-            if (storageAdapterConfig.metricsContext != null) {
-                if (storageAdapterConfig.metricsContext.startsWith("/")) {
-                    url.append(storageAdapterConfig.metricsContext.substring(1));
-                } else {
-                    url.append(storageAdapterConfig.metricsContext);
-                }
-                ensureEndsWithSlash(url);
-            }
-
-            // 3. the REST URL requires the tenant ID next in the path
+            // the REST URL requires the tenant ID next in the path
             String tenantId = this.selfId.getFullIdentifier();
             url.append(tenantId);
 
-            // 4. now the final portion of the REST context
+            // now the final portion of the REST context
             url.append("/metrics/numeric/data");
 
             // now send the REST request
@@ -187,26 +184,14 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
             jsonPayload = payloadBuilder.toPayload().toString();
 
             // build the REST URL...
+            // start with the protocol, host, and port, plus context
+            StringBuilder url = getContextUrlString(storageAdapterConfig.metricsContext);
 
-            // 1. start with the protocol, host, and port of the URL
-            StringBuilder url = new StringBuilder(storageAdapterConfig.url);
-            ensureEndsWithSlash(url);
-
-            // 2. add any rest context path that is needed
-            if (storageAdapterConfig.metricsContext != null) {
-                if (storageAdapterConfig.metricsContext.startsWith("/")) {
-                    url.append(storageAdapterConfig.metricsContext.substring(1));
-                } else {
-                    url.append(storageAdapterConfig.metricsContext);
-                }
-                ensureEndsWithSlash(url);
-            }
-
-            // 3. the REST URL requires the tenant ID next in the path
+            // the REST URL requires the tenant ID next in the path
             String tenantId = this.selfId.getFullIdentifier();
             url.append(tenantId);
 
-            // 4. now the final portion of the REST context
+            // now the final portion of the REST context
             url.append("/metrics/availability/data");
 
             // now send the REST request
@@ -232,6 +217,36 @@ public class HawkularMetricsStorageAdapter implements StorageAdapter {
                 request.releaseConnection();
             }
         }
+    }
+
+    @Override
+    public void storeResourceType(ResourceType<?, ?> resourceType) {
+        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
+    }
+
+    @Override
+    public void storeResource(Resource<?, ?, ?, ?> resourceType) {
+        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
+    }
+
+    @Override
+    public void store(InventoryDataPayloadBuilder payloadBuilder) {
+        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
+    }
+
+    private StringBuilder getContextUrlString(String context) throws MalformedURLException {
+        MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = this.config.getStorageAdapterConfig();
+        StringBuilder urlStr = new StringBuilder(storageAdapterConfig.url);
+        ensureEndsWithSlash(urlStr);
+        if (context != null) {
+            if (context.startsWith("/")) {
+                urlStr.append(context.substring(1));
+            } else {
+                urlStr.append(context);
+            }
+            ensureEndsWithSlash(urlStr);
+        }
+        return urlStr;
     }
 
     private void ensureEndsWithSlash(StringBuilder str) {

@@ -21,46 +21,45 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
+import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 
 import com.google.gson.Gson;
 
 /**
- * Allows one to build up a payload request to send to availability storage by adding
+ * Allows one to build up a payload request to send to metric storage by adding
  * data points one by one. After all data points are added, you can get the payload in
  * either an {@link #toObjectPayload() object} format or a {@link #toPayload() JSON} format.
  */
-public class HawkularMetricsAvailDataPayloadBuilder implements AvailDataPayloadBuilder {
+public class MetricsOnlyMetricDataPayloadBuilder implements MetricDataPayloadBuilder {
 
-    // key is avail ID, value is list of data points where a data point is a map with timestamp and value
-    private Map<String, List<Map<String, Object>>> allAvail = new HashMap<>();
+    // key is metric ID, value is list of data points where a data point is a map with timestamp and value
+    private Map<String, List<Map<String, Number>>> allMetrics = new HashMap<>();
 
     // a running count of the number of data points that have been added
     private int count = 0;
 
     @Override
-    public void addDataPoint(String key, long timestamp, Avail value) {
-        List<Map<String, Object>> data = allAvail.get(key);
+    public void addDataPoint(String key, long timestamp, double value) {
+        List<Map<String, Number>> data = allMetrics.get(key);
         if (data == null) {
-            // we haven't seen this avail ID before, create a new list of data points
-            data = new ArrayList<Map<String, Object>>();
-            allAvail.put(key, data);
+            // we haven't seen this metric ID before, create a new list of data points
+            data = new ArrayList<Map<String, Number>>();
+            allMetrics.put(key, data);
         }
-        Map<String, Object> timestampAndValue = new HashMap<>(2);
-        timestampAndValue.put("timestamp", new Long(timestamp));
-        timestampAndValue.put("value", String.valueOf(value.getNumericValue()));
+        Map<String, Number> timestampAndValue = new HashMap<>(2);
+        timestampAndValue.put("timestamp", timestamp);
+        timestampAndValue.put("value", value);
         data.add(timestampAndValue);
         count++;
     }
 
     public List<Map<String, Object>> toObjectPayload() {
         List<Map<String, Object>> fullMessageObject = new ArrayList<>();
-        for (Map.Entry<String, List<Map<String, Object>>> availEntry : allAvail.entrySet()) {
-            Map<String, Object> availKeyAndData = new HashMap<>(2);
-            availKeyAndData.put("id", availEntry.getKey());
-            availKeyAndData.put("data", availEntry.getValue());
-            fullMessageObject.add(availKeyAndData);
+        for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allMetrics.entrySet()) {
+            Map<String, Object> metricKeyAndData = new HashMap<>(2);
+            metricKeyAndData.put("id", metricEntry.getKey());
+            metricKeyAndData.put("data", metricEntry.getValue());
+            fullMessageObject.add(metricKeyAndData);
         }
         return fullMessageObject;
     }

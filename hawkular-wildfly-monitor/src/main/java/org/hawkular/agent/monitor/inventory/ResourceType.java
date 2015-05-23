@@ -19,15 +19,17 @@ package org.hawkular.agent.monitor.inventory;
 import java.util.Collection;
 import java.util.HashSet;
 
-public abstract class ResourceType extends NamedObject {
+public abstract class ResourceType<MT extends MetricType, AT extends AvailType> extends NamedObject {
     public ResourceType(String name) {
         super(name);
     }
 
     private String resourceNameTemplate;
     private Collection<Name> parents;
-    private Collection<Name> metricSets = new HashSet<>();
-    private Collection<Name> availSets = new HashSet<>();
+    private Collection<Name> metricSetNames = new HashSet<>();
+    private Collection<Name> availSetNames = new HashSet<>();
+    private Collection<MT> metricTypes = new HashSet<>();
+    private Collection<AT> availTypes = new HashSet<>();
 
     public String getResourceNameTemplate() {
         return resourceNameTemplate;
@@ -46,19 +48,28 @@ public abstract class ResourceType extends NamedObject {
     }
 
     public Collection<Name> getMetricSets() {
-        return metricSets;
+        return metricSetNames;
     }
 
     public void setMetricSets(Collection<Name> metricSets) {
-        this.metricSets = metricSets;
+        this.metricSetNames = metricSets;
     }
 
     public Collection<Name> getAvailSets() {
-        return availSets;
+        return availSetNames;
     }
 
     public void setAvailSets(Collection<Name> availSets) {
-        this.availSets = availSets;
+        this.availSetNames = availSets;
     }
+
+    public Collection<MT> getMetricTypes() {
+        return metricTypes;
+    }
+
+    public Collection<AT> getAvailTypes() {
+        return availTypes;
+    }
+
 
 }

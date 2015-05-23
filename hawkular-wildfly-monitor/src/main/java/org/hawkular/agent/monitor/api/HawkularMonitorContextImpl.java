@@ -20,10 +20,13 @@ public class HawkularMonitorContextImpl implements HawkularMonitorContext {
 
     private final MetricStorage metricStorage;
     private final AvailStorage availStorage;
+    private final InventoryStorage inventoryStorage;
 
-    public HawkularMonitorContextImpl(MetricStorage metricStorage, AvailStorage availStorage) {
+    public HawkularMonitorContextImpl(MetricStorage metricStorage, AvailStorage availStorage,
+            InventoryStorage inventoryStorage) {
         this.metricStorage = metricStorage;
         this.availStorage = availStorage;
+        this.inventoryStorage = inventoryStorage;
 
     }
 
@@ -35,5 +38,10 @@ public class HawkularMonitorContextImpl implements HawkularMonitorContext {
     @Override
     public AvailStorage getAvailStorage() {
         return this.availStorage;
+    }
+
+    @Override
+    public InventoryStorage getInventoryStorage() {
+        return inventoryStorage;
     }
 }

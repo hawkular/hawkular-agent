@@ -22,7 +22,7 @@ import java.util.HashSet;
 import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
 
 public abstract class Resource< //
-T extends ResourceType, //
+T extends ResourceType<?, ?>, //
 E extends MonitoredEndpoint, //
 M extends MetricInstance<?, ?>, //
 A extends AvailInstance<?, ?>>

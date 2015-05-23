@@ -32,27 +32,27 @@ import com.google.gson.Gson;
  */
 public class HawkularAvailDataPayloadBuilder implements AvailDataPayloadBuilder {
 
-    private HawkularMetricsAvailDataPayloadBuilder hMetricsPayloadBuilder =
-            new HawkularMetricsAvailDataPayloadBuilder();
+    private MetricsOnlyAvailDataPayloadBuilder metricsOnlyPayloadBuilder =
+            new MetricsOnlyAvailDataPayloadBuilder();
     private String tenantId = null;
 
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
     }
 
-    public HawkularMetricsAvailDataPayloadBuilder toHawkularMetricsAvailDataPayloadBuilder() {
-        return hMetricsPayloadBuilder;
+    public MetricsOnlyAvailDataPayloadBuilder toMetricsOnlyAvailDataPayloadBuilder() {
+        return metricsOnlyPayloadBuilder;
     }
 
     @Override
     public void addDataPoint(String key, long timestamp, Avail value) {
         // delegate
-        hMetricsPayloadBuilder.addDataPoint(key, timestamp, value);
+        metricsOnlyPayloadBuilder.addDataPoint(key, timestamp, value);
     }
 
     @Override
     public int getNumberDataPoints() {
-        return hMetricsPayloadBuilder.getNumberDataPoints();
+        return metricsOnlyPayloadBuilder.getNumberDataPoints();
     }
 
     @Override
@@ -71,7 +71,7 @@ public class HawkularAvailDataPayloadBuilder implements AvailDataPayloadBuilder 
         // list of maps where map is keyed on avail ID ("id") and value is "data"
         // where "data" is another List<Map<String, Object>> that is the list of avail data.
         // That inner map is keyed on either "timestamp" or "value".
-        List<Map<String, Object>> allAvails = hMetricsPayloadBuilder.toObjectPayload();
+        List<Map<String, Object>> allAvails = metricsOnlyPayloadBuilder.toObjectPayload();
         for (Map<String, Object> avail : allAvails) {
             String availId = (String) avail.get("id");
             List<Map<String, Object>> availListData = (List<Map<String, Object>>) avail.get("data");

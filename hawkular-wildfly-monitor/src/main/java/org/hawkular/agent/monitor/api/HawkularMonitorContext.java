@@ -21,4 +21,6 @@ public interface HawkularMonitorContext {
     MetricStorage getMetricStorage();
 
     AvailStorage getAvailStorage();
+
+    InventoryStorage getInventoryStorage();
 }

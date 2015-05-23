@@ -19,12 +19,15 @@ package org.hawkular.agent.monitor.storage;
 import java.util.Set;
 
 import org.hawkular.agent.monitor.api.AvailStorage;
+import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
-public interface StorageAdapter extends MetricStorage, AvailStorage {
+public interface StorageAdapter extends MetricStorage, AvailStorage, InventoryStorage {
     /**
      * Stores the given collected metric data points.
      * @param datapoints the data to be stored
@@ -36,6 +39,18 @@ public interface StorageAdapter extends MetricStorage, AvailStorage {
      * @param datapoints the data to be stored
      */
     void storeAvails(Set<AvailDataPoint> datapoints);
+
+    /**
+     * Stores the given resource type.
+     * @param resourceType the type to be stored
+     */
+    void storeResourceType(ResourceType<?, ?> resourceType);
+
+    /**
+     * Stores the given resource.
+     * @param resource to be stored
+     */
+    void storeResource(Resource<?, ?, ?, ?> resource);
 
     /**
      * @return the configuration used by this adapter

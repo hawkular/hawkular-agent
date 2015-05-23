@@ -128,4 +128,7 @@ public interface MsgLogger {
     @Message(id = 10023, value = "Discovery failed while probing endpoint [%s]")
     void errorDiscoveryFailed(@Cause Exception e, MonitoredEndpoint endpoint);
 
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10024, value = "Failed to store inventory data")
+    void errorFailedToStoreInventoryData(@Cause Throwable t);
 }
