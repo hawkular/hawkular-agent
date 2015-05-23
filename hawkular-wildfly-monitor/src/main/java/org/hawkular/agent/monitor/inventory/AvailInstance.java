@@ -18,14 +18,28 @@ package org.hawkular.agent.monitor.inventory;
 
 import org.hawkular.agent.monitor.scheduler.config.MonitoredPropertyReference;
 
-public abstract class AvailInstance<A extends AvailType, P extends MonitoredPropertyReference> extends NamedObject {
+public abstract class AvailInstance< //
+R extends Resource<?, ?, ?, ?>, //
+A extends AvailType, //
+P extends MonitoredPropertyReference> //
+        extends NamedObject {
+
+    private final R resource;
     private final A availType;
     private final P property;
 
-    public AvailInstance(String name, A availType, P property) {
+    public AvailInstance(String name, R resource, A availType, P property) {
         super(name);
+        this.resource = resource;
         this.availType = availType;
         this.property = property;
+    }
+
+    /**
+     * @return the resource that this avail instance belongs to
+     */
+    public R getResource() {
+        return resource;
     }
 
     public A getAvailType() {

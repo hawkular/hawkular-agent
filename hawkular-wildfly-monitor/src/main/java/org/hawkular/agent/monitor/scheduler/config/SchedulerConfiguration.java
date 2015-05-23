@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
+import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 
 public class SchedulerConfiguration {
 
@@ -53,38 +55,38 @@ public class SchedulerConfiguration {
     private int availDispatcherBufferSize = DEFAULT_AVAIL_DISPATCHER_BUFFER_SIZE;
     private int availDispatcherMaxBatchSize = DEFAULT_AVAIL_DISPATCHER_MAX_BATCH_SIZE;
 
-    private final Map<DMREndpoint, List<DMRPropertyReference>> dmrMetricsToBeCollected = new HashMap<>();
-    private final Map<DMREndpoint, List<AvailDMRPropertyReference>> dmrAvailsToBeChecked = new HashMap<>();
+    private final Map<DMREndpoint, List<DMRMetricInstance>> dmrMetricsToBeCollected = new HashMap<>();
+    private final Map<DMREndpoint, List<DMRAvailInstance>> dmrAvailsToBeChecked = new HashMap<>();
 
     private MonitorServiceConfiguration.StorageAdapter storageAdapterConfig;
     private MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
 
-    public Map<DMREndpoint, List<DMRPropertyReference>> getDMRMetricsToBeCollected() {
+    public Map<DMREndpoint, List<DMRMetricInstance>> getDMRMetricsToBeCollected() {
         return Collections.unmodifiableMap(dmrMetricsToBeCollected);
     }
 
-    public Map<DMREndpoint, List<AvailDMRPropertyReference>> getDMRAvailsToBeChecked() {
+    public Map<DMREndpoint, List<DMRAvailInstance>> getDMRAvailsToBeChecked() {
         return Collections.unmodifiableMap(dmrAvailsToBeChecked);
     }
 
-    public void addMetricToBeCollected(DMREndpoint endpoint, DMRPropertyReference ref) {
-        List<DMRPropertyReference> map = dmrMetricsToBeCollected.get(endpoint);
+    public void addMetricToBeCollected(DMREndpoint endpoint, DMRMetricInstance metricToBeCollected) {
+        List<DMRMetricInstance> map = dmrMetricsToBeCollected.get(endpoint);
         if (map == null) {
-            map = new ArrayList<DMRPropertyReference>();
+            map = new ArrayList<DMRMetricInstance>();
             dmrMetricsToBeCollected.put(endpoint, map);
         }
 
-        map.add(ref);
+        map.add(metricToBeCollected);
     }
 
-    public void addAvailToBeChecked(DMREndpoint endpoint, AvailDMRPropertyReference ref) {
-        List<AvailDMRPropertyReference> map = dmrAvailsToBeChecked.get(endpoint);
+    public void addAvailToBeChecked(DMREndpoint endpoint, DMRAvailInstance availToBeCollected) {
+        List<DMRAvailInstance> map = dmrAvailsToBeChecked.get(endpoint);
         if (map == null) {
-            map = new ArrayList<AvailDMRPropertyReference>();
+            map = new ArrayList<DMRAvailInstance>();
             dmrAvailsToBeChecked.put(endpoint, map);
         }
 
-        map.add(ref);
+        map.add(availToBeCollected);
     }
 
     public int getMetricSchedulerThreads() {

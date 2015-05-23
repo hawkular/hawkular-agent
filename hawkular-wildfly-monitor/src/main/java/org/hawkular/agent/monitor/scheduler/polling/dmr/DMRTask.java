@@ -18,7 +18,6 @@ package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
-import org.hawkular.agent.monitor.scheduler.polling.KeyGenerator;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.dmrclient.Address;
 
@@ -83,11 +82,6 @@ public abstract class DMRTask implements Task {
         this.address = address;
         this.attribute = attribute;
         this.subref = subref;
-    }
-
-    @Override
-    public KeyGenerator getKeyGenerator() {
-        return new DMRKeyGenerator();
     }
 
     @Override

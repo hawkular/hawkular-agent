@@ -14,15 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.inventory.dmr;
+package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
-import org.hawkular.agent.monitor.inventory.AvailInstance;
-import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
+import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
+import org.hawkular.agent.monitor.scheduler.polling.Task;
 
-public class DMRAvailInstance extends AvailInstance<DMRResource, DMRAvailType, AvailDMRPropertyReference> {
+public class AvailDMRTaskKeyGenerator extends DMRTaskKeyGenerator {
 
-    public DMRAvailInstance(String name, DMRResource resource, DMRAvailType availType,
-            AvailDMRPropertyReference property) {
-        super(name, resource, availType, property);
+    @Override
+    public String generateKey(Task task) {
+        AvailDMRTask dmrTask = (AvailDMRTask) task;
+        DMRAvailInstance availInstance = dmrTask.getAvailInstance();
+        if (availInstance == null) {
+            return generateDefaultKey(task);
+        }
+
+        return availInstance.getName().getNameString();
     }
+
 }

@@ -24,8 +24,8 @@ import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
 public abstract class Resource< //
 T extends ResourceType<?, ?>, //
 E extends MonitoredEndpoint, //
-M extends MetricInstance<?, ?>, //
-A extends AvailInstance<?, ?>>
+M extends MetricInstance<?, ?, ?>, //
+A extends AvailInstance<?, ?, ?>>
         extends NamedObject {
 
     private final T resourceType;

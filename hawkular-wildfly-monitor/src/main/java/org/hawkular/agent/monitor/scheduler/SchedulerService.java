@@ -28,6 +28,8 @@ import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
+import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
+import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
@@ -46,11 +48,11 @@ import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnab
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
-import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
+import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.jboss.logging.Logger;
 
@@ -263,14 +265,15 @@ public class SchedulerService {
         }
     }
 
-    private List<Task> createMetricDMRTasks(Map<DMREndpoint, List<DMRPropertyReference>> map) {
+    private List<Task> createMetricDMRTasks(Map<DMREndpoint, List<DMRMetricInstance>> map) {
         List<Task> tasks = new ArrayList<>();
 
-        for (Map.Entry<DMREndpoint, List<DMRPropertyReference>> entry : map.entrySet()) {
+        for (Map.Entry<DMREndpoint, List<DMRMetricInstance>> entry : map.entrySet()) {
             DMREndpoint dmrEndpoint = entry.getKey();
-            for (DMRPropertyReference ref : entry.getValue()) {
+            for (DMRMetricInstance instance : entry.getValue()) {
                 // parse sub references (complex attribute support)
-                String attribute = ref.getAttribute();
+                DMRPropertyReference propRef = instance.getProperty();
+                String attribute = propRef.getAttribute();
                 String subref = null;
 
                 if (attribute != null) {
@@ -281,22 +284,23 @@ public class SchedulerService {
                     }
                 }
 
-                tasks.add(new MetricDMRTask(ref.getInterval(), dmrEndpoint, ref.getAddress(), attribute, subref));
+                tasks.add(new MetricDMRTask(propRef.getInterval(), dmrEndpoint, propRef.getAddress(), attribute,
+                        subref, instance));
             }
         }
 
         return tasks;
     }
 
-    private List<Task> createAvailDMRTasks(Map<DMREndpoint, List<AvailDMRPropertyReference>> map) {
+    private List<Task> createAvailDMRTasks(Map<DMREndpoint, List<DMRAvailInstance>> map) {
         List<Task> tasks = new ArrayList<>();
 
-        for (Map.Entry<DMREndpoint, List<AvailDMRPropertyReference>> entry : map.entrySet()) {
+        for (Map.Entry<DMREndpoint, List<DMRAvailInstance>> entry : map.entrySet()) {
             DMREndpoint dmrEndpoint = entry.getKey();
-            for (AvailDMRPropertyReference ref : entry.getValue()) {
-
+            for (DMRAvailInstance instance : entry.getValue()) {
                 // parse sub references (complex attribute support)
-                String attribute = ref.getAttribute();
+                AvailDMRPropertyReference propRef = instance.getProperty();
+                String attribute = propRef.getAttribute();
                 String subref = null;
 
                 if (attribute != null) {
@@ -307,8 +311,8 @@ public class SchedulerService {
                     }
                 }
 
-                tasks.add(new AvailDMRTask(ref.getInterval(), dmrEndpoint, ref.getAddress(), attribute, subref,
-                        ref.getUpRegex()));
+                tasks.add(new AvailDMRTask(propRef.getInterval(), dmrEndpoint, propRef.getAddress(), attribute,
+                        subref, instance, propRef.getUpRegex()));
             }
         }
 

@@ -16,8 +16,10 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
+import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
+import org.hawkular.agent.monitor.scheduler.polling.KeyGenerator;
 import org.hawkular.dmrclient.Address;
 
 /**
@@ -25,14 +27,34 @@ import org.hawkular.dmrclient.Address;
  */
 public class MetricDMRTask extends DMRTask {
 
+    private final DMRMetricInstance metricInstance;
+
     public MetricDMRTask(
             Interval interval,
             DMREndpoint endpoint,
             Address address,
             String attribute,
-            String subref) {
+            String subref,
+            DMRMetricInstance metricInstance) {
 
         super(Type.METRIC, interval, endpoint, address, attribute, subref);
+        this.metricInstance = metricInstance;
+    }
+
+    /**
+     * If this task is collecting a metric from an inventoried resource,
+     * this will be the metric instance of that resource.
+     * If there is no inventoried resource behind this collected metric, this will be null.
+     *
+     * @return the metric instance or null if no inventoried resource backs this metric
+     */
+    public DMRMetricInstance getMetricInstance() {
+        return metricInstance;
+    }
+
+    @Override
+    public KeyGenerator getKeyGenerator() {
+        return new MetricDMRTaskKeyGenerator();
     }
 
     @Override

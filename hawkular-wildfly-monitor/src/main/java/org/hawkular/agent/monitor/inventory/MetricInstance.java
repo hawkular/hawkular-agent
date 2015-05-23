@@ -18,14 +18,28 @@ package org.hawkular.agent.monitor.inventory;
 
 import org.hawkular.agent.monitor.scheduler.config.MonitoredPropertyReference;
 
-public abstract class MetricInstance<M extends MetricType, P extends MonitoredPropertyReference> extends NamedObject {
+public abstract class MetricInstance< //
+R extends Resource<?, ?, ?, ?>, //
+M extends MetricType, //
+P extends MonitoredPropertyReference>
+        extends NamedObject {
+
+    private final R resource;
     private final M metricType;
     private final P property;
 
-    public MetricInstance(String name, M metricType, P property) {
+    public MetricInstance(String name, R resource, M metricType, P property) {
         super(name);
+        this.resource = resource;
         this.metricType = metricType;
         this.property = property;
+    }
+
+    /**
+     * @return the resource to which this metric instance belongs
+     */
+    public R getResource() {
+        return resource;
     }
 
     public M getMetricType() {

@@ -92,7 +92,7 @@ public class StorageReporter extends ScheduledReporter {
             for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
                 Gauge<Integer> gauge = entry.getValue();
                 samples.add(new MetricDataPoint(new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(),
-                        null), gauge.getValue()));
+                        null, null), gauge.getValue()));
             }
             storageAdapter.storeMetrics(samples);
         }
@@ -101,7 +101,7 @@ public class StorageReporter extends ScheduledReporter {
             Set<MetricDataPoint> samples = new HashSet<>(counters.size());
             for (Map.Entry<String, Counter> entry : counters.entrySet()) {
                 samples.add(new MetricDataPoint(new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(),
-                        null), entry.getValue().getCount()));
+                        null, null), entry.getValue().getCount()));
             }
             storageAdapter.storeMetrics(samples);
 
@@ -112,7 +112,7 @@ public class StorageReporter extends ScheduledReporter {
             for (Map.Entry<String, Meter> entry : meters.entrySet()) {
                 Meter meter = entry.getValue();
                 samples.add(new MetricDataPoint(new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(),
-                        null), meter.getOneMinuteRate()));
+                        null, null), meter.getOneMinuteRate()));
             }
             storageAdapter.storeMetrics(samples);
         }
@@ -122,7 +122,7 @@ public class StorageReporter extends ScheduledReporter {
             for (Map.Entry<String, Timer> entry : timers.entrySet()) {
                 Timer timer = entry.getValue();
                 samples.add(new MetricDataPoint(new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(),
-                        null), timer.getSnapshot().get75thPercentile()));
+                        null, null), timer.getSnapshot().get75thPercentile()));
             }
             storageAdapter.storeMetrics(samples);
         }

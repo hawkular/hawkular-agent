@@ -376,12 +376,12 @@ public class MonitorService implements Service<MonitorService> {
             // schedule collections
             Collection<DMRMetricInstance> metricsToBeCollected = resource.getMetrics();
             for (DMRMetricInstance metricToBeCollected : metricsToBeCollected) {
-                schedulerConfig.addMetricToBeCollected(resource.getEndpoint(), metricToBeCollected.getProperty());
+                schedulerConfig.addMetricToBeCollected(resource.getEndpoint(), metricToBeCollected);
             }
 
             Collection<DMRAvailInstance> availsToBeCollected = resource.getAvails();
             for (DMRAvailInstance availToBeCollected : availsToBeCollected) {
-                schedulerConfig.addAvailToBeChecked(resource.getEndpoint(), availToBeCollected.getProperty());
+                schedulerConfig.addAvailToBeChecked(resource.getEndpoint(), availToBeCollected);
             }
         }
     }
@@ -397,7 +397,7 @@ public class MonitorService implements Service<MonitorService> {
             if (fullAddress != null) {
                 DMRPropertyReference prop = new DMRPropertyReference(fullAddress, metricType.getAttribute(), interval);
                 DMRMetricInstance metricInstance = new DMRMetricInstance(String.format("%s:M:%s", resource.getName(),
-                        metricType.getName()), metricType, prop);
+                        metricType.getName()), resource, metricType, prop);
                 resource.getMetrics().add(metricInstance);
             }
         }
@@ -410,7 +410,7 @@ public class MonitorService implements Service<MonitorService> {
                 AvailDMRPropertyReference prop = new AvailDMRPropertyReference(fullAddress, availType.getAttribute(),
                         interval, availType.getUpRegex());
                 DMRAvailInstance availInstance = new DMRAvailInstance(String.format("%s:A:%s", resource.getName(),
-                        availType.getName()), availType, prop);
+                        availType.getName()), resource, availType, prop);
                 resource.getAvails().add(availInstance);
             }
         }

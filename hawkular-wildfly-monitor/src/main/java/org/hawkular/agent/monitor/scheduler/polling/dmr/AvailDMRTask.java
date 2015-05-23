@@ -16,8 +16,10 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
+import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
+import org.hawkular.agent.monitor.scheduler.polling.KeyGenerator;
 import org.hawkular.dmrclient.Address;
 
 /**
@@ -25,6 +27,7 @@ import org.hawkular.dmrclient.Address;
  */
 public class AvailDMRTask extends DMRTask {
 
+    private final DMRAvailInstance availInstance;
     private final String upRegex;
 
     public AvailDMRTask(
@@ -33,14 +36,32 @@ public class AvailDMRTask extends DMRTask {
             Address address,
             String attribute,
             String subref,
+            DMRAvailInstance availInstance,
             String upRegex) {
 
         super(Type.AVAIL, interval, endpoint, address, attribute, subref);
+        this.availInstance = availInstance;
         this.upRegex = upRegex;
+    }
+
+    /**
+     * If this task is checking an avail for an inventoried resource,
+     * this will be the avail instance of that resource.
+     * If there is no inventoried resource behind this availability check, this will be null.
+     *
+     * @return the avail instance or null if no inventoried resource backs this avail check
+     */
+    public DMRAvailInstance getAvailInstance() {
+        return availInstance;
     }
 
     public String getUpRegex() {
         return upRegex;
+    }
+
+    @Override
+    public KeyGenerator getKeyGenerator() {
+        return new AvailDMRTaskKeyGenerator();
     }
 
     @Override

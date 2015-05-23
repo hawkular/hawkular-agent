@@ -213,9 +213,9 @@ public class TaskGroupTest {
 
     private static DMRTask createDMRTask(Type type, int duration, DMREndpoint endpoint) {
         if (type == Type.METRIC) {
-            return new MetricDMRTask(interval(duration), endpoint, Address.root(), "c", null);
+            return new MetricDMRTask(interval(duration), endpoint, Address.root(), "c", null, null);
         } else {
-            return new AvailDMRTask(interval(duration), endpoint, Address.root(), "c", null, null);
+            return new AvailDMRTask(interval(duration), endpoint, Address.root(), "c", null, null, null);
         }
     }
 
