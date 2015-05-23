@@ -16,22 +16,13 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.util.Arrays;
-
 import org.jboss.as.controller.AbstractAddStepHandler;
-import org.jboss.as.controller.OperationFailedException;
-import org.jboss.dmr.ModelNode;
 
 public class RemoteDMRAdd extends AbstractAddStepHandler {
 
     public static final RemoteDMRAdd INSTANCE = new RemoteDMRAdd();
 
     private RemoteDMRAdd() {
-    }
-
-    @Override
-    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
-        this.attributes = Arrays.asList(RemoteDMRDefinition.ATTRIBUTES);
-        super.populateModel(operation, model);
+        super(RemoteDMRDefinition.INSTANCE.getAttributes());
     }
 }

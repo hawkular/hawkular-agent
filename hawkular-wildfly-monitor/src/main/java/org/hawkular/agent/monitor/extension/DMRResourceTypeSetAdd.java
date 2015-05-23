@@ -16,22 +16,13 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.util.Arrays;
-
 import org.jboss.as.controller.AbstractAddStepHandler;
-import org.jboss.as.controller.OperationFailedException;
-import org.jboss.dmr.ModelNode;
 
 public class DMRResourceTypeSetAdd extends AbstractAddStepHandler {
 
     public static final DMRResourceTypeSetAdd INSTANCE = new DMRResourceTypeSetAdd();
 
     private DMRResourceTypeSetAdd() {
-    }
-
-    @Override
-    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
-        this.attributes = Arrays.asList(DMRResourceTypeSetDefinition.ATTRIBUTES);
-        super.populateModel(operation, model);
+        super(DMRResourceTypeSetDefinition.INSTANCE.getAttributes());
     }
 }

@@ -16,22 +16,13 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.util.Arrays;
-
 import org.jboss.as.controller.AbstractAddStepHandler;
-import org.jboss.as.controller.OperationFailedException;
-import org.jboss.dmr.ModelNode;
 
 public class DMRAvailAdd extends AbstractAddStepHandler {
 
     public static final DMRAvailAdd INSTANCE = new DMRAvailAdd();
 
     private DMRAvailAdd() {
-    }
-
-    @Override
-    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
-        this.attributes = Arrays.asList(DMRAvailDefinition.ATTRIBUTES);
-        super.populateModel(operation, model);
+        super(DMRAvailDefinition.INSTANCE.getAttributes());
     }
 }

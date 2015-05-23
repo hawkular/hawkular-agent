@@ -16,22 +16,13 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.util.Arrays;
-
 import org.jboss.as.controller.AbstractAddStepHandler;
-import org.jboss.as.controller.OperationFailedException;
-import org.jboss.dmr.ModelNode;
 
 public class StorageAdd extends AbstractAddStepHandler {
 
     static final StorageAdd INSTANCE = new StorageAdd();
 
     private StorageAdd() {
-    }
-
-    @Override
-    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
-        this.attributes = Arrays.asList(StorageDefinition.ATTRIBUTES);
-        super.populateModel(operation, model);
+        super(StorageDefinition.INSTANCE.getAttributes());
     }
 }

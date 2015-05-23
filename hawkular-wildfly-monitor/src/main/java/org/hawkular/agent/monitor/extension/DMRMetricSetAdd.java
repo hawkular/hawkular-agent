@@ -16,22 +16,13 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.util.Arrays;
-
 import org.jboss.as.controller.AbstractAddStepHandler;
-import org.jboss.as.controller.OperationFailedException;
-import org.jboss.dmr.ModelNode;
 
 public class DMRMetricSetAdd extends AbstractAddStepHandler {
 
     public static final DMRMetricSetAdd INSTANCE = new DMRMetricSetAdd();
 
     private DMRMetricSetAdd() {
-    }
-
-    @Override
-    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
-        this.attributes = Arrays.asList(DMRMetricSetDefinition.ATTRIBUTES);
-        super.populateModel(operation, model);
+        super(DMRMetricSetDefinition.INSTANCE.getAttributes());
     }
 }

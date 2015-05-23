@@ -16,22 +16,13 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.util.Arrays;
-
 import org.jboss.as.controller.AbstractAddStepHandler;
-import org.jboss.as.controller.OperationFailedException;
-import org.jboss.dmr.ModelNode;
 
 public class DiagnosticsAdd extends AbstractAddStepHandler {
 
     public static final DiagnosticsAdd INSTANCE = new DiagnosticsAdd();
 
     private DiagnosticsAdd() {
-    }
-
-    @Override
-    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
-        this.attributes = Arrays.asList(DiagnosticsDefinition.ATTRIBUTES);
-        super.populateModel(operation, model);
+        super(DiagnosticsDefinition.INSTANCE.getAttributes());
     }
 }
