@@ -19,7 +19,9 @@ package org.hawkular.agent.monitor.service;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -101,6 +103,8 @@ public class MonitorService implements Service<MonitorService> {
     private final MetricStorageProxy metricStorageProxy = new MetricStorageProxy();
     private final AvailStorageProxy availStorageProxy = new AvailStorageProxy();
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
+
+    private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories = new HashMap<>();
 
     @Override
     public MonitorService getValue() {
@@ -259,6 +263,28 @@ public class MonitorService implements Service<MonitorService> {
         ServerIdentifiers id = localDMREndpoint.getServerIdentifiers();
         schedulerService = new SchedulerService(schedulerConfig, id, metricStorageProxy, availStorageProxy,
                 inventoryStorageProxy, createLocalClientFactory());
+
+        // if we are participating in a full hawkular environment, add resource and its metadata to inventory now
+        if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+
+            InventoryDataPayloadBuilder payloadBuilder;
+            ResourceManager<DMRResource> resourceManager;
+            BreadthFirstIterator<DMRResource, DefaultEdge> bIter;
+
+            for (DMRInventoryManager im : this.dmrServerInventories.values()) {
+                resourceManager = im.getResourceManager();
+                bIter = resourceManager.getBreadthFirstIterator();
+                while (bIter.hasNext()) {
+                    // TODO store resource and resource type data to inventory
+                    DMRResource resource = bIter.next();
+                    payloadBuilder = inventoryStorageProxy.createInventoryDataPayloadBuilder();
+                    payloadBuilder.addResourceType(resource.getResourceType());
+                    payloadBuilder.addResource(resource);
+                    inventoryStorageProxy.store(payloadBuilder);
+                }
+            }
+        }
+
         schedulerService.start();
     }
 
@@ -333,6 +359,7 @@ public class MonitorService implements Service<MonitorService> {
         // Now we can build our inventory manager and discover our resources
         DMRInventoryManager im;
         im = new DMRInventoryManager(rtm, mtm, atm, resourceManager, managedServer, dmrEndpoint, factory);
+        this.dmrServerInventories.put(managedServer, im);
         im.discoverResources();
 
         // now that we have our resources discovered, we need to do the following:
@@ -345,15 +372,6 @@ public class MonitorService implements Service<MonitorService> {
 
             // flesh out the resource by adding its metrics and avails
             addDMRMetricsAndAvails(resource, im);
-
-            // if we are participating in a full hawkular environment, add resource and its metadata to inventory
-            if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
-                // TODO store resource and resource type data to inventory
-                InventoryDataPayloadBuilder payloadBuilder = inventoryStorageProxy.createInventoryDataPayloadBuilder();
-                payloadBuilder.addResourceType(resource.getResourceType());
-                payloadBuilder.addResource(resource);
-                inventoryStorageProxy.store(payloadBuilder);
-            }
 
             // schedule collections
             Collection<DMRMetricInstance> metricsToBeCollected = resource.getMetrics();
