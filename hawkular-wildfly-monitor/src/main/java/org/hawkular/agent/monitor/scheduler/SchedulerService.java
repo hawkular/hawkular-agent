@@ -124,7 +124,7 @@ public class SchedulerService {
                         .convertRatesTo(TimeUnit.SECONDS)
                         .convertDurationsTo(MILLISECONDS)
                         .outputTo(Logger.getLogger(getClass()))
-                        .withLoggingLevel(LoggingLevel.INFO)
+                        .withLoggingLevel(LoggingLevel.DEBUG)
                         .build();
                 break;
             }
