@@ -16,10 +16,12 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceTypeSet;
 
 public class DMRResourceTypeSet extends ResourceTypeSet<DMRResourceType> {
-    public DMRResourceTypeSet(String name) {
-        super(name);
+    public DMRResourceTypeSet(ID id, Name name) {
+        super(id, name);
     }
 }

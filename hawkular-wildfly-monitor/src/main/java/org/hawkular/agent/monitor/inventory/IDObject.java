@@ -16,15 +16,30 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public class Name {
-    private final String name;
+/**
+ * An object that has an ID that can uniquely identify it.
+ *
+ * @author John Mazzitelli
+ */
+public abstract class IDObject {
+    private final ID id;
 
-    public Name(String name) {
-        this.name = name;
+    public IDObject(String id) {
+        if (id == null) {
+            throw new IllegalArgumentException("id cannot be null");
+        }
+        this.id = new ID(id);
     }
 
-    public String getNameString() {
-        return this.name;
+    public IDObject(ID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("id cannot be null");
+        }
+        this.id = id;
+    }
+
+    public ID getID() {
+        return this.id;
     }
 
     @Override
@@ -37,28 +52,21 @@ public class Name {
             return false;
         }
 
-        if (!(obj instanceof Name)) {
+        if (!(obj instanceof IDObject)) {
             return false;
         }
-        String thisName = getNameString();
-        String thatName = ((Name) obj).getNameString();
-        if (thisName == null) {
-            return thatName == null;
-        }
-        return thisName.equals(thatName);
+        ID thisID = this.id;
+        ID thatID = ((IDObject) obj).id;
+        return thisID.equals(thatID);
     }
 
     @Override
     public int hashCode() {
-        String n = getNameString();
-        return (n != null) ? n.hashCode() : 0;
+        return id.hashCode();
     }
 
-    /**
-     * @return the same as {@link #getNameString()}
-     */
     @Override
     public String toString() {
-        return getNameString();
+        return String.format("%s[id=%s]", getClass().getSimpleName(), getID());
     }
 }

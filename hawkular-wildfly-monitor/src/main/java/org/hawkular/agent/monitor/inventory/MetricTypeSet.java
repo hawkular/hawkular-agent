@@ -20,8 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class MetricTypeSet<T extends MetricType> extends NamedObject {
-    public MetricTypeSet(String name) {
-        super(name);
+    public MetricTypeSet(ID id, Name name) {
+        super(id, name);
     }
 
     private boolean enabled;

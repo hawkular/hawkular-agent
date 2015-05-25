@@ -34,8 +34,8 @@ A extends AvailInstance<?, ?, ?>>
     private final Collection<M> metrics = new HashSet<M>();
     private final Collection<A> avails = new HashSet<A>();
 
-    public <P extends Resource<?, ?, ?, ?>> Resource(E endpoint, String name, T resourceType, P parent) {
-        super(name);
+    public <P extends Resource<?, ?, ?, ?>> Resource(ID id, Name name, E endpoint, T resourceType, P parent) {
+        super(id, name);
         this.endpoint = endpoint;
         this.resourceType = resourceType;
         this.parent = parent;

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
@@ -90,7 +91,7 @@ public class MonitorServiceConfigurationBuilder {
                 if (metricSetName.indexOf(',') > -1) {
                     MsgLogger.LOG.warnCommaInName(metricSetName);
                 }
-                DMRMetricTypeSet metricSet = new DMRMetricTypeSet(metricSetName);
+                DMRMetricTypeSet metricSet = new DMRMetricTypeSet(ID.NULL_ID, new Name(metricSetName));
                 theConfig.dmrMetricTypeSetMap.put(metricSet.getName(), metricSet);
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
                 metricSet.setEnabled(getBoolean(metricSetValueNode, context, DMRMetricSetDefinition.ENABLED));
@@ -98,7 +99,7 @@ public class MonitorServiceConfigurationBuilder {
                     List<Property> metricsList = metricSetValueNode.get(DMRMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
                         String metricName = metricProperty.getName();
-                        DMRMetricType metric = new DMRMetricType(metricName);
+                        DMRMetricType metric = new DMRMetricType(ID.NULL_ID, new Name(metricName));
                         metricSet.getMetricTypeMap().put(metric.getName(), metric);
                         ModelNode metricValueNode = metricProperty.getValue();
                         metric.setPath(getString(metricValueNode, context, DMRMetricDefinition.PATH));
@@ -133,7 +134,7 @@ public class MonitorServiceConfigurationBuilder {
                 if (availSetName.indexOf(',') > -1) {
                     MsgLogger.LOG.warnCommaInName(availSetName);
                 }
-                DMRAvailTypeSet availSet = new DMRAvailTypeSet(availSetName);
+                DMRAvailTypeSet availSet = new DMRAvailTypeSet(ID.NULL_ID, new Name(availSetName));
                 theConfig.dmrAvailTypeSetMap.put(availSet.getName(), availSet);
                 ModelNode availSetValueNode = availSetProperty.getValue();
                 availSet.setEnabled(getBoolean(availSetValueNode, context, DMRAvailSetDefinition.ENABLED));
@@ -141,7 +142,7 @@ public class MonitorServiceConfigurationBuilder {
                     List<Property> availsList = availSetValueNode.get(DMRAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
                         String availName = availProperty.getName();
-                        DMRAvailType avail = new DMRAvailType(availName);
+                        DMRAvailType avail = new DMRAvailType(ID.NULL_ID, new Name(availName));
                         availSet.getAvailTypeMap().put(avail.getName(), avail);
                         ModelNode availValueNode = availProperty.getValue();
                         avail.setPath(getString(availValueNode, context, DMRAvailDefinition.PATH));
@@ -243,7 +244,7 @@ public class MonitorServiceConfigurationBuilder {
                     .asPropertyList();
             for (Property resourceTypeSetProperty : resourceTypeSetsList) {
                 String resourceTypeSetName = resourceTypeSetProperty.getName();
-                DMRResourceTypeSet resourceTypeSet = new DMRResourceTypeSet(resourceTypeSetName);
+                DMRResourceTypeSet resourceTypeSet = new DMRResourceTypeSet(ID.NULL_ID, new Name(resourceTypeSetName));
                 if (resourceTypeSetName.indexOf(',') > -1) {
                     MsgLogger.LOG.warnCommaInName(resourceTypeSetName);
                 }
@@ -258,7 +259,7 @@ public class MonitorServiceConfigurationBuilder {
                         ModelNode resourceTypeValueNode = resourceTypeProperty.getValue();
 
                         String resourceTypeName = resourceTypeProperty.getName();
-                        DMRResourceType resourceType = new DMRResourceType(resourceTypeName);
+                        DMRResourceType resourceType = new DMRResourceType(ID.NULL_ID, new Name(resourceTypeName));
                         resourceTypeSet.getResourceTypeMap().put(resourceType.getName(), resourceType);
                         resourceType.setResourceNameTemplate(getString(resourceTypeValueNode, context,
                                 DMRResourceTypeDefinition.RESOURCE_NAME_TEMPLATE));
@@ -339,7 +340,7 @@ public class MonitorServiceConfigurationBuilder {
                         }
                     }
 
-                    RemoteDMRManagedServer res = new RemoteDMRManagedServer(name);
+                    RemoteDMRManagedServer res = new RemoteDMRManagedServer(ID.NULL_ID, new Name(name));
                     res.setEnabled(enabled);
                     res.setHost(host);
                     res.setPort(port);
@@ -371,7 +372,7 @@ public class MonitorServiceConfigurationBuilder {
                     }
                 }
 
-                LocalDMRManagedServer res = new LocalDMRManagedServer(name);
+                LocalDMRManagedServer res = new LocalDMRManagedServer(ID.NULL_ID, new Name(name));
                 res.setEnabled(enabled);
                 res.getResourceTypeSets().addAll(resourceTypeSets);
                 theConfig.managedServersMap.put(res.getName(), res);

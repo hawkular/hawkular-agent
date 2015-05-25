@@ -17,11 +17,13 @@
 package org.hawkular.agent.monitor.inventory.dmr;
 
 import org.hawkular.agent.monitor.inventory.AvailType;
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
 
 public class DMRAvailType extends AvailType {
 
-    public DMRAvailType(String name) {
-        super(name);
+    public DMRAvailType(ID id, Name name) {
+        super(id, name);
     }
 
     private String path;

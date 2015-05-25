@@ -17,11 +17,13 @@
 package org.hawkular.agent.monitor.inventory.dmr;
 
 import org.hawkular.agent.monitor.inventory.AvailTypeSet;
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
 
 public class DMRAvailTypeSet extends AvailTypeSet<DMRAvailType> {
 
-    public DMRAvailTypeSet(String name) {
-        super(name);
+    public DMRAvailTypeSet(ID id, Name name) {
+        super(id, name);
     }
 
 }

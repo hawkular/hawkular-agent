@@ -16,15 +16,23 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public class Name {
-    private final String name;
+/**
+ * Can be used to identify object instances.
+ */
+public class ID {
+    public static final ID NULL_ID = new ID(null);
 
-    public Name(String name) {
-        this.name = name;
+    private final String id;
+
+    public ID(String id) {
+        this.id = id;
     }
 
-    public String getNameString() {
-        return this.name;
+    /**
+     * @return the actual ID string, or null if this object represents a null ID.
+     */
+    public String getIDString() {
+        return this.id;
     }
 
     @Override
@@ -37,28 +45,28 @@ public class Name {
             return false;
         }
 
-        if (!(obj instanceof Name)) {
+        if (!(obj instanceof ID)) {
             return false;
         }
-        String thisName = getNameString();
-        String thatName = ((Name) obj).getNameString();
-        if (thisName == null) {
-            return thatName == null;
+        String thisIDString = getIDString();
+        String thatIDString = ((ID) obj).getIDString();
+        if (thisIDString == null) {
+            return thatIDString == null;
         }
-        return thisName.equals(thatName);
+        return thisIDString.equals(thatIDString);
     }
 
     @Override
     public int hashCode() {
-        String n = getNameString();
-        return (n != null) ? n.hashCode() : 0;
+        String i = getIDString();
+        return (i != null) ? i.hashCode() : 0;
     }
 
     /**
-     * @return the same as {@link #getNameString()}
+     * @return the same string that is returned by {@link #getIDString()}.
      */
     @Override
     public String toString() {
-        return getNameString();
+        return getIDString();
     }
 }

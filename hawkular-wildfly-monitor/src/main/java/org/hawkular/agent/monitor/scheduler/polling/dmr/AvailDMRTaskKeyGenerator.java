@@ -29,7 +29,7 @@ public class AvailDMRTaskKeyGenerator extends DMRTaskKeyGenerator {
             return generateDefaultKey(task);
         }
 
-        return availInstance.getName().getNameString();
+        return availInstance.getID().getIDString();
     }
 
 }

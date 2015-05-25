@@ -16,17 +16,24 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class NamedObject {
+/**
+ * An object that has an associated name as well as an ID.
+ */
+public abstract class NamedObject extends IDObject {
     private final Name name;
 
-    public NamedObject(String name) {
+    public NamedObject(String id, String name) {
+        super(id);
+
         if (name == null) {
             throw new IllegalArgumentException("name cannot be null");
         }
         this.name = new Name(name);
     }
 
-    public NamedObject(Name name) {
+    public NamedObject(ID id, Name name) {
+        super(id);
+
         if (name == null) {
             throw new IllegalArgumentException("name cannot be null");
         }
@@ -37,6 +44,14 @@ public abstract class NamedObject {
         return this.name;
     }
 
+    /**
+     * IDs are checked for equality between named objects.
+     * However, if neither this object nor the object passed in has a
+     * non-null ID, name will be checked for equality.
+     *
+     * @param object to test for equality with this object
+     * @return equality based on ID or name if ID is null
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -50,18 +65,41 @@ public abstract class NamedObject {
         if (!(obj instanceof NamedObject)) {
             return false;
         }
-        Name thisName = getName();
-        Name thatName = ((NamedObject) obj).getName();
+
+        if (!super.equals(obj)) {
+            return false;
+        }
+
+        if (super.getID().getIDString() != null) {
+            // If our ID is not null, then obj's ID must also be non-null since it was equal to our ID.
+            // Thus both objects being compared have non-null IDs and they are equal,
+            // so we consider both objects equal as well.
+            return true;
+        }
+
+        // both IDs were null, so let's fall back and check name for equality
+        Name thisName = name;
+        Name thatName = ((NamedObject) obj).name;
         return thisName.equals(thatName);
     }
 
+    /**
+     * Returns the hash code of this object's ID. If this object's ID is a null ID
+     * then the hash code will be that of the name.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
-        return getName().hashCode();
+        if (super.getID().getIDString() == null) {
+            return name.hashCode();
+        } else {
+            return super.hashCode();
+        }
     }
 
     @Override
     public String toString() {
-        return String.format("%s[%s]", getClass().getSimpleName(), getName());
+        return String.format("%s[name=%s]", super.toString(), getName());
     }
 }

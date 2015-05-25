@@ -90,6 +90,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         for (MetricDataPoint datapoint : datapoints) {
             Task task = datapoint.getTask();
             String key = task.getKeyGenerator().generateKey(task);
+            // append feed ID to the key
+            key = String.format("%s~%s", this.selfId.getFullIdentifier(), key);
             long timestamp = datapoint.getTimestamp();
             double value = datapoint.getValue();
             payloadBuilder.addDataPoint(key, timestamp, value);
@@ -153,6 +155,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         for (AvailDataPoint datapoint : datapoints) {
             Task task = datapoint.getTask();
             String key = task.getKeyGenerator().generateKey(task);
+            // append feed ID to the key
+            key = String.format("%s~%s", this.selfId.getFullIdentifier(), key);
             long timestamp = datapoint.getTimestamp();
             Avail value = datapoint.getValue();
             payloadBuilder.addDataPoint(key, timestamp, value);

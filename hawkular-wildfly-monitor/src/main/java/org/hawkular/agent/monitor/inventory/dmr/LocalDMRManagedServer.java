@@ -16,11 +16,13 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.inventory.Name;
 
 public class LocalDMRManagedServer extends ManagedServer {
 
-    public LocalDMRManagedServer(String name) {
-        super(name);
+    public LocalDMRManagedServer(ID id, Name name) {
+        super(id, name);
     }
 }

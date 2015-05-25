@@ -20,8 +20,8 @@ import java.util.Collection;
 import java.util.HashSet;
 
 public abstract class ResourceType<MT extends MetricType, AT extends AvailType> extends NamedObject {
-    public ResourceType(String name) {
-        super(name);
+    public ResourceType(ID id, Name name) {
+        super(id, name);
     }
 
     private String resourceNameTemplate;

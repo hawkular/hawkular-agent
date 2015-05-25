@@ -16,13 +16,15 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MetricInstance;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 
 public class DMRMetricInstance extends MetricInstance<DMRResource, DMRMetricType, DMRPropertyReference> {
 
-    public DMRMetricInstance(String name, DMRResource resource, DMRMetricType metricType,
+    public DMRMetricInstance(ID id, Name name, DMRResource resource, DMRMetricType metricType,
             DMRPropertyReference property) {
-        super(name, resource, metricType, property);
+        super(id, name, resource, metricType, property);
     }
 }

@@ -16,10 +16,12 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MetricTypeSet;
+import org.hawkular.agent.monitor.inventory.Name;
 
 public class DMRMetricTypeSet extends MetricTypeSet<DMRMetricType> {
-    public DMRMetricTypeSet(String name) {
-        super(name);
+    public DMRMetricTypeSet(ID id, Name name) {
+        super(id, name);
     }
 }

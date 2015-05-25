@@ -21,8 +21,8 @@ import java.util.HashSet;
 
 public abstract class ManagedServer extends NamedObject {
 
-    public ManagedServer(String name) {
-        super(name);
+    public ManagedServer(ID id, Name name) {
+        super(id, name);
     }
 
     private boolean enabled;

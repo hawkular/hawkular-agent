@@ -28,8 +28,8 @@ P extends MonitoredPropertyReference>
     private final M metricType;
     private final P property;
 
-    public MetricInstance(String name, R resource, M metricType, P property) {
-        super(name);
+    public MetricInstance(ID id, Name name, R resource, M metricType, P property) {
+        super(id, name);
         this.resource = resource;
         this.metricType = metricType;
         this.property = property;

@@ -28,8 +28,8 @@ P extends MonitoredPropertyReference> //
     private final A availType;
     private final P property;
 
-    public AvailInstance(String name, R resource, A availType, P property) {
-        super(name);
+    public AvailInstance(ID id, Name name, R resource, A availType, P property) {
+        super(id, name);
         this.resource = resource;
         this.availType = availType;
         this.property = property;

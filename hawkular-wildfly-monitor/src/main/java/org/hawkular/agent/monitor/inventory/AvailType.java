@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class AvailType extends NamedObject {
 
-    public AvailType(String name) {
-        super(name);
+    public AvailType(ID id, Name name) {
+        super(id, name);
     }
 
     private int interval;

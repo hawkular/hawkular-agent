@@ -17,12 +17,14 @@
 package org.hawkular.agent.monitor.inventory.dmr;
 
 import org.hawkular.agent.monitor.inventory.AvailInstance;
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 
 public class DMRAvailInstance extends AvailInstance<DMRResource, DMRAvailType, AvailDMRPropertyReference> {
 
-    public DMRAvailInstance(String name, DMRResource resource, DMRAvailType availType,
+    public DMRAvailInstance(ID id, Name name, DMRResource resource, DMRAvailType availType,
             AvailDMRPropertyReference property) {
-        super(name, resource, availType, property);
+        super(id, name, resource, availType, property);
     }
 }

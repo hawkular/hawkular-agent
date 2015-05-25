@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.dmrclient.Address;
@@ -26,9 +28,9 @@ public class DMRResource extends Resource<DMRResourceType, DMREndpoint, DMRMetri
     private final Address address;
     private final ModelNode modelNode;
 
-    public DMRResource(DMREndpoint endpoint, String name, DMRResourceType type, DMRResource parent,
+    public DMRResource(ID id, Name name, DMREndpoint endpoint, DMRResourceType type, DMRResource parent,
             Address address, ModelNode modelNode) {
-        super(endpoint, name, type, parent);
+        super(id, name, endpoint, type, parent);
         this.address = address;
         this.modelNode = modelNode;
     }

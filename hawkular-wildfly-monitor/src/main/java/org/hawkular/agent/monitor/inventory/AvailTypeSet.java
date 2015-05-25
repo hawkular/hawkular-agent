@@ -21,8 +21,8 @@ import java.util.Map;
 
 public abstract class AvailTypeSet<T extends AvailType> extends NamedObject {
 
-    public AvailTypeSet(String name) {
-        super(name);
+    public AvailTypeSet(ID id, Name name) {
+        super(id, name);
     }
 
     private boolean enabled;

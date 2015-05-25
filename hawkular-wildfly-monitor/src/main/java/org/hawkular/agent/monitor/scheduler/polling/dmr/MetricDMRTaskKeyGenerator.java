@@ -29,7 +29,7 @@ public class MetricDMRTaskKeyGenerator extends DMRTaskKeyGenerator {
             return generateDefaultKey(task);
         }
 
-        return metricInstance.getName().getNameString();
+        return metricInstance.getID().getIDString();
     }
 
 }

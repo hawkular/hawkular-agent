@@ -31,6 +31,7 @@ import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.api.InventoryDataPayloadBuilder;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.MetricTypeManager;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -105,6 +106,9 @@ public class MonitorService implements Service<MonitorService> {
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
 
     private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories = new HashMap<>();
+
+    // this is used to identify us to the Hawkular environment as a particular feed
+    private ServerIdentifiers feedId;
 
     @Override
     public MonitorService getValue() {
@@ -260,8 +264,8 @@ public class MonitorService implements Service<MonitorService> {
     private void startScheduler() {
         ModelControllerClientFactory mccFactory = createLocalClientFactory();
         LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
-        ServerIdentifiers id = localDMREndpoint.getServerIdentifiers();
-        schedulerService = new SchedulerService(schedulerConfig, id, metricStorageProxy, availStorageProxy,
+        feedId = localDMREndpoint.getServerIdentifiers();
+        schedulerService = new SchedulerService(schedulerConfig, feedId, metricStorageProxy, availStorageProxy,
                 inventoryStorageProxy, createLocalClientFactory());
 
         // if we are participating in a full hawkular environment, add resource and its metadata to inventory now
@@ -396,9 +400,9 @@ public class MonitorService implements Service<MonitorService> {
             Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
             if (fullAddress != null) {
                 DMRPropertyReference prop = new DMRPropertyReference(fullAddress, metricType.getAttribute(), interval);
-                DMRMetricInstance metricInstance = new DMRMetricInstance(String.format("%s~%s~M~%s",
-                        im.getManagedServer().getName(), resource.getName(), metricType.getName()), resource,
-                        metricType, prop);
+                ID id = new ID(String.format("MI~R~%s~MT~%s", resource.getID(), metricType.getName()));
+                Name name = metricType.getName();
+                DMRMetricInstance metricInstance = new DMRMetricInstance(id, name, resource, metricType, prop);
                 resource.getMetrics().add(metricInstance);
             }
         }
@@ -410,9 +414,9 @@ public class MonitorService implements Service<MonitorService> {
             if (fullAddress != null) {
                 AvailDMRPropertyReference prop = new AvailDMRPropertyReference(fullAddress, availType.getAttribute(),
                         interval, availType.getUpRegex());
-                DMRAvailInstance availInstance = new DMRAvailInstance(String.format("%s~%s~A~%s",
-                        im.getManagedServer().getName(), resource.getName(), availType.getName()), resource,
-                        availType, prop);
+                ID id = new ID(String.format("AI~R~%s~AT~%s", resource.getID(), availType.getName()));
+                Name name = availType.getName();
+                DMRAvailInstance availInstance = new DMRAvailInstance(id, name, resource, availType, prop);
                 resource.getAvails().add(availInstance);
             }
         }

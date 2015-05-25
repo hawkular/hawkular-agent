@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.dmrclient.Address;
@@ -113,9 +115,11 @@ public class DMRDiscovery {
             }
 
             for (Map.Entry<Address, ModelNode> entry : resources.entrySet()) {
-                String resourceName = generateResourceName(type, entry.getKey());
-                DMRResource resource = new DMRResource(this.inventoryManager.getEndpoint(), resourceName, type,
-                        parent, entry.getKey(), entry.getValue());
+                Address address = entry.getKey(); // this is the unique DMR address for this resource
+                Name resourceName = generateResourceName(type, address);
+                ID id = new ID(String.format("[%s~%s]", this.inventoryManager.getManagedServer().getName(), address));
+                DMRResource resource = new DMRResource(id, resourceName, this.inventoryManager.getEndpoint(), type,
+                        parent, address, entry.getValue());
                 LOG.debugf("Discovered [%s]", resource);
 
                 resourceManager.addResource(resource);
@@ -155,7 +159,7 @@ public class DMRDiscovery {
         LOG.debugf("%s\n%s", logMsg, graphString);
     }
 
-    private String generateResourceName(DMRResourceType type, Address address) {
+    private Name generateResourceName(DMRResourceType type, Address address) {
         ArrayList<String> args = new ArrayList<>();
         if (!address.isRoot()) {
             List<Property> parts = address.getAddressNode().asPropertyList();
@@ -176,7 +180,7 @@ public class DMRDiscovery {
         String nameTemplate = type.getResourceNameTemplate();
         nameTemplate = nameTemplate.replaceAll("%(\\d+)", "%$1\\$s");
         nameTemplate = nameTemplate.replaceAll("%(-)", "%" + args.size() + "\\$s");
-
-        return String.format(nameTemplate, args.toArray());
+        String nameStr = String.format(nameTemplate, args.toArray());
+        return new Name(nameStr);
     }
 }

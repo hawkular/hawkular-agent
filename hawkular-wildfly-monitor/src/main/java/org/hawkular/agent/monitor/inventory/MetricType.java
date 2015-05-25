@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 public abstract class MetricType extends NamedObject {
-    public MetricType(String name) {
-        super(name);
+    public MetricType(ID id, Name name) {
+        super(id, name);
     }
 
     private int interval;

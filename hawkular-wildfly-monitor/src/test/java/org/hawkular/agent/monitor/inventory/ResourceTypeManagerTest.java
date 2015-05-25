@@ -274,7 +274,7 @@ public class ResourceTypeManagerTest {
     }
 
     private DMRResourceTypeSet createResourceTypeSetDMR(String name, boolean enabled, DMRResourceType... types) {
-        DMRResourceTypeSet set = new DMRResourceTypeSet(name);
+        DMRResourceTypeSet set = new DMRResourceTypeSet(new ID(name), new Name(name));
         set.setEnabled(enabled);
         set.setResourceTypeMap(new HashMap<Name, DMRResourceType>());
 
@@ -287,7 +287,7 @@ public class ResourceTypeManagerTest {
     }
 
     private DMRResourceType createResourceTypeDMR(String name, String path, Name... parents) {
-        DMRResourceType rt = new DMRResourceType(name);
+        DMRResourceType rt = new DMRResourceType(new ID(name), new Name(name));
         rt.setResourceNameTemplate(name);
         rt.setPath(path);
         rt.setParents(new ArrayList<Name>());
