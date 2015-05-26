@@ -25,6 +25,7 @@ import java.util.SortedMap;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Diagnostics;
 import org.hawkular.agent.monitor.extension.SubsystemDefinition;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
@@ -48,6 +49,7 @@ import com.codahale.metrics.Timer;
 
 public class StorageReporter extends ScheduledReporter {
 
+    private final Diagnostics diagnosticsConfig;
     private final StorageAdapter storageAdapter;
     private final Locale locale;
     private final Clock clock;
@@ -61,12 +63,14 @@ public class StorageReporter extends ScheduledReporter {
             TimeUnit rateUnit,
             TimeUnit durationUnit,
             MetricFilter filter,
+            Diagnostics diagnosticsConfig,
             StorageAdapter storageAdapter,
             ServerIdentifiers selfId) {
 
         super(registry, "storage-reporter", filter, rateUnit, durationUnit);
         this.locale = locale;
         this.clock = clock;
+        this.diagnosticsConfig = diagnosticsConfig;
         this.storageAdapter = storageAdapter;
         this.selfId = selfId;
         this.dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM, locale);
@@ -81,8 +85,7 @@ public class StorageReporter extends ScheduledReporter {
             SortedMap<String, Meter> meters,
             SortedMap<String, Timer> timers) {
 
-        Diagnostics diagConfig = this.storageAdapter.getSchedulerConfiguration().getDiagnosticsConfig();
-        Interval interval = new Interval(diagConfig.interval, diagConfig.timeUnits);
+        Interval interval = new Interval(diagnosticsConfig.interval, diagnosticsConfig.timeUnits);
         String pathStr = PathAddress.pathAddress(SubsystemDefinition.INSTANCE.getPathElement()).toCLIStyleString();
         Address ourAddr = Address.parse(pathStr);
         LocalDMREndpoint localDmrEndpoint = new LocalDMREndpoint("_self", this.selfId);
@@ -128,13 +131,15 @@ public class StorageReporter extends ScheduledReporter {
         }
     }
 
-    public static Builder forRegistry(MetricRegistry registry, StorageAdapter storageAdapter,
+    public static Builder forRegistry(MetricRegistry registry,
+            MonitorServiceConfiguration.Diagnostics diagnosticsConfig, StorageAdapter storageAdapter,
             ServerIdentifiers selfId) {
-        return new Builder(registry, storageAdapter, selfId);
+        return new Builder(registry, diagnosticsConfig, storageAdapter, selfId);
     }
 
     public static class Builder {
         private final MetricRegistry registry;
+        private final MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
         private final StorageAdapter storageAdapter;
         private final ServerIdentifiers sid;
         private Locale locale;
@@ -144,8 +149,10 @@ public class StorageReporter extends ScheduledReporter {
         private TimeUnit durationUnit;
         private MetricFilter filter;
 
-        private Builder(MetricRegistry registry, StorageAdapter storageAdapter, ServerIdentifiers selfId) {
+        private Builder(MetricRegistry registry, MonitorServiceConfiguration.Diagnostics diagnosticsConfig,
+                StorageAdapter storageAdapter, ServerIdentifiers selfId) {
             this.registry = registry;
+            this.diagnosticsConfig = diagnosticsConfig;
             this.storageAdapter = storageAdapter;
             this.sid = selfId;
             this.locale = Locale.getDefault();
@@ -194,6 +201,7 @@ public class StorageReporter extends ScheduledReporter {
                     rateUnit,
                     durationUnit,
                     filter,
+                    diagnosticsConfig,
                     storageAdapter,
                     sid);
         }

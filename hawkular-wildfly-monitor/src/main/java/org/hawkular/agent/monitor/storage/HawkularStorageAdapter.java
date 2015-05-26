@@ -29,7 +29,6 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.bus.restclient.RestClient;
@@ -38,7 +37,7 @@ import org.jboss.logging.Logger;
 public class HawkularStorageAdapter implements StorageAdapter {
     private static final Logger LOGGER = Logger.getLogger(HawkularStorageAdapter.class);
 
-    private SchedulerConfiguration config;
+    private MonitorServiceConfiguration.StorageAdapter config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
 
@@ -46,12 +45,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public SchedulerConfiguration getSchedulerConfiguration() {
+    public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration() {
         return config;
     }
 
     @Override
-    public void setSchedulerConfiguration(SchedulerConfiguration config) {
+    public void setStorageAdapterConfiguration(MonitorServiceConfiguration.StorageAdapter config) {
         this.config = config;
     }
 
@@ -105,7 +104,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     @Override
     public void store(MetricDataPayloadBuilder payloadBuilder) {
 
-        String tenantId = this.config.getStorageAdapterConfig().tenantId;
+        String tenantId = this.config.tenantId;
         ((HawkularMetricDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
 
         // for now, we need to send it twice:
@@ -115,7 +114,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         // send to metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
         metricsAdapter.setDiagnostics(diagnostics);
-        metricsAdapter.setSchedulerConfiguration(getSchedulerConfiguration());
+        metricsAdapter.setStorageAdapterConfiguration(getStorageAdapterConfiguration());
         metricsAdapter.setSelfIdentifiers(selfId);
         metricsAdapter.store(((HawkularMetricDataPayloadBuilder) payloadBuilder)
                 .toMetricsOnlyMetricDataPayloadBuilder());
@@ -124,8 +123,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String jsonPayload = null;
         try {
             // build the URL to the bus interface
-            MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
-            StringBuilder urlStr = getContextUrlString(storageAdapterConfig.busContext);
+            StringBuilder urlStr = getContextUrlString(config.busContext);
             URL url = new URL(urlStr.toString());
 
             // build the bus client
@@ -170,7 +168,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     @Override
     public void store(AvailDataPayloadBuilder payloadBuilder) {
 
-        String tenantId = this.config.getStorageAdapterConfig().tenantId;
+        String tenantId = this.config.tenantId;
         ((HawkularAvailDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
 
         // for now, we need to send it twice:
@@ -180,7 +178,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         // send to h-metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
         metricsAdapter.setDiagnostics(diagnostics);
-        metricsAdapter.setSchedulerConfiguration(getSchedulerConfiguration());
+        metricsAdapter.setStorageAdapterConfiguration(getStorageAdapterConfiguration());
         metricsAdapter.setSelfIdentifiers(selfId);
         metricsAdapter.store(((HawkularAvailDataPayloadBuilder) payloadBuilder)
                 .toMetricsOnlyAvailDataPayloadBuilder());
@@ -189,8 +187,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String jsonPayload = null;
         try {
             // build the URL to the bus interface
-            MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
-            StringBuilder urlStr = getContextUrlString(storageAdapterConfig.busContext);
+            StringBuilder urlStr = getContextUrlString(config.busContext);
             URL url = new URL(urlStr.toString());
 
             // build the bus client
@@ -229,13 +226,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
     @Override
     public void store(InventoryDataPayloadBuilder payloadBuilder) {
         // TODO
-        String tenantId = this.config.getStorageAdapterConfig().tenantId;
+        String tenantId = this.config.tenantId;
         ((HawkularInventoryDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
 
         try {
             // build the URL to the inventory interface
-            MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
-            StringBuilder urlStr = getContextUrlString(storageAdapterConfig.inventoryContext);
+            StringBuilder urlStr = getContextUrlString(config.inventoryContext);
             URL url = new URL(urlStr.toString());
 
             LOGGER.warnf("STORE TO INVENTORY: url=[%s], payload=[%s]", url, payloadBuilder.toPayload());
@@ -246,8 +242,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     private StringBuilder getContextUrlString(String context) throws MalformedURLException {
-        MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = this.config.getStorageAdapterConfig();
-        StringBuilder urlStr = new StringBuilder(storageAdapterConfig.url);
+        StringBuilder urlStr = new StringBuilder(config.url);
         ensureEndsWithSlash(urlStr);
         if (context != null) {
             if (context.startsWith("/")) {

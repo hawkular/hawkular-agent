@@ -28,16 +28,6 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 
 public class SchedulerConfiguration {
 
-    public enum DiagnosticsReportTo {
-        LOG, // stores the diagnostics data as simple log messages
-        STORAGE // stores the diagnostics as metrics to the storage adapter
-    }
-
-    public enum StorageReportTo {
-        HAWKULAR, // stores metrics to a Hawkular system
-        METRICS // stores metrics to just a Hawkular-Metrics standalone system
-    }
-
     public static final int DEFAULT_NUM_METRIC_SCHEDULER_THREADS = 2;
     public static final int DEFAULT_NUM_AVAIL_SCHEDULER_THREADS = 2;
 

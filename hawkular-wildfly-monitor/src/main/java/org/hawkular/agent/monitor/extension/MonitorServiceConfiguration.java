@@ -25,13 +25,22 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 
 /**
  * This represents the monitor service extension's XML configuration in a more consumable form.
  * To build this from the actual service model, see {@link MonitorServiceConfigurationBuilder}.
  */
 public class MonitorServiceConfiguration {
+
+    public enum StorageReportTo {
+        HAWKULAR, // stores metrics to a Hawkular system
+        METRICS // stores metrics to just a Hawkular-Metrics standalone system
+    }
+
+    public enum DiagnosticsReportTo {
+        LOG, // stores the diagnostics data as simple log messages
+        STORAGE // stores the diagnostics as metrics to the storage adapter
+    }
 
     public boolean subsystemEnabled;
     public String apiJndi;
@@ -50,7 +59,7 @@ public class MonitorServiceConfiguration {
     public Map<Name, ManagedServer> managedServersMap = new HashMap<>();
 
     public static class StorageAdapter {
-        public SchedulerConfiguration.StorageReportTo type;
+        public StorageReportTo type;
         public String username;
         public String password;
         public String tenantId;
@@ -61,7 +70,7 @@ public class MonitorServiceConfiguration {
     }
 
     public static class Diagnostics {
-        public SchedulerConfiguration.DiagnosticsReportTo reportTo;
+        public DiagnosticsReportTo reportTo;
         public boolean enabled;
         public int interval;
         public TimeUnit timeUnits;

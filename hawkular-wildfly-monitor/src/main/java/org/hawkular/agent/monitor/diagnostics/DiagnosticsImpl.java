@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.diagnostics;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 import com.codahale.metrics.Counter;
@@ -35,7 +36,9 @@ public class DiagnosticsImpl implements Diagnostics {
     private final Counter availStorageBuffer;
     private final Meter availRate;
 
-    public DiagnosticsImpl(MetricRegistry metrics, ServerIdentifiers selfId) {
+    public DiagnosticsImpl(MonitorServiceConfiguration.Diagnostics config, MetricRegistry metrics,
+            ServerIdentifiers selfId) {
+        // we don't need config now, but maybe in future - so keep "config" param here for future API consistency
         dmrRequestTimer = metrics.timer(name(selfId + ".diagnostics.dmr-request-timer"));
         dmrDelayCounter = metrics.meter(name(selfId + ".diagnostics.dmr-delay-rate"));
         dmrErrorCounter = metrics.meter(name(selfId + ".diagnostics.dmr-error-rate"));

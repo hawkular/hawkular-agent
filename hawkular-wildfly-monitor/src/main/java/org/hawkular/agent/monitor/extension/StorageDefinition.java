@@ -19,7 +19,6 @@ package org.hawkular.agent.monitor.extension;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
@@ -41,8 +40,8 @@ public class StorageDefinition extends PersistentResourceDefinition {
             ModelType.STRING)
             .setAllowNull(false)
             .setAllowExpression(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.StorageReportTo.HAWKULAR.name()))
-            .setValidator(EnumValidator.create(SchedulerConfiguration.StorageReportTo.class, false, true))
+            .setDefaultValue(new ModelNode(MonitorServiceConfiguration.StorageReportTo.HAWKULAR.name()))
+            .setValidator(EnumValidator.create(MonitorServiceConfiguration.StorageReportTo.class, false, true))
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 

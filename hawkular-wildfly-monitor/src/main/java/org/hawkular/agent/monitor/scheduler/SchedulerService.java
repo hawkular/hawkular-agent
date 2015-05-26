@@ -16,18 +16,11 @@
  */
 package org.hawkular.agent.monitor.scheduler;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
-import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
-import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
-import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
-import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -47,17 +40,8 @@ import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
-import org.hawkular.agent.monitor.storage.AvailStorageProxy;
-import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
-import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
-import org.hawkular.agent.monitor.storage.MetricStorageProxy;
-import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
-import org.jboss.logging.Logger;
-
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.ScheduledReporter;
 
 /**
  * The core service that schedules tasks and stores the data resulting from those tasks to its storage adapter.
@@ -68,8 +52,6 @@ public class SchedulerService {
     private final ServerIdentifiers selfId;
     private final ModelControllerClientFactory localDMRClientFactory;
     private final Diagnostics diagnostics;
-    private final ScheduledReporter diagnosticsReporter;
-    private final StorageAdapter storageAdapter;
     private final Scheduler metricScheduler;
     private final Scheduler availScheduler;
     private final MetricBufferedStorageDispatcher metricCompletionHandler;
@@ -80,9 +62,8 @@ public class SchedulerService {
     public SchedulerService(
             SchedulerConfiguration configuration,
             ServerIdentifiers selfId,
-            MetricStorageProxy metricStorageProxy,
-            AvailStorageProxy availStorageProxy,
-            InventoryStorageProxy inventoryStorageProxy,
+            Diagnostics diagnostics,
+            StorageAdapter storageAdapter,
             ModelControllerClientFactory localDMRClientFactory) {
 
         this.schedulerConfig = configuration;
@@ -93,53 +74,8 @@ public class SchedulerService {
         // this helps identify where we are running
         this.selfId = selfId;
 
-        // build the diagnostics object that will be used to track our own performance
-        final MetricRegistry metricRegistry = new MetricRegistry();
-        this.diagnostics = new DiagnosticsImpl(metricRegistry, selfId);
-
-        // determine what our backend storage should be and create its associated adapter
-        switch (configuration.getStorageAdapterConfig().type) {
-            case HAWKULAR: {
-                this.storageAdapter = new HawkularStorageAdapter();
-                break;
-            }
-            case METRICS: {
-                this.storageAdapter = new MetricsOnlyStorageAdapter();
-                break;
-            }
-            default: {
-                throw new IllegalArgumentException("Invalid storage adapter: "
-                        + configuration.getStorageAdapterConfig());
-            }
-        }
-
-        this.storageAdapter.setSchedulerConfiguration(configuration);
-        this.storageAdapter.setDiagnostics(diagnostics);
-        this.storageAdapter.setSelfIdentifiers(selfId);
-
-        // determine where we are to store our own diagnostic reports
-        switch (configuration.getDiagnosticsConfig().reportTo) {
-            case LOG: {
-                this.diagnosticsReporter = JBossLoggingReporter.forRegistry(metricRegistry)
-                        .convertRatesTo(TimeUnit.SECONDS)
-                        .convertDurationsTo(MILLISECONDS)
-                        .outputTo(Logger.getLogger(getClass()))
-                        .withLoggingLevel(LoggingLevel.DEBUG)
-                        .build();
-                break;
-            }
-            case STORAGE: {
-                this.diagnosticsReporter = StorageReporter.forRegistry(metricRegistry, storageAdapter, selfId)
-                        .convertRatesTo(TimeUnit.SECONDS)
-                        .convertDurationsTo(MILLISECONDS)
-                        .build();
-                break;
-            }
-            default: {
-                throw new IllegalArgumentException("Invalid diagnostics type: "
-                        + configuration.getDiagnosticsConfig().reportTo);
-            }
-        }
+        // metrics for our own internals
+        this.diagnostics = diagnostics;
 
         // create the schedulers - we use two: one for metric collections and one for avail checks
         this.metricCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
@@ -151,15 +87,6 @@ public class SchedulerService {
                 diagnostics);
         this.availScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Scheduler-Avail",
                 configuration.getAvailSchedulerThreads());
-
-        // provide our storage adapater to the proxies - allows external apps to use them to store its own data
-        metricStorageProxy.setStorageAdapter(storageAdapter);
-        availStorageProxy.setStorageAdapter(storageAdapter);
-        inventoryStorageProxy.setStorageAdapter(storageAdapter);
-    }
-
-    public SchedulerConfiguration getSchedulerConfiguration() {
-        return this.schedulerConfig;
     }
 
     public ServerIdentifiers getSelfIdentifiers() {
@@ -187,11 +114,6 @@ public class SchedulerService {
         this.availCompletionHandler.start();
         this.availScheduler.schedule(availTasks);
 
-        if (this.schedulerConfig.getDiagnosticsConfig().enabled) {
-            diagnosticsReporter.start(this.schedulerConfig.getDiagnosticsConfig().interval,
-                    this.schedulerConfig.getDiagnosticsConfig().timeUnits);
-        }
-
         started = true;
     }
 
@@ -209,14 +131,6 @@ public class SchedulerService {
         // stop the schedulers
         this.metricScheduler.shutdown();
         this.availScheduler.shutdown();
-
-        // stop diagnostic reporting
-        this.diagnosticsReporter.stop();
-
-        // spit out a final diagnostics report
-        if (this.schedulerConfig.getDiagnosticsConfig().enabled) {
-            this.diagnosticsReporter.report();
-        }
 
         started = false;
     }

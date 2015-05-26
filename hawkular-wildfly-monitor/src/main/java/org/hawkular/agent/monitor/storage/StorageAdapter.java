@@ -22,12 +22,17 @@ import org.hawkular.agent.monitor.api.AvailStorage;
 import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceType;
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 public interface StorageAdapter extends MetricStorage, AvailStorage, InventoryStorage {
+
+    MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration();
+
+    void setStorageAdapterConfiguration(MonitorServiceConfiguration.StorageAdapter config);
+
     /**
      * Stores the given collected metric data points.
      * @param datapoints the data to be stored
@@ -51,16 +56,6 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
      * @param resource to be stored
      */
     void storeResource(Resource<?, ?, ?, ?> resource);
-
-    /**
-     * @return the configuration used by this adapter
-     */
-    SchedulerConfiguration getSchedulerConfiguration();
-
-    /**
-     * @param config the configuration of the scheduler to which this storage adapter is associated with
-     */
-    void setSchedulerConfiguration(SchedulerConfiguration config);
 
     /**
      * @param diag the object used to track internal diagnostic data for the storage adapter

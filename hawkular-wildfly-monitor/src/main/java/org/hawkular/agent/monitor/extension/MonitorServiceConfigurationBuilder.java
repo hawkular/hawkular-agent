@@ -34,7 +34,6 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.SimpleAttributeDefinition;
@@ -182,7 +181,8 @@ public class MonitorServiceConfigurationBuilder {
         ModelNode diagnosticsValueNode = asPropertyList.get(0).getValue();
 
         String reportToStr = getString(diagnosticsValueNode, context, DiagnosticsDefinition.REPORT_TO);
-        theConfig.diagnostics.reportTo = SchedulerConfiguration.DiagnosticsReportTo.valueOf(reportToStr.toUpperCase());
+        theConfig.diagnostics.reportTo = MonitorServiceConfiguration.DiagnosticsReportTo.valueOf(reportToStr
+                .toUpperCase());
         theConfig.diagnostics.enabled = getBoolean(diagnosticsValueNode, context, DiagnosticsDefinition.ENABLED);
         theConfig.diagnostics.interval = getInt(diagnosticsValueNode, context, DiagnosticsDefinition.INTERVAL);
         String diagnosticsTimeUnitsStr = getString(diagnosticsValueNode, context, DiagnosticsDefinition.TIME_UNITS);
@@ -216,7 +216,7 @@ public class MonitorServiceConfigurationBuilder {
         theConfig.storageAdapter.username = getString(storageAdapterConfig, context, StorageDefinition.USERNAME);
         theConfig.storageAdapter.password = getString(storageAdapterConfig, context, StorageDefinition.PASSWORD);
         String typeStr = getString(storageAdapterConfig, context, StorageDefinition.TYPE);
-        theConfig.storageAdapter.type = SchedulerConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
+        theConfig.storageAdapter.type = MonitorServiceConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
     }
 
     private void determineGlobalConfig(ModelNode config, OperationContext context) throws OperationFailedException {

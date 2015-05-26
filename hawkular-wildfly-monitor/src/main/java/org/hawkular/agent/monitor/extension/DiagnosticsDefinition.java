@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
@@ -69,8 +68,8 @@ public class DiagnosticsDefinition extends PersistentResourceDefinition {
             ModelType.STRING)
             .setAllowNull(false)
             .setAllowExpression(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.DiagnosticsReportTo.LOG.name()))
-            .setValidator(EnumValidator.create(SchedulerConfiguration.DiagnosticsReportTo.class, false, true))
+            .setDefaultValue(new ModelNode(MonitorServiceConfiguration.DiagnosticsReportTo.LOG.name()))
+            .setValidator(EnumValidator.create(MonitorServiceConfiguration.DiagnosticsReportTo.class, false, true))
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 

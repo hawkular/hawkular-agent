@@ -35,7 +35,6 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.jboss.logging.Logger;
@@ -44,7 +43,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     private static final Logger LOGGER = Logger.getLogger(MetricsOnlyStorageAdapter.class);
 
     private final HttpClient httpclient;
-    private SchedulerConfiguration config;
+    private MonitorServiceConfiguration.StorageAdapter config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
 
@@ -53,12 +52,12 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public SchedulerConfiguration getSchedulerConfiguration() {
+    public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration() {
         return config;
     }
 
     @Override
-    public void setSchedulerConfiguration(SchedulerConfiguration config) {
+    public void setStorageAdapterConfiguration(MonitorServiceConfiguration.StorageAdapter config) {
         this.config = config;
     }
 
@@ -111,7 +110,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
     @Override
     public void store(MetricDataPayloadBuilder payloadBuilder) {
-        MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
         String jsonPayload = "?";
         HttpPost request = null;
 
@@ -121,7 +119,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
             // build the REST URL...
             // start with the protocol, host, and port, plus context
-            StringBuilder url = getContextUrlString(storageAdapterConfig.metricsContext);
+            StringBuilder url = getContextUrlString(config.metricsContext);
 
             // the REST URL requires the tenant ID next in the path
             String tenantId = this.selfId.getFullIdentifier();
@@ -179,7 +177,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
     @Override
     public void store(AvailDataPayloadBuilder payloadBuilder) {
-        MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = config.getStorageAdapterConfig();
         String jsonPayload = "?";
         HttpPost request = null;
 
@@ -189,7 +186,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
             // build the REST URL...
             // start with the protocol, host, and port, plus context
-            StringBuilder url = getContextUrlString(storageAdapterConfig.metricsContext);
+            StringBuilder url = getContextUrlString(config.metricsContext);
 
             // the REST URL requires the tenant ID next in the path
             String tenantId = this.selfId.getFullIdentifier();
@@ -239,8 +236,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     private StringBuilder getContextUrlString(String context) throws MalformedURLException {
-        MonitorServiceConfiguration.StorageAdapter storageAdapterConfig = this.config.getStorageAdapterConfig();
-        StringBuilder urlStr = new StringBuilder(storageAdapterConfig.url);
+        StringBuilder urlStr = new StringBuilder(config.url);
         ensureEndsWithSlash(urlStr);
         if (context != null) {
             if (context.startsWith("/")) {

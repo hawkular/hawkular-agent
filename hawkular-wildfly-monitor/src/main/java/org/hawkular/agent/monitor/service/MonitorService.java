@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.service;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Collection;
@@ -25,10 +27,16 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.api.InventoryDataPayloadBuilder;
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
+import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
+import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
+import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ID;
@@ -59,10 +67,12 @@ import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
+import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
+import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
+import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
@@ -83,6 +93,9 @@ import org.jboss.msc.value.InjectedValue;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.BreadthFirstIterator;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.ScheduledReporter;
+
 public class MonitorService implements Service<MonitorService> {
 
     private static final Logger LOG = Logger.getLogger(MonitorService.class);
@@ -98,17 +111,26 @@ public class MonitorService implements Service<MonitorService> {
 
     private MonitorServiceConfiguration configuration;
 
-    private SchedulerConfiguration schedulerConfig;
+    // this is used to identify us to the Hawkular environment as a particular feed
+    private ServerIdentifiers selfId;
+
+    // used to report our own internal metrics
+    private Diagnostics diagnostics;
+    private ScheduledReporter diagnosticsReporter;
+
+    // used to send monitored data for storage
+    private StorageAdapter storageAdapter;
+
+    // scheduled metric and avail collections
     private SchedulerService schedulerService;
 
+    // proxies that are exposed via JNDI so external apps can emit their own inventory, metrics, and avail checks
     private final MetricStorageProxy metricStorageProxy = new MetricStorageProxy();
     private final AvailStorageProxy availStorageProxy = new AvailStorageProxy();
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
 
+    // our internal inventories for each monitored server
     private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories = new HashMap<>();
-
-    // this is used to identify us to the Hawkular environment as a particular feed
-    private ServerIdentifiers feedId;
 
     @Override
     public MonitorService getValue() {
@@ -186,8 +208,14 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         MsgLogger.LOG.infoStarting();
-        prepareSchedulerConfig();
+
+        ModelControllerClientFactory mccFactory = createLocalClientFactory();
+        LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
+        selfId = localDMREndpoint.getServerIdentifiers();
+
+        startStorageAdapter();
         startScheduler();
+
         started = true;
     }
 
@@ -205,6 +233,14 @@ public class MonitorService implements Service<MonitorService> {
         if (schedulerService != null) {
             schedulerService.stop();
             schedulerService = null;
+        }
+
+        // stop diagnostic reporting and spit out a final diagnostics report
+        if (diagnosticsReporter != null) {
+            this.diagnosticsReporter.stop();
+            if (this.configuration.diagnostics.enabled) {
+                this.diagnosticsReporter.report();
+            }
         }
 
         // cleanup the state listener
@@ -261,15 +297,77 @@ public class MonitorService implements Service<MonitorService> {
         return managementClientExecutor;
     }
 
+    private void startStorageAdapter() {
+        // build the diagnostics object that will be used to track our own performance
+        final MetricRegistry metricRegistry = new MetricRegistry();
+        this.diagnostics = new DiagnosticsImpl(configuration.diagnostics, metricRegistry, selfId);
+
+        // determine what our backend storage should be and create its associated adapter
+        switch (configuration.storageAdapter.type) {
+            case HAWKULAR: {
+                this.storageAdapter = new HawkularStorageAdapter();
+                break;
+            }
+            case METRICS: {
+                this.storageAdapter = new MetricsOnlyStorageAdapter();
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Invalid storage adapter: "
+                        + configuration.storageAdapter);
+            }
+        }
+
+        this.storageAdapter.setStorageAdapterConfiguration(configuration.storageAdapter);
+        this.storageAdapter.setDiagnostics(diagnostics);
+        this.storageAdapter.setSelfIdentifiers(selfId);
+
+        // provide our storage adapter to the proxies - allows external apps to use them to store its own data
+        metricStorageProxy.setStorageAdapter(storageAdapter);
+        availStorageProxy.setStorageAdapter(storageAdapter);
+        inventoryStorageProxy.setStorageAdapter(storageAdapter);
+
+        // determine where we are to store our own diagnostic reports
+        switch (configuration.diagnostics.reportTo) {
+            case LOG: {
+                this.diagnosticsReporter = JBossLoggingReporter.forRegistry(metricRegistry)
+                        .convertRatesTo(TimeUnit.SECONDS)
+                        .convertDurationsTo(MILLISECONDS)
+                        .outputTo(Logger.getLogger(getClass()))
+                        .withLoggingLevel(LoggingLevel.DEBUG)
+                        .build();
+                break;
+            }
+            case STORAGE: {
+                this.diagnosticsReporter = StorageReporter
+                        .forRegistry(metricRegistry, configuration.diagnostics, storageAdapter, selfId)
+                        .convertRatesTo(TimeUnit.SECONDS)
+                        .convertDurationsTo(MILLISECONDS)
+                        .build();
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Invalid diagnostics type: "
+                        + configuration.diagnostics.reportTo);
+            }
+        }
+
+        if (this.configuration.diagnostics.enabled) {
+            diagnosticsReporter.start(this.configuration.diagnostics.interval,
+                    this.configuration.diagnostics.timeUnits);
+        }
+    }
+
     private void startScheduler() {
+        SchedulerConfiguration schedulerConfig = prepareSchedulerConfig();
         ModelControllerClientFactory mccFactory = createLocalClientFactory();
         LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
-        feedId = localDMREndpoint.getServerIdentifiers();
-        schedulerService = new SchedulerService(schedulerConfig, feedId, metricStorageProxy, availStorageProxy,
-                inventoryStorageProxy, createLocalClientFactory());
+        selfId = localDMREndpoint.getServerIdentifiers();
+        schedulerService = new SchedulerService(schedulerConfig, selfId, diagnostics, storageAdapter,
+                createLocalClientFactory());
 
         // if we are participating in a full hawkular environment, add resource and its metadata to inventory now
-        if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+        if (this.configuration.storageAdapter.type == MonitorServiceConfiguration.StorageReportTo.HAWKULAR) {
 
             InventoryDataPayloadBuilder payloadBuilder;
             ResourceManager<DMRResource> resourceManager;
@@ -292,8 +390,8 @@ public class MonitorService implements Service<MonitorService> {
         schedulerService.start();
     }
 
-    private void prepareSchedulerConfig() {
-        this.schedulerConfig = new SchedulerConfiguration();
+    private SchedulerConfiguration prepareSchedulerConfig() {
+        SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
         schedulerConfig.setDiagnosticsConfig(this.configuration.diagnostics);
         schedulerConfig.setStorageAdapterConfig(this.configuration.storageAdapter);
         schedulerConfig.setMetricSchedulerThreads(this.configuration.numMetricSchedulerThreads);
@@ -314,12 +412,12 @@ public class MonitorService implements Service<MonitorService> {
                     RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
                     DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(), dmrServer.getHost(),
                             dmrServer.getPort(), dmrServer.getUsername(), dmrServer.getPassword());
-                    addDMRResources(managedServer, dmrEndpoint, resourceTypeSets);
+                    addDMRResources(schedulerConfig, managedServer, dmrEndpoint, resourceTypeSets);
                 } else if (managedServer instanceof LocalDMRManagedServer) {
                     LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
                     LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.getName().toString(),
                             createLocalClientFactory());
-                    addDMRResources(managedServer, dmrEndpoint, resourceTypeSets);
+                    addDMRResources(schedulerConfig, managedServer, dmrEndpoint, resourceTypeSets);
                 } else {
                     throw new IllegalArgumentException("An invalid managed server type was found. ["
                             + managedServer
@@ -327,10 +425,12 @@ public class MonitorService implements Service<MonitorService> {
                 }
             }
         }
+
+        return schedulerConfig;
     }
 
-    private void addDMRResources(ManagedServer managedServer, DMREndpoint dmrEndpoint,
-            Collection<Name> dmrResourceTypeSets) {
+    private void addDMRResources(SchedulerConfiguration schedulerConfig, ManagedServer managedServer,
+            DMREndpoint dmrEndpoint, Collection<Name> dmrResourceTypeSets) {
 
         // determine the client to use to connect to the managed server
         ModelControllerClientFactory factory;
