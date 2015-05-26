@@ -360,9 +360,6 @@ public class MonitorService implements Service<MonitorService> {
 
     private void startScheduler() {
         SchedulerConfiguration schedulerConfig = prepareSchedulerConfig();
-        ModelControllerClientFactory mccFactory = createLocalClientFactory();
-        LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
-        selfId = localDMREndpoint.getServerIdentifiers();
         schedulerService = new SchedulerService(schedulerConfig, selfId, diagnostics, storageAdapter,
                 createLocalClientFactory());
 
