@@ -122,8 +122,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             StringBuilder url = getContextUrlString(config.metricsContext);
 
             // the REST URL requires the tenant ID next in the path
-            String tenantId = this.selfId.getFullIdentifier();
-            url.append(tenantId);
+            url.append(config.tenantId);
 
             // now the final portion of the REST context
             url.append("/metrics/numeric/data");
@@ -189,8 +188,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             StringBuilder url = getContextUrlString(config.metricsContext);
 
             // the REST URL requires the tenant ID next in the path
-            String tenantId = this.selfId.getFullIdentifier();
-            url.append(tenantId);
+            url.append(config.tenantId);
 
             // now the final portion of the REST context
             url.append("/metrics/availability/data");
