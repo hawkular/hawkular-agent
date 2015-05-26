@@ -87,7 +87,7 @@ public class StorageDefinition extends PersistentResourceDefinition {
             ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
-            .setDefaultValue(new ModelNode("/hawkular-inventory/"))
+            .setDefaultValue(new ModelNode("/hawkular/inventory/"))
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 

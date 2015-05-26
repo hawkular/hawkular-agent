@@ -31,10 +31,7 @@
                    username="jdoe"
                    password="password"
                    tenantId="test"
-                   url="http://localhost:8080"
-                   busContext="/hawkular-bus/message/"
-                   inventoryContext="/hawkular-inventory/"
-                   metricsContext="/hawkular-metrics/" />
+                   url="http://localhost:8080"/>
 
   <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
     <metric-dmr name="Heap Used"

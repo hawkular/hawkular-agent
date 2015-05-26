@@ -37,7 +37,7 @@
                    tenantId="test"
                    url="http://localhost:8080"
                    busContext="/hawkular-bus/message/"
-                   inventoryContext="/hawkular-inventory/"
+                   inventoryContext="/hawkular/inventory/"
                    metricsContext="/hawkular-metrics/" />
 
   <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
