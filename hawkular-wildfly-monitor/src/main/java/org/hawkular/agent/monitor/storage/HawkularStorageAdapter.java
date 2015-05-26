@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Set;
 
@@ -31,6 +30,7 @@ import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
+import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.bus.restclient.RestClient;
 import org.jboss.logging.Logger;
 
@@ -123,7 +123,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String jsonPayload = null;
         try {
             // build the URL to the bus interface
-            StringBuilder urlStr = getContextUrlString(config.busContext);
+            StringBuilder urlStr = Util.getContextUrlString(config.url, config.busContext);
             URL url = new URL(urlStr.toString());
 
             // build the bus client
@@ -187,7 +187,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String jsonPayload = null;
         try {
             // build the URL to the bus interface
-            StringBuilder urlStr = getContextUrlString(config.busContext);
+            StringBuilder urlStr = Util.getContextUrlString(config.url, config.busContext);
             URL url = new URL(urlStr.toString());
 
             // build the bus client
@@ -231,33 +231,13 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         try {
             // build the URL to the inventory interface
-            StringBuilder urlStr = getContextUrlString(config.inventoryContext);
+            StringBuilder urlStr = Util.getContextUrlString(config.url, config.inventoryContext);
             URL url = new URL(urlStr.toString());
 
             LOGGER.warnf("STORE TO INVENTORY: url=[%s], payload=[%s]", url, payloadBuilder.toPayload());
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             diagnostics.getStorageErrorRate().mark(1);
-        }
-    }
-
-    private StringBuilder getContextUrlString(String context) throws MalformedURLException {
-        StringBuilder urlStr = new StringBuilder(config.url);
-        ensureEndsWithSlash(urlStr);
-        if (context != null) {
-            if (context.startsWith("/")) {
-                urlStr.append(context.substring(1));
-            } else {
-                urlStr.append(context);
-            }
-            ensureEndsWithSlash(urlStr);
-        }
-        return urlStr;
-    }
-
-    private void ensureEndsWithSlash(StringBuilder str) {
-        if (str.length() == 0 || str.charAt(str.length() - 1) != '/') {
-            str.append('/');
         }
     }
 }

@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.net.MalformedURLException;
 import java.util.Set;
 
 import org.apache.http.HttpResponse;
@@ -37,6 +36,7 @@ import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
+import org.hawkular.agent.monitor.service.Util;
 import org.jboss.logging.Logger;
 
 public class MetricsOnlyStorageAdapter implements StorageAdapter {
@@ -119,7 +119,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
             // build the REST URL...
             // start with the protocol, host, and port, plus context
-            StringBuilder url = getContextUrlString(config.metricsContext);
+            StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
 
             // the REST URL requires the tenant ID next in the path
             url.append(config.tenantId);
@@ -185,7 +185,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
             // build the REST URL...
             // start with the protocol, host, and port, plus context
-            StringBuilder url = getContextUrlString(config.metricsContext);
+            StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
 
             // the REST URL requires the tenant ID next in the path
             url.append(config.tenantId);
@@ -231,25 +231,5 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     @Override
     public void store(InventoryDataPayloadBuilder payloadBuilder) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
-    }
-
-    private StringBuilder getContextUrlString(String context) throws MalformedURLException {
-        StringBuilder urlStr = new StringBuilder(config.url);
-        ensureEndsWithSlash(urlStr);
-        if (context != null) {
-            if (context.startsWith("/")) {
-                urlStr.append(context.substring(1));
-            } else {
-                urlStr.append(context);
-            }
-            ensureEndsWithSlash(urlStr);
-        }
-        return urlStr;
-    }
-
-    private void ensureEndsWithSlash(StringBuilder str) {
-        if (str.length() == 0 || str.charAt(str.length() - 1) != '/') {
-            str.append('/');
-        }
     }
 }
