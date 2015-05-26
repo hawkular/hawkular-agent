@@ -61,9 +61,8 @@ public class StorageDefinition extends PersistentResourceDefinition {
 
     static final SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenantId",
             ModelType.STRING)
-            .setAllowNull(false)
+            .setAllowNull(true)
             .setAllowExpression(true)
-            .setDefaultValue(new ModelNode("test"))
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 

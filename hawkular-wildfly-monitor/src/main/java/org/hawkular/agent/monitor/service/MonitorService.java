@@ -20,6 +20,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +34,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.api.InventoryDataPayloadBuilder;
@@ -38,6 +50,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
@@ -74,6 +87,8 @@ import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
+import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Tenant;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
@@ -95,6 +110,7 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
+import com.google.gson.GsonBuilder;
 
 public class MonitorService implements Service<MonitorService> {
 
@@ -213,6 +229,11 @@ public class MonitorService implements Service<MonitorService> {
         LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
         selfId = localDMREndpoint.getServerIdentifiers();
 
+        // if we are participating in a full Hawkular environment, register our feed ID
+        if (configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+            registerFeed();
+        }
+
         startStorageAdapter();
         startScheduler();
 
@@ -250,6 +271,27 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         started = false;
+    }
+
+    private File getDataDirectory() {
+        File dataDir = new File(this.serverEnvironmentValue.getValue().getServerDataDir(), "hawkular-agent");
+        dataDir.mkdirs();
+        return dataDir;
+    }
+
+    private String slurpDataFile(String filename) throws FileNotFoundException {
+        File dataFile = new File(getDataDirectory(), filename);
+        FileInputStream dataFileInputStream = new FileInputStream(dataFile);
+        String fileContents = Util.slurpStream(dataFileInputStream);
+        return fileContents;
+    }
+
+    private File writeDataFile(String filename, String fileContents) throws FileNotFoundException {
+        File dataFile = new File(getDataDirectory(), filename);
+        FileOutputStream dataFileOutputStream = new FileOutputStream(dataFile);
+        ByteArrayInputStream bais = new ByteArrayInputStream(fileContents.getBytes());
+        Util.copyStream(bais, dataFileOutputStream, true);
+        return dataFile;
     }
 
     /**
@@ -558,5 +600,127 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
         return fullAddress;
+    }
+
+    private String determineTenantId() {
+        if (configuration.storageAdapter.tenantId != null) {
+            return configuration.storageAdapter.tenantId;
+        }
+
+        HttpGet request = null;
+
+        try {
+            StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
+                    configuration.storageAdapter.inventoryContext);
+            url.append("tenant");
+            DefaultHttpClient httpclient = new DefaultHttpClient();
+            request = new HttpGet(url.toString());
+
+            // make sure we are authenticated
+            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
+            String base64Encode = Util.base64Encode(configuration.storageAdapter.username + ":"
+                    + configuration.storageAdapter.password);
+            request.setHeader("Authorization", "Basic " + base64Encode);
+
+            HttpResponse httpResponse = httpclient.execute(request);
+            StatusLine statusLine = httpResponse.getStatusLine();
+
+            if (statusLine.getStatusCode() != 200) {
+                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
+                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            }
+
+            String fromServer = Util.slurpStream(httpResponse.getEntity().getContent());
+            Tenant tenant = new GsonBuilder().create().fromJson(fromServer, Tenant.class);
+            LOG.infof("Tenant ID [%s]", tenant.getId());
+
+            configuration.storageAdapter.tenantId = tenant.getId();
+            return configuration.storageAdapter.tenantId;
+        } catch (Throwable t) {
+            throw new RuntimeException("Cannot get tenant ID", t);
+        } finally {
+            if (request != null) {
+                request.releaseConnection();
+            }
+        }
+    }
+
+    private void registerFeed() {
+        HttpPost request = null;
+        String desiredFeedId = this.selfId.getFullIdentifier();
+
+        try {
+            File feedFile = new File(getDataDirectory(), "feedId.txt");
+            try {
+                String feedIdFromDataFile = slurpDataFile(feedFile.getName());
+                if (desiredFeedId.equals(feedIdFromDataFile)) {
+                    return; // we already have our feed ID - return now since there is nothing to do
+                } else {
+                    LOG.warnf("Our feed ID [%s] in [%s] is different than our desired feed ID [%s]."
+                            + " Will try to create our desired feed ID.",
+                            feedIdFromDataFile, feedFile, desiredFeedId);
+                    feedFile.delete();
+                }
+
+            } catch (FileNotFoundException e) {
+                // probably just haven't been registered yet, keep going
+            }
+
+            // get the payload in JSON format
+            String tenantId = determineTenantId();
+            String environmentId = "test";
+            Feed.Blueprint feedPojo = new Feed.Blueprint(desiredFeedId, null);
+            String jsonPayload = new GsonBuilder().create().toJson(feedPojo);
+
+            // build the REST URL...
+            // start with the protocol, host, and port, plus context
+            StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
+                    configuration.storageAdapter.inventoryContext);
+
+            // the REST URL requires the tenant ID and environment ID next in the path
+            url.append(tenantId).append('/').append(environmentId);
+
+            // rest of the URL says we want the feeds API
+            url.append("/feeds");
+
+            // now send the REST request
+            DefaultHttpClient httpclient = new DefaultHttpClient();
+            request = new HttpPost(url.toString());
+            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
+
+            // make sure we are authenticated
+            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
+            String base64Encode = Util.base64Encode(configuration.storageAdapter.username + ":"
+                    + configuration.storageAdapter.password);
+            request.setHeader("Authorization", "Basic " + base64Encode);
+            request.setHeader("Accept", "application/json");
+
+            HttpResponse httpResponse = httpclient.execute(request);
+            StatusLine statusLine = httpResponse.getStatusLine();
+
+            // HTTP status of 201 means success; anything else is an error
+            if (statusLine.getStatusCode() != 201) {
+                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
+                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            }
+
+            // success - store our feed ID so we remember it the next time
+            String feedObjectFromServer = Util.slurpStream(httpResponse.getEntity().getContent());
+            Feed feed = new GsonBuilder().create().fromJson(feedObjectFromServer, Feed.class);
+            if (desiredFeedId.equals(feed.getId())) {
+                LOG.infof("Feed ID registered [%s]", feed.getId());
+            } else {
+                LOG.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
+                // should we throw an error here or just use the feed ID we were given?
+                LOG.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file", feed.getId());
+            }
+            writeDataFile(feedFile.getName(), feed.getId());
+        } catch (Throwable t) {
+            LOG.errorf(t, "Cannot create feed [%s]", desiredFeedId);
+        } finally {
+            if (request != null) {
+                request.releaseConnection();
+            }
+        }
     }
 }

@@ -34,7 +34,6 @@
   <storage-adapter type="HAWKULAR"
                    username="jdoe"
                    password="password"
-                   tenantId="test"
                    url="http://localhost:8080"
                    busContext="/hawkular-bus/message/"
                    inventoryContext="/hawkular/inventory/"
