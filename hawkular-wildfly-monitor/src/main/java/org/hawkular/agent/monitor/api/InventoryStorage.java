@@ -16,17 +16,19 @@
  */
 package org.hawkular.agent.monitor.api;
 
+import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceType;
+
 public interface InventoryStorage {
     /**
-     * @return a builder object suitable for wrapping inventory data in a proper payload
-     *         message format to be sent to the storage backend.
+     * Stores the given resource type.
+     * @param resourceType the type to be stored
      */
-    InventoryDataPayloadBuilder createInventoryDataPayloadBuilder();
+    void storeResourceType(ResourceType<?, ?> resourceType);
 
     /**
-     * Stores the inventory data found in the given builder.
-     *
-     * @param payloadBuilder contains the inventory data to store
+     * Stores the given resource.
+     * @param resource to be stored
      */
-    void store(InventoryDataPayloadBuilder payloadBuilder);
+    void storeResource(Resource<?, ?, ?, ?> resource);
 }

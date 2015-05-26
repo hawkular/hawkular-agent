@@ -27,7 +27,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
-import org.hawkular.agent.monitor.api.InventoryDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
@@ -82,11 +81,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public InventoryDataPayloadBuilder createInventoryDataPayloadBuilder() {
-        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
-    }
-
-    @Override
     public void storeMetrics(Set<MetricDataPoint> datapoints) {
         if (datapoints == null || datapoints.isEmpty()) {
             return; // nothing to do
@@ -96,8 +90,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
         for (MetricDataPoint datapoint : datapoints) {
             Task task = datapoint.getTask();
             String key = task.getKeyGenerator().generateKey(task);
-            // append feed ID to the key
-            key = String.format("%s~%s", this.selfId.getFullIdentifier(), key);
             long timestamp = datapoint.getTimestamp();
             double value = datapoint.getValue();
             payloadBuilder.addDataPoint(key, timestamp, value);
@@ -162,8 +154,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
         for (AvailDataPoint datapoint : datapoints) {
             Task task = datapoint.getTask();
             String key = task.getKeyGenerator().generateKey(task);
-            // append feed ID to the key
-            key = String.format("%s~%s", this.selfId.getFullIdentifier(), key);
             long timestamp = datapoint.getTimestamp();
             Avail value = datapoint.getValue();
             payloadBuilder.addDataPoint(key, timestamp, value);
@@ -225,11 +215,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
     @Override
     public void storeResource(Resource<?, ?, ?, ?> resourceType) {
-        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
-    }
-
-    @Override
-    public void store(InventoryDataPayloadBuilder payloadBuilder) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 }

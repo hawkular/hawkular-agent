@@ -43,7 +43,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
-import org.hawkular.agent.monitor.api.InventoryDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
@@ -129,6 +128,7 @@ public class MonitorService implements Service<MonitorService> {
 
     // this is used to identify us to the Hawkular environment as a particular feed
     private ServerIdentifiers selfId;
+    private String feedId;
 
     // used to report our own internal metrics
     private Diagnostics diagnostics;
@@ -408,7 +408,6 @@ public class MonitorService implements Service<MonitorService> {
         // if we are participating in a full hawkular environment, add resource and its metadata to inventory now
         if (this.configuration.storageAdapter.type == MonitorServiceConfiguration.StorageReportTo.HAWKULAR) {
 
-            InventoryDataPayloadBuilder payloadBuilder;
             ResourceManager<DMRResource> resourceManager;
             BreadthFirstIterator<DMRResource, DefaultEdge> bIter;
 
@@ -418,10 +417,8 @@ public class MonitorService implements Service<MonitorService> {
                 while (bIter.hasNext()) {
                     // TODO store resource and resource type data to inventory
                     DMRResource resource = bIter.next();
-                    payloadBuilder = inventoryStorageProxy.createInventoryDataPayloadBuilder();
-                    payloadBuilder.addResourceType(resource.getResourceType());
-                    payloadBuilder.addResource(resource);
-                    inventoryStorageProxy.store(payloadBuilder);
+                    inventoryStorageProxy.storeResourceType(resource.getResourceType());
+                    inventoryStorageProxy.storeResource(resource);
                 }
             }
         }
@@ -648,21 +645,20 @@ public class MonitorService implements Service<MonitorService> {
     private void registerFeed() {
         HttpPost request = null;
         String desiredFeedId = this.selfId.getFullIdentifier();
+        this.feedId = desiredFeedId; // assume we will get what we want
 
         try {
             File feedFile = new File(getDataDirectory(), "feedId.txt");
             try {
                 String feedIdFromDataFile = slurpDataFile(feedFile.getName());
                 feedIdFromDataFile = feedIdFromDataFile.trim();
-                if (desiredFeedId.equals(feedIdFromDataFile)) {
-                    return; // we already have our feed ID - return now since there is nothing to do
-                } else {
-                    LOG.warnf("Our feed ID [%s] in [%s] is different than our desired feed ID [%s]."
-                            + " Will try to create our desired feed ID.",
+                if (!desiredFeedId.equals(feedIdFromDataFile)) {
+                    LOG.warnf("Will use feed ID [%s] found in [%s];"
+                            + " note that it is different than our desired feed ID [%s].",
                             feedIdFromDataFile, feedFile, desiredFeedId);
-                    feedFile.delete();
+                    feedId = feedIdFromDataFile;
                 }
-
+                return; // we already have a feed ID - we can return now since there is nothing else to do
             } catch (FileNotFoundException e) {
                 // probably just haven't been registered yet, keep going
             }
@@ -715,7 +711,9 @@ public class MonitorService implements Service<MonitorService> {
                 // should we throw an error here or just use the feed ID we were given?
                 LOG.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file", feed.getId());
             }
-            writeDataFile(feedFile.getName(), feed.getId());
+
+            this.feedId = feed.getId();
+            writeDataFile(feedFile.getName(), feedId);
         } catch (Throwable t) {
             LOG.errorf(t, "Cannot create feed [%s]", desiredFeedId);
         } finally {

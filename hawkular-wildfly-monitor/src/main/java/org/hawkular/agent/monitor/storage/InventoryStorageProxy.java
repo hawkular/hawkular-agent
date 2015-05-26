@@ -16,8 +16,9 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import org.hawkular.agent.monitor.api.InventoryDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.InventoryStorage;
+import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceType;
 
 /**
  * A proxy that delegates to a {@link StorageAdapter}.
@@ -34,18 +35,18 @@ public class InventoryStorageProxy implements InventoryStorage {
     }
 
     @Override
-    public InventoryDataPayloadBuilder createInventoryDataPayloadBuilder() {
+    public void storeResourceType(ResourceType<?, ?> resourceType) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
-        return storageAdapter.createInventoryDataPayloadBuilder();
+        storageAdapter.storeResourceType(resourceType);
     }
 
     @Override
-    public void store(InventoryDataPayloadBuilder payloadBuilder) {
+    public void storeResource(Resource<?, ?, ?, ?> resource) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
-        storageAdapter.store(payloadBuilder);
+        storageAdapter.storeResource(resource);
     }
 }

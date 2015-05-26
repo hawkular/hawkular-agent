@@ -23,8 +23,6 @@ import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 public interface StorageAdapter extends MetricStorage, AvailStorage, InventoryStorage {
@@ -44,18 +42,6 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
      * @param datapoints the data to be stored
      */
     void storeAvails(Set<AvailDataPoint> datapoints);
-
-    /**
-     * Stores the given resource type.
-     * @param resourceType the type to be stored
-     */
-    void storeResourceType(ResourceType<?, ?> resourceType);
-
-    /**
-     * Stores the given resource.
-     * @param resource to be stored
-     */
-    void storeResource(Resource<?, ?, ?, ?> resource);
 
     /**
      * @param diag the object used to track internal diagnostic data for the storage adapter
