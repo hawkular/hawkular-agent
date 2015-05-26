@@ -653,6 +653,7 @@ public class MonitorService implements Service<MonitorService> {
             File feedFile = new File(getDataDirectory(), "feedId.txt");
             try {
                 String feedIdFromDataFile = slurpDataFile(feedFile.getName());
+                feedIdFromDataFile = feedIdFromDataFile.trim();
                 if (desiredFeedId.equals(feedIdFromDataFile)) {
                     return; // we already have our feed ID - return now since there is nothing to do
                 } else {
