@@ -33,7 +33,7 @@ public class LocalDMREndpoint extends DMREndpoint {
      * be used when the identification needs to be determined (a client will be created
      * and queried for the server identification).
      *
-     * @param name
+     * @param name the name of the endpoint
      * @param localClientFactory creates clients that will talk to the WildFly instance we are running in
      */
     public LocalDMREndpoint(String name, ModelControllerClientFactory localClientFactory) {
@@ -48,7 +48,7 @@ public class LocalDMREndpoint extends DMREndpoint {
      * object avoid having to contact the management endpoint of the local WildFly
      * to obtain that information.
      *
-     * @param name
+     * @param name the name of the endpoint
      * @param selfId the known identification of the WildFly instance we are running in
      */
     public LocalDMREndpoint(String name, ServerIdentifiers selfId) {

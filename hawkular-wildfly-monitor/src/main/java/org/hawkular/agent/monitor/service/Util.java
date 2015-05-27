@@ -57,7 +57,7 @@ public class Util {
      * @param context the context to add to the given base URL
      * @return the base URL with the context appended to it
      *
-     * @throws MalformedURLException
+     * @throws MalformedURLException if URL cannot be built
      */
     public static StringBuilder getContextUrlString(String baseUrl, String context) throws MalformedURLException {
         StringBuilder urlStr = new StringBuilder(baseUrl);

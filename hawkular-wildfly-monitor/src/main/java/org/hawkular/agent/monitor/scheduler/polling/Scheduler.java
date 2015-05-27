@@ -26,7 +26,7 @@ public interface Scheduler {
      * Submit tasks to the scheduler. The completion handler
      * will be called when the tasks are either successful or a failure occurred.
      *
-     * @param tasks
+     * @param tasks tasks to schedule
      */
     void schedule(List<Task> tasks);
 

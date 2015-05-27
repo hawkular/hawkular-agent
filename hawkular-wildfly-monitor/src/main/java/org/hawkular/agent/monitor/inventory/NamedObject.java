@@ -49,7 +49,7 @@ public abstract class NamedObject extends IDObject {
      * However, if neither this object nor the object passed in has a
      * non-null ID, name will be checked for equality.
      *
-     * @param object to test for equality with this object
+     * @param obj object to test for equality with this object
      * @return equality based on ID or name if ID is null
      */
     @Override
