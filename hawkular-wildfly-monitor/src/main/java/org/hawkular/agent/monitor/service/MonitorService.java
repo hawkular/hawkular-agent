@@ -231,11 +231,29 @@ public class MonitorService implements Service<MonitorService> {
 
         // if we are participating in a full Hawkular environment, register our feed ID
         if (configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
-            registerFeed();
+            try {
+                registerFeed();
+            } catch (Exception e) {
+                LOG.errorf(e, "Can't do anything without a feed; aborting startup.");
+                return;
+            }
         }
 
-        startStorageAdapter();
-        startScheduler();
+        // start the storage adapter
+        try {
+            startStorageAdapter();
+        } catch (Exception e) {
+            LOG.errorf(e, "Can't do anything without storage; aborting startup.");
+            return;
+        }
+
+        // start the scheduler - this will begin metric collection
+        try {
+            startScheduler();
+        } catch (Exception e) {
+            LOG.errorf(e, "Scheduler failed to initialize; aborting startup.");
+            return;
+        }
 
         started = true;
     }
@@ -339,7 +357,7 @@ public class MonitorService implements Service<MonitorService> {
         return managementClientExecutor;
     }
 
-    private void startStorageAdapter() {
+    private void startStorageAdapter() throws Exception {
         // build the diagnostics object that will be used to track our own performance
         final MetricRegistry metricRegistry = new MetricRegistry();
         this.diagnostics = new DiagnosticsImpl(configuration.diagnostics, metricRegistry, selfId);
@@ -389,8 +407,7 @@ public class MonitorService implements Service<MonitorService> {
                 break;
             }
             default: {
-                throw new IllegalArgumentException("Invalid diagnostics type: "
-                        + configuration.diagnostics.reportTo);
+                throw new Exception("Invalid diagnostics type: " + configuration.diagnostics.reportTo);
             }
         }
 
@@ -400,7 +417,7 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
-    private void startScheduler() {
+    private void startScheduler() throws Exception {
         SchedulerConfiguration schedulerConfig = prepareSchedulerConfig();
         schedulerService = new SchedulerService(schedulerConfig, selfId, diagnostics, storageAdapter,
                 createLocalClientFactory());
@@ -423,6 +440,7 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
 
+        // now we can begin collecting metrics
         schedulerService.start();
     }
 
@@ -642,7 +660,7 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
-    private void registerFeed() {
+    private void registerFeed() throws Exception {
         HttpPost request = null;
         String desiredFeedId = this.selfId.getFullIdentifier();
         this.feedId = desiredFeedId; // assume we will get what we want
@@ -715,7 +733,7 @@ public class MonitorService implements Service<MonitorService> {
             this.feedId = feed.getId();
             writeDataFile(feedFile.getName(), feedId);
         } catch (Throwable t) {
-            LOG.errorf(t, "Cannot create feed [%s]", desiredFeedId);
+            throw new Exception(String.format("Cannot create feed [%s]", desiredFeedId), t);
         } finally {
             if (request != null) {
                 request.releaseConnection();
