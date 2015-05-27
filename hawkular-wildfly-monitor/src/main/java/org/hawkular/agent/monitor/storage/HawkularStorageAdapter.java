@@ -16,9 +16,7 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
@@ -261,14 +259,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
         return id;
     }
 
-    private String urlEncode(String str) {
-        try {
-            return URLEncoder.encode(str, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new IllegalStateException("JVM does not support UTF-8");
-        }
-    }
-
     private void registerResource(Resource<?, ?, ?, ?> resource) {
         HttpPost request = null;
 
@@ -467,7 +457,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append(this.config.tenantId).append("/");
             url.append("test").append("/"); // environment
             url.append(getFeedId());
-            url.append("/resources").append("/").append(urlEncode(resourceId)).append("/metrics");
+            url.append("/resources").append("/").append(Util.urlEncode(resourceId)).append("/metrics");
 
 
             // now send the REST request
@@ -509,7 +499,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
             url.append(this.config.tenantId);
-            url.append("/resourceTypes").append("/").append(urlEncode(resourceTypeId)).append("/metricTypes");
+            url.append("/resourceTypes").append("/").append(Util.urlEncode(resourceTypeId)).append("/metricTypes");
 
             // now send the REST request
             DefaultHttpClient httpclient = new DefaultHttpClient();

@@ -23,12 +23,29 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URLEncoder;
 import java.util.Base64;
 
 /**
  * Just some basic utilities.
  */
 public class Util {
+    /**
+     * Encodes the given string so it can be placed inside a URL.
+     *
+     * @param str string to encode
+     * @return encoded string that can be placed inside a URL
+     */
+    public static String urlEncode(String str) {
+        try {
+            String encodeForForm = URLEncoder.encode(str, "UTF-8");
+            String encodeForUrl = encodeForForm.replace("+", "%20");
+            return encodeForUrl;
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("JVM does not support UTF-8");
+        }
+    }
+
     /**
      * Given a base URL (like 'http://localhost:8080') this will append the given
      * context string to it and will return the URL with a forward-slash as its last character.
