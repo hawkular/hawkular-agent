@@ -35,6 +35,8 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.AvailInstance;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.MeasurementInstance;
+import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.NamedObject;
@@ -46,7 +48,6 @@ import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.bus.restclient.RestClient;
 import org.hawkular.inventory.api.model.MetricUnit;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.jboss.logging.Logger;
 
 import com.google.gson.GsonBuilder;
@@ -221,31 +222,41 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public void storeResourceType(ResourceType<?, ?> resourceType) {
+        if (resourceType.isPersisted()) {
+            return;
+        }
+
         registerResourceType(resourceType);
+
         Collection<? extends MetricType> metricTypes = resourceType.getMetricTypes();
         for (MetricType metricType : metricTypes) {
-            registerMetricType(getInventoryId(metricType), metricType.getMetricUnits());
-            relateResourceTypeWithMetricType(getInventoryId(resourceType), getInventoryId(metricType));
+            registerMetricType(metricType);
+            relateResourceTypeWithMetricType(resourceType, metricType);
         }
         Collection<? extends AvailType> availTypes = resourceType.getAvailTypes();
         for (AvailType availType : availTypes) {
-            registerMetricType(getInventoryId(availType), MeasurementUnit.NONE);
-            relateResourceTypeWithMetricType(getInventoryId(resourceType), getInventoryId(availType));
+            registerMetricType(availType);
+            relateResourceTypeWithMetricType(resourceType, availType);
         }
     }
 
     @Override
     public void storeResource(Resource<?, ?, ?, ?> resource) {
+        if (resource.isPersisted()) {
+            return;
+        }
+
         registerResource(resource);
+
         Collection<? extends MetricInstance<?, ?, ?>> metricInstances = resource.getMetrics();
         for (MetricInstance<?, ?, ?> metricInstance : metricInstances) {
-            registerMetricInstance(getInventoryId(metricInstance), getInventoryId(metricInstance.getMetricType()));
-            relateResourceWithMetric(getInventoryId(resource), getInventoryId(metricInstance));
+            registerMetricInstance(metricInstance);
+            relateResourceWithMetric(resource, metricInstance);
         }
         Collection<? extends AvailInstance<?, ?, ?>> availInstances = resource.getAvails();
         for (AvailInstance<?, ?, ?> availInstance : availInstances) {
-            registerMetricInstance(getInventoryId(availInstance), getInventoryId(availInstance.getAvailType()));
-            relateResourceWithMetric(getInventoryId(resource), getInventoryId(availInstance));
+            registerMetricInstance(availInstance);
+            relateResourceWithMetric(resource, availInstance);
         }
     }
 
@@ -260,6 +271,10 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     private void registerResource(Resource<?, ?, ?, ?> resource) {
+        if (resource.isPersisted()) {
+            return;
+        }
+
         HttpPost request = null;
 
         try {
@@ -295,6 +310,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
                         + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
             }
+
+            resource.setPersisted(true);
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource: " + resource, t);
@@ -303,9 +320,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 request.releaseConnection();
             }
         }
+
+        resource.setPersisted(true);
     }
 
     private void registerResourceType(ResourceType<?, ?> resourceType) {
+        if (resourceType.isPersisted()) {
+            return;
+        }
+
         HttpPost request = null;
 
         try {
@@ -338,6 +361,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
                         + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
             }
+
+            resourceType.setPersisted(true);
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource type: " + resourceType, t);
@@ -346,10 +371,19 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 request.releaseConnection();
             }
         }
+
+        resourceType.setPersisted(true);
     }
 
-    private void registerMetricInstance(String metricId, String metricTypeId) {
+    private void registerMetricInstance(MeasurementInstance<?, ?, ?> measurementInstance) {
+        if (measurementInstance.isPersisted()) {
+            return;
+        }
+
         HttpPost request = null;
+
+        String metricId = getInventoryId(measurementInstance);
+        String metricTypeId = getInventoryId(measurementInstance.getMeasurementType());
 
         try {
             // get the payload in JSON format
@@ -391,17 +425,27 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 request.releaseConnection();
             }
         }
+
+        measurementInstance.setPersisted(true);
     }
 
-    private void registerMetricType(String metricTypeId, MeasurementUnit metricTypeUnits) {
+    private void registerMetricType(MeasurementType measurementType) {
+        if (measurementType.isPersisted()) {
+            return;
+        }
+
         HttpPost request = null;
 
+        String metricTypeId = getInventoryId(measurementType);
+
         try {
-            MetricUnit mu;
+            MetricUnit mu = MetricUnit.NONE;
             try {
-                mu = MetricUnit.valueOf(metricTypeUnits.name());
+                if (measurementType instanceof MetricType) {
+                    mu = MetricUnit.valueOf(((MetricType) measurementType).getMetricUnits().name());
+                }
             } catch (Exception e) {
-                mu = MetricUnit.NONE;
+                // the unit isn't supported
             }
 
             // get the payload in JSON format
@@ -441,10 +485,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 request.releaseConnection();
             }
         }
+
+        measurementType.setPersisted(true);
     }
 
-    private void relateResourceWithMetric(String resourceId, String metricId) {
+    private void relateResourceWithMetric(Resource<?, ?, ?, ?> resource, MeasurementInstance<?, ?, ?> measInstance) {
         HttpPost request = null;
+
+        String resourceId = getInventoryId(resource);
+        String metricId = getInventoryId(measInstance);
 
         try {
             // get the payload in JSON format
@@ -489,8 +538,11 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
     }
 
-    private void relateResourceTypeWithMetricType(String resourceTypeId, String metricTypeId) {
+    private void relateResourceTypeWithMetricType(ResourceType<?, ?> resourceType, MeasurementType measType) {
         HttpPost request = null;
+
+        String resourceTypeId = getInventoryId(resourceType);
+        String metricTypeId = getInventoryId(measType);
 
         try {
             // get the payload in JSON format

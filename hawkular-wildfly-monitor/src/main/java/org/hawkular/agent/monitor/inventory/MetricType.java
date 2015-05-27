@@ -16,34 +16,14 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import java.util.concurrent.TimeUnit;
-
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
-public abstract class MetricType extends NamedObject {
+public abstract class MetricType extends MeasurementType {
     public MetricType(ID id, Name name) {
         super(id, name);
     }
 
-    private int interval;
-    private TimeUnit timeUnits;
     private MeasurementUnit metricUnits;
-
-    public int getInterval() {
-        return interval;
-    }
-
-    public void setInterval(int interval) {
-        this.interval = interval;
-    }
-
-    public TimeUnit getTimeUnits() {
-        return timeUnits;
-    }
-
-    public void setTimeUnits(TimeUnit timeUnits) {
-        this.timeUnits = timeUnits;
-    }
 
     public MeasurementUnit getMetricUnits() {
         return metricUnits;

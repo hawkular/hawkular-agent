@@ -22,31 +22,13 @@ public abstract class MetricInstance< //
 R extends Resource<?, ?, ?, ?>, //
 M extends MetricType, //
 P extends MonitoredPropertyReference>
-        extends NamedObject {
-
-    private final R resource;
-    private final M metricType;
-    private final P property;
+        extends MeasurementInstance<R, M, P> {
 
     public MetricInstance(ID id, Name name, R resource, M metricType, P property) {
-        super(id, name);
-        this.resource = resource;
-        this.metricType = metricType;
-        this.property = property;
-    }
-
-    /**
-     * @return the resource to which this metric instance belongs
-     */
-    public R getResource() {
-        return resource;
+        super(id, name, resource, metricType, property);
     }
 
     public M getMetricType() {
-        return metricType;
-    }
-
-    public P getProperty() {
-        return property;
+        return getMeasurementType();
     }
 }

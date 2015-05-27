@@ -18,17 +18,35 @@ package org.hawkular.agent.monitor.inventory;
 
 import org.hawkular.agent.monitor.scheduler.config.MonitoredPropertyReference;
 
-public abstract class AvailInstance< //
+public abstract class MeasurementInstance< //
 R extends Resource<?, ?, ?, ?>, //
-A extends AvailType, //
+M extends MeasurementType, //
 P extends MonitoredPropertyReference> //
-        extends MeasurementInstance<R, A, P> {
+        extends NamedObject {
 
-    public AvailInstance(ID id, Name name, R resource, A availType, P property) {
-        super(id, name, resource, availType, property);
+    private final R resource;
+    private final M measurementType;
+    private final P property;
+
+    public MeasurementInstance(ID id, Name name, R resource, M measurementType, P property) {
+        super(id, name);
+        this.resource = resource;
+        this.measurementType = measurementType;
+        this.property = property;
     }
 
-    public A getAvailType() {
-        return getMeasurementType();
+    /**
+     * @return the resource that this measurement instance belongs to
+     */
+    public R getResource() {
+        return resource;
+    }
+
+    public M getMeasurementType() {
+        return measurementType;
+    }
+
+    public P getProperty() {
+        return property;
     }
 }

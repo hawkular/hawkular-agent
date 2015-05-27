@@ -16,30 +16,9 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import java.util.concurrent.TimeUnit;
-
-public abstract class AvailType extends NamedObject {
+public abstract class AvailType extends MeasurementType {
 
     public AvailType(ID id, Name name) {
         super(id, name);
-    }
-
-    private int interval;
-    private TimeUnit timeUnits;
-
-    public int getInterval() {
-        return interval;
-    }
-
-    public void setInterval(int interval) {
-        this.interval = interval;
-    }
-
-    public TimeUnit getTimeUnits() {
-        return timeUnits;
-    }
-
-    public void setTimeUnits(TimeUnit timeUnits) {
-        this.timeUnits = timeUnits;
     }
 }

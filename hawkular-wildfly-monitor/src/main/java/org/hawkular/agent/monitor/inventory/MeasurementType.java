@@ -16,19 +16,30 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import org.hawkular.agent.monitor.scheduler.config.MonitoredPropertyReference;
+import java.util.concurrent.TimeUnit;
 
-public abstract class AvailInstance< //
-R extends Resource<?, ?, ?, ?>, //
-A extends AvailType, //
-P extends MonitoredPropertyReference> //
-        extends MeasurementInstance<R, A, P> {
+public abstract class MeasurementType extends NamedObject {
 
-    public AvailInstance(ID id, Name name, R resource, A availType, P property) {
-        super(id, name, resource, availType, property);
+    public MeasurementType(ID id, Name name) {
+        super(id, name);
     }
 
-    public A getAvailType() {
-        return getMeasurementType();
+    private int interval;
+    private TimeUnit timeUnits;
+
+    public int getInterval() {
+        return interval;
+    }
+
+    public void setInterval(int interval) {
+        this.interval = interval;
+    }
+
+    public TimeUnit getTimeUnits() {
+        return timeUnits;
+    }
+
+    public void setTimeUnits(TimeUnit timeUnits) {
+        this.timeUnits = timeUnits;
     }
 }

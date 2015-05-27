@@ -24,6 +24,8 @@ package org.hawkular.agent.monitor.inventory;
 public abstract class IDObject {
     private final ID id;
 
+    private boolean persisted = false;
+
     public IDObject(String id) {
         if (id == null) {
             throw new IllegalArgumentException("id cannot be null");
@@ -40,6 +42,17 @@ public abstract class IDObject {
 
     public ID getID() {
         return this.id;
+    }
+
+    /**
+     * @return if true, this object has been registered or persisted in backend storage
+     */
+    public boolean isPersisted() {
+        return persisted;
+    }
+
+    public void setPersisted(boolean persisted) {
+        this.persisted = persisted;
     }
 
     @Override
