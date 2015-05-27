@@ -428,15 +428,21 @@ public class MonitorService implements Service<MonitorService> {
             ResourceManager<DMRResource> resourceManager;
             BreadthFirstIterator<DMRResource, DefaultEdge> bIter;
 
-            for (DMRInventoryManager im : this.dmrServerInventories.values()) {
-                resourceManager = im.getResourceManager();
-                bIter = resourceManager.getBreadthFirstIterator();
-                while (bIter.hasNext()) {
-                    // TODO store resource and resource type data to inventory
-                    DMRResource resource = bIter.next();
-                    inventoryStorageProxy.storeResourceType(resource.getResourceType());
-                    inventoryStorageProxy.storeResource(resource);
+            try {
+                for (DMRInventoryManager im : this.dmrServerInventories.values()) {
+                    resourceManager = im.getResourceManager();
+                    bIter = resourceManager.getBreadthFirstIterator();
+                    while (bIter.hasNext()) {
+                        // TODO store resource and resource type data to inventory
+                        DMRResource resource = bIter.next();
+                        inventoryStorageProxy.storeResourceType(resource.getResourceType());
+                        inventoryStorageProxy.storeResource(resource);
+                    }
                 }
+            } catch (Throwable t) {
+                // TODO for now, just stop what we were doing and whatever we have in inventory is "good enough"
+                // for prototyping, this is good enough, but we'll need better handling later
+                LOG.errorf(t, "Failed to completely add our inventory - but we will keep going with partial inventory");
             }
         }
 
