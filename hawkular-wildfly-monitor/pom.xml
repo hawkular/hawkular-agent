@@ -144,6 +144,13 @@
       <scope>provided</scope>
       <optional>true</optional>
     </dependency>
+
+    <!-- need this to avoid annoying javadoc errors when doing a mvn release -->
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-jackson2-provider</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>
