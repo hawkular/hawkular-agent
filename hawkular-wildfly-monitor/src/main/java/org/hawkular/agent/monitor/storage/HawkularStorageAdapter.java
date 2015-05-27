@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.storage;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
@@ -457,7 +458,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         try {
             // get the payload in JSON format
-            String jsonPayload = String.format("{\"id\":\"%s\"}", metricId);
+            ArrayList<String> id = new ArrayList<>();
+            id.add(metricId);
+            String jsonPayload = new GsonBuilder().create().toJson(id);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
