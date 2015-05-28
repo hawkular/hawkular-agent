@@ -39,7 +39,7 @@
     <moduleName>org.hawkular.agent.monitor</moduleName>
     <moduleDir>org/hawkular/agent/monitor</moduleDir>
 
-    <version.org.hawkular.inventory>0.0.6</version.org.hawkular.inventory>
+    <version.org.hawkular.inventory>0.0.7</version.org.hawkular.inventory>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
   </properties>
 
