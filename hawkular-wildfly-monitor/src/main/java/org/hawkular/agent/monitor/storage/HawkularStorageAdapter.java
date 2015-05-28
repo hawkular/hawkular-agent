@@ -523,8 +523,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
             HttpResponse httpResponse = httpclient.execute(request);
             StatusLine statusLine = httpResponse.getStatusLine();
 
-            // HTTP status of 204 means success
-            if (statusLine.getStatusCode() != 204) {
+            // HTTP status of 204 means success, 409 means it already exists; anything else is an error
+            if (statusLine.getStatusCode() != 204 && statusLine.getStatusCode() != 409) {
                 throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
                         + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
             }
@@ -567,8 +567,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
             HttpResponse httpResponse = httpclient.execute(request);
             StatusLine statusLine = httpResponse.getStatusLine();
 
-            // HTTP status of 204 means success
-            if (statusLine.getStatusCode() != 204) {
+            // HTTP status of 204 means success, 409 means it already exists; anything else is an error
+            if (statusLine.getStatusCode() != 204 && statusLine.getStatusCode() != 409) {
                 throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
                         + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
             }

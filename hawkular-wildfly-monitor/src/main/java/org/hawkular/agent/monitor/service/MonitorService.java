@@ -232,9 +232,15 @@ public class MonitorService implements Service<MonitorService> {
         // if we are participating in a full Hawkular environment, register our feed ID
         if (configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
             try {
+                determineTenantId();
                 registerFeed();
             } catch (Exception e) {
                 LOG.errorf(e, "Can't do anything without a feed; aborting startup.");
+                return;
+            }
+        } else {
+            if (configuration.storageAdapter.tenantId == null) {
+                LOG.errorf("To use standalone Hawkular Metrics, you must configure a tenant ID");
                 return;
             }
         }
@@ -688,7 +694,7 @@ public class MonitorService implements Service<MonitorService> {
             }
 
             // get the payload in JSON format
-            String tenantId = determineTenantId();
+            String tenantId = configuration.storageAdapter.tenantId;
             String environmentId = "test";
             Feed.Blueprint feedPojo = new Feed.Blueprint(desiredFeedId, null);
             String jsonPayload = new GsonBuilder().create().toJson(feedPojo);
