@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.storage;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.http.HttpResponse;
@@ -281,7 +282,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
             rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource),
-                    getInventoryId(resource.getResourceType()));
+                    getInventoryId(resource.getResourceType()), resource.getProperties());
             String jsonPayload = new GsonBuilder().create().toJson(rPojo);
 
             // build the REST URL
@@ -334,7 +335,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.ResourceType.Blueprint rtPojo;
-            rtPojo = new org.hawkular.inventory.api.model.ResourceType.Blueprint(getInventoryId(resourceType), "0.1");
+            rtPojo = new org.hawkular.inventory.api.model.ResourceType.Blueprint(getInventoryId(resourceType), "0.1",
+                    resourceType.getProperties());
             String jsonPayload = new GsonBuilder().create().toJson(rtPojo);
 
             // build the REST URL
@@ -384,11 +386,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         String metricId = getInventoryId(measurementInstance);
         String metricTypeId = getInventoryId(measurementInstance.getMeasurementType());
+        Map<String, Object> metricProps = measurementInstance.getProperties();
 
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Metric.Blueprint mtPojo;
-            mtPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypeId, metricId);
+            mtPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypeId, metricId, metricProps);
             String jsonPayload = new GsonBuilder().create().toJson(mtPojo);
 
             // build the REST URL
@@ -437,6 +440,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         HttpPost request = null;
 
         String metricTypeId = getInventoryId(measurementType);
+        Map<String, Object> metricTypeProps = measurementType.getProperties();
 
         try {
             MetricUnit mu = MetricUnit.NONE;
@@ -450,7 +454,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // get the payload in JSON format
             org.hawkular.inventory.api.model.MetricType.Blueprint mtPojo;
-            mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu);
+            mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, metricTypeProps);
             String jsonPayload = new GsonBuilder().create().toJson(mtPojo);
 
             // build the REST URL

@@ -20,86 +20,27 @@ package org.hawkular.agent.monitor.inventory;
  * An object that has an associated name as well as an ID.
  */
 public abstract class NamedObject extends IDObject {
-    private final Name name;
+    public static final String NAME = "name"; // the property name where the object's name is stored
 
-    public NamedObject(String id, String name) {
-        super(id);
-
-        if (name == null) {
-            throw new IllegalArgumentException("name cannot be null");
-        }
-        this.name = new Name(name);
-    }
-
+    /**
+     * Creates a named object.
+     *
+     * @param id the id of the object; if null, name will be used as its ID
+     * @param name the name of the object; must not be null
+     */
     public NamedObject(ID id, Name name) {
-        super(id);
+        super((id != null && !id.equals(ID.NULL_ID)) ? id : (name != null) ? new ID(name.getNameString()) : null);
 
         if (name == null) {
             throw new IllegalArgumentException("name cannot be null");
         }
-        this.name = name;
+        if (name.getNameString() == null) {
+            throw new IllegalArgumentException("name string cannot be null");
+        }
+        addProperty(NAME, name.getNameString());
     }
 
     public Name getName() {
-        return this.name;
-    }
-
-    /**
-     * IDs are checked for equality between named objects.
-     * However, if neither this object nor the object passed in has a
-     * non-null ID, name will be checked for equality.
-     *
-     * @param obj object to test for equality with this object
-     * @return equality based on ID or name if ID is null
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        if (obj == null) {
-            return false;
-        }
-
-        if (!(obj instanceof NamedObject)) {
-            return false;
-        }
-
-        if (!super.equals(obj)) {
-            return false;
-        }
-
-        if (super.getID().getIDString() != null) {
-            // If our ID is not null, then obj's ID must also be non-null since it was equal to our ID.
-            // Thus both objects being compared have non-null IDs and they are equal,
-            // so we consider both objects equal as well.
-            return true;
-        }
-
-        // both IDs were null, so let's fall back and check name for equality
-        Name thisName = name;
-        Name thatName = ((NamedObject) obj).name;
-        return thisName.equals(thatName);
-    }
-
-    /**
-     * Returns the hash code of this object's ID. If this object's ID is a null ID
-     * then the hash code will be that of the name.
-     *
-     * @return hash code
-     */
-    @Override
-    public int hashCode() {
-        if (super.getID().getIDString() == null) {
-            return name.hashCode();
-        } else {
-            return super.hashCode();
-        }
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s[name=%s]", super.toString(), getName());
+        return new Name(getProperties().get(NAME).toString());
     }
 }

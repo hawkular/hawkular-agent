@@ -16,13 +16,20 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * An object that has an ID that can uniquely identify it.
+ *
+ * It also has optional properties that also help to further identify it.
  *
  * @author John Mazzitelli
  */
 public abstract class IDObject {
     private final ID id;
+    private final Map<String, Object> properties = new HashMap<>();
 
     private boolean persisted = false;
 
@@ -42,6 +49,30 @@ public abstract class IDObject {
 
     public ID getID() {
         return this.id;
+    }
+
+    /**
+     * @return a read-only map of the optional properties for this object.
+     */
+    public Map<String, Object> getProperties() {
+        return Collections.unmodifiableMap(properties);
+    }
+
+    /**
+     * Adds an optional property to this object.
+     *
+     * @param name the name of the property
+     * @param value the value of the property; must be JSON-serializable and must be non-null
+     */
+    public void addProperty(String name, Object value) {
+        if (value == null) {
+            throw new IllegalArgumentException("value must not be null");
+        }
+        properties.put(name, value);
+    }
+
+    public void removeProperty(String name) {
+        properties.remove(name);
     }
 
     /**
@@ -80,6 +111,6 @@ public abstract class IDObject {
 
     @Override
     public String toString() {
-        return String.format("%s[id=%s]", getClass().getSimpleName(), getID());
+        return String.format("%s[id=%s][props=%s]", getClass().getSimpleName(), getID(), getProperties());
     }
 }
