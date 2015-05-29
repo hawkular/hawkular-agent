@@ -131,4 +131,25 @@ public interface MsgLogger {
     @LogMessage(level = Level.ERROR)
     @Message(id = 10024, value = "Failed to store inventory data")
     void errorFailedToStoreInventoryData(@Cause Throwable t);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10025, value = "Will talk to Hawkular at URL [%s]")
+    void infoUsingServerSideUrl(String url);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10026, value = "Can't do anything without a feed; aborting startup")
+    void errorCannotDoAnythingWithoutFeed(@Cause Throwable t);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10027, value = "To use standalone Hawkular Metrics, you must configure a tenant ID")
+    void errorMustHaveTenantIdConfigured();
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10028, value = "Cannot start storage adapter; aborting startup")
+    void errorCannotStartStorageAdapter(@Cause Throwable t);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10029, value = "Scheduler failed to initialize; aborting startup")
+    void errorCannotInitializeScheduler(@Cause Throwable t);
+
 }

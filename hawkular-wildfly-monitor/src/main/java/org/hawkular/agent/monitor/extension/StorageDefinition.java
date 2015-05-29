@@ -68,7 +68,15 @@ public class StorageDefinition extends PersistentResourceDefinition {
 
     static final SimpleAttributeDefinition URL = new SimpleAttributeDefinitionBuilder("url",
             ModelType.STRING)
-            .setAllowNull(false)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    static final SimpleAttributeDefinition SERVER_OUTBOUND_SOCKET_BINDING_REF = new SimpleAttributeDefinitionBuilder(
+            "serverOutboundSocketBindingRef",
+            ModelType.STRING)
+            .setAllowNull(true)
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
@@ -99,7 +107,8 @@ public class StorageDefinition extends PersistentResourceDefinition {
             .build();
 
     static final AttributeDefinition[] ATTRIBUTES = {
-            TYPE, USERNAME, PASSWORD, TENANT_ID, URL, BUS_CONTEXT, INVENTORY_CONTEXT, METRICS_CONTEXT
+            TYPE, USERNAME, PASSWORD, TENANT_ID, URL, SERVER_OUTBOUND_SOCKET_BINDING_REF, BUS_CONTEXT,
+            INVENTORY_CONTEXT, METRICS_CONTEXT
     };
 
     private StorageDefinition() {

@@ -25,6 +25,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -92,6 +94,8 @@ import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.as.network.OutboundSocketBinding;
+import org.jboss.as.network.SocketBinding;
 import org.jboss.as.server.ServerEnvironment;
 import org.jboss.as.server.ServerEnvironmentService;
 import org.jboss.as.server.Services;
@@ -118,6 +122,8 @@ public class MonitorService implements Service<MonitorService> {
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
     private final InjectedValue<ControlledProcessStateService> processStateValue = new InjectedValue<>();
+    private final InjectedValue<SocketBinding> httpSocketBindingValue = new InjectedValue<>();
+    private final InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue = new InjectedValue<>();
 
     private boolean started = false;
 
@@ -185,6 +191,13 @@ public class MonitorService implements Service<MonitorService> {
         bldr.addDependency(Services.JBOSS_SERVER_CONTROLLER, ModelController.class, modelControllerValue);
         bldr.addDependency(ControlledProcessStateService.SERVICE_NAME, ControlledProcessStateService.class,
                 processStateValue);
+        bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("http"), SocketBinding.class,
+                httpSocketBindingValue);
+        if (this.configuration.storageAdapter.serverOutboundSocketBindingRef != null) {
+            bldr.addDependency(OutboundSocketBinding.OUTBOUND_SOCKET_BINDING_BASE_SERVICE_NAME
+                    .append(this.configuration.storageAdapter.serverOutboundSocketBindingRef),
+                    OutboundSocketBinding.class, serverOutboundSocketBindingValue);
+        }
     }
 
     /**
@@ -225,9 +238,42 @@ public class MonitorService implements Service<MonitorService> {
 
         MsgLogger.LOG.infoStarting();
 
+        // get our self identifiers
         ModelControllerClientFactory mccFactory = createLocalClientFactory();
         LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
         selfId = localDMREndpoint.getServerIdentifiers();
+
+        // determine where our Hawkular server is
+        // If the user gave us a URL explicitly, that overrides everything and we use it.
+        // If no URL is configured, but we are given a server outbound socket binding name,
+        // we use that to determine the remote Hawkular URL.
+        // If neither URL nor output socket binding name is provided, we assume we are running
+        // co-located with the Hawkular server and we use local bindings.
+        if (this.configuration.storageAdapter.url == null) {
+            try {
+                String address;
+                int port;
+
+                if (this.configuration.storageAdapter.serverOutboundSocketBindingRef == null) {
+                    // no URL or output socket binding - assume we are running co-located with server
+                    SocketBinding httpSocketBinding = httpSocketBindingValue.getValue();
+                    address = httpSocketBinding.getAddress().getHostAddress();
+                    if (address.equals("0.0.0.0") || address.equals("::/128")) {
+                        address = InetAddress.getLocalHost().getCanonicalHostName();
+                    }
+                    port = httpSocketBinding.getAbsolutePort();
+                } else {
+                    OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue.getValue();
+                    address = serverBinding.getResolvedDestinationAddress().getHostAddress();
+                    port = serverBinding.getDestinationPort();
+                }
+                // TODO: should we use https?
+                this.configuration.storageAdapter.url = String.format("http://%s:%d", address, port);
+            } catch (UnknownHostException uhe) {
+                throw new IllegalArgumentException("Cannot determine Hawkular server host", uhe);
+            }
+        }
+        MsgLogger.LOG.infoUsingServerSideUrl(this.configuration.storageAdapter.url);
 
         // if we are participating in a full Hawkular environment, register our feed ID
         if (configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
@@ -235,12 +281,12 @@ public class MonitorService implements Service<MonitorService> {
                 determineTenantId();
                 registerFeed();
             } catch (Exception e) {
-                LOG.errorf(e, "Can't do anything without a feed; aborting startup.");
+                MsgLogger.LOG.errorCannotDoAnythingWithoutFeed(e);
                 return;
             }
         } else {
             if (configuration.storageAdapter.tenantId == null) {
-                LOG.errorf("To use standalone Hawkular Metrics, you must configure a tenant ID");
+                MsgLogger.LOG.errorMustHaveTenantIdConfigured();
                 return;
             }
         }
@@ -249,7 +295,7 @@ public class MonitorService implements Service<MonitorService> {
         try {
             startStorageAdapter();
         } catch (Exception e) {
-            LOG.errorf(e, "Can't do anything without storage; aborting startup.");
+            MsgLogger.LOG.errorCannotStartStorageAdapter(e);
             return;
         }
 
@@ -257,7 +303,7 @@ public class MonitorService implements Service<MonitorService> {
         try {
             startScheduler();
         } catch (Exception e) {
-            LOG.errorf(e, "Scheduler failed to initialize; aborting startup.");
+            MsgLogger.LOG.errorCannotInitializeScheduler(e);
             return;
         }
 

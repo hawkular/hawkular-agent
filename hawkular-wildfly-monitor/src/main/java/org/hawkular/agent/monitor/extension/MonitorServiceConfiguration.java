@@ -64,6 +64,7 @@ public class MonitorServiceConfiguration {
         public String password;
         public String tenantId;
         public String url;
+        public String serverOutboundSocketBindingRef;
         public String busContext;
         public String inventoryContext;
         public String metricsContext;
