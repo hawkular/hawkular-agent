@@ -55,7 +55,7 @@ public class LocalDMRDefinition extends PersistentResourceDefinition {
     };
 
     private LocalDMRDefinition() {
-        super(PathElement.pathElement(LOCAL_DMR, "_self"),
+        super(PathElement.pathElement(LOCAL_DMR),
                 SubsystemExtension.getResourceDescriptionResolver(ManagedServersDefinition.MANAGED_SERVERS,
                         LOCAL_DMR),
                 LocalDMRAdd.INSTANCE,

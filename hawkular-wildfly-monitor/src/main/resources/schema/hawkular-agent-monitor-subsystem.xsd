@@ -109,6 +109,7 @@
   </xs:complexType>
 
   <xs:complexType name="localDmrType">
+    <xs:attribute name="name"             type="xs:string" use="required"/>
     <xs:attribute name="resourceTypeSets" type="xs:string"/>
   </xs:complexType>
 

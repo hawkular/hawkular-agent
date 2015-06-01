@@ -177,9 +177,12 @@ public class DMRDiscovery {
         // This replaceAll just replaces all occurrances of "%#" with "%#$s" so String.format will work.
         // We also allow for the special %- notation to mean "the last address part" since that's usually the one we
         // want and sometimes you can't know its positional value.
+        // We also support %ManagedServerName which can help distinguish similar resources running in different servers.
         String nameTemplate = type.getResourceNameTemplate();
         nameTemplate = nameTemplate.replaceAll("%(\\d+)", "%$1\\$s");
         nameTemplate = nameTemplate.replaceAll("%(-)", "%" + args.size() + "\\$s");
+        nameTemplate = nameTemplate.replaceAll("%ManagedServerName", inventoryManager.getManagedServer().getName()
+                .getNameString());
         String nameStr = String.format(nameTemplate, args.toArray());
         return new Name(nameStr);
     }

@@ -72,7 +72,8 @@
                 port="9990"
                 resourceTypeSets="Main" />
 
-    <local-dmr enabled="true"
+    <local-dmr name="Self"
+               enabled="true"
                resourceTypeSets="Main" />
   </managed-servers>
 
