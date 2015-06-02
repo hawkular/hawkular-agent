@@ -23,6 +23,6 @@ public class DiagnosticsAdd extends AbstractAddStepHandler {
     public static final DiagnosticsAdd INSTANCE = new DiagnosticsAdd();
 
     private DiagnosticsAdd() {
-        super(DiagnosticsDefinition.INSTANCE.getAttributes());
+        super(DiagnosticsAttributes.ATTRIBUTES);
     }
 }

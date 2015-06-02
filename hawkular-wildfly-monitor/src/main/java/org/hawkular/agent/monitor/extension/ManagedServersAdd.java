@@ -23,6 +23,6 @@ public class ManagedServersAdd extends AbstractAddStepHandler {
     public static final ManagedServersAdd INSTANCE = new ManagedServersAdd();
 
     private ManagedServersAdd() {
-        super(ManagedServersDefinition.INSTANCE.getAttributes());
+        super(ManagedServersAttributes.ATTRIBUTES);
     }
 }

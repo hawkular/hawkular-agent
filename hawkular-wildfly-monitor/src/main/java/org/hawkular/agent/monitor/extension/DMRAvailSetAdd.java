@@ -23,6 +23,6 @@ public class DMRAvailSetAdd extends AbstractAddStepHandler {
     public static final DMRAvailSetAdd INSTANCE = new DMRAvailSetAdd();
 
     private DMRAvailSetAdd() {
-        super(DMRAvailSetDefinition.INSTANCE.getAttributes());
+        super(DMRAvailSetAttributes.ATTRIBUTES);
     }
 }

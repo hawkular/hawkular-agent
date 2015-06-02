@@ -44,7 +44,7 @@ public class SubsystemAdd extends AbstractAddStepHandler {
     static final SubsystemAdd INSTANCE = new SubsystemAdd();
 
     private SubsystemAdd() {
-        super(SubsystemDefinition.INSTANCE.getAttributes());
+        super(SubsystemAttributes.ATTRIBUTES);
     }
 
     @Override

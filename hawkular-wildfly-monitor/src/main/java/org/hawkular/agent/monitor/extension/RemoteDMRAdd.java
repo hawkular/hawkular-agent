@@ -23,6 +23,6 @@ public class RemoteDMRAdd extends AbstractAddStepHandler {
     public static final RemoteDMRAdd INSTANCE = new RemoteDMRAdd();
 
     private RemoteDMRAdd() {
-        super(RemoteDMRDefinition.INSTANCE.getAttributes());
+        super(RemoteDMRAttributes.ATTRIBUTES);
     }
 }

@@ -23,6 +23,6 @@ public class DMRResourceTypeAdd extends AbstractAddStepHandler {
     public static final DMRResourceTypeAdd INSTANCE = new DMRResourceTypeAdd();
 
     private DMRResourceTypeAdd() {
-        super(DMRResourceTypeDefinition.INSTANCE.getAttributes());
+        super(DMRResourceTypeAttributes.ATTRIBUTES);
     }
 }

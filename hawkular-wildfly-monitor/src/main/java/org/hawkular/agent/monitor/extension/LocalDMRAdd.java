@@ -23,6 +23,6 @@ public class LocalDMRAdd extends AbstractAddStepHandler {
     public static final LocalDMRAdd INSTANCE = new LocalDMRAdd();
 
     private LocalDMRAdd() {
-        super(LocalDMRDefinition.INSTANCE.getAttributes());
+        super(LocalDMRAttributes.ATTRIBUTES);
     }
 }

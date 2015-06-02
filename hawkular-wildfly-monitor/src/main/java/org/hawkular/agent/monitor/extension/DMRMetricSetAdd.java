@@ -23,6 +23,6 @@ public class DMRMetricSetAdd extends AbstractAddStepHandler {
     public static final DMRMetricSetAdd INSTANCE = new DMRMetricSetAdd();
 
     private DMRMetricSetAdd() {
-        super(DMRMetricSetDefinition.INSTANCE.getAttributes());
+        super(DMRMetricSetAttributes.ATTRIBUTES);
     }
 }

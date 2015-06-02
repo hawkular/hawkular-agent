@@ -23,6 +23,6 @@ public class StorageAdd extends AbstractAddStepHandler {
     static final StorageAdd INSTANCE = new StorageAdd();
 
     private StorageAdd() {
-        super(StorageDefinition.INSTANCE.getAttributes());
+        super(StorageAttributes.ATTRIBUTES);
     }
 }
