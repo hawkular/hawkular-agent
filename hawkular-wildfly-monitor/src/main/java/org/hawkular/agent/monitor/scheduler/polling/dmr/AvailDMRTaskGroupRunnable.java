@@ -24,6 +24,7 @@ import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
+import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.dmrclient.JBossASClient;
@@ -115,11 +116,19 @@ public class AvailDMRTaskGroupRunnable implements Runnable {
             } else {
                 this.diagnostics.getDMRErrorRate().mark(1);
                 completionHandler.onFailed(new RuntimeException(JBossASClient.getFailureDescription(response)));
+                // we are going to artifically mark the availabilities UNKNOWN since we really don't know
+                for (Task task : this.group) {
+                    completionHandler.onCompleted(new AvailDataPoint(task, Avail.UNKNOWN));
+                }
             }
 
         } catch (Throwable e) {
             this.diagnostics.getDMRErrorRate().mark(1);
             completionHandler.onFailed(e);
+            // we are going to artifically mark the availabilities UNKNOWN since we really don't know
+            for (Task task : this.group) {
+                completionHandler.onCompleted(new AvailDataPoint(task, Avail.UNKNOWN));
+            }
         }
     }
 }
