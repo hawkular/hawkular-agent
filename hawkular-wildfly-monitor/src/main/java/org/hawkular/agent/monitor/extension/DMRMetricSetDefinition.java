@@ -23,29 +23,13 @@ import java.util.List;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
-import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
-import org.jboss.dmr.ModelType;
 
 public class DMRMetricSetDefinition extends PersistentResourceDefinition {
 
     public static final DMRMetricSetDefinition INSTANCE = new DMRMetricSetDefinition();
 
     static final String METRIC_SET = "metric-set-dmr";
-
-    static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
-            ModelType.BOOLEAN)
-            .setAllowNull(false)
-            //WHY DOES THIS CAUSE TEST TO FAIL? .setDefaultValue(new ModelNode(true))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED
-    };
 
     private DMRMetricSetDefinition() {
         super(PathElement.pathElement(METRIC_SET),
@@ -58,7 +42,7 @@ public class DMRMetricSetDefinition extends PersistentResourceDefinition {
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ATTRIBUTES);
+        return Arrays.asList(DMRMetricSetAttributes.ATTRIBUTES);
     }
 
     @Override

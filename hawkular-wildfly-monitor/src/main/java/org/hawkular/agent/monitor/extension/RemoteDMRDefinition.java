@@ -22,65 +22,13 @@ import java.util.Collection;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
-import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
-import org.jboss.dmr.ModelType;
 
 public class RemoteDMRDefinition extends PersistentResourceDefinition {
 
     public static final RemoteDMRDefinition INSTANCE = new RemoteDMRDefinition();
 
     static final String REMOTE_DMR = "remote-dmr";
-
-    static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
-            ModelType.BOOLEAN)
-            .setAllowNull(false)
-            //WHY DOES THIS CAUSE TEST TO FAIL? .setDefaultValue(new ModelNode(true))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition HOST = new SimpleAttributeDefinitionBuilder("host",
-            ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition PORT = new SimpleAttributeDefinitionBuilder("port",
-            ModelType.INT)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition USERNAME = new SimpleAttributeDefinitionBuilder("username",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition PASSWORD = new SimpleAttributeDefinitionBuilder("password",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder(
-            "resourceTypeSets",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED, HOST, PORT, USERNAME, PASSWORD, RESOURCE_TYPE_SETS
-    };
 
     private RemoteDMRDefinition() {
         super(PathElement.pathElement(REMOTE_DMR),
@@ -94,6 +42,6 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ATTRIBUTES);
+        return Arrays.asList(RemoteDMRAttributes.ATTRIBUTES);
     }
 }

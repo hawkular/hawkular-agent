@@ -93,7 +93,7 @@ public class MonitorServiceConfigurationBuilder {
                 DMRMetricTypeSet metricSet = new DMRMetricTypeSet(ID.NULL_ID, new Name(metricSetName));
                 theConfig.dmrMetricTypeSetMap.put(metricSet.getName(), metricSet);
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
-                metricSet.setEnabled(getBoolean(metricSetValueNode, context, DMRMetricSetDefinition.ENABLED));
+                metricSet.setEnabled(getBoolean(metricSetValueNode, context, DMRMetricSetAttributes.ENABLED));
                 if (metricSetValueNode.hasDefined(DMRMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(DMRMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
@@ -101,16 +101,16 @@ public class MonitorServiceConfigurationBuilder {
                         DMRMetricType metric = new DMRMetricType(ID.NULL_ID, new Name(metricName));
                         metricSet.getMetricTypeMap().put(metric.getName(), metric);
                         ModelNode metricValueNode = metricProperty.getValue();
-                        metric.setPath(getString(metricValueNode, context, DMRMetricDefinition.PATH));
-                        metric.setAttribute(getString(metricValueNode, context, DMRMetricDefinition.ATTRIBUTE));
-                        String metricUnitsStr = getString(metricValueNode, context, DMRMetricDefinition.METRIC_UNITS);
+                        metric.setPath(getString(metricValueNode, context, DMRMetricAttributes.PATH));
+                        metric.setAttribute(getString(metricValueNode, context, DMRMetricAttributes.ATTRIBUTE));
+                        String metricUnitsStr = getString(metricValueNode, context, DMRMetricAttributes.METRIC_UNITS);
                         if (metricUnitsStr == null) {
                             metric.setMetricUnits(MeasurementUnit.NONE);
                         } else {
                             metric.setMetricUnits(MeasurementUnit.valueOf(metricUnitsStr.toUpperCase(Locale.ENGLISH)));
                         }
-                        metric.setInterval(getInt(metricValueNode, context, DMRMetricDefinition.INTERVAL));
-                        String metricTimeUnitsStr = getString(metricValueNode, context, DMRMetricDefinition.TIME_UNITS);
+                        metric.setInterval(getInt(metricValueNode, context, DMRMetricAttributes.INTERVAL));
+                        String metricTimeUnitsStr = getString(metricValueNode, context, DMRMetricAttributes.TIME_UNITS);
                         metric.setTimeUnits(TimeUnit.valueOf(metricTimeUnitsStr.toUpperCase()));
                     }
                     if (metricSet.isEnabled() && !metricSet.getMetricTypeMap().isEmpty()) {
@@ -136,7 +136,7 @@ public class MonitorServiceConfigurationBuilder {
                 DMRAvailTypeSet availSet = new DMRAvailTypeSet(ID.NULL_ID, new Name(availSetName));
                 theConfig.dmrAvailTypeSetMap.put(availSet.getName(), availSet);
                 ModelNode availSetValueNode = availSetProperty.getValue();
-                availSet.setEnabled(getBoolean(availSetValueNode, context, DMRAvailSetDefinition.ENABLED));
+                availSet.setEnabled(getBoolean(availSetValueNode, context, DMRAvailSetAttributes.ENABLED));
                 if (availSetValueNode.hasDefined(DMRAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(DMRAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
@@ -144,12 +144,12 @@ public class MonitorServiceConfigurationBuilder {
                         DMRAvailType avail = new DMRAvailType(ID.NULL_ID, new Name(availName));
                         availSet.getAvailTypeMap().put(avail.getName(), avail);
                         ModelNode availValueNode = availProperty.getValue();
-                        avail.setPath(getString(availValueNode, context, DMRAvailDefinition.PATH));
-                        avail.setAttribute(getString(availValueNode, context, DMRAvailDefinition.ATTRIBUTE));
-                        avail.setInterval(getInt(availValueNode, context, DMRAvailDefinition.INTERVAL));
-                        String availTimeUnitsStr = getString(availValueNode, context, DMRAvailDefinition.TIME_UNITS);
+                        avail.setPath(getString(availValueNode, context, DMRAvailAttributes.PATH));
+                        avail.setAttribute(getString(availValueNode, context, DMRAvailAttributes.ATTRIBUTE));
+                        avail.setInterval(getInt(availValueNode, context, DMRAvailAttributes.INTERVAL));
+                        String availTimeUnitsStr = getString(availValueNode, context, DMRAvailAttributes.TIME_UNITS);
                         avail.setTimeUnits(TimeUnit.valueOf(availTimeUnitsStr.toUpperCase()));
-                        avail.setUpRegex(getString(availValueNode, context, DMRAvailDefinition.UP_REGEX));
+                        avail.setUpRegex(getString(availValueNode, context, DMRAvailAttributes.UP_REGEX));
                     }
                     if (availSet.isEnabled() && !availSet.getAvailTypeMap().isEmpty()) {
                         hasEnabledAvails = true;
@@ -180,12 +180,12 @@ public class MonitorServiceConfigurationBuilder {
 
         ModelNode diagnosticsValueNode = asPropertyList.get(0).getValue();
 
-        String reportToStr = getString(diagnosticsValueNode, context, DiagnosticsDefinition.REPORT_TO);
+        String reportToStr = getString(diagnosticsValueNode, context, DiagnosticsAttributes.REPORT_TO);
         theConfig.diagnostics.reportTo = MonitorServiceConfiguration.DiagnosticsReportTo.valueOf(reportToStr
                 .toUpperCase());
-        theConfig.diagnostics.enabled = getBoolean(diagnosticsValueNode, context, DiagnosticsDefinition.ENABLED);
-        theConfig.diagnostics.interval = getInt(diagnosticsValueNode, context, DiagnosticsDefinition.INTERVAL);
-        String diagnosticsTimeUnitsStr = getString(diagnosticsValueNode, context, DiagnosticsDefinition.TIME_UNITS);
+        theConfig.diagnostics.enabled = getBoolean(diagnosticsValueNode, context, DiagnosticsAttributes.ENABLED);
+        theConfig.diagnostics.interval = getInt(diagnosticsValueNode, context, DiagnosticsAttributes.INTERVAL);
+        String diagnosticsTimeUnitsStr = getString(diagnosticsValueNode, context, DiagnosticsAttributes.TIME_UNITS);
         theConfig.diagnostics.timeUnits = TimeUnit.valueOf(diagnosticsTimeUnitsStr.toUpperCase());
     }
 
@@ -205,36 +205,36 @@ public class MonitorServiceConfigurationBuilder {
 
         ModelNode storageAdapterConfig = asPropertyList.get(0).getValue();
 
-        theConfig.storageAdapter.url = getString(storageAdapterConfig, context, StorageDefinition.URL);
+        theConfig.storageAdapter.url = getString(storageAdapterConfig, context, StorageAttributes.URL);
         theConfig.storageAdapter.serverOutboundSocketBindingRef = getString(storageAdapterConfig, context,
-                StorageDefinition.SERVER_OUTBOUND_SOCKET_BINDING_REF);
-        theConfig.storageAdapter.tenantId = getString(storageAdapterConfig, context, StorageDefinition.TENANT_ID);
+                StorageAttributes.SERVER_OUTBOUND_SOCKET_BINDING_REF);
+        theConfig.storageAdapter.tenantId = getString(storageAdapterConfig, context, StorageAttributes.TENANT_ID);
         theConfig.storageAdapter.busContext = getString(storageAdapterConfig, context,
-                StorageDefinition.BUS_CONTEXT);
+                StorageAttributes.BUS_CONTEXT);
         theConfig.storageAdapter.inventoryContext = getString(storageAdapterConfig, context,
-                StorageDefinition.INVENTORY_CONTEXT);
+                StorageAttributes.INVENTORY_CONTEXT);
         theConfig.storageAdapter.metricsContext = getString(storageAdapterConfig, context,
-                StorageDefinition.METRICS_CONTEXT);
-        theConfig.storageAdapter.username = getString(storageAdapterConfig, context, StorageDefinition.USERNAME);
-        theConfig.storageAdapter.password = getString(storageAdapterConfig, context, StorageDefinition.PASSWORD);
-        String typeStr = getString(storageAdapterConfig, context, StorageDefinition.TYPE);
+                StorageAttributes.METRICS_CONTEXT);
+        theConfig.storageAdapter.username = getString(storageAdapterConfig, context, StorageAttributes.USERNAME);
+        theConfig.storageAdapter.password = getString(storageAdapterConfig, context, StorageAttributes.PASSWORD);
+        String typeStr = getString(storageAdapterConfig, context, StorageAttributes.TYPE);
         theConfig.storageAdapter.type = MonitorServiceConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
     }
 
     private void determineGlobalConfig(ModelNode config, OperationContext context) throws OperationFailedException {
-        theConfig.subsystemEnabled = getBoolean(config, context, SubsystemDefinition.ENABLED);
-        theConfig.apiJndi = getString(config, context, SubsystemDefinition.API_JNDI);
-        theConfig.numMetricSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_METRIC_SCHEDULER_THREADS);
-        theConfig.numAvailSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_AVAIL_SCHEDULER_THREADS);
-        theConfig.numDmrSchedulerThreads = getInt(config, context, SubsystemDefinition.NUM_DMR_SCHEDULER_THREADS);
+        theConfig.subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
+        theConfig.apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
+        theConfig.numMetricSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_METRIC_SCHEDULER_THREADS);
+        theConfig.numAvailSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_AVAIL_SCHEDULER_THREADS);
+        theConfig.numDmrSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_DMR_SCHEDULER_THREADS);
         theConfig.metricDispatcherBufferSize = getInt(config, context,
-                SubsystemDefinition.METRIC_DISPATCHER_BUFFER_SIZE);
+                SubsystemAttributes.METRIC_DISPATCHER_BUFFER_SIZE);
         theConfig.metricDispatcherMaxBatchSize = getInt(config, context,
-                SubsystemDefinition.METRIC_DISPATCHER_MAX_BATCH_SIZE);
+                SubsystemAttributes.METRIC_DISPATCHER_MAX_BATCH_SIZE);
         theConfig.availDispatcherBufferSize = getInt(config, context,
-                SubsystemDefinition.AVAIL_DISPATCHER_BUFFER_SIZE);
+                SubsystemAttributes.AVAIL_DISPATCHER_BUFFER_SIZE);
         theConfig.availDispatcherMaxBatchSize = getInt(config, context,
-                SubsystemDefinition.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
+                SubsystemAttributes.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
     }
 
     private boolean determineResourceTypeSetDmr(ModelNode config, OperationContext context)
@@ -253,7 +253,7 @@ public class MonitorServiceConfigurationBuilder {
                 theConfig.dmrResourceTypeSetMap.put(resourceTypeSet.getName(), resourceTypeSet);
                 ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
                 resourceTypeSet.setEnabled(getBoolean(resourceTypeSetValueNode, context,
-                        DMRResourceTypeSetDefinition.ENABLED));
+                        DMRResourceTypeSetAttributes.ENABLED));
                 if (resourceTypeSetValueNode.hasDefined(DMRResourceTypeDefinition.RESOURCE_TYPE)) {
                     List<Property> resourceTypesList = resourceTypeSetValueNode.get(
                             DMRResourceTypeDefinition.RESOURCE_TYPE).asPropertyList();
@@ -264,16 +264,16 @@ public class MonitorServiceConfigurationBuilder {
                         DMRResourceType resourceType = new DMRResourceType(ID.NULL_ID, new Name(resourceTypeName));
                         resourceTypeSet.getResourceTypeMap().put(resourceType.getName(), resourceType);
                         resourceType.setResourceNameTemplate(getString(resourceTypeValueNode, context,
-                                DMRResourceTypeDefinition.RESOURCE_NAME_TEMPLATE));
+                                DMRResourceTypeAttributes.RESOURCE_NAME_TEMPLATE));
                         resourceType.setPath(getString(resourceTypeValueNode, context,
-                                DMRResourceTypeDefinition.PATH));
+                                DMRResourceTypeAttributes.PATH));
                         resourceType.setParents(getNameListFromString(resourceTypeValueNode, context,
-                                DMRResourceTypeDefinition.PARENTS));
+                                DMRResourceTypeAttributes.PARENTS));
 
                         List<Name> metricSets = getNameListFromString(resourceTypeValueNode, context,
-                                DMRResourceTypeDefinition.METRIC_SETS);
+                                DMRResourceTypeAttributes.METRIC_SETS);
                         List<Name> availSets = getNameListFromString(resourceTypeValueNode, context,
-                                DMRResourceTypeDefinition.AVAIL_SETS);
+                                DMRResourceTypeAttributes.AVAIL_SETS);
 
                         // verify that the metric sets and avail sets exist
                         for (Name metricSetName : metricSets) {
@@ -326,13 +326,13 @@ public class MonitorServiceConfigurationBuilder {
                 for (Property remoteDMRProperty : remoteDMRsList) {
                     String name = remoteDMRProperty.getName();
                     ModelNode remoteDMRValueNode = remoteDMRProperty.getValue();
-                    boolean enabled = getBoolean(remoteDMRValueNode, context, RemoteDMRDefinition.ENABLED);
-                    String host = getString(remoteDMRValueNode, context, RemoteDMRDefinition.HOST);
-                    int port = getInt(remoteDMRValueNode, context, RemoteDMRDefinition.PORT);
-                    String username = getString(remoteDMRValueNode, context, RemoteDMRDefinition.USERNAME);
-                    String password = getString(remoteDMRValueNode, context, RemoteDMRDefinition.PASSWORD);
+                    boolean enabled = getBoolean(remoteDMRValueNode, context, RemoteDMRAttributes.ENABLED);
+                    String host = getString(remoteDMRValueNode, context, RemoteDMRAttributes.HOST);
+                    int port = getInt(remoteDMRValueNode, context, RemoteDMRAttributes.PORT);
+                    String username = getString(remoteDMRValueNode, context, RemoteDMRAttributes.USERNAME);
+                    String password = getString(remoteDMRValueNode, context, RemoteDMRAttributes.PASSWORD);
                     List<Name> resourceTypeSets = getNameListFromString(remoteDMRValueNode, context,
-                            RemoteDMRDefinition.RESOURCE_TYPE_SETS);
+                            RemoteDMRAttributes.RESOURCE_TYPE_SETS);
 
                     // verify that the resource type sets exist
                     for (Name resourceTypeSetName : resourceTypeSets) {
@@ -363,9 +363,9 @@ public class MonitorServiceConfigurationBuilder {
                 Property localDMRProperty = localDMRsList.get(0);
                 String name = localDMRProperty.getName();
                 ModelNode localDMRValueNode = localDMRProperty.getValue();
-                boolean enabled = getBoolean(localDMRValueNode, context, LocalDMRDefinition.ENABLED);
+                boolean enabled = getBoolean(localDMRValueNode, context, LocalDMRAttributes.ENABLED);
                 List<Name> resourceTypeSets = getNameListFromString(localDMRValueNode, context,
-                        LocalDMRDefinition.RESOURCE_TYPE_SETS);
+                        LocalDMRAttributes.RESOURCE_TYPE_SETS);
 
                 // verify that the metric sets and avail sets exist
                 for (Name resourceTypeSetName : resourceTypeSets) {

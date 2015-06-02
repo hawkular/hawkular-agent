@@ -22,94 +22,13 @@ import java.util.Collection;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
-import org.jboss.as.controller.operations.validation.EnumValidator;
-import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
-import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
 
 public class StorageDefinition extends PersistentResourceDefinition {
 
     public static final StorageDefinition INSTANCE = new StorageDefinition();
 
     static final String STORAGE_ADAPTER = "storage-adapter";
-
-    static final SimpleAttributeDefinition TYPE = new SimpleAttributeDefinitionBuilder("type",
-            ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .setDefaultValue(new ModelNode(MonitorServiceConfiguration.StorageReportTo.HAWKULAR.name()))
-            .setValidator(EnumValidator.create(MonitorServiceConfiguration.StorageReportTo.class, false, true))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition USERNAME = new SimpleAttributeDefinitionBuilder("username",
-            ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition PASSWORD = new SimpleAttributeDefinitionBuilder("password",
-            ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenantId",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition URL = new SimpleAttributeDefinitionBuilder("url",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition SERVER_OUTBOUND_SOCKET_BINDING_REF = new SimpleAttributeDefinitionBuilder(
-            "serverOutboundSocketBindingRef",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition BUS_CONTEXT = new SimpleAttributeDefinitionBuilder("busContext",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setDefaultValue(new ModelNode("/hawkular-bus/message/"))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition INVENTORY_CONTEXT = new SimpleAttributeDefinitionBuilder(
-            "inventoryContext",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setDefaultValue(new ModelNode("/hawkular/inventory/"))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition METRICS_CONTEXT = new SimpleAttributeDefinitionBuilder("metricsContext",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setDefaultValue(new ModelNode("/hawkular-metrics/"))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final AttributeDefinition[] ATTRIBUTES = {
-            TYPE, USERNAME, PASSWORD, TENANT_ID, URL, SERVER_OUTBOUND_SOCKET_BINDING_REF, BUS_CONTEXT,
-            INVENTORY_CONTEXT, METRICS_CONTEXT
-    };
 
     private StorageDefinition() {
         super(PathElement.pathElement(STORAGE_ADAPTER, "default"),
@@ -122,6 +41,6 @@ public class StorageDefinition extends PersistentResourceDefinition {
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ATTRIBUTES);
+        return Arrays.asList(StorageAttributes.ATTRIBUTES);
     }
 }
