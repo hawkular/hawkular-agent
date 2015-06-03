@@ -77,11 +77,6 @@
       </dependency>
       <dependency>
         <groupId>org.wildfly.swarm</groupId>
-        <artifactId>wildfly-swarm-bootstrap</artifactId>
-        <version>${version.org.wildfly.swarm}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.wildfly.swarm</groupId>
         <artifactId>wildfly-swarm-connector</artifactId>
         <version>${version.org.wildfly.swarm}</version>
       </dependency>
@@ -92,12 +87,7 @@
       </dependency>
       <dependency>
         <groupId>org.wildfly.swarm</groupId>
-        <artifactId>wildfly-swarm-msc</artifactId>
-        <version>${version.org.wildfly.swarm}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.wildfly.swarm</groupId>
-        <artifactId>wildfly-swarm-request-controller</artifactId>
+        <artifactId>wildfly-swarm-runtime-connector</artifactId>
         <version>${version.org.wildfly.swarm}</version>
       </dependency>
       <dependency>

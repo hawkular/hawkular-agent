@@ -42,6 +42,10 @@
     </dependency>
     <dependency>
       <groupId>org.wildfly.swarm</groupId>
+      <artifactId>wildfly-swarm-runtime-connector</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.wildfly.swarm</groupId>
       <artifactId>wildfly-swarm-runtime-logging</artifactId>
     </dependency>
     <dependency>
