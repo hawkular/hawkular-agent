@@ -68,10 +68,18 @@
 
   <!-- diagnostics configuration -->
   <xs:complexType name="diagnosticsType">
+    <xs:attribute name="reportTo"  type="reportToType" default="LOG"/>
     <xs:attribute name="enabled"   type="xs:boolean"/>
     <xs:attribute name="interval"  type="xs:int"/>
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
   </xs:complexType>
+
+  <xs:simpleType name="reportToType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="LOG"/>
+      <xs:enumeration value="STORAGE"/>
+    </xs:restriction>
+  </xs:simpleType>
 
   <!-- definition of sets of resource types -->
   <xs:complexType name="resourceTypeSetDmrType">
@@ -101,6 +109,7 @@
 
   <xs:complexType name="remoteDmrType">
     <xs:attribute name="name"             type="xs:string" use="required"/>
+    <xs:attribute name="enabled"          type="xs:boolean"/>
     <xs:attribute name="host"             type="xs:string" use="required"/>
     <xs:attribute name="port"             type="xs:int"    use="required"/>
     <xs:attribute name="username"         type="xs:string"/>
@@ -110,6 +119,7 @@
 
   <xs:complexType name="localDmrType">
     <xs:attribute name="name"             type="xs:string" use="required"/>
+    <xs:attribute name="enabled"          type="xs:boolean"/>
     <xs:attribute name="resourceTypeSets" type="xs:string"/>
   </xs:complexType>
 
@@ -126,7 +136,6 @@
     <xs:attribute name="name"        type="xs:string" use="required"/>
     <xs:attribute name="path"        type="xs:string" use="required"/>
     <xs:attribute name="attribute"   type="xs:string" use="required"/>
-    <xs:attribute name="enabled"     type="xs:boolean"/>
     <xs:attribute name="metricUnits" type="metricUnitsType"/>
     <xs:attribute name="interval"    type="xs:int"/>
     <xs:attribute name="timeUnits"   type="timeUnitsType"/>
@@ -145,7 +154,6 @@
     <xs:attribute name="name"      type="xs:string" use="required"/>
     <xs:attribute name="path"      type="xs:string" use="required"/>
     <xs:attribute name="attribute" type="xs:string" use="optional"/> <!-- if not specified, existence of resource at path is used for availability status -->
-    <xs:attribute name="enabled"   type="xs:boolean"/>
     <xs:attribute name="interval"  type="xs:int"/>
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
     <xs:attribute name="upRegex"   type="xs:string"/>
