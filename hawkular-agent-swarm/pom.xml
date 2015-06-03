@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2015 Red Hat, Inc. and/or its affiliates
+    and other contributors as indicated by the @author tags.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+<!--
+  <parent>
+    <groupId>org.hawkular.agent</groupId>
+    <artifactId>hawkular-agent-parent</artifactId>
+    <version>0.0.10-SNAPSHOT</version>
+  </parent>
+-->
+<!-- DELETE THESE WHEN WE USE HAWKULAR-PARENT -->
+<groupId>org.hawkular.agent</groupId>
+<version>0.0.10-SNAPSHOT</version>
+<!-- DELETE THESE WHEN WE USE HAWKULAR-PARENT -->
+
+  <artifactId>hawkular-agent-swarm-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Hawkular Agent Swarm: Parent</name>
+
+  <modules>
+    <module>hawkular-agent-swarm-api</module>
+    <module>hawkular-agent-swarm-runtime</module>
+  </modules>
+
+  <properties>
+<!-- DELETE THESE WHEN WE USE HAWKULAR-PARENT -->
+<maven.compiler.source>1.8</maven.compiler.source>
+<maven.compiler.target>1.8</maven.compiler.target>
+<!-- DELETE THESE WHEN WE USE HAWKULAR-PARENT -->
+
+    <version.org.wildfly>9.0.0.CR1</version.org.wildfly>
+    <version.org.wildfly.swarm>1.0.0.Alpha2-SNAPSHOT</version.org.wildfly.swarm>
+    <plugin.version.org.wildfly.swarm.fraction>1.0.0.Alpha3</plugin.version.org.wildfly.swarm.fraction>
+  </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.wildfly.swarm</groupId>
+          <artifactId>wildfly-swarm-fraction-plugin</artifactId>
+          <version>${version.org.wildfly.swarm}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>wildfly-swarm-bootstrap</artifactId>
+        <version>${version.org.wildfly.swarm}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>wildfly-swarm-container</artifactId>
+        <version>${version.org.wildfly.swarm}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>wildfly-swarm-runtime-container</artifactId>
+        <version>${version.org.wildfly.swarm}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>wildfly-swarm-msc</artifactId>
+        <version>${version.org.wildfly.swarm}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>wildfly-swarm-request-controller</artifactId>
+        <version>${version.org.wildfly.swarm}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly</groupId>
+        <artifactId>wildfly-parent</artifactId>
+        <version>${version.org.wildfly}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>
+
