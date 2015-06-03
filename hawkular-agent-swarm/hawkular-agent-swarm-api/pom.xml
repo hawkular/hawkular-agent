@@ -44,7 +44,7 @@
         <artifactId>wildfly-swarm-fraction-plugin</artifactId>
         <executions>
           <execution>
-            <phase>prepare-packages</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>generate</goal>
             </goals>
@@ -58,6 +58,10 @@
     <dependency>
       <groupId>org.wildfly.swarm</groupId>
       <artifactId>wildfly-swarm-container</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.wildfly.swarm</groupId>
+      <artifactId>wildfly-swarm-connector</artifactId>
     </dependency>
   </dependencies>
 

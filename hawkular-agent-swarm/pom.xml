@@ -39,6 +39,7 @@
   <modules>
     <module>hawkular-agent-swarm-api</module>
     <module>hawkular-agent-swarm-runtime</module>
+    <module>hawkular-agent-swarm-dist</module>
   </modules>
 
   <properties>
@@ -50,6 +51,7 @@
     <version.org.wildfly>9.0.0.CR1</version.org.wildfly>
     <version.org.wildfly.swarm>1.0.0.Alpha2-SNAPSHOT</version.org.wildfly.swarm>
     <plugin.version.org.wildfly.swarm.fraction>1.0.0.Alpha3</plugin.version.org.wildfly.swarm.fraction>
+    <plugin.version.org.wildfly.swarm>1.0.0.Alpha2-SNAPSHOT</plugin.version.org.wildfly.swarm>
   </properties>
 
   <build>
@@ -58,7 +60,7 @@
         <plugin>
           <groupId>org.wildfly.swarm</groupId>
           <artifactId>wildfly-swarm-fraction-plugin</artifactId>
-          <version>${version.org.wildfly.swarm}</version>
+          <version>${plugin.version.org.wildfly.swarm.fraction}</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -67,18 +69,25 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.wildfly</groupId>
+        <artifactId>wildfly-parent</artifactId>
+        <version>${version.org.wildfly}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>org.wildfly.swarm</groupId>
         <artifactId>wildfly-swarm-bootstrap</artifactId>
         <version>${version.org.wildfly.swarm}</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.swarm</groupId>
-        <artifactId>wildfly-swarm-container</artifactId>
+        <artifactId>wildfly-swarm-connector</artifactId>
         <version>${version.org.wildfly.swarm}</version>
       </dependency>
       <dependency>
         <groupId>org.wildfly.swarm</groupId>
-        <artifactId>wildfly-swarm-runtime-container</artifactId>
+        <artifactId>wildfly-swarm-container</artifactId>
         <version>${version.org.wildfly.swarm}</version>
       </dependency>
       <dependency>
@@ -92,11 +101,14 @@
         <version>${version.org.wildfly.swarm}</version>
       </dependency>
       <dependency>
-        <groupId>org.wildfly</groupId>
-        <artifactId>wildfly-parent</artifactId>
-        <version>${version.org.wildfly}</version>
-        <type>pom</type>
-        <scope>import</scope>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>wildfly-swarm-runtime-container</artifactId>
+        <version>${version.org.wildfly.swarm}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>wildfly-swarm-runtime-logging</artifactId>
+        <version>${version.org.wildfly.swarm}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

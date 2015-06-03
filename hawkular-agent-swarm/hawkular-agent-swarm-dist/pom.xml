@@ -26,33 +26,37 @@
     <version>0.0.10-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-agent-swarm-runtime</artifactId>
+  <artifactId>hawkular-agent-swarm-dist</artifactId>
   <packaging>jar</packaging>
-  <name>Hawkular Agent Swarm: Runtime</name>
+  <name>Hawkular Agent Swarm: Distribution</name>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.wildfly.swarm</groupId>
+        <artifactId>wildfly-swarm-plugin</artifactId>
+        <version>${plugin.version.org.wildfly.swarm}</version>
+        <!--
+        <configuration>
+          <mainClass>org.hawkular.agent.swarm.Main</mainClass>
+        </configuration>
+        -->
+        <executions>
+          <execution>
+            <goals>
+              <goal>package</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-agent-swarm-api</artifactId>
+      <artifactId>hawkular-agent-swarm-runtime</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.wildfly.swarm</groupId>
-      <artifactId>wildfly-swarm-runtime-container</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.wildfly.swarm</groupId>
-      <artifactId>wildfly-swarm-runtime-logging</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss</groupId>
-      <artifactId>jboss-dmr</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.wildfly.core</groupId>
-      <artifactId>wildfly-controller</artifactId>
-      <scope>provided</scope>
     </dependency>
   </dependencies>
 
