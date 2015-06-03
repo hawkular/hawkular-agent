@@ -63,6 +63,28 @@ public class AgentConfiguration extends AbstractServerConfiguration<AgentFractio
         node.get(OP).set(ADD);
         list.add(node);
 
+        if (fraction.numMetricSchedulerThreads() != 0) {
+            node.get("numMetricSchedulerThreads").set(fraction.numMetricSchedulerThreads());
+        }
+        if (fraction.numAvailSchedulerThreads() != 0) {
+            node.get("numAvailSchedulerThreads").set(fraction.numAvailSchedulerThreads());
+        }
+        if (fraction.numDmrSchedulerThreads() != 0) {
+            node.get("numDmrSchedulerThreads").set(fraction.numDmrSchedulerThreads());
+        }
+        if (fraction.metricDispatcherBufferSize() != 0) {
+            node.get("metricDispatcherBufferSize").set(fraction.metricDispatcherBufferSize());
+        }
+        if (fraction.metricDispatcherMaxBatchSize() != 0) {
+            node.get("metricDispatcherMaxBatchSize").set(fraction.metricDispatcherMaxBatchSize());
+        }
+        if (fraction.availDispatcherBufferSize() != 0) {
+            node.get("availDispatcherBufferSize").set(fraction.availDispatcherBufferSize());
+        }
+        if (fraction.availDispatcherMaxBatchSize() != 0) {
+            node.get("availDispatcherMaxBatchSize").set(fraction.availDispatcherMaxBatchSize());
+        }
+
         addDiagnostics(fraction, list);
         addStorageAdapter(fraction, list);
         addDMRMetricSets(fraction, list);
