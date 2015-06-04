@@ -55,7 +55,7 @@
   <dependencies>
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-agent-swarm-runtime</artifactId>
+      <artifactId>hawkular-agent-swarm-api</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
