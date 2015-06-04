@@ -17,6 +17,7 @@
 package org.hawkular.agent.swarm.runtime;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.EXTENSION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
@@ -57,6 +58,15 @@ public class AgentConfiguration extends AbstractServerConfiguration<AgentFractio
     public List<ModelNode> getList(AgentFraction fraction) {
 
         List<ModelNode> list = new ArrayList<>();
+
+        ModelNode address = new ModelNode();
+
+        address.setEmptyList();
+
+        ModelNode add = new ModelNode();
+        add.get(OP_ADDR).set(address).add(EXTENSION, "org.hawkular.agent.monitor");
+        add.get(OP).set(ADD);
+        list.add(add);
 
         ModelNode node = new ModelNode();
         node.get(OP_ADDR).set(agentAddress.toModelNode());
