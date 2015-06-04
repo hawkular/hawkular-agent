@@ -16,13 +16,8 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.jboss.as.controller.AbstractAddStepHandler;
+import org.jboss.as.controller.AttributeDefinition;
 
-public class DiagnosticsAdd extends AbstractAddStepHandler {
-
-    public static final DiagnosticsAdd INSTANCE = new DiagnosticsAdd();
-
-    private DiagnosticsAdd() {
-        super(DiagnosticsAttributes.ATTRIBUTES);
-    }
+public interface ManagedServersAttributes {
+    AttributeDefinition[] ATTRIBUTES = {};
 }

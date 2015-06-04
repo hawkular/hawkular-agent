@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
@@ -45,12 +44,7 @@ public class SubsystemAdd extends AbstractAddStepHandler {
     static final SubsystemAdd INSTANCE = new SubsystemAdd();
 
     private SubsystemAdd() {
-    }
-
-    @Override
-    protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
-        this.attributes = Arrays.asList(SubsystemDefinition.ATTRIBUTES);
-        super.populateModel(operation, model);
+        super(SubsystemAttributes.ATTRIBUTES);
     }
 
     @Override

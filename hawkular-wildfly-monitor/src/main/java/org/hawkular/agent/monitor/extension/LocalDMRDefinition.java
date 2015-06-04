@@ -22,37 +22,13 @@ import java.util.Collection;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
-import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
-import org.jboss.dmr.ModelType;
 
 public class LocalDMRDefinition extends PersistentResourceDefinition {
 
     public static final LocalDMRDefinition INSTANCE = new LocalDMRDefinition();
 
     static final String LOCAL_DMR = "local-dmr";
-
-    static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
-            ModelType.BOOLEAN)
-            .setAllowNull(false)
-            //WHY DOES THIS CAUSE TEST TO FAIL? .setDefaultValue(new ModelNode(true))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder(
-            "resourceTypeSets",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED, RESOURCE_TYPE_SETS
-    };
 
     private LocalDMRDefinition() {
         super(PathElement.pathElement(LOCAL_DMR),
@@ -66,6 +42,6 @@ public class LocalDMRDefinition extends PersistentResourceDefinition {
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ATTRIBUTES);
+        return Arrays.asList(LocalDMRAttributes.ATTRIBUTES);
     }
 }

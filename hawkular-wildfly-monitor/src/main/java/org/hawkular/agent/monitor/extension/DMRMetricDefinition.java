@@ -18,72 +18,17 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
-import org.jboss.as.controller.operations.validation.TimeUnitValidator;
-import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
-import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
 
 public class DMRMetricDefinition extends PersistentResourceDefinition {
 
     public static final DMRMetricDefinition INSTANCE = new DMRMetricDefinition();
 
     static final String METRIC = "metric-dmr";
-
-    static final SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
-            ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition ATTRIBUTE = new SimpleAttributeDefinitionBuilder("attribute",
-            ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition INTERVAL = new SimpleAttributeDefinitionBuilder("interval",
-            ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(5))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("timeUnits",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
-            .setAllowExpression(true)
-            .setValidator(new TimeUnitValidator(true, true, TimeUnit.MILLISECONDS, TimeUnit.SECONDS,
-                    TimeUnit.MINUTES))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition METRIC_UNITS = new SimpleAttributeDefinitionBuilder("metricUnits",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setValidator(MeasurementUnitValidator.ANY_OPTIONAL)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final AttributeDefinition[] ATTRIBUTES = {
-            PATH,
-            ATTRIBUTE,
-            INTERVAL,
-            TIME_UNITS,
-            METRIC_UNITS
-    };
 
     private DMRMetricDefinition() {
         super(PathElement.pathElement(METRIC),
@@ -96,6 +41,6 @@ public class DMRMetricDefinition extends PersistentResourceDefinition {
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ATTRIBUTES);
+        return Arrays.asList(DMRMetricAttributes.ATTRIBUTES);
     }
 }

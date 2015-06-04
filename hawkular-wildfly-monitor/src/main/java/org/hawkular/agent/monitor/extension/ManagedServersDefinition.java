@@ -31,9 +31,6 @@ public class ManagedServersDefinition extends PersistentResourceDefinition {
 
     static final String MANAGED_SERVERS = "managed-servers";
 
-    static final AttributeDefinition[] ATTRIBUTES = {
-    };
-
     private ManagedServersDefinition() {
         super(PathElement.pathElement(MANAGED_SERVERS, "default"),
                 SubsystemExtension.getResourceDescriptionResolver(MANAGED_SERVERS),
@@ -45,7 +42,7 @@ public class ManagedServersDefinition extends PersistentResourceDefinition {
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ATTRIBUTES);
+        return Arrays.asList(ManagedServersAttributes.ATTRIBUTES);
     }
 
     @Override

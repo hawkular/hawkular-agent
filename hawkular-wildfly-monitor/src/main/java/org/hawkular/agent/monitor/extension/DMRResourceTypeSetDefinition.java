@@ -23,29 +23,13 @@ import java.util.List;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinition;
-import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
-import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
-import org.jboss.dmr.ModelType;
 
 public class DMRResourceTypeSetDefinition extends PersistentResourceDefinition {
 
     public static final DMRResourceTypeSetDefinition INSTANCE = new DMRResourceTypeSetDefinition();
 
     static final String RESOURCE_TYPE_SET = "resource-type-set-dmr";
-
-    static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
-            ModelType.BOOLEAN)
-            .setAllowNull(false)
-            //WHY DOES THIS CAUSE TEST TO FAIL? .setDefaultValue(new ModelNode(true))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED
-    };
 
     private DMRResourceTypeSetDefinition() {
         super(PathElement.pathElement(RESOURCE_TYPE_SET),
@@ -58,7 +42,7 @@ public class DMRResourceTypeSetDefinition extends PersistentResourceDefinition {
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ATTRIBUTES);
+        return Arrays.asList(DMRResourceTypeSetAttributes.ATTRIBUTES);
     }
 
     @Override

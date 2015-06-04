@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
@@ -30,7 +29,6 @@ import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.SimpleOperationDefinition;
 import org.jboss.as.controller.SimpleOperationDefinitionBuilder;
-import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelNode;
@@ -39,86 +37,6 @@ import org.jboss.dmr.ModelType;
 public class SubsystemDefinition extends PersistentResourceDefinition {
 
     public static final SubsystemDefinition INSTANCE = new SubsystemDefinition();
-
-    // ATTRIBUTES
-
-    static final SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
-            ModelType.BOOLEAN)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(true))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition API_JNDI = new SimpleAttributeDefinitionBuilder("apiJndiName",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode("java:global/hawkular/agent/monitor/api"))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition NUM_METRIC_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
-            "numMetricSchedulerThreads", ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_NUM_METRIC_SCHEDULER_THREADS))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition NUM_AVAIL_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
-            "numAvailSchedulerThreads", ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_NUM_AVAIL_SCHEDULER_THREADS))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition NUM_DMR_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
-            "numDmrSchedulerThreads", ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(4))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition METRIC_DISPATCHER_BUFFER_SIZE = new SimpleAttributeDefinitionBuilder(
-            "metricDispatcherBufferSize", ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_METRIC_DISPATCHER_BUFFER_SIZE))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition METRIC_DISPATCHER_MAX_BATCH_SIZE = new SimpleAttributeDefinitionBuilder(
-            "metricDispatcherMaxBatchSize", ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition AVAIL_DISPATCHER_BUFFER_SIZE = new SimpleAttributeDefinitionBuilder(
-            "availDispatcherBufferSize", ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_AVAIL_DISPATCHER_BUFFER_SIZE))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final SimpleAttributeDefinition AVAIL_DISPATCHER_MAX_BATCH_SIZE = new SimpleAttributeDefinitionBuilder(
-            "availDispatcherMaxBatchSize", ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_AVAIL_DISPATCHER_MAX_BATCH_SIZE))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    static final AttributeDefinition[] ATTRIBUTES = {
-            ENABLED, API_JNDI, NUM_METRIC_SCHEDULER_THREADS, NUM_AVAIL_SCHEDULER_THREADS, NUM_DMR_SCHEDULER_THREADS,
-            METRIC_DISPATCHER_BUFFER_SIZE, METRIC_DISPATCHER_MAX_BATCH_SIZE, AVAIL_DISPATCHER_BUFFER_SIZE,
-            AVAIL_DISPATCHER_MAX_BATCH_SIZE
-    };
 
     // OPERATIONS
 
@@ -152,7 +70,7 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ATTRIBUTES);
+        return Arrays.asList(SubsystemAttributes.ATTRIBUTES);
     }
 
     @Override
