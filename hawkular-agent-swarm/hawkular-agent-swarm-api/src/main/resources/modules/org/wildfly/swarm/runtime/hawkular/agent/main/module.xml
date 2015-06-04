@@ -8,6 +8,6 @@
       <module name="org.wildfly.swarm.container"/>
       <module name="org.wildfly.swarm.runtime.container"/>
 
-      <module name="org.jboss.as.connector"/>
+      <module name="org.hawkular.agent.monitor"/>
     </dependencies>
 </module>

@@ -48,10 +48,14 @@
 <maven.compiler.target>1.8</maven.compiler.target>
 <!-- DELETE THESE WHEN WE USE HAWKULAR-PARENT -->
 
+    <version.org.hawkular.bus>0.0.6</version.org.hawkular.bus>
+    <version.org.hawkular.metrics>0.3.3</version.org.hawkular.metrics>
+    <version.org.hawkular.inventory>0.0.7</version.org.hawkular.inventory>
+
     <version.org.wildfly>9.0.0.CR1</version.org.wildfly>
-    <version.org.wildfly.swarm>1.0.0.Alpha2-SNAPSHOT</version.org.wildfly.swarm>
+    <version.org.wildfly.swarm>1.0.0.Alpha2</version.org.wildfly.swarm>
     <plugin.version.org.wildfly.swarm.fraction>1.0.0.Alpha3</plugin.version.org.wildfly.swarm.fraction>
-    <plugin.version.org.wildfly.swarm>1.0.0.Alpha2-SNAPSHOT</plugin.version.org.wildfly.swarm>
+    <plugin.version.org.wildfly.swarm>1.0.0.Alpha2</plugin.version.org.wildfly.swarm>
   </properties>
 
   <build>
