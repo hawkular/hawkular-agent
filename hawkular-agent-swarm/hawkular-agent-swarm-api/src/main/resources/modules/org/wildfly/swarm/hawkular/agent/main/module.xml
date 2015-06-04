@@ -23,14 +23,14 @@
       <!-- For when run with bonafide IDE classpath -->
       <system export="true">
         <paths>
-          <path name="org/wildfly/swarm/hawkular/agent"/>
+          <path name="org/hawkular/agent/swarm"/>
         </paths>
       </system>
 
       <!-- For when bootstrapped through a fat-jar -->
       <module name="org.wildfly.swarm.bootstrap" optional="true" export="true">
         <exports>
-          <include path="org/wildfly/swarm/hawkular/agent"/>
+          <include path="org/hawkular/agent/swarm"/>
         </exports>
       </module>
 
