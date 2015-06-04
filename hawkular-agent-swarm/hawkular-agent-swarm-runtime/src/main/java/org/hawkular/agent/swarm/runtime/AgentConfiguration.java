@@ -102,10 +102,12 @@ public class AgentConfiguration extends AbstractServerConfiguration<AgentFractio
         list.add(node);
 
         Diagnostics diagnostics = fraction.diagnostics();
-        node.get("enabled").set(diagnostics.enabled());
-        node.get("reportTo").set(diagnostics.reportTo());
-        node.get("interval").set(diagnostics.interval());
-        node.get("timeUnits").set(diagnostics.timeUnits());
+        if (diagnostics != null) {
+            node.get("enabled").set(diagnostics.enabled());
+            node.get("reportTo").set(diagnostics.reportTo());
+            node.get("interval").set(diagnostics.interval());
+            node.get("timeUnits").set(diagnostics.timeUnits());
+        }
     }
 
     protected void addStorageAdapter(AgentFraction fraction, List<ModelNode> list) {
@@ -115,12 +117,14 @@ public class AgentConfiguration extends AbstractServerConfiguration<AgentFractio
         list.add(node);
 
         StorageAdapter storageAdapter = fraction.storageAdapter();
-        node.get("type").set(storageAdapter.type());
-        node.get("username").set(storageAdapter.username());
-        node.get("password").set(storageAdapter.password());
-        node.get("url").set(storageAdapter.url());
-        if (storageAdapter.tenantId() != null) {
-            node.get("tenantId").set(storageAdapter.tenantId());
+        if (storageAdapter != null) {
+            node.get("type").set(storageAdapter.type());
+            node.get("username").set(storageAdapter.username());
+            node.get("password").set(storageAdapter.password());
+            node.get("url").set(storageAdapter.url());
+            if (storageAdapter.tenantId() != null) {
+                node.get("tenantId").set(storageAdapter.tenantId());
+            }
         }
     }
 
@@ -239,10 +243,12 @@ public class AgentConfiguration extends AbstractServerConfiguration<AgentFractio
         node.get(OP).set(ADD);
         list.add(node);
 
-        addManagedServerLocalDMR(fraction.managedServers().localDmr(), list);
+        if (fraction.managedServers() != null) {
+            addManagedServerLocalDMR(fraction.managedServers().localDmr(), list);
 
-        for (RemoteDMR each : fraction.managedServers().remoteDmrs()) {
-            addManagedServerRemoteDMR(each, list);
+            for (RemoteDMR each : fraction.managedServers().remoteDmrs()) {
+                addManagedServerRemoteDMR(each, list);
+            }
         }
     }
 
