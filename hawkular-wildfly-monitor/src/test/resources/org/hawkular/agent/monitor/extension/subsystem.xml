@@ -62,7 +62,14 @@
                        resourceNameTemplate="WildFly Server"
                        path="/"
                        metricSets="WildFly Memory Metrics"
-                       availSets="Server Availability" />
+                       availSets="Server Availability">
+      <resource-config-dmr name="Hostname"
+                           path="/core-service=server-environment"
+                           attribute="qualified-host-name" />
+      <resource-config-dmr name="Max Heap"
+                           path="/core-service=platform-mbean/type=memory"
+                           attribute="heap-memory-usage#max" />
+    </resource-type-dmr>
   </resource-type-set-dmr>
 
   <managed-servers>
