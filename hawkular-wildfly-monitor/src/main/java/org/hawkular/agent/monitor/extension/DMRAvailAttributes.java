@@ -29,43 +29,42 @@ import org.jboss.dmr.ModelType;
 public interface DMRAvailAttributes {
 
     SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
-                ModelType.STRING)
-                .setAllowNull(false)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition ATTRIBUTE = new SimpleAttributeDefinitionBuilder("attribute",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition UP_REGEX = new SimpleAttributeDefinitionBuilder("upRegex",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition INTERVAL = new SimpleAttributeDefinitionBuilder("interval",
-                ModelType.INT)
-                .setAllowNull(true)
-                .setDefaultValue(new ModelNode(5))
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.INT)
+            .setAllowNull(true)
+            .setDefaultValue(new ModelNode(5))
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("timeUnits",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
-                .setAllowExpression(true)
-                .setValidator(new TimeUnitValidator(true, true, TimeUnit.MILLISECONDS, TimeUnit.SECONDS,
-                        TimeUnit.MINUTES))
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
+            .setAllowExpression(true)
+            .setValidator(new TimeUnitValidator(true, true, TimeUnit.MILLISECONDS, TimeUnit.SECONDS, TimeUnit.MINUTES))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             PATH,

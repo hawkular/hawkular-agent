@@ -25,39 +25,39 @@ import org.jboss.dmr.ModelType;
 public interface DMRResourceTypeAttributes {
 
     SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
-                ModelType.STRING)
-                .setAllowNull(false)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition RESOURCE_NAME_TEMPLATE = new SimpleAttributeDefinitionBuilder(
-                "resourceNameTemplate", ModelType.STRING)
-                .setAllowNull(false)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            "resourceNameTemplate", ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition PARENTS = new SimpleAttributeDefinitionBuilder("parents",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder("metricSets",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition AVAIL_SETS = new SimpleAttributeDefinitionBuilder("availSets",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             RESOURCE_NAME_TEMPLATE,

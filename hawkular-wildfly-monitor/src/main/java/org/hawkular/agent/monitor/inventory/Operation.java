@@ -16,16 +16,26 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class ConfigurationPropertyType<RT extends ResourceType<?, ?, ?>> extends NamedObject {
+public abstract class Operation<RT extends ResourceType<?, ?, ?>> extends NamedObject {
 
     private final RT resourceType;
 
-    public ConfigurationPropertyType(ID id, Name name, RT resourceType) {
+    public Operation(ID id, Name name, RT resourceType) {
         super(id, name);
         this.resourceType = resourceType;
     }
 
     public RT getResourceType() {
         return resourceType;
+    }
+
+    private static final String OP_NAME_PROP = "operationName";
+
+    public String getOperationName() {
+        return (String) getProperties().get(OP_NAME_PROP);
+    }
+
+    public void setOperationName(String operationName) {
+        getProperties().put(OP_NAME_PROP, operationName);
     }
 }

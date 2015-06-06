@@ -14,18 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.inventory;
+package org.hawkular.agent.monitor.extension;
 
-public abstract class ConfigurationPropertyType<RT extends ResourceType<?, ?, ?>> extends NamedObject {
+import org.jboss.as.controller.AbstractAddStepHandler;
 
-    private final RT resourceType;
+public class DMROperationAdd extends AbstractAddStepHandler {
 
-    public ConfigurationPropertyType(ID id, Name name, RT resourceType) {
-        super(id, name);
-        this.resourceType = resourceType;
-    }
+    public static final DMROperationAdd INSTANCE = new DMROperationAdd();
 
-    public RT getResourceType() {
-        return resourceType;
+    private DMROperationAdd() {
+        super(DMROperationAttributes.ATTRIBUTES);
     }
 }

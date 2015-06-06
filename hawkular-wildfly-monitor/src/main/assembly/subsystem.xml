@@ -435,6 +435,7 @@
       <resource-config-dmr name="Max Heap"
                            path="/core-service=platform-mbean/type=memory"
                            attribute="heap-memory-usage#max" />
+      <operation-dmr name="Reload Server" operationName="reload" path="/" />
     </resource-type-dmr>
   </resource-type-set-dmr>
 

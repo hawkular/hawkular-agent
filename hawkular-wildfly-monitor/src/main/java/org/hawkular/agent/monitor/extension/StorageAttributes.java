@@ -27,74 +27,74 @@ import org.jboss.dmr.ModelType;
 public interface StorageAttributes {
 
     SimpleAttributeDefinition TYPE = new SimpleAttributeDefinitionBuilder("type",
-                ModelType.STRING)
-                .setAllowNull(false)
-                .setAllowExpression(true)
-                .setDefaultValue(new ModelNode(MonitorServiceConfiguration.StorageReportTo.HAWKULAR.name()))
-                .setValidator(EnumValidator.create(MonitorServiceConfiguration.StorageReportTo.class, false, true))
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode(MonitorServiceConfiguration.StorageReportTo.HAWKULAR.name()))
+            .setValidator(EnumValidator.create(MonitorServiceConfiguration.StorageReportTo.class, false, true))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition USERNAME = new SimpleAttributeDefinitionBuilder("username",
-                ModelType.STRING)
-                .setAllowNull(false)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition PASSWORD = new SimpleAttributeDefinitionBuilder("password",
-                ModelType.STRING)
-                .setAllowNull(false)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenantId",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition URL = new SimpleAttributeDefinitionBuilder("url",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition SERVER_OUTBOUND_SOCKET_BINDING_REF = new SimpleAttributeDefinitionBuilder(
-                "serverOutboundSocketBindingRef",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            "serverOutboundSocketBindingRef",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition BUS_CONTEXT = new SimpleAttributeDefinitionBuilder("busContext",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .setDefaultValue(new ModelNode("/hawkular-bus/message/"))
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode("/hawkular-bus/message/"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition INVENTORY_CONTEXT = new SimpleAttributeDefinitionBuilder(
-                "inventoryContext",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .setDefaultValue(new ModelNode("/hawkular/inventory/"))
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            "inventoryContext",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode("/hawkular/inventory/"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition METRICS_CONTEXT = new SimpleAttributeDefinitionBuilder("metricsContext",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .setDefaultValue(new ModelNode("/hawkular-metrics/"))
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode("/hawkular-metrics/"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             TYPE,

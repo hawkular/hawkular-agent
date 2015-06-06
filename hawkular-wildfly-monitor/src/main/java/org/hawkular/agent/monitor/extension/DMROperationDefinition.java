@@ -18,36 +18,30 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class DMRResourceTypeDefinition extends PersistentResourceDefinition {
+public class DMROperationDefinition extends PersistentResourceDefinition {
 
-    public static final DMRResourceTypeDefinition INSTANCE = new DMRResourceTypeDefinition();
+    public static final DMROperationDefinition INSTANCE = new DMROperationDefinition();
 
-    static final String RESOURCE_TYPE = "resource-type-dmr";
+    static final String OPERATION = "operation-dmr";
 
-    private DMRResourceTypeDefinition() {
-        super(PathElement.pathElement(RESOURCE_TYPE),
+    private DMROperationDefinition() {
+        super(PathElement.pathElement(OPERATION),
                 SubsystemExtension.getResourceDescriptionResolver(DMRResourceTypeSetDefinition.RESOURCE_TYPE_SET,
-                        RESOURCE_TYPE),
-                DMRResourceTypeAdd.INSTANCE,
-                DMRResourceTypeRemove.INSTANCE,
+                        DMRResourceTypeDefinition.RESOURCE_TYPE, OPERATION),
+                DMROperationAdd.INSTANCE,
+                DMROperationRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(DMRResourceTypeAttributes.ATTRIBUTES);
-    }
-
-    @Override
-    protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(DMRResourceConfigDefinition.INSTANCE, DMROperationDefinition.INSTANCE);
+        return Arrays.asList(DMROperationAttributes.ATTRIBUTES);
     }
 }

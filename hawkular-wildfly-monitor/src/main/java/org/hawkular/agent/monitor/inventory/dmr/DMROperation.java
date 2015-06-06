@@ -14,18 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.inventory;
+package org.hawkular.agent.monitor.inventory.dmr;
 
-public abstract class ConfigurationPropertyType<RT extends ResourceType<?, ?, ?>> extends NamedObject {
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.Operation;
 
-    private final RT resourceType;
+public class DMROperation extends Operation<DMRResourceType> {
 
-    public ConfigurationPropertyType(ID id, Name name, RT resourceType) {
-        super(id, name);
-        this.resourceType = resourceType;
+    public DMROperation(ID id, Name name, DMRResourceType resourceType) {
+        super(id, name, resourceType);
     }
 
-    public RT getResourceType() {
-        return resourceType;
+    private String path;
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 }
