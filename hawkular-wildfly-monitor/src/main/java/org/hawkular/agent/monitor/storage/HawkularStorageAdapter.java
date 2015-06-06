@@ -222,7 +222,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeResourceType(ResourceType<?, ?, ?> resourceType) {
+    public void storeResourceType(ResourceType<?, ?, ?, ?> resourceType) {
         if (resourceType.isPersisted()) {
             return;
         }
@@ -325,7 +325,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         resource.setPersisted(true);
     }
 
-    private void registerResourceType(ResourceType<?, ?, ?> resourceType) {
+    private void registerResourceType(ResourceType<?, ?, ?, ?> resourceType) {
         if (resourceType.isPersisted()) {
             return;
         }
@@ -543,7 +543,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
     }
 
-    private void relateResourceTypeWithMetricType(ResourceType<?, ?, ?> resourceType, MeasurementType measType) {
+    private void relateResourceTypeWithMetricType(ResourceType<?, ?, ?, ?> resourceType, MeasurementType measType) {
         HttpPost request = null;
 
         String resourceTypeId = getInventoryId(resourceType);

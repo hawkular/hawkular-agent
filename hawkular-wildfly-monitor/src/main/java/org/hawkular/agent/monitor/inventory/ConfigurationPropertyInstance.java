@@ -16,25 +16,25 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class ConfigurationPropertyInstance<T extends ConfigurationPropertyType> extends NamedObject {
+public abstract class ConfigurationPropertyInstance<T extends ConfigurationPropertyType<?>> extends NamedObject {
+
+    private final T configurationPropertyType;
+    private String value;
 
     public ConfigurationPropertyInstance(ID id, Name name, T configurationPropertyType) {
         super(id, name);
         this.configurationPropertyType = configurationPropertyType;
     }
 
-    private static final String VALUE_PROP = "value";
-    private final T configurationPropertyType;
-
     public T getConfigurationPropertyType() {
         return configurationPropertyType;
     }
 
     public String getValue() {
-        return (String) getProperties().get(VALUE_PROP);
+        return this.value;
     }
 
     public void setValue(String value) {
-        getProperties().put(VALUE_PROP, value);
+        this.value = value;
     }
 }

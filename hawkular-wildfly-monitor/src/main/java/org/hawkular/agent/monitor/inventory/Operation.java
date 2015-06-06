@@ -16,9 +16,10 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class Operation<RT extends ResourceType<?, ?, ?>> extends NamedObject {
+public abstract class Operation<RT extends ResourceType<?, ?, ?, ?>> extends NamedObject {
 
     private final RT resourceType;
+    private String operationName;
 
     public Operation(ID id, Name name, RT resourceType) {
         super(id, name);
@@ -29,13 +30,17 @@ public abstract class Operation<RT extends ResourceType<?, ?, ?>> extends NamedO
         return resourceType;
     }
 
-    private static final String OP_NAME_PROP = "operationName";
-
     public String getOperationName() {
-        return (String) getProperties().get(OP_NAME_PROP);
+        if (operationName == null) {
+            if (getName() == null) {
+                throw new IllegalStateException("operation has no name");
+            }
+            return getName().getNameString();
+        }
+        return operationName;
     }
 
     public void setOperationName(String operationName) {
-        getProperties().put(OP_NAME_PROP, operationName);
+        this.operationName = operationName;
     }
 }

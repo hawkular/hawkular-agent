@@ -36,14 +36,15 @@ import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
  * @author John Mazzitelli
  */
 public abstract class InventoryManager< //
-RT extends ResourceType<MT, AT, CPT>, //
+RT extends ResourceType<MT, AT, O, CPT>, //
 RTS extends ResourceTypeSet<RT>, //
 MT extends MetricType, //
 MTS extends MetricTypeSet<MT>, //
 AT extends AvailType, //
 ATS extends AvailTypeSet<AT>, //
-CPT extends ConfigurationPropertyType, //
-R extends Resource<?, ?, ?, ?, ?>, //
+O extends Operation<RT>, //
+CPT extends ConfigurationPropertyType<RT>, //
+R extends Resource<RT, ?, ?, ?, ?>, //
 ME extends MonitoredEndpoint> {
 
     private final ResourceTypeManager<RT, RTS> resourceTypeManager;

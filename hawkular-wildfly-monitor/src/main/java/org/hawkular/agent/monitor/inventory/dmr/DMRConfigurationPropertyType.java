@@ -22,12 +22,12 @@ import org.hawkular.agent.monitor.inventory.Name;
 
 public class DMRConfigurationPropertyType extends ConfigurationPropertyType<DMRResourceType> {
 
+    private String path;
+    private String attribute;
+
     public DMRConfigurationPropertyType(ID id, Name name, DMRResourceType resourceType) {
         super(id, name, resourceType);
     }
-
-    private String path;
-    private String attribute;
 
     public String getPath() {
         return path;

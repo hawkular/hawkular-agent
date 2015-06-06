@@ -24,7 +24,7 @@ public interface InventoryStorage {
      * Stores the given resource type.
      * @param resourceType the type to be stored
      */
-    void storeResourceType(ResourceType<?, ?, ?> resourceType);
+    void storeResourceType(ResourceType<?, ?, ?, ?> resourceType);
 
     /**
      * Stores the given resource.

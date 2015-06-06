@@ -27,8 +27,10 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
+import org.hawkular.agent.monitor.inventory.dmr.DMRConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
+import org.hawkular.agent.monitor.inventory.dmr.DMROperation;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
@@ -291,6 +293,31 @@ public class MonitorServiceConfigurationBuilder {
 
                         resourceType.setMetricSets(metricSets);
                         resourceType.setAvailSets(availSets);
+
+                        List<Property> operationList = resourceTypeValueNode.get(DMROperationDefinition.OPERATION)
+                                .asPropertyList();
+                        for (Property operationProperty : operationList) {
+                            ModelNode operationValueNode = operationProperty.getValue();
+                            String operationName = operationProperty.getName();
+                            DMROperation op = new DMROperation(ID.NULL_ID, new Name(operationName), resourceType);
+                            op.setPath(getString(operationValueNode, context, DMROperationAttributes.PATH));
+                            op.setOperationName(getString(operationValueNode, context,
+                                    DMROperationAttributes.OPERATION_NAME));
+                            resourceType.getOperations().add(op);
+                        }
+
+                        List<Property> configList = resourceTypeValueNode.get(
+                                DMRResourceConfigDefinition.RESOURCE_CONFIG).asPropertyList();
+                        for (Property configProperty : configList) {
+                            ModelNode configValueNode = configProperty.getValue();
+                            String configName = configProperty.getName();
+                            DMRConfigurationPropertyType configType = new DMRConfigurationPropertyType(ID.NULL_ID,
+                                    new Name(configName), resourceType);
+                            configType.setPath(getString(configValueNode, context, DMRResourceConfigAttributes.PATH));
+                            configType.setAttribute(getString(configValueNode, context,
+                                    DMRResourceConfigAttributes.ATTRIBUTE));
+                            resourceType.getConfigurationPropertyTypes().add(configType);
+                        }
                     }
                 }
             }
