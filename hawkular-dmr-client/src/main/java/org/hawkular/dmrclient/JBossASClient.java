@@ -336,6 +336,40 @@ public class JBossASClient implements AutoCloseable {
     }
 
     /**
+     * Convienence method that allows you to obtain a single attribute's value from a resource.
+     *
+     * @param attributeName the attribute whose value is to be returned
+     * @param address identifies the resource
+     * @return the attribute value
+     *
+     * @throws Exception if failed to obtain the attribute value
+     */
+    public ModelNode getAttribute(String attributeName, Address address) throws Exception {
+        return getAttribute(false, attributeName, address);
+    }
+
+    /**
+     * Convienence method that allows you to obtain a single attribute's value from a resource.
+     *
+     * @param runtime if <code>true</code>, the attribute to be retrieved is a runtime attribute
+     * @param attributeName the attribute whose value is to be returned
+     * @param address identifies the resource
+     * @return the attribute value
+     *
+     * @throws Exception if failed to obtain the attribute value
+     */
+    public ModelNode getAttribute(boolean runtime, String attributeName, Address address) throws Exception {
+        final ModelNode op = createReadAttributeRequest(runtime, attributeName, address);
+        final ModelNode results = execute(op);
+        if (isSuccess(results)) {
+            return getResults(results);
+        } else {
+            throw new FailureException(results, "Failed to get attribute [" + attributeName + "] from [" + address
+                    + "]");
+        }
+    }
+
+    /**
      * Convienence method that allows you to obtain a single attribute's string value from
      * a resource.
      *
@@ -361,16 +395,7 @@ public class JBossASClient implements AutoCloseable {
      * @throws Exception if failed to obtain the attribute value
      */
     public String getStringAttribute(boolean runtime, String attributeName, Address address) throws Exception {
-        final ModelNode op = createReadAttributeRequest(runtime, attributeName, address);
-        final ModelNode results = execute(op);
-        if (isSuccess(results)) {
-            final ModelNode version = getResults(results);
-            final String attributeValue = version.asString();
-            return attributeValue;
-        } else {
-            throw new FailureException(results, "Failed to get attribute [" + attributeName + "] from [" + address
-                + "]");
-        }
+        return getAttribute(runtime, attributeName, address).asString();
     }
 
     /**

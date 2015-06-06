@@ -149,21 +149,13 @@ public class DMRDiscovery {
                 String[] attribute = configPropType.getAttribute().split("#");
                 if (configPath == null || configPath.equals("/")) {
                     value = resource.getModelNode().get(attribute[0]);
-                        if (attribute.length > 1 && value != null && value.isDefined()) {
-                            value = value.get(attribute[1]);
-                        }
-                    } else {
+                } else {
                     Address addr = resource.getAddress().clone().add(Address.parse(configPath));
-                    ModelNode req = JBossASClient.createReadAttributeRequest(attribute[0], addr);
-                    ModelNode executeNode = new CoreJBossASClient(mcc).execute(req);
-                    if (JBossASClient.isSuccess(executeNode)) {
-                        value = JBossASClient.getResults(executeNode);
-                        if (attribute.length > 1 && value != null && value.isDefined()) {
-                            value = value.get(attribute[1]);
-                        }
-                    } else {
-                        value = null;
-                    }
+                    value = new CoreJBossASClient(mcc).getAttribute(attribute[0], addr);
+                }
+
+                if (attribute.length > 1 && value != null && value.isDefined()) {
+                    value = value.get(attribute[1]);
                 }
 
                 DMRConfigurationPropertyInstance cpi = new DMRConfigurationPropertyInstance(ID.NULL_ID,
