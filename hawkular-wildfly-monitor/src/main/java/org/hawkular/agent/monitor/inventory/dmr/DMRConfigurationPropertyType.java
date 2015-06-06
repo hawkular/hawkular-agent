@@ -14,33 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.inventory;
+package org.hawkular.agent.monitor.inventory.dmr;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.ConfigurationPropertyType;
 
-public abstract class ResourceTypeSet<T extends ResourceType<?, ?, ?>> extends NamedObject {
-    public ResourceTypeSet(ID id, Name name) {
+public class DMRConfigurationPropertyType extends ConfigurationPropertyType {
+
+    public DMRConfigurationPropertyType(ID id, Name name) {
         super(id, name);
     }
 
-    private boolean enabled;
-    private Map<Name, T> resourceTypeMap = new HashMap<>();
+    private String path;
+    private String attribute;
 
-    public boolean isEnabled() {
-        return enabled;
+    public String getPath() {
+        return path;
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+    public void setPath(String path) {
+        this.path = path;
     }
 
-    public Map<Name, T> getResourceTypeMap() {
-        return resourceTypeMap;
+    public String getAttribute() {
+        return attribute;
     }
 
-    public void setResourceTypeMap(Map<Name, T> map) {
-        this.resourceTypeMap = map;
+    public void setAttribute(String attribute) {
+        this.attribute = attribute;
     }
 
 }

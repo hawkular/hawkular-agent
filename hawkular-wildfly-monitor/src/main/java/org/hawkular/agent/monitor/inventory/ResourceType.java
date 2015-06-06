@@ -19,7 +19,9 @@ package org.hawkular.agent.monitor.inventory;
 import java.util.Collection;
 import java.util.HashSet;
 
-public abstract class ResourceType<MT extends MetricType, AT extends AvailType> extends NamedObject {
+public abstract class ResourceType<MT extends MetricType, AT extends AvailType, RCD extends ConfigurationPropertyType>
+        extends NamedObject {
+
     public ResourceType(ID id, Name name) {
         super(id, name);
     }
@@ -30,6 +32,7 @@ public abstract class ResourceType<MT extends MetricType, AT extends AvailType> 
     private Collection<Name> availSetNames = new HashSet<>();
     private Collection<MT> metricTypes = new HashSet<>();
     private Collection<AT> availTypes = new HashSet<>();
+    private Collection<RCD> resourceConfigDefs = new HashSet<>();
 
     public String getResourceNameTemplate() {
         return resourceNameTemplate;
@@ -71,5 +74,8 @@ public abstract class ResourceType<MT extends MetricType, AT extends AvailType> 
         return availTypes;
     }
 
+    public Collection<RCD> getResourceConfigDefs() {
+        return resourceConfigDefs;
+    }
 
 }

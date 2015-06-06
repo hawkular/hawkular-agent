@@ -32,7 +32,7 @@ import org.jgrapht.traverse.DepthFirstIterator;
  *
  * @author John Mazzitelli
  */
-public class ResourceManager<T extends Resource<?, ?, ?, ?>> {
+public class ResourceManager<T extends Resource<?, ?, ?, ?, ?>> {
 
     private final ListenableDirectedGraph<T, DefaultEdge> resourcesGraph;
     private final DirectedNeighborIndex<T, DefaultEdge> index;

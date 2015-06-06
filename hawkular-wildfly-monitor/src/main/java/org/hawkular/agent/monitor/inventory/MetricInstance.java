@@ -19,7 +19,7 @@ package org.hawkular.agent.monitor.inventory;
 import org.hawkular.agent.monitor.scheduler.config.MonitoredPropertyReference;
 
 public abstract class MetricInstance< //
-R extends Resource<?, ?, ?, ?>, //
+R extends Resource<?, ?, ?, ?, ?>, //
 M extends MetricType, //
 P extends MonitoredPropertyReference>
         extends MeasurementInstance<R, M, P> {

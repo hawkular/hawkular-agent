@@ -16,19 +16,25 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import org.hawkular.agent.monitor.scheduler.config.MonitoredPropertyReference;
+public abstract class ConfigurationPropertyInstance<T extends ConfigurationPropertyType> extends NamedObject {
 
-public abstract class AvailInstance< //
-R extends Resource<?, ?, ?, ?, ?>, //
-A extends AvailType, //
-P extends MonitoredPropertyReference> //
-        extends MeasurementInstance<R, A, P> {
-
-    public AvailInstance(ID id, Name name, R resource, A availType, P property) {
-        super(id, name, resource, availType, property);
+    public ConfigurationPropertyInstance(ID id, Name name, T configurationPropertyType) {
+        super(id, name);
+        this.configurationPropertyType = configurationPropertyType;
     }
 
-    public A getAvailType() {
-        return getMeasurementType();
+    private static final String VALUE_PROP = "value";
+    private final T configurationPropertyType;
+
+    public T getConfigurationPropertyType() {
+        return configurationPropertyType;
+    }
+
+    public String getValue() {
+        return (String) getProperties().get(VALUE_PROP);
+    }
+
+    public void setValue(String value) {
+        getProperties().put(VALUE_PROP, value);
     }
 }

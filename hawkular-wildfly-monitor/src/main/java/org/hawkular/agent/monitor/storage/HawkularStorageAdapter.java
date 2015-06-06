@@ -222,7 +222,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeResourceType(ResourceType<?, ?> resourceType) {
+    public void storeResourceType(ResourceType<?, ?, ?> resourceType) {
         if (resourceType.isPersisted()) {
             return;
         }
@@ -242,7 +242,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeResource(Resource<?, ?, ?, ?> resource) {
+    public void storeResource(Resource<?, ?, ?, ?, ?> resource) {
         if (resource.isPersisted()) {
             return;
         }
@@ -271,7 +271,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         return id;
     }
 
-    private void registerResource(Resource<?, ?, ?, ?> resource) {
+    private void registerResource(Resource<?, ?, ?, ?, ?> resource) {
         if (resource.isPersisted()) {
             return;
         }
@@ -325,7 +325,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         resource.setPersisted(true);
     }
 
-    private void registerResourceType(ResourceType<?, ?> resourceType) {
+    private void registerResourceType(ResourceType<?, ?, ?> resourceType) {
         if (resourceType.isPersisted()) {
             return;
         }
@@ -493,7 +493,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         measurementType.setPersisted(true);
     }
 
-    private void relateResourceWithMetric(Resource<?, ?, ?, ?> resource, MeasurementInstance<?, ?, ?> measInstance) {
+    private void relateResourceWithMetric(Resource<?, ?, ?, ?, ?> resource,
+            MeasurementInstance<?, ?, ?> measInstance) {
         HttpPost request = null;
 
         String resourceId = getInventoryId(resource);
@@ -542,7 +543,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
     }
 
-    private void relateResourceTypeWithMetricType(ResourceType<?, ?> resourceType, MeasurementType measType) {
+    private void relateResourceTypeWithMetricType(ResourceType<?, ?, ?> resourceType, MeasurementType measType) {
         HttpPost request = null;
 
         String resourceTypeId = getInventoryId(resourceType);

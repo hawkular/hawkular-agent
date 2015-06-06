@@ -22,19 +22,21 @@ import java.util.HashSet;
 import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
 
 public abstract class Resource< //
-T extends ResourceType<?, ?>, //
+T extends ResourceType<?, ?, ?>, //
 E extends MonitoredEndpoint, //
 M extends MetricInstance<?, ?, ?>, //
-A extends AvailInstance<?, ?, ?>>
+A extends AvailInstance<?, ?, ?>, //
+C extends ConfigurationPropertyInstance<?>> //
         extends NamedObject {
 
     private final T resourceType;
-    private final Resource<?, ?, ?, ?> parent;
+    private final Resource<?, ?, ?, ?, ?> parent;
     private final E endpoint;
-    private final Collection<M> metrics = new HashSet<M>();
-    private final Collection<A> avails = new HashSet<A>();
+    private final Collection<M> metrics = new HashSet<>();
+    private final Collection<A> avails = new HashSet<>();
+    private final Collection<C> configurationProperties = new HashSet<>();
 
-    public <P extends Resource<?, ?, ?, ?>> Resource(ID id, Name name, E endpoint, T resourceType, P parent) {
+    public <P extends Resource<?, ?, ?, ?, ?>> Resource(ID id, Name name, E endpoint, T resourceType, P parent) {
         super(id, name);
         this.endpoint = endpoint;
         this.resourceType = resourceType;
@@ -49,7 +51,7 @@ A extends AvailInstance<?, ?, ?>>
         return resourceType;
     }
 
-    public <P extends Resource<?, ?, ?, ?>> P getParent() {
+    public <P extends Resource<?, ?, ?, ?, ?>> P getParent() {
         return (P) parent;
     }
 
@@ -59,6 +61,10 @@ A extends AvailInstance<?, ?, ?>>
 
     public Collection<A> getAvails() {
         return avails;
+    }
+
+    public Collection<C> getConfigurationProperties() {
+        return configurationProperties;
     }
 
     @Override

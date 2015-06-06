@@ -14,21 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.api;
+package org.hawkular.agent.monitor.inventory;
 
-import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceType;
+public abstract class ConfigurationPropertyType extends NamedObject {
 
-public interface InventoryStorage {
-    /**
-     * Stores the given resource type.
-     * @param resourceType the type to be stored
-     */
-    void storeResourceType(ResourceType<?, ?, ?> resourceType);
+    public ConfigurationPropertyType(ID id, Name name) {
+        super(id, name);
+    }
 
-    /**
-     * Stores the given resource.
-     * @param resource to be stored
-     */
-    void storeResource(Resource<?, ?, ?, ?, ?> resource);
 }
