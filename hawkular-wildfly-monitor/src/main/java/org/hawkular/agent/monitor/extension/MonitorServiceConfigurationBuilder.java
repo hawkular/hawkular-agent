@@ -294,29 +294,35 @@ public class MonitorServiceConfigurationBuilder {
                         resourceType.setMetricSets(metricSets);
                         resourceType.setAvailSets(availSets);
 
-                        List<Property> operationList = resourceTypeValueNode.get(DMROperationDefinition.OPERATION)
-                                .asPropertyList();
-                        for (Property operationProperty : operationList) {
-                            ModelNode operationValueNode = operationProperty.getValue();
-                            String operationName = operationProperty.getName();
-                            DMROperation op = new DMROperation(ID.NULL_ID, new Name(operationName), resourceType);
-                            op.setPath(getString(operationValueNode, context, DMROperationAttributes.PATH));
-                            op.setOperationName(getString(operationValueNode, context,
-                                    DMROperationAttributes.OPERATION_NAME));
-                            resourceType.getOperations().add(op);
+                        ModelNode opModelNode = resourceTypeValueNode.get(DMROperationDefinition.OPERATION);
+                        if (opModelNode != null && opModelNode.isDefined()) {
+                            List<Property> operationList = opModelNode.asPropertyList();
+                            for (Property operationProperty : operationList) {
+                                ModelNode operationValueNode = operationProperty.getValue();
+                                String operationName = operationProperty.getName();
+                                DMROperation op = new DMROperation(ID.NULL_ID, new Name(operationName), resourceType);
+                                op.setPath(getString(operationValueNode, context, DMROperationAttributes.PATH));
+                                op.setOperationName(getString(operationValueNode, context,
+                                        DMROperationAttributes.OPERATION_NAME));
+                                resourceType.getOperations().add(op);
+                            }
                         }
 
-                        List<Property> configList = resourceTypeValueNode.get(
-                                DMRResourceConfigDefinition.RESOURCE_CONFIG).asPropertyList();
-                        for (Property configProperty : configList) {
-                            ModelNode configValueNode = configProperty.getValue();
-                            String configName = configProperty.getName();
-                            DMRConfigurationPropertyType configType = new DMRConfigurationPropertyType(ID.NULL_ID,
-                                    new Name(configName), resourceType);
-                            configType.setPath(getString(configValueNode, context, DMRResourceConfigAttributes.PATH));
-                            configType.setAttribute(getString(configValueNode, context,
-                                    DMRResourceConfigAttributes.ATTRIBUTE));
-                            resourceType.getConfigurationPropertyTypes().add(configType);
+                        ModelNode configModelNode = resourceTypeValueNode
+                                .get(DMRResourceConfigDefinition.RESOURCE_CONFIG);
+                        if (configModelNode != null && configModelNode.isDefined()) {
+                            List<Property> configList = configModelNode.asPropertyList();
+                            for (Property configProperty : configList) {
+                                ModelNode configValueNode = configProperty.getValue();
+                                String configName = configProperty.getName();
+                                DMRConfigurationPropertyType configType = new DMRConfigurationPropertyType(ID.NULL_ID,
+                                        new Name(configName), resourceType);
+                                configType.setPath(getString(configValueNode, context,
+                                        DMRResourceConfigAttributes.PATH));
+                                configType.setAttribute(getString(configValueNode, context,
+                                        DMRResourceConfigAttributes.ATTRIBUTE));
+                                resourceType.getConfigurationPropertyTypes().add(configType);
+                            }
                         }
                     }
                 }

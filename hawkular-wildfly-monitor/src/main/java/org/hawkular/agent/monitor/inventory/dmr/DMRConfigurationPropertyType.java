@@ -45,4 +45,9 @@ public class DMRConfigurationPropertyType extends ConfigurationPropertyType<DMRR
         this.attribute = attribute;
     }
 
+    @Override
+    public String toString() {
+        return String.format("%s[path=%s][attribute=%s]", super.toString(), getPath(), getAttribute());
+    }
+
 }
