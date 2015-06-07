@@ -23,7 +23,7 @@ public abstract class ResourceType< //
 MT extends MetricType, //
 AT extends AvailType, //
 O extends Operation<?>, //
-RCD extends ConfigurationPropertyType<?>>
+RCPT extends ResourceConfigurationPropertyType<?>>
         extends NamedObject {
 
     public ResourceType(ID id, Name name) {
@@ -37,7 +37,7 @@ RCD extends ConfigurationPropertyType<?>>
     private Collection<MT> metricTypes = new HashSet<>();
     private Collection<AT> availTypes = new HashSet<>();
     private Collection<O> operations = new HashSet<>();
-    private Collection<RCD> configurationPropertyTypes = new HashSet<>();
+    private Collection<RCPT> resourceConfigurationPropertyTypes = new HashSet<>();
 
     public String getResourceNameTemplate() {
         return resourceNameTemplate;
@@ -79,8 +79,8 @@ RCD extends ConfigurationPropertyType<?>>
         return availTypes;
     }
 
-    public Collection<RCD> getConfigurationPropertyTypes() {
-        return configurationPropertyTypes;
+    public Collection<RCPT> getResourceConfigurationPropertyTypes() {
+        return resourceConfigurationPropertyTypes;
     }
 
     public Collection<O> getOperations() {

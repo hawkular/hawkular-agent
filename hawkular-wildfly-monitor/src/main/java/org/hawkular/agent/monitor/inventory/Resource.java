@@ -26,7 +26,7 @@ T extends ResourceType<?, ?, ?, ?>, //
 E extends MonitoredEndpoint, //
 M extends MetricInstance<?, ?, ?>, //
 A extends AvailInstance<?, ?, ?>, //
-C extends ConfigurationPropertyInstance<?>> //
+C extends ResourceConfigurationPropertyInstance<?>> //
         extends NamedObject {
 
     private final T resourceType;

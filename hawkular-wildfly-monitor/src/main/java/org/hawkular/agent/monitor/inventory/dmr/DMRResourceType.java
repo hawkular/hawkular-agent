@@ -21,7 +21,7 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 
 public class DMRResourceType extends
-        ResourceType<DMRMetricType, DMRAvailType, DMROperation, DMRConfigurationPropertyType> {
+        ResourceType<DMRMetricType, DMRAvailType, DMROperation, DMRResourceConfigurationPropertyType> {
 
     public DMRResourceType(ID id, Name name) {
         super(id, name);

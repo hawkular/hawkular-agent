@@ -16,16 +16,16 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
-import org.hawkular.agent.monitor.inventory.ConfigurationPropertyType;
+import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 
-public class DMRConfigurationPropertyType extends ConfigurationPropertyType<DMRResourceType> {
+public class DMRResourceConfigurationPropertyType extends ResourceConfigurationPropertyType<DMRResourceType> {
 
     private String path;
     private String attribute;
 
-    public DMRConfigurationPropertyType(ID id, Name name, DMRResourceType resourceType) {
+    public DMRResourceConfigurationPropertyType(ID id, Name name, DMRResourceType resourceType) {
         super(id, name, resourceType);
     }
 

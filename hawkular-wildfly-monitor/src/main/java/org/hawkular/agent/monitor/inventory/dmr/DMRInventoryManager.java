@@ -34,7 +34,7 @@ public class DMRInventoryManager extends InventoryManager
         DMRAvailType,
         DMRAvailTypeSet,
         DMROperation,
-        DMRConfigurationPropertyType,
+        DMRResourceConfigurationPropertyType,
         DMRResource,
         DMREndpoint> {
 

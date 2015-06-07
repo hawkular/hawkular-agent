@@ -141,8 +141,8 @@ public class DMRDiscovery {
 
     private void discoverResourceConfiguration(DMRResource resource, ModelControllerClient mcc) {
         DMRResourceType rt = resource.getResourceType();
-        Collection<DMRConfigurationPropertyType> configPropTypes = rt.getConfigurationPropertyTypes();
-        for (DMRConfigurationPropertyType configPropType : configPropTypes) {
+        Collection<DMRResourceConfigurationPropertyType> configPropTypes = rt.getResourceConfigurationPropertyTypes();
+        for (DMRResourceConfigurationPropertyType configPropType : configPropTypes) {
             try {
                 ModelNode value;
                 String configPath = configPropType.getPath();
@@ -158,8 +158,8 @@ public class DMRDiscovery {
                     value = value.get(attribute[1]);
                 }
 
-                DMRConfigurationPropertyInstance cpi = new DMRConfigurationPropertyInstance(ID.NULL_ID,
-                        configPropType.getName(), configPropType);
+                DMRResourceConfigurationPropertyInstance cpi = new DMRResourceConfigurationPropertyInstance(
+                        ID.NULL_ID, configPropType.getName(), configPropType);
                 cpi.setValue((value != null && value.isDefined()) ? value.asString() : null);
                 resource.getConfigurationProperties().add(cpi);
             } catch (Exception e) {

@@ -29,21 +29,21 @@ import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
  * @param <MTS> metric type set
  * @param <AT> avail type
  * @param <ATS> avail type set
- * @param <CPT> resource configuration property definition
+ * @param <RCPT> resource configuration property definition
  * @param <R> resource
  * @param <ME> monitored endpoint
  *
  * @author John Mazzitelli
  */
 public abstract class InventoryManager< //
-RT extends ResourceType<MT, AT, O, CPT>, //
+RT extends ResourceType<MT, AT, O, RCPT>, //
 RTS extends ResourceTypeSet<RT>, //
 MT extends MetricType, //
 MTS extends MetricTypeSet<MT>, //
 AT extends AvailType, //
 ATS extends AvailTypeSet<AT>, //
 O extends Operation<RT>, //
-CPT extends ConfigurationPropertyType<RT>, //
+RCPT extends ResourceConfigurationPropertyType<RT>, //
 R extends Resource<RT, ?, ?, ?, ?>, //
 ME extends MonitoredEndpoint> {
 

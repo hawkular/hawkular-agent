@@ -16,30 +16,16 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class ConfigurationPropertyInstance<T extends ConfigurationPropertyType<?>> extends NamedObject {
+public abstract class ResourceConfigurationPropertyType<RT extends ResourceType<?, ?, ?, ?>> extends NamedObject {
 
-    private final T configurationPropertyType;
-    private String value;
+    private final RT resourceType;
 
-    public ConfigurationPropertyInstance(ID id, Name name, T configurationPropertyType) {
+    public ResourceConfigurationPropertyType(ID id, Name name, RT resourceType) {
         super(id, name);
-        this.configurationPropertyType = configurationPropertyType;
+        this.resourceType = resourceType;
     }
 
-    public T getConfigurationPropertyType() {
-        return configurationPropertyType;
-    }
-
-    public String getValue() {
-        return this.value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s[value=%s]", super.toString(), getValue());
+    public RT getResourceType() {
+        return resourceType;
     }
 }
