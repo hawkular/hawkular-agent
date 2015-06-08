@@ -16,8 +16,12 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 public abstract class ResourceType< //
 MT extends MetricType, //
@@ -80,11 +84,37 @@ RCPT extends ResourceConfigurationPropertyType<?>>
     }
 
     public Collection<RCPT> getResourceConfigurationPropertyTypes() {
-        return resourceConfigurationPropertyTypes;
+        return Collections.unmodifiableCollection(resourceConfigurationPropertyTypes);
+    }
+
+    public void addResourceConfigurationPropertyType(RCPT resConfigPropertyType) {
+        resourceConfigurationPropertyTypes.add(resConfigPropertyType);
+
+        // put it in our properties so it gets stored properly in inventory
+        final String configsPropName = "resourceConfiguration";
+        List<Map<String, Object>> configs = (List<Map<String, Object>>) getProperties().get(configsPropName);
+        if (configs == null) {
+            configs = new ArrayList<>();
+            addProperty(configsPropName, configs);
+        }
+        configs.add(resConfigPropertyType.getProperties());
     }
 
     public Collection<O> getOperations() {
-        return operations;
+        return Collections.unmodifiableCollection(operations);
+    }
+
+    public void addOperation(O operation) {
+        operations.add(operation);
+
+        // put it in our properties so it gets stored properly in inventory
+        final String opsPropName = "operations";
+        List<Map<String, Object>> ops = (List<Map<String, Object>>) getProperties().get(opsPropName);
+        if (ops == null) {
+            ops = new ArrayList<>();
+            addProperty(opsPropName, ops);
+        }
+        ops.add(operation.getProperties());
     }
 
 }

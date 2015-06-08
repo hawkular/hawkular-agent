@@ -18,8 +18,9 @@ package org.hawkular.agent.monitor.inventory;
 
 public abstract class Operation<RT extends ResourceType<?, ?, ?, ?>> extends NamedObject {
 
+    private static final String OPNAME_PROPNAME = "operationName";
+
     private final RT resourceType;
-    private String operationName;
 
     public Operation(ID id, Name name, RT resourceType) {
         super(id, name);
@@ -31,6 +32,7 @@ public abstract class Operation<RT extends ResourceType<?, ?, ?, ?>> extends Nam
     }
 
     public String getOperationName() {
+        String operationName = (String) getProperties().get(OPNAME_PROPNAME);
         if (operationName == null) {
             if (getName() == null) {
                 throw new IllegalStateException("operation has no name");
@@ -41,6 +43,6 @@ public abstract class Operation<RT extends ResourceType<?, ?, ?, ?>> extends Nam
     }
 
     public void setOperationName(String operationName) {
-        this.operationName = operationName;
+        addProperty("operationName", operationName);
     }
 }

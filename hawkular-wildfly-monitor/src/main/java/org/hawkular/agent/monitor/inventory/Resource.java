@@ -16,8 +16,12 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
 
@@ -64,7 +68,20 @@ C extends ResourceConfigurationPropertyInstance<?>> //
     }
 
     public Collection<C> getConfigurationProperties() {
-        return configurationProperties;
+        return Collections.unmodifiableCollection(configurationProperties);
+    }
+
+    public void addConfigurationProperty(C configProperty) {
+        configurationProperties.add(configProperty);
+
+        // put it in our properties so it gets stored properly in inventory
+        final String configPropName = "resourceConfiguration";
+        List<Map<String, Object>> config = (List<Map<String, Object>>) getProperties().get(configPropName);
+        if (config == null) {
+            config = new ArrayList<>();
+            addProperty(configPropName, config);
+        }
+        config.add(configProperty.getProperties());
     }
 
     @Override

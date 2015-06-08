@@ -300,6 +300,7 @@ public class MonitorServiceConfigurationBuilder {
                         resourceType.setMetricSets(metricSets);
                         resourceType.setAvailSets(availSets);
 
+                        // get operations
                         ModelNode opModelNode = resourceTypeValueNode.get(DMROperationDefinition.OPERATION);
                         if (opModelNode != null && opModelNode.isDefined()) {
                             List<Property> operationList = opModelNode.asPropertyList();
@@ -310,10 +311,11 @@ public class MonitorServiceConfigurationBuilder {
                                 op.setPath(getString(operationValueNode, context, DMROperationAttributes.PATH));
                                 op.setOperationName(getString(operationValueNode, context,
                                         DMROperationAttributes.OPERATION_NAME));
-                                resourceType.getOperations().add(op);
+                                resourceType.addOperation(op);
                             }
                         }
 
+                        // get resource config properties
                         ModelNode configModelNode = resourceTypeValueNode
                                 .get(DMRResourceConfigDefinition.RESOURCE_CONFIG);
                         if (configModelNode != null && configModelNode.isDefined()) {
@@ -328,7 +330,7 @@ public class MonitorServiceConfigurationBuilder {
                                         DMRResourceConfigAttributes.PATH));
                                 configType.setAttribute(getString(configValueNode, context,
                                         DMRResourceConfigAttributes.ATTRIBUTE));
-                                resourceType.getResourceConfigurationPropertyTypes().add(configType);
+                                resourceType.addResourceConfigurationPropertyType(configType);
                             }
                         }
                     }
