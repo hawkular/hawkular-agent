@@ -209,12 +209,12 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeResourceType(ResourceType<?, ?> resourceType) {
+    public void storeResourceType(ResourceType<?, ?, ?, ?> resourceType) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 
     @Override
-    public void storeResource(Resource<?, ?, ?, ?> resourceType) {
+    public void storeResource(Resource<?, ?, ?, ?, ?> resourceType) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 }

@@ -29,6 +29,8 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
+import org.hawkular.agent.monitor.inventory.dmr.DMROperation;
+import org.hawkular.agent.monitor.inventory.dmr.DMRResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
@@ -80,7 +82,9 @@ public class MonitorServiceConfigurationBuilder {
         return;
     }
 
-    private boolean determineMetricSetDmr(ModelNode config, OperationContext context) throws OperationFailedException {
+    private boolean determineMetricSetDmr(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+
         boolean hasEnabledMetrics = false;
 
         if (config.hasDefined(DMRMetricSetDefinition.METRIC_SET)) {
@@ -110,7 +114,8 @@ public class MonitorServiceConfigurationBuilder {
                             metric.setMetricUnits(MeasurementUnit.valueOf(metricUnitsStr.toUpperCase(Locale.ENGLISH)));
                         }
                         metric.setInterval(getInt(metricValueNode, context, DMRMetricAttributes.INTERVAL));
-                        String metricTimeUnitsStr = getString(metricValueNode, context, DMRMetricAttributes.TIME_UNITS);
+                        String metricTimeUnitsStr = getString(metricValueNode, context,
+                                DMRMetricAttributes.TIME_UNITS);
                         metric.setTimeUnits(TimeUnit.valueOf(metricTimeUnitsStr.toUpperCase()));
                     }
                     if (metricSet.isEnabled() && !metricSet.getMetricTypeMap().isEmpty()) {
@@ -224,9 +229,12 @@ public class MonitorServiceConfigurationBuilder {
     private void determineGlobalConfig(ModelNode config, OperationContext context) throws OperationFailedException {
         theConfig.subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
         theConfig.apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
-        theConfig.numMetricSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_METRIC_SCHEDULER_THREADS);
-        theConfig.numAvailSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_AVAIL_SCHEDULER_THREADS);
-        theConfig.numDmrSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_DMR_SCHEDULER_THREADS);
+        theConfig.numMetricSchedulerThreads = getInt(config, context,
+                SubsystemAttributes.NUM_METRIC_SCHEDULER_THREADS);
+        theConfig.numAvailSchedulerThreads = getInt(config, context,
+                SubsystemAttributes.NUM_AVAIL_SCHEDULER_THREADS);
+        theConfig.numDmrSchedulerThreads = getInt(config, context,
+                SubsystemAttributes.NUM_DMR_SCHEDULER_THREADS);
         theConfig.metricDispatcherBufferSize = getInt(config, context,
                 SubsystemAttributes.METRIC_DISPATCHER_BUFFER_SIZE);
         theConfig.metricDispatcherMaxBatchSize = getInt(config, context,
@@ -291,6 +299,40 @@ public class MonitorServiceConfigurationBuilder {
 
                         resourceType.setMetricSets(metricSets);
                         resourceType.setAvailSets(availSets);
+
+                        // get operations
+                        ModelNode opModelNode = resourceTypeValueNode.get(DMROperationDefinition.OPERATION);
+                        if (opModelNode != null && opModelNode.isDefined()) {
+                            List<Property> operationList = opModelNode.asPropertyList();
+                            for (Property operationProperty : operationList) {
+                                ModelNode operationValueNode = operationProperty.getValue();
+                                String operationName = operationProperty.getName();
+                                DMROperation op = new DMROperation(ID.NULL_ID, new Name(operationName), resourceType);
+                                op.setPath(getString(operationValueNode, context, DMROperationAttributes.PATH));
+                                op.setOperationName(getString(operationValueNode, context,
+                                        DMROperationAttributes.OPERATION_NAME));
+                                resourceType.addOperation(op);
+                            }
+                        }
+
+                        // get resource config properties
+                        ModelNode configModelNode = resourceTypeValueNode
+                                .get(DMRResourceConfigDefinition.RESOURCE_CONFIG);
+                        if (configModelNode != null && configModelNode.isDefined()) {
+                            List<Property> configList = configModelNode.asPropertyList();
+                            for (Property configProperty : configList) {
+                                ModelNode configValueNode = configProperty.getValue();
+                                String configName = configProperty.getName();
+                                DMRResourceConfigurationPropertyType configType =
+                                        new DMRResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName),
+                                                resourceType);
+                                configType.setPath(getString(configValueNode, context,
+                                        DMRResourceConfigAttributes.PATH));
+                                configType.setAttribute(getString(configValueNode, context,
+                                        DMRResourceConfigAttributes.ATTRIBUTE));
+                                resourceType.addResourceConfigurationPropertyType(configType);
+                            }
+                        }
                     }
                 }
             }

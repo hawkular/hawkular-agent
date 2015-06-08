@@ -19,7 +19,7 @@ package org.hawkular.agent.monitor.inventory;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class ResourceTypeSet<T extends ResourceType<?, ?>> extends NamedObject {
+public abstract class ResourceTypeSet<T extends ResourceType<?, ?, ?, ?>> extends NamedObject {
     public ResourceTypeSet(ID id, Name name) {
         super(id, name);
     }

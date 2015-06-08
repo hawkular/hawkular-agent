@@ -16,18 +16,18 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
+import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.ResourceType;
 
-public class DMRResourceType extends
-        ResourceType<DMRMetricType, DMRAvailType, DMROperation, DMRResourceConfigurationPropertyType> {
-
-    public DMRResourceType(ID id, Name name) {
-        super(id, name);
-    }
+public class DMRResourceConfigurationPropertyType extends ResourceConfigurationPropertyType<DMRResourceType> {
 
     private String path;
+    private String attribute;
+
+    public DMRResourceConfigurationPropertyType(ID id, Name name, DMRResourceType resourceType) {
+        super(id, name, resourceType);
+    }
 
     public String getPath() {
         return path;
@@ -36,4 +36,18 @@ public class DMRResourceType extends
     public void setPath(String path) {
         this.path = path;
     }
+
+    public String getAttribute() {
+        return attribute;
+    }
+
+    public void setAttribute(String attribute) {
+        this.attribute = attribute;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s[path=%s][attribute=%s]", super.toString(), getPath(), getAttribute());
+    }
+
 }

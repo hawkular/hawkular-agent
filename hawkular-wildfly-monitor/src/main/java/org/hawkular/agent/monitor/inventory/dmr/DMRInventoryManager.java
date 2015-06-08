@@ -33,6 +33,8 @@ public class DMRInventoryManager extends InventoryManager
         DMRMetricTypeSet,
         DMRAvailType,
         DMRAvailTypeSet,
+        DMROperation,
+        DMRResourceConfigurationPropertyType,
         DMRResource,
         DMREndpoint> {
 

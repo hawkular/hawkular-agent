@@ -20,17 +20,18 @@ import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.registry.AttributeAccess;
+import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
 public interface DMRAvailSetAttributes {
 
     SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
-                ModelType.BOOLEAN)
-                .setAllowNull(false)
-                //WHY DOES THIS CAUSE TEST TO FAIL? .setDefaultValue(new ModelNode(true))
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.BOOLEAN)
+            .setAllowNull(true)
+            .setDefaultValue(new ModelNode(true))
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED

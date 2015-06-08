@@ -31,7 +31,7 @@ import org.jgrapht.graph.ListenableDirectedGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.DepthFirstIterator;
 
-public class ResourceTypeManager<T extends ResourceType<?, ?>, S extends ResourceTypeSet<T>> {
+public class ResourceTypeManager<T extends ResourceType<?, ?, ?, ?>, S extends ResourceTypeSet<T>> {
 
     private final Map<Name, S> resourceTypeSetMap;
     private final ListenableDirectedGraph<T, DefaultEdge> resourceTypesGraph;

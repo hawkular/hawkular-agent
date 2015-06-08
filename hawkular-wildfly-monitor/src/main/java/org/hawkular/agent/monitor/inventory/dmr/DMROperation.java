@@ -14,21 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.api;
+package org.hawkular.agent.monitor.inventory.dmr;
 
-import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceType;
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.Operation;
 
-public interface InventoryStorage {
-    /**
-     * Stores the given resource type.
-     * @param resourceType the type to be stored
-     */
-    void storeResourceType(ResourceType<?, ?, ?, ?> resourceType);
+public class DMROperation extends Operation<DMRResourceType> {
 
-    /**
-     * Stores the given resource.
-     * @param resource to be stored
-     */
-    void storeResource(Resource<?, ?, ?, ?, ?> resource);
+    public DMROperation(ID id, Name name, DMRResourceType resourceType) {
+        super(id, name, resourceType);
+    }
+
+    private String path;
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
 }

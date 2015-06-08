@@ -14,21 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.api;
+package org.hawkular.agent.monitor.inventory.dmr;
 
-import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceType;
+import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstance;
 
-public interface InventoryStorage {
-    /**
-     * Stores the given resource type.
-     * @param resourceType the type to be stored
-     */
-    void storeResourceType(ResourceType<?, ?, ?, ?> resourceType);
+public class DMRResourceConfigurationPropertyInstance extends
+        ResourceConfigurationPropertyInstance<DMRResourceConfigurationPropertyType> {
 
-    /**
-     * Stores the given resource.
-     * @param resource to be stored
-     */
-    void storeResource(Resource<?, ?, ?, ?, ?> resource);
+    public DMRResourceConfigurationPropertyInstance(ID id, Name name,
+            DMRResourceConfigurationPropertyType configPropertyType) {
+        super(id, name, configPropertyType);
+    }
+
 }

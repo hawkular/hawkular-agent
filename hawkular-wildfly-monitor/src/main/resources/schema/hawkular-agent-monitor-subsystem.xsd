@@ -91,12 +91,28 @@
   </xs:complexType>
 
   <xs:complexType name="resourceTypeDmrType">
+    <xs:all>
+      <xs:element name="resource-config-dmr" type="resourceConfigDmrType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="operation-dmr"       type="operationDmrType"      minOccurs="0" maxOccurs="unbounded"/>
+    </xs:all>
     <xs:attribute name="name"                 type="xs:string" use="required"/>
     <xs:attribute name="resourceNameTemplate" type="xs:string" use="required"/>
     <xs:attribute name="path"                 type="xs:string" use="required"/>
     <xs:attribute name="parents"              type="xs:string"/>
     <xs:attribute name="metricSets"           type="xs:string"/>
     <xs:attribute name="availSets"            type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="resourceConfigDmrType">
+    <xs:attribute name="name"      type="xs:string" use="required"/>
+    <xs:attribute name="path"      type="xs:string" use="required"/>
+    <xs:attribute name="attribute" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="operationDmrType">
+    <xs:attribute name="name"          type="xs:string" use="required"/>
+    <xs:attribute name="path"          type="xs:string"/>
+    <xs:attribute name="operationName" type="xs:string"/>
   </xs:complexType>
 
   <!-- definition of managed servers -->

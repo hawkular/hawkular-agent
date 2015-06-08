@@ -23,18 +23,25 @@ import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
-public interface DMRResourceTypeSetAttributes {
+public interface DMROperationAttributes {
 
-    SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
-            ModelType.BOOLEAN)
+    SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
+            ModelType.STRING)
             .setAllowNull(true)
-            .setDefaultValue(new ModelNode(true))
+            .setDefaultValue(new ModelNode("/"))
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    SimpleAttributeDefinition OPERATION_NAME = new SimpleAttributeDefinitionBuilder("operationName",
+            ModelType.STRING)
+            .setAllowNull(true)
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
     AttributeDefinition[] ATTRIBUTES = {
-            ENABLED
+            PATH,
+            OPERATION_NAME
     };
-
 }

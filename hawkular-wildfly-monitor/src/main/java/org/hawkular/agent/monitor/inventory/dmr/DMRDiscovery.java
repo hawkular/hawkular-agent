@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.inventory.dmr;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -90,7 +91,7 @@ public class DMRDiscovery {
         try {
             Map<Address, ModelNode> resources;
 
-            CoreJBossASClient client = new CoreJBossASClient(mcc);
+            CoreJBossASClient client = new CoreJBossASClient(mcc); // don't close this - the caller will
             Address parentAddr = (parent == null) ? Address.root() : parent.getAddress().clone();
             Address addr = parentAddr.add(Address.parse(type.getPath()));
 
@@ -124,6 +125,9 @@ public class DMRDiscovery {
 
                 resourceManager.addResource(resource);
 
+                // get the configuration of the resource
+                discoverResourceConfiguration(resource, mcc);
+
                 // recursively discover children of child types
                 Set<DMRResourceType> childTypes = this.inventoryManager.getResourceTypeManager().getChildren(type);
                 for (DMRResourceType childType : childTypes) {
@@ -132,6 +136,35 @@ public class DMRDiscovery {
             }
         } catch (Exception e) {
             LOG.errorf(e, "Failed to discover resources in [%s]", this.inventoryManager.getEndpoint());
+        }
+    }
+
+    private void discoverResourceConfiguration(DMRResource resource, ModelControllerClient mcc) {
+        DMRResourceType rt = resource.getResourceType();
+        Collection<DMRResourceConfigurationPropertyType> configPropTypes = rt.getResourceConfigurationPropertyTypes();
+        for (DMRResourceConfigurationPropertyType configPropType : configPropTypes) {
+            try {
+                ModelNode value;
+                String configPath = configPropType.getPath();
+                String[] attribute = configPropType.getAttribute().split("#");
+                if (configPath == null || configPath.equals("/")) {
+                    value = resource.getModelNode().get(attribute[0]);
+                } else {
+                    Address addr = resource.getAddress().clone().add(Address.parse(configPath));
+                    value = new CoreJBossASClient(mcc).getAttribute(attribute[0], addr);
+                }
+
+                if (attribute.length > 1 && value != null && value.isDefined()) {
+                    value = value.get(attribute[1]);
+                }
+
+                DMRResourceConfigurationPropertyInstance cpi = new DMRResourceConfigurationPropertyInstance(
+                        ID.NULL_ID, configPropType.getName(), configPropType);
+                cpi.setValue((value != null && value.isDefined()) ? value.asString() : null);
+                resource.addConfigurationProperty(cpi);
+            } catch (Exception e) {
+                LOG.warnf(e, "Failed to discover config [%s] for resource [%s]", configPropType, resource);
+            }
         }
     }
 

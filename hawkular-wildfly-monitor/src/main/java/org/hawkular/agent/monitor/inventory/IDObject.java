@@ -60,15 +60,18 @@ public abstract class IDObject {
 
     /**
      * Adds an optional property to this object.
+     * If null, any property with the given name will be removed.
+     * If the property already exists, this new value will replace the old value.
      *
      * @param name the name of the property
-     * @param value the value of the property; must be JSON-serializable and must be non-null
+     * @param value the value of the property; must be JSON-serializable if not-null
      */
     public void addProperty(String name, Object value) {
-        if (value == null) {
-            throw new IllegalArgumentException("value must not be null");
+        if (value != null) {
+            properties.put(name, value);
+        } else {
+            removeProperty(name);
         }
-        properties.put(name, value);
     }
 
     public void removeProperty(String name) {

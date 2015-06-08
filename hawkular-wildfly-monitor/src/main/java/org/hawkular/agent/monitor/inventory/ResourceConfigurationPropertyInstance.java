@@ -16,37 +16,32 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import org.hawkular.agent.monitor.scheduler.config.MonitoredPropertyReference;
-
-public abstract class MeasurementInstance< //
-R extends Resource<?, ?, ?, ?, ?>, //
-M extends MeasurementType, //
-P extends MonitoredPropertyReference> //
+public abstract class ResourceConfigurationPropertyInstance<T extends ResourceConfigurationPropertyType<?>>
         extends NamedObject {
 
-    private final R resource;
-    private final M measurementType;
-    private final P property;
+    private static final String VALUE_PROPNAME = "value";
 
-    public MeasurementInstance(ID id, Name name, R resource, M measurementType, P property) {
+    private final T configurationPropertyType;
+
+    public ResourceConfigurationPropertyInstance(ID id, Name name, T configurationPropertyType) {
         super(id, name);
-        this.resource = resource;
-        this.measurementType = measurementType;
-        this.property = property;
+        this.configurationPropertyType = configurationPropertyType;
     }
 
-    /**
-     * @return the resource that this measurement instance belongs to
-     */
-    public R getResource() {
-        return resource;
+    public T getConfigurationPropertyType() {
+        return configurationPropertyType;
     }
 
-    public M getMeasurementType() {
-        return measurementType;
+    public String getValue() {
+        return (String) getProperties().get(VALUE_PROPNAME);
     }
 
-    public P getProperty() {
-        return property;
+    public void setValue(String value) {
+        addProperty(VALUE_PROPNAME, value);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s[value=%s]", super.toString(), getValue());
     }
 }

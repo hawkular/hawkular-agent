@@ -23,7 +23,12 @@ import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.dmrclient.Address;
 import org.jboss.dmr.ModelNode;
 
-public class DMRResource extends Resource<DMRResourceType, DMREndpoint, DMRMetricInstance, DMRAvailInstance> {
+public class DMRResource extends Resource
+        <DMRResourceType,
+        DMREndpoint,
+        DMRMetricInstance,
+        DMRAvailInstance,
+        DMRResourceConfigurationPropertyInstance> {
 
     private final Address address;
     private final ModelNode modelNode;

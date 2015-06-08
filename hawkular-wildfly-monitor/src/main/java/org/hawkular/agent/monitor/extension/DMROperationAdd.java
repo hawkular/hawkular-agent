@@ -14,21 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.api;
+package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceType;
+import org.jboss.as.controller.AbstractAddStepHandler;
 
-public interface InventoryStorage {
-    /**
-     * Stores the given resource type.
-     * @param resourceType the type to be stored
-     */
-    void storeResourceType(ResourceType<?, ?, ?, ?> resourceType);
+public class DMROperationAdd extends AbstractAddStepHandler {
 
-    /**
-     * Stores the given resource.
-     * @param resource to be stored
-     */
-    void storeResource(Resource<?, ?, ?, ?, ?> resource);
+    public static final DMROperationAdd INSTANCE = new DMROperationAdd();
+
+    private DMROperationAdd() {
+        super(DMROperationAttributes.ATTRIBUTES);
+    }
 }

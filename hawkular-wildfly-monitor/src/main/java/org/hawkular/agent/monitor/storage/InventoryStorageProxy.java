@@ -35,7 +35,7 @@ public class InventoryStorageProxy implements InventoryStorage {
     }
 
     @Override
-    public void storeResourceType(ResourceType<?, ?> resourceType) {
+    public void storeResourceType(ResourceType<?, ?, ?, ?> resourceType) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
@@ -43,7 +43,7 @@ public class InventoryStorageProxy implements InventoryStorage {
     }
 
     @Override
-    public void storeResource(Resource<?, ?, ?, ?> resource) {
+    public void storeResource(Resource<?, ?, ?, ?, ?> resource) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }

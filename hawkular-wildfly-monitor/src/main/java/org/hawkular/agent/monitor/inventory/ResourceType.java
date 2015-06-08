@@ -16,10 +16,20 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
-public abstract class ResourceType<MT extends MetricType, AT extends AvailType> extends NamedObject {
+public abstract class ResourceType< //
+MT extends MetricType, //
+AT extends AvailType, //
+O extends Operation<?>, //
+RCPT extends ResourceConfigurationPropertyType<?>>
+        extends NamedObject {
+
     public ResourceType(ID id, Name name) {
         super(id, name);
     }
@@ -30,6 +40,8 @@ public abstract class ResourceType<MT extends MetricType, AT extends AvailType> 
     private Collection<Name> availSetNames = new HashSet<>();
     private Collection<MT> metricTypes = new HashSet<>();
     private Collection<AT> availTypes = new HashSet<>();
+    private Collection<O> operations = new HashSet<>();
+    private Collection<RCPT> resourceConfigurationPropertyTypes = new HashSet<>();
 
     public String getResourceNameTemplate() {
         return resourceNameTemplate;
@@ -71,5 +83,38 @@ public abstract class ResourceType<MT extends MetricType, AT extends AvailType> 
         return availTypes;
     }
 
+    public Collection<RCPT> getResourceConfigurationPropertyTypes() {
+        return Collections.unmodifiableCollection(resourceConfigurationPropertyTypes);
+    }
+
+    public void addResourceConfigurationPropertyType(RCPT resConfigPropertyType) {
+        resourceConfigurationPropertyTypes.add(resConfigPropertyType);
+
+        // put it in our properties so it gets stored properly in inventory
+        final String configsPropName = "resourceConfiguration";
+        List<Map<String, Object>> configs = (List<Map<String, Object>>) getProperties().get(configsPropName);
+        if (configs == null) {
+            configs = new ArrayList<>();
+            addProperty(configsPropName, configs);
+        }
+        configs.add(resConfigPropertyType.getProperties());
+    }
+
+    public Collection<O> getOperations() {
+        return Collections.unmodifiableCollection(operations);
+    }
+
+    public void addOperation(O operation) {
+        operations.add(operation);
+
+        // put it in our properties so it gets stored properly in inventory
+        final String opsPropName = "operations";
+        List<Map<String, Object>> ops = (List<Map<String, Object>>) getProperties().get(opsPropName);
+        if (ops == null) {
+            ops = new ArrayList<>();
+            addProperty(opsPropName, ops);
+        }
+        ops.add(operation.getProperties());
+    }
 
 }

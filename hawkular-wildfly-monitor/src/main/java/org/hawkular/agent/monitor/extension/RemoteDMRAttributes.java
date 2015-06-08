@@ -20,53 +20,54 @@ import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.registry.AttributeAccess;
+import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
 public interface RemoteDMRAttributes {
 
     SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
-                ModelType.BOOLEAN)
-                .setAllowNull(false)
-                //WHY DOES THIS CAUSE TEST TO FAIL? .setDefaultValue(new ModelNode(true))
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.BOOLEAN)
+            .setAllowNull(true)
+            .setDefaultValue(new ModelNode(true))
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition HOST = new SimpleAttributeDefinitionBuilder("host",
-                ModelType.STRING)
-                .setAllowNull(false)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition PORT = new SimpleAttributeDefinitionBuilder("port",
-                ModelType.INT)
-                .setAllowNull(false)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.INT)
+            .setAllowNull(false)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition USERNAME = new SimpleAttributeDefinitionBuilder("username",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition PASSWORD = new SimpleAttributeDefinitionBuilder("password",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder(
-                "resourceTypeSets",
-                ModelType.STRING)
-                .setAllowNull(true)
-                .setAllowExpression(true)
-                .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                .build();
+            "resourceTypeSets",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,

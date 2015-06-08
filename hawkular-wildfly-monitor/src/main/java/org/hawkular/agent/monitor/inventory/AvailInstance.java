@@ -19,7 +19,7 @@ package org.hawkular.agent.monitor.inventory;
 import org.hawkular.agent.monitor.scheduler.config.MonitoredPropertyReference;
 
 public abstract class AvailInstance< //
-R extends Resource<?, ?, ?, ?>, //
+R extends Resource<?, ?, ?, ?, ?>, //
 A extends AvailType, //
 P extends MonitoredPropertyReference> //
         extends MeasurementInstance<R, A, P> {

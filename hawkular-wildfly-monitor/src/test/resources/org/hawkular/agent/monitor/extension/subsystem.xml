@@ -17,7 +17,7 @@
 
 -->
 <subsystem xmlns="urn:org.hawkular.agent.monitor:monitor:1.0"
-           enabled="true"
+           enabled="false"
            apiJndiName="java:global/hawkular/agent/monitor/api"
            numMetricSchedulerThreads="3"
            numAvailSchedulerThreads="3"
@@ -26,7 +26,7 @@
            availDispatcherBufferSize="101"
            availDispatcherMaxBatchSize="26">
 
-  <diagnostics enabled="true"
+  <diagnostics enabled="false"
                reportTo="LOG"
                interval="1"
                timeUnits="minutes"/>
@@ -39,7 +39,7 @@
                    inventoryContext="/hawkular/inventory/"
                    metricsContext="/hawkular-metrics/" />
 
-  <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
+  <metric-set-dmr name="WildFly Memory Metrics">
     <metric-dmr name="Heap Used"
                 interval="30"
                 timeUnits="seconds"
@@ -48,7 +48,7 @@
                 attribute="heap-memory-usage#used" />
   </metric-set-dmr>
 
-  <avail-set-dmr name="Server Availability" enabled="true">
+  <avail-set-dmr name="Server Availability" enabled="false">
     <avail-dmr name="App Server"
                interval="30"
                timeUnits="seconds"
@@ -57,23 +57,30 @@
                upRegex="run.*" />
   </avail-set-dmr>
 
-  <resource-type-set-dmr name="Main" enabled="true">
+  <resource-type-set-dmr name="Main" enabled="false">
     <resource-type-dmr name="WildFly Server"
                        resourceNameTemplate="WildFly Server"
                        path="/"
                        metricSets="WildFly Memory Metrics"
-                       availSets="Server Availability" />
+                       availSets="Server Availability">
+      <resource-config-dmr name="Hostname"
+                           path="/core-service=server-environment"
+                           attribute="qualified-host-name" />
+      <resource-config-dmr name="Max Heap"
+                           path="/core-service=platform-mbean/type=memory"
+                           attribute="heap-memory-usage#max" />
+      <operation-dmr name="Reload Server" operationName="reload" path="/some/other/path"/>
+    </resource-type-dmr>
   </resource-type-set-dmr>
 
   <managed-servers>
     <remote-dmr name="Local Host"
-                enabled="true"
+                enabled="false"
                 host="localhost"
                 port="9990"
                 resourceTypeSets="Main" />
 
     <local-dmr name="Self"
-               enabled="true"
                resourceTypeSets="Main" />
   </managed-servers>
 

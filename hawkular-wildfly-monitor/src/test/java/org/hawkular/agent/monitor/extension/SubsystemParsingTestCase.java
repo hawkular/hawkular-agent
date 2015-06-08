@@ -55,7 +55,7 @@ public class SubsystemParsingTestCase extends SubsystemBaseParsingTestCase {
         List<ModelNode> operations = super.parse(subsystemXml);
 
         ///Check that we have the expected number of operations
-        final int expectedOperations = 12;
+        final int expectedOperations = 15;
         Assert.assertEquals("Wrong operations: " + operations, expectedOperations, operations.size());
 
         //Check that each operation has the correct content
