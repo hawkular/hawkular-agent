@@ -110,17 +110,12 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             jsonPayload = payloadBuilder.toPayload().toString();
 
             // build the REST URL...
-            // start with the protocol, host, and port, plus context
             StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
-
-            // the REST URL requires the tenant ID next in the path
-            url.append(config.tenantId);
-
-            // now the final portion of the REST context
-            url.append("/metrics/numeric/data");
+            url.append("/metrics/data");
 
             // now send the REST request
             request = new HttpPost(url.toString());
+            request.setHeader("Hawkular-Tenant", config.tenantId);
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
             HttpResponse httpResponse = httpclient.execute(request);
             StatusLine statusLine = httpResponse.getStatusLine();
@@ -174,17 +169,12 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             jsonPayload = payloadBuilder.toPayload().toString();
 
             // build the REST URL...
-            // start with the protocol, host, and port, plus context
             StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
-
-            // the REST URL requires the tenant ID next in the path
-            url.append(config.tenantId);
-
-            // now the final portion of the REST context
-            url.append("/metrics/availability/data");
+            url.append("/availability/data");
 
             // now send the REST request
             request = new HttpPost(url.toString());
+            request.setHeader("Hawkular-Tenant", config.tenantId);
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
             HttpResponse httpResponse = httpclient.execute(request);
             StatusLine statusLine = httpResponse.getStatusLine();

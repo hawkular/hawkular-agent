@@ -59,6 +59,7 @@ public class MetricsOnlyAvailDataPayloadBuilder implements AvailDataPayloadBuild
         for (Map.Entry<String, List<Map<String, Object>>> availEntry : allAvail.entrySet()) {
             Map<String, Object> availKeyAndData = new HashMap<>(2);
             availKeyAndData.put("id", availEntry.getKey());
+            availKeyAndData.put("type", "availability");
             availKeyAndData.put("data", availEntry.getValue());
             fullMessageObject.add(availKeyAndData);
         }

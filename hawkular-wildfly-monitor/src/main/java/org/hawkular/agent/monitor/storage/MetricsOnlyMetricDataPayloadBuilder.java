@@ -58,6 +58,7 @@ public class MetricsOnlyMetricDataPayloadBuilder implements MetricDataPayloadBui
         for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allMetrics.entrySet()) {
             Map<String, Object> metricKeyAndData = new HashMap<>(2);
             metricKeyAndData.put("id", metricEntry.getKey());
+            metricKeyAndData.put("type", "gauge");
             metricKeyAndData.put("data", metricEntry.getValue());
             fullMessageObject.add(metricKeyAndData);
         }
