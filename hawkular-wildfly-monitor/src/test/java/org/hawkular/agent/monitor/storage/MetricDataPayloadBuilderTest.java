@@ -42,8 +42,9 @@ public class MetricDataPayloadBuilderTest {
         objectPayload = builder.toObjectPayload();
         Assert.assertEquals(1, objectPayload.size());
         dataListById = (Map<String, Object>) objectPayload.get(0);
-        Assert.assertEquals(2, dataListById.size());
+        Assert.assertEquals(3, dataListById.size());
         Assert.assertEquals("one", dataListById.get("id"));
+        Assert.assertEquals("gauge", dataListById.get("type"));
         List<Map<String, Number>> dataList = (List<Map<String, Number>>) dataListById.get("data");
         Assert.assertEquals(1, dataList.size());
         Assert.assertEquals(12345, dataList.get(0).get("timestamp").longValue());
@@ -53,8 +54,9 @@ public class MetricDataPayloadBuilderTest {
         objectPayload = builder.toObjectPayload();
         Assert.assertEquals(1, objectPayload.size()); // still 1, we just added more metrics for id "one"
         dataListById = (Map<String, Object>) objectPayload.get(0);
-        Assert.assertEquals(2, dataListById.size());
+        Assert.assertEquals(3, dataListById.size());
         Assert.assertEquals("one", dataListById.get("id"));
+        Assert.assertEquals("gauge", dataListById.get("type"));
         dataList = (List<Map<String, Number>>) dataListById.get("data");
         Assert.assertEquals(2, dataList.size());
         Assert.assertEquals(12345, dataList.get(0).get("timestamp").longValue());
@@ -82,10 +84,12 @@ public class MetricDataPayloadBuilderTest {
         Assert.assertEquals(2, objectPayload.size());
         oneDataListById = (Map<String, Object>) objectPayload.get(0);
         twoDataListById = (Map<String, Object>) objectPayload.get(1);
-        Assert.assertEquals(2, oneDataListById.size());
-        Assert.assertEquals(2, twoDataListById.size());
+        Assert.assertEquals(3, oneDataListById.size());
+        Assert.assertEquals(3, twoDataListById.size());
         Assert.assertEquals("one", oneDataListById.get("id"));
         Assert.assertEquals("two", twoDataListById.get("id"));
+        Assert.assertEquals("gauge", oneDataListById.get("type"));
+        Assert.assertEquals("gauge", twoDataListById.get("type"));
 
         List<Map<String, Number>> dataList = (List<Map<String, Number>>) oneDataListById.get("data");
         Assert.assertEquals(2, dataList.size());
