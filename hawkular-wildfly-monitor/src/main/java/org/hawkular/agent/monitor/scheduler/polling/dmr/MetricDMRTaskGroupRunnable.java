@@ -16,11 +16,9 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
-import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
@@ -28,7 +26,6 @@ import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
-import org.jboss.dmr.Property;
 
 import com.codahale.metrics.Timer;
 
@@ -38,7 +35,7 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
     private final MetricCompletionHandler completionHandler;
     private final Diagnostics diagnostics;
     private final ModelControllerClientFactory mccFactory;
-    private final ModelNode operation;
+    private final ModelNode[] operations;
 
     public MetricDMRTaskGroupRunnable(TaskGroup group, MetricCompletionHandler completionHandler,
             Diagnostics diagnostics, ModelControllerClientFactory mccFactory) {
@@ -48,48 +45,42 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
         this.mccFactory = mccFactory;
 
         // for the lifetime of this runnable, the operation is immutable and can be re-used
-        this.operation = new ReadAttributeOperationBuilder().createOperation(group);
+        this.operations = new ReadAttributeOperationBuilder().createOperations(group);
     }
 
     @Override
     public void run() {
         try (final JBossASClient client = new JBossASClient(mccFactory.createClient())) {
 
-            // execute request
-            final Timer.Context requestContext = diagnostics.getDMRRequestTimer().time();
-            final ModelNode response = client.execute(operation);
-            final long durationNanos = requestContext.stop();
-            final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
+            int i = 0;
+            for (ModelNode operation : this.operations) {
 
-            if (JBossASClient.isSuccess(response)) {
+                // execute request
+                final Timer.Context requestContext = diagnostics.getDMRRequestTimer().time();
+                final ModelNode response = client.execute(operation);
+                final long durationNanos = requestContext.stop();
+                final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
 
-                if (durationMs > group.getInterval().millis()) {
-                    diagnostics.getDMRDelayedRate().mark(1);
-                }
+                if (JBossASClient.isSuccess(response)) {
 
-                final List<Property> stepResults = JBossASClient.getResults(response).asPropertyList();
+                    if (durationMs > group.getInterval().millis()) {
+                        diagnostics.getDMRDelayedRate().mark(1);
+                    }
 
-                if (stepResults.size() != group.size()) {
-                    MsgLogger.LOG.warnBatchResultsDoNotMatchRequests(group.size(), stepResults.size());
-                }
-
-                int i = 0;
-                for (Property step : stepResults) {
                     final DMRTask task = (DMRTask) group.getTask(i++);
 
                     // deconstruct model node
-                    final ModelNode stepData = step.getValue();
-                    final ModelNode result = JBossASClient.getResults(stepData);
+                    final ModelNode result = JBossASClient.getResults(response);
                     final ModelNode valueNode = (task.getSubref() == null) ? result : result.get(task.getSubref());
                     if (valueNode.getType() != ModelType.UNDEFINED) {
                         Double value = valueNode.asDouble();
                         completionHandler.onCompleted(new MetricDataPoint(task, value));
                     }
-                }
 
-            } else {
-                this.diagnostics.getDMRErrorRate().mark(1);
-                completionHandler.onFailed(new RuntimeException(JBossASClient.getFailureDescription(response)));
+                } else {
+                    this.diagnostics.getDMRErrorRate().mark(1);
+                    completionHandler.onFailed(new RuntimeException(JBossASClient.getFailureDescription(response)));
+                }
             }
 
         } catch (Throwable e) {

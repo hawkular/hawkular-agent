@@ -16,12 +16,10 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
-import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
@@ -30,7 +28,6 @@ import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
-import org.jboss.dmr.Property;
 
 import com.codahale.metrics.Timer;
 
@@ -40,7 +37,7 @@ public class AvailDMRTaskGroupRunnable implements Runnable {
     private final AvailCompletionHandler completionHandler;
     private final Diagnostics diagnostics;
     private final ModelControllerClientFactory mccFactory;
-    private final ModelNode operation;
+    private final ModelNode[] operations;
 
     public AvailDMRTaskGroupRunnable(TaskGroup group, AvailCompletionHandler completionHandler,
             Diagnostics diagnostics, ModelControllerClientFactory mccFactory) {
@@ -50,44 +47,40 @@ public class AvailDMRTaskGroupRunnable implements Runnable {
         this.mccFactory = mccFactory;
 
         // for the lifetime of this runnable, the operation is immutable and can be re-used
-        this.operation = new ReadAttributeOrResourceOperationBuilder().createOperation(group);
+        this.operations = new ReadAttributeOrResourceOperationBuilder().createOperations(group);
     }
 
     @Override
     public void run() {
+        int operationIndex = -1;
+
         try (JBossASClient client = new JBossASClient(mccFactory.createClient())) {
 
-            // execute request
-            Timer.Context requestContext = diagnostics.getDMRRequestTimer().time();
-            ModelNode response = client.execute(operation);
-            long durationNanos = requestContext.stop();
-            long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
+            for (ModelNode operation : this.operations) {
+                operationIndex++; // move to the one we are working on - this is important in the catch block
 
-            if (JBossASClient.isSuccess(response)) {
+                // execute request
+                final Timer.Context requestContext = diagnostics.getDMRRequestTimer().time();
+                final ModelNode response = client.execute(operation);
+                final long durationNanos = requestContext.stop();
+                final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
 
-                if (durationMs > group.getInterval().millis()) {
-                    diagnostics.getDMRDelayedRate().mark(1);
-                }
+                final AvailDMRTask task = (AvailDMRTask) group.getTask(operationIndex);
 
-                List<Property> stepResults = JBossASClient.getResults(response).asPropertyList();
+                if (JBossASClient.isSuccess(response)) {
 
-                if (stepResults.size() != group.size()) {
-                    MsgLogger.LOG.warnBatchResultsDoNotMatchRequests(group.size(), stepResults.size());
-                }
+                    if (durationMs > group.getInterval().millis()) {
+                        diagnostics.getDMRDelayedRate().mark(1);
+                    }
 
-                int i = 0;
-                for (Property step : stepResults) {
+                    // deconstruct model node
                     Avail avail;
-                    AvailDMRTask task = (AvailDMRTask) group.getTask(i++);
-                    ModelNode stepData = step.getValue();
-
                     if (task.getAttribute() == null) {
                         // step operation didn't read any attribute, it just read the resource to see if it exists
-                        boolean exists = JBossASClient.isSuccess(stepData);
-                        avail = (exists) ? Avail.UP : Avail.DOWN;
+                        avail = Avail.UP;
                     } else {
-                        // step operation read attribute; need to see what avail that attrib value corresponds to
-                        final ModelNode result = JBossASClient.getResults(stepData);
+                        // operation read attribute; need to see what avail that attrib value corresponds to
+                        final ModelNode result = JBossASClient.getResults(response);
                         final ModelNode valueNode = (task.getSubref() == null) ? result : result.get(task.getSubref());
                         String value = null;
                         if (valueNode.getType() != ModelType.UNDEFINED) {
@@ -111,22 +104,28 @@ public class AvailDMRTaskGroupRunnable implements Runnable {
                     }
 
                     completionHandler.onCompleted(new AvailDataPoint(task, avail));
-                }
 
-            } else {
-                this.diagnostics.getDMRErrorRate().mark(1);
-                completionHandler.onFailed(new RuntimeException(JBossASClient.getFailureDescription(response)));
-                // we are going to artifically mark the availabilities UNKNOWN since we really don't know
-                for (Task task : this.group) {
-                    completionHandler.onCompleted(new AvailDataPoint(task, Avail.UNKNOWN));
+                } else {
+                    if (task.getAttribute() == null) {
+                        // operation didn't read any attribute, it just read the resource to see if it exists
+                        completionHandler.onCompleted(new AvailDataPoint(task, Avail.DOWN));
+                    } else {
+                        this.diagnostics.getDMRErrorRate().mark(1);
+                        String err = JBossASClient.getFailureDescription(response);
+                        completionHandler.onFailed(new RuntimeException(err));
+
+                        // we are going to artifically mark the availabilities UNKNOWN since we really don't know
+                        completionHandler.onCompleted(new AvailDataPoint(task, Avail.UNKNOWN));
+                    }
                 }
             }
-
         } catch (Throwable e) {
             this.diagnostics.getDMRErrorRate().mark(1);
             completionHandler.onFailed(e);
             // we are going to artifically mark the availabilities UNKNOWN since we really don't know
-            for (Task task : this.group) {
+            // only mark the ones we didn't get to yet and the one we are currently worked on
+            for (int i = operationIndex; i < this.group.size(); i++) {
+                Task task = this.group.getTask(i);
                 completionHandler.onCompleted(new AvailDataPoint(task, Avail.UNKNOWN));
             }
         }
