@@ -27,7 +27,13 @@ import org.jboss.dmr.ModelNode;
  * attribute defined (the latter is just a way to confirm the resource exists).
  */
 public class ReadAttributeOrResourceOperationBuilder {
-    public ModelNode createOperation(final TaskGroup group) {
+    // Returns a batch operation that obtains all the data in one request.
+    public ModelNode createBatchOperation(final TaskGroup group) {
+        return JBossASClient.createBatchRequest(createOperations(group));
+    }
+
+    // Returns one request operation per group item
+    public ModelNode[] createOperations(final TaskGroup group) {
         if (group.isEmpty()) {
             throw new IllegalArgumentException("Empty groups are not allowed");
         }
@@ -44,6 +50,6 @@ public class ReadAttributeOrResourceOperationBuilder {
             }
         }
 
-        return JBossASClient.createBatchRequest(readOps);
+        return readOps;
     }
 }

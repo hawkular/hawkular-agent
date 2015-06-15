@@ -239,6 +239,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
             registerMetricType(availType);
             relateResourceTypeWithMetricType(resourceType, availType);
         }
+
+        LOGGER.debugf("Stored resource type: %s", resourceType);
     }
 
     @Override
@@ -259,6 +261,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
             registerMetricInstance(availInstance);
             relateResourceWithMetric(resource, availInstance);
         }
+
+        LOGGER.debugf("Stored resource: %s", resource);
     }
 
     private String getInventoryId(NamedObject no) {

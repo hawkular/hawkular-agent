@@ -25,7 +25,13 @@ import org.jboss.dmr.ModelNode;
  * Given a task group of DMR tasks, creates a batch operation to read the attributes.
  */
 public class ReadAttributeOperationBuilder {
-    public ModelNode createOperation(final TaskGroup group) {
+    // Returns a batch operation that obtains all the data in one request.
+    public ModelNode createBatchOperation(final TaskGroup group) {
+        return JBossASClient.createBatchRequest(createOperations(group));
+    }
+
+    // Returns one request operation per group item
+    public ModelNode[] createOperations(final TaskGroup group) {
         if (group.isEmpty()) {
             throw new IllegalArgumentException("Empty groups are not allowed");
         }
@@ -37,6 +43,6 @@ public class ReadAttributeOperationBuilder {
             readOps[i++] = JBossASClient.createReadAttributeRequest(dmrTask.getAttribute(), dmrTask.getAddress());
         }
 
-        return JBossASClient.createBatchRequest(readOps);
+        return readOps;
     }
 }
