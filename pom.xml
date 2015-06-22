@@ -23,12 +23,12 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>15</version>
+    <version>16</version>
   </parent>
 
   <groupId>org.hawkular.agent</groupId>
   <artifactId>hawkular-agent-parent</artifactId>
-  <version>0.0.11-SNAPSHOT</version>
+  <version>0.1.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Hawkular Agent Parent</name>
   <inceptionYear>2015</inceptionYear>
@@ -47,8 +47,9 @@
 
   <properties>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
-    <version.org.hawkular.bus>0.0.6</version.org.hawkular.bus>
-    <version.org.hawkular.metrics>0.3.5-SNAPSHOT</version.org.hawkular.metrics>
+    <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
+    <version.org.hawkular.bus>0.1.1</version.org.hawkular.bus>
+    <version.org.hawkular.metrics>0.4.0</version.org.hawkular.metrics>
     <version.org.jboss.msc>1.2.2.Final</version.org.jboss.msc>
     <version.org.jboss.jboss-dmr>1.2.0.Final</version.org.jboss.jboss-dmr>
   </properties>
@@ -71,6 +72,12 @@
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
         <version>${version.io.dropwizard.metrics}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>${version.org.apache.httpcomponents}</version>
       </dependency>
 
       <dependency>
@@ -98,15 +105,15 @@
       </dependency>
 
       <dependency>
-        <groupId>org.wildfly</groupId>
+        <groupId>org.wildfly.core</groupId>
         <artifactId>wildfly-controller</artifactId>
-        <version>${version.org.wildfly}</version>
+        <version>${version.org.wildfly.core}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.wildfly</groupId>
+        <groupId>org.wildfly.core</groupId>
         <artifactId>wildfly-controller-client</artifactId>
-        <version>${version.org.wildfly}</version>
+        <version>${version.org.wildfly.core}</version>
       </dependency>
 
       <dependency>
@@ -123,22 +130,22 @@
       </dependency>
 
       <dependency>
-        <groupId>org.wildfly</groupId>
+        <groupId>org.wildfly.core</groupId>
         <artifactId>wildfly-server</artifactId>
-        <version>${version.org.wildfly}</version>
+        <version>${version.org.wildfly.core}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.wildfly</groupId>
+        <groupId>org.wildfly.core</groupId>
         <artifactId>wildfly-subsystem-test</artifactId>
-        <version>${version.org.wildfly}</version>
+        <version>${version.org.wildfly.core}</version>
         <type>pom</type>
       </dependency>
 
       <dependency>
-        <groupId>org.wildfly</groupId>
+        <groupId>org.wildfly.core</groupId>
         <artifactId>wildfly-subsystem-test-framework</artifactId>
-        <version>${version.org.wildfly}</version>
+        <version>${version.org.wildfly.core}</version>
       </dependency>
 
     </dependencies>

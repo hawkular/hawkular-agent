@@ -24,7 +24,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
@@ -47,7 +47,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     private ServerIdentifiers selfId;
 
     public MetricsOnlyStorageAdapter() {
-        this.httpclient = new DefaultHttpClient();
+        this.httpclient = HttpClientBuilder.create().build();
     }
 
     @Override
