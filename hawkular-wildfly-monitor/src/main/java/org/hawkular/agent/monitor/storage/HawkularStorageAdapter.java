@@ -24,10 +24,11 @@ import java.util.Set;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
@@ -291,13 +292,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
-            url.append(this.config.tenantId).append("/");
             url.append("test").append("/"); // environment
             url.append(getFeedId());
             url.append("/resources");
 
             // now send the REST request
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpClient httpclient = HttpClientBuilder.create().build();
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
 
@@ -345,11 +345,10 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
-            url.append(this.config.tenantId);
-            url.append("/resourceTypes");
+            url.append("resourceTypes");
 
             // now send the REST request
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpClient httpclient = HttpClientBuilder.create().build();
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
 
@@ -400,13 +399,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
-            url.append(this.config.tenantId).append("/");
             url.append("test").append("/"); // environment
             url.append(getFeedId());
             url.append("/metrics");
 
             // now send the REST request
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpClient httpclient = HttpClientBuilder.create().build();
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
 
@@ -463,11 +461,10 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
-            url.append(this.config.tenantId);
-            url.append("/metricTypes");
+            url.append("metricTypes");
 
             // now send the REST request
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpClient httpclient = HttpClientBuilder.create().build();
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
 
@@ -512,14 +509,13 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
-            url.append(this.config.tenantId).append("/");
             url.append("test").append("/"); // environment
             url.append(getFeedId());
             url.append("/resources").append("/").append(Util.urlEncode(resourceId)).append("/metrics");
 
 
             // now send the REST request
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpClient httpclient = HttpClientBuilder.create().build();
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
 
@@ -559,11 +555,10 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
-            url.append(this.config.tenantId);
-            url.append("/resourceTypes").append("/").append(Util.urlEncode(resourceTypeId)).append("/metricTypes");
+            url.append("resourceTypes").append("/").append(Util.urlEncode(resourceTypeId)).append("/metricTypes");
 
             // now send the REST request
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpClient httpclient = HttpClientBuilder.create().build();
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
 
