@@ -38,11 +38,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
@@ -686,7 +687,7 @@ public class MonitorService implements Service<MonitorService> {
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
                     configuration.storageAdapter.inventoryContext);
             url.append("tenant");
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpClient httpclient = HttpClientBuilder.create().build();
             request = new HttpGet(url.toString());
 
             // make sure we are authenticated
@@ -740,7 +741,6 @@ public class MonitorService implements Service<MonitorService> {
             }
 
             // get the payload in JSON format
-            String tenantId = configuration.storageAdapter.tenantId;
             String environmentId = "test";
             Feed.Blueprint feedPojo = new Feed.Blueprint(desiredFeedId, null);
             String jsonPayload = new GsonBuilder().create().toJson(feedPojo);
@@ -750,14 +750,14 @@ public class MonitorService implements Service<MonitorService> {
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
                     configuration.storageAdapter.inventoryContext);
 
-            // the REST URL requires the tenant ID and environment ID next in the path
-            url.append(tenantId).append('/').append(environmentId);
+            // the REST URL requires environment ID next in the path
+            url.append(environmentId);
 
             // rest of the URL says we want the feeds API
             url.append("/feeds");
 
             // now send the REST request
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpClient httpclient = HttpClientBuilder.create().build();
             request = new HttpPost(url.toString());
             request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
 
