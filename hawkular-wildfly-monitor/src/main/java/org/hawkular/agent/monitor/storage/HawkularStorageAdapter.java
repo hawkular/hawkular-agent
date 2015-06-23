@@ -551,7 +551,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         try {
             // get the payload in JSON format
-            String jsonPayload = String.format("{\"id\":\"%s\"}", metricTypeId);
+            ArrayList<String> id = new ArrayList<>();
+            id.add(metricTypeId);
+            String jsonPayload = new GsonBuilder().create().toJson(id);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
