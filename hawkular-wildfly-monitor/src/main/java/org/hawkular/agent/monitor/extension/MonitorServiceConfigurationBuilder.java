@@ -101,7 +101,7 @@ public class MonitorServiceConfigurationBuilder {
                 if (metricSetValueNode.hasDefined(DMRMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(DMRMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
-                        String metricName = metricProperty.getName();
+                        String metricName = metricSet.getName() + "~" + metricProperty.getName();
                         DMRMetricType metric = new DMRMetricType(ID.NULL_ID, new Name(metricName));
                         metricSet.getMetricTypeMap().put(metric.getName(), metric);
                         ModelNode metricValueNode = metricProperty.getValue();
@@ -145,7 +145,7 @@ public class MonitorServiceConfigurationBuilder {
                 if (availSetValueNode.hasDefined(DMRAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(DMRAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
-                        String availName = availProperty.getName();
+                        String availName = availSet.getName() + "~" + availProperty.getName();
                         DMRAvailType avail = new DMRAvailType(ID.NULL_ID, new Name(availName));
                         availSet.getAvailTypeMap().put(avail.getName(), avail);
                         ModelNode availValueNode = availProperty.getValue();
