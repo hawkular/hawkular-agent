@@ -111,7 +111,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
             // build the REST URL...
             StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
-            url.append("/metrics/data");
+            url.append("metrics/data");
 
             // now send the REST request
             request = new HttpPost(url.toString());
@@ -170,7 +170,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
             // build the REST URL...
             StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
-            url.append("/availability/data");
+            url.append("availability/data");
 
             // now send the REST request
             request = new HttpPost(url.toString());
