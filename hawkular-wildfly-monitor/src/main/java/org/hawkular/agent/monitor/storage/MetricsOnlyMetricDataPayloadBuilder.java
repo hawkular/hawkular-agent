@@ -16,13 +16,14 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import com.google.gson.Gson;
-import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
+
+import com.google.gson.Gson;
 
 /**
  * Allows one to build up a payload request to send to metric storage by adding

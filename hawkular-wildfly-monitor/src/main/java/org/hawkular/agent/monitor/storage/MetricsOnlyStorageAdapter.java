@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.util.Set;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
@@ -35,8 +37,6 @@ import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.jboss.logging.Logger;
-
-import java.util.Set;
 
 public class MetricsOnlyStorageAdapter implements StorageAdapter {
     private static final Logger LOGGER = Logger.getLogger(MetricsOnlyStorageAdapter.class);
