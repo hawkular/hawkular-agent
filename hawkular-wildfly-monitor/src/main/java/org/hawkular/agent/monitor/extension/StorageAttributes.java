@@ -92,7 +92,7 @@ public interface StorageAttributes {
             ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
-            .setDefaultValue(new ModelNode("/hawkular-metrics/"))
+            .setDefaultValue(new ModelNode("/hawkular/metrics/"))
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 

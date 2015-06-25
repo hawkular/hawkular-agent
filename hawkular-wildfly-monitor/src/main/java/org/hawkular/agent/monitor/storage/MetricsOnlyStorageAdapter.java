@@ -16,8 +16,6 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.util.Set;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
@@ -37,6 +35,8 @@ import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.jboss.logging.Logger;
+
+import java.util.Set;
 
 public class MetricsOnlyStorageAdapter implements StorageAdapter {
     private static final Logger LOGGER = Logger.getLogger(MetricsOnlyStorageAdapter.class);
@@ -111,7 +111,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
             // build the REST URL...
             StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
-            url.append("metrics/data");
+            url.append("gauges/data");
 
             // now send the REST request
             request = new HttpPost(url.toString());

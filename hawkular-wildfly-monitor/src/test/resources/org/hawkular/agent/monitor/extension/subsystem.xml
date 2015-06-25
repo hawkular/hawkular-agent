@@ -37,7 +37,7 @@
                    url="http://localhost:8080"
                    busContext="/hawkular-bus/message/"
                    inventoryContext="/hawkular/inventory/"
-                   metricsContext="/hawkular-metrics/" />
+                   metricsContext="/hawkular/metrics/" />
 
   <metric-set-dmr name="WildFly Memory Metrics">
     <metric-dmr name="Heap Used"

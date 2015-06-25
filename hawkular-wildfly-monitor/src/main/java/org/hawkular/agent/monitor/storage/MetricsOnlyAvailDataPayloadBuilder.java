@@ -16,15 +16,14 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import com.google.gson.Gson;
+import org.hawkular.agent.monitor.api.Avail;
+import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
-
-import com.google.gson.Gson;
 
 /**
  * Allows one to build up a payload request to send to availability storage by adding
@@ -49,7 +48,7 @@ public class MetricsOnlyAvailDataPayloadBuilder implements AvailDataPayloadBuild
         }
         Map<String, Object> timestampAndValue = new HashMap<>(2);
         timestampAndValue.put("timestamp", new Long(timestamp));
-        timestampAndValue.put("value", String.valueOf(value.getNumericValue()));
+        timestampAndValue.put("value", value.name().toLowerCase());
         data.add(timestampAndValue);
         count++;
     }
@@ -59,7 +58,6 @@ public class MetricsOnlyAvailDataPayloadBuilder implements AvailDataPayloadBuild
         for (Map.Entry<String, List<Map<String, Object>>> availEntry : allAvail.entrySet()) {
             Map<String, Object> availKeyAndData = new HashMap<>(2);
             availKeyAndData.put("id", availEntry.getKey());
-            availKeyAndData.put("type", "availability");
             availKeyAndData.put("data", availEntry.getValue());
             fullMessageObject.add(availKeyAndData);
         }

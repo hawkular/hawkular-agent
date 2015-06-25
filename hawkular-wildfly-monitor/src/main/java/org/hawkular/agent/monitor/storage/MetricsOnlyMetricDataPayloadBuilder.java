@@ -16,14 +16,13 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import com.google.gson.Gson;
+import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
-
-import com.google.gson.Gson;
 
 /**
  * Allows one to build up a payload request to send to metric storage by adding
@@ -58,7 +57,6 @@ public class MetricsOnlyMetricDataPayloadBuilder implements MetricDataPayloadBui
         for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allMetrics.entrySet()) {
             Map<String, Object> metricKeyAndData = new HashMap<>(2);
             metricKeyAndData.put("id", metricEntry.getKey());
-            metricKeyAndData.put("type", "gauge");
             metricKeyAndData.put("data", metricEntry.getValue());
             fullMessageObject.add(metricKeyAndData);
         }
