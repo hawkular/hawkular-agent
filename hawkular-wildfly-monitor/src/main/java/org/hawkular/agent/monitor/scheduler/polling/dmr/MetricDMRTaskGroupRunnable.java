@@ -74,18 +74,18 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
 
                     // deconstruct model node
                     final ModelNode result = JBossASClient.getResults(response);
-                    final ModelNode valueNode = (task.getSubref() == null) ? result : result.get(task.getSubref());
-                    if (valueNode.getType() != ModelType.UNDEFINED) {
-                        if (valueNode.getType() == ModelType.LIST) {
+                    if (result.getType() != ModelType.UNDEFINED) {
+                        if (result.getType() == ModelType.LIST) {
                             // a metric request that asked to aggregate a metric across potentially multiple resources
-                            LOG.tracef("Task [%s] resulted in aggregated metric: %s", task, valueNode);
+                            LOG.tracef("Task [%s] resulted in aggregated metric: %s", task, result);
                             double aggregate = 0.0;
-                            List<ModelNode> listNodes = valueNode.asList();
+                            List<ModelNode> listNodes = result.asList();
                             for (ModelNode listNode : listNodes) {
                                 if (JBossASClient.isSuccess(listNode)) {
                                     final ModelNode listNodeResult = JBossASClient.getResults(listNode);
-                                    final ModelNode listNodeValueNode = (task.getSubref() == null) ? listNodeResult
-                                            : listNodeResult.get(task.getSubref());
+                                    final ModelNode listNodeValueNode =
+                                            (task.getSubref() == null) ? listNodeResult : listNodeResult.get(task
+                                                    .getSubref());
                                     if (listNode.getType() != ModelType.UNDEFINED) {
                                         aggregate += listNodeValueNode.asDouble();
                                     }
@@ -98,7 +98,9 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
                             completionHandler.onCompleted(new MetricDataPoint(task, aggregate));
                         } else {
                             // a metric was requested from a single resource
-                            Double value = valueNode.asDouble();
+                            final ModelNode valueNode =
+                                    (task.getSubref() == null) ? result : result.get(task.getSubref());
+                            final Double value = valueNode.asDouble();
                             completionHandler.onCompleted(new MetricDataPoint(task, value));
                         }
                     }
