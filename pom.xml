@@ -49,7 +49,7 @@
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
     <version.org.hawkular.bus>0.1.1</version.org.hawkular.bus>
-    <version.org.hawkular.inventory>0.1.0.Alpha2</version.org.hawkular.inventory>
+    <version.org.hawkular.inventory>0.1.0-SNAPSHOT</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.4.0.Final</version.org.hawkular.metrics>
     <!-- START DELETE WHEN WE MOVE TO PARENT POM 18+ -->
     <version.org.jboss.msc>1.2.6.Final</version.org.jboss.msc>
