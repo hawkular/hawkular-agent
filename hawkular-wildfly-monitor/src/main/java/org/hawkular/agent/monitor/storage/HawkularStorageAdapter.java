@@ -339,7 +339,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.ResourceType.Blueprint rtPojo;
-            rtPojo = new org.hawkular.inventory.api.model.ResourceType.Blueprint(getInventoryId(resourceType), "0.1",
+            rtPojo = new org.hawkular.inventory.api.model.ResourceType.Blueprint(getInventoryId(resourceType),
                     resourceType.getProperties());
             String jsonPayload = new GsonBuilder().create().toJson(rtPojo);
 
