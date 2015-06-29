@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.dmr;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
@@ -26,10 +27,12 @@ import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.jboss.logging.Logger;
 
 import com.codahale.metrics.Timer;
 
 public class MetricDMRTaskGroupRunnable implements Runnable {
+    private static final Logger LOG = Logger.getLogger(MetricDMRTaskGroupRunnable.class);
 
     private final TaskGroup group;
     private final MetricCompletionHandler completionHandler;
@@ -73,8 +76,31 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
                     final ModelNode result = JBossASClient.getResults(response);
                     final ModelNode valueNode = (task.getSubref() == null) ? result : result.get(task.getSubref());
                     if (valueNode.getType() != ModelType.UNDEFINED) {
-                        Double value = valueNode.asDouble();
-                        completionHandler.onCompleted(new MetricDataPoint(task, value));
+                        if (valueNode.getType() == ModelType.LIST) {
+                            // a metric request that asked to aggregate a metric across potentially multiple resources
+                            LOG.tracef("Task [%s] resulted in aggregated metric: %s", task, valueNode);
+                            double aggregate = 0.0;
+                            List<ModelNode> listNodes = valueNode.asList();
+                            for (ModelNode listNode : listNodes) {
+                                if (JBossASClient.isSuccess(listNode)) {
+                                    final ModelNode listNodeResult = JBossASClient.getResults(listNode);
+                                    final ModelNode listNodeValueNode = (task.getSubref() == null) ? listNodeResult
+                                            : listNodeResult.get(task.getSubref());
+                                    if (listNode.getType() != ModelType.UNDEFINED) {
+                                        aggregate += listNodeValueNode.asDouble();
+                                    }
+                                } else {
+                                    // a resources failed to report metric but keep going and aggregate the others
+                                    this.diagnostics.getDMRErrorRate().mark(1);
+                                    LOG.debugf("Failed to fully aggregate metric for task [%s]: %s ", task, listNode);
+                                }
+                            }
+                            completionHandler.onCompleted(new MetricDataPoint(task, aggregate));
+                        } else {
+                            // a metric was requested from a single resource
+                            Double value = valueNode.asDouble();
+                            completionHandler.onCompleted(new MetricDataPoint(task, value));
+                        }
                     }
 
                 } else {
