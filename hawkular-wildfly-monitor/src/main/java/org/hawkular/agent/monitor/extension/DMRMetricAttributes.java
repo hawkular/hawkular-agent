@@ -67,9 +67,18 @@ public interface DMRMetricAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition METRIC_TYPE = new SimpleAttributeDefinitionBuilder("metricType",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setValidator(MetricTypeValidator.ANY_OPTIONAL)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             PATH,
             ATTRIBUTE,
+            METRIC_TYPE,
             INTERVAL,
             TIME_UNITS,
             METRIC_UNITS

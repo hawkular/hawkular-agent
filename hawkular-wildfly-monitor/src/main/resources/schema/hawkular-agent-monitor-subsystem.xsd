@@ -152,6 +152,7 @@
     <xs:attribute name="name"        type="xs:string" use="required"/>
     <xs:attribute name="path"        type="xs:string" use="required"/>
     <xs:attribute name="attribute"   type="xs:string" use="required"/>
+    <xs:attribute name="metricType"  type="metricTypeType"/>
     <xs:attribute name="metricUnits" type="metricUnitsType"/>
     <xs:attribute name="interval"    type="xs:int"/>
     <xs:attribute name="timeUnits"   type="timeUnitsType"/>
@@ -174,6 +175,13 @@
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
     <xs:attribute name="upRegex"   type="xs:string"/>
   </xs:complexType>
+
+  <xs:simpleType name="metricTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="gauge"/>
+      <xs:enumeration value="counter"/>
+    </xs:restriction>
+  </xs:simpleType>
 
   <xs:simpleType name="timeUnitsType">
     <xs:restriction base="xs:string">
