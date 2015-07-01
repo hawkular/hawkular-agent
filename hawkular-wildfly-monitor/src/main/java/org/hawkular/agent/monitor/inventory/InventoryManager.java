@@ -53,13 +53,17 @@ ME extends MonitoredEndpoint> {
     private final ResourceManager<R> resourceManager;
     private final ManagedServer managedServer;
     private final ME endpoint;
+    private final String feedId; // identifies the agent that owns this inventory
 
-    public InventoryManager(ResourceTypeManager<RT, RTS> resourceTypeManager,
+    public InventoryManager(
+            String feedId,
+            ResourceTypeManager<RT, RTS> resourceTypeManager,
             MetricTypeManager<MT, MTS> metricTypeManager,
             AvailTypeManager<AT, ATS> availTypeManager,
             ResourceManager<R> resourceManager,
             ManagedServer managedServer,
             ME endpoint) {
+        this.feedId = feedId;
         this.resourceTypeManager = resourceTypeManager;
         this.metricTypeManager = metricTypeManager;
         this.availTypeManager = availTypeManager;
@@ -90,6 +94,13 @@ ME extends MonitoredEndpoint> {
 
     public ME getEndpoint() {
         return endpoint;
+    }
+
+    /**
+     * @return the feed identifier which simply identifies the agent that owns the inventory
+     */
+    public String getFeedId() {
+        return feedId;
     }
 
     /**

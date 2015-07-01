@@ -40,12 +40,21 @@ public class DMRInventoryManager extends InventoryManager
 
     private final ModelControllerClientFactory dmrClientFactory;
 
-    public DMRInventoryManager(ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> resourceTypeManager,
+    public DMRInventoryManager(String feedId,
+            ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> resourceTypeManager,
             MetricTypeManager<DMRMetricType, DMRMetricTypeSet> metricTypeManager,
             AvailTypeManager<DMRAvailType, DMRAvailTypeSet> availTypeManager,
-            ResourceManager<DMRResource> resourceManager, ManagedServer managedServer, DMREndpoint dmrEndpoint,
+            ResourceManager<DMRResource> resourceManager,
+            ManagedServer managedServer,
+            DMREndpoint dmrEndpoint,
             ModelControllerClientFactory dmrClientFactory) {
-        super(resourceTypeManager, metricTypeManager, availTypeManager, resourceManager, managedServer, dmrEndpoint);
+        super(feedId,
+                resourceTypeManager,
+                metricTypeManager,
+                availTypeManager,
+                resourceManager,
+                managedServer,
+                dmrEndpoint);
         this.dmrClientFactory = dmrClientFactory;
     }
 
