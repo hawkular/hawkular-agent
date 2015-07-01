@@ -575,7 +575,7 @@ public class MonitorService implements Service<MonitorService> {
 
         // Now we can build our inventory manager and discover our resources
         DMRInventoryManager im;
-        im = new DMRInventoryManager(rtm, mtm, atm, resourceManager, managedServer, dmrEndpoint, factory);
+        im = new DMRInventoryManager(this.feedId, rtm, mtm, atm, resourceManager, managedServer, dmrEndpoint, factory);
         this.dmrServerInventories.put(managedServer, im);
         im.discoverResources();
 

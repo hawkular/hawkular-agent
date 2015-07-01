@@ -118,7 +118,10 @@ public class DMRDiscovery {
             for (Map.Entry<Address, ModelNode> entry : resources.entrySet()) {
                 Address address = entry.getKey(); // this is the unique DMR address for this resource
                 Name resourceName = generateResourceName(type, address);
-                ID id = new ID(String.format("[%s~%s]", this.inventoryManager.getManagedServer().getName(), address));
+                ID id = new ID(String.format("[%s~%s~%s]",
+                        this.inventoryManager.getFeedId(),
+                        this.inventoryManager.getManagedServer().getName(),
+                        address));
                 DMRResource resource = new DMRResource(id, resourceName, this.inventoryManager.getEndpoint(), type,
                         parent, address, entry.getValue());
                 LOG.debugf("Discovered [%s]", resource);

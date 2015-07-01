@@ -544,7 +544,7 @@
                 password="adminPass"
                 resourceTypeSets="Main,Deployment,Web Component,EJB" />
 
-    <local-dmr name="Self"
+    <local-dmr name="Local"
                enabled="true"
                resourceTypeSets="Hawkular,Main,Deployment,Web Component,EJB,Datasource,Transaction Manager" />
 
