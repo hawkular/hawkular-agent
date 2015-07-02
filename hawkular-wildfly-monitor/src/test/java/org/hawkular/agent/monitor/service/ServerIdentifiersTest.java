@@ -16,42 +16,48 @@
  */
 package org.hawkular.agent.monitor.service;
 
+import java.util.UUID;
+
 import org.junit.Test;
 
 public class ServerIdentifiersTest {
 
     @Test
     public void testGetFullIdentifier() {
-        ServerIdentifiers id = new ServerIdentifiers("one", "two", "three");
+        ServerIdentifiers id = new ServerIdentifiers("one", "two", "three", null);
         assert id.toString().equals("one.two.three");
 
-        id = new ServerIdentifiers(null, "two", "three");
+        id = new ServerIdentifiers(null, "two", "three", null);
         assert id.toString().equals("two.three");
 
-        id = new ServerIdentifiers(null, null, "three");
+        id = new ServerIdentifiers(null, null, "three", null);
         assert id.toString().equals("three");
 
-        id = new ServerIdentifiers(null, null, null);
+        id = new ServerIdentifiers(null, null, null, null);
         assert id.toString().equals("");
 
-        id = new ServerIdentifiers("", "two", "three");
+        id = new ServerIdentifiers("", "two", "three", null);
         assert id.toString().equals("two.three");
 
-        id = new ServerIdentifiers("", "", "three");
+        id = new ServerIdentifiers("", "", "three", null);
         assert id.toString().equals("three");
 
-        id = new ServerIdentifiers("", "", "");
+        id = new ServerIdentifiers("", "", "", null);
         assert id.toString().equals("");
 
         // if server name and node name are the same, only one is added to the full ID
-        id = new ServerIdentifiers("one", "two", "two");
+        id = new ServerIdentifiers("one", "two", "two", null);
         assert id.toString().equals("one.two");
 
-        id = new ServerIdentifiers("", "two", "two");
+        id = new ServerIdentifiers("", "two", "two", null);
         assert id.toString().equals("two");
 
-        id = new ServerIdentifiers(null, "two", "two");
+        id = new ServerIdentifiers(null, "two", "two", null);
         assert id.toString().equals("two");
+
+        String uuid = UUID.randomUUID().toString();
+        id = new ServerIdentifiers("a", "b", "c", uuid);
+        assert id.toString().equals(uuid) : String.format("Should have been [%s] but was [%s]", uuid, id);
     }
 
 }
