@@ -25,11 +25,13 @@ public class ServerIdentifiers {
     private final String host;
     private final String server;
     private final String nodeName;
+    private final String uuid;
 
-    public ServerIdentifiers(String host, String server, String nodeName) {
+    public ServerIdentifiers(String host, String server, String nodeName, String uuid) {
         this.host = (host != null) ? host : "";
         this.server = (server != null) ? server : "";
         this.nodeName = (nodeName != null) ? nodeName : "";
+        this.uuid = uuid;
     }
 
     /**
@@ -58,12 +60,25 @@ public class ServerIdentifiers {
     }
 
     /**
-     * Returns a concatenation of host, server, and node name. Host will be omitted
-     * if its empty and node name will be omitted if its empty or is the same as server.
+     * @return The UUID of the WildFly application server. If it did not have a UUID, this will be null.
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * Returns a string that can uniquely identify the WildFly application server.
+     * This will be the {@link #getUuid() UUID} if one is available; otherwise, this will
+     * return a concatenation of host, server, and node name where the host will be omitted
+     * if it is empty and node name will be omitted if it is empty or is the same as server.
      *
-     * @return [host.]server[.nodeName]
+     * @return UUID or (if that is null) the string "[host.]server[.nodeName]"
      */
     public String getFullIdentifier() {
+        if (uuid != null) {
+            return uuid;
+        }
+
         ArrayList<String> ids = new ArrayList<>();
         if (!host.isEmpty()) {
             ids.add(host);

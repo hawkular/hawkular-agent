@@ -79,7 +79,16 @@ public class DMREndpoint extends MonitoredEndpoint {
                 String serverName = client.getStringAttribute("name", rootResource);
                 Properties sysprops = client.getSystemProperties();
                 String nodeName = sysprops.getProperty("jboss.node.name");
-                this.serverId = new ServerIdentifiers(hostName, serverName, nodeName);
+
+                // this is a new attribute that only exists in Wildfly 10 and up. If we can't get it, just use null.
+                String uuid;
+                try {
+                    uuid = client.getStringAttribute("uuid", rootResource);
+                } catch (Exception ignore) {
+                    uuid = null;
+                }
+
+                this.serverId = new ServerIdentifiers(hostName, serverName, nodeName, uuid);
             } catch (Exception e) {
                 MsgLogger.LOG.warnCannotObtainServerIdentifiersForDMREndpoint(this.toString(), e.toString());
             }

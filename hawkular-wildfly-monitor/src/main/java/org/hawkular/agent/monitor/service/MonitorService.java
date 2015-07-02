@@ -575,7 +575,7 @@ public class MonitorService implements Service<MonitorService> {
 
         // Now we can build our inventory manager and discover our resources
         DMRInventoryManager im;
-        im = new DMRInventoryManager(rtm, mtm, atm, resourceManager, managedServer, dmrEndpoint, factory);
+        im = new DMRInventoryManager(this.feedId, rtm, mtm, atm, resourceManager, managedServer, dmrEndpoint, factory);
         this.dmrServerInventories.put(managedServer, im);
         im.discoverResources();
 
@@ -771,8 +771,8 @@ public class MonitorService implements Service<MonitorService> {
             HttpResponse httpResponse = httpclient.execute(request);
             StatusLine statusLine = httpResponse.getStatusLine();
 
-            // HTTP status of 201 means success; anything else is an error
-            if (statusLine.getStatusCode() != 201) {
+            // HTTP status of 201 means success; 409 means we already created the feed, anything else is an error
+            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
                 throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
                         + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
             }

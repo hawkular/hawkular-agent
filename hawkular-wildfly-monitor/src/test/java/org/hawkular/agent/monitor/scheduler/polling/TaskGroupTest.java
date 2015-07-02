@@ -207,7 +207,7 @@ public class TaskGroupTest {
     }
 
     private static DMRTask createDMRTask(Type type, int duration) {
-        DMREndpoint endpoint = new LocalDMREndpoint("_self", new ServerIdentifiers("x", "y", "z"));
+        DMREndpoint endpoint = new LocalDMREndpoint("_self", new ServerIdentifiers("x", "y", "z", null));
         return createDMRTask(type, duration, endpoint);
     }
 
