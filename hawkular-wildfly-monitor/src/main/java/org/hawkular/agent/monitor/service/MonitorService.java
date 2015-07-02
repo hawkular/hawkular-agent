@@ -772,7 +772,7 @@ public class MonitorService implements Service<MonitorService> {
             StatusLine statusLine = httpResponse.getStatusLine();
 
             // HTTP status of 201 means success; 409 means we already created the feed, anything else is an error
-            if (statusLine.getStatusCode() != 201 || statusLine.getStatusCode() != 409) {
+            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
                 throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
                         + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
             }
