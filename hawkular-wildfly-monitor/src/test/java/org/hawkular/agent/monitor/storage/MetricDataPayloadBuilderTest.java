@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.storage;
 import java.util.List;
 import java.util.Map;
 
+import org.hawkular.metrics.client.common.MetricType;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,7 +29,7 @@ public class MetricDataPayloadBuilderTest {
     public void testEmpty() {
         MetricsOnlyMetricDataPayloadBuilder builder = new MetricsOnlyMetricDataPayloadBuilder();
         Assert.assertEquals(0, builder.toObjectPayload().size());
-        Assert.assertEquals("[]", builder.toPayload());
+        Assert.assertEquals("{}", builder.toPayload());
     }
 
     @SuppressWarnings("unchecked")
@@ -38,8 +39,8 @@ public class MetricDataPayloadBuilderTest {
         Map<String, Object> dataListById;
 
         MetricsOnlyMetricDataPayloadBuilder builder = new MetricsOnlyMetricDataPayloadBuilder();
-        builder.addDataPoint("one", 12345, 1.2);
-        objectPayload = builder.toObjectPayload();
+        builder.addDataPoint("one", 12345, 1.2, MetricType.GAUGE);
+        objectPayload = builder.toObjectPayload().get("gaugeMetrics");
         Assert.assertEquals(1, objectPayload.size());
         dataListById = (Map<String, Object>) objectPayload.get(0);
         Assert.assertEquals(2, dataListById.size());
@@ -49,8 +50,8 @@ public class MetricDataPayloadBuilderTest {
         Assert.assertEquals(12345, dataList.get(0).get("timestamp").longValue());
         Assert.assertEquals(1.200, dataList.get(0).get("value").doubleValue(), 0.1);
 
-        builder.addDataPoint("one", 54321, 9.8);
-        objectPayload = builder.toObjectPayload();
+        builder.addDataPoint("one", 54321, 9.8, MetricType.GAUGE);
+        objectPayload = builder.toObjectPayload().get("gaugeMetrics");
         Assert.assertEquals(1, objectPayload.size()); // still 1, we just added more metrics for id "one"
         dataListById = (Map<String, Object>) objectPayload.get(0);
         Assert.assertEquals(2, dataListById.size());
@@ -73,12 +74,12 @@ public class MetricDataPayloadBuilderTest {
         Map<String, Object> twoDataListById;
 
         MetricsOnlyMetricDataPayloadBuilder builder = new MetricsOnlyMetricDataPayloadBuilder();
-        builder.addDataPoint("one", 12345, 1.2);
-        builder.addDataPoint("two", 45678, 11.22);
-        builder.addDataPoint("one", 56789, 9.8);
-        builder.addDataPoint("two", 87654, 99.88);
+        builder.addDataPoint("one", 12345, 1.2, MetricType.GAUGE);
+        builder.addDataPoint("two", 45678, 11.22, MetricType.GAUGE);
+        builder.addDataPoint("one", 56789, 9.8, MetricType.GAUGE);
+        builder.addDataPoint("two", 87654, 99.88, MetricType.GAUGE);
 
-        objectPayload = builder.toObjectPayload();
+        objectPayload = builder.toObjectPayload().get("gaugeMetrics");
         Assert.assertEquals(2, objectPayload.size());
         oneDataListById = (Map<String, Object>) objectPayload.get(0);
         twoDataListById = (Map<String, Object>) objectPayload.get(1);

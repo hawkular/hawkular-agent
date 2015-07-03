@@ -35,6 +35,7 @@ import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
+import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.as.controller.PathAddress;
 
 import com.codahale.metrics.Clock;
@@ -94,8 +95,10 @@ public class StorageReporter extends ScheduledReporter {
             Set<MetricDataPoint> samples = new HashSet<>(gauges.size());
             for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
                 Gauge<Integer> gauge = entry.getValue();
-                samples.add(new MetricDataPoint(new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(),
-                        null, null), gauge.getValue()));
+                samples.add(new MetricDataPoint(
+                        new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(), null, null),
+                        gauge.getValue(),
+                        MetricType.GAUGE));
             }
             storageAdapter.storeMetrics(samples);
         }
@@ -103,8 +106,10 @@ public class StorageReporter extends ScheduledReporter {
         if (!counters.isEmpty()) {
             Set<MetricDataPoint> samples = new HashSet<>(counters.size());
             for (Map.Entry<String, Counter> entry : counters.entrySet()) {
-                samples.add(new MetricDataPoint(new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(),
-                        null, null), entry.getValue().getCount()));
+                samples.add(new MetricDataPoint(
+                        new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(), null, null),
+                        entry.getValue().getCount(),
+                        MetricType.COUNTER));
             }
             storageAdapter.storeMetrics(samples);
 
@@ -114,8 +119,10 @@ public class StorageReporter extends ScheduledReporter {
             Set<MetricDataPoint> samples = new HashSet<>(meters.size());
             for (Map.Entry<String, Meter> entry : meters.entrySet()) {
                 Meter meter = entry.getValue();
-                samples.add(new MetricDataPoint(new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(),
-                        null, null), meter.getOneMinuteRate()));
+                samples.add(new MetricDataPoint(
+                        new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(), null, null),
+                        meter.getOneMinuteRate(),
+                        MetricType.GAUGE));
             }
             storageAdapter.storeMetrics(samples);
         }
@@ -124,8 +131,10 @@ public class StorageReporter extends ScheduledReporter {
             Set<MetricDataPoint> samples = new HashSet<>(timers.size());
             for (Map.Entry<String, Timer> entry : timers.entrySet()) {
                 Timer timer = entry.getValue();
-                samples.add(new MetricDataPoint(new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(),
-                        null, null), timer.getSnapshot().get75thPercentile()));
+                samples.add(new MetricDataPoint(
+                        new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(), null, null),
+                        timer.getSnapshot().get75thPercentile(),
+                        MetricType.GAUGE));
             }
             storageAdapter.storeMetrics(samples);
         }

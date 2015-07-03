@@ -25,6 +25,7 @@ import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.dmrclient.JBossASClient;
+import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.logging.Logger;
@@ -70,7 +71,8 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
                         diagnostics.getDMRDelayedRate().mark(1);
                     }
 
-                    final DMRTask task = (DMRTask) group.getTask(i++);
+                    final MetricDMRTask task = (MetricDMRTask) group.getTask(i++);
+                    final MetricType metricType = task.getMetricInstance().getMetricType().getMetricType();
 
                     // deconstruct model node
                     final ModelNode result = JBossASClient.getResults(response);
@@ -95,13 +97,13 @@ public class MetricDMRTaskGroupRunnable implements Runnable {
                                     LOG.debugf("Failed to fully aggregate metric for task [%s]: %s ", task, listNode);
                                 }
                             }
-                            completionHandler.onCompleted(new MetricDataPoint(task, aggregate));
+                            completionHandler.onCompleted(new MetricDataPoint(task, aggregate, metricType));
                         } else {
                             // a metric was requested from a single resource
                             final ModelNode valueNode =
                                     (task.getSubref() == null) ? result : result.get(task.getSubref());
                             final Double value = valueNode.asDouble();
-                            completionHandler.onCompleted(new MetricDataPoint(task, value));
+                            completionHandler.onCompleted(new MetricDataPoint(task, value, metricType));
                         }
                     }
 
