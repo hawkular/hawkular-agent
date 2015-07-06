@@ -28,8 +28,8 @@ public class MetricDataPayloadBuilderTest {
     @Test
     public void testEmpty() {
         MetricsOnlyMetricDataPayloadBuilder builder = new MetricsOnlyMetricDataPayloadBuilder();
-        Assert.assertEquals(0, builder.toObjectPayload().size());
-        Assert.assertEquals("{}", builder.toPayload());
+        Assert.assertEquals(3, builder.toObjectPayload().size());
+        Assert.assertEquals("{\"counters\":[],\"availabilities\":[],\"gauges\":[]}", builder.toPayload());
     }
 
     @SuppressWarnings("unchecked")

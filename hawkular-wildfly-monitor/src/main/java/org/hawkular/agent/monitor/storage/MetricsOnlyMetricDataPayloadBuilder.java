@@ -77,27 +77,27 @@ public class MetricsOnlyMetricDataPayloadBuilder implements MetricDataPayloadBui
     public Map<String, List<Map<String, Object>>> toObjectPayload() {
         Map<String, List<Map<String, Object>>> fullMessageObject = new HashMap<>();
 
-        if (!allGauges.isEmpty()) {
-            List<Map<String, Object>> allOfSpecificType = new ArrayList<>();
-            fullMessageObject.put("gauges", allOfSpecificType);
-            for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allGauges.entrySet()) {
-                Map<String, Object> metricKeyAndData = new HashMap<>(2);
-                metricKeyAndData.put("id", metricEntry.getKey());
-                metricKeyAndData.put("data", metricEntry.getValue());
-                allOfSpecificType.add(metricKeyAndData);
-            }
+        List<Map<String, Object>> allOfSpecificType = new ArrayList<>();
+        fullMessageObject.put("gauges", allOfSpecificType);
+        for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allGauges.entrySet()) {
+            Map<String, Object> metricKeyAndData = new HashMap<>(2);
+            metricKeyAndData.put("id", metricEntry.getKey());
+            metricKeyAndData.put("data", metricEntry.getValue());
+            allOfSpecificType.add(metricKeyAndData);
         }
 
-        if (!allCounters.isEmpty()) {
-            List<Map<String, Object>> allOfSpecificType = new ArrayList<>();
-            fullMessageObject.put("counters", allOfSpecificType);
-            for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allCounters.entrySet()) {
-                Map<String, Object> metricKeyAndData = new HashMap<>(2);
-                metricKeyAndData.put("id", metricEntry.getKey());
-                metricKeyAndData.put("data", metricEntry.getValue());
-                allOfSpecificType.add(metricKeyAndData);
-            }
+        allOfSpecificType = new ArrayList<>();
+        fullMessageObject.put("counters", allOfSpecificType);
+        for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allCounters.entrySet()) {
+            Map<String, Object> metricKeyAndData = new HashMap<>(2);
+            metricKeyAndData.put("id", metricEntry.getKey());
+            metricKeyAndData.put("data", metricEntry.getValue());
+            allOfSpecificType.add(metricKeyAndData);
         }
+
+        allOfSpecificType = new ArrayList<>();
+        fullMessageObject.put("availabilities", allOfSpecificType); // we never send avails
+
         return fullMessageObject;
     }
 
