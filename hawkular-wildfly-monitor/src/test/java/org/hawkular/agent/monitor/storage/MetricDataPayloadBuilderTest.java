@@ -40,7 +40,7 @@ public class MetricDataPayloadBuilderTest {
 
         MetricsOnlyMetricDataPayloadBuilder builder = new MetricsOnlyMetricDataPayloadBuilder();
         builder.addDataPoint("one", 12345, 1.2, MetricType.GAUGE);
-        objectPayload = builder.toObjectPayload().get("gaugeMetrics");
+        objectPayload = builder.toObjectPayload().get("gauges");
         Assert.assertEquals(1, objectPayload.size());
         dataListById = (Map<String, Object>) objectPayload.get(0);
         Assert.assertEquals(2, dataListById.size());
@@ -51,7 +51,7 @@ public class MetricDataPayloadBuilderTest {
         Assert.assertEquals(1.200, dataList.get(0).get("value").doubleValue(), 0.1);
 
         builder.addDataPoint("one", 54321, 9.8, MetricType.GAUGE);
-        objectPayload = builder.toObjectPayload().get("gaugeMetrics");
+        objectPayload = builder.toObjectPayload().get("gauges");
         Assert.assertEquals(1, objectPayload.size()); // still 1, we just added more metrics for id "one"
         dataListById = (Map<String, Object>) objectPayload.get(0);
         Assert.assertEquals(2, dataListById.size());
@@ -79,7 +79,7 @@ public class MetricDataPayloadBuilderTest {
         builder.addDataPoint("one", 56789, 9.8, MetricType.GAUGE);
         builder.addDataPoint("two", 87654, 99.88, MetricType.GAUGE);
 
-        objectPayload = builder.toObjectPayload().get("gaugeMetrics");
+        objectPayload = builder.toObjectPayload().get("gauges");
         Assert.assertEquals(2, objectPayload.size());
         oneDataListById = (Map<String, Object>) objectPayload.get(0);
         twoDataListById = (Map<String, Object>) objectPayload.get(1);

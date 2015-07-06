@@ -88,11 +88,13 @@
                 path="/subsystem=undertow"
                 attribute="sessions-created" />
     <metric-dmr name="Expired Sessions"
+                metricType="counter"
                 interval="2"
                 timeUnits="minutes"
                 path="/subsystem=undertow"
                 attribute="expired-sessions" />
     <metric-dmr name="Rejected Sessions"
+                metricType="counter"
                 interval="2"
                 timeUnits="minutes"
                 path="/subsystem=undertow"
@@ -122,6 +124,7 @@
                 path="/"
                 attribute="total-request-time" />
     <metric-dmr name="Request Count"
+                metricType="counter"
                 interval="5"
                 timeUnits="minutes"
                 path="/"
@@ -135,6 +138,7 @@
                 path="/"
                 attribute="execution-time" />
     <metric-dmr name="Invocations"
+                metricType="counter"
                 interval="5"
                 timeUnits="minutes"
                 path="/"
@@ -158,6 +162,7 @@
                 path="/"
                 attribute="execution-time" />
     <metric-dmr name="Invocations"
+                metricType="counter"
                 interval="5"
                 timeUnits="minutes"
                 path="/"
@@ -206,6 +211,7 @@
                 path="/"
                 attribute="execution-time" />
     <metric-dmr name="Invocations"
+                metricType="counter"
                 interval="5"
                 timeUnits="minutes"
                 path="/"

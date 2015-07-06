@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.metrics.client.common.MetricType;
-import org.jboss.logging.Logger;
 
 import com.google.gson.Gson;
 
@@ -44,17 +43,17 @@ public class MetricsOnlyMetricDataPayloadBuilder implements MetricDataPayloadBui
     @Override
     public void addDataPoint(String key, long timestamp, double value, MetricType metricType) {
         Map<String, List<Map<String, Number>>> map;
+        Number valueObject;
 
         switch (metricType) {
             case GAUGE: {
                 map = allGauges;
+                valueObject = Double.valueOf(value);
                 break;
             }
             case COUNTER: {
-                map = allGauges; // SHOULD BE allCounters!!!
-                String str = String.format("HACK ALERT! Counters are gauges until HWKMETRICS-166 is fixed. "
-                        + "key=[%s], value=[%s], metricTye=[%s]", key, String.valueOf(value), metricType);
-                Logger.getLogger(getClass()).info(str);
+                map = allCounters;
+                valueObject = Long.valueOf(Double.valueOf(value).longValue());
                 break;
             }
             default: {
@@ -70,7 +69,7 @@ public class MetricsOnlyMetricDataPayloadBuilder implements MetricDataPayloadBui
         }
         Map<String, Number> timestampAndValue = new HashMap<>(2);
         timestampAndValue.put("timestamp", timestamp);
-        timestampAndValue.put("value", value);
+        timestampAndValue.put("value", valueObject);
         data.add(timestampAndValue);
         count++;
     }
@@ -80,7 +79,7 @@ public class MetricsOnlyMetricDataPayloadBuilder implements MetricDataPayloadBui
 
         if (!allGauges.isEmpty()) {
             List<Map<String, Object>> allOfSpecificType = new ArrayList<>();
-            fullMessageObject.put("gaugeMetrics", allOfSpecificType);
+            fullMessageObject.put("gauges", allOfSpecificType);
             for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allGauges.entrySet()) {
                 Map<String, Object> metricKeyAndData = new HashMap<>(2);
                 metricKeyAndData.put("id", metricEntry.getKey());
@@ -91,7 +90,7 @@ public class MetricsOnlyMetricDataPayloadBuilder implements MetricDataPayloadBui
 
         if (!allCounters.isEmpty()) {
             List<Map<String, Object>> allOfSpecificType = new ArrayList<>();
-            fullMessageObject.put("counterMetrics", allOfSpecificType);
+            fullMessageObject.put("counters", allOfSpecificType);
             for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allCounters.entrySet()) {
                 Map<String, Object> metricKeyAndData = new HashMap<>(2);
                 metricKeyAndData.put("id", metricEntry.getKey());
