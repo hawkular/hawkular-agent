@@ -36,6 +36,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.SimpleAttributeDefinition;
@@ -107,6 +108,12 @@ public class MonitorServiceConfigurationBuilder {
                         ModelNode metricValueNode = metricProperty.getValue();
                         metric.setPath(getString(metricValueNode, context, DMRMetricAttributes.PATH));
                         metric.setAttribute(getString(metricValueNode, context, DMRMetricAttributes.ATTRIBUTE));
+                        String metricTypeStr = getString(metricValueNode, context, DMRMetricAttributes.METRIC_TYPE);
+                        if (metricTypeStr == null) {
+                            metric.setMetricType(MetricType.GAUGE);
+                        } else {
+                            metric.setMetricType(MetricType.valueOf(metricTypeStr.toUpperCase(Locale.ENGLISH)));
+                        }
                         String metricUnitsStr = getString(metricValueNode, context, DMRMetricAttributes.METRIC_UNITS);
                         if (metricUnitsStr == null) {
                             metric.setMetricUnits(MeasurementUnit.NONE);

@@ -110,7 +110,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
             double value = datapoint.getValue();
-            payloadBuilder.addDataPoint(key, timestamp, value);
+            payloadBuilder.addDataPoint(key, timestamp, value, datapoint.getMetricType());
         }
 
         store(payloadBuilder);

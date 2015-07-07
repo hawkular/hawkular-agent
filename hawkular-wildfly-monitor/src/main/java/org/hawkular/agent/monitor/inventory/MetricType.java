@@ -24,6 +24,7 @@ public abstract class MetricType extends MeasurementType {
     }
 
     private MeasurementUnit metricUnits;
+    private org.hawkular.metrics.client.common.MetricType metricType;
 
     public MeasurementUnit getMetricUnits() {
         return metricUnits;
@@ -33,4 +34,11 @@ public abstract class MetricType extends MeasurementType {
         this.metricUnits = metricUnits;
     }
 
+    public org.hawkular.metrics.client.common.MetricType getMetricType() {
+        return metricType;
+    }
+
+    public void setMetricType(org.hawkular.metrics.client.common.MetricType metricType) {
+        this.metricType = metricType;
+    }
 }

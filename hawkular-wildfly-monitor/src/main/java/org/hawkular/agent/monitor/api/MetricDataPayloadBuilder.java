@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.api;
 
+import org.hawkular.metrics.client.common.MetricType;
+
 public interface MetricDataPayloadBuilder {
 
     /**
@@ -26,8 +28,9 @@ public interface MetricDataPayloadBuilder {
      * @param key identifies the metric
      * @param timestamp the time the metric was collected
      * @param value the value of the metric
+     * @param metricType the type of metric
      */
-    void addDataPoint(String key, long timestamp, double value);
+    void addDataPoint(String key, long timestamp, double value, MetricType metricType);
 
     /**
      * @return the payload in a format suitable for the storage adapter.

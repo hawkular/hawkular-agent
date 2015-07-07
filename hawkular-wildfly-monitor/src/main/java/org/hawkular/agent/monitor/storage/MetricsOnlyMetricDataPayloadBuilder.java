@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
+import org.hawkular.metrics.client.common.MetricType;
 
 import com.google.gson.Gson;
 
@@ -33,34 +34,70 @@ import com.google.gson.Gson;
 public class MetricsOnlyMetricDataPayloadBuilder implements MetricDataPayloadBuilder {
 
     // key is metric ID, value is list of data points where a data point is a map with timestamp and value
-    private Map<String, List<Map<String, Number>>> allMetrics = new HashMap<>();
+    private Map<String, List<Map<String, Number>>> allGauges = new HashMap<>();
+    private Map<String, List<Map<String, Number>>> allCounters = new HashMap<>();
 
     // a running count of the number of data points that have been added
     private int count = 0;
 
     @Override
-    public void addDataPoint(String key, long timestamp, double value) {
-        List<Map<String, Number>> data = allMetrics.get(key);
+    public void addDataPoint(String key, long timestamp, double value, MetricType metricType) {
+        Map<String, List<Map<String, Number>>> map;
+        Number valueObject;
+
+        switch (metricType) {
+            case GAUGE: {
+                map = allGauges;
+                valueObject = Double.valueOf(value);
+                break;
+            }
+            case COUNTER: {
+                map = allCounters;
+                valueObject = Long.valueOf(Double.valueOf(value).longValue());
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Unsupported metric type: " + metricType);
+            }
+        }
+
+        List<Map<String, Number>> data = map.get(key);
         if (data == null) {
             // we haven't seen this metric ID before, create a new list of data points
             data = new ArrayList<Map<String, Number>>();
-            allMetrics.put(key, data);
+            map.put(key, data);
         }
         Map<String, Number> timestampAndValue = new HashMap<>(2);
         timestampAndValue.put("timestamp", timestamp);
-        timestampAndValue.put("value", value);
+        timestampAndValue.put("value", valueObject);
         data.add(timestampAndValue);
         count++;
     }
 
-    public List<Map<String, Object>> toObjectPayload() {
-        List<Map<String, Object>> fullMessageObject = new ArrayList<>();
-        for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allMetrics.entrySet()) {
+    public Map<String, List<Map<String, Object>>> toObjectPayload() {
+        Map<String, List<Map<String, Object>>> fullMessageObject = new HashMap<>();
+
+        List<Map<String, Object>> allOfSpecificType = new ArrayList<>();
+        fullMessageObject.put("gauges", allOfSpecificType);
+        for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allGauges.entrySet()) {
             Map<String, Object> metricKeyAndData = new HashMap<>(2);
             metricKeyAndData.put("id", metricEntry.getKey());
             metricKeyAndData.put("data", metricEntry.getValue());
-            fullMessageObject.add(metricKeyAndData);
+            allOfSpecificType.add(metricKeyAndData);
         }
+
+        allOfSpecificType = new ArrayList<>();
+        fullMessageObject.put("counters", allOfSpecificType);
+        for (Map.Entry<String, List<Map<String, Number>>> metricEntry : allCounters.entrySet()) {
+            Map<String, Object> metricKeyAndData = new HashMap<>(2);
+            metricKeyAndData.put("id", metricEntry.getKey());
+            metricKeyAndData.put("data", metricEntry.getValue());
+            allOfSpecificType.add(metricKeyAndData);
+        }
+
+        allOfSpecificType = new ArrayList<>();
+        fullMessageObject.put("availabilities", allOfSpecificType); // we never send avails
+
         return fullMessageObject;
     }
 

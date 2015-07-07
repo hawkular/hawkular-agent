@@ -21,8 +21,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 
+import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.jboss.as.controller.operations.validation.AllowedValuesValidator;
 import org.jboss.as.controller.operations.validation.ModelTypeValidator;
 import org.jboss.as.controller.operations.validation.ParameterValidator;
@@ -30,33 +30,33 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
 /**
- * {@link ParameterValidator} that validates the value is a string matching one of the {@link MeasurementUnit} names.
+ * {@link ParameterValidator} that validates the value is a string matching one of the {@link MetricType} names.
  * This follows the design pattern of org.jboss.as.controller.operations.validation.TimeUnitValidator.
  */
-public class MeasurementUnitValidator extends ModelTypeValidator implements AllowedValuesValidator {
+public class MetricTypeValidator extends ModelTypeValidator implements AllowedValuesValidator {
 
-    /** MeasurementUnitValidator where any MeasurementUnit is valid, but an undefined value is not */
-    public static final MeasurementUnitValidator ANY_REQUIRED = new MeasurementUnitValidator(false, true);
-    /** MeasurementUnitValidator where any MeasurementUnit is valid, as is an undefined value */
-    public static final MeasurementUnitValidator ANY_OPTIONAL = new MeasurementUnitValidator(true, true);
+    /** any value is valid, but an undefined value is not */
+    public static final MetricTypeValidator ANY_REQUIRED = new MetricTypeValidator(false, true);
+    /** any value is valid, as is an undefined value */
+    public static final MetricTypeValidator ANY_OPTIONAL = new MetricTypeValidator(true, true);
 
-    private final EnumSet<MeasurementUnit> allowedValues;
+    private final EnumSet<MetricType> allowedValues;
 
-    public MeasurementUnitValidator(final boolean nullable, final MeasurementUnit... allowed) {
+    public MetricTypeValidator(final boolean nullable, final MetricType... allowed) {
         this(nullable, true, allowed);
     }
 
-    public MeasurementUnitValidator(final boolean nullable, final boolean allowExpressions) {
+    public MetricTypeValidator(final boolean nullable, final boolean allowExpressions) {
         super(ModelType.STRING, nullable, allowExpressions);
-        allowedValues = EnumSet.allOf(MeasurementUnit.class);
+        allowedValues = EnumSet.allOf(MetricType.class);
     }
 
-    public MeasurementUnitValidator(final boolean nullable, final boolean allowExpressions,
-            final MeasurementUnit... allowed) {
+    public MetricTypeValidator(final boolean nullable, final boolean allowExpressions,
+            final MetricType... allowed) {
         super(ModelType.STRING, nullable, allowExpressions);
-        allowedValues = EnumSet.noneOf(MeasurementUnit.class);
-        for (MeasurementUnit tu : allowed) {
-            allowedValues.add(tu);
+        allowedValues = EnumSet.noneOf(MetricType.class);
+        for (MetricType mt : allowed) {
+            allowedValues.add(mt);
         }
     }
 
@@ -64,10 +64,10 @@ public class MeasurementUnitValidator extends ModelTypeValidator implements Allo
     public void validateParameter(String parameterName, ModelNode value) throws OperationFailedException {
         super.validateParameter(parameterName, value);
         if (value.isDefined()) {
-            String muString = value.asString();
-            MeasurementUnit mu = MeasurementUnit.valueOf(muString.toUpperCase(Locale.ENGLISH));
-            if (mu == null || !allowedValues.contains(mu)) {
-                throw new OperationFailedException("Bad value [" + muString + "] for param [" + parameterName + "]");
+            String mtString = value.asString();
+            MetricType mt = MetricType.valueOf(mtString.toUpperCase(Locale.ENGLISH));
+            if (mt == null || !allowedValues.contains(mt)) {
+                throw new OperationFailedException("Bad value [" + mtString + "] for param [" + parameterName + "]");
             }
         }
     }
@@ -75,8 +75,8 @@ public class MeasurementUnitValidator extends ModelTypeValidator implements Allo
     @Override
     public List<ModelNode> getAllowedValues() {
         List<ModelNode> result = new ArrayList<ModelNode>();
-        for (MeasurementUnit mu : allowedValues) {
-            result.add(new ModelNode().set(mu.name()));
+        for (MetricType mt : allowedValues) {
+            result.add(new ModelNode().set(mt.name()));
         }
         return result;
     }

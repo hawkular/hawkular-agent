@@ -92,7 +92,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
             double value = datapoint.getValue();
-            payloadBuilder.addDataPoint(key, timestamp, value);
+            payloadBuilder.addDataPoint(key, timestamp, value, datapoint.getMetricType());
         }
 
         store(payloadBuilder);
@@ -111,7 +111,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
             // build the REST URL...
             StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
-            url.append("gauges/data");
+            url.append("metrics/data");
 
             // now send the REST request
             request = new HttpPost(url.toString());
