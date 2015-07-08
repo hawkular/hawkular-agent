@@ -218,6 +218,16 @@ public class MonitorServiceConfigurationBuilder {
         ModelNode storageAdapterConfig = asPropertyList.get(0).getValue();
 
         theConfig.storageAdapter.url = getString(storageAdapterConfig, context, StorageAttributes.URL);
+        if (theConfig.storageAdapter.url != null) {
+            theConfig.storageAdapter.useSSL = theConfig.storageAdapter.url.startsWith("https");
+            MsgLogger.LOG.infoUsingSSL(theConfig.storageAdapter.url, theConfig.storageAdapter.useSSL);
+        } else {
+            theConfig.storageAdapter.useSSL = getBoolean(storageAdapterConfig, context, StorageAttributes.USE_SSL);
+        }
+        theConfig.storageAdapter.keystorePath = getString(storageAdapterConfig, context,
+                StorageAttributes.KEYSTORE_PATH);
+        theConfig.storageAdapter.keystorePassword = getString(storageAdapterConfig, context,
+                StorageAttributes.KEYSTORE_PASSWORD);
         theConfig.storageAdapter.serverOutboundSocketBindingRef = getString(storageAdapterConfig, context,
                 StorageAttributes.SERVER_OUTBOUND_SOCKET_BINDING_REF);
         theConfig.storageAdapter.tenantId = getString(storageAdapterConfig, context, StorageAttributes.TENANT_ID);

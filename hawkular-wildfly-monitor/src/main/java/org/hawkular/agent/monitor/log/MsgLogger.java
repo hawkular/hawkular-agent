@@ -152,4 +152,12 @@ public interface MsgLogger {
     @Message(id = 10029, value = "Scheduler failed to initialize; aborting startup")
     void errorCannotInitializeScheduler(@Cause Throwable t);
 
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10030, value = "Using keystore at [%s]")
+    void infoUseKeystore(String keystorePath);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10031, value = "The storage adapter URL is explicitly specified [%s], so useSSL will be set to [%s]")
+    void infoUsingSSL(String url, boolean useSSL);
+
 }

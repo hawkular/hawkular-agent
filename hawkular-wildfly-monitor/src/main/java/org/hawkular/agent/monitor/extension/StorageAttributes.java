@@ -63,6 +63,27 @@ public interface StorageAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition USE_SSL = new SimpleAttributeDefinitionBuilder("useSSL",
+            ModelType.BOOLEAN)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    SimpleAttributeDefinition KEYSTORE_PATH = new SimpleAttributeDefinitionBuilder("keystorePath",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    SimpleAttributeDefinition KEYSTORE_PASSWORD = new SimpleAttributeDefinitionBuilder("keystorePassword",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     SimpleAttributeDefinition SERVER_OUTBOUND_SOCKET_BINDING_REF = new SimpleAttributeDefinitionBuilder(
             "serverOutboundSocketBindingRef",
             ModelType.STRING)
@@ -102,6 +123,9 @@ public interface StorageAttributes {
             PASSWORD,
             TENANT_ID,
             URL,
+            USE_SSL,
+            KEYSTORE_PATH,
+            KEYSTORE_PASSWORD,
             SERVER_OUTBOUND_SOCKET_BINDING_REF,
             BUS_CONTEXT,
             INVENTORY_CONTEXT,

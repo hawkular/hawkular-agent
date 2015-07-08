@@ -64,10 +64,13 @@ public class MonitorServiceConfiguration {
         public String password;
         public String tenantId;
         public String url;
+        public boolean useSSL;
         public String serverOutboundSocketBindingRef;
         public String busContext;
         public String inventoryContext;
         public String metricsContext;
+        public String keystorePath;
+        public String keystorePassword;
     }
 
     public static class Diagnostics {

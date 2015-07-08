@@ -16,7 +16,7 @@
     limitations under the License.
 
 -->
-<module xmlns="urn:jboss:module:1.0" name="${moduleName}">
+<module xmlns="urn:jboss:module:1.3" name="${moduleName}">
   <resources>
     <resource-root path="clients-common.jar"/>
     <resource-root path="gson.jar"/>
@@ -26,6 +26,8 @@
     <resource-root path="hawkular-monitor.jar"/>
     <resource-root path="metrics-core.jar"/>
     <resource-root path="jgrapht-core.jar"/>
+    <resource-root path="okhttp.jar"/>
+    <resource-root path="okio.jar"/>
   </resources>
 
   <dependencies>
@@ -51,5 +53,12 @@
     <module name="org.slf4j"/>
     <module name="org.wildfly.security.manager"/>
     <module name="sun.jdk"/> <!-- codahale needs sun.misc.Unsafe -->
+
+    <system export="true">
+      <paths>
+        <!-- Needed for HTTP2 and SPDY support-->
+        <path name="org/eclipse/jetty/alpn"/>
+      </paths>
+    </system>
   </dependencies>
 </module>

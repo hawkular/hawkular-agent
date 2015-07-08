@@ -16,15 +16,9 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.io.IOException;
 import java.util.Set;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
@@ -38,16 +32,21 @@ import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.jboss.logging.Logger;
 
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
+
 public class MetricsOnlyStorageAdapter implements StorageAdapter {
     private static final Logger LOGGER = Logger.getLogger(MetricsOnlyStorageAdapter.class);
 
-    private final HttpClient httpclient;
     private MonitorServiceConfiguration.StorageAdapter config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
+    private HttpClientBuilder httpClientBuilder;
 
     public MetricsOnlyStorageAdapter() {
-        this.httpclient = HttpClientBuilder.create().build();
     }
 
     @Override
@@ -68,6 +67,11 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     @Override
     public void setSelfIdentifiers(ServerIdentifiers selfId) {
         this.selfId = selfId;
+    }
+
+    @Override
+    public void setHttpClientBuilder(HttpClientBuilder httpClientBuilder) {
+        this.httpClientBuilder = httpClientBuilder;
     }
 
     @Override
@@ -103,7 +107,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     @Override
     public void store(MetricDataPayloadBuilder payloadBuilder) {
         String jsonPayload = "?";
-        HttpPost request = null;
 
         try {
             // get the payload in JSON format
@@ -114,28 +117,40 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             url.append("metrics/data");
 
             // now send the REST request
-            request = new HttpPost(url.toString());
-            request.setHeader("Hawkular-Tenant", config.tenantId);
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = new Request.Builder()
+                    .url(url.toString())
+                    .addHeader("Hawkular-Tenant", config.tenantId)
+                    .post(RequestBody.create(MediaType.parse("application/json"),jsonPayload))
+                    .build();
 
-            // HTTP status of 200 means success; anything else is an error
-            if (statusLine.getStatusCode() != 200) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
-            }
+            final String jsonPayloadFinal = jsonPayload;
+            this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+                    MsgLogger.LOG.errorFailedToStoreMetricData(e, jsonPayloadFinal);
+                    diagnostics.getStorageErrorRate().mark(1);
+                }
 
-            // looks like everything stored successfully
-            diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
+                @Override
+                public void onResponse(Response response) throws IOException {
+                    // HTTP status of 200 means success; anything else is an error
+                    if (response.code() != 200) {
+                        IOException e = new IOException("status-code=[" + response.code() + "], reason=["
+                                + response.message() + "], url=[" + request.urlString() + "]");
+                        MsgLogger.LOG.errorFailedToStoreMetricData(e, jsonPayloadFinal);
+                        diagnostics.getStorageErrorRate().mark(1);
+                        throw e;
+                    }
+
+                    // looks like everything stored successfully
+                    diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
+
+                }
+            });
 
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreMetricData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
     }
 
@@ -162,7 +177,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     @Override
     public void store(AvailDataPayloadBuilder payloadBuilder) {
         String jsonPayload = "?";
-        HttpPost request = null;
 
         try {
             // get the payload in JSON format
@@ -173,28 +187,41 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             url.append("availability/data");
 
             // now send the REST request
-            request = new HttpPost(url.toString());
-            request.setHeader("Hawkular-Tenant", config.tenantId);
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
 
-            // HTTP status of 200 means success; anything else is an error
-            if (statusLine.getStatusCode() != 200) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
-            }
+            Request request = new Request.Builder()
+                    .url(url.toString())
+                    .addHeader("Hawkular-Tenant", config.tenantId)
+                    .post(RequestBody.create(MediaType.parse("application/json"),jsonPayload))
+                    .build();
 
-            // looks like everything stored successfully
-            diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
+            final String jsonPayloadFinal = jsonPayload;
+            this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+                    MsgLogger.LOG.errorFailedToStoreAvailData(e, jsonPayloadFinal);
+                    diagnostics.getStorageErrorRate().mark(1);
+                }
+
+                @Override
+                public void onResponse(Response response) throws IOException {
+                    // HTTP status of 200 means success; anything else is an error
+                    if (response.code() != 200) {
+                        IOException e = new IOException("status-code=[" + response.code() + "], reason=["
+                                + response.message() + "], url=[" + request.urlString() + "]");
+                        MsgLogger.LOG.errorFailedToStoreAvailData(e, jsonPayloadFinal);
+                        diagnostics.getStorageErrorRate().mark(1);
+                        throw e;
+                    }
+
+                    // looks like everything stored successfully
+                    diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
+
+                }
+            });
 
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreAvailData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
     }
 

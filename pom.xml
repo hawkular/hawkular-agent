@@ -85,9 +85,21 @@
       </dependency>
 
       <dependency>
+        <groupId>com.squareup.okhttp</groupId>
+        <artifactId>okhttp</artifactId>
+        <version>2.4.0</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.hawkular.bus</groupId>
         <artifactId>hawkular-bus-rest-client</artifactId>
         <version>${version.org.hawkular.bus}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>

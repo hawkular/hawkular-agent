@@ -40,6 +40,7 @@ import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
+import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 
@@ -56,6 +57,8 @@ public class SchedulerService {
     private final Scheduler availScheduler;
     private final MetricBufferedStorageDispatcher metricCompletionHandler;
     private final AvailBufferedStorageDispatcher availCompletionHandler;
+    private final Scheduler operationScheduler;
+    private final HttpClientBuilder httpClientBuilder;
 
     private boolean started = false;
 
@@ -64,7 +67,8 @@ public class SchedulerService {
             ServerIdentifiers selfId,
             Diagnostics diagnostics,
             StorageAdapter storageAdapter,
-            ModelControllerClientFactory localDMRClientFactory) {
+            ModelControllerClientFactory localDMRClientFactory,
+            HttpClientBuilder httpClientBuilder) {
 
         this.schedulerConfig = configuration;
 
@@ -77,6 +81,9 @@ public class SchedulerService {
         // metrics for our own internals
         this.diagnostics = diagnostics;
 
+        // used to send requests to the server
+        this.httpClientBuilder = httpClientBuilder;
+
         // create the schedulers - we use two: one for metric collections and one for avail checks
         this.metricCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
                 diagnostics);
@@ -87,6 +94,8 @@ public class SchedulerService {
                 diagnostics);
         this.availScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Scheduler-Avail",
                 configuration.getAvailSchedulerThreads());
+
+        this.operationScheduler = new IntervalBasedScheduler(this, "Hawkular-Monitor-Scheduler-Ops", 2);
     }
 
     public ServerIdentifiers getSelfIdentifiers() {
@@ -113,6 +122,10 @@ public class SchedulerService {
         List<Task> availTasks = createAvailDMRTasks(schedulerConfig.getDMRAvailsToBeChecked());
         this.availCompletionHandler.start();
         this.availScheduler.schedule(availTasks);
+
+        List<Task> opsTasks = new ArrayList<>(1);
+        opsTasks.add(new OpsRemotePoller());
+        this.operationScheduler.schedule(opsTasks);
 
         started = true;
     }
@@ -173,6 +186,12 @@ public class SchedulerService {
                 }
             }
 
+            case OPS:
+
+                ModelControllerClientFactory factory;
+                // We currently do not support any remote DMR instances
+                factory = this.localDMRClientFactory;
+                return new OpsGroupRunnable(schedulerConfig, getSelfIdentifiers(), factory, httpClientBuilder);
             default: {
                 throw new IllegalArgumentException("Bad group [" + group + "]. Please report this bug.");
             }

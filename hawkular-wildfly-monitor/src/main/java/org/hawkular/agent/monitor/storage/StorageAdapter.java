@@ -52,4 +52,10 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
      * @param selfId helps identify where we are hosted
      */
     void setSelfIdentifiers(ServerIdentifiers selfId);
+
+    /**
+     * @param httpClientBuilder used to communicate with the storage server
+     */
+    void setHttpClientBuilder(HttpClientBuilder httpClientBuilder);
+
 }

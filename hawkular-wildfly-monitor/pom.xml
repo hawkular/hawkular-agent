@@ -64,6 +64,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.squareup.okhttp</groupId>
+      <artifactId>okhttp</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-dmr-client</artifactId>
       <version>${project.version}</version>
