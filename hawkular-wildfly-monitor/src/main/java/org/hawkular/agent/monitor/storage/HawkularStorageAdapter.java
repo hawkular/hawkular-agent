@@ -22,13 +22,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
@@ -53,6 +46,8 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.jboss.logging.Logger;
 
 import com.google.gson.GsonBuilder;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
 public class HawkularStorageAdapter implements StorageAdapter {
     private static final Logger LOGGER = Logger.getLogger(HawkularStorageAdapter.class);
@@ -102,12 +97,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
     @Override
     public AvailDataPayloadBuilder createAvailDataPayloadBuilder() {
         return new HawkularAvailDataPayloadBuilder();
-    }
-
-    // get rid of usage of this and use our own http builder
-    @Deprecated
-    private CloseableHttpClient buildApacheHttpClient() {
-        return org.apache.http.impl.client.HttpClientBuilder.create().build();
     }
 
     @Override
@@ -295,8 +284,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
             return;
         }
 
-        HttpPost request = null;
-
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
@@ -312,44 +299,27 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append("/resources");
 
             // now send the REST request
-            HttpClient httpclient = buildApacheHttpClient();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
 
             resource.setPersisted(true);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource: " + resource, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
-
-        resource.setPersisted(true);
     }
 
     private void registerResourceType(ResourceType<?, ?, ?, ?> resourceType) {
         if (resourceType.isPersisted()) {
             return;
         }
-
-        HttpPost request = null;
 
         try {
             // get the payload in JSON format
@@ -364,44 +334,27 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append("resourceTypes");
 
             // now send the REST request
-            HttpClient httpclient = buildApacheHttpClient();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
 
             resourceType.setPersisted(true);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource type: " + resourceType, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
-
-        resourceType.setPersisted(true);
     }
 
     private void registerMetricInstance(MeasurementInstance<?, ?, ?> measurementInstance) {
         if (measurementInstance.isPersisted()) {
             return;
         }
-
-        HttpPost request = null;
 
         String metricId = getInventoryId(measurementInstance);
         String metricTypeId = getInventoryId(measurementInstance.getMeasurementType());
@@ -421,42 +374,27 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append("/metrics");
 
             // now send the REST request
-            HttpClient httpclient = buildApacheHttpClient();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
+
+            measurementInstance.setPersisted(true);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create metric type: " + metricTypeId, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
-
-        measurementInstance.setPersisted(true);
     }
 
     private void registerMetricType(MeasurementType measurementType) {
         if (measurementType.isPersisted()) {
             return;
         }
-
-        HttpPost request = null;
 
         String metricTypeId = getInventoryId(measurementType);
         Map<String, Object> metricTypeProps = measurementType.getProperties();
@@ -482,39 +420,25 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append("metricTypes");
 
             // now send the REST request
-            HttpClient httpclient = buildApacheHttpClient();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
+
+            measurementType.setPersisted(true);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create metric type: " + metricTypeId, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
-
-        measurementType.setPersisted(true);
     }
 
     private void relateResourceWithMetric(Resource<?, ?, ?, ?, ?> resource,
             MeasurementInstance<?, ?, ?> measInstance) {
-        HttpPost request = null;
 
         String resourceId = getInventoryId(resource);
         String metricId = getInventoryId(measInstance);
@@ -532,38 +456,22 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append(getFeedId());
             url.append("/resources").append("/").append(Util.urlEncode(resourceId)).append("/metrics");
 
-
             // now send the REST request
-            HttpClient httpclient = buildApacheHttpClient();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 204 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 204 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 204 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot associate resource with metric: " + resourceId + "/" + metricId, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
     }
 
     private void relateResourceTypeWithMetricType(ResourceType<?, ?, ?, ?> resourceType, MeasurementType measType) {
-        HttpPost request = null;
 
         String resourceTypeId = getInventoryId(resourceType);
         String metricTypeId = getInventoryId(measType);
@@ -580,32 +488,18 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append("resourceTypes").append("/").append(Util.urlEncode(resourceTypeId)).append("/metricTypes");
 
             // now send the REST request
-            HttpClient httpclient = buildApacheHttpClient();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 204 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 204 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 204 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot associate resource type with metric type: " + resourceTypeId + "/"
                     + metricTypeId, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
     }
 }
