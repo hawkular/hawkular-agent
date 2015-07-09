@@ -241,6 +241,15 @@ public class MonitorServiceConfigurationBuilder {
         theConfig.storageAdapter.password = getString(storageAdapterConfig, context, StorageAttributes.PASSWORD);
         String typeStr = getString(storageAdapterConfig, context, StorageAttributes.TYPE);
         theConfig.storageAdapter.type = MonitorServiceConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
+
+        if (theConfig.storageAdapter.useSSL) {
+            if (theConfig.storageAdapter.keystorePath == null) {
+                throw new IllegalArgumentException("In order to use SSL, a keystore file path must be specified");
+            }
+            if (theConfig.storageAdapter.keystorePassword == null) {
+                throw new IllegalArgumentException("In order to use SSL, a keystore password must be specified");
+            }
+        }
     }
 
     private void determineGlobalConfig(ModelNode config, OperationContext context) throws OperationFailedException {
