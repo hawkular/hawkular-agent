@@ -48,29 +48,19 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     public MetricsOnlyStorageAdapter() {
     }
 
+
+    @Override
+    public void initialize(org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter config,
+            Diagnostics diag, ServerIdentifiers selfId, HttpClientBuilder httpClientBuilder) {
+        this.config = config;
+        this.diagnostics = diag;
+        this.selfId = selfId;
+        this.httpClientBuilder = httpClientBuilder;
+    }
+
     @Override
     public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration() {
         return config;
-    }
-
-    @Override
-    public void setStorageAdapterConfiguration(MonitorServiceConfiguration.StorageAdapter config) {
-        this.config = config;
-    }
-
-    @Override
-    public void setDiagnostics(Diagnostics diag) {
-        this.diagnostics = diag;
-    }
-
-    @Override
-    public void setSelfIdentifiers(ServerIdentifiers selfId) {
-        this.selfId = selfId;
-    }
-
-    @Override
-    public void setHttpClientBuilder(HttpClientBuilder httpClientBuilder) {
-        this.httpClientBuilder = httpClientBuilder;
     }
 
     @Override

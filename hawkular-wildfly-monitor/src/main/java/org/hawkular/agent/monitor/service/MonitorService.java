@@ -440,10 +440,7 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
 
-        this.storageAdapter.setStorageAdapterConfiguration(configuration.storageAdapter);
-        this.storageAdapter.setDiagnostics(diagnostics);
-        this.storageAdapter.setSelfIdentifiers(selfId);
-        this.storageAdapter.setHttpClientBuilder(httpClientBuilder);
+        this.storageAdapter.initialize(configuration.storageAdapter, diagnostics, selfId, httpClientBuilder);
 
         // provide our storage adapter to the proxies - allows external apps to use them to store its own data
         metricStorageProxy.setStorageAdapter(storageAdapter);
