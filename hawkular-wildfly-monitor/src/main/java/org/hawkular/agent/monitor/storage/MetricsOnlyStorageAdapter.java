@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.storage;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 
 import org.hawkular.agent.monitor.api.Avail;
@@ -33,9 +34,7 @@ import org.hawkular.agent.monitor.service.Util;
 import org.jboss.logging.Logger;
 
 import com.squareup.okhttp.Callback;
-import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
 public class MetricsOnlyStorageAdapter implements StorageAdapter {
@@ -117,11 +116,8 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             url.append("metrics/data");
 
             // now send the REST request
-            Request request = new Request.Builder()
-                    .url(url.toString())
-                    .addHeader("Hawkular-Tenant", config.tenantId)
-                    .post(RequestBody.create(MediaType.parse("application/json"),jsonPayload))
-                    .build();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(),
+                    Collections.singletonMap("Hawkular-Tenant", config.tenantId), jsonPayload);
 
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
@@ -187,12 +183,8 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             url.append("availability/data");
 
             // now send the REST request
-
-            Request request = new Request.Builder()
-                    .url(url.toString())
-                    .addHeader("Hawkular-Tenant", config.tenantId)
-                    .post(RequestBody.create(MediaType.parse("application/json"),jsonPayload))
-                    .build();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(),
+                    Collections.singletonMap("Hawkular-Tenant", config.tenantId), jsonPayload);
 
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {

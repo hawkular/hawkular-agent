@@ -108,10 +108,8 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.google.gson.GsonBuilder;
-import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
 public class MonitorService implements Service<MonitorService> {
@@ -693,33 +691,16 @@ public class MonitorService implements Service<MonitorService> {
             return configuration.storageAdapter.tenantId;
         }
 
-        Request request = null;
-
         try {
-            // We need to hack around the fact that inventory
-            // is somehow forwarding the calls to accounts via Https
-            // when this call is Https, but Inventory is not providing
-            // the matching key. So no Https for now
+            // TODO: hack around the fact that inventory is somehow forwarding the calls to accounts via Https
+            // when this call is Https, but Inventory is not providing the matching key. So no Https for now
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
                     configuration.storageAdapter.inventoryContext);
             url = Util.convertToNonSecureUrl(url.toString());
             url.append("tenant");
 
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(configuration.storageAdapter.username + ":"
-                    + configuration.storageAdapter.password);
-
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-
-            request = new Request.Builder()
-                    .url(url.toString())
-                    .addHeader("Authorization", "Basic " + base64Encode)
-                    .addHeader("Accept","application/json")
-                    .get()
-                    .build();
-
-            // This is a synchronous call
+            Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), null);
             Response httpResponse = httpclient.newCall(request).execute();
 
             if (!httpResponse.isSuccessful()) {
@@ -735,15 +716,10 @@ public class MonitorService implements Service<MonitorService> {
             return configuration.storageAdapter.tenantId;
         } catch (Throwable t) {
             throw new RuntimeException("Cannot get tenant ID", t);
-        } finally {
-            if (request != null) {
-//                request.;
-            }
         }
     }
 
     private void registerFeed() throws Exception {
-        Request request = null;
         String desiredFeedId = this.selfId.getFullIdentifier();
         this.feedId = desiredFeedId; // assume we will get what we want
 
@@ -782,24 +758,7 @@ public class MonitorService implements Service<MonitorService> {
 
             // now send the REST request
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-
-            MediaType mediaType = MediaType.parse("application/json");
-            RequestBody body = RequestBody.create(mediaType, jsonPayload);
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(configuration.storageAdapter.username + ":"
-                    + configuration.storageAdapter.password);
-
-            request = new Request.Builder()
-                    .url(url.toString())
-                    .post(body)
-                    .addHeader("Authorization", "Basic " + base64Encode)
-                    .addHeader("Content-Type", "application/json")
-                    .build();
-
-
-            // This is a synchronous call
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
             Response httpResponse = httpclient.newCall(request).execute();
 
             // HTTP status of 201 means success; 409 means it already exists, anything else is an error
