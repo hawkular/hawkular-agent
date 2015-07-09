@@ -496,7 +496,6 @@ public class MonitorService implements Service<MonitorService> {
                     resourceManager = im.getResourceManager();
                     bIter = resourceManager.getBreadthFirstIterator();
                     while (bIter.hasNext()) {
-                        // TODO store resource and resource type data to inventory
                         DMRResource resource = bIter.next();
                         inventoryStorageProxy.storeResourceType(resource.getResourceType());
                         inventoryStorageProxy.storeResource(resource);

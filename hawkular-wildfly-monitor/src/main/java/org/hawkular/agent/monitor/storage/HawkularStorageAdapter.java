@@ -134,6 +134,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         metricsAdapter.setDiagnostics(diagnostics);
         metricsAdapter.setStorageAdapterConfiguration(getStorageAdapterConfiguration());
         metricsAdapter.setSelfIdentifiers(selfId);
+        metricsAdapter.setHttpClientBuilder(httpClientBuilder);
         metricsAdapter.store(((HawkularMetricDataPayloadBuilder) payloadBuilder)
                 .toMetricsOnlyMetricDataPayloadBuilder());
 
@@ -197,6 +198,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         metricsAdapter.setDiagnostics(diagnostics);
         metricsAdapter.setStorageAdapterConfiguration(getStorageAdapterConfiguration());
         metricsAdapter.setSelfIdentifiers(selfId);
+        metricsAdapter.setHttpClientBuilder(httpClientBuilder);
         metricsAdapter.store(((HawkularAvailDataPayloadBuilder) payloadBuilder)
                 .toMetricsOnlyAvailDataPayloadBuilder());
 
