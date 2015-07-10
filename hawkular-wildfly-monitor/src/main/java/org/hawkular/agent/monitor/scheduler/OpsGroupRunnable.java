@@ -30,7 +30,6 @@ import org.hawkular.dmrclient.JBossASClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.logging.Logger;
 
-import com.google.gson.Gson;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
@@ -51,7 +50,6 @@ public class OpsGroupRunnable implements Runnable {
     private ServerIdentifiers selfIdentifiers;
 
     private String baseuri;
-    private Gson gson;
     private JBossASClient asClient;
     private OkHttpClient httpClient;
 
@@ -63,7 +61,6 @@ public class OpsGroupRunnable implements Runnable {
 
         this.selfIdentifiers = selfIdentifiers;
 
-        gson = new Gson();
         asClient = new JBossASClient(factory.createClient());
         MonitorServiceConfiguration.StorageAdapter adapterConfig = schedulerConfig.getStorageAdapterConfig();
         try {
@@ -108,7 +105,7 @@ public class OpsGroupRunnable implements Runnable {
 
                     String content = response.body().string();
 
-                    OpsRequest map = gson.fromJson(content, OpsRequest.class);
+                    OpsRequest map = Util.fromJson(content, OpsRequest.class);
 
                     String action = map.getAction();
                     String operationId = map.getId();
@@ -146,7 +143,7 @@ public class OpsGroupRunnable implements Runnable {
     }
 
     private OpsResult toOutcome(ModelNode result) {
-        Map<String,Object> tmp = gson.fromJson(result.toJSONString(true),Map.class);
+        Map<String, Object> tmp = Util.fromJson(result.toJSONString(true), Map.class);
         if (tmp.get("outcome").equals("success")) {
             return new OpsResult(true);
         }
@@ -163,7 +160,7 @@ public class OpsGroupRunnable implements Runnable {
         Request request;
 
         String uri = baseuri + "/" + selfIdentifiers.getFullIdentifier() + "/" + operationId;
-        String json = gson.toJson(result);
+        String json = Util.toJson(result);
         RequestBody body = RequestBody.create(JSON_MEDIA_TYPE,json);
 
         request = new Request.Builder()
