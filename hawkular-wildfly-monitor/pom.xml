@@ -42,8 +42,19 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>${version.com.fasterxml.jackson.core}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${version.com.fasterxml.jackson.core}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>${version.com.fasterxml.jackson.core}</version>
     </dependency>
 
     <dependency>
@@ -58,21 +69,23 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-dmr-client</artifactId>
       <version>${project.version}</version>
     </dependency>
 
+    <!-- START DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
+    <!-- DON'T FORGET TO REMOVE THE DEP FROM module.xml -->
     <dependency>
       <groupId>org.hawkular.bus</groupId>
       <artifactId>hawkular-bus-rest-client</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <!-- END DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
@@ -138,13 +151,6 @@
       <artifactId>jboss-logging-processor</artifactId>
       <scope>provided</scope>
       <optional>true</optional>
-    </dependency>
-
-    <!-- need this to avoid annoying javadoc errors when doing a mvn release -->
-    <dependency>
-      <groupId>org.jboss.resteasy</groupId>
-      <artifactId>resteasy-jackson2-provider</artifactId>
-      <scope>provided</scope>
     </dependency>
   </dependencies>
 

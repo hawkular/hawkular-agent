@@ -16,14 +16,14 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import com.google.gson.Gson;
-import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.hawkular.agent.monitor.api.Avail;
+import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
+import org.hawkular.agent.monitor.service.Util;
 
 /**
  * Allows one to build up a payload request to send to availability storage by adding
@@ -66,7 +66,7 @@ public class MetricsOnlyAvailDataPayloadBuilder implements AvailDataPayloadBuild
 
     @Override
     public String toPayload() {
-        String jsonPayload = new Gson().toJson(toObjectPayload());
+        final String jsonPayload = Util.toJson(toObjectPayload());
         return jsonPayload;
     }
 

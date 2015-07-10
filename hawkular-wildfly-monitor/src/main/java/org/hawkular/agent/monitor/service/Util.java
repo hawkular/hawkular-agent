@@ -26,10 +26,41 @@ import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.util.Base64;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * Just some basic utilities.
  */
 public class Util {
+    public static String toJson(Object obj) {
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.setVisibilityChecker(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        final String json;
+        try {
+            json = mapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Object cannot be parsed as JSON", e);
+        }
+        return json;
+    }
+
+    public static <T> T fromJson(String json, Class<T> clazz) {
+        final ObjectMapper mapper = new ObjectMapper();
+        final T obj;
+        try {
+            obj = mapper.readValue(json, clazz);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("JSON message cannot be converted to object of type:" + clazz, e);
+        }
+        return obj;
+    }
+
     /**
      * Encodes the given string so it can be placed inside a URL.
      *

@@ -19,13 +19,16 @@
 <module xmlns="urn:jboss:module:1.0" name="${moduleName}">
   <resources>
     <resource-root path="clients-common.jar"/>
-    <resource-root path="gson.jar"/>
     <resource-root path="hawkular-bus-rest-client.jar"/>
     <resource-root path="hawkular-dmr-client.jar"/>
     <resource-root path="inventory-api.jar"/>
     <resource-root path="hawkular-monitor.jar"/>
     <resource-root path="metrics-core.jar"/>
     <resource-root path="jgrapht-core.jar"/>
+    <resource-root path="jackson-core.jar"/>
+    <resource-root path="jackson-databind.jar"/>
+    <resource-root path="jackson-annotations.jar"/>
+    <resource-root path="rxjava.jar"/>
   </resources>
 
   <dependencies>
@@ -40,8 +43,7 @@
     <module name="org.jboss.vfs"/>
 
     <!-- other dependencies we need -->
-    <module name="org.apache.httpcomponents"/>
-    <module name="org.codehaus.jackson.jackson-core-asl"/>
+    <module name="org.apache.httpcomponents"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>
     <module name="org.jboss.as.threads"/>
