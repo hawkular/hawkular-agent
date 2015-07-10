@@ -38,9 +38,26 @@
     <!-- used to replace the variables in module.xml -->
     <moduleName>org.hawkular.agent.monitor</moduleName>
     <moduleDir>org/hawkular/agent/monitor</moduleDir>
+    <version.com.fasterxml.jackson.core>2.6.0-rc3</version.com.fasterxml.jackson.core>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>${version.com.fasterxml.jackson.core}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${version.com.fasterxml.jackson.core}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>${version.com.fasterxml.jackson.core}</version>
+    </dependency>
+
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
@@ -76,12 +93,6 @@
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.resteasy</groupId>
-      <artifactId>resteasy-jackson2-provider</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -134,7 +145,6 @@
       <scope>provided</scope>
       <optional>true</optional>
     </dependency>
-
   </dependencies>
 
   <build>
