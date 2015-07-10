@@ -22,10 +22,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
+import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.metrics.client.common.MetricType;
 import org.hawkular.metrics.client.common.SingleMetric;
-
-import com.google.gson.Gson;
 
 /**
  * Allows one to build up a payload request to send to Hawkular by adding
@@ -58,7 +57,7 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
 
     @Override
     public String toPayload() {
-        String jsonPayload = new Gson().toJson(toMessageBusObject());
+        final String jsonPayload = Util.toJson(toMessageBusObject());
         return jsonPayload;
     }
 

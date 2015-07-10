@@ -52,8 +52,6 @@ import org.hawkular.bus.restclient.RestClient;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.jboss.logging.Logger;
 
-import com.google.gson.GsonBuilder;
-
 public class HawkularStorageAdapter implements StorageAdapter {
     private static final Logger LOGGER = Logger.getLogger(HawkularStorageAdapter.class);
 
@@ -288,7 +286,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
             rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource),
                     getInventoryId(resource.getResourceType()), resource.getProperties());
-            String jsonPayload = new GsonBuilder().create().toJson(rPojo);
+            final String jsonPayload = Util.toJson(rPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
@@ -341,7 +339,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             org.hawkular.inventory.api.model.ResourceType.Blueprint rtPojo;
             rtPojo = new org.hawkular.inventory.api.model.ResourceType.Blueprint(getInventoryId(resourceType),
                     resourceType.getProperties());
-            String jsonPayload = new GsonBuilder().create().toJson(rtPojo);
+            final String jsonPayload = Util.toJson(rtPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
@@ -395,7 +393,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Metric.Blueprint mtPojo;
             mtPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypeId, metricId, metricProps);
-            String jsonPayload = new GsonBuilder().create().toJson(mtPojo);
+            final String jsonPayload = Util.toJson(mtPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
@@ -457,7 +455,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.MetricType.Blueprint mtPojo;
             mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, metricTypeProps);
-            String jsonPayload = new GsonBuilder().create().toJson(mtPojo);
+            final String jsonPayload = Util.toJson(mtPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
@@ -505,7 +503,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // get the payload in JSON format
             ArrayList<String> id = new ArrayList<>();
             id.add(metricId);
-            String jsonPayload = new GsonBuilder().create().toJson(id);
+            final String jsonPayload = Util.toJson(id);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
@@ -553,7 +551,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // get the payload in JSON format
             ArrayList<String> id = new ArrayList<>();
             id.add(metricTypeId);
-            String jsonPayload = new GsonBuilder().create().toJson(id);
+            final String jsonPayload = Util.toJson(id);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);

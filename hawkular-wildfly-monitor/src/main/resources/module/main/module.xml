@@ -19,7 +19,6 @@
 <module xmlns="urn:jboss:module:1.0" name="${moduleName}">
   <resources>
     <resource-root path="clients-common.jar"/>
-    <resource-root path="gson.jar"/>
     <resource-root path="hawkular-bus-rest-client.jar"/>
     <resource-root path="hawkular-dmr-client.jar"/>
     <resource-root path="inventory-api.jar"/>
