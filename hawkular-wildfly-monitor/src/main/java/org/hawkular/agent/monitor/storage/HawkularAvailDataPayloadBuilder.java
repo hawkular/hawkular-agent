@@ -23,8 +23,7 @@ import java.util.Map;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
-
-import com.google.gson.Gson;
+import org.hawkular.agent.monitor.service.Util;
 
 /**
  * Allows one to build up a payload request to send to Hawkular by adding
@@ -57,7 +56,7 @@ public class HawkularAvailDataPayloadBuilder implements AvailDataPayloadBuilder 
 
     @Override
     public String toPayload() {
-        String jsonPayload = new Gson().toJson(toMessageBusObject());
+        final String jsonPayload = Util.toJson(toMessageBusObject());
         return jsonPayload;
     }
 

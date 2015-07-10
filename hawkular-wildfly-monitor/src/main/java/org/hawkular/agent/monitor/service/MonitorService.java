@@ -107,7 +107,6 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
-import com.google.gson.GsonBuilder;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -704,8 +703,8 @@ public class MonitorService implements Service<MonitorService> {
                         + httpResponse.message() + "], url=[" + url + "]");
             }
 
-            String fromServer = Util.slurpStream(httpResponse.body().byteStream());
-            Tenant tenant = new GsonBuilder().create().fromJson(fromServer, Tenant.class);
+            final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
+            final Tenant tenant = Util.fromJson(fromServer, Tenant.class);
             LOG.infof("Tenant ID [%s]", tenant.getId());
 
             configuration.storageAdapter.tenantId = tenant.getId();
@@ -738,7 +737,7 @@ public class MonitorService implements Service<MonitorService> {
             // get the payload in JSON format
             String environmentId = "test";
             Feed.Blueprint feedPojo = new Feed.Blueprint(desiredFeedId, null);
-            String jsonPayload = new GsonBuilder().create().toJson(feedPojo);
+            String jsonPayload = Util.toJson(feedPojo);
 
             // build the REST URL...
             // start with the protocol, host, and port, plus context
@@ -764,8 +763,8 @@ public class MonitorService implements Service<MonitorService> {
             }
 
             // success - store our feed ID so we remember it the next time
-            String feedObjectFromServer = Util.slurpStream(httpResponse.body().byteStream());
-            Feed feed = new GsonBuilder().create().fromJson(feedObjectFromServer, Feed.class);
+            final String feedObjectFromServer = Util.slurpStream(httpResponse.body().byteStream());
+            final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
             if (desiredFeedId.equals(feed.getId())) {
                 LOG.infof("Feed ID registered [%s]", feed.getId());
             } else {

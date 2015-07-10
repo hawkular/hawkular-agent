@@ -46,6 +46,7 @@
   </modules>
 
   <properties>
+    <version.com.fasterxml.jackson.core>2.6.0-rc3</version.com.fasterxml.jackson.core>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
     <version.org.hawkular.bus>0.1.1</version.org.hawkular.bus>
