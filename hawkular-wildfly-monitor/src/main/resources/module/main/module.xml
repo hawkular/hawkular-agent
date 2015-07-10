@@ -43,8 +43,7 @@
     <module name="org.jboss.vfs"/>
 
     <!-- other dependencies we need -->
-    <module name="org.apache.httpcomponents"/>
-    <module name="org.codehaus.jackson.jackson-core-asl"/>
+    <module name="org.apache.httpcomponents"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>
     <module name="org.jboss.as.threads"/>

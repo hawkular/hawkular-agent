@@ -74,10 +74,18 @@
       <version>${project.version}</version>
     </dependency>
 
+    <!-- START DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
+    <!-- DON'T FORGET TO REMOVE THE DEP FROM module.xml -->
     <dependency>
       <groupId>org.hawkular.bus</groupId>
       <artifactId>hawkular-bus-rest-client</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <!-- END DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
