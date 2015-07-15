@@ -69,6 +69,7 @@ public class MonitorServiceConfiguration {
         public String busContext;
         public String inventoryContext;
         public String metricsContext;
+        public String feedcommContext;
         public String keystorePath;
         public String keystorePassword;
     }

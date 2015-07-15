@@ -117,6 +117,14 @@ public interface StorageAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition FEEDCOMM_CONTEXT = new SimpleAttributeDefinitionBuilder("feedcommContext",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode("/hawkular/feed-comm/"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             TYPE,
             USERNAME,
@@ -129,6 +137,7 @@ public interface StorageAttributes {
             SERVER_OUTBOUND_SOCKET_BINDING_REF,
             BUS_CONTEXT,
             INVENTORY_CONTEXT,
-            METRICS_CONTEXT
+            METRICS_CONTEXT,
+            FEEDCOMM_CONTEXT
     };
 }

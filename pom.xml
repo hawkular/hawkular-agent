@@ -47,9 +47,11 @@
 
   <properties>
     <version.com.fasterxml.jackson.core>2.6.0-rc3</version.com.fasterxml.jackson.core>
+    <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
-    <version.org.hawkular.bus>0.1.1</version.org.hawkular.bus>
+    <version.org.hawkular>1.0.0.Alpha3-SNAPSHOT</version.org.hawkular>
+    <version.org.hawkular.bus>0.2.1-SNAPSHOT</version.org.hawkular.bus>
     <version.org.hawkular.inventory>0.1.0.Final</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.5.0-SNAPSHOT</version.org.hawkular.metrics>
     <!-- START DELETE WHEN WE MOVE TO PARENT POM 18+ -->
@@ -68,17 +70,12 @@
       <!-- - A element's inner order is <groupId>, <artifactId>, [<type>,] [<classifier>,] <version> -->
 
       <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>${version.com.google.code.gson}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
         <version>${version.io.dropwizard.metrics}</version>
       </dependency>
 
+      <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
@@ -88,7 +85,19 @@
       <dependency>
         <groupId>com.squareup.okhttp</groupId>
         <artifactId>okhttp</artifactId>
-        <version>2.4.0</version>
+        <version>${version.com.squareup.okhttp}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.squareup.okhttp</groupId>
+        <artifactId>okhttp-ws</artifactId>
+        <version>${version.com.squareup.okhttp}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular</groupId>
+        <artifactId>hawkular-feed-comm-api</artifactId>
+        <version>${version.org.hawkular}</version>
       </dependency>
 
       <dependency>
@@ -99,6 +108,23 @@
           <exclusion>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.bus</groupId>
+        <artifactId>hawkular-bus-common</artifactId>
+        <version>${version.org.hawkular.bus}</version>
+        <!-- we know that we never need to use these so don't pull them in -->
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-all</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-jaas</artifactId>
           </exclusion>
         </exclusions>
       </dependency>

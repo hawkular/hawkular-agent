@@ -43,14 +43,11 @@ import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.bus.restclient.RestClient;
 import org.hawkular.inventory.api.model.MetricUnit;
-import org.jboss.logging.Logger;
 
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 public class HawkularStorageAdapter implements StorageAdapter {
-    private static final Logger LOGGER = Logger.getLogger(HawkularStorageAdapter.class);
-
     private MonitorServiceConfiguration.StorageAdapter config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
@@ -228,7 +225,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             relateResourceTypeWithMetricType(resourceType, availType);
         }
 
-        LOGGER.debugf("Stored resource type: %s", resourceType);
+        MsgLogger.LOG.debugf("Stored resource type: %s", resourceType);
     }
 
     @Override
@@ -250,7 +247,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             relateResourceWithMetric(resource, availInstance);
         }
 
-        LOGGER.debugf("Stored resource: %s", resource);
+        MsgLogger.LOG.debugf("Stored resource: %s", resource);
     }
 
     private String getInventoryId(NamedObject no) {

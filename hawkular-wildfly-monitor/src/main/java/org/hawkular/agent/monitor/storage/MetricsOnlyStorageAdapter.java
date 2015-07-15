@@ -31,15 +31,12 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
-import org.jboss.logging.Logger;
 
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 public class MetricsOnlyStorageAdapter implements StorageAdapter {
-    private static final Logger LOGGER = Logger.getLogger(MetricsOnlyStorageAdapter.class);
-
     private MonitorServiceConfiguration.StorageAdapter config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
@@ -47,7 +44,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
     public MetricsOnlyStorageAdapter() {
     }
-
 
     @Override
     public void initialize(org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter config,

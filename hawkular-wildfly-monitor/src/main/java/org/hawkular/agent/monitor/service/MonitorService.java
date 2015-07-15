@@ -45,6 +45,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
+import org.hawkular.agent.monitor.feedcomm.FeedComm;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
@@ -113,8 +114,6 @@ import com.squareup.okhttp.Response;
 
 public class MonitorService implements Service<MonitorService> {
 
-    private static final Logger LOG = Logger.getLogger(MonitorService.class);
-
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
     private final InjectedValue<ControlledProcessStateService> processStateValue = new InjectedValue<>();
@@ -140,6 +139,9 @@ public class MonitorService implements Service<MonitorService> {
     // used to send monitored data for storage
     private StorageAdapter storageAdapter;
     private HttpClientBuilder httpClientBuilder;
+
+    // used to send data to the server over the feed communications channel
+    private FeedComm feedComm;
 
     // scheduled metric and avail collections
     private SchedulerService schedulerService;
@@ -284,11 +286,15 @@ public class MonitorService implements Service<MonitorService> {
 
         MsgLogger.LOG.infoUsingServerSideUrl(this.configuration.storageAdapter.url);
 
-        // if we are participating in a full Hawkular environment, register our feed ID
+        // if we are participating in a full Hawkular environment, we need to do some additional things:
+        // 1. determine our tenant ID dynamically
+        // 2. register our feed ID
+        // 3. connect to the server's feed comm channel
         if (configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
             try {
                 determineTenantId();
                 registerFeed();
+                connectToFeedCommChannel();
             } catch (Exception e) {
                 MsgLogger.LOG.errorCannotDoAnythingWithoutFeed(e);
                 return;
@@ -500,7 +506,8 @@ public class MonitorService implements Service<MonitorService> {
             } catch (Throwable t) {
                 // TODO for now, just stop what we were doing and whatever we have in inventory is "good enough"
                 // for prototyping, this is good enough, but we'll need better handling later
-                LOG.errorf(t, "Failed to completely add our inventory - but we will keep going with partial inventory");
+                MsgLogger.LOG.errorf(t,
+                        "Failed to completely add our inventory - but we will keep going with partial inventory");
             }
         }
 
@@ -660,7 +667,7 @@ public class MonitorService implements Service<MonitorService> {
                 // if a metric/avail gets data from grandchildren or deeper, we don't know if it exists,
                 // so just assume it does.
                 childResourceExists = true;
-                LOG.tracef("Cannot test long child path [%s] under resource [%s] "
+                MsgLogger.LOG.tracef("Cannot test long child path [%s] under resource [%s] "
                         + "for existence so it will be assumed to exist", childRelativePath, parentResource);
             } else {
                 ModelNode haystackNode = parentResource.getModelNode().get(addressParts[0]);
@@ -705,7 +712,7 @@ public class MonitorService implements Service<MonitorService> {
 
             final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
             final Tenant tenant = Util.fromJson(fromServer, Tenant.class);
-            LOG.infof("Tenant ID [%s]", tenant.getId());
+            MsgLogger.LOG.debugf("Tenant ID [%s]", tenant.getId());
 
             configuration.storageAdapter.tenantId = tenant.getId();
             return configuration.storageAdapter.tenantId;
@@ -724,7 +731,7 @@ public class MonitorService implements Service<MonitorService> {
                 String feedIdFromDataFile = slurpDataFile(feedFile.getName());
                 feedIdFromDataFile = feedIdFromDataFile.trim();
                 if (!desiredFeedId.equals(feedIdFromDataFile)) {
-                    LOG.warnf("Will use feed ID [%s] found in [%s];"
+                    MsgLogger.LOG.warnf("Will use feed ID [%s] found in [%s];"
                             + " note that it is different than our desired feed ID [%s].",
                             feedIdFromDataFile, feedFile, desiredFeedId);
                     feedId = feedIdFromDataFile;
@@ -766,11 +773,12 @@ public class MonitorService implements Service<MonitorService> {
             final String feedObjectFromServer = Util.slurpStream(httpResponse.body().byteStream());
             final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
             if (desiredFeedId.equals(feed.getId())) {
-                LOG.infof("Feed ID registered [%s]", feed.getId());
+                MsgLogger.LOG.infof("Feed ID registered [%s]", feed.getId());
             } else {
-                LOG.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
+                MsgLogger.LOG.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
                 // should we throw an error here or just use the feed ID we were given?
-                LOG.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file", feed.getId());
+                MsgLogger.LOG.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file",
+                        feed.getId());
             }
 
             this.feedId = feed.getId();
@@ -778,5 +786,10 @@ public class MonitorService implements Service<MonitorService> {
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot create feed [%s]", desiredFeedId), t);
         }
+    }
+
+    private void connectToFeedCommChannel() throws Exception {
+        feedComm = new FeedComm(this.httpClientBuilder, this.configuration, this.feedId);
+        feedComm.connect();
     }
 }

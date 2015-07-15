@@ -31,13 +31,13 @@ import javax.net.ssl.TrustManagerFactory;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.Util;
-import org.jboss.logging.Logger;
 
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Request.Builder;
 import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.ws.WebSocketCall;
 
 /**
  * Builds an HTTP client that can be used to talk to the Hawkular server-side.
@@ -45,8 +45,6 @@ import com.squareup.okhttp.RequestBody;
  * This builder also has methods that you can use to build requests.
  */
 public class HttpClientBuilder {
-    private static final Logger LOG = Logger.getLogger(HttpClientBuilder.class);
-
     private final String password;
     private final String username;
     private final boolean useSSL;
@@ -55,7 +53,6 @@ public class HttpClientBuilder {
 
     // holds the last built client
     private OkHttpClient httpClient;
-
 
     public HttpClientBuilder(MonitorServiceConfiguration configuration) {
         username = configuration.storageAdapter.username;
@@ -81,38 +78,57 @@ public class HttpClientBuilder {
     public Request buildJsonGetRequest(String url, Map<String, String> headers) {
         String base64Credentials = Util.base64Encode(username + ":" + password);
 
-        Builder request = new Request.Builder()
+        Builder requestBuilder = new Request.Builder()
                 .url(url)
                 .addHeader("Authorization", "Basic " + base64Credentials)
                 .addHeader("Accept", "application/json");
 
         if (headers != null) {
             for (Map.Entry<String, String> header : headers.entrySet()) {
-                request.addHeader(header.getKey(), header.getValue());
+                requestBuilder.addHeader(header.getKey(), header.getValue());
             }
         }
 
-        return request.get().build();
+        return requestBuilder.get().build();
     }
 
     public Request buildJsonPostRequest(String url, Map<String, String> headers, String jsonPayload) {
         // make sure we are authenticated. see http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
         String base64Credentials = Util.base64Encode(username + ":" + password);
 
-        Builder request = new Request.Builder()
+        Builder requestBuilder = new Request.Builder()
                 .url(url)
                 .addHeader("Authorization", "Basic " + base64Credentials)
                 .addHeader("Accept", "application/json");
 
         if (headers != null) {
             for (Map.Entry<String, String> header : headers.entrySet()) {
-                request.addHeader(header.getKey(), header.getValue());
+                requestBuilder.addHeader(header.getKey(), header.getValue());
             }
         }
 
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), jsonPayload);
 
-        return request.post(body).build();
+        return requestBuilder.post(body).build();
+    }
+
+    public WebSocketCall createWebSocketCall(String url, Map<String, String> headers) {
+        String base64Credentials = Util.base64Encode(username + ":" + password);
+
+        Builder requestBuilder = new Request.Builder()
+                .url(url)
+                .addHeader("Authorization", "Basic " + base64Credentials)
+                .addHeader("Accept", "application/json");
+
+        if (headers != null) {
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                requestBuilder.addHeader(header.getKey(), header.getValue());
+            }
+        }
+
+        Request request = requestBuilder.build();
+        WebSocketCall wsc = WebSocketCall.create(httpClient, request);
+        return wsc;
     }
 
     /**
@@ -170,7 +186,7 @@ public class HttpClientBuilder {
     private class NullHostNameVerifier implements HostnameVerifier {
         @Override
         public boolean verify(String hostname, SSLSession session) {
-            LOG.debugf("HTTP client is blindly approving cert for [%s]", hostname);
+            MsgLogger.LOG.debugf("HTTP client is blindly approving cert for [%s]", hostname);
             return true;
         }
     }

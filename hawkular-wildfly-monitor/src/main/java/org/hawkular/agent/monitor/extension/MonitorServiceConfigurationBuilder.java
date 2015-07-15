@@ -237,6 +237,8 @@ public class MonitorServiceConfigurationBuilder {
                 StorageAttributes.INVENTORY_CONTEXT);
         theConfig.storageAdapter.metricsContext = getString(storageAdapterConfig, context,
                 StorageAttributes.METRICS_CONTEXT);
+        theConfig.storageAdapter.feedcommContext = getString(storageAdapterConfig, context,
+                StorageAttributes.FEEDCOMM_CONTEXT);
         theConfig.storageAdapter.username = getString(storageAdapterConfig, context, StorageAttributes.USERNAME);
         theConfig.storageAdapter.password = getString(storageAdapterConfig, context, StorageAttributes.PASSWORD);
         String typeStr = getString(storageAdapterConfig, context, StorageAttributes.TYPE);

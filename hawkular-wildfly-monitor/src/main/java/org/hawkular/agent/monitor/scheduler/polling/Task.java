@@ -29,9 +29,6 @@ public interface Task {
 
         /** The task is for collecting availability data. */
         AVAIL,
-
-        /** The task is for poling the server for operations to execute */
-        OPS
     }
 
     interface Kind {
