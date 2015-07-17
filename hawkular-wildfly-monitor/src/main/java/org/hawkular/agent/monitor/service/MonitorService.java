@@ -83,8 +83,9 @@ import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.json.PathDeserializer;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
@@ -717,10 +718,14 @@ public class MonitorService implements Service<MonitorService> {
             }
 
             final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
-            final Tenant tenant = Util.fromJson(fromServer, Tenant.class);
-            MsgLogger.LOG.debugf("Tenant ID [%s]", tenant.getId());
+            // fixme: workaround to the chicken egg problem with tenant deserialization
+            // (path deserializer requires tenant id)
+//            final Tenant tenant = Util.fromJson(fromServer, Tenant.class);
+//            MsgLogger.LOG.debugf("Tenant ID [%s]", tenant.getId());
+            MsgLogger.LOG.debugf("Tenant ID [%s]", "28026b36-8fe4-4332-84c8-524e173a68bf");
 
-            configuration.storageAdapter.tenantId = tenant.getId();
+//            configuration.storageAdapter.tenantId = tenant.getId();
+            configuration.storageAdapter.tenantId = "28026b36-8fe4-4332-84c8-524e173a68bf";
             return configuration.storageAdapter.tenantId;
         } catch (Throwable t) {
             throw new RuntimeException("Cannot get tenant ID", t);
@@ -746,6 +751,10 @@ public class MonitorService implements Service<MonitorService> {
             } catch (FileNotFoundException e) {
                 // probably just haven't been registered yet, keep going
             }
+
+            // set up custom json deserializer then needs the tenantId to work properly
+            PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.of().tenant(configuration.storageAdapter.tenantId)
+                    .get());
 
             // get the payload in JSON format
             String environmentId = "test";
