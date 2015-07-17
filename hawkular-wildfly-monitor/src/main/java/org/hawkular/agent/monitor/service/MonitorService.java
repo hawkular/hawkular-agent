@@ -341,6 +341,12 @@ public class MonitorService implements Service<MonitorService> {
             schedulerService = null;
         }
 
+        // disconnect from the feed comm channel
+        if (feedComm != null) {
+            feedComm.disconnect();
+            feedComm = null;
+        }
+
         // stop diagnostic reporting and spit out a final diagnostics report
         if (diagnosticsReporter != null) {
             this.diagnosticsReporter.stop();

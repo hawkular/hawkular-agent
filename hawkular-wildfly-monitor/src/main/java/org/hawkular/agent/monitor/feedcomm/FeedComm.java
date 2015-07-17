@@ -67,12 +67,20 @@ public class FeedComm {
 
     public void disconnect() {
         if (commProcessor != null) {
-            commProcessor.close(1000, "Disconnect");
+            try {
+                commProcessor.close(1000, "Disconnect");
+            } catch (Exception e) {
+                MsgLogger.LOG.errorCannotCloseCommProcessor(e);
+            }
             commProcessor = null;
         }
 
         if (webSocketCall != null) {
-            webSocketCall.cancel();
+            try {
+                webSocketCall.cancel();
+            } catch (Exception e) {
+                MsgLogger.LOG.errorCannotCloseWebSocketCall(e);
+            }
             webSocketCall = null;
         }
     }
