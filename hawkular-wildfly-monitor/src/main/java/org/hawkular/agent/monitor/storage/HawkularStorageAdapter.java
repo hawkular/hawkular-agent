@@ -42,10 +42,13 @@ import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.bus.restclient.RestClient;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
 
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+import org.hawkular.inventory.json.PathDeserializer;
 
 public class HawkularStorageAdapter implements StorageAdapter {
     private MonitorServiceConfiguration.StorageAdapter config;
@@ -67,6 +70,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         this.diagnostics = diag;
         this.selfId = selfId;
         this.httpClientBuilder = httpClientBuilder;
+        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.of().tenant(config.tenantId).get());
     }
 
     @Override
@@ -268,8 +272,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
-            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource),
-                    getInventoryId(resource.getResourceType()), resource.getProperties());
+            String resourceTypePath = "/" + getInventoryId(resource.getResourceType());
+            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource), resourceTypePath,
+                    resource.getProperties());
             final String jsonPayload = Util.toJson(rPojo);
 
             // build the REST URL
@@ -339,12 +344,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         String metricId = getInventoryId(measurementInstance);
         String metricTypeId = getInventoryId(measurementInstance.getMeasurementType());
+        // todo: in next version of inventory feed will probably have it's own resource and metric types, so instead of
+        // using the absolute path (/metricTypeId), the relative path (../metricTypeId) can be better here
+        String metricTypePath = "/" + metricTypeId;
         Map<String, Object> metricProps = measurementInstance.getProperties();
 
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Metric.Blueprint mtPojo;
-            mtPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypeId, metricId, metricProps);
+            mtPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypePath, metricId, metricProps);
             final String jsonPayload = Util.toJson(mtPojo);
 
             // build the REST URL
@@ -392,7 +400,10 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // get the payload in JSON format
             org.hawkular.inventory.api.model.MetricType.Blueprint mtPojo;
-            mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, metricTypeProps);
+
+            // todo: correctly map the MetricDataType from the MeasurementType instance type (avail from AvailType etc.)
+            mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, MetricDataType.GAUGE,
+                    metricTypeProps);
             final String jsonPayload = Util.toJson(mtPojo);
 
             // build the REST URL
@@ -427,7 +438,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             ArrayList<String> id = new ArrayList<>();
-            id.add(metricId);
+            id.add("../" + metricId);
             final String jsonPayload = Util.toJson(id);
 
             // build the REST URL
@@ -460,7 +471,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             ArrayList<String> id = new ArrayList<>();
-            id.add(metricTypeId);
+            id.add("/" + metricTypeId);
             final String jsonPayload = Util.toJson(id);
 
             // build the REST URL

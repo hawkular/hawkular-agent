@@ -92,6 +92,16 @@ public interface StorageAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition ACCOUNTS_CONTEXT = new SimpleAttributeDefinitionBuilder(
+            "accountsContext",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            // this will be changed to /hawkular/accounts (HAWKULAR-454)
+            .setDefaultValue(new ModelNode("/hawkular-accounts/"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     SimpleAttributeDefinition BUS_CONTEXT = new SimpleAttributeDefinitionBuilder("busContext",
             ModelType.STRING)
             .setAllowNull(true)

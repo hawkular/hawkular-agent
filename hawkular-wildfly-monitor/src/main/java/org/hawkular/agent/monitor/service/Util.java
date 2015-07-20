@@ -29,18 +29,28 @@ import java.util.Base64;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hawkular.inventory.json.InventoryJacksonConfig;
 
 /**
  * Just some basic utilities.
  */
 public class Util {
+    private static ObjectMapper mapper;
+    static {
+        try {
+            mapper = new ObjectMapper();
+            mapper.setVisibilityChecker(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+                    .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                    .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                    .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                    .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+            InventoryJacksonConfig.configure(mapper);
+        } catch (Throwable t) {
+            // don't break the class loading
+        }
+    }
+
     public static String toJson(Object obj) {
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.setVisibilityChecker(mapper.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
         final String json;
         try {
             json = mapper.writeValueAsString(obj);
@@ -51,7 +61,6 @@ public class Util {
     }
 
     public static <T> T fromJson(String json, Class<T> clazz) {
-        final ObjectMapper mapper = new ObjectMapper();
         final T obj;
         try {
             obj = mapper.readValue(json, clazz);

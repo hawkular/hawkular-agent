@@ -35,6 +35,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
@@ -83,8 +85,9 @@ import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.json.PathDeserializer;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
@@ -700,14 +703,17 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         try {
-            // TODO: hack around the fact that inventory is somehow forwarding the calls to accounts via Https
-            // when this call is Https, but Inventory is not providing the matching key. So no Https for now
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.inventoryContext);
-            url = Util.convertToNonSecureUrl(url.toString());
-            url.append("tenant");
+                configuration.storageAdapter.accountsContext);
+            url.append("personas/current");
 
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
+
+            // make the call to the inventory to pre-create the test environment and other assumed entities
+            String tenantUrl = Util.getContextUrlString(configuration.storageAdapter.url,
+                configuration.storageAdapter.inventoryContext).append("tenant").toString();
+            httpclient.newCall(this.httpClientBuilder.buildJsonGetRequest(tenantUrl, null)).execute();
+
             Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), null);
             Response httpResponse = httpclient.newCall(request).execute();
 
@@ -717,10 +723,13 @@ public class MonitorService implements Service<MonitorService> {
             }
 
             final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
-            final Tenant tenant = Util.fromJson(fromServer, Tenant.class);
-            MsgLogger.LOG.debugf("Tenant ID [%s]", tenant.getId());
-
-            configuration.storageAdapter.tenantId = tenant.getId();
+            // depending on accounts is probably overkill because of 1 REST call, so let's process the JSON via regex
+            Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
+            if (matcher.find()) {
+                configuration.storageAdapter.tenantId = matcher.group(1);
+            }
+            MsgLogger.LOG.debugf("Tenant ID [%s]", configuration.storageAdapter.tenantId == null ? "unknown" :
+                    configuration.storageAdapter.tenantId);
             return configuration.storageAdapter.tenantId;
         } catch (Throwable t) {
             throw new RuntimeException("Cannot get tenant ID", t);
@@ -746,6 +755,10 @@ public class MonitorService implements Service<MonitorService> {
             } catch (FileNotFoundException e) {
                 // probably just haven't been registered yet, keep going
             }
+
+            // set up custom json deserializer then needs the tenantId to work properly
+            PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.of().tenant(configuration.storageAdapter.tenantId)
+                    .get());
 
             // get the payload in JSON format
             String environmentId = "test";
