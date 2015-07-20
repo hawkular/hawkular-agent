@@ -66,6 +66,7 @@ public class MonitorServiceConfiguration {
         public String url;
         public boolean useSSL;
         public String serverOutboundSocketBindingRef;
+        public String accountsContext;
         public String busContext;
         public String inventoryContext;
         public String metricsContext;

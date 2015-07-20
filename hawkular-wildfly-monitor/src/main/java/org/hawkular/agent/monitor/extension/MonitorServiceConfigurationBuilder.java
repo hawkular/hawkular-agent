@@ -231,6 +231,8 @@ public class MonitorServiceConfigurationBuilder {
         theConfig.storageAdapter.serverOutboundSocketBindingRef = getString(storageAdapterConfig, context,
                 StorageAttributes.SERVER_OUTBOUND_SOCKET_BINDING_REF);
         theConfig.storageAdapter.tenantId = getString(storageAdapterConfig, context, StorageAttributes.TENANT_ID);
+        theConfig.storageAdapter.accountsContext = getString(storageAdapterConfig, context,
+                StorageAttributes.ACCOUNTS_CONTEXT);
         theConfig.storageAdapter.busContext = getString(storageAdapterConfig, context,
                 StorageAttributes.BUS_CONTEXT);
         theConfig.storageAdapter.inventoryContext = getString(storageAdapterConfig, context,

@@ -35,6 +35,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
@@ -701,12 +703,9 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         try {
-            // TODO: hack around the fact that inventory is somehow forwarding the calls to accounts via Https
-            // when this call is Https, but Inventory is not providing the matching key. So no Https for now
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.inventoryContext);
-            url = Util.convertToNonSecureUrl(url.toString());
-            url.append("tenant");
+                    configuration.storageAdapter.accountsContext);
+            url.append("personas/current");
 
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
             Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), null);
@@ -718,14 +717,13 @@ public class MonitorService implements Service<MonitorService> {
             }
 
             final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
-            // fixme: workaround to the chicken egg problem with tenant deserialization
-            // (path deserializer requires tenant id)
-//            final Tenant tenant = Util.fromJson(fromServer, Tenant.class);
-//            MsgLogger.LOG.debugf("Tenant ID [%s]", tenant.getId());
-            MsgLogger.LOG.debugf("Tenant ID [%s]", "28026b36-8fe4-4332-84c8-524e173a68bf");
-
-//            configuration.storageAdapter.tenantId = tenant.getId();
-            configuration.storageAdapter.tenantId = "28026b36-8fe4-4332-84c8-524e173a68bf";
+            // depending on accounts is probably overkill because of 1 REST call, so let's process the JSON via regex
+            Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
+            if (matcher.find()) {
+                configuration.storageAdapter.tenantId = matcher.group(1);
+            }
+            MsgLogger.LOG.debugf("Tenant ID [%s]", configuration.storageAdapter.tenantId == null ? "unknown" :
+                    configuration.storageAdapter.tenantId);
             return configuration.storageAdapter.tenantId;
         } catch (Throwable t) {
             throw new RuntimeException("Cannot get tenant ID", t);
