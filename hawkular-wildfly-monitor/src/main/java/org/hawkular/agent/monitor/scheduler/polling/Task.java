@@ -28,7 +28,7 @@ public interface Task {
         METRIC,
 
         /** The task is for collecting availability data. */
-        AVAIL
+        AVAIL,
     }
 
     interface Kind {

@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.log;
 import java.util.List;
 
 import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
+import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 import org.jboss.logging.annotations.Cause;
@@ -29,7 +30,7 @@ import org.jboss.logging.annotations.ValidIdRange;
 
 @MessageLogger(projectCode = "HAWKMONITOR")
 @ValidIdRange(min = 10000, max = 19999)
-public interface MsgLogger {
+public interface MsgLogger extends BasicLogger {
     MsgLogger LOG = Logger.getMessageLogger(MsgLogger.class, "org.hawkular.agent.monitor");
 
     @LogMessage(level = Level.INFO)
@@ -151,5 +152,53 @@ public interface MsgLogger {
     @LogMessage(level = Level.ERROR)
     @Message(id = 10029, value = "Scheduler failed to initialize; aborting startup")
     void errorCannotInitializeScheduler(@Cause Throwable t);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10030, value = "Using keystore at [%s]")
+    void infoUseKeystore(String keystorePath);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10031, value = "The storage adapter URL is explicitly specified [%s], so useSSL will be set to [%s]")
+    void infoUsingSSL(String url, boolean useSSL);
+
+    @LogMessage(level = Logger.Level.ERROR)
+    @Message(id = 10032, value = "Server provided an invalid command request: [%s]")
+    void errorInvalidCommandRequestFeed(String requestClassName);
+
+    @LogMessage(level = Logger.Level.ERROR)
+    @Message(id = 10033, value = "Failed to execute command [%s] for server")
+    void errorCommandExecutionFailureFeed(String requestClassName, @Cause Throwable t);
+
+    @LogMessage(level = Logger.Level.INFO)
+    @Message(id = 10034, value = "Feed communications channel to the server has been opened")
+    void infoOpenedFeedComm();
+
+    @LogMessage(level = Logger.Level.INFO)
+    @Message(id = 10035, value = "Feed communications channel to the server has been closed. Code=[%d], Reason=[%s]")
+    void infoClosedFeedComm(int reasonCode, String reason);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 10036, value = "Feed communications channel encountered a failure. Response=[%s]")
+    void warnFeedCommFailure(String response, @Cause Exception e);
+
+    @LogMessage(level = Logger.Level.ERROR)
+    @Message(id = 10037, value = "Failed to send message [%s] over the feed communications channel")
+    void errorFailedToSendOverFeedComm(String command, @Cause Throwable t);
+
+    @LogMessage(level = Logger.Level.WARN)
+    @Message(id = 10038, value = "Failed to close web socket with code=[%d] and reason=[%s]")
+    void warnFailedToCloseWebSocket(int code, String reason, @Cause Exception e);
+
+    @LogMessage(level = Logger.Level.INFO)
+    @Message(id = 10039, value = "The feed-comm URL is [%s]")
+    void infoFeedCommUrl(String feedcommUrl);
+
+    @LogMessage(level = Logger.Level.ERROR)
+    @Message(id = 10040, value = "Cannot close feed-comm processor")
+    void errorCannotCloseCommProcessor(@Cause Exception e);
+
+    @LogMessage(level = Logger.Level.ERROR)
+    @Message(id = 10041, value = "Cannot close feed-comm websocket")
+    void errorCannotCloseWebSocketCall(@Cause Exception e);
 
 }

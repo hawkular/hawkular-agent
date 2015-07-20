@@ -52,6 +52,9 @@
     <xs:attribute name="username"         type="xs:string" use="required"/>
     <xs:attribute name="password"         type="xs:string" use="required"/>
     <xs:attribute name="url"              type="xs:string"/>
+    <xs:attribute name="keystorePath"     type="xs:string"/>
+    <xs:attribute name="keystorePassword" type="xs:string"/>
+    <xs:attribute name="useSSL"           type="xs:boolean"/>
     <xs:attribute name="serverOutboundSocketBindingRef" type="xs:string"/>
     <xs:attribute name="tenantId"         type="xs:string"/>
     <xs:attribute name="busContext"       type="xs:string"/>

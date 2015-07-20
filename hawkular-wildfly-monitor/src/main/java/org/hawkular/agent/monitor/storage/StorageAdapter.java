@@ -27,9 +27,18 @@ import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 public interface StorageAdapter extends MetricStorage, AvailStorage, InventoryStorage {
 
-    MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration();
+    /**
+     * Initializes the storage adapter.
+     *
+     * @param config the configuration of the storage adapter
+     * @param diag the object used to track internal diagnostic data for the storage adapter
+     * @param selfId helps identify where we are hosted
+     * @param httpClientBuilder used to communicate with the storage server
+     */
+    void initialize(MonitorServiceConfiguration.StorageAdapter config, Diagnostics diag, ServerIdentifiers selfId,
+            HttpClientBuilder httpClientBuilder);
 
-    void setStorageAdapterConfiguration(MonitorServiceConfiguration.StorageAdapter config);
+    MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration();
 
     /**
      * Stores the given collected metric data points.
@@ -42,14 +51,4 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
      * @param datapoints the data to be stored
      */
     void storeAvails(Set<AvailDataPoint> datapoints);
-
-    /**
-     * @param diag the object used to track internal diagnostic data for the storage adapter
-     */
-    void setDiagnostics(Diagnostics diag);
-
-    /**
-     * @param selfId helps identify where we are hosted
-     */
-    void setSelfIdentifiers(ServerIdentifiers selfId);
 }

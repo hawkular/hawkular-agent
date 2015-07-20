@@ -46,16 +46,14 @@
   </modules>
 
   <properties>
-    <version.com.fasterxml.jackson.core>2.6.0-rc3</version.com.fasterxml.jackson.core>
+    <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
+    <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
-    <version.org.hawkular.bus>0.1.1</version.org.hawkular.bus>
-    <version.org.hawkular.inventory>0.1.0.Final</version.org.hawkular.inventory>
+    <version.org.hawkular>1.0.0.Alpha3-SNAPSHOT</version.org.hawkular>
+    <version.org.hawkular.bus>0.2.1-SNAPSHOT</version.org.hawkular.bus>
+    <version.org.hawkular.inventory>0.2.0-SNAPSHOT</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.5.0-SNAPSHOT</version.org.hawkular.metrics>
-    <!-- START DELETE WHEN WE MOVE TO PARENT POM 18+ -->
-    <version.org.jboss.msc>1.2.6.Final</version.org.jboss.msc>
-    <version.org.jboss.jboss-dmr>1.3.0.Final</version.org.jboss.jboss-dmr>
-    <!-- END DELETE WHEN WE MOVE TO PARENT POM 18+ -->
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
   </properties>
 
@@ -68,17 +66,12 @@
       <!-- - A element's inner order is <groupId>, <artifactId>, [<type>,] [<classifier>,] <version> -->
 
       <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>${version.com.google.code.gson}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
         <version>${version.io.dropwizard.metrics}</version>
       </dependency>
 
+      <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
@@ -86,14 +79,55 @@
       </dependency>
 
       <dependency>
+        <groupId>com.squareup.okhttp</groupId>
+        <artifactId>okhttp</artifactId>
+        <version>${version.com.squareup.okhttp}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.squareup.okhttp</groupId>
+        <artifactId>okhttp-ws</artifactId>
+        <version>${version.com.squareup.okhttp}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular</groupId>
+        <artifactId>hawkular-feed-comm-api</artifactId>
+        <version>${version.org.hawkular}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.hawkular.bus</groupId>
         <artifactId>hawkular-bus-rest-client</artifactId>
         <version>${version.org.hawkular.bus}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.bus</groupId>
+        <artifactId>hawkular-bus-common</artifactId>
+        <version>${version.org.hawkular.bus}</version>
+        <!-- we know that we never need to use these so don't pull them in -->
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-all</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-jaas</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
         <groupId>org.hawkular.inventory</groupId>
-        <artifactId>inventory-api</artifactId>
+        <artifactId>hawkular-inventory-json-helper</artifactId>
         <version>${version.org.hawkular.inventory}</version>
       </dependency>
 
@@ -102,20 +136,6 @@
         <artifactId>clients-common</artifactId>
         <version>${version.org.hawkular.metrics}</version>
       </dependency>
-
-      <!-- START DELETE WHEN WE MOVE TO PARENT POM 18+ -->
-      <dependency>
-        <groupId>org.jboss.msc</groupId>
-        <artifactId>jboss-msc</artifactId>
-        <version>${version.org.jboss.msc}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.jboss</groupId>
-        <artifactId>jboss-dmr</artifactId>
-        <version>${version.org.jboss.jboss-dmr}</version>
-      </dependency>
-      <!-- END DELETE WHEN WE MOVE TO PARENT POM 18+ -->
 
       <dependency>
         <groupId>org.jgrapht</groupId>

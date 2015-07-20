@@ -63,11 +63,42 @@ public interface StorageAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition USE_SSL = new SimpleAttributeDefinitionBuilder("useSSL",
+            ModelType.BOOLEAN)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    SimpleAttributeDefinition KEYSTORE_PATH = new SimpleAttributeDefinitionBuilder("keystorePath",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    SimpleAttributeDefinition KEYSTORE_PASSWORD = new SimpleAttributeDefinitionBuilder("keystorePassword",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     SimpleAttributeDefinition SERVER_OUTBOUND_SOCKET_BINDING_REF = new SimpleAttributeDefinitionBuilder(
             "serverOutboundSocketBindingRef",
             ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    SimpleAttributeDefinition ACCOUNTS_CONTEXT = new SimpleAttributeDefinitionBuilder(
+            "accountsContext",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            // this will be changed to /hawkular/accounts (HAWKULAR-454)
+            .setDefaultValue(new ModelNode("/hawkular-accounts/"))
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
@@ -96,15 +127,27 @@ public interface StorageAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition FEEDCOMM_CONTEXT = new SimpleAttributeDefinitionBuilder("feedcommContext",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .setDefaultValue(new ModelNode("/hawkular/feed-comm/"))
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             TYPE,
             USERNAME,
             PASSWORD,
             TENANT_ID,
             URL,
+            USE_SSL,
+            KEYSTORE_PATH,
+            KEYSTORE_PASSWORD,
             SERVER_OUTBOUND_SOCKET_BINDING_REF,
             BUS_CONTEXT,
             INVENTORY_CONTEXT,
-            METRICS_CONTEXT
+            METRICS_CONTEXT,
+            FEEDCOMM_CONTEXT
     };
 }

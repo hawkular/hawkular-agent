@@ -35,15 +35,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
@@ -53,6 +47,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
+import org.hawkular.agent.monitor.feedcomm.FeedComm;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
@@ -84,13 +79,15 @@ import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
+import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Tenant;
+import org.hawkular.inventory.json.PathDeserializer;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
@@ -114,15 +111,17 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
 public class MonitorService implements Service<MonitorService> {
-
-    private static final Logger LOG = Logger.getLogger(MonitorService.class);
 
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
     private final InjectedValue<ControlledProcessStateService> processStateValue = new InjectedValue<>();
     private final InjectedValue<SocketBinding> httpSocketBindingValue = new InjectedValue<>();
+    private final InjectedValue<SocketBinding> httpsSocketBindingValue = new InjectedValue<>();
     private final InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue = new InjectedValue<>();
 
     private boolean started = false;
@@ -142,6 +141,10 @@ public class MonitorService implements Service<MonitorService> {
 
     // used to send monitored data for storage
     private StorageAdapter storageAdapter;
+    private HttpClientBuilder httpClientBuilder;
+
+    // used to send data to the server over the feed communications channel
+    private FeedComm feedComm;
 
     // scheduled metric and avail collections
     private SchedulerService schedulerService;
@@ -178,6 +181,9 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         this.configuration = config;
+
+        // the config has everything we need to build the http clients
+        this.httpClientBuilder = new HttpClientBuilder(config);
     }
 
     /**
@@ -193,6 +199,8 @@ public class MonitorService implements Service<MonitorService> {
                 processStateValue);
         bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("http"), SocketBinding.class,
                 httpSocketBindingValue);
+        bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("https"), SocketBinding.class,
+                httpsSocketBindingValue);
         if (this.configuration.storageAdapter.serverOutboundSocketBindingRef != null) {
             bldr.addDependency(OutboundSocketBinding.OUTBOUND_SOCKET_BINDING_BASE_SERVICE_NAME
                     .append(this.configuration.storageAdapter.serverOutboundSocketBindingRef),
@@ -256,30 +264,40 @@ public class MonitorService implements Service<MonitorService> {
 
                 if (this.configuration.storageAdapter.serverOutboundSocketBindingRef == null) {
                     // no URL or output socket binding - assume we are running co-located with server
-                    SocketBinding httpSocketBinding = httpSocketBindingValue.getValue();
-                    address = httpSocketBinding.getAddress().getHostAddress();
+                    SocketBinding socketBinding;
+                    if (this.configuration.storageAdapter.useSSL) {
+                        socketBinding = httpsSocketBindingValue.getValue();
+                    } else {
+                        socketBinding = httpSocketBindingValue.getValue();
+                    }
+                    address = socketBinding.getAddress().getHostAddress();
                     if (address.equals("0.0.0.0") || address.equals("::/128")) {
                         address = InetAddress.getLocalHost().getCanonicalHostName();
                     }
-                    port = httpSocketBinding.getAbsolutePort();
+                    port = socketBinding.getAbsolutePort();
                 } else {
                     OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue.getValue();
                     address = serverBinding.getResolvedDestinationAddress().getHostAddress();
                     port = serverBinding.getDestinationPort();
                 }
-                // TODO: should we use https?
-                this.configuration.storageAdapter.url = String.format("http://%s:%d", address, port);
+                String protocol = (this.configuration.storageAdapter.useSSL) ? "https" : "http";
+                this.configuration.storageAdapter.url = String.format("%s://%s:%d", protocol, address, port);
             } catch (UnknownHostException uhe) {
                 throw new IllegalArgumentException("Cannot determine Hawkular server host", uhe);
             }
         }
+
         MsgLogger.LOG.infoUsingServerSideUrl(this.configuration.storageAdapter.url);
 
-        // if we are participating in a full Hawkular environment, register our feed ID
+        // if we are participating in a full Hawkular environment, we need to do some additional things:
+        // 1. determine our tenant ID dynamically
+        // 2. register our feed ID
+        // 3. connect to the server's feed comm channel
         if (configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
             try {
                 determineTenantId();
                 registerFeed();
+                connectToFeedCommChannel();
             } catch (Exception e) {
                 MsgLogger.LOG.errorCannotDoAnythingWithoutFeed(e);
                 return;
@@ -324,6 +342,12 @@ public class MonitorService implements Service<MonitorService> {
         if (schedulerService != null) {
             schedulerService.stop();
             schedulerService = null;
+        }
+
+        // disconnect from the feed comm channel
+        if (feedComm != null) {
+            feedComm.disconnect();
+            feedComm = null;
         }
 
         // stop diagnostic reporting and spit out a final diagnostics report
@@ -430,9 +454,7 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
 
-        this.storageAdapter.setStorageAdapterConfiguration(configuration.storageAdapter);
-        this.storageAdapter.setDiagnostics(diagnostics);
-        this.storageAdapter.setSelfIdentifiers(selfId);
+        this.storageAdapter.initialize(configuration.storageAdapter, diagnostics, selfId, httpClientBuilder);
 
         // provide our storage adapter to the proxies - allows external apps to use them to store its own data
         metricStorageProxy.setStorageAdapter(storageAdapter);
@@ -472,7 +494,7 @@ public class MonitorService implements Service<MonitorService> {
     private void startScheduler() throws Exception {
         SchedulerConfiguration schedulerConfig = prepareSchedulerConfig();
         schedulerService = new SchedulerService(schedulerConfig, selfId, diagnostics, storageAdapter,
-                createLocalClientFactory());
+                createLocalClientFactory(), this.httpClientBuilder);
 
         // if we are participating in a full hawkular environment, add resource and its metadata to inventory now
         if (this.configuration.storageAdapter.type == MonitorServiceConfiguration.StorageReportTo.HAWKULAR) {
@@ -485,7 +507,6 @@ public class MonitorService implements Service<MonitorService> {
                     resourceManager = im.getResourceManager();
                     bIter = resourceManager.getBreadthFirstIterator();
                     while (bIter.hasNext()) {
-                        // TODO store resource and resource type data to inventory
                         DMRResource resource = bIter.next();
                         inventoryStorageProxy.storeResourceType(resource.getResourceType());
                         inventoryStorageProxy.storeResource(resource);
@@ -494,7 +515,8 @@ public class MonitorService implements Service<MonitorService> {
             } catch (Throwable t) {
                 // TODO for now, just stop what we were doing and whatever we have in inventory is "good enough"
                 // for prototyping, this is good enough, but we'll need better handling later
-                LOG.errorf(t, "Failed to completely add our inventory - but we will keep going with partial inventory");
+                MsgLogger.LOG.errorf(t,
+                        "Failed to completely add our inventory - but we will keep going with partial inventory");
             }
         }
 
@@ -654,7 +676,7 @@ public class MonitorService implements Service<MonitorService> {
                 // if a metric/avail gets data from grandchildren or deeper, we don't know if it exists,
                 // so just assume it does.
                 childResourceExists = true;
-                LOG.tracef("Cannot test long child path [%s] under resource [%s] "
+                MsgLogger.LOG.tracef("Cannot test long child path [%s] under resource [%s] "
                         + "for existence so it will be assumed to exist", childRelativePath, parentResource);
             } else {
                 ModelNode haystackNode = parentResource.getModelNode().get(addressParts[0]);
@@ -680,46 +702,41 @@ public class MonitorService implements Service<MonitorService> {
             return configuration.storageAdapter.tenantId;
         }
 
-        HttpGet request = null;
-
         try {
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.inventoryContext);
-            url.append("tenant");
-            HttpClient httpclient = HttpClientBuilder.create().build();
-            request = new HttpGet(url.toString());
+                configuration.storageAdapter.accountsContext);
+            url.append("personas/current");
 
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(configuration.storageAdapter.username + ":"
-                    + configuration.storageAdapter.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
+            OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
 
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            // make the call to the inventory to pre-create the test environment and other assumed entities
+            String tenantUrl = Util.getContextUrlString(configuration.storageAdapter.url,
+                configuration.storageAdapter.inventoryContext).append("tenant").toString();
+            httpclient.newCall(this.httpClientBuilder.buildJsonGetRequest(tenantUrl, null)).execute();
 
-            if (statusLine.getStatusCode() != 200) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), null);
+            Response httpResponse = httpclient.newCall(request).execute();
+
+            if (!httpResponse.isSuccessful()) {
+                throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
+                        + httpResponse.message() + "], url=[" + url + "]");
             }
 
-            final String fromServer = Util.slurpStream(httpResponse.getEntity().getContent());
-            final Tenant tenant = Util.fromJson(fromServer, Tenant.class);
-            LOG.infof("Tenant ID [%s]", tenant.getId());
-
-            configuration.storageAdapter.tenantId = tenant.getId();
+            final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
+            // depending on accounts is probably overkill because of 1 REST call, so let's process the JSON via regex
+            Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
+            if (matcher.find()) {
+                configuration.storageAdapter.tenantId = matcher.group(1);
+            }
+            MsgLogger.LOG.debugf("Tenant ID [%s]", configuration.storageAdapter.tenantId == null ? "unknown" :
+                    configuration.storageAdapter.tenantId);
             return configuration.storageAdapter.tenantId;
         } catch (Throwable t) {
             throw new RuntimeException("Cannot get tenant ID", t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
     }
 
     private void registerFeed() throws Exception {
-        HttpPost request = null;
         String desiredFeedId = this.selfId.getFullIdentifier();
         this.feedId = desiredFeedId; // assume we will get what we want
 
@@ -729,7 +746,7 @@ public class MonitorService implements Service<MonitorService> {
                 String feedIdFromDataFile = slurpDataFile(feedFile.getName());
                 feedIdFromDataFile = feedIdFromDataFile.trim();
                 if (!desiredFeedId.equals(feedIdFromDataFile)) {
-                    LOG.warnf("Will use feed ID [%s] found in [%s];"
+                    MsgLogger.LOG.warnf("Will use feed ID [%s] found in [%s];"
                             + " note that it is different than our desired feed ID [%s].",
                             feedIdFromDataFile, feedFile, desiredFeedId);
                     feedId = feedIdFromDataFile;
@@ -738,6 +755,10 @@ public class MonitorService implements Service<MonitorService> {
             } catch (FileNotFoundException e) {
                 // probably just haven't been registered yet, keep going
             }
+
+            // set up custom json deserializer then needs the tenantId to work properly
+            PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.of().tenant(configuration.storageAdapter.tenantId)
+                    .get());
 
             // get the payload in JSON format
             String environmentId = "test";
@@ -748,6 +769,7 @@ public class MonitorService implements Service<MonitorService> {
             // start with the protocol, host, and port, plus context
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
                     configuration.storageAdapter.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
 
             // the REST URL requires environment ID next in the path
             url.append(environmentId);
@@ -756,45 +778,37 @@ public class MonitorService implements Service<MonitorService> {
             url.append("/feeds");
 
             // now send the REST request
-            HttpClient httpclient = HttpClientBuilder.create().build();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
+            OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response httpResponse = httpclient.newCall(request).execute();
 
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(configuration.storageAdapter.username + ":"
-                    + configuration.storageAdapter.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
-
-            // HTTP status of 201 means success; 409 means we already created the feed, anything else is an error
-            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            // HTTP status of 201 means success; 409 means it already exists, anything else is an error
+            if (httpResponse.code() != 201 && httpResponse.code() != 409) {
+                throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
+                        + httpResponse.message() + "], url=[" + request.urlString() + "]");
             }
 
             // success - store our feed ID so we remember it the next time
-            final String feedObjectFromServer = Util.slurpStream(httpResponse.getEntity().getContent());
+            final String feedObjectFromServer = Util.slurpStream(httpResponse.body().byteStream());
             final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
             if (desiredFeedId.equals(feed.getId())) {
-                LOG.infof("Feed ID registered [%s]", feed.getId());
+                MsgLogger.LOG.infof("Feed ID registered [%s]", feed.getId());
             } else {
-                LOG.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
+                MsgLogger.LOG.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
                 // should we throw an error here or just use the feed ID we were given?
-                LOG.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file", feed.getId());
+                MsgLogger.LOG.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file",
+                        feed.getId());
             }
 
             this.feedId = feed.getId();
             writeDataFile(feedFile.getName(), feedId);
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot create feed [%s]", desiredFeedId), t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
+    }
+
+    private void connectToFeedCommChannel() throws Exception {
+        feedComm = new FeedComm(this.httpClientBuilder, this.configuration, this.feedId);
+        feedComm.connect();
     }
 }

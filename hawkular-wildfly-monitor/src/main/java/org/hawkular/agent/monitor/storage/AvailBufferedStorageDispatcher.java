@@ -25,14 +25,11 @@ import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
-import org.jboss.logging.Logger;
 
 /**
  * Buffers availability check data and eventually stores them in a storage adapter.
  */
 public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
-    private static final Logger LOGGER = Logger.getLogger(AvailBufferedStorageDispatcher.class);
-
     private final int maxBatchSize;
     private final int bufferSize;
     private final SchedulerConfiguration config;
@@ -63,7 +60,7 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
     @Override
     public void onCompleted(AvailDataPoint sample) {
         if (queue.remainingCapacity() > 0) {
-            LOGGER.debugf("Availability checked: [%s]->[%s]", sample.getTask(), sample.getValue());
+            MsgLogger.LOG.debugf("Availability checked: [%s]->[%s]", sample.getTask(), sample.getValue());
             diagnostics.getAvailStorageBufferSize().inc();
             queue.add(sample);
         }

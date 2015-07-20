@@ -58,6 +58,16 @@
     </dependency>
 
     <dependency>
+      <groupId>com.squareup.okhttp</groupId>
+      <artifactId>okhttp</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.squareup.okhttp</groupId>
+      <artifactId>okhttp-ws</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
     </dependency>
@@ -69,6 +79,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular</groupId>
+      <artifactId>hawkular-feed-comm-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-dmr-client</artifactId>
       <version>${project.version}</version>
@@ -76,6 +91,7 @@
 
     <!-- START DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <!-- DON'T FORGET TO REMOVE THE DEP FROM module.xml -->
+    <!-- DON'T FORGET TO REMOVE THE DEP FROM ../pom.xml DepManagement Section -->
     <dependency>
       <groupId>org.hawkular.bus</groupId>
       <artifactId>hawkular-bus-rest-client</artifactId>
@@ -88,8 +104,13 @@
     <!-- END DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
 
     <dependency>
+      <groupId>org.hawkular.bus</groupId>
+      <artifactId>hawkular-bus-common</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.inventory</groupId>
-      <artifactId>inventory-api</artifactId>
+      <artifactId>hawkular-inventory-json-helper</artifactId>
     </dependency>
 
     <dependency>

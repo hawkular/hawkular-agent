@@ -22,13 +22,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
@@ -49,15 +42,19 @@ import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.bus.restclient.RestClient;
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
-import org.jboss.logging.Logger;
+
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+import org.hawkular.inventory.json.PathDeserializer;
 
 public class HawkularStorageAdapter implements StorageAdapter {
-    private static final Logger LOGGER = Logger.getLogger(HawkularStorageAdapter.class);
-
     private MonitorServiceConfiguration.StorageAdapter config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
+    private HttpClientBuilder httpClientBuilder;
 
     public HawkularStorageAdapter() {
     }
@@ -67,23 +64,18 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
+    public void initialize(org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter config,
+            Diagnostics diag, ServerIdentifiers selfId, HttpClientBuilder httpClientBuilder) {
+        this.config = config;
+        this.diagnostics = diag;
+        this.selfId = selfId;
+        this.httpClientBuilder = httpClientBuilder;
+        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.of().tenant(config.tenantId).get());
+    }
+
+    @Override
     public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration() {
         return config;
-    }
-
-    @Override
-    public void setStorageAdapterConfiguration(MonitorServiceConfiguration.StorageAdapter config) {
-        this.config = config;
-    }
-
-    @Override
-    public void setDiagnostics(Diagnostics diag) {
-        this.diagnostics = diag;
-    }
-
-    @Override
-    public void setSelfIdentifiers(ServerIdentifiers selfId) {
-        this.selfId = selfId;
     }
 
     @Override
@@ -128,9 +120,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         // send to metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
-        metricsAdapter.setDiagnostics(diagnostics);
-        metricsAdapter.setStorageAdapterConfiguration(getStorageAdapterConfiguration());
-        metricsAdapter.setSelfIdentifiers(selfId);
+        metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, selfId, httpClientBuilder);
         metricsAdapter.store(((HawkularMetricDataPayloadBuilder) payloadBuilder)
                 .toMetricsOnlyMetricDataPayloadBuilder());
 
@@ -138,7 +128,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String jsonPayload = null;
         try {
             // build the URL to the bus interface
-            StringBuilder urlStr = Util.getContextUrlString(config.url, config.busContext);
+            StringBuilder urlStr = Util.getContextUrlString(this.config.url, this.config.busContext);
+            urlStr = Util.convertToNonSecureUrl(urlStr.toString());
             URL url = new URL(urlStr.toString());
 
             // build the bus client
@@ -190,9 +181,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         // send to h-metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
-        metricsAdapter.setDiagnostics(diagnostics);
-        metricsAdapter.setStorageAdapterConfiguration(getStorageAdapterConfiguration());
-        metricsAdapter.setSelfIdentifiers(selfId);
+        metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, selfId, httpClientBuilder);
         metricsAdapter.store(((HawkularAvailDataPayloadBuilder) payloadBuilder)
                 .toMetricsOnlyAvailDataPayloadBuilder());
 
@@ -200,7 +189,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String jsonPayload = null;
         try {
             // build the URL to the bus interface
-            StringBuilder urlStr = Util.getContextUrlString(config.url, config.busContext);
+            StringBuilder urlStr = Util.getContextUrlString(this.config.url, this.config.busContext);
+            urlStr = Util.convertToNonSecureUrl(urlStr.toString());
             URL url = new URL(urlStr.toString());
 
             // build the bus client
@@ -239,7 +229,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             relateResourceTypeWithMetricType(resourceType, availType);
         }
 
-        LOGGER.debugf("Stored resource type: %s", resourceType);
+        MsgLogger.LOG.debugf("Stored resource type: %s", resourceType);
     }
 
     @Override
@@ -261,7 +251,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             relateResourceWithMetric(resource, availInstance);
         }
 
-        LOGGER.debugf("Stored resource: %s", resource);
+        MsgLogger.LOG.debugf("Stored resource: %s", resource);
     }
 
     private String getInventoryId(NamedObject no) {
@@ -279,60 +269,43 @@ public class HawkularStorageAdapter implements StorageAdapter {
             return;
         }
 
-        HttpPost request = null;
-
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
-            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource),
-                    getInventoryId(resource.getResourceType()), resource.getProperties());
+            String resourceTypePath = "/" + getInventoryId(resource.getResourceType());
+            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource), resourceTypePath,
+                    resource.getProperties());
             final String jsonPayload = Util.toJson(rPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
             url.append("test").append("/"); // environment
             url.append(getFeedId());
             url.append("/resources");
 
             // now send the REST request
-            HttpClient httpclient = HttpClientBuilder.create().build();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
 
             resource.setPersisted(true);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource: " + resource, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
-
-        resource.setPersisted(true);
     }
 
     private void registerResourceType(ResourceType<?, ?, ?, ?> resourceType) {
         if (resourceType.isPersisted()) {
             return;
         }
-
-        HttpPost request = null;
 
         try {
             // get the payload in JSON format
@@ -343,39 +316,25 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
             url.append("resourceTypes");
 
             // now send the REST request
-            HttpClient httpclient = HttpClientBuilder.create().build();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
 
             resourceType.setPersisted(true);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource type: " + resourceType, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
-
-        resourceType.setPersisted(true);
     }
 
     private void registerMetricInstance(MeasurementInstance<?, ?, ?> measurementInstance) {
@@ -383,61 +342,48 @@ public class HawkularStorageAdapter implements StorageAdapter {
             return;
         }
 
-        HttpPost request = null;
-
         String metricId = getInventoryId(measurementInstance);
         String metricTypeId = getInventoryId(measurementInstance.getMeasurementType());
+        // todo: in next version of inventory feed will probably have it's own resource and metric types, so instead of
+        // using the absolute path (/metricTypeId), the relative path (../metricTypeId) can be better here
+        String metricTypePath = "/" + metricTypeId;
         Map<String, Object> metricProps = measurementInstance.getProperties();
 
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Metric.Blueprint mtPojo;
-            mtPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypeId, metricId, metricProps);
+            mtPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypePath, metricId, metricProps);
             final String jsonPayload = Util.toJson(mtPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
             url.append("test").append("/"); // environment
             url.append(getFeedId());
             url.append("/metrics");
 
             // now send the REST request
-            HttpClient httpclient = HttpClientBuilder.create().build();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
+
+            measurementInstance.setPersisted(true);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create metric type: " + metricTypeId, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
-
-        measurementInstance.setPersisted(true);
     }
 
     private void registerMetricType(MeasurementType measurementType) {
         if (measurementType.isPersisted()) {
             return;
         }
-
-        HttpPost request = null;
 
         String metricTypeId = getInventoryId(measurementType);
         Map<String, Object> metricTypeProps = measurementType.getProperties();
@@ -454,47 +400,37 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             // get the payload in JSON format
             org.hawkular.inventory.api.model.MetricType.Blueprint mtPojo;
-            mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, metricTypeProps);
+
+            // todo: correctly map the MetricDataType from the MeasurementType instance type (avail from AvailType etc.)
+            mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, MetricDataType.GAUGE,
+                    metricTypeProps);
             final String jsonPayload = Util.toJson(mtPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
             url.append("metricTypes");
 
             // now send the REST request
-            HttpClient httpclient = HttpClientBuilder.create().build();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 201 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
+
+            measurementType.setPersisted(true);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create metric type: " + metricTypeId, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
-
-        measurementType.setPersisted(true);
     }
 
     private void relateResourceWithMetric(Resource<?, ?, ?, ?, ?> resource,
             MeasurementInstance<?, ?, ?> measInstance) {
-        HttpPost request = null;
 
         String resourceId = getInventoryId(resource);
         String metricId = getInventoryId(measInstance);
@@ -502,47 +438,32 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             ArrayList<String> id = new ArrayList<>();
-            id.add(metricId);
+            id.add("../" + metricId);
             final String jsonPayload = Util.toJson(id);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
             url.append("test").append("/"); // environment
             url.append(getFeedId());
             url.append("/resources").append("/").append(Util.urlEncode(resourceId)).append("/metrics");
 
-
             // now send the REST request
-            HttpClient httpclient = HttpClientBuilder.create().build();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 204 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 204 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 204 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot associate resource with metric: " + resourceId + "/" + metricId, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
     }
 
     private void relateResourceTypeWithMetricType(ResourceType<?, ?, ?, ?> resourceType, MeasurementType measType) {
-        HttpPost request = null;
 
         String resourceTypeId = getInventoryId(resourceType);
         String metricTypeId = getInventoryId(measType);
@@ -550,40 +471,27 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             ArrayList<String> id = new ArrayList<>();
-            id.add(metricTypeId);
+            id.add("/" + metricTypeId);
             final String jsonPayload = Util.toJson(id);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
             url.append("resourceTypes").append("/").append(Util.urlEncode(resourceTypeId)).append("/metricTypes");
 
             // now send the REST request
-            HttpClient httpclient = HttpClientBuilder.create().build();
-            request = new HttpPost(url.toString());
-            request.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-            // make sure we are authenticated
-            // http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-            String base64Encode = Util.base64Encode(this.config.username + ":" + this.config.password);
-            request.setHeader("Authorization", "Basic " + base64Encode);
-            request.setHeader("Accept", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(request);
-            StatusLine statusLine = httpResponse.getStatusLine();
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 204 means success, 409 means it already exists; anything else is an error
-            if (statusLine.getStatusCode() != 204 && statusLine.getStatusCode() != 409) {
-                throw new Exception("status-code=[" + statusLine.getStatusCode() + "], reason=["
-                        + statusLine.getReasonPhrase() + "], url=[" + request.getURI() + "]");
+            if (response.code() != 204 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
             }
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot associate resource type with metric type: " + resourceTypeId + "/"
                     + metricTypeId, t);
-        } finally {
-            if (request != null) {
-                request.releaseConnection();
-            }
         }
     }
 }

@@ -29,18 +29,28 @@ import java.util.Base64;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hawkular.inventory.json.InventoryJacksonConfig;
 
 /**
  * Just some basic utilities.
  */
 public class Util {
+    private static ObjectMapper mapper;
+    static {
+        try {
+            mapper = new ObjectMapper();
+            mapper.setVisibilityChecker(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+                    .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                    .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                    .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                    .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+            InventoryJacksonConfig.configure(mapper);
+        } catch (Throwable t) {
+            // don't break the class loading
+        }
+    }
+
     public static String toJson(Object obj) {
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.setVisibilityChecker(mapper.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
         final String json;
         try {
             json = mapper.writeValueAsString(obj);
@@ -51,7 +61,6 @@ public class Util {
     }
 
     public static <T> T fromJson(String json, Class<T> clazz) {
-        final ObjectMapper mapper = new ObjectMapper();
         final T obj;
         try {
             obj = mapper.readValue(json, clazz);
@@ -102,6 +111,19 @@ public class Util {
             ensureEndsWithSlash(urlStr);
         }
         return urlStr;
+    }
+
+    // TODO this is to support some kind of bug where inventory won't let use talk to it over https;
+    //      we need to fix that problem and get rid of this hack
+    @Deprecated
+    public static StringBuilder convertToNonSecureUrl(String url) {
+        if (url.startsWith("http:")) {
+            return new StringBuilder(url); // it already is non-secure
+        }
+        String securePort = System.getProperty("hawkular.hack.secure-port", "8443");
+        String nonsecurePort = System.getProperty("hawkular.hack.nonsecure-port", "8080");
+        url = url.replace("https:", "http:").replace(":" + securePort, ":" + nonsecurePort);
+        return new StringBuilder(url);
     }
 
     /**

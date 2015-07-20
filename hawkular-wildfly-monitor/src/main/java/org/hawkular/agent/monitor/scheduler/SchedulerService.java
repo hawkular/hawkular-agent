@@ -40,6 +40,7 @@ import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
+import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 
@@ -56,6 +57,7 @@ public class SchedulerService {
     private final Scheduler availScheduler;
     private final MetricBufferedStorageDispatcher metricCompletionHandler;
     private final AvailBufferedStorageDispatcher availCompletionHandler;
+    private final HttpClientBuilder httpClientBuilder;
 
     private boolean started = false;
 
@@ -64,7 +66,8 @@ public class SchedulerService {
             ServerIdentifiers selfId,
             Diagnostics diagnostics,
             StorageAdapter storageAdapter,
-            ModelControllerClientFactory localDMRClientFactory) {
+            ModelControllerClientFactory localDMRClientFactory,
+            HttpClientBuilder httpClientBuilder) {
 
         this.schedulerConfig = configuration;
 
@@ -76,6 +79,9 @@ public class SchedulerService {
 
         // metrics for our own internals
         this.diagnostics = diagnostics;
+
+        // used to send requests to the server
+        this.httpClientBuilder = httpClientBuilder;
 
         // create the schedulers - we use two: one for metric collections and one for avail checks
         this.metricCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
