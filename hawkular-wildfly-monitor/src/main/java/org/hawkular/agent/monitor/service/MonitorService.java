@@ -704,10 +704,16 @@ public class MonitorService implements Service<MonitorService> {
 
         try {
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.accountsContext);
+                configuration.storageAdapter.accountsContext);
             url.append("personas/current");
 
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
+
+            // make the call to the inventory to pre-create the test environment and other assumed entities
+            String tenantUrl = Util.getContextUrlString(configuration.storageAdapter.url,
+                configuration.storageAdapter.inventoryContext).append("tenant").toString();
+            httpclient.newCall(this.httpClientBuilder.buildJsonGetRequest(tenantUrl, null)).execute();
+
             Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), null);
             Response httpResponse = httpclient.newCall(request).execute();
 
