@@ -45,10 +45,10 @@ import org.hawkular.bus.restclient.RestClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.json.PathDeserializer;
 
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
-import org.hawkular.inventory.json.PathDeserializer;
 
 public class HawkularStorageAdapter implements StorageAdapter {
     private MonitorServiceConfiguration.StorageAdapter config;
@@ -390,9 +390,24 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         try {
             MetricUnit mu = MetricUnit.NONE;
+            MetricDataType metricDataType = MetricDataType.GAUGE;
             try {
                 if (measurementType instanceof MetricType) {
                     mu = MetricUnit.valueOf(((MetricType) measurementType).getMetricUnits().name());
+
+                    // we need to translate from metric API type to inventory API type
+                    switch (((MetricType) measurementType).getMetricType()) {
+                        case GAUGE:
+                            metricDataType = MetricDataType.GAUGE;
+                            break;
+                        case COUNTER:
+                            metricDataType = MetricDataType.COUNTER;
+                            break;
+                        default:
+                            metricDataType = MetricDataType.GAUGE;
+                            break;
+
+                    }
                 }
             } catch (Exception e) {
                 // the unit isn't supported
@@ -402,7 +417,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             org.hawkular.inventory.api.model.MetricType.Blueprint mtPojo;
 
             // todo: correctly map the MetricDataType from the MeasurementType instance type (avail from AvailType etc.)
-            mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, MetricDataType.GAUGE,
+            mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, metricDataType,
                     metricTypeProps);
             final String jsonPayload = Util.toJson(mtPojo);
 
