@@ -297,7 +297,6 @@ public class MonitorService implements Service<MonitorService> {
             try {
                 determineTenantId();
                 registerFeed();
-                connectToFeedCommChannel();
             } catch (Exception e) {
                 MsgLogger.LOG.errorCannotDoAnythingWithoutFeed(e);
                 return;

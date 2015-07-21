@@ -53,7 +53,7 @@ public class FeedComm {
         try {
             StringBuilder url;
             url = Util.getContextUrlString(config.storageAdapter.url, config.storageAdapter.feedcommContext);
-            url.append("/feed/").append(feedId);
+            url.append("feed/").append(feedId);
             this.feedcommUrl = url.toString().replaceFirst("https?:", (config.storageAdapter.useSSL) ? "wss:" : "ws:");
             MsgLogger.LOG.infoFeedCommUrl(this.feedcommUrl);
         } catch (MalformedURLException e) {
