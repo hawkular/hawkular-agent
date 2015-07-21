@@ -709,6 +709,7 @@ public class MonitorService implements Service<MonitorService> {
 
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
 
+            // TODO: next three lines are only temporary and should be deleted when inventory no longer needs this.
             // make the call to the inventory to pre-create the test environment and other assumed entities
             String tenantUrl = Util.getContextUrlString(configuration.storageAdapter.url,
                 configuration.storageAdapter.inventoryContext).append("tenant").toString();
