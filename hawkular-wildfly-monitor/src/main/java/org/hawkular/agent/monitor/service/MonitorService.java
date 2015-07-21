@@ -302,6 +302,13 @@ public class MonitorService implements Service<MonitorService> {
                 MsgLogger.LOG.errorCannotDoAnythingWithoutFeed(e);
                 return;
             }
+
+            // try to connect to the server over the feed-comm channel - if it fails, just log an error but keep going
+            try {
+                connectToFeedCommChannel();
+            } catch (Exception e) {
+                MsgLogger.LOG.errorCannotEstablishFeedComm(e);
+            }
         } else {
             if (configuration.storageAdapter.tenantId == null) {
                 MsgLogger.LOG.errorMustHaveTenantIdConfigured();
@@ -809,7 +816,7 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     private void connectToFeedCommChannel() throws Exception {
-        feedComm = new FeedComm(this.httpClientBuilder, this.configuration, this.feedId);
+        feedComm = new FeedComm(this.httpClientBuilder, this.configuration, this.feedId, this.dmrServerInventories);
         feedComm.connect();
     }
 }

@@ -201,4 +201,8 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10041, value = "Cannot close feed-comm websocket")
     void errorCannotCloseWebSocketCall(@Cause Exception e);
 
+    @LogMessage(level = Logger.Level.ERROR)
+    @Message(id = 10042, value = "Cannot connect to the server over the feed communications channel.")
+    void errorCannotEstablishFeedComm(@Cause Exception e);
+
 }
