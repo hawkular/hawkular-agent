@@ -448,12 +448,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
             MeasurementInstance<?, ?, ?> measInstance) {
 
         String resourceId = getInventoryId(resource);
-        String metricId = getInventoryId(measInstance);
+        String metricId = getInventoryId(measInstance).replaceAll("/", "\\\\/");
 
         try {
             // get the payload in JSON format
             ArrayList<String> id = new ArrayList<>();
-            id.add("../" + metricId);
+            id.add("../m;" + metricId);
             final String jsonPayload = Util.toJson(id);
 
             // build the REST URL
@@ -481,12 +481,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
     private void relateResourceTypeWithMetricType(ResourceType<?, ?, ?, ?> resourceType, MeasurementType measType) {
 
         String resourceTypeId = getInventoryId(resourceType);
-        String metricTypeId = getInventoryId(measType);
+        String metricTypeId = getInventoryId(measType).replaceAll("/", "\\\\/");
 
         try {
             // get the payload in JSON format
             ArrayList<String> id = new ArrayList<>();
-            id.add("/" + metricTypeId);
+            id.add("/mt;" + metricTypeId);
             final String jsonPayload = Util.toJson(id);
 
             // build the REST URL
