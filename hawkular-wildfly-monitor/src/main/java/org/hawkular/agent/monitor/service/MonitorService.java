@@ -297,10 +297,16 @@ public class MonitorService implements Service<MonitorService> {
             try {
                 determineTenantId();
                 registerFeed();
-                connectToFeedCommChannel();
             } catch (Exception e) {
                 MsgLogger.LOG.errorCannotDoAnythingWithoutFeed(e);
                 return;
+            }
+
+            // try to connect to the server over the feed-comm channel - if it fails, just log an error but keep going
+            try {
+                connectToFeedCommChannel();
+            } catch (Exception e) {
+                MsgLogger.LOG.errorCannotEstablishFeedComm(e);
             }
         } else {
             if (configuration.storageAdapter.tenantId == null) {
@@ -709,6 +715,7 @@ public class MonitorService implements Service<MonitorService> {
 
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
 
+            // TODO: next three lines are only temporary and should be deleted when inventory no longer needs this.
             // make the call to the inventory to pre-create the test environment and other assumed entities
             String tenantUrl = Util.getContextUrlString(configuration.storageAdapter.url,
                 configuration.storageAdapter.inventoryContext).append("tenant").toString();
@@ -808,7 +815,7 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     private void connectToFeedCommChannel() throws Exception {
-        feedComm = new FeedComm(this.httpClientBuilder, this.configuration, this.feedId);
+        feedComm = new FeedComm(this.httpClientBuilder, this.configuration, this.feedId, this.dmrServerInventories);
         feedComm.connect();
     }
 }

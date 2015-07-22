@@ -17,8 +17,11 @@
 package org.hawkular.agent.monitor.feedcomm;
 
 import java.net.MalformedURLException;
+import java.util.Map;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
@@ -33,10 +36,14 @@ public class FeedComm {
 
     private final HttpClientBuilder httpClientBuilder;
     private final String feedcommUrl;
+    private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories;
+
     private FeedCommProcessor commProcessor;
     private WebSocketCall webSocketCall;
 
-    public FeedComm(HttpClientBuilder httpClientBuilder, MonitorServiceConfiguration config, String feedId) {
+    public FeedComm(HttpClientBuilder httpClientBuilder, MonitorServiceConfiguration config, String feedId,
+            Map<ManagedServer, DMRInventoryManager> dmrServerInventories) {
+        this.dmrServerInventories = dmrServerInventories;
         if (feedId == null || feedId.isEmpty()) {
             throw new IllegalArgumentException("Must have a valid feed ID to communicate with the server");
         }
@@ -46,7 +53,7 @@ public class FeedComm {
         try {
             StringBuilder url;
             url = Util.getContextUrlString(config.storageAdapter.url, config.storageAdapter.feedcommContext);
-            url.append(feedId);
+            url.append("feed/").append(feedId);
             this.feedcommUrl = url.toString().replaceFirst("https?:", (config.storageAdapter.useSSL) ? "wss:" : "ws:");
             MsgLogger.LOG.infoFeedCommUrl(this.feedcommUrl);
         } catch (MalformedURLException e) {
@@ -60,7 +67,7 @@ public class FeedComm {
         }
 
         webSocketCall = httpClientBuilder.createWebSocketCall(feedcommUrl, null);
-        commProcessor = new FeedCommProcessor();
+        commProcessor = new FeedCommProcessor(this.dmrServerInventories);
 
         webSocketCall.enqueue(this.commProcessor);
     }
