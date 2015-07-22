@@ -640,7 +640,7 @@ public class MonitorService implements Service<MonitorService> {
             Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
             if (fullAddress != null) {
                 DMRPropertyReference prop = new DMRPropertyReference(fullAddress, metricType.getAttribute(), interval);
-                ID id = new ID(String.format("MI~R~%s~MT~%s", resource.getID(), metricType.getName()));
+                ID id = Util.generateMetricInstanceId(resource, metricType);
                 Name name = metricType.getName();
                 DMRMetricInstance metricInstance = new DMRMetricInstance(id, name, resource, metricType, prop);
                 resource.getMetrics().add(metricInstance);
@@ -654,7 +654,7 @@ public class MonitorService implements Service<MonitorService> {
             if (fullAddress != null) {
                 AvailDMRPropertyReference prop = new AvailDMRPropertyReference(fullAddress, availType.getAttribute(),
                         interval, availType.getUpRegex());
-                ID id = new ID(String.format("AI~R~%s~AT~%s", resource.getID(), availType.getName()));
+                ID id = Util.generateAvailInstanceId(resource, availType);
                 Name name = availType.getName();
                 DMRAvailInstance availInstance = new DMRAvailInstance(id, name, resource, availType, prop);
                 resource.getAvails().add(availInstance);
