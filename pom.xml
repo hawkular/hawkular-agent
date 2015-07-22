@@ -51,7 +51,7 @@
     <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
     <version.org.hawkular.bus>0.3.0.Final</version.org.hawkular.bus>
-    <version.org.hawkular.inventory>0.2.0.Alpha1</version.org.hawkular.inventory>
+    <version.org.hawkular.inventory>0.2.0.Alpha2</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.5.0.Final</version.org.hawkular.metrics>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
   </properties>
