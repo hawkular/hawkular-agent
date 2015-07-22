@@ -50,8 +50,7 @@
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
-    <version.org.hawkular>1.0.0.Alpha3-SNAPSHOT</version.org.hawkular>
-    <version.org.hawkular.bus>0.2.1</version.org.hawkular.bus>
+    <version.org.hawkular.bus>0.3.0.Final</version.org.hawkular.bus>
     <version.org.hawkular.inventory>0.2.0.Alpha1</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.5.0.Final</version.org.hawkular.metrics>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
@@ -91,9 +90,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.hawkular</groupId>
+        <groupId>org.hawkular.bus</groupId>
         <artifactId>hawkular-feed-comm-api</artifactId>
-        <version>${version.org.hawkular}</version>
+        <version>${version.org.hawkular.bus}</version>
       </dependency>
 
       <dependency>
