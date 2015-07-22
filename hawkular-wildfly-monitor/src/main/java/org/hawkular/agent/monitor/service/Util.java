@@ -26,13 +26,6 @@ import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.util.Base64;
 
-import org.hawkular.agent.monitor.inventory.AvailInstance;
-import org.hawkular.agent.monitor.inventory.AvailType;
-import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.MetricInstance;
-import org.hawkular.agent.monitor.inventory.MetricType;
-import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -214,45 +207,5 @@ public class Util {
             // UTF-8 should always be there; if it isn't, that's very bad
             throw new RuntimeException("Charset UTF-8 is not available");
         }
-    }
-
-    /**
-     * Generates an ID for a resource.
-     *
-     * @param feedId the ID of the feed that owns the resource whose ID is to be generated
-     * @param managedServer the managed server where the resource is found
-     * @param idPart a unique string that identifies the resource within the managed server
-     *
-     * @return the resource ID
-     */
-    public static ID generateResourceId(String feedId, ManagedServer managedServer, String idPart) {
-        ID id = new ID(String.format("%s~%s~%s", feedId, managedServer.getName(), idPart));
-        return id;
-    }
-
-    /**
-     * Generates an ID for an {@link MetricInstance}.
-     *
-     * @param resource the resource that owns the MetricInstance
-     * @param metricType the type of the MetricInstance whose ID is being generated
-     *
-     * @return the ID
-     */
-    public static ID generateMetricInstanceId(Resource<?, ?, ?, ?, ?> resource, MetricType metricType) {
-        ID id = new ID(String.format("MI~R~[%s]~MT~%s", resource.getID(), metricType.getName()));
-        return id;
-    }
-
-    /**
-     * Generates an ID for an {@link AvailInstance}.
-     *
-     * @param resource the resource that owns the AvailInstance
-     * @param availType the type of the AvailInstance whose ID is being generated
-     *
-     * @return the ID
-     */
-    public static ID generateAvailInstanceId(Resource<?, ?, ?, ?, ?> resource, AvailType availType) {
-        ID id = new ID(String.format("AI~R~[%s]~AT~%s", resource.getID(), availType.getName()));
-        return id;
     }
 }

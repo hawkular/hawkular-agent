@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
@@ -119,7 +119,7 @@ public class DMRDiscovery {
             for (Map.Entry<Address, ModelNode> entry : resources.entrySet()) {
                 Address address = entry.getKey(); // this is the unique DMR address for this resource
                 Name resourceName = generateResourceName(type, address);
-                ID id = Util.generateResourceId(
+                ID id = InventoryIdUtil.generateResourceId(
                         this.inventoryManager.getFeedId(),
                         this.inventoryManager.getManagedServer(),
                         address.toAddressPathString());

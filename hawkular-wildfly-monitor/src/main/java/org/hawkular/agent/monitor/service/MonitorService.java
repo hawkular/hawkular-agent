@@ -50,6 +50,7 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageR
 import org.hawkular.agent.monitor.feedcomm.FeedComm;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.MetricTypeManager;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -640,7 +641,7 @@ public class MonitorService implements Service<MonitorService> {
             Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
             if (fullAddress != null) {
                 DMRPropertyReference prop = new DMRPropertyReference(fullAddress, metricType.getAttribute(), interval);
-                ID id = Util.generateMetricInstanceId(resource, metricType);
+                ID id = InventoryIdUtil.generateMetricInstanceId(resource, metricType);
                 Name name = metricType.getName();
                 DMRMetricInstance metricInstance = new DMRMetricInstance(id, name, resource, metricType, prop);
                 resource.getMetrics().add(metricInstance);
@@ -654,7 +655,7 @@ public class MonitorService implements Service<MonitorService> {
             if (fullAddress != null) {
                 AvailDMRPropertyReference prop = new AvailDMRPropertyReference(fullAddress, availType.getAttribute(),
                         interval, availType.getUpRegex());
-                ID id = Util.generateAvailInstanceId(resource, availType);
+                ID id = InventoryIdUtil.generateAvailInstanceId(resource, availType);
                 Name name = availType.getName();
                 DMRAvailInstance availInstance = new DMRAvailInstance(id, name, resource, availType, prop);
                 resource.getAvails().add(availInstance);
