@@ -22,9 +22,9 @@ package org.hawkular.agent.monitor.inventory;
  */
 public class InventoryIdUtil {
     public static class ResourceIdParts {
-        String feedId;
-        String managedServerName;
-        String idPart;
+        public String feedId;
+        public String managedServerName;
+        public String idPart;
     }
 
     /**

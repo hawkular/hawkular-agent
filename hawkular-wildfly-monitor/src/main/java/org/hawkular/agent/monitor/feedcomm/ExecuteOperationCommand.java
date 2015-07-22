@@ -16,6 +16,10 @@
  */
 package org.hawkular.agent.monitor.feedcomm;
 
+import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
+import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
+import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.feedcomm.api.ExecuteOperationRequest;
 import org.hawkular.feedcomm.api.GenericSuccessResponse;
@@ -28,7 +32,15 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
 
     @Override
     public GenericSuccessResponse execute(ExecuteOperationRequest request, CommandContext context) throws Exception {
-        MsgLogger.LOG.warnf("GOT A REQUEST TO EXECUTE OP: [%s]", request);
+        MsgLogger.LOG.infof("Received request to execute operation [%s] on resource [%s]",
+                request.getOperationName(), request.getResourceId());
+
+        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(request.getResourceId());
+        ManagedServer managedServer = context.getFeedCommProcessor().getMonitorServiceConfiguration().managedServersMap
+                .get(idParts.managedServerName);
+        DMRInventoryManager inventoryManager = context.getFeedCommProcessor().getDmrServerInventories()
+                .get(managedServer);
+
         return null;
     }
 }

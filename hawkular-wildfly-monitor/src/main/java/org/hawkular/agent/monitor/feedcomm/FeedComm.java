@@ -35,20 +35,22 @@ import com.squareup.okhttp.ws.WebSocketCall;
 public class FeedComm {
 
     private final HttpClientBuilder httpClientBuilder;
-    private final String feedcommUrl;
+    private final MonitorServiceConfiguration config;
     private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories;
+    private final String feedcommUrl;
 
     private FeedCommProcessor commProcessor;
     private WebSocketCall webSocketCall;
 
     public FeedComm(HttpClientBuilder httpClientBuilder, MonitorServiceConfiguration config, String feedId,
             Map<ManagedServer, DMRInventoryManager> dmrServerInventories) {
-        this.dmrServerInventories = dmrServerInventories;
         if (feedId == null || feedId.isEmpty()) {
             throw new IllegalArgumentException("Must have a valid feed ID to communicate with the server");
         }
 
         this.httpClientBuilder = httpClientBuilder;
+        this.config = config;
+        this.dmrServerInventories = dmrServerInventories;
 
         try {
             StringBuilder url;
@@ -67,7 +69,7 @@ public class FeedComm {
         }
 
         webSocketCall = httpClientBuilder.createWebSocketCall(feedcommUrl, null);
-        commProcessor = new FeedCommProcessor(this.dmrServerInventories);
+        commProcessor = new FeedCommProcessor(this.config, this.dmrServerInventories);
 
         webSocketCall.enqueue(this.commProcessor);
     }
