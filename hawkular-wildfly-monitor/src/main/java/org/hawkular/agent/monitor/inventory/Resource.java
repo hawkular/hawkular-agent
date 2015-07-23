@@ -87,6 +87,6 @@ C extends ResourceConfigurationPropertyInstance<?>> //
     @Override
     public String toString() {
         return String.format("%s=[type=%s][endpoint=%s]",
-                super.toString(), this.resourceType, this.endpoint.getName());
+                super.toString(), this.resourceType, (this.endpoint != null) ? this.endpoint.getName() : "null");
     }
 }

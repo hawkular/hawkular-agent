@@ -17,9 +17,13 @@
 package org.hawkular.agent.monitor.inventory;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.alg.DirectedNeighborIndex;
+import org.jgrapht.event.GraphVertexChangeEvent;
+import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.ListenableDirectedGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
@@ -35,12 +39,15 @@ import org.jgrapht.traverse.DepthFirstIterator;
 public class ResourceManager<T extends Resource<?, ?, ?, ?, ?>> {
 
     private final ListenableDirectedGraph<T, DefaultEdge> resourcesGraph;
-    private final DirectedNeighborIndex<T, DefaultEdge> index;
+    private final DirectedNeighborIndex<T, DefaultEdge> neighborIndex;
+    private final Map<ID, T> resourceCache = new ConcurrentHashMap<>();
 
     public ResourceManager() {
         this.resourcesGraph = new ListenableDirectedGraph<>(DefaultEdge.class);
-        this.index = new DirectedNeighborIndex<>(this.resourcesGraph);
-        this.resourcesGraph.addGraphListener(index);
+        this.neighborIndex = new DirectedNeighborIndex<>(this.resourcesGraph);
+        this.resourcesGraph.addGraphListener(neighborIndex);
+        this.resourcesGraph.addVertexSetListener(new VertexCacheListener());
+
     }
 
     /**
@@ -80,11 +87,22 @@ public class ResourceManager<T extends Resource<?, ?, ?, ?, ?>> {
         Set<T> roots = new HashSet<>();
         Set<T> allTypes = resourcesGraph.vertexSet();
         for (T type : allTypes) {
-            if (index.successorsOf(type).isEmpty()) {
+            if (neighborIndex.successorsOf(type).isEmpty()) {
                 roots.add(type);
             }
         }
         return roots;
+    }
+
+    /**
+     * Given a resource ID this will return the resource with that ID
+     * or <code>null</code> if there is no resource with that ID.
+     *
+     * @param resourceId the ID of the resource to retrieve
+     * @return the resource or null
+     */
+    public T getResource(ID resourceId) {
+        return resourceCache.get(resourceId);
     }
 
     /**
@@ -95,7 +113,7 @@ public class ResourceManager<T extends Resource<?, ?, ?, ?, ?>> {
      * @return the direct children of the given resource
      */
     public Set<T> getChildren(T resource) {
-        Set<T> directChildren = index.predecessorsOf(resource);
+        Set<T> directChildren = neighborIndex.predecessorsOf(resource);
         return directChildren;
     }
 
@@ -109,7 +127,7 @@ public class ResourceManager<T extends Resource<?, ?, ?, ?, ?>> {
     public T getParent(T resource) {
         // We could do resource.getParent(), but so could our caller. Here, let's go through the graph to get it.
         // We know all resources have at most one parent.
-        Set<T> directParents = index.successorsOf(resource);
+        Set<T> directParents = neighborIndex.successorsOf(resource);
         if (directParents.isEmpty()) {
             return null;
         }
@@ -136,6 +154,23 @@ public class ResourceManager<T extends Resource<?, ?, ?, ?, ?>> {
         this.resourcesGraph.addVertex(newResource);
         if (newResource.getParent() != null) {
             this.resourcesGraph.addEdge(newResource, newResource.getParent());
+        }
+    }
+
+    /**
+     * This class listens for resources getting added and removed from the graph and updates
+     * its internal cache to reflect the changes. The internal cache lets us retrieve
+     * resources quickly by resource ID.
+     */
+    private class VertexCacheListener implements VertexSetListener<T> {
+        @Override
+        public void vertexAdded(GraphVertexChangeEvent<T> e) {
+            resourceCache.put(e.getVertex().getID(), e.getVertex());
+        }
+
+        @Override
+        public void vertexRemoved(GraphVertexChangeEvent<T> e) {
+            resourceCache.remove(e.getVertex().getID());
         }
     }
 }
