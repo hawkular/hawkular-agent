@@ -67,4 +67,11 @@ public class DMRInventoryManager extends InventoryManager
             MsgLogger.LOG.errorDiscoveryFailed(e, getEndpoint());
         }
     }
+
+    /**
+     * @return factory that can be used to build clients that can talk to the server
+     */
+    public ModelControllerClientFactory getModelControllerClientFactory() {
+        return dmrClientFactory;
+    }
 }

@@ -16,13 +16,27 @@
  */
 package org.hawkular.agent.monitor.feedcomm;
 
+import java.util.Collection;
+
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
+import org.hawkular.agent.monitor.inventory.dmr.DMROperation;
+import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
+import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
+import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.dmrclient.Address;
+import org.hawkular.dmrclient.CoreJBossASClient;
+import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.feedcomm.api.ExecuteOperationRequest;
 import org.hawkular.feedcomm.api.GenericSuccessResponse;
+import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.dmr.ModelNode;
 
 /**
  * Execute an operation on a resource.
@@ -35,12 +49,74 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         MsgLogger.LOG.infof("Received request to execute operation [%s] on resource [%s]",
                 request.getOperationName(), request.getResourceId());
 
-        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(request.getResourceId());
-        ManagedServer managedServer = context.getFeedCommProcessor().getMonitorServiceConfiguration().managedServersMap
-                .get(idParts.managedServerName);
-        DMRInventoryManager inventoryManager = context.getFeedCommProcessor().getDmrServerInventories()
-                .get(managedServer);
+        FeedCommProcessor processor = context.getFeedCommProcessor();
+        MonitorServiceConfiguration config = processor.getMonitorServiceConfiguration();
 
-        return null;
+        // Based on the resource ID we need to know which inventory manager is handling it.
+        // From the inventory manager, we can get the actual resource.
+        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(request.getResourceId());
+        ManagedServer managedServer = config.managedServersMap.get(idParts.managedServerName);
+        if (managedServer == null) {
+            throw new IllegalArgumentException(
+                    String.format("Cannot execute operation: unknown managed server [%s]", idParts.managedServerName));
+        }
+
+        if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
+            return executeOperationDMR(request, processor, managedServer);
+        } else {
+            throw new IllegalStateException("Cannot execute operation: report this bug: " + managedServer.getClass());
+        }
+    }
+
+    private GenericSuccessResponse executeOperationDMR(ExecuteOperationRequest request, FeedCommProcessor processor,
+            ManagedServer managedServer) throws Exception {
+
+        DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
+        if (inventoryManager == null) {
+            throw new IllegalArgumentException(
+                    String.format("Cannot execute operation: missing inventory manager [%s]", managedServer));
+        }
+
+        ResourceManager<DMRResource> resourceManager = inventoryManager.getResourceManager();
+        DMRResource resource = resourceManager.getResource(new ID(request.getResourceId()));
+        if (resource == null) {
+            throw new IllegalArgumentException(
+                    String.format("Cannot execute operation: unknown resource [%s]", request.getResourceId()));
+        }
+
+        // find the operation we need to execute - make sure it exists and get the address for the resource to invoke
+        Address opAddress = null;
+
+        Collection<DMROperation> ops = resource.getResourceType().getOperations();
+        for (DMROperation op : ops) {
+            if (request.getOperationName().equals(op.getID().getIDString())) {
+                opAddress = resource.getAddress().clone().add(Address.parse(op.getPath()));
+                break;
+            }
+        }
+
+        if (opAddress == null) {
+            throw new IllegalArgumentException(
+                    String.format("Cannot execute operation: unknown operation [%s] for resource [%s]",
+                            request.getOperationName(), resource));
+        }
+
+        try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
+            ModelNode opReq = JBossASClient.createRequest(request.getOperationName(), opAddress);
+
+            // TODO: when we support parameters, this is how we set them
+            // opReq.get(paramName).set(paramValue);
+
+            CoreJBossASClient client = new CoreJBossASClient(mcc);
+            ModelNode opResp = client.execute(opReq);
+            if (!JBossASClient.isSuccess(opResp)) {
+                throw new Exception("Operation failed: " + JBossASClient.getFailureDescription(opResp));
+            }
+
+            GenericSuccessResponse response = new GenericSuccessResponse();
+            ModelNode results = JBossASClient.getResults(opResp);
+            response.setMessage("OPERATION SUCCESS: " + request.getOperationName() + ": " + results);
+            return response;
+        }
     }
 }

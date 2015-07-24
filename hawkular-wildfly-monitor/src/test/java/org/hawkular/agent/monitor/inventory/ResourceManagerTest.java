@@ -122,7 +122,7 @@ public class ResourceManagerTest {
 
         /*
          * WHY DOESN'T THIS ITERATE LIKE IT SHOULD?
-         * 
+         *
 
         // iterate depth first which should be:
         // root1 -> child1 -> grandchild1 -> child2 -> root2
@@ -143,9 +143,9 @@ public class ResourceManagerTest {
         Assert.assertEquals(grandChild1, bIter.next());
         Assert.assertEquals(root2, bIter.next());
         Assert.assertFalse(bIter.hasNext());
-        
-         * 
-         * THE ABOVE DOESN'T WORK AS EXPECTED         
+
+         *
+         * THE ABOVE DOESN'T WORK AS EXPECTED
          */
 
     }
