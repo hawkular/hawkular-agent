@@ -28,7 +28,7 @@
 
   <groupId>org.hawkular.agent</groupId>
   <artifactId>hawkular-agent-parent</artifactId>
-  <version>0.3.2.Final</version>
+  <version>0.3.3-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Hawkular Agent Parent</name>
   <inceptionYear>2015</inceptionYear>
@@ -37,7 +37,7 @@
     <connection>scm:git:git@github.com:hawkular/hawkular-agent.git</connection>
     <developerConnection>scm:git:git@github.com:hawkular/hawkular-agent.git</developerConnection>
     <url>https://github.com/hawkular/hawkular-agent</url>
-    <tag>0.3.2.Final</tag>
+    <tag>head</tag>
   </scm>
 
   <modules>
