@@ -23,6 +23,7 @@ import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMROperation;
@@ -34,18 +35,18 @@ import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.feedcomm.api.ExecuteOperationRequest;
-import org.hawkular.feedcomm.api.GenericSuccessResponse;
+import org.hawkular.feedcomm.api.ExecuteOperationResponse;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
 
 /**
  * Execute an operation on a resource.
  */
-public class ExecuteOperationCommand implements Command<ExecuteOperationRequest, GenericSuccessResponse> {
+public class ExecuteOperationCommand implements Command<ExecuteOperationRequest, ExecuteOperationResponse> {
     public static final Class<ExecuteOperationRequest> REQUEST_CLASS = ExecuteOperationRequest.class;
 
     @Override
-    public GenericSuccessResponse execute(ExecuteOperationRequest request, CommandContext context) throws Exception {
+    public ExecuteOperationResponse execute(ExecuteOperationRequest request, CommandContext context) throws Exception {
         MsgLogger.LOG.infof("Received request to execute operation [%s] on resource [%s]",
                 request.getOperationName(), request.getResourceId());
 
@@ -55,7 +56,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         // Based on the resource ID we need to know which inventory manager is handling it.
         // From the inventory manager, we can get the actual resource.
         ResourceIdParts idParts = InventoryIdUtil.parseResourceId(request.getResourceId());
-        ManagedServer managedServer = config.managedServersMap.get(idParts.managedServerName);
+        ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.managedServerName));
         if (managedServer == null) {
             throw new IllegalArgumentException(
                     String.format("Cannot execute operation: unknown managed server [%s]", idParts.managedServerName));
@@ -68,7 +69,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         }
     }
 
-    private GenericSuccessResponse executeOperationDMR(ExecuteOperationRequest request, FeedCommProcessor processor,
+    private ExecuteOperationResponse executeOperationDMR(ExecuteOperationRequest request, FeedCommProcessor processor,
             ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
@@ -101,6 +102,10 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
                             request.getOperationName(), resource));
         }
 
+        ExecuteOperationResponse response = new ExecuteOperationResponse();
+        response.setResourceId(request.getResourceId());
+        response.setOperationName(request.getOperationName());
+
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
             ModelNode opReq = JBossASClient.createRequest(request.getOperationName(), opAddress);
 
@@ -110,13 +115,17 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
             CoreJBossASClient client = new CoreJBossASClient(mcc);
             ModelNode opResp = client.execute(opReq);
             if (!JBossASClient.isSuccess(opResp)) {
-                throw new Exception("Operation failed: " + JBossASClient.getFailureDescription(opResp));
+                response.setStatus("ERROR");
+                response.setMessage(JBossASClient.getFailureDescription(opResp));
+            } else {
+                response.setStatus("OK");
+                response.setMessage(JBossASClient.getResults(opResp).toString());
             }
-
-            GenericSuccessResponse response = new GenericSuccessResponse();
-            ModelNode results = JBossASClient.getResults(opResp);
-            response.setMessage("OPERATION SUCCESS: " + request.getOperationName() + ": " + results);
-            return response;
+        } catch (Exception e) {
+            response.setStatus("ERROR");
+            response.setMessage(e.toString());
         }
+
+        return response;
     }
 }

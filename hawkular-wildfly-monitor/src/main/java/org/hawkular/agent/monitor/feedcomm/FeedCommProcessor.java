@@ -183,7 +183,7 @@ public class FeedCommProcessor implements WebSocketListener {
             }
         } catch (Throwable t) {
             MsgLogger.LOG.errorCommandExecutionFailureFeed(requestClassName, t);
-            String errorMessage = "Command failed[" + requestClassName + "]";
+            String errorMessage = "Command failed [" + requestClassName + "]";
             response = new GenericErrorResponseBuilder()
                     .setThrowable(t)
                     .setErrorMessage(errorMessage)
