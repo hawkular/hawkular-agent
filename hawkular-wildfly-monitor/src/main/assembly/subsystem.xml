@@ -476,6 +476,12 @@
                        resourceNameTemplate="Bus Broker"
                        path="/subsystem=hawkular-bus-broker"
                        parents="WildFly Server"/>
+    <resource-type-dmr name="Monitor Agent"
+                       resourceNameTemplate="Monitor Agent"
+                       path="/subsystem=hawkular-monitor"
+                       parents="WildFly Server">
+      <operation-dmr name="Status" operationName="status" path="/" />
+    </resource-type-dmr>
   </resource-type-set-dmr>
 
   <resource-type-set-dmr name="Deployment" enabled="true">

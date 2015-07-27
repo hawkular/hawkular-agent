@@ -51,6 +51,7 @@ public class FeedCommProcessor implements WebSocketListener {
     static {
         VALID_COMMANDS = new HashMap<>();
         VALID_COMMANDS.put(EchoCommand.REQUEST_CLASS.getName(), EchoCommand.class);
+        VALID_COMMANDS.put(GenericErrorResponseCommand.REQUEST_CLASS.getName(), GenericErrorResponseCommand.class);
         VALID_COMMANDS.put(ExecuteOperationCommand.REQUEST_CLASS.getName(), ExecuteOperationCommand.class);
     }
 
