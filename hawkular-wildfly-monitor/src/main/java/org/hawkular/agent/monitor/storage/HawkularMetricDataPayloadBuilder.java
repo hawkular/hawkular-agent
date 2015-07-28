@@ -74,7 +74,7 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
         // list of maps where map is keyed on metric ID ("id") and value is "data"
         // where "data" is another List<Map<String, Number>> that is the list of metric data.
         // That inner map is keyed on either "timestamp" or "value" (both are Numbers).
-        List<Map<String, Object>> allMetrics = gaugesAndCounters.get("gaugeMetrics");
+        List<Map<String, Object>> allMetrics = gaugesAndCounters.get("gauges");
         if (allMetrics != null) {
             for (Map<String, Object> metric : allMetrics) {
                 String metricId = (String) metric.get("id");
@@ -82,12 +82,12 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
                 for (Map<String, Number> singleMetricData : metricListData) {
                     long timestamp = singleMetricData.get("timestamp").longValue();
                     double value = singleMetricData.get("value").doubleValue();
-                    singleMetrics.add(new SingleMetric(metricId, timestamp, value));
+                    singleMetrics.add(new SingleMetric(metricId, timestamp, value, MetricType.GAUGE));
                 }
             }
         }
 
-        allMetrics = gaugesAndCounters.get("counterMetrics");
+        allMetrics = gaugesAndCounters.get("counters");
         if (allMetrics != null) {
             for (Map<String, Object> metric : allMetrics) {
                 String metricId = (String) metric.get("id");
@@ -95,7 +95,7 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
                 for (Map<String, Number> singleMetricData : metricListData) {
                     long timestamp = singleMetricData.get("timestamp").longValue();
                     double value = singleMetricData.get("value").doubleValue();
-                    singleMetrics.add(new SingleMetric(metricId, timestamp, value));
+                    singleMetrics.add(new SingleMetric(metricId, timestamp, value, MetricType.COUNTER));
                 }
             }
         }
