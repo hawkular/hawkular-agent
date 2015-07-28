@@ -87,11 +87,13 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
 
         // find the operation we need to execute - make sure it exists and get the address for the resource to invoke
         Address opAddress = null;
+        String actualOperationName = null;
 
         Collection<DMROperation> ops = resource.getResourceType().getOperations();
         for (DMROperation op : ops) {
             if (request.getOperationName().equals(op.getID().getIDString())) {
                 opAddress = resource.getAddress().clone().add(Address.parse(op.getPath()));
+                actualOperationName = op.getOperationName();
                 break;
             }
         }
@@ -107,7 +109,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         response.setOperationName(request.getOperationName());
 
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
-            ModelNode opReq = JBossASClient.createRequest(request.getOperationName(), opAddress);
+            ModelNode opReq = JBossASClient.createRequest(actualOperationName, opAddress);
 
             // TODO: when we support parameters, this is how we set them
             // opReq.get(paramName).set(paramValue);
