@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.feedcomm;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
@@ -111,8 +112,12 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
             ModelNode opReq = JBossASClient.createRequest(actualOperationName, opAddress);
 
-            // TODO: when we support parameters, this is how we set them
-            // opReq.get(paramName).set(paramValue);
+            Map<String, String> params = request.getParameters();
+            if (params != null) {
+                for (Map.Entry<String, String> param : params.entrySet()) {
+                    opReq.get(param.getKey()).set(param.getValue());
+                }
+            }
 
             CoreJBossASClient client = new CoreJBossASClient(mcc);
             ModelNode opResp = client.execute(opReq);
