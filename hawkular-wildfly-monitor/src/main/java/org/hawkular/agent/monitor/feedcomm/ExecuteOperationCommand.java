@@ -90,9 +90,12 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         Address opAddress = null;
         String actualOperationName = null;
 
+        String requestedOpName = request.getOperationName();
         Collection<DMROperation> ops = resource.getResourceType().getOperations();
+        MsgLogger.LOG.tracef("Searching for operation [%s] among operations [%s] for resource [%s].",
+                requestedOpName, ops, resource.getID());
         for (DMROperation op : ops) {
-            if (request.getOperationName().equals(op.getID().getIDString())) {
+            if (requestedOpName.equals(op.getID().getIDString())) {
                 opAddress = resource.getAddress().clone().add(Address.parse(op.getPath()));
                 actualOperationName = op.getOperationName();
                 break;
