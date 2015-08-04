@@ -25,7 +25,7 @@
     <resource-root path="hawkular-feed-comm-api.jar"/>
     <resource-root path="hawkular-inventory-json-helper.jar"/>
     <resource-root path="hawkular-monitor.jar"/>
-    <resource-root path="inventory-api.jar"/>
+    <resource-root path="hawkular-inventory-api.jar"/>
     <resource-root path="jgrapht-core.jar"/>
     <resource-root path="metrics-core.jar"/>
     <resource-root path="okhttp.jar"/>
