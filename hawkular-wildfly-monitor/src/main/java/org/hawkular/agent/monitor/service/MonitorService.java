@@ -37,9 +37,12 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
+import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
@@ -54,7 +57,9 @@ import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.MetricTypeManager;
 import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
+import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
@@ -64,6 +69,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
+import org.hawkular.agent.monitor.inventory.dmr.DMRResourceConfigurationPropertyInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
@@ -512,11 +518,13 @@ public class MonitorService implements Service<MonitorService> {
             try {
                 for (DMRInventoryManager im : this.dmrServerInventories.values()) {
                     resourceManager = im.getResourceManager();
+                    InventoryStorage invStorage = new ServerAddressResolver(im.getManagedServer(),
+                            inventoryStorageProxy);
                     bIter = resourceManager.getBreadthFirstIterator();
                     while (bIter.hasNext()) {
                         DMRResource resource = bIter.next();
-                        inventoryStorageProxy.storeResourceType(resource.getResourceType());
-                        inventoryStorageProxy.storeResource(resource);
+                        invStorage.storeResourceType(resource.getResourceType());
+                        invStorage.storeResource(resource);
                     }
                 }
             } catch (Throwable t) {
@@ -818,5 +826,75 @@ public class MonitorService implements Service<MonitorService> {
     private void connectToFeedCommChannel() throws Exception {
         feedComm = new FeedComm(this.httpClientBuilder, this.configuration, this.feedId, this.dmrServerInventories);
         feedComm.connect();
+    }
+
+    /**
+     * A filter that replaces 0.0.0.0 server address with the list of addresses got from
+     * {@link InetAddress#getByName(String)} where the argument of {@code getByName(String)} is the host the agent uses
+     * to query the AS'es DMR.
+     */
+    private static final class ServerAddressResolver implements InventoryStorage {
+        private final InventoryStorage delegate;
+        private final ManagedServer server;
+
+        public ServerAddressResolver(ManagedServer server, InventoryStorage delegate) {
+            super();
+            this.delegate = delegate;
+            this.server = server;
+        }
+
+        private InetAddress[] resolveHost() throws UnknownHostException {
+            String host = null;
+            if (server instanceof RemoteDMRManagedServer) {
+                RemoteDMRManagedServer remoteServer = (RemoteDMRManagedServer) server;
+                host = remoteServer.getHost();
+            } else if (server instanceof LocalDMRManagedServer) {
+                host = InetAddress.getLocalHost().getCanonicalHostName();
+            } else {
+                throw new IllegalStateException("Unexpected type of managed server '" + server.getClass().getName()
+                        + "'; expected '" + RemoteDMRManagedServer.class.getName() + "' or '"
+                        + LocalDMRManagedServer.class.getName() + "'. Please report this bug.");
+            }
+            return InetAddress.getAllByName(host);
+        }
+
+        @Override
+        public void storeResourceType(ResourceType<?, ?, ?, ?> resourceType) {
+            delegate.storeResourceType(resourceType);
+        }
+
+        @Override
+        public void storeResource(Resource<?, ?, ?, ?, ?> resource) {
+            final String IP_ADDRESSES_PROPERTY_NAME = "Bound Address";
+            /* here, we used to check if "WildFly Server".equals(resource.getResourceType().getName().getNameString())
+             * but resource.getParent() == null should select the same node */
+            if (resource.getParent() == null && resource instanceof DMRResource) {
+                DMRResource dmrResource = (DMRResource) resource;
+                DMRResourceConfigurationPropertyInstance adrProp = null;
+                for (DMRResourceConfigurationPropertyInstance prop : dmrResource.getConfigurationProperties()) {
+                    if (IP_ADDRESSES_PROPERTY_NAME.equals(prop.getName().getNameString())) {
+                        adrProp = prop;
+                        break;
+                    }
+                }
+                if (adrProp != null) {
+                    String displayAddresses = null;
+                    try {
+                        InetAddress dmrAddr = InetAddress.getByName(adrProp.getValue());
+                        if (dmrAddr.isAnyLocalAddress()) {
+                            /* resolve the addresses rather than showing 0.0.0.0 */
+                            InetAddress[] resolvedAddresses = resolveHost();
+                            displayAddresses = Stream.of(resolvedAddresses).map(a -> a.getHostAddress())
+                                    .collect(Collectors.joining(", "));
+                            adrProp.setValue(displayAddresses);
+                        }
+                    } catch (UnknownHostException e) {
+                        MsgLogger.LOG.warnf(e, "Could not parse IP address [%s]", adrProp.getValue());
+                    }
+                }
+            }
+            delegate.storeResource(resource);
+        }
+
     }
 }
