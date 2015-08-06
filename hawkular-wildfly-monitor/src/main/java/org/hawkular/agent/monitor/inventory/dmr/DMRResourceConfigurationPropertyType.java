@@ -16,9 +16,9 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
-import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 
 public class DMRResourceConfigurationPropertyType extends ResourceConfigurationPropertyType<DMRResourceType> {
 
