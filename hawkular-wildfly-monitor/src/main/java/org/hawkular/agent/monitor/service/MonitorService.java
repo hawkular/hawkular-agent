@@ -503,6 +503,9 @@ public class MonitorService implements Service<MonitorService> {
         schedulerService = new SchedulerService(schedulerConfig, selfId, diagnostics, storageAdapter,
                 createLocalClientFactory(), this.httpClientBuilder);
 
+        // now we can begin collecting metrics
+        schedulerService.start();
+
         // if we are participating in a full hawkular environment, add resource and its metadata to inventory now
         if (this.configuration.storageAdapter.type == MonitorServiceConfiguration.StorageReportTo.HAWKULAR) {
 
@@ -526,9 +529,6 @@ public class MonitorService implements Service<MonitorService> {
                         "Failed to completely add our inventory - but we will keep going with partial inventory");
             }
         }
-
-        // now we can begin collecting metrics
-        schedulerService.start();
     }
 
     private SchedulerConfiguration prepareSchedulerConfig() {
