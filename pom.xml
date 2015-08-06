@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>18</version>
+    <version>19</version>
   </parent>
 
   <groupId>org.hawkular.agent</groupId>
@@ -140,6 +140,14 @@
         <groupId>org.jgrapht</groupId>
         <artifactId>jgrapht-core</artifactId>
         <version>${version.org.jgrapht}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.wildfly.bom</groupId>
+        <artifactId>jboss-javaee-7.0-wildfly</artifactId>
+        <version>${version.org.wildfly}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <dependency>
