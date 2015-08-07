@@ -55,6 +55,7 @@ public class FeedCommProcessor implements WebSocketListener {
         VALID_COMMANDS.put(EchoCommand.REQUEST_CLASS.getName(), EchoCommand.class);
         VALID_COMMANDS.put(GenericErrorResponseCommand.REQUEST_CLASS.getName(), GenericErrorResponseCommand.class);
         VALID_COMMANDS.put(ExecuteOperationCommand.REQUEST_CLASS.getName(), ExecuteOperationCommand.class);
+        VALID_COMMANDS.put(DeployApplicationCommand.REQUEST_CLASS.getName(), DeployApplicationCommand.class);
     }
 
     public FeedCommProcessor(MonitorServiceConfiguration config,
@@ -164,32 +165,32 @@ public class FeedCommProcessor implements WebSocketListener {
     public void onMessage(BufferedSource payload, WebSocket.PayloadType payloadType) throws IOException {
 
         BasicMessage response;
+        String requestClassName = "?";
 
         try {
-            BasicMessageWithExtraData<? extends BasicMessage> msgWithData;
-
-            switch (payloadType) {
-                case TEXT: {
-                    String nameAndJsonStr = payload.readUtf8();
-                    BasicMessage msgFromJson = new ApiDeserializer().deserialize(nameAndJsonStr);
-                    msgWithData = new BasicMessageWithExtraData<BasicMessage>(msgFromJson, null);
-                    break;
-                }
-                case BINARY: {
-                    InputStream input = payload.inputStream();
-                    msgWithData = new ApiDeserializer().deserialize(input);
-                    break;
-                }
-                default: {
-                    throw new IllegalArgumentException("Unknown payload type, please report this bug: " + payloadType);
-                }
-            }
-
-            MsgLogger.LOG.debug("Received message from server");
-
-            String requestClassName = "?";
-
             try {
+                BasicMessageWithExtraData<? extends BasicMessage> msgWithData;
+
+                switch (payloadType) {
+                    case TEXT: {
+                        String nameAndJsonStr = payload.readUtf8();
+                        BasicMessage msgFromJson = new ApiDeserializer().deserialize(nameAndJsonStr);
+                        msgWithData = new BasicMessageWithExtraData<BasicMessage>(msgFromJson, null);
+                        break;
+                    }
+                    case BINARY: {
+                        InputStream input = payload.inputStream();
+                        msgWithData = new ApiDeserializer().deserialize(input);
+                        break;
+                    }
+                    default: {
+                        throw new IllegalArgumentException("Unknown payload type, please report this bug: "
+                                + payloadType);
+                    }
+                }
+
+                MsgLogger.LOG.debug("Received message from server");
+
                 BasicMessage msg = msgWithData.getBasicMessage();
                 requestClassName = msg.getClass().getName();
 
@@ -203,18 +204,17 @@ public class FeedCommProcessor implements WebSocketListener {
                     CommandContext context = new CommandContext(this);
                     response = command.execute(msg, msgWithData.getBinaryData(), context);
                 }
-            } catch (Throwable t) {
-                MsgLogger.LOG.errorCommandExecutionFailureFeed(requestClassName, t);
-                String errorMessage = "Command failed [" + requestClassName + "]";
-                response = new GenericErrorResponseBuilder()
-                        .setThrowable(t)
-                        .setErrorMessage(errorMessage)
-                        .build();
-
+            } finally {
+                // must ensure payload is closed; this assumes if it was a stream that the command is finished with it
+                payload.close();
             }
-        } finally {
-            // Must ensure payload is closed. This assumes if it was a stream that the command is finished with it.
-            payload.close();
+        } catch (Throwable t) {
+            MsgLogger.LOG.errorCommandExecutionFailureFeed(requestClassName, t);
+            String errorMessage = "Command failed [" + requestClassName + "]";
+            response = new GenericErrorResponseBuilder()
+                    .setThrowable(t)
+                    .setErrorMessage(errorMessage)
+                    .build();
         }
 
         // send the response back to the server
