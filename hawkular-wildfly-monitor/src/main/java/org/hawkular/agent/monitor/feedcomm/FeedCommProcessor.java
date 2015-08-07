@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.feedcomm;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -27,6 +28,7 @@ import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessage;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.feedcomm.api.ApiDeserializer;
 import org.hawkular.feedcomm.api.GenericErrorResponseBuilder;
 
@@ -160,36 +162,59 @@ public class FeedCommProcessor implements WebSocketListener {
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void onMessage(BufferedSource payload, WebSocket.PayloadType payloadType) throws IOException {
-        String nameAndJsonStr = payload.readUtf8();
-        payload.close();
 
-        MsgLogger.LOG.debug("Received message from server");
-
-        String requestClassName = "?";
         BasicMessage response;
 
         try {
-            BasicMessage request = new ApiDeserializer().deserialize(nameAndJsonStr);
-            requestClassName = request.getClass().getName();
+            BasicMessageWithExtraData<? extends BasicMessage> msgWithData;
 
-            Class<? extends Command<?, ?>> commandClass = VALID_COMMANDS.get(requestClassName);
-            if (commandClass == null) {
-                MsgLogger.LOG.errorInvalidCommandRequestFeed(requestClassName);
-                String errorMessage = "Invalid command request: " + requestClassName;
-                response = new GenericErrorResponseBuilder().setErrorMessage(errorMessage).build();
-            } else {
-                Command command = commandClass.newInstance();
-                CommandContext context = new CommandContext(this);
-                response = command.execute(request, context);
+            switch (payloadType) {
+                case TEXT: {
+                    String nameAndJsonStr = payload.readUtf8();
+                    BasicMessage msgFromJson = new ApiDeserializer().deserialize(nameAndJsonStr);
+                    msgWithData = new BasicMessageWithExtraData<BasicMessage>(msgFromJson, null);
+                    break;
+                }
+                case BINARY: {
+                    InputStream input = payload.inputStream();
+                    msgWithData = new ApiDeserializer().deserialize(input);
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException("Unknown payload type, please report this bug: " + payloadType);
+                }
             }
-        } catch (Throwable t) {
-            MsgLogger.LOG.errorCommandExecutionFailureFeed(requestClassName, t);
-            String errorMessage = "Command failed [" + requestClassName + "]";
-            response = new GenericErrorResponseBuilder()
-                    .setThrowable(t)
-                    .setErrorMessage(errorMessage)
-                    .build();
 
+            MsgLogger.LOG.debug("Received message from server");
+
+            String requestClassName = "?";
+
+            try {
+                BasicMessage msg = msgWithData.getBasicMessage();
+                requestClassName = msg.getClass().getName();
+
+                Class<? extends Command<?, ?>> commandClass = VALID_COMMANDS.get(requestClassName);
+                if (commandClass == null) {
+                    MsgLogger.LOG.errorInvalidCommandRequestFeed(requestClassName);
+                    String errorMessage = "Invalid command request: " + requestClassName;
+                    response = new GenericErrorResponseBuilder().setErrorMessage(errorMessage).build();
+                } else {
+                    Command command = commandClass.newInstance();
+                    CommandContext context = new CommandContext(this);
+                    response = command.execute(msg, msgWithData.getBinaryData(), context);
+                }
+            } catch (Throwable t) {
+                MsgLogger.LOG.errorCommandExecutionFailureFeed(requestClassName, t);
+                String errorMessage = "Command failed [" + requestClassName + "]";
+                response = new GenericErrorResponseBuilder()
+                        .setThrowable(t)
+                        .setErrorMessage(errorMessage)
+                        .build();
+
+            }
+        } finally {
+            // Must ensure payload is closed. This assumes if it was a stream that the command is finished with it.
+            payload.close();
         }
 
         // send the response back to the server

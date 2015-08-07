@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.feedcomm;
 
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessage;
+import org.hawkular.bus.common.BinaryData;
 import org.hawkular.feedcomm.api.GenericErrorResponse;
 
 /**
@@ -28,7 +29,8 @@ public class GenericErrorResponseCommand implements Command<GenericErrorResponse
     public static final Class<GenericErrorResponse> REQUEST_CLASS = GenericErrorResponse.class;
 
     @Override
-    public BasicMessage execute(GenericErrorResponse errorResponse, CommandContext context) throws Exception {
+    public BasicMessage execute(GenericErrorResponse errorResponse, BinaryData binaryData, CommandContext context)
+            throws Exception {
 
         String errorMessage = errorResponse.getErrorMessage();
         String stackTrace = errorResponse.getStackTrace();
