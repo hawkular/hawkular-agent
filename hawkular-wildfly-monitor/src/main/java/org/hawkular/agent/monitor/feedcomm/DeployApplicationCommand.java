@@ -91,7 +91,7 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
 
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
             DeploymentJBossASClient client = new DeploymentJBossASClient(mcc);
-            client.deploy(request.getDestinationFileName(), applicationContent);
+            client.deployStandalone(request.getDestinationFileName(), applicationContent);
             response.setStatus("OK");
             response.setMessage(String.format("Deployed application: %s", request.getDestinationFileName()));
         } catch (Exception e) {

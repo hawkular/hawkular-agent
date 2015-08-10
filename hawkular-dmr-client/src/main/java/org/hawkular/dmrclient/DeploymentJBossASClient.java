@@ -129,7 +129,7 @@ public class DeploymentJBossASClient extends JBossASClient {
      * @param deploymentName name that the content will be known as
      * @param content stream containing the actual content data
      */
-    public void deploy(String deploymentName, InputStream content) {
+    public void deployStandalone(String deploymentName, InputStream content) {
         ModelControllerClientServerDeploymentManager deployMgr;
         deployMgr = new ModelControllerClientServerDeploymentManager(getModelControllerClient(), false);
         DeploymentPlan plan = deployMgr
