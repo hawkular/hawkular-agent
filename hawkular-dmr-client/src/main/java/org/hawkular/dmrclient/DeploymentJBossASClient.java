@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.as.controller.client.helpers.domain.DeploymentPlanResult;
+import org.jboss.as.controller.client.helpers.domain.DomainDeploymentManager;
+import org.jboss.as.controller.client.helpers.domain.impl.DomainClientImpl;
 import org.jboss.as.controller.client.helpers.standalone.DeploymentAction;
 import org.jboss.as.controller.client.helpers.standalone.DeploymentPlan;
 import org.jboss.as.controller.client.helpers.standalone.ServerDeploymentActionResult;
@@ -125,6 +128,7 @@ public class DeploymentJBossASClient extends JBossASClient {
 
     /**
      * Uploads the content to the app server's content repository and then deploys the content.
+     * This is to be used for app servers in "standalone" mode.
      *
      * @param deploymentName name that the content will be known as
      * @param content stream containing the actual content data
@@ -143,7 +147,7 @@ public class DeploymentJBossASClient extends JBossASClient {
         try {
             results = future.get();
         } catch (Exception e) {
-            throw new FailureException("Failed to execute deployment plan for [" + deploymentName + "]", e);
+            throw new FailureException("Failed to execute standalone deployment plan for [" + deploymentName + "]", e);
         }
 
         boolean success = true;
@@ -181,5 +185,41 @@ public class DeploymentJBossASClient extends JBossASClient {
         }
 
         return; // success
+    }
+
+    /**
+     * Uploads the content to the app server's content repository and then deploys the content.
+     * This is to be used for app servers in "domain" mode.
+     *
+     * NOTE: This has not been tested. It also will not throw exceptions if the deployment failed.
+     *       This method needs some TLC to finish it.
+     *
+     * @param deploymentName name that the content will be known as
+     * @param content stream containing the actual content data
+     */
+    public void deployDomain(String deploymentName, InputStream content) {
+        DomainClientImpl domainClient = new DomainClientImpl(getModelControllerClient());
+        DomainDeploymentManager deployMgr = domainClient.getDeploymentManager();
+        org.jboss.as.controller.client.helpers.domain.DeploymentPlan plan;
+        try {
+            plan = deployMgr
+                    .newDeploymentPlan()
+                    .add(deploymentName, content)
+                    .andDeploy()
+                    .build();
+        } catch (Exception e) {
+            throw new FailureException("Cannot build domain deployment plan for [" + deploymentName + "]", e);
+        }
+
+        Future<DeploymentPlanResult> future = deployMgr.execute(plan);
+        DeploymentPlanResult results;
+        try {
+            results = future.get();
+        } catch (Exception e) {
+            throw new FailureException("Failed to execute domain deployment plan for [" + deploymentName + "]", e);
+        }
+
+        // TODO parse "results" to know if it worked; if failed, throw exception with appropriate error message
+        return;
     }
 }
