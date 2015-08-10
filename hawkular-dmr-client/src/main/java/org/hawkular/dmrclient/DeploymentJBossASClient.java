@@ -155,6 +155,7 @@ public class DeploymentJBossASClient extends JBossASClient {
                 case EXECUTED:
                 case CONFIGURATION_MODIFIED_REQUIRES_RESTART: {
                     success &= true; // if it is already false, we want to keep it as false
+                    break;
                 }
                 case FAILED:
                 case NOT_EXECUTED:
@@ -164,6 +165,7 @@ public class DeploymentJBossASClient extends JBossASClient {
                     if (error != null) {
                         exceptions.add(error);
                     }
+                    break;
                 }
             }
         }
