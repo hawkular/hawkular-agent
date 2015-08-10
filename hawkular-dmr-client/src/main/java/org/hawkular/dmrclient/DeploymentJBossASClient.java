@@ -16,7 +16,20 @@
  */
 package org.hawkular.dmrclient;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Future;
+
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.as.controller.client.helpers.domain.DeploymentPlanResult;
+import org.jboss.as.controller.client.helpers.domain.DomainDeploymentManager;
+import org.jboss.as.controller.client.helpers.domain.impl.DomainClientImpl;
+import org.jboss.as.controller.client.helpers.standalone.DeploymentAction;
+import org.jboss.as.controller.client.helpers.standalone.DeploymentPlan;
+import org.jboss.as.controller.client.helpers.standalone.ServerDeploymentActionResult;
+import org.jboss.as.controller.client.helpers.standalone.ServerDeploymentPlanResult;
+import org.jboss.as.controller.client.helpers.standalone.impl.ModelControllerClientServerDeploymentManager;
 import org.jboss.dmr.ModelNode;
 
 /**
@@ -111,5 +124,102 @@ public class DeploymentJBossASClient extends JBossASClient {
         } else {
             throw new FailureException(results, "Cannot get the deployment path");
         }
+    }
+
+    /**
+     * Uploads the content to the app server's content repository and then deploys the content.
+     * This is to be used for app servers in "standalone" mode.
+     *
+     * @param deploymentName name that the content will be known as
+     * @param content stream containing the actual content data
+     */
+    public void deployStandalone(String deploymentName, InputStream content) {
+        ModelControllerClientServerDeploymentManager deployMgr;
+        deployMgr = new ModelControllerClientServerDeploymentManager(getModelControllerClient(), false);
+        DeploymentPlan plan = deployMgr
+                .newDeploymentPlan()
+                .add(deploymentName, content)
+                .andDeploy()
+                .build();
+
+        Future<ServerDeploymentPlanResult> future = deployMgr.execute(plan);
+        ServerDeploymentPlanResult results;
+        try {
+            results = future.get();
+        } catch (Exception e) {
+            throw new FailureException("Failed to execute standalone deployment plan for [" + deploymentName + "]", e);
+        }
+
+        boolean success = true;
+        ArrayList<Throwable> exceptions = new ArrayList<>();
+        List<DeploymentAction> actions = plan.getDeploymentActions();
+        for (DeploymentAction action : actions) {
+            ServerDeploymentActionResult result = results.getDeploymentActionResult(action.getId());
+            switch (result.getResult()) {
+                case EXECUTED:
+                case CONFIGURATION_MODIFIED_REQUIRES_RESTART: {
+                    success &= true; // if it is already false, we want to keep it as false
+                    break;
+                }
+                case FAILED:
+                case NOT_EXECUTED:
+                case ROLLED_BACK: {
+                    success = false;
+                    Throwable error = result.getDeploymentException();
+                    if (error != null) {
+                        exceptions.add(error);
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (!success) {
+            StringBuilder errorMsg = new StringBuilder();
+            errorMsg.append("Failed to deploy [").append(deploymentName).append("]");
+            int errorNumber = 1;
+            for (Throwable exception : exceptions) {
+                errorMsg.append('\n').append(errorNumber++).append(": ").append(exception);
+            }
+            throw new FailureException(errorMsg.toString());
+        }
+
+        return; // success
+    }
+
+    /**
+     * Uploads the content to the app server's content repository and then deploys the content.
+     * This is to be used for app servers in "domain" mode.
+     *
+     * NOTE: This has not been tested. It also will not throw exceptions if the deployment failed.
+     *       This method needs some TLC to finish it.
+     *
+     * @param deploymentName name that the content will be known as
+     * @param content stream containing the actual content data
+     */
+    public void deployDomain(String deploymentName, InputStream content) {
+        DomainClientImpl domainClient = new DomainClientImpl(getModelControllerClient());
+        DomainDeploymentManager deployMgr = domainClient.getDeploymentManager();
+        org.jboss.as.controller.client.helpers.domain.DeploymentPlan plan;
+        try {
+            plan = deployMgr
+                    .newDeploymentPlan()
+                    .add(deploymentName, content)
+                    .andDeploy()
+                    .build();
+        } catch (Exception e) {
+            throw new FailureException("Cannot build domain deployment plan for [" + deploymentName + "]", e);
+        }
+
+        Future<DeploymentPlanResult> future = deployMgr.execute(plan);
+        DeploymentPlanResult results;
+        try {
+            results = future.get();
+        } catch (Exception e) {
+            throw new FailureException("Failed to execute domain deployment plan for [" + deploymentName + "]", e);
+        }
+
+        // TODO parse "results" to know if it worked; if failed, throw exception with appropriate error message
+        return;
     }
 }
