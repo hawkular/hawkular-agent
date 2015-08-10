@@ -344,7 +344,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         String metricId = getInventoryId(measurementInstance);
         String metricTypeId = getInventoryId(measurementInstance.getMeasurementType());
-        // todo: in next version of inventory feed will probably have it's own resource and metric types, so instead of
+        // TODO: in next version of inventory feed will probably have it's own resource and metric types, so instead of
         // using the absolute path (/metricTypeId), the relative path (../metricTypeId) can be better here
         String metricTypePath = "/" + metricTypeId;
         Map<String, Object> metricProps = measurementInstance.getProperties();

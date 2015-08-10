@@ -86,7 +86,7 @@
       <version>${project.version}</version>
     </dependency>
 
-    <!-- START DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
+    <!-- TODO: START DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <!-- DON'T FORGET TO REMOVE THE DEP FROM module.xml -->
     <!-- DON'T FORGET TO REMOVE THE DEP FROM ../pom.xml DepManagement Section -->
     <dependency>
