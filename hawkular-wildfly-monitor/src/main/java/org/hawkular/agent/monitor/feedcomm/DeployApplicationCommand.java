@@ -33,6 +33,7 @@ import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.DeploymentJBossASClient;
 import org.hawkular.feedcomm.api.DeployApplicationRequest;
 import org.hawkular.feedcomm.api.DeployApplicationResponse;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
@@ -46,14 +47,16 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
             CommandContext context) throws Exception {
 
         MsgLogger.LOG.infof("Received request to deploy application [%s] on resource [%s]",
-                request.getDestinationFileName(), request.getResourceId());
+                request.getDestinationFileName(), request.getResourcePath());
 
         FeedCommProcessor processor = context.getFeedCommProcessor();
         MonitorServiceConfiguration config = processor.getMonitorServiceConfiguration();
 
         // Based on the resource ID we need to know which inventory manager is handling it.
         // From the inventory manager, we can get the actual resource.
-        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(request.getResourceId());
+        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
+        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
         ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.managedServerName));
         if (managedServer == null) {
             throw new IllegalArgumentException(
@@ -61,13 +64,13 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return deployApplicationDMR(request, applicationContent, processor, managedServer);
+            return deployApplicationDMR(resourceId, request, applicationContent, processor, managedServer);
         } else {
             throw new IllegalStateException("Cannot deploy application: report this bug: " + managedServer.getClass());
         }
     }
 
-    private DeployApplicationResponse deployApplicationDMR(DeployApplicationRequest request,
+    private DeployApplicationResponse deployApplicationDMR(String resourceId, DeployApplicationRequest request,
             BinaryData applicationContent, FeedCommProcessor processor, ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
@@ -77,17 +80,17 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
         }
 
         ResourceManager<DMRResource> resourceManager = inventoryManager.getResourceManager();
-        DMRResource resource = resourceManager.getResource(new ID(request.getResourceId()));
+        DMRResource resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot deploy application: unknown resource [%s]", request.getResourceId()));
+                    String.format("Cannot deploy application: unknown resource [%s]", request.getResourcePath()));
         }
 
         // find the operation we need to execute - make sure it exists and get the address for the resource to invoke
         Address opAddress = resource.getAddress();
 
         DeployApplicationResponse response = new DeployApplicationResponse();
-        response.setResourceId(request.getResourceId());
+        response.setResourcePath(request.getResourcePath());
 
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
             DeploymentJBossASClient client = new DeploymentJBossASClient(mcc);
