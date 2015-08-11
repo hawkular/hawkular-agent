@@ -273,7 +273,11 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
             String resourceTypePath = "/" + getInventoryId(resource.getResourceType());
-            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource), resourceTypePath,
+            // TODO: !!!!!!!! HWKAGENT-5 WE NEED TO PASS RESOURCE CONFIGURATION PROPERTIES HERE
+            //                WAITING ON THE NEW INVENTORY API. MIGHT BE USING StructuredData BUT HOW?
+            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(
+                    getInventoryId(resource),
+                    resourceTypePath,
                     resource.getProperties());
             final String jsonPayload = Util.toJson(rPojo);
 
@@ -310,7 +314,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.ResourceType.Blueprint rtPojo;
-            rtPojo = new org.hawkular.inventory.api.model.ResourceType.Blueprint(getInventoryId(resourceType),
+            rtPojo = new org.hawkular.inventory.api.model.ResourceType.Blueprint(
+                    getInventoryId(resourceType),
                     resourceType.getProperties());
             final String jsonPayload = Util.toJson(rtPojo);
 
@@ -351,9 +356,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         try {
             // get the payload in JSON format
-            org.hawkular.inventory.api.model.Metric.Blueprint mtPojo;
-            mtPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypePath, metricId, metricProps);
-            final String jsonPayload = Util.toJson(mtPojo);
+            org.hawkular.inventory.api.model.Metric.Blueprint mPojo;
+            mPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypePath, metricId, metricProps);
+            final String jsonPayload = Util.toJson(mPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
@@ -416,7 +421,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.MetricType.Blueprint mtPojo;
 
-            // todo: correctly map the MetricDataType from the MeasurementType instance type (avail from AvailType etc.)
+            // TODO: correctly map the MetricDataType from the MeasurementType instance type (avail from AvailType etc.)
             mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, metricDataType,
                     metricTypeProps);
             final String jsonPayload = Util.toJson(mtPojo);

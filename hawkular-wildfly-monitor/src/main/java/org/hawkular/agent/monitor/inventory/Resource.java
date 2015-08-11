@@ -16,12 +16,9 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 
 import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
 
@@ -38,7 +35,7 @@ C extends ResourceConfigurationPropertyInstance<?>> //
     private final E endpoint;
     private final Collection<M> metrics = new HashSet<>();
     private final Collection<A> avails = new HashSet<>();
-    private final Collection<C> configurationProperties = new HashSet<>();
+    private final Collection<C> resourceConfigurationProperties = new HashSet<>();
 
     public <P extends Resource<?, ?, ?, ?, ?>> Resource(ID id, Name name, E endpoint, T resourceType, P parent) {
         super(id, name);
@@ -67,21 +64,12 @@ C extends ResourceConfigurationPropertyInstance<?>> //
         return avails;
     }
 
-    public Collection<C> getConfigurationProperties() {
-        return Collections.unmodifiableCollection(configurationProperties);
+    public Collection<C> getResourceConfigurationProperties() {
+        return Collections.unmodifiableCollection(resourceConfigurationProperties);
     }
 
-    public void addConfigurationProperty(C configProperty) {
-        configurationProperties.add(configProperty);
-
-        // put it in our properties so it gets stored properly in inventory
-        final String configPropName = "resourceConfiguration";
-        List<Map<String, Object>> config = (List<Map<String, Object>>) getProperties().get(configPropName);
-        if (config == null) {
-            config = new ArrayList<>();
-            addProperty(configPropName, config);
-        }
-        config.add(configProperty.getProperties());
+    public void addResourceConfigurationProperty(C configProperty) {
+        resourceConfigurationProperties.add(configProperty);
     }
 
     @Override
