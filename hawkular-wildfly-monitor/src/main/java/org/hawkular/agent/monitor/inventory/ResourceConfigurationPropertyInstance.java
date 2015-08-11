@@ -28,7 +28,7 @@ public abstract class ResourceConfigurationPropertyInstance<T extends ResourceCo
         this.configurationPropertyType = configurationPropertyType;
     }
 
-    public T getConfigurationPropertyType() {
+    public T getResourceConfigurationPropertyType() {
         return configurationPropertyType;
     }
 

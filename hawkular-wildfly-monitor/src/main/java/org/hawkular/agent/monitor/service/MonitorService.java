@@ -871,9 +871,9 @@ public class MonitorService implements Service<MonitorService> {
             if (resource.getParent() == null && resource instanceof DMRResource) {
                 DMRResource dmrResource = (DMRResource) resource;
                 DMRResourceConfigurationPropertyInstance adrProp = null;
-                for (DMRResourceConfigurationPropertyInstance prop : dmrResource.getConfigurationProperties()) {
-                    if (IP_ADDRESSES_PROPERTY_NAME.equals(prop.getName().getNameString())) {
-                        adrProp = prop;
+                for (DMRResourceConfigurationPropertyInstance p : dmrResource.getResourceConfigurationProperties()) {
+                    if (IP_ADDRESSES_PROPERTY_NAME.equals(p.getName().getNameString())) {
+                        adrProp = p;
                         break;
                     }
                 }
