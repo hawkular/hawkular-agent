@@ -165,7 +165,7 @@ public class DMRDiscovery {
                 DMRResourceConfigurationPropertyInstance cpi = new DMRResourceConfigurationPropertyInstance(
                         ID.NULL_ID, configPropType.getName(), configPropType);
                 cpi.setValue((value != null && value.isDefined()) ? value.asString() : null);
-                resource.addConfigurationProperty(cpi);
+                resource.addResourceConfigurationProperty(cpi);
             } catch (Exception e) {
                 LOG.warnf(e, "Failed to discover config [%s] for resource [%s]", configPropType, resource);
             }
