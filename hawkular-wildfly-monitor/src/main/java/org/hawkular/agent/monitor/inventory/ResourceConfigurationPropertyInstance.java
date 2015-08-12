@@ -19,9 +19,8 @@ package org.hawkular.agent.monitor.inventory;
 public abstract class ResourceConfigurationPropertyInstance<T extends ResourceConfigurationPropertyType<?>>
         extends NamedObject {
 
-    private static final String VALUE_PROPNAME = "value";
-
     private final T configurationPropertyType;
+    private String value;
 
     public ResourceConfigurationPropertyInstance(ID id, Name name, T configurationPropertyType) {
         super(id, name);
@@ -33,11 +32,11 @@ public abstract class ResourceConfigurationPropertyInstance<T extends ResourceCo
     }
 
     public String getValue() {
-        return (String) getProperties().get(VALUE_PROPNAME);
+        return value;
     }
 
     public void setValue(String value) {
-        addProperty(VALUE_PROPNAME, value);
+        this.value = value;
     }
 
     @Override
