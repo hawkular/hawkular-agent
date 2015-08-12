@@ -44,7 +44,6 @@ import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.bus.restclient.RestClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.DataEntity.Role;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.StructuredData;
@@ -538,10 +537,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             }
 
             org.hawkular.inventory.api.model.DataEntity.Blueprint dePojo;
-            dePojo = new org.hawkular.inventory.api.model.DataEntity.Blueprint(
-                    Role.configuration,
-                    structDataBuilder.build(),
-                    null);
+            dePojo = new org.hawkular.inventory.api.model.DataEntity.Blueprint(structDataBuilder.build(), null);
             final String jsonPayload = Util.toJson(dePojo);
 
             // build the REST URL
