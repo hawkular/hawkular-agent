@@ -522,11 +522,17 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     private void registerResourceConfiguration(Resource<?, ?, ?, ?, ?> resource) {
+
         try {
-            // get the payload in JSON format
-            StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
             Collection<? extends ResourceConfigurationPropertyInstance<?>> resConfigInstances =
                     resource.getResourceConfigurationProperties();
+
+            if (resConfigInstances == null || resConfigInstances.isEmpty()) {
+                return; // nothing to do
+            }
+
+            // get the payload in JSON format
+            StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
             for (ResourceConfigurationPropertyInstance<?> resConfigInstance : resConfigInstances) {
                 structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
             }
