@@ -519,6 +519,7 @@ public class MonitorService implements Service<MonitorService> {
             BreadthFirstIterator<DMRResource, DefaultEdge> bIter;
 
             try {
+                long start = System.nanoTime();
                 for (DMRInventoryManager im : this.dmrServerInventories.values()) {
                     resourceManager = im.getResourceManager();
                     InventoryStorage invStorage = new ServerAddressResolver(im.getManagedServer(),
@@ -530,6 +531,9 @@ public class MonitorService implements Service<MonitorService> {
                         invStorage.storeResource(resource);
                     }
                 }
+                long elapsed = System.nanoTime() - start;
+                MsgLogger.LOG.infof("Inventory successfully initialized. It took " + ((double) elapsed / 1000000000.0)
+                        + " seconds.");
             } catch (Throwable t) {
                 // TODO for now, just stop what we were doing and whatever we have in inventory is "good enough"
                 // for prototyping, this is good enough, but we'll need better handling later
