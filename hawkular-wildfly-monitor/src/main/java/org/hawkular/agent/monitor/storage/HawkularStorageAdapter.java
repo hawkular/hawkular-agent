@@ -19,8 +19,10 @@ package org.hawkular.agent.monitor.storage;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
@@ -43,8 +45,8 @@ import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.bus.restclient.RestClient;
+import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.DataEntity.Role;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.StructuredData;
@@ -271,6 +273,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
         if (resource.isPersisted()) {
             return;
         }
+        if (resource.getParent() != null) {
+            registerResource(resource.getParent());
+        }
 
         try {
             // get the payload in JSON format
@@ -288,6 +293,16 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append("test").append("/"); // environment
             url.append(getFeedId());
             url.append("/resources");
+            if (resource.getParent() != null) {
+                Stack<String> ancestors = new Stack<>();
+                Resource it = resource;
+                while ((it = it.getParent()) != null) {
+                    ancestors.push(it.getID().getIDString());
+                }
+                while (!ancestors.empty()) {
+                    url.append('/').append(ancestors.pop());
+                }
+            }
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
@@ -458,13 +473,17 @@ public class HawkularStorageAdapter implements StorageAdapter {
     private void relateResourceWithMetric(Resource<?, ?, ?, ?, ?> resource,
             MeasurementInstance<?, ?, ?> measInstance) {
 
-        String resourceId = getInventoryId(resource);
-        String metricId = getInventoryId(measInstance).replaceAll("/", "\\\\/");
+        String metricId = getInventoryId(measInstance);
 
         try {
             // get the payload in JSON format
+            Resource it = resource;
+            int level = 1;
+            while ((it = resource.getParent()) != null) {
+                level++;
+            }
             ArrayList<String> id = new ArrayList<>();
-            id.add("../m;" + metricId);
+            id.add(String.join("", Collections.nCopies(level, "../")) + "m;" + metricId);
             final String jsonPayload = Util.toJson(id);
 
             // build the REST URL
@@ -472,7 +491,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url = Util.convertToNonSecureUrl(url.toString());
             url.append("test").append("/"); // environment
             url.append(getFeedId());
-            url.append("/resources").append("/").append(Util.urlEncode(resourceId)).append("/metrics");
+            url.append("/resources").append(getResourcePath(resource)).append("/metrics");
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
@@ -485,14 +504,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
             }
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
-            throw new RuntimeException("Cannot associate resource with metric: " + resourceId + "/" + metricId, t);
+            throw new RuntimeException("Cannot associate resource [" + getResourcePath(resource) + "] with metric [ " +
+                    metricId + "]", t);
         }
     }
 
     private void relateResourceTypeWithMetricType(ResourceType<?, ?, ?, ?> resourceType, MeasurementType measType) {
 
         String resourceTypeId = getInventoryId(resourceType);
-        String metricTypeId = getInventoryId(measType).replaceAll("/", "\\\\/");
+        String metricTypeId = getInventoryId(measType);
 
         try {
             // get the payload in JSON format
@@ -539,7 +559,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             org.hawkular.inventory.api.model.DataEntity.Blueprint dePojo;
             dePojo = new org.hawkular.inventory.api.model.DataEntity.Blueprint(
-                    Role.configuration,
+                    Resources.DataRole.configuration,
                     structDataBuilder.build(),
                     null);
             final String jsonPayload = Util.toJson(dePojo);
