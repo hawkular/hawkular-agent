@@ -37,12 +37,14 @@ import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.NamedObject;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstance;
+import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.bus.restclient.RestClient;
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.MetricDataType;
@@ -221,6 +223,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
 
         registerResourceType(resourceType);
+        registerResourceTypeConfigurationSchema(resourceType);
 
         Collection<? extends MetricType> metricTypes = resourceType.getMetricTypes();
         for (MetricType metricType : metricTypes) {
@@ -573,6 +576,77 @@ public class HawkularStorageAdapter implements StorageAdapter {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot register resource configuration for resource: " + resource, t);
         }
+    }
+
+    private void registerResourceTypeConfigurationSchema(ResourceType<?, ?, ?, ?> resourceType) {
+
+        Collection<? extends ResourceConfigurationPropertyType> configurationPropertyTypes =
+                resourceType.getResourceConfigurationPropertyTypes();
+
+        if (!resourceType.isPersisted() || null == configurationPropertyTypes || configurationPropertyTypes.isEmpty()) {
+            return;
+        }
+
+        StructuredData configSchema = getConfigurationSchema(resourceType, configurationPropertyTypes);
+        org.hawkular.inventory.api.model.DataEntity.Blueprint<ResourceTypes.DataRole> blueprint =
+                new org.hawkular.inventory.api.model.DataEntity.Blueprint(
+                        ResourceTypes.DataRole.configurationSchema,
+                        configSchema,
+                        null);
+
+        try {
+            StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
+            url.append("test/"); // environment
+            url.append(getFeedId());
+            url.append("/resourceTypes/");
+            url.append(resourceType.getID().getIDString());
+            url.append("/data");
+
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, Util.toJson(blueprint));
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
+
+            // HTTP status of 201 means success, 409 means it already exists; anything else is an error
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
+            }
+
+        } catch (Throwable t) {
+            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            throw new RuntimeException("Cannot register resource configuration for resource: " + resourceType, t);
+        }
+    }
+
+    private StructuredData getConfigurationSchema(ResourceType<?, ?, ?, ?> resourceType,
+                                                  Collection<? extends ResourceConfigurationPropertyType>
+                                                  configurationPropertyTypes) {
+
+        StructuredData configSchema = StructuredData.get().map()
+                .putString("tile", resourceType.getID().getIDString())
+                .putString("description", resourceType.getResourceNameTemplate())
+                .putString("type", "object")
+                .putMap("properties")
+                .closeMap()
+                .build();
+
+        if (configurationPropertyTypes == null) {
+            return configSchema;
+        }
+
+        /* TODO include when updating inventory >= 0.3.1
+        for (ResourceConfigurationPropertyType<?> resConfigInstance : configurationPropertyTypes) {
+            configSchema = configSchema.update().toMap()
+                    .updateMap("properties")
+                        .updateMap(resConfigInstance.getID().getIDString()) //fixed in inventory >= 0.3.1
+                            .putString("type", "string")
+                        .closeMap()
+                    .closeMap()
+                    .build();
+        }
+        */
+
+        return configSchema;
     }
 
     /**
