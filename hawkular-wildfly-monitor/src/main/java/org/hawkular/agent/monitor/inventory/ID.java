@@ -25,7 +25,7 @@ public class ID {
     private final String id;
 
     public ID(String id) {
-        this.id = id;
+        this.id = id != null && id.endsWith("/") ? id.substring(0, id.length() - 1) + '~' : id;
     }
 
     /**
