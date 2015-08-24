@@ -38,6 +38,7 @@ import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.feedcomm.api.ExecuteOperationRequest;
 import org.hawkular.feedcomm.api.ExecuteOperationResponse;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
 
@@ -51,14 +52,16 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
     public ExecuteOperationResponse execute(ExecuteOperationRequest request, BinaryData binaryData,
             CommandContext context) throws Exception {
         MsgLogger.LOG.infof("Received request to execute operation [%s] on resource [%s]",
-                request.getOperationName(), request.getResourceId());
+                request.getOperationName(), request.getResourcePath());
 
         FeedCommProcessor processor = context.getFeedCommProcessor();
         MonitorServiceConfiguration config = processor.getMonitorServiceConfiguration();
 
         // Based on the resource ID we need to know which inventory manager is handling it.
         // From the inventory manager, we can get the actual resource.
-        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(request.getResourceId());
+        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
+        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
         ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.managedServerName));
         if (managedServer == null) {
             throw new IllegalArgumentException(
@@ -66,14 +69,14 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return executeOperationDMR(request, processor, managedServer);
+            return executeOperationDMR(resourceId, request, processor, managedServer);
         } else {
             throw new IllegalStateException("Cannot execute operation: report this bug: " + managedServer.getClass());
         }
     }
 
-    private ExecuteOperationResponse executeOperationDMR(ExecuteOperationRequest request, FeedCommProcessor processor,
-            ManagedServer managedServer) throws Exception {
+    private ExecuteOperationResponse executeOperationDMR(String resourceId, ExecuteOperationRequest request,
+            FeedCommProcessor processor, ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
         if (inventoryManager == null) {
@@ -82,10 +85,10 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         }
 
         ResourceManager<DMRResource> resourceManager = inventoryManager.getResourceManager();
-        DMRResource resource = resourceManager.getResource(new ID(request.getResourceId()));
+        DMRResource resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot execute operation: unknown resource [%s]", request.getResourceId()));
+                    String.format("Cannot execute operation: unknown resource [%s]", request.getResourcePath()));
         }
 
         // find the operation we need to execute - make sure it exists and get the address for the resource to invoke
@@ -111,7 +114,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         }
 
         ExecuteOperationResponse response = new ExecuteOperationResponse();
-        response.setResourceId(request.getResourceId());
+        response.setResourcePath(request.getResourcePath());
         response.setOperationName(request.getOperationName());
 
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
