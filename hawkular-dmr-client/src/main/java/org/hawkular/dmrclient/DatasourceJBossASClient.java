@@ -149,6 +149,23 @@ public class DatasourceJBossASClient extends JBossASClient {
     }
 
     /**
+     * @param driverName the name of the JDBC driver to create, e.g. {@code "h2"}
+     * @param moduleName the name of the WIldFly module that contains the driver jar file
+     * @throws Exception
+     */
+    public void addJdbcDriver(String driverName, String moduleName) throws Exception {
+        Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, JDBC_DRIVER, driverName);
+        final ModelNode driverNode = new ModelNode();
+
+        driverNode.get("driver-name").set(driverName);
+        driverNode.get("driver-module-name").set(moduleName);
+        driverNode.get(OPERATION).set(ADD);
+        driverNode.get(ADDRESS).set(addr.getAddressNode());
+
+        execute(driverNode);
+
+    }
+    /**
      * Returns a ModelNode that can be used to create a JDBC driver configuration for use by datasources.
      * Callers are free to tweek the JDBC driver request that is returned,
      * if they so choose, before asking the client to execute the request.
