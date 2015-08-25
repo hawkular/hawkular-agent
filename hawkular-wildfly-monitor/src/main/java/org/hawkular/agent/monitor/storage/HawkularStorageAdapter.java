@@ -623,7 +623,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
                                                   configurationPropertyTypes) {
 
         StructuredData configSchema = StructuredData.get().map()
-                .putString("tile", resourceType.getID().getIDString())
+                .putString("title", resourceType.getID().getIDString())
                 .putString("description", resourceType.getResourceNameTemplate())
                 .putString("type", "object")
                 .putMap("properties")
