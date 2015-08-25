@@ -17,7 +17,7 @@
 package org.hawkular.agent.monitor.storage;
 
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +45,7 @@ import org.hawkular.bus.restclient.RestClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.json.PathDeserializer;
 
 import com.squareup.okhttp.Request;
@@ -272,7 +273,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
-            String resourceTypePath = "/" + getInventoryId(resource.getResourceType());
+            String resourceTypePath = getCanonicalPathBuilderStartingByTenant()
+                    .resourceType(getInventoryId(resource.getResourceType())).get().toString();
             rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource), resourceTypePath,
                     resource.getProperties());
             final String jsonPayload = Util.toJson(rPojo);
@@ -344,9 +346,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         String metricId = getInventoryId(measurementInstance);
         String metricTypeId = getInventoryId(measurementInstance.getMeasurementType());
-        // TODO: in next version of inventory feed will probably have it's own resource and metric types, so instead of
-        // using the absolute path (/metricTypeId), the relative path (../metricTypeId) can be better here
-        String metricTypePath = "/" + metricTypeId;
+        String metricTypePath = getCanonicalPathBuilderStartingByTenant().metricType(metricTypeId).get().toString();
         Map<String, Object> metricProps = measurementInstance.getProperties();
 
         try {
@@ -448,13 +448,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
             MeasurementInstance<?, ?, ?> measInstance) {
 
         String resourceId = getInventoryId(resource);
-        String metricId = getInventoryId(measInstance).replaceAll("/", "\\\\/");
+        String metricId = getInventoryId(measInstance);
 
         try {
+            String metricPath = getCanonicalPathBuilderStartingByFeed().metric(metricId).get().toString();
             // get the payload in JSON format
-            ArrayList<String> id = new ArrayList<>();
-            id.add("../m;" + metricId);
-            final String jsonPayload = Util.toJson(id);
+            final String jsonPayload = Util.toJson(Arrays.asList(metricPath));
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
@@ -481,13 +480,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
     private void relateResourceTypeWithMetricType(ResourceType<?, ?, ?, ?> resourceType, MeasurementType measType) {
 
         String resourceTypeId = getInventoryId(resourceType);
-        String metricTypeId = getInventoryId(measType).replaceAll("/", "\\\\/");
+        String metricTypeId = getInventoryId(measType);
 
         try {
             // get the payload in JSON format
-            ArrayList<String> id = new ArrayList<>();
-            id.add("/mt;" + metricTypeId);
-            final String jsonPayload = Util.toJson(id);
+            String metricTypePath = getCanonicalPathBuilderStartingByTenant().metricType(metricTypeId).get().toString();
+            final String jsonPayload = Util.toJson(Arrays.asList(metricTypePath));
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
@@ -508,5 +506,13 @@ public class HawkularStorageAdapter implements StorageAdapter {
             throw new RuntimeException("Cannot associate resource type with metric type: " + resourceTypeId + "/"
                     + metricTypeId, t);
         }
+    }
+
+    private Path.TenantBuilder<CanonicalPath> getCanonicalPathBuilderStartingByTenant() {
+        return CanonicalPath.of().tenant(config.tenantId);
+    }
+
+    private Path.FeedBuilder<CanonicalPath> getCanonicalPathBuilderStartingByFeed() {
+        return CanonicalPath.of().tenant(config.tenantId).environment("test").feed(getFeedId());
     }
 }
