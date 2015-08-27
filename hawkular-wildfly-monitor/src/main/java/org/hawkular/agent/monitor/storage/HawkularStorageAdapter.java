@@ -279,9 +279,11 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
-            String resourceTypePath = getCanonicalPathBuilderStartingByTenant()
+            String resourceTypePath = getCanonicalPathBuilderStartingByFeed()
                     .resourceType(getInventoryId(resource.getResourceType())).get().toString();
-            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource), resourceTypePath,
+            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(
+                    getInventoryId(resource),
+                    resourceTypePath,
                     resource.getProperties());
             final String jsonPayload = Util.toJson(rPojo);
 
@@ -308,6 +310,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             }
 
             resource.setPersisted(true);
+
             // now that the resource is registered, immediately register its configuration
             registerResourceConfiguration(resource);
 
@@ -540,8 +543,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
             }
 
-            org.hawkular.inventory.api.model.DataEntity.Blueprint dePojo;
-            dePojo = new org.hawkular.inventory.api.model.DataEntity.Blueprint(
+            org.hawkular.inventory.api.model.DataEntity.Blueprint<Resources.DataRole> dePojo;
+            dePojo = new org.hawkular.inventory.api.model.DataEntity.Blueprint<>(
                     Resources.DataRole.configuration,
                     structDataBuilder.build(),
                     null);
