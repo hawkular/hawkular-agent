@@ -279,11 +279,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
-            String resourceTypePath = getCanonicalPathBuilderStartingByFeed()
+            String resourceTypePath = getCanonicalPathBuilderStartingByTenant()
                     .resourceType(getInventoryId(resource.getResourceType())).get().toString();
-            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(
-                    getInventoryId(resource),
-                    resourceTypePath,
+            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource), resourceTypePath,
                     resource.getProperties());
             final String jsonPayload = Util.toJson(rPojo);
 
@@ -469,7 +467,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         try {
             String metricPath = getCanonicalPathBuilderStartingByFeed().metric(metricId).get().toString();
-
             final String jsonPayload = Util.toJson(Arrays.asList(metricPath));
 
             // build the REST URL
