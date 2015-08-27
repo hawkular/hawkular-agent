@@ -47,6 +47,7 @@ import org.hawkular.bus.restclient.RestClient;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Path;
@@ -223,7 +224,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
 
         registerResourceType(resourceType);
-        registerResourceTypeConfigurationSchema(resourceType);
 
         Collection<? extends MetricType> metricTypes = resourceType.getMetricTypes();
         for (MetricType metricType : metricTypes) {
@@ -355,10 +355,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             resourceType.setPersisted(true);
 
+            // now that the resource type is registered, immediately register its configuration schema
+            registerResourceTypeConfigurationSchema(resourceType);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource type: " + resourceType, t);
         }
+
+        return;
     }
 
     private void registerMetricInstance(MeasurementInstance<?, ?, ?> measurementInstance) {
@@ -580,30 +585,31 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     private void registerResourceTypeConfigurationSchema(ResourceType<?, ?, ?, ?> resourceType) {
 
-        Collection<? extends ResourceConfigurationPropertyType> configurationPropertyTypes =
+        Collection<? extends ResourceConfigurationPropertyType<?>> configurationPropTypes =
                 resourceType.getResourceConfigurationPropertyTypes();
 
-        if (!resourceType.isPersisted() || null == configurationPropertyTypes || configurationPropertyTypes.isEmpty()) {
+        if (!resourceType.isPersisted() || null == configurationPropTypes || configurationPropTypes.isEmpty()) {
             return;
         }
 
-        StructuredData configSchema = getConfigurationSchema(resourceType, configurationPropertyTypes);
-        org.hawkular.inventory.api.model.DataEntity.Blueprint<ResourceTypes.DataRole> blueprint =
-                new org.hawkular.inventory.api.model.DataEntity.Blueprint(
-                        ResourceTypes.DataRole.configurationSchema,
-                        configSchema,
-                        null);
+        StructuredData configSchema = getConfigurationSchema(resourceType, configurationPropTypes);
+        DataEntity.Blueprint<ResourceTypes.DataRole> dePojo = new DataEntity.Blueprint<>(
+                ResourceTypes.DataRole.configurationSchema,
+                configSchema,
+                null);
 
         try {
+            String resourceTypeId = Util.urlEncode(getInventoryId(resourceType));
+
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
             url = Util.convertToNonSecureUrl(url.toString());
             url.append("test/"); // environment
             url.append(getFeedId());
             url.append("/resourceTypes/");
-            url.append(resourceType.getID().getIDString());
+            url.append(resourceTypeId);
             url.append("/data");
 
-            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, Util.toJson(blueprint));
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, Util.toJson(dePojo));
             Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error
@@ -619,8 +625,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     private StructuredData getConfigurationSchema(ResourceType<?, ?, ?, ?> resourceType,
-                                                  Collection<? extends ResourceConfigurationPropertyType>
-                                                  configurationPropertyTypes) {
+            Collection<? extends ResourceConfigurationPropertyType<?>> configurationPropertyTypes) {
 
         StructuredData configSchema = StructuredData.get().map()
                 .putString("title", resourceType.getID().getIDString())
@@ -634,17 +639,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
             return configSchema;
         }
 
-        /* TODO include when updating inventory >= 0.3.1
         for (ResourceConfigurationPropertyType<?> resConfigInstance : configurationPropertyTypes) {
             configSchema = configSchema.update().toMap()
                     .updateMap("properties")
-                        .updateMap(resConfigInstance.getID().getIDString()) //fixed in inventory >= 0.3.1
-                            .putString("type", "string")
-                        .closeMap()
+                    .updateMap(resConfigInstance.getID().getIDString())
+                    .putString("type", "string")
+                    .closeMap()
                     .closeMap()
                     .build();
         }
-        */
 
         return configSchema;
     }
