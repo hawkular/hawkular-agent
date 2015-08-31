@@ -26,8 +26,8 @@ import java.util.Map;
 public abstract class ResourceType< //
 MT extends MetricType, //
 AT extends AvailType, //
-O extends Operation<?>, //
-RCPT extends ResourceConfigurationPropertyType<?>>
+O extends Operation<? extends ResourceType<?, ?, ?, ?>>, //
+RCPT extends ResourceConfigurationPropertyType<? extends ResourceType<?, ?, ?, ?>>>
         extends NamedObject {
 
     public ResourceType(ID id, Name name) {

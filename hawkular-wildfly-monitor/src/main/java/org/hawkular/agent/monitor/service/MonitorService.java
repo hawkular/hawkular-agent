@@ -519,6 +519,7 @@ public class MonitorService implements Service<MonitorService> {
             BreadthFirstIterator<DMRResource, DefaultEdge> bIter;
 
             try {
+                long start = System.nanoTime();
                 for (DMRInventoryManager im : this.dmrServerInventories.values()) {
                     resourceManager = im.getResourceManager();
                     InventoryStorage invStorage = new ServerAddressResolver(im.getManagedServer(),
@@ -530,6 +531,9 @@ public class MonitorService implements Service<MonitorService> {
                         invStorage.storeResource(resource);
                     }
                 }
+                long elapsed = System.nanoTime() - start;
+                MsgLogger.LOG.infof("Inventory successfully initialized. It took " + ((double) elapsed / 1000000000.0)
+                        + " seconds.");
             } catch (Throwable t) {
                 // TODO for now, just stop what we were doing and whatever we have in inventory is "good enough"
                 // for prototyping, this is good enough, but we'll need better handling later
@@ -871,9 +875,9 @@ public class MonitorService implements Service<MonitorService> {
             if (resource.getParent() == null && resource instanceof DMRResource) {
                 DMRResource dmrResource = (DMRResource) resource;
                 DMRResourceConfigurationPropertyInstance adrProp = null;
-                for (DMRResourceConfigurationPropertyInstance prop : dmrResource.getConfigurationProperties()) {
-                    if (IP_ADDRESSES_PROPERTY_NAME.equals(prop.getName().getNameString())) {
-                        adrProp = prop;
+                for (DMRResourceConfigurationPropertyInstance p : dmrResource.getResourceConfigurationProperties()) {
+                    if (IP_ADDRESSES_PROPERTY_NAME.equals(p.getName().getNameString())) {
+                        adrProp = p;
                         break;
                     }
                 }

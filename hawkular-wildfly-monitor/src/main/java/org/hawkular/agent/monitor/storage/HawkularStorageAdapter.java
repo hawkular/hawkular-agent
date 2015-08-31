@@ -36,16 +36,22 @@ import org.hawkular.agent.monitor.inventory.MetricInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.NamedObject;
 import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstance;
+import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.bus.restclient.RestClient;
+import org.hawkular.inventory.api.ResourceTypes;
+import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Path;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.json.PathDeserializer;
 
 import com.squareup.okhttp.Request;
@@ -269,22 +275,32 @@ public class HawkularStorageAdapter implements StorageAdapter {
         if (resource.isPersisted()) {
             return;
         }
+        if (resource.getParent() != null) {
+            registerResource(resource.getParent());
+        }
 
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
-            String resourceTypePath = getCanonicalPathBuilderStartingByTenant()
+            String resourceTypePath = getCanonicalPathBuilderStartingByFeed()
                     .resourceType(getInventoryId(resource.getResourceType())).get().toString();
-            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(getInventoryId(resource), resourceTypePath,
+            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(
+                    getInventoryId(resource),
+                    resourceTypePath,
                     resource.getProperties());
             final String jsonPayload = Util.toJson(rPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
             url = Util.convertToNonSecureUrl(url.toString());
-            url.append("test").append("/"); // environment
+            url.append("test/"); // environment
             url.append(getFeedId());
             url.append("/resources");
+
+            if (resource.getParent() != null) {
+                String resourcePath = getResourcePath(resource);
+                url.append(resourcePath.substring(0, resourcePath.lastIndexOf('/')));
+            }
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
@@ -298,10 +314,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             resource.setPersisted(true);
 
+            // now that the resource is registered, immediately register its configuration
+            registerResourceConfiguration(resource);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource: " + resource, t);
         }
+
+        return;
     }
 
     private void registerResourceType(ResourceType<?, ?, ?, ?> resourceType) {
@@ -312,14 +333,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.ResourceType.Blueprint rtPojo;
-            rtPojo = new org.hawkular.inventory.api.model.ResourceType.Blueprint(getInventoryId(resourceType),
+            rtPojo = new org.hawkular.inventory.api.model.ResourceType.Blueprint(
+                    getInventoryId(resourceType),
                     resourceType.getProperties());
             final String jsonPayload = Util.toJson(rtPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
             url = Util.convertToNonSecureUrl(url.toString());
-            url.append("resourceTypes");
+            url.append("test/").append(getFeedId()).append("/resourceTypes");
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
@@ -333,10 +355,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             resourceType.setPersisted(true);
 
+            // now that the resource type is registered, immediately register its configuration schema
+            registerResourceTypeConfigurationSchema(resourceType);
+
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource type: " + resourceType, t);
         }
+
+        return;
     }
 
     private void registerMetricInstance(MeasurementInstance<?, ?, ?> measurementInstance) {
@@ -346,14 +373,14 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         String metricId = getInventoryId(measurementInstance);
         String metricTypeId = getInventoryId(measurementInstance.getMeasurementType());
-        String metricTypePath = getCanonicalPathBuilderStartingByTenant().metricType(metricTypeId).get().toString();
+        String metricTypePath = getCanonicalPathBuilderStartingByFeed().metricType(metricTypeId).get().toString();
         Map<String, Object> metricProps = measurementInstance.getProperties();
 
         try {
             // get the payload in JSON format
-            org.hawkular.inventory.api.model.Metric.Blueprint mtPojo;
-            mtPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypePath, metricId, metricProps);
-            final String jsonPayload = Util.toJson(mtPojo);
+            org.hawkular.inventory.api.model.Metric.Blueprint mPojo;
+            mPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypePath, metricId, metricProps);
+            final String jsonPayload = Util.toJson(mPojo);
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
@@ -416,7 +443,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // get the payload in JSON format
             org.hawkular.inventory.api.model.MetricType.Blueprint mtPojo;
 
-            // todo: correctly map the MetricDataType from the MeasurementType instance type (avail from AvailType etc.)
+            // TODO: correctly map the MetricDataType from the MeasurementType instance type (avail from AvailType etc.)
             mtPojo = new org.hawkular.inventory.api.model.MetricType.Blueprint(metricTypeId, mu, metricDataType,
                     metricTypeProps);
             final String jsonPayload = Util.toJson(mtPojo);
@@ -424,7 +451,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
             url = Util.convertToNonSecureUrl(url.toString());
-            url.append("metricTypes");
+            url.append("test/").append(getFeedId()).append("/metricTypes");
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
@@ -447,20 +474,18 @@ public class HawkularStorageAdapter implements StorageAdapter {
     private void relateResourceWithMetric(Resource<?, ?, ?, ?, ?> resource,
             MeasurementInstance<?, ?, ?> measInstance) {
 
-        String resourceId = getInventoryId(resource);
         String metricId = getInventoryId(measInstance);
 
         try {
             String metricPath = getCanonicalPathBuilderStartingByFeed().metric(metricId).get().toString();
-            // get the payload in JSON format
             final String jsonPayload = Util.toJson(Arrays.asList(metricPath));
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
             url = Util.convertToNonSecureUrl(url.toString());
-            url.append("test").append("/"); // environment
+            url.append("test/"); // environment
             url.append(getFeedId());
-            url.append("/resources").append("/").append(Util.urlEncode(resourceId)).append("/metrics");
+            url.append("/resources").append(getResourcePath(resource)).append("/metrics");
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
@@ -473,24 +498,26 @@ public class HawkularStorageAdapter implements StorageAdapter {
             }
         } catch (Throwable t) {
             MsgLogger.LOG.errorFailedToStoreInventoryData(t);
-            throw new RuntimeException("Cannot associate resource with metric: " + resourceId + "/" + metricId, t);
+            throw new RuntimeException("Cannot associate resource [" + getResourcePath(resource) + "] with metric [ " +
+                    metricId + "]", t);
         }
     }
 
     private void relateResourceTypeWithMetricType(ResourceType<?, ?, ?, ?> resourceType, MeasurementType measType) {
 
-        String resourceTypeId = getInventoryId(resourceType);
+        String resourceTypeId = Util.urlEncode(getInventoryId(resourceType));
         String metricTypeId = getInventoryId(measType);
 
         try {
             // get the payload in JSON format
-            String metricTypePath = getCanonicalPathBuilderStartingByTenant().metricType(metricTypeId).get().toString();
+            String metricTypePath = getCanonicalPathBuilderStartingByFeed().metricType(metricTypeId).get().toString();
             final String jsonPayload = Util.toJson(Arrays.asList(metricTypePath));
 
             // build the REST URL
             StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
             url = Util.convertToNonSecureUrl(url.toString());
-            url.append("resourceTypes").append("/").append(Util.urlEncode(resourceTypeId)).append("/metricTypes");
+            url.append("test/").append(getFeedId()).append("/resourceTypes/").append(resourceTypeId)
+                    .append("/metricTypes");
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
@@ -508,8 +535,139 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
     }
 
-    private Path.TenantBuilder<CanonicalPath> getCanonicalPathBuilderStartingByTenant() {
-        return CanonicalPath.of().tenant(config.tenantId);
+    private void registerResourceConfiguration(Resource<?, ?, ?, ?, ?> resource) {
+
+        try {
+            Collection<? extends ResourceConfigurationPropertyInstance<?>> resConfigInstances =
+                    resource.getResourceConfigurationProperties();
+
+            if (resConfigInstances == null || resConfigInstances.isEmpty()) {
+                return; // nothing to do
+            }
+
+            // get the payload in JSON format
+            StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
+            for (ResourceConfigurationPropertyInstance<?> resConfigInstance : resConfigInstances) {
+                structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
+            }
+
+            org.hawkular.inventory.api.model.DataEntity.Blueprint<Resources.DataRole> dePojo;
+            dePojo = new org.hawkular.inventory.api.model.DataEntity.Blueprint<>(
+                    Resources.DataRole.configuration,
+                    structDataBuilder.build(),
+                    null);
+            final String jsonPayload = Util.toJson(dePojo);
+
+            // build the REST URL
+            StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
+            url.append("test/"); // environment
+            url.append(getFeedId());
+            url.append("/resources");
+            url.append(getResourcePath(resource));
+            url.append("/data");
+
+            // now send the REST request
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
+
+            // HTTP status of 201 means success, 409 means it already exists; anything else is an error
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
+            }
+
+        } catch (Throwable t) {
+            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            throw new RuntimeException("Cannot register resource configuration for resource: " + resource, t);
+        }
+    }
+
+    private void registerResourceTypeConfigurationSchema(ResourceType<?, ?, ?, ?> resourceType) {
+
+        Collection<? extends ResourceConfigurationPropertyType<?>> configurationPropTypes =
+                resourceType.getResourceConfigurationPropertyTypes();
+
+        if (!resourceType.isPersisted() || null == configurationPropTypes || configurationPropTypes.isEmpty()) {
+            return;
+        }
+
+        StructuredData configSchema = getConfigurationSchema(resourceType, configurationPropTypes);
+        DataEntity.Blueprint<ResourceTypes.DataRole> dePojo = new DataEntity.Blueprint<>(
+                ResourceTypes.DataRole.configurationSchema,
+                configSchema,
+                null);
+
+        try {
+            String resourceTypeId = Util.urlEncode(getInventoryId(resourceType));
+
+            StringBuilder url = Util.getContextUrlString(this.config.url, this.config.inventoryContext);
+            url = Util.convertToNonSecureUrl(url.toString());
+            url.append("test/"); // environment
+            url.append(getFeedId());
+            url.append("/resourceTypes/");
+            url.append(resourceTypeId);
+            url.append("/data");
+
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, Util.toJson(dePojo));
+            Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
+
+            // HTTP status of 201 means success, 409 means it already exists; anything else is an error
+            if (response.code() != 201 && response.code() != 409) {
+                throw new Exception("status-code=[" + response.code() + "], reason=["
+                        + response.message() + "], url=[" + request.urlString() + "]");
+            }
+
+        } catch (Throwable t) {
+            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            throw new RuntimeException("Cannot register resource configuration for resource: " + resourceType, t);
+        }
+    }
+
+    private StructuredData getConfigurationSchema(ResourceType<?, ?, ?, ?> resourceType,
+            Collection<? extends ResourceConfigurationPropertyType<?>> configurationPropertyTypes) {
+
+        StructuredData configSchema = StructuredData.get().map()
+                .putString("title", resourceType.getID().getIDString())
+                .putString("description", resourceType.getResourceNameTemplate())
+                .putString("type", "object")
+                .putMap("properties")
+                .closeMap()
+                .build();
+
+        if (configurationPropertyTypes == null) {
+            return configSchema;
+        }
+
+        for (ResourceConfigurationPropertyType<?> resConfigInstance : configurationPropertyTypes) {
+            configSchema = configSchema.update().toMap()
+                    .updateMap("properties")
+                    .updateMap(resConfigInstance.getID().getIDString())
+                    .putString("type", "string")
+                    .closeMap()
+                    .closeMap()
+                    .build();
+        }
+
+        return configSchema;
+    }
+
+    /**
+     * For those inventory REST calls that need a resource path, this obtains that path.
+     * It is just the hierarchy of IDs like "idGrandparent/idParent/resourceId".
+     * The returned string will be properly encoded for use in a URL.
+     *
+     * @param resource resource whose path is to be returned
+     * @return the resource path properly URL encoded. This will be prefixed with "/" always.
+     */
+    private String getResourcePath(Resource<?, ?, ?, ?, ?> resource) {
+        String resourceIdPath = "/" + Util.urlEncode(resource.getID().getIDString());
+        Resource<?, ?, ?, ?, ?> parent = resource.getParent();
+        if (parent == null) {
+            return resourceIdPath;
+        } else {
+            return getResourcePath(parent) + resourceIdPath;
+        }
     }
 
     private Path.FeedBuilder<CanonicalPath> getCanonicalPathBuilderStartingByFeed() {
