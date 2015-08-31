@@ -30,6 +30,8 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.feedcomm.api.ApiDeserializer;
+import org.hawkular.feedcomm.api.AuthMessage;
+import org.hawkular.feedcomm.api.Authentication;
 import org.hawkular.feedcomm.api.GenericErrorResponseBuilder;
 
 import com.squareup.okhttp.Response;
@@ -110,6 +112,8 @@ public class FeedCommProcessor implements WebSocketListener {
             throw new IllegalStateException("The connection to the server is closed. Cannot send any messages");
         }
 
+        configurationAuthentication(message);
+
         String messageString = ApiDeserializer.toHawkularFormat(message);
 
         this.sendExecutor.execute(new Runnable() {
@@ -136,6 +140,8 @@ public class FeedCommProcessor implements WebSocketListener {
         if (this.webSocket == null) {
             throw new IllegalStateException("The connection to the server is closed. Cannot send any messages");
         }
+
+        configurationAuthentication(message);
 
         String messageString = ApiDeserializer.toHawkularFormat(message);
         Buffer buffer = new Buffer();
@@ -230,5 +236,23 @@ public class FeedCommProcessor implements WebSocketListener {
     @Override
     public void onPong(Buffer buffer) {
         // no-op
+    }
+
+    private void configurationAuthentication(BasicMessage message) {
+        if (!(message instanceof AuthMessage)) {
+            return; // this message doesn't need authentication
+        }
+
+        AuthMessage authMessage = (AuthMessage) message;
+
+        Authentication auth = authMessage.getAuthentication();
+        if (auth != null) {
+            return; // authentication already configured; assume whoever did it knew what they were doing and keep it
+        }
+
+        auth = new Authentication();
+        auth.setUsername(this.config.storageAdapter.username);
+        auth.setPassword(this.config.storageAdapter.password);
+        authMessage.setAuthentication(auth);
     }
 }
