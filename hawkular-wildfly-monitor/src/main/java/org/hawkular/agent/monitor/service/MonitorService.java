@@ -50,7 +50,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
-import org.hawkular.agent.monitor.feedcomm.FeedComm;
+import org.hawkular.agent.monitor.feedcomm.FeedCommProcessor;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
@@ -151,7 +151,7 @@ public class MonitorService implements Service<MonitorService> {
     private HttpClientBuilder httpClientBuilder;
 
     // used to send data to the server over the feed communications channel
-    private FeedComm feedComm;
+    private FeedCommProcessor feedComm;
 
     // scheduled metric and avail collections
     private SchedulerService schedulerService;
@@ -828,7 +828,8 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     private void connectToFeedCommChannel() throws Exception {
-        feedComm = new FeedComm(this.httpClientBuilder, this.configuration, this.feedId, this.dmrServerInventories);
+        feedComm = new FeedCommProcessor(this.httpClientBuilder, this.configuration, this.feedId,
+                this.dmrServerInventories);
         feedComm.connect();
     }
 
