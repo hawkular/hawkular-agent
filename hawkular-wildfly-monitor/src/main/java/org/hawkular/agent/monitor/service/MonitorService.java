@@ -50,7 +50,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
-import org.hawkular.agent.monitor.feedcomm.FeedComm;
+import org.hawkular.agent.monitor.feedcomm.FeedCommProcessor;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
@@ -92,9 +92,7 @@ import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.json.PathDeserializer;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
@@ -151,7 +149,7 @@ public class MonitorService implements Service<MonitorService> {
     private HttpClientBuilder httpClientBuilder;
 
     // used to send data to the server over the feed communications channel
-    private FeedComm feedComm;
+    private FeedCommProcessor feedComm;
 
     // scheduled metric and avail collections
     private SchedulerService schedulerService;
@@ -776,10 +774,6 @@ public class MonitorService implements Service<MonitorService> {
                 // probably just haven't been registered yet, keep going
             }
 
-            // set up custom json deserializer then needs the tenantId to work properly
-            PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.of().tenant(configuration.storageAdapter.tenantId)
-                    .get());
-
             // get the payload in JSON format
             String environmentId = "test";
             Feed.Blueprint feedPojo = new Feed.Blueprint(desiredFeedId, null);
@@ -828,7 +822,8 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     private void connectToFeedCommChannel() throws Exception {
-        feedComm = new FeedComm(this.httpClientBuilder, this.configuration, this.feedId, this.dmrServerInventories);
+        feedComm = new FeedCommProcessor(this.httpClientBuilder, this.configuration, this.feedId,
+                this.dmrServerInventories);
         feedComm.connect();
     }
 

@@ -194,8 +194,8 @@ public interface MsgLogger extends BasicLogger {
     void infoFeedCommUrl(String feedcommUrl);
 
     @LogMessage(level = Logger.Level.ERROR)
-    @Message(id = 10040, value = "Cannot close feed-comm processor")
-    void errorCannotCloseCommProcessor(@Cause Exception e);
+    @Message(id = 10040, value = "Cannot re-establish websocket connection")
+    void errorCannotReconnectToWebSocket(@Cause Exception e);
 
     @LogMessage(level = Logger.Level.ERROR)
     @Message(id = 10041, value = "Cannot close feed-comm websocket")
