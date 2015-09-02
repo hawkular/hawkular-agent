@@ -52,7 +52,6 @@ import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Path;
 import org.hawkular.inventory.api.model.StructuredData;
-import org.hawkular.inventory.json.PathDeserializer;
 
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -77,7 +76,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
         this.diagnostics = diag;
         this.selfId = selfId;
         this.httpClientBuilder = httpClientBuilder;
-        PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.of().tenant(config.tenantId).get());
     }
 
     @Override
