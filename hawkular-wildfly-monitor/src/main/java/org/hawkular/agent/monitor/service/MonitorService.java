@@ -512,32 +512,40 @@ public class MonitorService implements Service<MonitorService> {
 
         // if we are participating in a full hawkular environment, add resource and its metadata to inventory now
         if (this.configuration.storageAdapter.type == MonitorServiceConfiguration.StorageReportTo.HAWKULAR) {
+            Runnable populateInventory = new Runnable() {
+                @Override
+                public void run() {
+                    ResourceManager<DMRResource> resourceManager;
+                    BreadthFirstIterator<DMRResource, DefaultEdge> bIter;
 
-            ResourceManager<DMRResource> resourceManager;
-            BreadthFirstIterator<DMRResource, DefaultEdge> bIter;
-
-            try {
-                long start = System.nanoTime();
-                for (DMRInventoryManager im : this.dmrServerInventories.values()) {
-                    resourceManager = im.getResourceManager();
-                    InventoryStorage invStorage = new ServerAddressResolver(im.getManagedServer(),
-                            inventoryStorageProxy);
-                    bIter = resourceManager.getBreadthFirstIterator();
-                    while (bIter.hasNext()) {
-                        DMRResource resource = bIter.next();
-                        invStorage.storeResourceType(resource.getResourceType());
-                        invStorage.storeResource(resource);
+                    try {
+                        long start = System.nanoTime();
+                        for (DMRInventoryManager im : MonitorService.this.dmrServerInventories.values()) {
+                            resourceManager = im.getResourceManager();
+                            InventoryStorage invStorage = new ServerAddressResolver(im.getManagedServer(),
+                                    inventoryStorageProxy);
+                            bIter = resourceManager.getBreadthFirstIterator();
+                            while (bIter.hasNext()) {
+                                DMRResource resource = bIter.next();
+                                invStorage.storeResourceType(resource.getResourceType());
+                                invStorage.storeResource(resource);
+                            }
+                        }
+                        long elapsed = System.nanoTime() - start;
+                        MsgLogger.LOG.infof("Inventory successfully initialized. It took "
+                                + ((double) elapsed / 1000000000.0)
+                                + " seconds.");
+                    } catch (Throwable t) {
+                        // TODO for now stop what we were doing and whatever we have in inventory is "good enough"
+                        // for prototyping, this is good enough, but we'll need better handling later
+                        MsgLogger.LOG.errorf(t,
+                                "Failed to completely add inventory - keep going with partial inventory");
                     }
                 }
-                long elapsed = System.nanoTime() - start;
-                MsgLogger.LOG.infof("Inventory successfully initialized. It took " + ((double) elapsed / 1000000000.0)
-                        + " seconds.");
-            } catch (Throwable t) {
-                // TODO for now, just stop what we were doing and whatever we have in inventory is "good enough"
-                // for prototyping, this is good enough, but we'll need better handling later
-                MsgLogger.LOG.errorf(t,
-                        "Failed to completely add our inventory - but we will keep going with partial inventory");
-            }
+            };
+
+            // run it in background so we don't block the subsystem startup
+            new Thread(populateInventory, "Hawkular Monitor Agent Populate Inventory").start();
         }
     }
 

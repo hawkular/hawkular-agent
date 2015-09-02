@@ -55,6 +55,9 @@ public class FeedCommProcessor implements WebSocketListener {
         VALID_COMMANDS.put(DeployApplicationCommand.REQUEST_CLASS.getName(), DeployApplicationCommand.class);
     }
 
+    private final int disconnectCode = 1000;
+    private final String disconnectReason = "Shutting down FeedCommProcessor";
+
     private final HttpClientBuilder httpClientBuilder;
     private final MonitorServiceConfiguration config;
     private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories;
@@ -109,12 +112,10 @@ public class FeedCommProcessor implements WebSocketListener {
 
     public void disconnect() {
         if (webSocket != null) {
-            final int code = 1000;
-            final String reason = "Disconnect";
             try {
-                webSocket.close(code, reason);
+                webSocket.close(disconnectCode, disconnectReason);
             } catch (Exception e) {
-                MsgLogger.LOG.warnFailedToCloseWebSocket(code, reason, e);
+                MsgLogger.LOG.warnFailedToCloseWebSocket(disconnectCode, disconnectReason, e);
             }
             webSocket = null;
         }
@@ -190,18 +191,21 @@ public class FeedCommProcessor implements WebSocketListener {
 
         // We always want a connection - so try to get another one.
         // Note that we don't try to get another connection if we think we'll never get one;
-        // This avoids a potential infinite loop of continually trying (and failing) to get a connection
-        switch (reasonCode) {
-            case 1008: { // VIOLATED POLICY - our credentials are bad - don't try to connect since it will fail again
-                break;
-            }
-            default: {
-                try {
-                    connect();
-                } catch (Exception e) {
-                    MsgLogger.LOG.errorCannotReconnectToWebSocket(e);
+        // This avoids a potential infinite loop of continually trying (and failing) to get a connection.
+        // We also don't try to get another one if we were explicitly told to disconnect.
+        if (!(disconnectCode == reasonCode && disconnectReason.equals(reason))) {
+            switch (reasonCode) {
+                case 1008: { // VIOLATED POLICY - don't try again since it probably will fail again (bad credentials?)
+                    break;
                 }
-                break;
+                default: {
+                    try {
+                        connect();
+                    } catch (Exception e) {
+                        MsgLogger.LOG.errorCannotReconnectToWebSocket(e);
+                    }
+                    break;
+                }
             }
         }
     }
