@@ -92,9 +92,7 @@ import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.json.PathDeserializer;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
@@ -775,10 +773,6 @@ public class MonitorService implements Service<MonitorService> {
             } catch (FileNotFoundException e) {
                 // probably just haven't been registered yet, keep going
             }
-
-            // set up custom json deserializer then needs the tenantId to work properly
-            PathDeserializer.setCurrentCanonicalOrigin(CanonicalPath.of().tenant(configuration.storageAdapter.tenantId)
-                    .get());
 
             // get the payload in JSON format
             String environmentId = "test";
