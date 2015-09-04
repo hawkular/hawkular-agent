@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<module xmlns="urn:jboss:module:1.1" name="usual">
+  <resources>
+    <resource-root path="usual.jar"/>
+  </resources>
+  <dependencies>
+    <module name="javax.transaction.api"/>
+    <module name="javax.api"/>
+  </dependencies>
+</module>

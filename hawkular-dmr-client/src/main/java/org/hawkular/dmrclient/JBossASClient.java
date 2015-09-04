@@ -56,7 +56,7 @@ public class JBossASClient implements AutoCloseable {
     public static final String SYSTEM_PROPERTY = "system-property";
     public static final String PERSISTENT = "persistent"; // used by some operations to persist their effects
 
-    private ModelControllerClient client;
+    private final ModelControllerClient client;
 
     /**
      * Constructs a new JBoss AS Client that talks to the model through the provided client.
