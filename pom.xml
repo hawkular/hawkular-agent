@@ -50,7 +50,9 @@
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
-    <version.org.hawkular.bus>0.5.1.Final-SNAPSHOT</version.org.hawkular.bus>
+    <version.org.hawkular.bus>0.5.0.Final</version.org.hawkular.bus>
+    <version.org.hawkular.cmdgw>0.5.1.Final-SRC-revision-6c572dca2b31966d68f9b1525abbace4e80b495d</version.org.hawkular.cmdgw>
+
     <version.org.hawkular.inventory>0.3.3.Final</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.5.0.Final</version.org.hawkular.metrics>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
@@ -90,9 +92,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.hawkular.bus</groupId>
-        <artifactId>hawkular-feed-comm-api</artifactId>
-        <version>${version.org.hawkular.bus}</version>
+        <groupId>org.hawkular.cmdgw</groupId>
+        <artifactId>hawkular-command-gateway-api</artifactId>
+        <version>${version.org.hawkular.cmdgw}</version>
       </dependency>
 
       <dependency>
@@ -196,6 +198,30 @@
 
     </dependencies>
   </dependencyManagement>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>org.l2x6.maven.srcdeps</groupId>
+        <artifactId>srcdeps-maven-plugin</artifactId>
+        <version>0.0.1</version>
+        <extensions>true</extensions>
+        <configuration>
+          <repositories>
+            <repository>
+              <id>org.hawkular.cmdgw</id>
+              <selectors>
+                <selector>org.hawkular.cmdgw</selector>
+              </selectors>
+              <url>scm:git:https://github.com/hawkular/hawkular-command-gateway.git</url>
+            </repository>
+          </repositories>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
 
 </project>
 

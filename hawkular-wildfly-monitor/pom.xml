@@ -83,8 +83,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.bus</groupId>
-      <artifactId>hawkular-feed-comm-api</artifactId>
+      <groupId>org.hawkular.cmdgw</groupId>
+      <artifactId>hawkular-command-gateway-api</artifactId>
     </dependency>
 
     <dependency>
