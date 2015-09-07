@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>19</version>
+    <version>21</version>
   </parent>
 
   <groupId>org.hawkular.agent</groupId>
@@ -198,30 +198,6 @@
 
     </dependencies>
   </dependencyManagement>
-
-  <build>
-    <plugins>
-
-      <plugin>
-        <groupId>org.l2x6.maven.srcdeps</groupId>
-        <artifactId>srcdeps-maven-plugin</artifactId>
-        <version>0.0.1</version>
-        <extensions>true</extensions>
-        <configuration>
-          <repositories>
-            <repository>
-              <id>org.hawkular.cmdgw</id>
-              <selectors>
-                <selector>org.hawkular.cmdgw</selector>
-              </selectors>
-              <url>scm:git:https://github.com/hawkular/hawkular-command-gateway.git</url>
-            </repository>
-          </repositories>
-        </configuration>
-      </plugin>
-
-    </plugins>
-  </build>
 
 </project>
 
