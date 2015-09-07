@@ -19,7 +19,7 @@ package org.hawkular.agent.monitor.feedcomm;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.bus.common.BinaryData;
-import org.hawkular.feedcomm.api.GenericErrorResponse;
+import org.hawkular.cmdgw.api.GenericErrorResponse;
 
 /**
  * The server is responding to our agent with some generic error message, probably due to

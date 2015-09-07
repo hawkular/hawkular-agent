@@ -29,10 +29,10 @@ import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BinaryData;
+import org.hawkular.cmdgw.api.DeployApplicationRequest;
+import org.hawkular.cmdgw.api.DeployApplicationResponse;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.DeploymentJBossASClient;
-import org.hawkular.feedcomm.api.DeployApplicationRequest;
-import org.hawkular.feedcomm.api.DeployApplicationResponse;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
