@@ -22,7 +22,7 @@
     <resource-root path="hawkular-bus-common.jar"/>
     <resource-root path="hawkular-bus-rest-client.jar"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES -->
     <resource-root path="hawkular-dmr-client.jar"/>
-    <resource-root path="hawkular-feed-comm-api.jar"/>
+    <resource-root path="hawkular-command-gateway-api.jar"/>
     <resource-root path="hawkular-inventory-json-helper.jar"/>
     <resource-root path="hawkular-monitor.jar"/>
     <resource-root path="hawkular-inventory-api.jar"/>

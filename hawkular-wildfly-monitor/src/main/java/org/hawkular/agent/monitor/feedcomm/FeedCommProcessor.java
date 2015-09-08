@@ -31,10 +31,10 @@ import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.feedcomm.api.ApiDeserializer;
-import org.hawkular.feedcomm.api.AuthMessage;
-import org.hawkular.feedcomm.api.Authentication;
-import org.hawkular.feedcomm.api.GenericErrorResponseBuilder;
+import org.hawkular.cmdgw.api.ApiDeserializer;
+import org.hawkular.cmdgw.api.AuthMessage;
+import org.hawkular.cmdgw.api.Authentication;
+import org.hawkular.cmdgw.api.GenericErrorResponseBuilder;
 
 import com.squareup.okhttp.Response;
 import com.squareup.okhttp.ws.WebSocket;
@@ -85,7 +85,7 @@ public class FeedCommProcessor implements WebSocketListener {
             this.feedcommUrl = url.toString().replaceFirst("https?:", (config.storageAdapter.useSSL) ? "wss:" : "ws:");
             MsgLogger.LOG.infoFeedCommUrl(this.feedcommUrl);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Cannot build URL to the server feed-comm endpoint", e);
+            throw new IllegalArgumentException("Cannot build URL to the server command-gateway endpoint", e);
         }
     }
 

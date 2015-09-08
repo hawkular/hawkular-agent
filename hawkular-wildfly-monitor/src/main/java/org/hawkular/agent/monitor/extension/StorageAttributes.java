@@ -131,7 +131,7 @@ public interface StorageAttributes {
             ModelType.STRING)
             .setAllowNull(true)
             .setAllowExpression(true)
-            .setDefaultValue(new ModelNode("/hawkular/feed-comm/"))
+            .setDefaultValue(new ModelNode("/hawkular/command-gateway/"))
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 

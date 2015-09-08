@@ -307,7 +307,8 @@ public class MonitorService implements Service<MonitorService> {
                 return;
             }
 
-            // try to connect to the server over the feed-comm channel - if it fails, just log an error but keep going
+            /* try to connect to the server over the command-gateway channel
+             * - if it fails, just log an error but keep going */
             try {
                 connectToFeedCommChannel();
             } catch (Exception e) {

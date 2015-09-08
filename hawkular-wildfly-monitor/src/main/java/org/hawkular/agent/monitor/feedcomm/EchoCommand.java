@@ -17,8 +17,8 @@
 package org.hawkular.agent.monitor.feedcomm;
 
 import org.hawkular.bus.common.BinaryData;
-import org.hawkular.feedcomm.api.EchoRequest;
-import org.hawkular.feedcomm.api.EchoResponse;
+import org.hawkular.cmdgw.api.EchoRequest;
+import org.hawkular.cmdgw.api.EchoResponse;
 
 public class EchoCommand implements Command<EchoRequest, EchoResponse> {
     public static final Class<EchoRequest> REQUEST_CLASS = EchoRequest.class;
