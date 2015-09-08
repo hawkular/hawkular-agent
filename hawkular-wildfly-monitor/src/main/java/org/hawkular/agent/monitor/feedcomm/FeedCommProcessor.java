@@ -85,7 +85,7 @@ public class FeedCommProcessor implements WebSocketListener {
             this.feedcommUrl = url.toString().replaceFirst("https?:", (config.storageAdapter.useSSL) ? "wss:" : "ws:");
             MsgLogger.LOG.infoFeedCommUrl(this.feedcommUrl);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Cannot build URL to the server feed-comm endpoint", e);
+            throw new IllegalArgumentException("Cannot build URL to the server command-gateway endpoint", e);
         }
     }
 

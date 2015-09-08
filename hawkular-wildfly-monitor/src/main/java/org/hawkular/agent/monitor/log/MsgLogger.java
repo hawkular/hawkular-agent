@@ -190,7 +190,7 @@ public interface MsgLogger extends BasicLogger {
     void warnFailedToCloseWebSocket(int code, String reason, @Cause Exception e);
 
     @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 10039, value = "The feed-comm URL is [%s]")
+    @Message(id = 10039, value = "The command-gateway URL is [%s]")
     void infoFeedCommUrl(String feedcommUrl);
 
     @LogMessage(level = Logger.Level.ERROR)
@@ -198,7 +198,7 @@ public interface MsgLogger extends BasicLogger {
     void errorCannotReconnectToWebSocket(@Cause Exception e);
 
     @LogMessage(level = Logger.Level.ERROR)
-    @Message(id = 10041, value = "Cannot close feed-comm websocket")
+    @Message(id = 10041, value = "Cannot close command-gateway websocket")
     void errorCannotCloseWebSocketCall(@Cause Exception e);
 
     @LogMessage(level = Logger.Level.ERROR)
