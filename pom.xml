@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>21</version>
+    <version>23</version>
   </parent>
 
   <groupId>org.hawkular.agent</groupId>
@@ -51,7 +51,7 @@
     <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
     <version.org.hawkular.bus>0.5.0.Final</version.org.hawkular.bus>
-    <version.org.hawkular.cmdgw>0.5.1.Final-SRC-revision-55caf449479cc74cc94fa02c4bbc61167feedd22</version.org.hawkular.cmdgw>
+    <version.org.hawkular.cmdgw>0.5.1.Final-SRC-revision-9578a6588b55237228c44341758c27b8d5da9d22</version.org.hawkular.cmdgw>
 
     <version.org.hawkular.inventory>0.3.3.Final</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.5.0.Final</version.org.hawkular.metrics>
