@@ -49,7 +49,7 @@
   </scm>
 
   <properties>
-    <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
+    <version.com.squareup.okhttp>2.5.0</version.com.squareup.okhttp>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
