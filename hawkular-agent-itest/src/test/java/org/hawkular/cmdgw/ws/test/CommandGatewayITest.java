@@ -123,6 +123,8 @@ public class CommandGatewayITest {
     protected static final String testPasword = "password";
 
     protected static final String testUser = "jdoe";
+    private static final int ATTEMPT_COUNT = 10;
+    private static final long ATTEMPT_DELAY = 500;
 
     static {
         String host = System.getProperty("hawkular.bind.address", "localhost");
@@ -156,15 +158,36 @@ public class CommandGatewayITest {
         this.client = new OkHttpClient();
     }
 
-    private List<Resource> getResources(String path) throws IOException {
-        Request request = newAuthRequest().url(baseInvUri + path).build();
-        Response response = client.newCall(request).execute();
-        Assert.assertEquals(200, response.code());
-        String body = response.body().string();
-        TypeFactory tf = mapper.getTypeFactory();
-        JavaType listType = tf.constructCollectionType(ArrayList.class, Resource.class);
-        JsonNode node = mapper.readTree(body);
-        return mapper.readValue(node.traverse(), listType);
+    private List<Resource> getResources(String path, int minCount) throws Throwable {
+        String url = baseInvUri + path;
+        Throwable e = null;
+        for (int i = 0; i < ATTEMPT_COUNT; i++) {
+            try {
+                Request request = newAuthRequest().url(url).build();
+                Response response = client.newCall(request).execute();
+                Assert.assertEquals(200, response.code());
+                String body = response.body().string();
+                TypeFactory tf = mapper.getTypeFactory();
+                JavaType listType = tf.constructCollectionType(ArrayList.class, Resource.class);
+                JsonNode node = mapper.readTree(body);
+                List<Resource> result = mapper.readValue(node.traverse(), listType);
+                if (result.size() >= minCount) {
+                    return result ;
+                }
+            } catch (Throwable t) {
+                /* some initial attempts may fail */
+                e = t;
+            }
+            System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + ATTEMPT_COUNT
+                    + " attempts, about to retry after " + ATTEMPT_DELAY + " ms");
+            /* sleep one second */
+            Thread.sleep(ATTEMPT_DELAY);
+        }
+        if (e != null) {
+            throw e;
+        } else {
+            throw new AssertionError("Could not get [" + url + "]");
+        }
     }
 
     private Request.Builder newAuthRequest() {
@@ -217,16 +240,16 @@ public class CommandGatewayITest {
     }
 
     @Test
-    public void testExecuteOperation() throws InterruptedException, IOException {
+    public void testExecuteOperation() throws Throwable {
 
         Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
         WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
 
-        List<Resource> wfs = getResources("/test/resources");
+        List<Resource> wfs = getResources("/test/resources", 1);
         Assert.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
         String feedId = wfPath.ids().getFeedId();
-        List<Resource> deployments = getResources("/test/" + feedId + "/resourceTypes/Deployment/resources");
+        List<Resource> deployments = getResources("/test/" + feedId + "/resourceTypes/Deployment/resources", 1);
         final String deploymentName = "hawkular-helloworld-war.war";
         Resource deployment = deployments.stream().filter(r -> r.getId().endsWith("=" + deploymentName)).findFirst()
                 .get();
