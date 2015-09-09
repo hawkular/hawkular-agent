@@ -22,11 +22,12 @@
 
   <parent>
     <groupId>org.hawkular.agent</groupId>
-    <artifactId>hawkular-agent-parent</artifactId>
+    <artifactId>hawkular-agent-itest-parent</artifactId>
     <version>0.6.2.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-agent-itest</artifactId>
+
   <name>Hawkular Agent Integration Tests</name>
   <description>A module containing integration tests of Command Gateway and Agent</description>
 
@@ -208,5 +209,4 @@
       </build>
     </profile>
   </profiles>
-
 </project>
