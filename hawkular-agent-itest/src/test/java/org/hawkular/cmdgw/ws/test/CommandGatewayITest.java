@@ -86,7 +86,7 @@ public class CommandGatewayITest {
         }
 
         public void onMessage(BufferedSource payload, PayloadType type) throws IOException {
-            //System.out.println("onMessage");
+            // System.out.println("onMessage");
             delegate.onMessage(copy(payload), type);
         }
 
@@ -226,9 +226,10 @@ public class CommandGatewayITest {
         Assert.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
         String feedId = wfPath.ids().getFeedId();
-        List<Resource> deployments = getResources("/test/"+ feedId +"/resourceTypes/Deployment/resources");
-        final String deploymentName = "hawkular-avail-creator.war";
-        Resource deployment = deployments.stream().filter(r -> r.getId().endsWith("="+ deploymentName)).findFirst().get();
+        List<Resource> deployments = getResources("/test/" + feedId + "/resourceTypes/Deployment/resources");
+        final String deploymentName = "hawkular-helloworld-war.war";
+        Resource deployment = deployments.stream().filter(r -> r.getId().endsWith("=" + deploymentName)).findFirst()
+                .get();
 
         WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
             @Override
@@ -253,15 +254,13 @@ public class CommandGatewayITest {
         int i = 0;
 
         String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                +"\"The execution request has been forwarded to feed ["+ wfPath.ids().getFeedId() +"] (\\E.*";
+                + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
         String msg = receivedMessages.get(i++).readUtf8();
-        Assert.assertTrue("["+ msg +"] does not match ["+ expectedRe +"]", msg.matches(expectedRe));
+        Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-        Assert.assertEquals("ExecuteOperationResponse={"
-                + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
-                + "\"operationName\":\"Redeploy\","
-                + "\"status\":\"OK\"," //
+        Assert.assertEquals("ExecuteOperationResponse={" + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
+                + "\"operationName\":\"Redeploy\"," + "\"status\":\"OK\"," //
                 + "\"message\":\"undefined\"," //
                 + "\"authentication\":" + authentication //
                 + "}", receivedMessages.get(i++).readUtf8());

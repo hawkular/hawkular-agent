@@ -45,6 +45,12 @@
       <type>zip</type>
     </dependency>
     <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-helloworld-war</artifactId>
+      <version>0.5.1.Final-SNAPSHOT</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
       <groupId>org.hawkular.bus</groupId>
       <artifactId>hawkular-bus-broker-wf-extension</artifactId>
       <version>${version.org.hawkular.bus}</version>

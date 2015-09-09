@@ -37,6 +37,7 @@
   <modules>
     <module>hawkular-dmr-client</module>
     <module>hawkular-wildfly-monitor</module>
+    <module>hawkular-helloworld-war</module>
     <module>hawkular-agent-itest-dist</module>
     <module>hawkular-agent-itest</module>
   </modules>
