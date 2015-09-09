@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-agent-parent</artifactId>
-    <version>0.6.0.Final</version>
+    <version>0.6.1.Final-SNAPSHOT</version>
   </parent>
   <artifactId>hawkular-agent-itest-dist</artifactId>
   <packaging>pom</packaging>
@@ -40,7 +40,7 @@
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-monitor</artifactId>
-      <version>0.6.0.Final</version>
+      <version>0.6.1.Final-SNAPSHOT</version>
       <classifier>module</classifier>
       <type>zip</type>
     </dependency>
