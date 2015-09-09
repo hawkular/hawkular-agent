@@ -1,4 +1,12 @@
 language: java
+# Enable container-based infrastructure
+# see http://docs.travis-ci.com/user/workers/container-based-infrastructure/
+sudo: false
+
+# manage the caches here https://travis-ci.org/hawkular/hawkular/caches
+cache:
+  directories:
+  - $HOME/.m2/repository
 jdk:
 - oraclejdk8
 notifications:
@@ -9,7 +17,7 @@ notifications:
 install:
 - mvn -version -B
 script:
-- mvn -s .travis.maven.settings.xml verify | grep -vF "[INFO] Downloading:" | grep
+- mvn -s .travis.maven.settings.xml verify -Pitest | grep -vF "[INFO] Downloading:" | grep
   -vF "[INFO] Downloaded:"; test ${PIPESTATUS[0]} -eq 0
 env:
   global:
