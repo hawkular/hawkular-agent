@@ -30,8 +30,14 @@
   <artifactId>hawkular-agent-parent</artifactId>
   <version>0.5.1.Final-SNAPSHOT</version>
   <packaging>pom</packaging>
+
   <name>Hawkular Agent Parent</name>
   <inceptionYear>2015</inceptionYear>
+
+  <modules>
+    <module>hawkular-dmr-client</module>
+    <module>hawkular-wildfly-monitor</module>
+  </modules>
 
   <scm>
     <connection>scm:git:git@github.com:hawkular/hawkular-agent.git</connection>
@@ -39,11 +45,6 @@
     <url>https://github.com/hawkular/hawkular-agent</url>
     <tag>head</tag>
   </scm>
-
-  <modules>
-    <module>hawkular-dmr-client</module>
-    <module>hawkular-wildfly-monitor</module>
-  </modules>
 
   <properties>
     <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
