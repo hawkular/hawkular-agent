@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 
     Copyright 2015 Red Hat, Inc. and/or its affiliates
@@ -18,11 +19,13 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>org.hawkular.agent</groupId>
-    <artifactId>hawkular-agent-parent</artifactId>
+    <artifactId>hawkular-agent-itest-parent</artifactId>
     <version>0.6.2.Final-SNAPSHOT</version>
   </parent>
+
   <artifactId>hawkular-agent-itest-dist</artifactId>
   <packaging>pom</packaging>
 
@@ -43,6 +46,12 @@
       <version>0.6.2.Final-SNAPSHOT</version>
       <classifier>module</classifier>
       <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-helloworld-war</artifactId>
+      <version>0.6.2.Final-SNAPSHOT</version>
+      <type>war</type>
     </dependency>
     <dependency>
       <groupId>org.hawkular.bus</groupId>
@@ -396,5 +405,4 @@
       </build>
     </profile>
   </profiles>
-
 </project>

@@ -134,6 +134,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
                 response.setMessage(JBossASClient.getFailureDescription(opResp));
             } else {
                 response.setStatus("OK");
+                // FIXME HAWKULAR-604 The message field of ExecuteOperationResponse should not be "undefined"
                 response.setMessage(JBossASClient.getResults(opResp).toString());
             }
         } catch (Exception e) {

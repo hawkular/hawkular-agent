@@ -103,6 +103,7 @@
       <outputDirectory>${hawkular.dist.zip.root.dir}/modules/org/hawkular/nest/main/deployments</outputDirectory>
       <useProjectArtifact>false</useProjectArtifact>
       <includes>
+        <include>org.hawkular.agent:hawkular-helloworld-war</include>
         <include>org.hawkular.inventory:hawkular-inventory-dist</include>
         <include>org.hawkular.cmdgw:hawkular-command-gateway-war</include>
         <include>org.hawkular.accounts:hawkular-accounts:war</include>

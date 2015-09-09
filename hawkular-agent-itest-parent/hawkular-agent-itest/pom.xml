@@ -22,11 +22,12 @@
 
   <parent>
     <groupId>org.hawkular.agent</groupId>
-    <artifactId>hawkular-agent-parent</artifactId>
+    <artifactId>hawkular-agent-itest-parent</artifactId>
     <version>0.6.2.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-agent-itest</artifactId>
+
   <name>Hawkular Agent Integration Tests</name>
   <description>A module containing integration tests of Command Gateway and Agent</description>
 
@@ -46,6 +47,18 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-json-helper</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -78,7 +91,7 @@
 
         <hawkular.log>INFO</hawkular.log>
         <hawkular.log.accounts>INFO</hawkular.log.accounts>
-        <hawkular.log.agent>INFO</hawkular.log.agent>
+        <hawkular.log.agent>DEBUG</hawkular.log.agent>
         <hawkular.log.alerts>INFO</hawkular.log.alerts>
         <hawkular.log.bus>INFO</hawkular.log.bus>
         <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
@@ -196,5 +209,4 @@
       </build>
     </profile>
   </profiles>
-
 </project>
