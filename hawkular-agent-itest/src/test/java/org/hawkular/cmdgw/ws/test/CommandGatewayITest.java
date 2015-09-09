@@ -118,13 +118,14 @@ public class CommandGatewayITest {
     }
 
     protected static final String authentication;
+    protected static final String baseAccountsUri;
     protected static final String baseGwUri;
     protected static final String baseInvUri;
     protected static final String testPasword = "password";
 
     protected static final String testUser = "jdoe";
-    private static final int ATTEMPT_COUNT = 10;
-    private static final long ATTEMPT_DELAY = 500;
+    private static final int ATTEMPT_COUNT = 50;
+    private static final long ATTEMPT_DELAY = 5000;
 
     static {
         String host = System.getProperty("hawkular.bind.address", "localhost");
@@ -133,6 +134,7 @@ public class CommandGatewayITest {
         }
         int portOffset = Integer.parseInt(System.getProperty("hawkular.port.offset", "0"));
         int httpPort = portOffset + 8080;
+        baseAccountsUri = "http://" + host + ":" + httpPort + "/hawkular/accounts";
         baseInvUri = "http://" + host + ":" + httpPort + "/hawkular/inventory";
         baseGwUri = "ws://" + host + ":" + httpPort + "/hawkular/command-gateway";
 
@@ -163,17 +165,42 @@ public class CommandGatewayITest {
         Throwable e = null;
         for (int i = 0; i < ATTEMPT_COUNT; i++) {
             try {
-                Request request = newAuthRequest().url(url).build();
-                Response response = client.newCall(request).execute();
-                Assert.assertEquals(200, response.code());
-                String body = response.body().string();
+                String body = getWithRetries(url);
                 TypeFactory tf = mapper.getTypeFactory();
                 JavaType listType = tf.constructCollectionType(ArrayList.class, Resource.class);
                 JsonNode node = mapper.readTree(body);
                 List<Resource> result = mapper.readValue(node.traverse(), listType);
                 if (result.size() >= minCount) {
-                    return result ;
+                    return result;
                 }
+                System.out.println("Got only " + result.size() + " resources while expected " + minCount + " on "
+                        + (i + 1) + " of " + ATTEMPT_COUNT + " attempts for URL [" + url + "]");
+                // System.out.println(body);
+            } catch (Throwable t) {
+                /* some initial attempts may fail */
+                e = t;
+                System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + ATTEMPT_COUNT
+                        + " attempts, about to retry after " + ATTEMPT_DELAY + " ms");
+            }
+            /* sleep one second */
+            Thread.sleep(ATTEMPT_DELAY);
+        }
+        if (e != null) {
+            throw e;
+        } else {
+            throw new AssertionError("Could not get [" + url + "]");
+        }
+    }
+
+    private String getWithRetries(String url) throws Throwable {
+        Throwable e = null;
+        for (int i = 0; i < ATTEMPT_COUNT; i++) {
+            try {
+                Request request = newAuthRequest().url(url).build();
+                Response response = client.newCall(request).execute();
+                Assert.assertEquals(200, response.code());
+                System.out.println("Got after " + (i + 1) + " retries: " + url);
+                return response.body().string();
             } catch (Throwable t) {
                 /* some initial attempts may fail */
                 e = t;
@@ -206,6 +233,22 @@ public class CommandGatewayITest {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void waitForAccountsAndInventory() throws Throwable {
+        Thread.sleep(10000);
+        /*
+         * Make sure we can access the tenant first. We will do several attempts because race conditions may happen
+         * between this script and WildFly Agent who may have triggered the same initial tasks in Accounts
+         */
+        String body = getWithRetries(baseAccountsUri + "/personas/current");
+
+        /*
+         * Ensure the "test" env was autocreated. We will do several attempts because race conditions may happen between
+         * this script and WildFly Agent who may have triggered the same initial tasks in Inventory. A successfull GET
+         * to /hawkular/inventory/environments/test should mean that all initial tasks are over
+         */
+        body = getWithRetries(baseInvUri + "/environments/test");
     }
 
     @Test
@@ -241,19 +284,19 @@ public class CommandGatewayITest {
 
     @Test
     public void testExecuteOperation() throws Throwable {
-
-        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+        waitForAccountsAndInventory();
 
         List<Resource> wfs = getResources("/test/resources", 1);
         Assert.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
         String feedId = wfPath.ids().getFeedId();
-        List<Resource> deployments = getResources("/test/" + feedId + "/resourceTypes/Deployment/resources", 1);
+        List<Resource> deployments = getResources("/test/" + feedId + "/resourceTypes/Deployment/resources", 6);
         final String deploymentName = "hawkular-helloworld-war.war";
         Resource deployment = deployments.stream().filter(r -> r.getId().endsWith("=" + deploymentName)).findFirst()
                 .get();
 
+        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
         WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
             @Override
             public void onOpen(WebSocket webSocket, Response response) {
@@ -284,7 +327,9 @@ public class CommandGatewayITest {
 
         Assert.assertEquals("ExecuteOperationResponse={" + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
                 + "\"operationName\":\"Redeploy\"," + "\"status\":\"OK\"," //
+        // FIXME HAWKULAR-604 the message should not be undefined
                 + "\"message\":\"undefined\"," //
+        // FIXME HAWKULAR-603 the server should not forward the authentication to UI
                 + "\"authentication\":" + authentication //
                 + "}", receivedMessages.get(i++).readUtf8());
 
