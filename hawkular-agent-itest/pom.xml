@@ -49,6 +49,18 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-json-helper</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>

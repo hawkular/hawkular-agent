@@ -19,11 +19,17 @@ package org.hawkular.cmdgw.ws.test;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -32,6 +38,11 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -75,6 +86,7 @@ public class CommandGatewayITest {
         }
 
         public void onMessage(BufferedSource payload, PayloadType type) throws IOException {
+            //System.out.println("onMessage");
             delegate.onMessage(copy(payload), type);
         }
 
@@ -106,7 +118,8 @@ public class CommandGatewayITest {
     }
 
     protected static final String authentication;
-    protected static final String baseURI;
+    protected static final String baseGwUri;
+    protected static final String baseInvUri;
     protected static final String testPasword = "password";
 
     protected static final String testUser = "jdoe";
@@ -118,12 +131,14 @@ public class CommandGatewayITest {
         }
         int portOffset = Integer.parseInt(System.getProperty("hawkular.port.offset", "0"));
         int httpPort = portOffset + 8080;
-        baseURI = "ws://" + host + ":" + httpPort + "/hawkular/command-gateway";
+        baseInvUri = "http://" + host + ":" + httpPort + "/hawkular/inventory";
+        baseGwUri = "ws://" + host + ":" + httpPort + "/hawkular/command-gateway";
 
-        authentication = "{\"username\": \"" + testUser + "\", \"password\": \"" + testPasword + "\"}";
+        authentication = "{\"username\":\"" + testUser + "\",\"password\":\"" + testPasword + "\"}";
     }
 
     private OkHttpClient client;
+    private ObjectMapper mapper;
     private ExecutorService writeExecutor;
 
     @After
@@ -134,14 +149,46 @@ public class CommandGatewayITest {
 
     @Before
     public void before() {
+        JsonFactory f = new JsonFactory();
+        mapper = new ObjectMapper(f);
+        InventoryJacksonConfig.configure(mapper);
         this.writeExecutor = Executors.newSingleThreadExecutor();
         this.client = new OkHttpClient();
+    }
+
+    private List<Resource> getResources(String path) throws IOException {
+        Request request = newAuthRequest().url(baseInvUri + path).build();
+        Response response = client.newCall(request).execute();
+        Assert.assertEquals(200, response.code());
+        String body = response.body().string();
+        TypeFactory tf = mapper.getTypeFactory();
+        JavaType listType = tf.constructCollectionType(ArrayList.class, Resource.class);
+        JsonNode node = mapper.readTree(body);
+        return mapper.readValue(node.traverse(), listType);
+    }
+
+    private Request.Builder newAuthRequest() {
+        /*
+         * http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side : The Authorization header is
+         * constructed as follows: * Username and password are combined into a string "username:password" * The
+         * resulting string is then encoded using the RFC2045-MIME variant of Base64, except not limited to 76
+         * char/line[9] * The authorization method and a space i.e. "Basic " is then put before the encoded string.
+         */
+        try {
+            String encodedCredentials = Base64.getMimeEncoder()
+                    .encodeToString((testUser + ":" + testPasword).getBytes("utf-8"));
+            return new Request.Builder() //
+                    .addHeader("Authorization", "Basic " + encodedCredentials) //
+                    .addHeader("Accept", "application/json");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
     public void testEcho() throws InterruptedException, IOException {
 
-        Request request = new Request.Builder().url(baseURI + "/ui/ws").build();
+        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
         WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
 
         WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
@@ -166,6 +213,60 @@ public class CommandGatewayITest {
                 receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(1, receivedMessages.size());
+
+    }
+
+    @Test
+    public void testExecuteOperation() throws InterruptedException, IOException {
+
+        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+
+        List<Resource> wfs = getResources("/test/resources");
+        Assert.assertEquals(1, wfs.size());
+        CanonicalPath wfPath = wfs.get(0).getPath();
+        String feedId = wfPath.ids().getFeedId();
+        List<Resource> deployments = getResources("/test/"+ feedId +"/resourceTypes/Deployment/resources");
+        final String deploymentName = "hawkular-avail-creator.war";
+        Resource deployment = deployments.stream().filter(r -> r.getId().endsWith("="+ deploymentName)).findFirst().get();
+
+        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+            @Override
+            public void onOpen(WebSocket webSocket, Response response) {
+                sendText(webSocket,
+                        "ExecuteOperationRequest={\"authentication\":" + authentication + ", " //
+                                + "\"resourcePath\":\"" + deployment.getPath().toString() + "\"," //
+                                + "\"operationName\":\"Redeploy\"" //
+                                + "}");
+                super.onOpen(webSocket, response);
+            }
+        };
+
+        WebSocketCall.create(client, request).enqueue(openingListener);
+
+        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
+        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
+        verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
+                Mockito.same(PayloadType.TEXT));
+
+        List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
+        int i = 0;
+
+        String expectedRe = "\\QGenericSuccessResponse={\"message\":"
+                +"\"The execution request has been forwarded to feed ["+ wfPath.ids().getFeedId() +"] (\\E.*";
+
+        String msg = receivedMessages.get(i++).readUtf8();
+        Assert.assertTrue("["+ msg +"] does not match ["+ expectedRe +"]", msg.matches(expectedRe));
+
+        Assert.assertEquals("ExecuteOperationResponse={"
+                + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
+                + "\"operationName\":\"Redeploy\","
+                + "\"status\":\"OK\"," //
+                + "\"message\":\"undefined\"," //
+                + "\"authentication\":" + authentication //
+                + "}", receivedMessages.get(i++).readUtf8());
+
+        Assert.assertEquals(2, receivedMessages.size());
 
     }
 
