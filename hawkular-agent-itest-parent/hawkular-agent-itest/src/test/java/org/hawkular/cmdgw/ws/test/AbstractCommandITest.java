@@ -16,10 +16,10 @@
  */
 package org.hawkular.cmdgw.ws.test;
 
-import static org.mockito.Mockito.verify;
-
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -27,16 +27,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JavaType;
@@ -48,7 +43,6 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocket.PayloadType;
-import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
 
 import okio.Buffer;
@@ -57,8 +51,8 @@ import okio.BufferedSource;
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public class CommandGatewayITest {
-    private static class TestListener implements WebSocketListener {
+public abstract class AbstractCommandITest {
+    protected static class TestListener implements WebSocketListener {
 
         private final WebSocketListener delegate;
 
@@ -102,18 +96,33 @@ public class CommandGatewayITest {
             }
         }
 
-        public void sendText(final WebSocket webSocket, final String text) {
+        public void send(final WebSocket webSocket, final String text) {
+            send(webSocket, text, null);
+        }
+
+        public void send(final WebSocket webSocket, final String text, final URL dataUrl) {
             writeExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
                     try (Buffer b1 = new Buffer()) {
-                        webSocket.sendMessage(PayloadType.TEXT, b1.writeUtf8(text));
+                        if (text != null) {
+                            b1.writeUtf8(text);
+                        }
+                        if (dataUrl != null) {
+                            try (InputStream in = dataUrl.openStream()) {
+                                int b;
+                                while ((b = in.read()) != -1) {
+                                    b1.writeByte(b);
+                                    //System.out.println("Writing binary data");
+                                }
+                            }
+                        }
+                        webSocket.sendMessage(dataUrl == null ? PayloadType.TEXT : PayloadType.BINARY, b1);
                     } catch (IOException e) {
                         throw new RuntimeException("Unable to send message", e);
                     }
                 }
             });
-
         }
     }
 
@@ -124,8 +133,8 @@ public class CommandGatewayITest {
     protected static final String testPasword = "password";
 
     protected static final String testUser = "jdoe";
-    private static final int ATTEMPT_COUNT = 50;
-    private static final long ATTEMPT_DELAY = 5000;
+    protected static final int ATTEMPT_COUNT = 50;
+    protected static final long ATTEMPT_DELAY = 5000;
 
     static {
         String host = System.getProperty("hawkular.bind.address", "localhost");
@@ -137,13 +146,12 @@ public class CommandGatewayITest {
         baseAccountsUri = "http://" + host + ":" + httpPort + "/hawkular/accounts";
         baseInvUri = "http://" + host + ":" + httpPort + "/hawkular/inventory";
         baseGwUri = "ws://" + host + ":" + httpPort + "/hawkular/command-gateway";
-
         authentication = "{\"username\":\"" + testUser + "\",\"password\":\"" + testPasword + "\"}";
     }
 
-    private OkHttpClient client;
-    private ObjectMapper mapper;
-    private ExecutorService writeExecutor;
+    protected OkHttpClient client;
+    protected ObjectMapper mapper;
+    protected ExecutorService writeExecutor;
 
     @After
     public void after() {
@@ -160,7 +168,7 @@ public class CommandGatewayITest {
         this.client = new OkHttpClient();
     }
 
-    private List<Resource> getResources(String path, int minCount) throws Throwable {
+    protected List<Resource> getResources(String path, int minCount) throws Throwable {
         String url = baseInvUri + path;
         Throwable e = null;
         for (int i = 0; i < ATTEMPT_COUNT; i++) {
@@ -192,7 +200,7 @@ public class CommandGatewayITest {
         }
     }
 
-    private String getWithRetries(String url) throws Throwable {
+    protected String getWithRetries(String url) throws Throwable {
         Throwable e = null;
         for (int i = 0; i < ATTEMPT_COUNT; i++) {
             try {
@@ -217,7 +225,7 @@ public class CommandGatewayITest {
         }
     }
 
-    private Request.Builder newAuthRequest() {
+    protected Request.Builder newAuthRequest() {
         /*
          * http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side : The Authorization header is
          * constructed as follows: * Username and password are combined into a string "username:password" * The
@@ -235,131 +243,20 @@ public class CommandGatewayITest {
         }
     }
 
-    private void waitForAccountsAndInventory() throws Throwable {
+    protected void waitForAccountsAndInventory() throws Throwable {
         Thread.sleep(10000);
         /*
          * Make sure we can access the tenant first. We will do several attempts because race conditions may happen
          * between this script and WildFly Agent who may have triggered the same initial tasks in Accounts
          */
-        String body = getWithRetries(baseAccountsUri + "/personas/current");
+        getWithRetries(baseAccountsUri + "/personas/current");
 
         /*
          * Ensure the "test" env was autocreated. We will do several attempts because race conditions may happen between
          * this script and WildFly Agent who may have triggered the same initial tasks in Inventory. A successfull GET
          * to /hawkular/inventory/environments/test should mean that all initial tasks are over
          */
-        body = getWithRetries(baseInvUri + "/environments/test");
-    }
-
-    @Test
-    public void testEcho() throws InterruptedException, IOException {
-
-        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                sendText(webSocket, "EchoRequest={\"authentication\": " + authentication
-                        + ", \"echoMessage\": \"Yodel Ay EEE Oooo\"}");
-                super.onOpen(webSocket, response);
-            }
-        };
-
-        WebSocketCall.create(client, request).enqueue(openingListener);
-
-        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(1)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
-
-        List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-        int i = 0;
-        Assert.assertEquals("EchoResponse={\"reply\":\"ECHO [Yodel Ay EEE Oooo]\"}",
-                receivedMessages.get(i++).readUtf8());
-
-        Assert.assertEquals(1, receivedMessages.size());
-
-    }
-
-    @Test
-    public void testExecuteOperation() throws Throwable {
-        waitForAccountsAndInventory();
-
-        List<Resource> wfs = getResources("/test/resources", 1);
-        Assert.assertEquals(1, wfs.size());
-        CanonicalPath wfPath = wfs.get(0).getPath();
-        String feedId = wfPath.ids().getFeedId();
-        List<Resource> deployments = getResources("/test/" + feedId + "/resourceTypes/Deployment/resources", 6);
-        final String deploymentName = "hawkular-helloworld-war.war";
-        Resource deployment = deployments.stream().filter(r -> r.getId().endsWith("=" + deploymentName)).findFirst()
-                .get();
-
-        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                sendText(webSocket,
-                        "ExecuteOperationRequest={\"authentication\":" + authentication + ", " //
-                                + "\"resourcePath\":\"" + deployment.getPath().toString() + "\"," //
-                                + "\"operationName\":\"Redeploy\"" //
-                                + "}");
-                super.onOpen(webSocket, response);
-            }
-        };
-
-        WebSocketCall.create(client, request).enqueue(openingListener);
-
-        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
-
-        List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-        int i = 0;
-
-        String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
-
-        String msg = receivedMessages.get(i++).readUtf8();
-        Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
-
-        Assert.assertEquals("ExecuteOperationResponse={" + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
-                + "\"operationName\":\"Redeploy\"," + "\"status\":\"OK\"," //
-        // FIXME HAWKULAR-604 the message should not be undefined
-                + "\"message\":\"undefined\"," //
-        // FIXME HAWKULAR-603 the server should not forward the authentication to UI
-                + "\"authentication\":" + authentication //
-                + "}", receivedMessages.get(i++).readUtf8());
-
-        Assert.assertEquals(2, receivedMessages.size());
-
-    }
-
-    @Test
-    @Ignore // created as a proof of concept of a ws test. Can be removed later
-    public void testWsOrg() throws InterruptedException, IOException {
-
-        Request request = new Request.Builder().url("ws://echo.websocket.org").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                sendText(webSocket, "whatever");
-                super.onOpen(webSocket, response);
-            }
-        };
-
-        WebSocketCall.create(client, request).enqueue(openingListener);
-
-        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(1)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
-        Assert.assertEquals("whatever", bufferedSourceCaptor.getValue().readUtf8());
-
+        getWithRetries(baseInvUri + "/environments/test");
     }
 
 }
