@@ -34,6 +34,7 @@ import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.modules.AddModuleRequest;
+import org.hawkular.agent.monitor.modules.AddModuleRequest.ModuleResource;
 import org.hawkular.agent.monitor.modules.Modules;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
@@ -53,7 +54,7 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
     public AddJdbcDriverResponse execute(AddJdbcDriverRequest request, BinaryData jdbcDriverContent,
             CommandContext context) throws Exception {
 
-        MsgLogger.LOG.infof("Received request to deploy JDBC Driver [%s] on resource [%s]", request.getModuleName(),
+        MsgLogger.LOG.infof("Received request to add the JDBC Driver [%s] on resource [%s]", request.getModuleName(),
                 request.getResourcePath());
 
         FeedCommProcessor processor = context.getFeedCommProcessor();
@@ -100,10 +101,11 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
         try (DatasourceJBossASClient dsc = new DatasourceJBossASClient(
                 inventoryManager.getModelControllerClientFactory().createClient())) {
 
-            AddModuleRequest addModuleRequest = new AddModuleRequest(request.getModuleName(), (String) null,
-                    (String) null, Collections.singleton(request.getDriverJarName()),
-                    DEFAULT_DRIVER_MODULE_DEPENDENCIES, null);
+            ModuleResource jarResource = new AddModuleRequest.ModuleResource(jdbcDriverContent,
+                    request.getDriverJarName());
 
+            AddModuleRequest addModuleRequest = new AddModuleRequest(request.getModuleName(), (String) null,
+                    (String) null, Collections.singleton(jarResource), DEFAULT_DRIVER_MODULE_DEPENDENCIES, null);
             new Modules(Modules.findModulesDir()).add(addModuleRequest);
             dsc.addJdbcDriver(request.getDriverName(), request.getModuleName());
             response.setStatus("OK");

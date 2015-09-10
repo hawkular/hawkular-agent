@@ -17,6 +17,7 @@
 
 package org.hawkular.agent.monitor.modules;
 
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,26 @@ import java.util.Set;
  *
  */
 public class AddModuleRequest {
+
+    public static class ModuleResource {
+        private final String fileName;
+
+        public ModuleResource(InputStream input, String fileName) {
+            super();
+            this.input = input;
+            this.fileName = fileName;
+        }
+
+        private final InputStream input;
+
+        public String getFileName() {
+            return fileName;
+        }
+
+        public InputStream getInput() {
+            return input;
+        }
+    }
 
     /**
      * The name of the JBoss Module to create, such as "org.example.jdbc.driver" (Required)
@@ -47,7 +68,7 @@ public class AddModuleRequest {
      * List of resource paths relative to module folder on the server. (Required)
      *
      */
-    private final Set<java.lang.String> resources;
+    private final Set<ModuleResource> resources;
     /**
      * List of the dependencies for this module.
      *
@@ -59,7 +80,7 @@ public class AddModuleRequest {
      */
     private final Map<String, String> properties;
 
-    public AddModuleRequest(String moduleName, String slot, String mainClass, Set<String> resources,
+    public AddModuleRequest(String moduleName, String slot, String mainClass, Set<ModuleResource> resources,
             Set<String> dependencies, Map<String, String> properties) {
         super();
         this.moduleName = moduleName;
@@ -102,7 +123,7 @@ public class AddModuleRequest {
      *
      * @return The resources
      */
-    public Set<java.lang.String> getResources() {
+    public Set<ModuleResource> getResources() {
         return resources;
     }
 
