@@ -36,7 +36,7 @@
     <kettle.build.type>production</kettle.build.type>
     <assembly.dir>${project.build.directory}/assembly</assembly.dir>
     <wildfly.dist.zip.root.dir>wildfly-${version.org.wildfly}</wildfly.dist.zip.root.dir>
-    <hawkular.dist.zip.root.dir>hawkular-${project.version}</hawkular.dist.zip.root.dir>
+    <hawkular.dist.zip.root.dir>${project.artifactId}-${project.version}</hawkular.dist.zip.root.dir>
   </properties>
 
   <dependencies>

@@ -16,12 +16,10 @@
  */
 package org.hawkular.agent.monitor.modules;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,6 +29,7 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.hawkular.agent.monitor.feedcomm.InvalidCommandRequestException;
+import org.hawkular.agent.monitor.modules.AddModuleRequest.ModuleResource;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,18 +37,17 @@ import org.junit.Test;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class ModulesTest {
-
     private static AddModuleRequest createComplicated() throws IOException {
-        File srcDir = createTempDir("complicated");
-        File srcJar = new File(srcDir, "complicated.jar");
-        try (Writer out = new OutputStreamWriter(new FileOutputStream(srcJar), "utf-8")) {
-            out.write("1234");
-        }
+
         Map<String, String> props = new LinkedHashMap<>();
         props.put("k1", "v1");
         props.put("k2", "v2");
+
+        ByteArrayInputStream in = new ByteArrayInputStream("deadbeef".getBytes("utf-8"));
+        ModuleResource resource = new AddModuleRequest.ModuleResource(in, "complicated.jar");
+
         return new AddModuleRequest("complicated", "custom-slot", "complicated.Main",
-                new HashSet<String>(Arrays.asList(srcJar.getAbsolutePath())),
+                new HashSet<ModuleResource>(Arrays.asList(resource)),
                 new HashSet<String>(Arrays.asList("javax.api", "javax.transaction.api")), props);
     }
 
@@ -65,13 +63,11 @@ public class ModulesTest {
     }
 
     private static AddModuleRequest createUsual() throws IOException {
-        File srcDir = createTempDir("usual.src.resources");
-        File srcJar = new File(srcDir, "usual.jar");
-        try (Writer out = new OutputStreamWriter(new FileOutputStream(srcJar), "utf-8")) {
-            out.write("1234");
-        }
+        ByteArrayInputStream in = new ByteArrayInputStream("deadbeef".getBytes("utf-8"));
+        ModuleResource resource = new AddModuleRequest.ModuleResource(in, "usual.jar");
 
-        return new AddModuleRequest("usual", null, null, new HashSet<String>(Arrays.asList(srcJar.getAbsolutePath())),
+        return new AddModuleRequest("usual", null, null,
+                new HashSet<ModuleResource>(Arrays.asList(resource)),
                 new HashSet<String>(Arrays.asList("javax.api", "javax.transaction.api")), null);
     }
 
@@ -94,8 +90,8 @@ public class ModulesTest {
         String found = FileUtils.readFileToString(foundFile, "utf-8");
         Assert.assertEquals(expected, found);
 
-        for (String resourceName : request.getResources()) {
-            File f = new File(moduleDir, new File(resourceName).getName());
+        for (ModuleResource resourceName : request.getResources()) {
+            File f = new File(moduleDir, resourceName.getFileName());
             Assert.assertTrue(f.getAbsolutePath() + " does not exist", f.exists());
         }
         Assert.assertEquals(request.getResources().size() + 1, moduleDir.listFiles().length);

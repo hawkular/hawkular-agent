@@ -21,6 +21,7 @@
 <assembly>
   <id>zip-distrib</id>
   <formats>
+    <format>dir</format>
     <format>zip</format>
   </formats>
 

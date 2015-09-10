@@ -18,6 +18,8 @@ package org.hawkular.cmdgw.ws.test;
 
 import static org.mockito.Mockito.verify;
 
+import java.io.File;
+import java.net.URL;
 import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -39,31 +41,42 @@ import okio.BufferedSource;
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public class ExecuteOperationCommandITest extends AbstractCommandITest {
+public class AddJdbcDriverCommandITest extends AbstractCommandITest {
 
     @Test
-    public void testExecuteOperation() throws Throwable {
+    public void testAddJdbcDriver() throws Throwable {
         waitForAccountsAndInventory();
 
         List<Resource> wfs = getResources("/test/resources", 1);
         Assert.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
         String feedId = wfPath.ids().getFeedId();
-        List<Resource> deployments = getResources("/test/" + feedId + "/resourceTypes/Deployment/resources", 6);
-        final String deploymentName = "hawkular-helloworld-war.war";
-        Resource deployment = deployments.stream().filter(r -> r.getId().endsWith("=" + deploymentName)).findFirst()
-                .get();
+        // http://localhost:8080/hawkular/inventory/test/slama/resourceTypes/JDBC%20Driver/resources
+        /* Here we wait for Agent to write the built-in h2 driver to inventory */
+        List<Resource> drivers = getResources("/test/" + feedId + "/resourceTypes/JDBC%20Driver/resources", 1);
+        Assert.assertEquals(1, drivers.size());
+        final String driverName = "mysql";
+
+        /* OK, h2 is there let's add a new MySQL Driver */
+        final String driverJarRawUrl =
+                "http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.36/mysql-connector-java-5.1.36.jar";
+        URL driverJarUrl = new URL(driverJarRawUrl);
+        final String driverJarName = new File(driverJarUrl.getPath()).getName();
 
         Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
         WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
         WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+
             @Override
             public void onOpen(WebSocket webSocket, Response response) {
                 send(webSocket,
-                        "ExecuteOperationRequest={\"authentication\":" + authentication + ", " //
-                                + "\"resourcePath\":\"" + deployment.getPath().toString() + "\"," //
-                                + "\"operationName\":\"Redeploy\"" //
-                                + "}");
+                        "AddJdbcDriverRequest={\"authentication\":" + authentication + ", " //
+                                + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
+                                + "\"driverName\":\"" + driverName + "\"," //
+                                + "\"moduleName\":\"com.mysql\"," //
+                                + "\"driverJarName\":\"" + driverJarName + "\"" //
+                                + "}",
+                        driverJarUrl);
                 super.onOpen(webSocket, response);
             }
         };
@@ -84,15 +97,21 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         String msg = receivedMessages.get(i++).readUtf8();
         Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-        Assert.assertEquals("ExecuteOperationResponse={" + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
-                + "\"operationName\":\"Redeploy\"," + "\"status\":\"OK\"," //
-        // FIXME HAWKULAR-604 the message should not be undefined
-                + "\"message\":\"undefined\"," //
+        Assert.assertEquals("AddJdbcDriverResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
+                + "\"status\":\"OK\"," //
+                + "\"message\":\"Deployed JDBC Driver: " + driverName + "\"," //
         // FIXME HAWKULAR-603 the server should not forward the authentication to UI
                 + "\"authentication\":" + authentication //
                 + "}", receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(2, receivedMessages.size());
+
+        // there is a good hope that https://issues.jboss.org/browse/HWKAGENT-7
+        // brings a way to sync with the inventory, so that we can validate that we really added it.
+        // List<Resource> driversAfter = getResources("/test/" + feedId + "/resourceTypes/JDBC%20Driver/resources", 2);
+        // Assert.assertEquals(2, driversAfter.size());
+        // Assert.assertTrue("The [" + driverName + "] could not be found after it was added",
+        // driversAfter.stream().filter(r -> r.getId().endsWith("=" + driverName)).findFirst().isPresent());
 
     }
 
