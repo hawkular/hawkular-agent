@@ -25,6 +25,16 @@ public class InventoryIdUtil {
         public String feedId;
         public String managedServerName;
         public String idPart;
+
+        public String getFeedId() {
+            return feedId;
+        }
+        public String getManagedServerName() {
+            return managedServerName;
+        }
+        public String getIdPart() {
+            return idPart;
+        }
     }
 
     /**
