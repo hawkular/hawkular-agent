@@ -209,4 +209,8 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10043, value = "Received the following error message and stack trace from server: %s\n%s")
     void warnReceivedGenericErrorResponse(String errorMessage, String stackTrace);
 
+    @LogMessage(level = Logger.Level.ERROR)
+    @Message(id = 10044, value = "Failed to execute [%s] for request [%s]")
+    void errorFailedToExecuteCommand(@Cause Exception e, String commandClassName, Object request);
+
 }
