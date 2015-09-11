@@ -22,16 +22,26 @@ package org.hawkular.agent.monitor.inventory;
  */
 public class InventoryIdUtil {
     public static class ResourceIdParts {
-        public String feedId;
-        public String managedServerName;
-        public String idPart;
+
+        private final String feedId;
+        private final String managedServerName;
+        private final String idPart;
+
+        private ResourceIdParts(String feedId, String managedServerName, String idPart) {
+            super();
+            this.feedId = feedId;
+            this.managedServerName = managedServerName;
+            this.idPart = idPart;
+        }
 
         public String getFeedId() {
             return feedId;
         }
+
         public String getManagedServerName() {
             return managedServerName;
         }
+
         public String getIdPart() {
             return idPart;
         }
@@ -53,12 +63,7 @@ public class InventoryIdUtil {
         if (parts.length != 3) {
             throw new IllegalArgumentException("Cannot parse invalid ID: " + resourceId);
         }
-
-        ResourceIdParts resourceIdParts = new ResourceIdParts();
-        resourceIdParts.feedId = parts[0];
-        resourceIdParts.managedServerName = parts[1];
-        resourceIdParts.idPart = parts[2];
-        return resourceIdParts;
+        return new ResourceIdParts(parts[0], parts[1], parts[2]);
     }
 
     /**
