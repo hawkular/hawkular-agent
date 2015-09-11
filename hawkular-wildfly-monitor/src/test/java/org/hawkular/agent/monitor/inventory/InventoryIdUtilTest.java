@@ -34,9 +34,9 @@ public class InventoryIdUtilTest {
 
         Assert.assertEquals("testfeedid~testmanagedserver~/test/id/path", id.toString());
         parts = InventoryIdUtil.parseResourceId(id.getIDString());
-        Assert.assertEquals("testfeedid", parts.feedId);
-        Assert.assertEquals("testmanagedserver", parts.managedServerName);
-        Assert.assertEquals("/test/id/path", parts.idPart);
+        Assert.assertEquals("testfeedid", parts.getFeedId());
+        Assert.assertEquals("testmanagedserver", parts.getManagedServerName());
+        Assert.assertEquals("/test/id/path", parts.getIdPart());
 
         // test that you can have ~ in the last part of the ID
         id = InventoryIdUtil.generateResourceId(
@@ -45,8 +45,8 @@ public class InventoryIdUtilTest {
 
         Assert.assertEquals("testfeedid~testmanagedserver~~/~test/~id/~path", id.toString());
         parts = InventoryIdUtil.parseResourceId(id.getIDString());
-        Assert.assertEquals("testfeedid", parts.feedId);
-        Assert.assertEquals("testmanagedserver", parts.managedServerName);
-        Assert.assertEquals("~/~test/~id/~path", parts.idPart);
+        Assert.assertEquals("testfeedid", parts.getFeedId());
+        Assert.assertEquals("testmanagedserver", parts.getManagedServerName());
+        Assert.assertEquals("~/~test/~id/~path", parts.getIdPart());
     }
 }
