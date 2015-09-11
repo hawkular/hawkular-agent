@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,9 +25,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
+import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -138,6 +143,7 @@ public class DMRDiscovery {
 
                 // get the configuration of the resource
                 discoverResourceConfiguration(resource, mcc);
+                postProcessResourceConfiguration(resource);
 
                 // populate the metrics/avails based on the resource's type
                 addMetricAndAvailInstances(resource);
@@ -181,6 +187,51 @@ public class DMRDiscovery {
                 LOG.warnf(e, "Failed to discover config [%s] for resource [%s]", configPropType, resource);
             }
         }
+    }
+
+    private void postProcessResourceConfiguration(DMRResource resource) {
+        // rather than check ("WildFly Server".equals(resource.getResourceType().getName().getNameString()))
+        // instead we just know that (resource.getParent() == null) should select the same node.
+        if (resource.getParent() == null) {
+            final String IP_ADDRESSES_PROPERTY_NAME = "Bound Address";
+            DMRResourceConfigurationPropertyInstance adrProp = null;
+            for (DMRResourceConfigurationPropertyInstance p : resource.getResourceConfigurationProperties()) {
+                if (IP_ADDRESSES_PROPERTY_NAME.equals(p.getName().getNameString())) {
+                    adrProp = p;
+                    break;
+                }
+            }
+            if (adrProp != null) {
+                String displayAddresses = null;
+                try {
+                    // Replaces 0.0.0.0 server address with the list of addresses received from
+                    // InetAddress.getByName(String) where the argument of getByName(String) is the host the agent
+                    // uses to query the AS'es DMR.
+                    InetAddress dmrAddr = InetAddress.getByName(adrProp.getValue());
+                    if (dmrAddr.isAnyLocalAddress()) {
+                        String host = null;
+                        ManagedServer server = inventoryManager.getManagedServer();
+                        if (server instanceof RemoteDMRManagedServer) {
+                            RemoteDMRManagedServer remoteServer = (RemoteDMRManagedServer) server;
+                            host = remoteServer.getHost();
+                        } else if (server instanceof LocalDMRManagedServer) {
+                            host = InetAddress.getLocalHost().getCanonicalHostName();
+                        } else {
+                            throw new IllegalStateException("Unexpected type of managed server [" + server.getClass()
+                                    + "]. Please report this bug.");
+                        }
+                        InetAddress[] resolvedAddresses = InetAddress.getAllByName(host);
+                        displayAddresses = Stream.of(resolvedAddresses).map(a -> a.getHostAddress())
+                                .collect(Collectors.joining(", "));
+                        adrProp.setValue(displayAddresses);
+                    }
+                } catch (UnknownHostException e) {
+                    MsgLogger.LOG.warnf(e, "Could not parse IP address [%s]", adrProp.getValue());
+                }
+            }
+        }
+
+        return;
     }
 
     private void logTreeGraph(String logMsg, ResourceManager<DMRResource> resourceManager) {
