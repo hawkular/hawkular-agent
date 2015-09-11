@@ -75,7 +75,8 @@ public class DMRDiscovery {
      */
     public void discoverAllResources(ResourceManager<DMRResource> resourceManager) throws Exception {
         try (ModelControllerClient mcc = clientFactory.createClient()) {
-            Set<DMRResourceType> rootTypes = this.inventoryManager.getResourceTypeManager().getRootResourceTypes();
+            Set<DMRResourceType> rootTypes;
+            rootTypes = this.inventoryManager.getMetadataManager().getResourceTypeManager().getRootResourceTypes();
             for (DMRResourceType rootType : rootTypes) {
                 discoverChildrenOfResourceType(null, rootType, mcc, resourceManager);
             }
@@ -133,7 +134,8 @@ public class DMRDiscovery {
                 discoverResourceConfiguration(resource, mcc);
 
                 // recursively discover children of child types
-                Set<DMRResourceType> childTypes = this.inventoryManager.getResourceTypeManager().getChildren(type);
+                Set<DMRResourceType> childTypes;
+                childTypes = this.inventoryManager.getMetadataManager().getResourceTypeManager().getChildren(type);
                 for (DMRResourceType childType : childTypes) {
                     discoverChildrenOfResourceType(resource, childType, mcc, resourceManager);
                 }

@@ -65,6 +65,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
+import org.hawkular.agent.monitor.inventory.dmr.DMRMetadataManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
@@ -592,6 +593,12 @@ public class MonitorService implements Service<MonitorService> {
     private void addDMRResources(SchedulerConfiguration schedulerConfig, ManagedServer managedServer,
             DMREndpoint dmrEndpoint, Collection<Name> dmrResourceTypeSets) {
 
+        // Build our metadata manager
+        DMRMetadataManager metadataMgr = buildDMRMetadataManager(dmrResourceTypeSets, this.configuration);
+
+        // Create our empty resource manager - this will be filled in during discovery with our resources
+        ResourceManager<DMRResource> resourceManager = new ResourceManager<>();
+
         // determine the client to use to connect to the managed server
         ModelControllerClientFactory factory;
         if (dmrEndpoint instanceof LocalDMREndpoint) {
@@ -600,29 +607,9 @@ public class MonitorService implements Service<MonitorService> {
             factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
         }
 
-        // Build our inventory manager
-        // First build our resource type manager.
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
-        rtm = new ResourceTypeManager<>(this.configuration.dmrResourceTypeSetMap, dmrResourceTypeSets);
-
-        // Now tell metric/avail managers what metric and avail types we need to use for the resource types
-        MetricTypeManager<DMRMetricType, DMRMetricTypeSet> mtm = new MetricTypeManager<>();
-        AvailTypeManager<DMRAvailType, DMRAvailTypeSet> atm = new AvailTypeManager<>();
-        BreadthFirstIterator<DMRResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
-        while (resourceTypeIter.hasNext()) {
-            DMRResourceType type = resourceTypeIter.next();
-            Collection<Name> metricSetsToUse = type.getMetricSets();
-            Collection<Name> availSetsToUse = type.getAvailSets();
-            mtm.addMetricTypes(this.configuration.dmrMetricTypeSetMap, metricSetsToUse);
-            atm.addAvailTypes(this.configuration.dmrAvailTypeSetMap, availSetsToUse);
-        }
-
-        // Create our empty resource manager - this will be filled in during discovery with our resources
-        ResourceManager<DMRResource> resourceManager = new ResourceManager<>();
-
         // Now we can build our inventory manager and discover our resources
         DMRInventoryManager im;
-        im = new DMRInventoryManager(this.feedId, rtm, mtm, atm, resourceManager, managedServer, dmrEndpoint, factory);
+        im = new DMRInventoryManager(this.feedId, metadataMgr, resourceManager, managedServer, dmrEndpoint, factory);
         this.dmrServerInventories.put(managedServer, im);
         im.discoverResources();
 
@@ -650,9 +637,38 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
-    private void addDMRMetricsAndAvails(DMRResource resource, DMRInventoryManager im) {
+    /**
+     * Given a collection of resource type set names for DMR resources, this will build a metadata manager
+     * for all things (resource types, metric types, avail types) associated with those named type sets.
+     *
+     * @param dmrResourceTypeSets names of resource types to be used
+     * @param monitorServiceConfig configuration that contains all types known to our subsystem service
+     * @return metadata manager containing all metadata for the types in the named sets
+     */
+    private DMRMetadataManager buildDMRMetadataManager(Collection<Name> dmrResourceTypeSets,
+            MonitorServiceConfiguration monitorServiceConfig) {
 
-        im.populateMetricAndAvailTypesForResourceType(resource.getResourceType());
+        // First build our metadata manager and its resource type manager, metric type manager, and avail type manager
+        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
+        rtm = new ResourceTypeManager<>(monitorServiceConfig.dmrResourceTypeSetMap, dmrResourceTypeSets);
+
+        // tell metric/avail managers what metric and avail types we need to use for the resource types
+        MetricTypeManager<DMRMetricType, DMRMetricTypeSet> mtm = new MetricTypeManager<>();
+        AvailTypeManager<DMRAvailType, DMRAvailTypeSet> atm = new AvailTypeManager<>();
+        BreadthFirstIterator<DMRResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
+        while (resourceTypeIter.hasNext()) {
+            DMRResourceType type = resourceTypeIter.next();
+            Collection<Name> metricSetsToUse = type.getMetricSets();
+            Collection<Name> availSetsToUse = type.getAvailSets();
+            mtm.addMetricTypes(monitorServiceConfig.dmrMetricTypeSetMap, metricSetsToUse);
+            atm.addAvailTypes(monitorServiceConfig.dmrAvailTypeSetMap, availSetsToUse);
+        }
+        DMRMetadataManager mm = new DMRMetadataManager(rtm, mtm, atm);
+        mm.populateMetricAndAvailTypesForAllResourceTypes();
+        return mm;
+    }
+
+    private void addDMRMetricsAndAvails(DMRResource resource, DMRInventoryManager im) {
 
         for (DMRMetricType metricType : resource.getResourceType().getMetricTypes()) {
             Interval interval = new Interval(metricType.getInterval(), metricType.getTimeUnits());
