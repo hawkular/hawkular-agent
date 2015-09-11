@@ -29,7 +29,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,8 +51,6 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.feedcomm.FeedCommProcessor;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
-import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.MetricTypeManager;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -79,10 +76,7 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactoryImpl;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
-import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
-import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
-import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
@@ -92,7 +86,6 @@ import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
-import org.hawkular.dmrclient.Address;
 import org.hawkular.inventory.api.model.Feed;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
@@ -103,8 +96,6 @@ import org.jboss.as.network.SocketBinding;
 import org.jboss.as.server.ServerEnvironment;
 import org.jboss.as.server.ServerEnvironmentService;
 import org.jboss.as.server.Services;
-import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
@@ -593,23 +584,8 @@ public class MonitorService implements Service<MonitorService> {
     private void addDMRResources(SchedulerConfiguration schedulerConfig, ManagedServer managedServer,
             DMREndpoint dmrEndpoint, Collection<Name> dmrResourceTypeSets) {
 
-        // Build our metadata manager
-        DMRMetadataManager metadataMgr = buildDMRMetadataManager(dmrResourceTypeSets, this.configuration);
-
-        // Create our empty resource manager - this will be filled in during discovery with our resources
-        ResourceManager<DMRResource> resourceManager = new ResourceManager<>();
-
-        // determine the client to use to connect to the managed server
-        ModelControllerClientFactory factory;
-        if (dmrEndpoint instanceof LocalDMREndpoint) {
-            factory = createLocalClientFactory();
-        } else {
-            factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
-        }
-
-        // Now we can build our inventory manager and discover our resources
-        DMRInventoryManager im;
-        im = new DMRInventoryManager(this.feedId, metadataMgr, resourceManager, managedServer, dmrEndpoint, factory);
+        DMRInventoryManager im = buildInventoryManager(managedServer, dmrEndpoint, dmrResourceTypeSets,
+                this.feedId, this.configuration);
         this.dmrServerInventories.put(managedServer, im);
         im.discoverResources();
 
@@ -617,12 +593,9 @@ public class MonitorService implements Service<MonitorService> {
         // - finish fleshing our the resource by adding their metrics and avail checks
         // - add the resource and its metadata to inventory if applicable
         // - schedule the metric collections and avail checks
-        BreadthFirstIterator<DMRResource, DefaultEdge> bIter = resourceManager.getBreadthFirstIterator();
+        BreadthFirstIterator<DMRResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
         while (bIter.hasNext()) {
             DMRResource resource = bIter.next();
-
-            // flesh out the resource by adding its metrics and avails
-            addDMRMetricsAndAvails(resource, im);
 
             // schedule collections
             Collection<DMRMetricInstance> metricsToBeCollected = resource.getMetrics();
@@ -635,6 +608,27 @@ public class MonitorService implements Service<MonitorService> {
                 schedulerConfig.addAvailToBeChecked(resource.getEndpoint(), availToBeCollected);
             }
         }
+    }
+
+    private DMRInventoryManager buildInventoryManager(ManagedServer managedServer, DMREndpoint dmrEndpoint,
+            Collection<Name> dmrResourceTypeSets, String feedId, MonitorServiceConfiguration monitorServiceConfig) {
+
+        DMRMetadataManager metadataMgr = buildDMRMetadataManager(dmrResourceTypeSets, monitorServiceConfig);
+
+        // Create our empty resource manager - this will be filled in during discovery with our resources
+        ResourceManager<DMRResource> resourceManager = new ResourceManager<>();
+
+        // determine the client to use to connect to the managed server
+        ModelControllerClientFactory factory;
+        if (dmrEndpoint instanceof LocalDMREndpoint) {
+            factory = createLocalClientFactory();
+        } else {
+            factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
+        }
+
+        DMRInventoryManager im;
+        im = new DMRInventoryManager(feedId, metadataMgr, resourceManager, managedServer, dmrEndpoint, factory);
+        return im;
     }
 
     /**
@@ -668,76 +662,6 @@ public class MonitorService implements Service<MonitorService> {
         return mm;
     }
 
-    private void addDMRMetricsAndAvails(DMRResource resource, DMRInventoryManager im) {
-
-        for (DMRMetricType metricType : resource.getResourceType().getMetricTypes()) {
-            Interval interval = new Interval(metricType.getInterval(), metricType.getTimeUnits());
-            Address relativeAddress = Address.parse(metricType.getPath());
-            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
-            if (fullAddress != null) {
-                DMRPropertyReference prop = new DMRPropertyReference(fullAddress, metricType.getAttribute(), interval);
-                ID id = InventoryIdUtil.generateMetricInstanceId(resource, metricType);
-                Name name = metricType.getName();
-                DMRMetricInstance metricInstance = new DMRMetricInstance(id, name, resource, metricType, prop);
-                resource.getMetrics().add(metricInstance);
-            }
-        }
-
-        for (DMRAvailType availType : resource.getResourceType().getAvailTypes()) {
-            Interval interval = new Interval(availType.getInterval(), availType.getTimeUnits());
-            Address relativeAddress = Address.parse(availType.getPath());
-            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
-            if (fullAddress != null) {
-                AvailDMRPropertyReference prop = new AvailDMRPropertyReference(fullAddress, availType.getAttribute(),
-                        interval, availType.getUpRegex());
-                ID id = InventoryIdUtil.generateAvailInstanceId(resource, availType);
-                Name name = availType.getName();
-                DMRAvailInstance availInstance = new DMRAvailInstance(id, name, resource, availType, prop);
-                resource.getAvails().add(availInstance);
-            }
-        }
-    }
-
-    private Address getFullAddressOfChild(DMRResource parentResource, Address childRelativePath) {
-        // Some metrics/avails are collected from child resources. But sometimes resources
-        // don't have those child resources (e.g. ear deployments don't have an undertow subsystem).
-        // This means those metrics/avails cannot be collected (i.e. they are optional).
-        // We don't want to fail with errors in this case; we just want to ignore those metrics/avails
-        // since they don't exist.
-        // If the child does exist (by examining the parent resource's model), then this method
-        // will return the full address to that child resource.
-
-        Address fullAddress = null;
-        if (childRelativePath.isRoot()) {
-            fullAddress = parentResource.getAddress(); // there really is no child; it is the resource itself
-        } else {
-            boolean childResourceExists = false;
-            String[] addressParts = childRelativePath.toAddressParts();
-            if (addressParts.length > 2) {
-                // we didn't query the parent's model for recursive data - so we only know direct children.
-                // if a metric/avail gets data from grandchildren or deeper, we don't know if it exists,
-                // so just assume it does.
-                childResourceExists = true;
-                MsgLogger.LOG.tracef("Cannot test long child path [%s] under resource [%s] "
-                        + "for existence so it will be assumed to exist", childRelativePath, parentResource);
-            } else {
-                ModelNode haystackNode = parentResource.getModelNode().get(addressParts[0]);
-                if (haystackNode.getType() != ModelType.UNDEFINED) {
-                    final List<ModelNode> haystackList = haystackNode.asList();
-                    for (ModelNode needleNode : haystackList) {
-                        if (needleNode.has(addressParts[1])) {
-                            childResourceExists = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (childResourceExists) {
-                fullAddress = parentResource.getAddress().clone().add(childRelativePath);
-            }
-        }
-        return fullAddress;
-    }
 
     private String determineTenantId() {
         if (configuration.storageAdapter.tenantId != null) {

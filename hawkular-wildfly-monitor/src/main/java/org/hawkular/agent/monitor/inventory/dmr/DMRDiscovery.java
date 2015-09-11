@@ -28,7 +28,11 @@ import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
+import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
@@ -50,17 +54,19 @@ public class DMRDiscovery {
     private final ModelControllerClientFactory clientFactory;
 
     /**
-     * Creates the discovery object for the given inventory manager. Only resources of known types
-     * will be discovered. To connect to and query the server endpoint, the given client factory will
-     * be used to create clients.
+     * Creates the discovery object for the given inventory manager.
+     * Only resources of known types will be discovered.
+     * To connect to and query the server endpoint, the client factory provided
+     * by the inventory manager will be used to create clients
+     * (see {@link DMRInventoryManager#getModelControllerClientFactory()}).
      *
      * @param im the inventory manager that holds information about the server to be queried and
      *           the known types to be discovered
      * @param clientFactory will create clients used to communicate with the endpoint
      */
-    public DMRDiscovery(DMRInventoryManager im, ModelControllerClientFactory clientFactory) {
+    public DMRDiscovery(DMRInventoryManager im) {
         this.inventoryManager = im;
-        this.clientFactory = clientFactory;
+        this.clientFactory = im.getModelControllerClientFactory();
     }
 
     /**
@@ -132,6 +138,9 @@ public class DMRDiscovery {
 
                 // get the configuration of the resource
                 discoverResourceConfiguration(resource, mcc);
+
+                // populate the metrics/avails based on the resource's type
+                addMetricAndAvailInstances(resource);
 
                 // recursively discover children of child types
                 Set<DMRResourceType> childTypes;
@@ -224,5 +233,76 @@ public class DMRDiscovery {
                 .getNameString());
         String nameStr = String.format(nameTemplate, args.toArray());
         return new Name(nameStr);
+    }
+
+    private void addMetricAndAvailInstances(DMRResource resource) {
+
+        for (DMRMetricType metricType : resource.getResourceType().getMetricTypes()) {
+            Interval interval = new Interval(metricType.getInterval(), metricType.getTimeUnits());
+            Address relativeAddress = Address.parse(metricType.getPath());
+            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
+            if (fullAddress != null) {
+                DMRPropertyReference prop = new DMRPropertyReference(fullAddress, metricType.getAttribute(), interval);
+                ID id = InventoryIdUtil.generateMetricInstanceId(resource, metricType);
+                Name name = metricType.getName();
+                DMRMetricInstance metricInstance = new DMRMetricInstance(id, name, resource, metricType, prop);
+                resource.getMetrics().add(metricInstance);
+            }
+        }
+
+        for (DMRAvailType availType : resource.getResourceType().getAvailTypes()) {
+            Interval interval = new Interval(availType.getInterval(), availType.getTimeUnits());
+            Address relativeAddress = Address.parse(availType.getPath());
+            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
+            if (fullAddress != null) {
+                AvailDMRPropertyReference prop = new AvailDMRPropertyReference(fullAddress, availType.getAttribute(),
+                        interval, availType.getUpRegex());
+                ID id = InventoryIdUtil.generateAvailInstanceId(resource, availType);
+                Name name = availType.getName();
+                DMRAvailInstance availInstance = new DMRAvailInstance(id, name, resource, availType, prop);
+                resource.getAvails().add(availInstance);
+            }
+        }
+    }
+
+    private Address getFullAddressOfChild(DMRResource parentResource, Address childRelativePath) {
+        // Some metrics/avails are collected from child resources. But sometimes resources
+        // don't have those child resources (e.g. ear deployments don't have an undertow subsystem).
+        // This means those metrics/avails cannot be collected (i.e. they are optional).
+        // We don't want to fail with errors in this case; we just want to ignore those metrics/avails
+        // since they don't exist.
+        // If the child does exist (by examining the parent resource's model), then this method
+        // will return the full address to that child resource.
+
+        Address fullAddress = null;
+        if (childRelativePath.isRoot()) {
+            fullAddress = parentResource.getAddress(); // there really is no child; it is the resource itself
+        } else {
+            boolean childResourceExists = false;
+            String[] addressParts = childRelativePath.toAddressParts();
+            if (addressParts.length > 2) {
+                // we didn't query the parent's model for recursive data - so we only know direct children.
+                // if a metric/avail gets data from grandchildren or deeper, we don't know if it exists,
+                // so just assume it does.
+                childResourceExists = true;
+                MsgLogger.LOG.tracef("Cannot test long child path [%s] under resource [%s] "
+                        + "for existence so it will be assumed to exist", childRelativePath, parentResource);
+            } else {
+                ModelNode haystackNode = parentResource.getModelNode().get(addressParts[0]);
+                if (haystackNode.getType() != ModelType.UNDEFINED) {
+                    final List<ModelNode> haystackList = haystackNode.asList();
+                    for (ModelNode needleNode : haystackList) {
+                        if (needleNode.has(addressParts[1])) {
+                            childResourceExists = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (childResourceExists) {
+                fullAddress = parentResource.getAddress().clone().add(childRelativePath);
+            }
+        }
+        return fullAddress;
     }
 }

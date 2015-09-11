@@ -52,7 +52,7 @@ public class DMRInventoryManager extends InventoryManager
     @Override
     public void discoverResources() {
         try {
-            DMRDiscovery discovery = new DMRDiscovery(this, dmrClientFactory);
+            DMRDiscovery discovery = new DMRDiscovery(this);
             discovery.discoverAllResources(getResourceManager());
         } catch (Exception e) {
             MsgLogger.LOG.errorDiscoveryFailed(e, getEndpoint());
