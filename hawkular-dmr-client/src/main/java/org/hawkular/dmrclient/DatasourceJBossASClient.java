@@ -17,6 +17,7 @@
 package org.hawkular.dmrclient;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
@@ -42,11 +43,11 @@ public class DatasourceJBossASClient extends JBossASClient {
     }
 
     /**
-     * Completely removes the named datasource. If the datasource does not exist,
-     * this returns silently (in other words, no exception is thrown).
+     * Completely removes the named datasource. If the datasource does not exist, this returns silently (in other words,
+     * no exception is thrown).
      *
-     * Note that no distinguishing between XA and non-XA datasource is needed - if any datasource
-     * (XA or non-XA) exists with the given name, it will be removed.
+     * Note that no distinguishing between XA and non-XA datasource is needed - if any datasource (XA or non-XA) exists
+     * with the given name, it will be removed.
      *
      * @param name the name of the datasource to remove
      * @throws Exception any error
@@ -165,53 +166,102 @@ public class DatasourceJBossASClient extends JBossASClient {
         execute(driverNode);
 
     }
-    /**
-     * Returns a ModelNode that can be used to create a JDBC driver configuration for use by datasources.
-     * Callers are free to tweek the JDBC driver request that is returned,
-     * if they so choose, before asking the client to execute the request.
-     *
-     * NOTE: the JDBC module must have already been installed in the JBossAS's modules/ location.
-     *
-     * @param name the name of the JDBC driver (this is not the name of the JDBC jar or the module name, it is
-     *             just a convenience name of the JDBC driver configuration).
-     * @param moduleName the name of the JBossAS module where the JDBC driver is installed
-     * @param driverXaClassName the JDBC driver's XA datasource classname (null if XA is not supported)
-     *
-     * @return the request to create the JDBC driver configuration.
-     */
-    public ModelNode createNewJdbcDriverRequest(String name, String moduleName, String driverXaClassName) {
-        String dmrTemplate;
-        String dmr;
 
-        if (driverXaClassName != null) {
-            dmrTemplate = "" //
-                + "{" //
-                + "\"driver-module-name\" => \"%s\" " //
-                + ", \"driver-name\" => \"%s\" " //
-                + ", \"driver-xa-datasource-class-name\" => \"%s\" " //
-                + "}";
-            dmr = String.format(dmrTemplate, moduleName, name,  driverXaClassName);
-        } else {
-            dmrTemplate = "" //
-                + "{" //
-                + "\"driver-module-name\" => \"%s\" " //
-                + ", \"driver-name\" => \"%s\" " //
-                + "}";
-            dmr = String.format(dmrTemplate, name, moduleName);
+    public void addXaDatasource(String datasourceName, String jndiName, String driverName, String xaDataSourceClass,
+            Map<String, String> xaDatasourceProperties, String userName, String password, String securityDomain)
+                    throws Exception {
+        Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, XA_DATA_SOURCE, datasourceName);
+        final ModelNode dsNode = new ModelNode();
+        dsNode.get("name").set(datasourceName);
+        dsNode.get("jndi-name").set(jndiName);
+        dsNode.get("driver-name").set(driverName);
+        dsNode.get("jndi-name").set(xaDataSourceClass);
+
+        if (userName != null) {
+            dsNode.get("user-name ").set(userName);
+        }
+        if (password != null) {
+            dsNode.get("password").set(password);
+        }
+        if (securityDomain != null) {
+            dsNode.get("security-domain").set(securityDomain);
         }
 
-        Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, JDBC_DRIVER, name);
-        final ModelNode request = ModelNode.fromString(dmr);
-        request.get(OPERATION).set(ADD);
-        request.get(ADDRESS).set(addr.getAddressNode());
+        dsNode.get(OPERATION).set(ADD);
+        dsNode.get(ADDRESS).set(addr.getAddressNode());
 
-        return request;
+        final ModelNode batch;
+        if (xaDatasourceProperties == null || xaDatasourceProperties.isEmpty()) {
+            batch = dsNode;
+        } else {
+            batch = new ModelNode();
+            batch.get(OPERATION).set(BATCH);
+            batch.get(ADDRESS).setEmptyList();
+            final ModelNode stepsNode = batch.get(BATCH_STEPS);
+            stepsNode.add(dsNode);
+            for (Entry<String, String> prop : xaDatasourceProperties.entrySet()) {
+                addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, XA_DATA_SOURCE, datasourceName,
+                        XA_DATASOURCE_PROPERTIES, prop.getKey());
+                final ModelNode propNode = new ModelNode();
+                propNode.get(OPERATION).set(ADD);
+                propNode.get(ADDRESS).set(addr.getAddressNode());
+                setPossibleExpression(propNode, VALUE, prop.getValue());
+                stepsNode.add(propNode);
+            }
+        }
+
+        execute(batch);
+
+    }
+
+    public void addDatasource(String datasourceName, String jndiName, String driverName, String driverClass,
+            String connectionUrl, Map<String, String> xaDatasourceProperties, String userName, String password)
+                    throws Exception {
+        Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, XA_DATA_SOURCE, datasourceName);
+        final ModelNode dsNode = new ModelNode();
+        dsNode.get("name").set(datasourceName);
+        dsNode.get("jndi-name").set(jndiName);
+        dsNode.get("driver-name").set(driverName);
+        dsNode.get("driver-class").set(driverClass);
+        dsNode.get("connection-url").set(connectionUrl);
+
+        if (userName != null) {
+            dsNode.get("user-name ").set(userName);
+        }
+        if (password != null) {
+            dsNode.get("password").set(password);
+        }
+
+        dsNode.get(OPERATION).set(ADD);
+        dsNode.get(ADDRESS).set(addr.getAddressNode());
+
+        final ModelNode batch;
+        if (xaDatasourceProperties == null || xaDatasourceProperties.isEmpty()) {
+            batch = dsNode;
+        } else {
+            batch = new ModelNode();
+            batch.get(OPERATION).set(BATCH);
+            batch.get(ADDRESS).setEmptyList();
+            final ModelNode stepsNode = batch.get(BATCH_STEPS);
+            stepsNode.add(dsNode);
+            for (Entry<String, String> prop : xaDatasourceProperties.entrySet()) {
+                addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, DATA_SOURCE, datasourceName,
+                        CONNECTION_PROPERTIES, prop.getKey());
+                final ModelNode propNode = new ModelNode();
+                propNode.get(OPERATION).set(ADD);
+                propNode.get(ADDRESS).set(addr.getAddressNode());
+                setPossibleExpression(propNode, VALUE, prop.getValue());
+                stepsNode.add(propNode);
+            }
+        }
+
+        execute(batch);
+
     }
 
     /**
-     * Returns a ModelNode that can be used to create a datasource.
-     * Callers are free to tweak the datasource request that is returned,
-     * if they so choose, before asking the client to execute the request.
+     * Returns a ModelNode that can be used to create a datasource. Callers are free to tweak the datasource request
+     * that is returned, if they so choose, before asking the client to execute the request.
      *
      * @param name the name of the datasource
      * @param blockingTimeoutWaitMillis see datasource documentation for meaning of this setting
@@ -233,37 +283,37 @@ public class DatasourceJBossASClient extends JBossASClient {
      * @return the request that can be used to create the datasource
      */
     public ModelNode createNewDatasourceRequest(String name, int blockingTimeoutWaitMillis,
-        String connectionUrlExpression, String driverName, String exceptionSorterClassName, int idleTimeoutMinutes,
-        boolean jta, int minPoolSize, int maxPoolSize, int preparedStatementCacheSize, String securityDomain,
-        String staleConnectionCheckerClassName, String transactionIsolation, String validConnectionCheckerClassName,
-        boolean validateOnMatch, Map<String, String> connectionProperties) {
+            String connectionUrlExpression, String driverName, String exceptionSorterClassName, int idleTimeoutMinutes,
+            boolean jta, int minPoolSize, int maxPoolSize, int preparedStatementCacheSize, String securityDomain,
+            String staleConnectionCheckerClassName, String transactionIsolation, String validConnectionCheckerClassName,
+            boolean validateOnMatch, Map<String, String> connectionProperties) {
 
         String jndiName = "java:jboss/datasources/" + name;
 
         String dmrTemplate = "" //
-            + "{" //
-            + "\"blocking-timeout-wait-millis\" => %dL " //
-            + ", \"connection-url\" => expression \"%s\" " //
-            + ", \"driver-name\" => \"%s\" " //
-            + ", \"exception-sorter-class-name\" => \"%s\" " //
-            + ", \"idle-timeout-minutes\" => %dL " //
-            + ", \"jndi-name\" => \"%s\" " //
-            + ", \"jta\" => %s " //
-            + ", \"min-pool-size\" => %d " //
-            + ", \"max-pool-size\" => %d " //
-            + ", \"prepared-statements-cache-size\" => %dL " //
-            + ", \"security-domain\" => \"%s\" " //
-            + ", \"stale-connection-checker-class-name\" => \"%s\" " //
-            + ", \"transaction-isolation\" => \"%s\" " //
-            + ", \"use-java-context\" => true " //
-            + ", \"valid-connection-checker-class-name\" => \"%s\" " //
-            + ", \"validate-on-match\" => %s " //
-            + "}";
+                + "{" //
+                + "\"blocking-timeout-wait-millis\" => %dL " //
+                + ", \"connection-url\" => expression \"%s\" " //
+                + ", \"driver-name\" => \"%s\" " //
+                + ", \"exception-sorter-class-name\" => \"%s\" " //
+                + ", \"idle-timeout-minutes\" => %dL " //
+                + ", \"jndi-name\" => \"%s\" " //
+                + ", \"jta\" => %s " //
+                + ", \"min-pool-size\" => %d " //
+                + ", \"max-pool-size\" => %d " //
+                + ", \"prepared-statements-cache-size\" => %dL " //
+                + ", \"security-domain\" => \"%s\" " //
+                + ", \"stale-connection-checker-class-name\" => \"%s\" " //
+                + ", \"transaction-isolation\" => \"%s\" " //
+                + ", \"use-java-context\" => true " //
+                + ", \"valid-connection-checker-class-name\" => \"%s\" " //
+                + ", \"validate-on-match\" => %s " //
+                + "}";
 
         String dmr = String.format(dmrTemplate, blockingTimeoutWaitMillis, connectionUrlExpression, driverName,
-            exceptionSorterClassName, idleTimeoutMinutes, jndiName, jta, minPoolSize, maxPoolSize,
-            preparedStatementCacheSize, securityDomain, staleConnectionCheckerClassName, transactionIsolation,
-            validConnectionCheckerClassName, validateOnMatch);
+                exceptionSorterClassName, idleTimeoutMinutes, jndiName, jta, minPoolSize, maxPoolSize,
+                preparedStatementCacheSize, securityDomain, staleConnectionCheckerClassName, transactionIsolation,
+                validConnectionCheckerClassName, validateOnMatch);
 
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, DATA_SOURCE, name);
         final ModelNode request1 = ModelNode.fromString(dmr);
@@ -281,7 +331,7 @@ public class DatasourceJBossASClient extends JBossASClient {
         int n = 1;
         for (Map.Entry<String, String> entry : connectionProperties.entrySet()) {
             addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, DATA_SOURCE, name, CONNECTION_PROPERTIES,
-                entry.getKey());
+                    entry.getKey());
             final ModelNode requestN = new ModelNode();
             requestN.get(OPERATION).set(ADD);
             requestN.get(ADDRESS).set(addr.getAddressNode());
@@ -293,18 +343,18 @@ public class DatasourceJBossASClient extends JBossASClient {
     }
 
     public ModelNode createNewDatasourceRequest(String name, String connectionUrlExpression, String driverName,
-        boolean jta, Map<String, String> connectionProperties) {
+            boolean jta, Map<String, String> connectionProperties) {
 
         String jndiName = "java:jboss/datasources/" + name;
 
         String dmrTemplate = "" //
-            + "{" //
-            + "\"connection-url\" => expression \"%s\" " //
-            + ", \"driver-name\" => \"%s\" " //
-            + ", \"jndi-name\" => \"%s\" " //
-            + ", \"jta\" => %s " //
-            + ", \"use-java-context\" => true " //
-            + "}";
+                + "{" //
+                + "\"connection-url\" => expression \"%s\" " //
+                + ", \"driver-name\" => \"%s\" " //
+                + ", \"jndi-name\" => \"%s\" " //
+                + ", \"jta\" => %s " //
+                + ", \"use-java-context\" => true " //
+                + "}";
 
         String dmr = String.format(dmrTemplate, connectionUrlExpression, driverName, jndiName, jta);
 
@@ -324,7 +374,7 @@ public class DatasourceJBossASClient extends JBossASClient {
         int n = 1;
         for (Map.Entry<String, String> entry : connectionProperties.entrySet()) {
             addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, DATA_SOURCE, name, CONNECTION_PROPERTIES,
-                entry.getKey());
+                    entry.getKey());
             final ModelNode requestN = new ModelNode();
             requestN.get(OPERATION).set(ADD);
             requestN.get(ADDRESS).set(addr.getAddressNode());
@@ -340,9 +390,8 @@ public class DatasourceJBossASClient extends JBossASClient {
     }
 
     /**
-     * Returns a ModelNode that can be used to create an XA datasource.
-     * Callers are free to tweek the datasource request that is returned,
-     * if they so choose, before asking the client to execute the request.
+     * Returns a ModelNode that can be used to create an XA datasource. Callers are free to tweek the datasource request
+     * that is returned, if they so choose, before asking the client to execute the request.
      *
      * @param name name of the XA datasource
      * @param blockingTimeoutWaitMillis see datasource documentation for meaning of this setting
@@ -374,26 +423,25 @@ public class DatasourceJBossASClient extends JBossASClient {
         String jndiName = "java:jboss/datasources/" + name;
 
         String dmrTemplate = "" //
-            + "{" //
-            + "\"xa-datasource-class\" => \"%s\""
-            + ", \"blocking-timeout-wait-millis\" => %dL " //
-            + ", \"driver-name\" => \"%s\" " //
-            + ", \"exception-sorter-class-name\" => \"%s\" " //
-            + ", \"idle-timeout-minutes\" => %dL " //
-            + ", \"jndi-name\" => \"%s\" " //
-            + ", \"jta\" => true " //
-            + ", \"min-pool-size\" => %d " //
-            + ", \"max-pool-size\" => %d " //
-            + ", \"no-recovery\" => %b " //
-            + ", \"no-tx-separate-pool\" => %b " //
-            + ", \"prepared-statements-cache-size\" => %dL " //
-            + ", \"recovery-plugin-class-name\" => \"%s\" " //
-            + ", \"security-domain\" => \"%s\" " //
-            + ", \"stale-connection-checker-class-name\" => \"%s\" " //
-            + ", \"transaction-isolation\" => \"%s\" " //
-            + ", \"use-java-context\" => true " //
-            + ", \"valid-connection-checker-class-name\" => \"%s\" " //
-            + "}";
+                + "{" //
+                + "\"xa-datasource-class\" => \"%s\"" + ", \"blocking-timeout-wait-millis\" => %dL " //
+                + ", \"driver-name\" => \"%s\" " //
+                + ", \"exception-sorter-class-name\" => \"%s\" " //
+                + ", \"idle-timeout-minutes\" => %dL " //
+                + ", \"jndi-name\" => \"%s\" " //
+                + ", \"jta\" => true " //
+                + ", \"min-pool-size\" => %d " //
+                + ", \"max-pool-size\" => %d " //
+                + ", \"no-recovery\" => %b " //
+                + ", \"no-tx-separate-pool\" => %b " //
+                + ", \"prepared-statements-cache-size\" => %dL " //
+                + ", \"recovery-plugin-class-name\" => \"%s\" " //
+                + ", \"security-domain\" => \"%s\" " //
+                + ", \"stale-connection-checker-class-name\" => \"%s\" " //
+                + ", \"transaction-isolation\" => \"%s\" " //
+                + ", \"use-java-context\" => true " //
+                + ", \"valid-connection-checker-class-name\" => \"%s\" " //
+                + "}";
 
         String dmr = String.format(dmrTemplate, xaDataSourceClass, blockingTimeoutWaitMillis, driverName,
                 exceptionSorterClassName, idleTimeoutMinutes, jndiName, minPoolSize, maxPoolSize, noRecovery,
@@ -416,7 +464,7 @@ public class DatasourceJBossASClient extends JBossASClient {
         int n = 1;
         for (Map.Entry<String, String> entry : xaDatasourceProperties.entrySet()) {
             addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, XA_DATA_SOURCE, name, XA_DATASOURCE_PROPERTIES,
-                entry.getKey());
+                    entry.getKey());
             final ModelNode requestN = new ModelNode();
             requestN.get(OPERATION).set(ADD);
             requestN.get(ADDRESS).set(addr.getAddressNode());

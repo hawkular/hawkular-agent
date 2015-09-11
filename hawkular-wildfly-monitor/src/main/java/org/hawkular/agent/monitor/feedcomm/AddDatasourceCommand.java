@@ -16,11 +16,6 @@
  */
 package org.hawkular.agent.monitor.feedcomm;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
@@ -33,28 +28,23 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.modules.AddModuleRequest;
-import org.hawkular.agent.monitor.modules.AddModuleRequest.ModuleResource;
-import org.hawkular.agent.monitor.modules.Modules;
 import org.hawkular.bus.common.BinaryData;
-import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
-import org.hawkular.cmdgw.api.AddJdbcDriverResponse;
+import org.hawkular.cmdgw.api.AddDatasourceRequest;
+import org.hawkular.cmdgw.api.AddDatasourceResponse;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 
 /**
- * Adds an JdbcDriver on a resource.
+ * Adds an Datasource on a resource.
  */
-public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJdbcDriverResponse> {
-    public static final Class<AddJdbcDriverRequest> REQUEST_CLASS = AddJdbcDriverRequest.class;
-    public static final Set<String> DEFAULT_DRIVER_MODULE_DEPENDENCIES = Collections
-            .unmodifiableSet(new LinkedHashSet(Arrays.asList("javax.api", "javax.transaction.api")));
+public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDatasourceResponse> {
+    public static final Class<AddDatasourceRequest> REQUEST_CLASS = AddDatasourceRequest.class;
 
     @Override
-    public AddJdbcDriverResponse execute(AddJdbcDriverRequest request, BinaryData jdbcDriverContent,
+    public AddDatasourceResponse execute(AddDatasourceRequest request, BinaryData jdbcDriverContent,
             CommandContext context) throws Exception {
 
-        MsgLogger.LOG.infof("Received request to add the JDBC Driver [%s] on resource [%s]", request.getModuleName(),
+        MsgLogger.LOG.infof("Received request to add the Datasource [%s] on resource [%s]", request.getDatasourceName(),
                 request.getResourcePath());
 
         FeedCommProcessor processor = context.getFeedCommProcessor();
@@ -68,48 +58,52 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
         ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.getManagedServerName()));
 
         if (managedServer == null) {
-            throw new IllegalArgumentException(String.format("Cannot add JDBC Driver: unknown managed server [%s]",
+            throw new IllegalArgumentException(String.format("Cannot add Datasource: unknown managed server [%s]",
                     idParts.getManagedServerName()));
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return addLocal(resourceId, request, jdbcDriverContent, processor, managedServer);
+            return addDmr(resourceId, request, jdbcDriverContent, processor, managedServer);
         } else {
-            throw new IllegalStateException("Cannot add JDBC Driver: report this bug: " + managedServer.getClass());
+            throw new IllegalStateException("Cannot add Datasource: report this bug: " + managedServer.getClass());
         }
     }
 
-    private AddJdbcDriverResponse addLocal(String resourceId, AddJdbcDriverRequest request,
+    private AddDatasourceResponse addDmr(String resourceId, AddDatasourceRequest request,
             BinaryData jdbcDriverContent, FeedCommProcessor processor, ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
         if (inventoryManager == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot add JDBC Driver: missing inventory manager [%s]", managedServer));
+                    String.format("Cannot add Datasource: missing inventory manager [%s]", managedServer));
         }
 
         ResourceManager<DMRResource> resourceManager = inventoryManager.getResourceManager();
         DMRResource resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot add JDBC Driver: unknown resource [%s]", request.getResourcePath()));
+                    String.format("Cannot add Datasource: unknown resource [%s]", request.getResourcePath()));
         }
 
-        AddJdbcDriverResponse response = new AddJdbcDriverResponse();
+        AddDatasourceResponse response = new AddDatasourceResponse();
         response.setResourcePath(request.getResourcePath());
 
         try (DatasourceJBossASClient dsc = new DatasourceJBossASClient(
                 inventoryManager.getModelControllerClientFactory().createClient())) {
 
-            ModuleResource jarResource = new AddModuleRequest.ModuleResource(jdbcDriverContent,
-                    request.getDriverJarName());
+            if (request.isXaDatasource()) {
+                dsc.addXaDatasource(request.getDatasourceName(), request.getJndiName(), request.getDriverName(),
+                        request.getXaDataSourceClass(),
+                        request.getDatasourceProperties(), request.getUserName(), request.getPassword(),
+                        request.getSecurityDomain());
+            } else {
+                dsc.addDatasource(request.getDatasourceName(), request.getJndiName(), request.getDriverName(),
+                        request.getDriverClass(), request.getConnectionUrl(),
+                        request.getDatasourceProperties(), request.getUserName(), request.getPassword());
+            }
 
-            AddModuleRequest addModuleRequest = new AddModuleRequest(request.getModuleName(), (String) null,
-                    (String) null, Collections.singleton(jarResource), DEFAULT_DRIVER_MODULE_DEPENDENCIES, null);
-            new Modules(Modules.findModulesDir()).add(addModuleRequest);
-            dsc.addJdbcDriver(request.getDriverName(), request.getModuleName());
             response.setStatus("OK");
-            response.setMessage(String.format("Added JDBC Driver: %s", request.getDriverName()));
+            response.setMessage(String.format("Added Datasource: %s", request.getDatasourceName()));
         } catch (Exception e) {
             MsgLogger.LOG.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
             response.setStatus("ERROR");
