@@ -23,6 +23,7 @@ import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
+import org.jgrapht.event.VertexSetListener;
 
 public class DMRInventoryManager extends InventoryManager
         <DMRResourceType,
@@ -50,10 +51,10 @@ public class DMRInventoryManager extends InventoryManager
     }
 
     @Override
-    public void discoverResources() {
+    public void discoverResources(VertexSetListener<DMRResource> listener) {
         try {
             DMRDiscovery discovery = new DMRDiscovery(this);
-            discovery.discoverAllResources(getResourceManager());
+            discovery.discoverAllResources(listener);
         } catch (Exception e) {
             MsgLogger.LOG.errorDiscoveryFailed(e, getEndpoint());
         }

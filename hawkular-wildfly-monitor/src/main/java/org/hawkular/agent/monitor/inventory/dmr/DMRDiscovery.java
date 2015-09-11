@@ -46,6 +46,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 import org.jboss.logging.Logger;
+import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.DepthFirstIterator;
 
@@ -75,32 +76,44 @@ public class DMRDiscovery {
     }
 
     /**
-     * Performs the discovery. A graph is returned that contains all the discovered resources.
-     * The graph is nothing more than a tree with parent resources at the top of the tree and
+     * Performs the discovery and stores the discovered inventory in this object's inventory manager.
+     * This discovers a tree with parent resources at the top of the tree and
      * children at the bottom (that is to say, a resource will have an outgoing edge to its parent
      * and incoming edges from its children).
      *
-     * @param resourceManager tree graph where all discovered resources will be stored
+     * @param listener if not null, will be a listener that gets notified when resources are discovered
      *
      * @throws Exception if discovery failed
      */
-    public void discoverAllResources(ResourceManager<DMRResource> resourceManager) throws Exception {
+    public void discoverAllResources(final VertexSetListener<DMRResource> listener) throws Exception {
+        ResourceManager<DMRResource> resourceManager = this.inventoryManager.getResourceManager();
+
+        if (listener != null) {
+            resourceManager.getResourcesGraph().addVertexSetListener(listener);
+        }
+
         try (ModelControllerClient mcc = clientFactory.createClient()) {
             Set<DMRResourceType> rootTypes;
             rootTypes = this.inventoryManager.getMetadataManager().getResourceTypeManager().getRootResourceTypes();
+
+            long start = System.currentTimeMillis();
             for (DMRResourceType rootType : rootTypes) {
-                discoverChildrenOfResourceType(null, rootType, mcc, resourceManager);
+                discoverChildrenOfResourceType(null, rootType, mcc);
             }
-            logTreeGraph("Discovered resources", resourceManager);
-            return;
+            long duration = System.currentTimeMillis() - start;
+
+            logTreeGraph("Discovered resources", resourceManager, duration);
         } catch (Exception e) {
             throw new Exception("Failed to execute discovery for endpoint [" + this.inventoryManager.getEndpoint()
                     + "]", e);
+        } finally {
+            if (listener != null) {
+                resourceManager.getResourcesGraph().removeVertexSetListener(listener);
+            }
         }
     }
 
-    private void discoverChildrenOfResourceType(DMRResource parent, DMRResourceType type, ModelControllerClient mcc,
-            ResourceManager<DMRResource> resourceManager) {
+    private void discoverChildrenOfResourceType(DMRResource parent, DMRResourceType type, ModelControllerClient mcc) {
         try {
             Map<Address, ModelNode> resources;
 
@@ -128,6 +141,8 @@ public class DMRDiscovery {
                         + " [[" + results.toString() + "]]");
             }
 
+            ResourceManager<DMRResource> resourceManager = this.inventoryManager.getResourceManager();
+
             for (Map.Entry<Address, ModelNode> entry : resources.entrySet()) {
                 Address address = entry.getKey(); // this is the unique DMR address for this resource
                 Name resourceName = generateResourceName(type, address);
@@ -139,8 +154,6 @@ public class DMRDiscovery {
                         parent, address, entry.getValue());
                 LOG.debugf("Discovered [%s]", resource);
 
-                resourceManager.addResource(resource);
-
                 // get the configuration of the resource
                 discoverResourceConfiguration(resource, mcc);
                 postProcessResourceConfiguration(resource);
@@ -148,11 +161,14 @@ public class DMRDiscovery {
                 // populate the metrics/avails based on the resource's type
                 addMetricAndAvailInstances(resource);
 
+                // add it to our tree graph
+                resourceManager.addResource(resource);
+
                 // recursively discover children of child types
                 Set<DMRResourceType> childTypes;
                 childTypes = this.inventoryManager.getMetadataManager().getResourceTypeManager().getChildren(type);
                 for (DMRResourceType childType : childTypes) {
-                    discoverChildrenOfResourceType(resource, childType, mcc, resourceManager);
+                    discoverChildrenOfResourceType(resource, childType, mcc);
                 }
             }
         } catch (Exception e) {
@@ -234,7 +250,7 @@ public class DMRDiscovery {
         return;
     }
 
-    private void logTreeGraph(String logMsg, ResourceManager<DMRResource> resourceManager) {
+    private void logTreeGraph(String logMsg, ResourceManager<DMRResource> resourceManager, long duration) {
         if (!LOG.isDebugEnabled()) {
             return;
         }
@@ -255,7 +271,7 @@ public class DMRDiscovery {
             graphString.append(resource).append("\n");
         }
 
-        LOG.debugf("%s\n%s", logMsg, graphString);
+        LOG.debugf("%s\n%s\nDiscovery duration: [%d]ms", logMsg, graphString, duration);
     }
 
     private Name generateResourceName(DMRResourceType type, Address address) {

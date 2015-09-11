@@ -97,6 +97,8 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jgrapht.event.GraphVertexChangeEvent;
+import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.BreadthFirstIterator;
 
@@ -147,6 +149,9 @@ public class MonitorService implements Service<MonitorService> {
 
     // our internal inventories for each monitored server
     private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories = new HashMap<>();
+
+    // this is a thread pool that requests newly discovered resources to be stored in inventory
+    private ExecutorService discoveredResourcesStorageExecutor;
 
     @Override
     public MonitorService getValue() {
@@ -284,7 +289,8 @@ public class MonitorService implements Service<MonitorService> {
         // 1. determine our tenant ID dynamically
         // 2. register our feed ID
         // 3. connect to the server's feed comm channel
-        if (configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+        // 4. prepare the thread pool that will store discovered resources into inventory
+        if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
             try {
                 determineTenantId();
                 registerFeed();
@@ -293,15 +299,17 @@ public class MonitorService implements Service<MonitorService> {
                 return;
             }
 
-            /* try to connect to the server over the command-gateway channel
-             * - if it fails, just log an error but keep going */
+            // try to connect to the server via command-gateway channel; if it fails, just log an error but keep going
             try {
                 connectToFeedCommChannel();
             } catch (Exception e) {
                 MsgLogger.LOG.errorCannotEstablishFeedComm(e);
             }
+
+            this.discoveredResourcesStorageExecutor = Executors.newFixedThreadPool(1,
+                    ThreadFactoryGenerator.generateFactory(true, "Hawkular-Monitor-Discovered-Resources-Storage"));
         } else {
-            if (configuration.storageAdapter.tenantId == null) {
+            if (this.configuration.storageAdapter.tenantId == null) {
                 MsgLogger.LOG.errorMustHaveTenantIdConfigured();
                 return;
             }
@@ -325,9 +333,6 @@ public class MonitorService implements Service<MonitorService> {
             MsgLogger.LOG.errorCannotInitializeScheduler(e);
             return;
         }
-
-        // put our discovered resources into inventory
-        initializeInventoryStorage();
 
         started = true;
     }
@@ -354,14 +359,20 @@ public class MonitorService implements Service<MonitorService> {
             feedComm = null;
         }
 
+        // stop storing things to inventory
+        if (discoveredResourcesStorageExecutor != null) {
+            discoveredResourcesStorageExecutor.shutdownNow();
+            discoveredResourcesStorageExecutor = null;
+        }
+
         // remove our inventories
-        this.dmrServerInventories.clear();
+        dmrServerInventories.clear();
 
         // stop diagnostic reporting and spit out a final diagnostics report
         if (diagnosticsReporter != null) {
-            this.diagnosticsReporter.stop();
-            if (this.configuration.diagnostics.enabled) {
-                this.diagnosticsReporter.report();
+            diagnosticsReporter.stop();
+            if (configuration.diagnostics.enabled) {
+                diagnosticsReporter.report();
             }
         }
 
@@ -506,62 +517,10 @@ public class MonitorService implements Service<MonitorService> {
      * @throws Exception
      */
     private void startScheduler() throws Exception {
-        SchedulerConfiguration schedulerConfig = prepareSchedulerConfig();
-        this.schedulerService = new SchedulerService(
-                schedulerConfig,
-                this.selfId,
-                this.diagnostics,
-                this.storageAdapter,
-                createLocalClientFactory(),
-                this.httpClientBuilder);
-        this.schedulerService.start();
-    }
-
-    /**
-     * This will store our inventory into permanent storage. This will be a no-op if not running
-     * in "hawkular" storage mode.
-     * Do NOT call this until you know all resources have been discovered
-     * and the inventories have been built.
-     */
-    private void initializeInventoryStorage() {
-        // if we are participating in a full hawkular environment, add resource and its metadata to inventory now
-        if (this.configuration.storageAdapter.type == MonitorServiceConfiguration.StorageReportTo.HAWKULAR) {
-            Runnable populateInventory = new Runnable() {
-                @Override
-                public void run() {
-                    ResourceManager<DMRResource> resourceManager;
-                    BreadthFirstIterator<DMRResource, DefaultEdge> bIter;
-
-                    try {
-                        long start = System.nanoTime();
-                        for (DMRInventoryManager im : MonitorService.this.dmrServerInventories.values()) {
-                            resourceManager = im.getResourceManager();
-                            bIter = resourceManager.getBreadthFirstIterator();
-                            while (bIter.hasNext()) {
-                                DMRResource resource = bIter.next();
-                                inventoryStorageProxy.storeResourceType(resource.getResourceType());
-                                inventoryStorageProxy.storeResource(resource);
-                            }
-                        }
-                        long elapsed = System.nanoTime() - start;
-                        MsgLogger.LOG.infof("Inventory successfully initialized. It took "
-                                + ((double) elapsed / 1000000000.0)
-                                + " seconds.");
-                    } catch (Throwable t) {
-                        // TODO for now stop what we were doing and whatever we have in inventory is "good enough"
-                        // for prototyping, this is good enough, but we'll need better handling later
-                        MsgLogger.LOG.errorf(t,
-                                "Failed to completely add inventory - keep going with partial inventory");
-                    }
-                }
-            };
-
-            // run it in background so we don't block the subsystem startup
-            new Thread(populateInventory, "Hawkular Monitor Agent Populate Inventory").start();
+        if (this.schedulerService != null) {
+            return; // it has already been started
         }
-    }
 
-    private SchedulerConfiguration prepareSchedulerConfig() {
         SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
         schedulerConfig.setDiagnosticsConfig(this.configuration.diagnostics);
         schedulerConfig.setStorageAdapterConfig(this.configuration.storageAdapter);
@@ -577,7 +536,14 @@ public class MonitorService implements Service<MonitorService> {
             scheduleDMRMetricAvailCollections(schedulerConfig, im);
         }
 
-        return schedulerConfig;
+        this.schedulerService = new SchedulerService(
+                schedulerConfig,
+                this.selfId,
+                this.diagnostics,
+                this.storageAdapter,
+                createLocalClientFactory(),
+                this.httpClientBuilder);
+        this.schedulerService.start();
     }
 
     /**
@@ -610,12 +576,45 @@ public class MonitorService implements Service<MonitorService> {
      * resources.
      */
     private void discoverAllResourcesForAllManagedServers() {
+        // remove any old inventory data that might still be hanging around
+        this.dmrServerInventories.clear();
+
+        // go through each configured managed server and discovery all resources in them
         for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
             if (!managedServer.isEnabled()) {
                 MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
             } else {
-                Collection<Name> resourceTypeSets = managedServer.getResourceTypeSets();
 
+                VertexSetListener<DMRResource> listener = null;
+
+                // if we are participating in a full hawkular environment,
+                // new resources and their metadata will be added to inventory
+                if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+                    listener = new VertexSetListener<DMRResource>() {
+                        @Override
+                        public void vertexRemoved(GraphVertexChangeEvent<DMRResource> e) {
+                        }
+
+                        @Override
+                        public void vertexAdded(GraphVertexChangeEvent<DMRResource> e) {
+                            final DMRResource resource = e.getVertex();
+                            final DMRResourceType resourceType = resource.getResourceType();
+                            discoveredResourcesStorageExecutor.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
+                                        MonitorService.this.inventoryStorageProxy.storeResource(resource);
+                                    } catch (Throwable t) {
+                                        MsgLogger.LOG.errorf(t, "Failed to store resource [%s]", resource);
+                                    }
+                                }
+                            });
+                        }
+                    };
+                }
+
+                Collection<Name> resourceTypeSets = managedServer.getResourceTypeSets();
                 if (managedServer instanceof RemoteDMRManagedServer) {
                     RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
                     DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(), dmrServer.getHost(),
@@ -623,7 +622,7 @@ public class MonitorService implements Service<MonitorService> {
                     DMRInventoryManager im = buildDMRInventoryManager(managedServer, dmrEndpoint, resourceTypeSets,
                             this.feedId, this.configuration);
                     this.dmrServerInventories.put(managedServer, im);
-                    im.discoverResources();
+                    im.discoverResources(listener);
                 } else if (managedServer instanceof LocalDMRManagedServer) {
                     LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
                     LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.getName().toString(),
@@ -631,13 +630,15 @@ public class MonitorService implements Service<MonitorService> {
                     DMRInventoryManager im = buildDMRInventoryManager(managedServer, dmrEndpoint, resourceTypeSets,
                             this.feedId, this.configuration);
                     this.dmrServerInventories.put(managedServer, im);
-                    im.discoverResources();
+                    im.discoverResources(listener);
                 } else {
                     throw new IllegalArgumentException("An invalid managed server type was found. ["
                             + managedServer + "] Please report this bug.");
                 }
             }
         }
+
+        return;
     }
 
     private DMRInventoryManager buildDMRInventoryManager(ManagedServer managedServer, DMREndpoint dmrEndpoint,

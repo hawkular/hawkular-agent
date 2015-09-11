@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.inventory;
 
 import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
+import org.jgrapht.event.VertexSetListener;
 
 /**
  * Just a container that holds the different managers needed to keep track of inventory.
@@ -93,6 +94,8 @@ ME extends MonitoredEndpoint> {
      * Only those resources of known types (see {@link MetadataManager#getResourceTypeManager()}) will be discovered.
      *
      * Once this returns successfully, {@link #getResourceManager()} should be populated with resources.
+     *
+     * @param listener if not null, will be a listener that gets notified when resources are discovered
      */
-    public abstract void discoverResources();
+    public abstract void discoverResources(VertexSetListener<R> listener);
 }
