@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.modules;
+package org.hawkular.dmrclient.modules;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,8 +32,7 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
-import org.hawkular.agent.monitor.feedcomm.InvalidCommandRequestException;
-import org.hawkular.agent.monitor.modules.AddModuleRequest.ModuleResource;
+import org.hawkular.dmrclient.modules.AddModuleRequest.ModuleResource;
 
 /**
  * Operations related to JBoss modules. Inspired by {@code org.jboss.as.cli.handlers.module.ASModuleHandler} from
@@ -305,16 +304,16 @@ public class Modules {
                 moduleName.replace('.', File.separatorChar) + File.separatorChar + (slot == null ? "main" : slot));
     }
 
-    void validate(AddModuleRequest addModuleRequest) throws InvalidCommandRequestException {
+    void validate(AddModuleRequest addModuleRequest) throws IllegalArgumentException {
         if (!modulesDir.exists()) {
-            throw new InvalidCommandRequestException("The $JBOSS_HOME/modules director [" + modulesDir.getAbsolutePath()
+            throw new IllegalArgumentException("The $JBOSS_HOME/modules director [" + modulesDir.getAbsolutePath()
                     + "] must exist to be able to create a new module.");
         }
         final String moduleName = addModuleRequest.getModuleName();
         Objects.requireNonNull(moduleName, AddModuleRequest.class.getName() + ".moduleName cannot be null");
         final File moduleDir = getModulePath(moduleName, addModuleRequest.getSlot());
         if (moduleDir.exists()) {
-            throw new InvalidCommandRequestException(
+            throw new IllegalArgumentException(
                     "[" + moduleName + "] already exists at [" + moduleDir.getAbsolutePath() + "]");
         }
 
