@@ -102,6 +102,7 @@ import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.BreadthFirstIterator;
 
+import com.codahale.metrics.InstrumentedExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.squareup.okhttp.OkHttpClient;
@@ -247,6 +248,10 @@ public class MonitorService implements Service<MonitorService> {
         LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
         this.selfId = localDMREndpoint.getServerIdentifiers();
 
+        // build the diagnostics object that will be used to track our own performance
+        final MetricRegistry metricRegistry = new MetricRegistry();
+        this.diagnostics = new DiagnosticsImpl(configuration.diagnostics, metricRegistry, selfId);
+
         // determine where our Hawkular server is
         // If the user gave us a URL explicitly, that overrides everything and we use it.
         // If no URL is configured, but we are given a server outbound socket binding name,
@@ -306,8 +311,13 @@ public class MonitorService implements Service<MonitorService> {
                 MsgLogger.LOG.errorCannotEstablishFeedComm(e);
             }
 
-            this.discoveredResourcesStorageExecutor = Executors.newFixedThreadPool(1,
-                    ThreadFactoryGenerator.generateFactory(true, "Hawkular-Monitor-Discovered-Resources-Storage"));
+            // build the thread pool that will run jobs that store inventory
+            final ThreadFactory factoryGenerator = ThreadFactoryGenerator.generateFactory(true,
+                    "Hawkular-Monitor-Discovered-Resources-Storage");
+            final ExecutorService threadPool = Executors.newFixedThreadPool(1, factoryGenerator);
+            final String metricNamePrefix = DiagnosticsImpl.name(selfId, "inventory");
+            this.discoveredResourcesStorageExecutor = new InstrumentedExecutorService(threadPool, metricRegistry,
+                    metricNamePrefix);
         } else {
             if (this.configuration.storageAdapter.tenantId == null) {
                 MsgLogger.LOG.errorMustHaveTenantIdConfigured();
@@ -452,10 +462,6 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     private void startStorageAdapter() throws Exception {
-        // build the diagnostics object that will be used to track our own performance
-        final MetricRegistry metricRegistry = new MetricRegistry();
-        this.diagnostics = new DiagnosticsImpl(configuration.diagnostics, metricRegistry, selfId);
-
         // determine what our backend storage should be and create its associated adapter
         switch (configuration.storageAdapter.type) {
             case HAWKULAR: {
@@ -482,7 +488,7 @@ public class MonitorService implements Service<MonitorService> {
         // determine where we are to store our own diagnostic reports
         switch (configuration.diagnostics.reportTo) {
             case LOG: {
-                this.diagnosticsReporter = JBossLoggingReporter.forRegistry(metricRegistry)
+                this.diagnosticsReporter = JBossLoggingReporter.forRegistry(this.diagnostics.getMetricRegistry())
                         .convertRatesTo(TimeUnit.SECONDS)
                         .convertDurationsTo(MILLISECONDS)
                         .outputTo(Logger.getLogger(getClass()))
@@ -492,7 +498,8 @@ public class MonitorService implements Service<MonitorService> {
             }
             case STORAGE: {
                 this.diagnosticsReporter = StorageReporter
-                        .forRegistry(metricRegistry, configuration.diagnostics, storageAdapter, selfId)
+                        .forRegistry(this.diagnostics.getMetricRegistry(), configuration.diagnostics, storageAdapter,
+                                selfId)
                         .convertRatesTo(TimeUnit.SECONDS)
                         .convertDurationsTo(MILLISECONDS)
                         .build();
@@ -585,12 +592,12 @@ public class MonitorService implements Service<MonitorService> {
                 MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
             } else {
 
-                VertexSetListener<DMRResource> listener = null;
+                VertexSetListener<DMRResource> dmrListener = null;
 
                 // if we are participating in a full hawkular environment,
                 // new resources and their metadata will be added to inventory
                 if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
-                    listener = new VertexSetListener<DMRResource>() {
+                    dmrListener = new VertexSetListener<DMRResource>() {
                         @Override
                         public void vertexRemoved(GraphVertexChangeEvent<DMRResource> e) {
                         }
@@ -622,7 +629,7 @@ public class MonitorService implements Service<MonitorService> {
                     DMRInventoryManager im = buildDMRInventoryManager(managedServer, dmrEndpoint, resourceTypeSets,
                             this.feedId, this.configuration);
                     this.dmrServerInventories.put(managedServer, im);
-                    im.discoverResources(listener);
+                    im.discoverResources(dmrListener);
                 } else if (managedServer instanceof LocalDMRManagedServer) {
                     LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
                     LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.getName().toString(),
@@ -630,7 +637,7 @@ public class MonitorService implements Service<MonitorService> {
                     DMRInventoryManager im = buildDMRInventoryManager(managedServer, dmrEndpoint, resourceTypeSets,
                             this.feedId, this.configuration);
                     this.dmrServerInventories.put(managedServer, im);
-                    im.discoverResources(listener);
+                    im.discoverResources(dmrListener);
                 } else {
                     throw new IllegalArgumentException("An invalid managed server type was found. ["
                             + managedServer + "] Please report this bug.");

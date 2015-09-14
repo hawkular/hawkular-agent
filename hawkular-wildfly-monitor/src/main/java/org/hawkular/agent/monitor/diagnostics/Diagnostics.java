@@ -18,12 +18,18 @@ package org.hawkular.agent.monitor.diagnostics;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 
 /**
  * Provides diagnostic metrics for the scheduler itself.
  */
 public interface Diagnostics {
+    /**
+     * @return the registry of all metrics
+     */
+    MetricRegistry getMetricRegistry();
+
     /**
      * @return time it takes to execute DMR requests
      */
