@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hawkular.agent.monitor.modules;
+package org.hawkular.dmrclient.modules;
 
 import java.io.InputStream;
 import java.util.Collections;
