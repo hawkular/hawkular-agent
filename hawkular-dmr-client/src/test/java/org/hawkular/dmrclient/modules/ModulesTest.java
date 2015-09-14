@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.modules;
+package org.hawkular.dmrclient.modules;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -28,8 +28,7 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.hawkular.agent.monitor.feedcomm.InvalidCommandRequestException;
-import org.hawkular.agent.monitor.modules.AddModuleRequest.ModuleResource;
+import org.hawkular.dmrclient.modules.AddModuleRequest.ModuleResource;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -109,8 +108,8 @@ public class ModulesTest {
         Assert.assertFalse(modulesDir.exists());
         try {
             modules.add(minimal);
-            Assert.fail("InvalidCommandRequestException expected");
-        } catch (InvalidCommandRequestException expected) {
+            Assert.fail("Exception expected");
+        } catch (IllegalArgumentException expected) {
         }
     }
 

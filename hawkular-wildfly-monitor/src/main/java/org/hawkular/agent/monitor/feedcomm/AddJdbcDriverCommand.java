@@ -33,13 +33,13 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.modules.AddModuleRequest;
-import org.hawkular.agent.monitor.modules.AddModuleRequest.ModuleResource;
-import org.hawkular.agent.monitor.modules.Modules;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
 import org.hawkular.cmdgw.api.AddJdbcDriverResponse;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
+import org.hawkular.dmrclient.modules.AddModuleRequest;
+import org.hawkular.dmrclient.modules.AddModuleRequest.ModuleResource;
+import org.hawkular.dmrclient.modules.Modules;
 import org.hawkular.inventory.api.model.CanonicalPath;
 
 /**
