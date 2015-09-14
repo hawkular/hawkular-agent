@@ -581,8 +581,14 @@ public class MonitorService implements Service<MonitorService> {
      * Given all managed servers defined in our configuration, this will build inventory managers
      * for them all and discover all resources, populating the inventory managers with the discovered
      * resources.
+     *
+     * This method is public to allow the "fullDiscoveryScan" operation to invoke it.
+     *
+     * @return the total number of resources discovered
      */
-    private void discoverAllResourcesForAllManagedServers() {
+    public int discoverAllResourcesForAllManagedServers() {
+        int resourcesDiscovered = 0;
+
         // remove any old inventory data that might still be hanging around
         this.dmrServerInventories.clear();
 
@@ -630,6 +636,7 @@ public class MonitorService implements Service<MonitorService> {
                             this.feedId, this.configuration);
                     this.dmrServerInventories.put(managedServer, im);
                     im.discoverResources(dmrListener);
+                    resourcesDiscovered += im.getResourceManager().getAllResources().size();
                 } else if (managedServer instanceof LocalDMRManagedServer) {
                     LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
                     LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.getName().toString(),
@@ -638,6 +645,7 @@ public class MonitorService implements Service<MonitorService> {
                             this.feedId, this.configuration);
                     this.dmrServerInventories.put(managedServer, im);
                     im.discoverResources(dmrListener);
+                    resourcesDiscovered += im.getResourceManager().getAllResources().size();
                 } else {
                     throw new IllegalArgumentException("An invalid managed server type was found. ["
                             + managedServer + "] Please report this bug.");
@@ -645,7 +653,9 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
 
-        return;
+        MsgLogger.LOG.debugf("Full discovery scan found [%d] resources", resourcesDiscovered);
+
+        return resourcesDiscovered;
     }
 
     private DMRInventoryManager buildDMRInventoryManager(ManagedServer managedServer, DMREndpoint dmrEndpoint,
