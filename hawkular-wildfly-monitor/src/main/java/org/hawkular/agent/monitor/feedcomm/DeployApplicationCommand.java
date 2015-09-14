@@ -31,7 +31,6 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.DeployApplicationRequest;
 import org.hawkular.cmdgw.api.DeployApplicationResponse;
-import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.DeploymentJBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -79,24 +78,26 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
                     String.format("Cannot deploy application: missing inventory manager [%s]", managedServer));
         }
 
+        final String resourcePath = request.getResourcePath();
+        final String destFileName = request.getDestinationFileName();
+        final boolean enabled = (request.getEnabled() == null) ? true : request.getEnabled().booleanValue();
+
         ResourceManager<DMRResource> resourceManager = inventoryManager.getResourceManager();
         DMRResource resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot deploy application: unknown resource [%s]", request.getResourcePath()));
+                    String.format("Cannot deploy application: unknown resource [%s]", resourcePath));
         }
 
         // find the operation we need to execute - make sure it exists and get the address for the resource to invoke
-        Address opAddress = resource.getAddress();
-
         DeployApplicationResponse response = new DeployApplicationResponse();
-        response.setResourcePath(request.getResourcePath());
+        response.setResourcePath(resourcePath);
 
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
             DeploymentJBossASClient client = new DeploymentJBossASClient(mcc);
-            client.deployStandalone(request.getDestinationFileName(), applicationContent);
+            client.deployStandalone(destFileName, applicationContent, enabled);
             response.setStatus("OK");
-            response.setMessage(String.format("Deployed application: %s", request.getDestinationFileName()));
+            response.setMessage(String.format("Uploaded [%s]. Enabled=[%s].", destFileName, enabled));
         } catch (Exception e) {
             response.setStatus("ERROR");
             response.setMessage(e.toString());

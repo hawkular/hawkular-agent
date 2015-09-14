@@ -132,15 +132,19 @@ public class DeploymentJBossASClient extends JBossASClient {
      *
      * @param deploymentName name that the content will be known as
      * @param content stream containing the actual content data
+     * @param enabled if true, the content will be uploaded and actually deployed;
+     *                if false, content will be uploaded to the server, but it won't be deployed in the server runtime
      */
-    public void deployStandalone(String deploymentName, InputStream content) {
+    public void deployStandalone(String deploymentName, InputStream content, boolean enabled) {
         ModelControllerClientServerDeploymentManager deployMgr;
         deployMgr = new ModelControllerClientServerDeploymentManager(getModelControllerClient(), false);
-        DeploymentPlan plan = deployMgr
-                .newDeploymentPlan()
-                .add(deploymentName, content)
-                .andDeploy()
-                .build();
+
+        DeploymentPlan plan;
+        if (enabled) {
+            plan = deployMgr.newDeploymentPlan().add(deploymentName, content).andDeploy().build();
+        } else {
+            plan = deployMgr.newDeploymentPlan().add(deploymentName, content).build();
+        }
 
         Future<ServerDeploymentPlanResult> future = deployMgr.execute(plan);
         ServerDeploymentPlanResult results;
@@ -196,17 +200,19 @@ public class DeploymentJBossASClient extends JBossASClient {
      *
      * @param deploymentName name that the content will be known as
      * @param content stream containing the actual content data
+     * @param enabled if true, the content will be uploaded and actually deployed;
+     *                if false, content will be uploaded to the server, but it won't be deployed in the server runtime
      */
-    public void deployDomain(String deploymentName, InputStream content) {
+    public void deployDomain(String deploymentName, InputStream content, boolean enabled) {
         DomainClientImpl domainClient = new DomainClientImpl(getModelControllerClient());
         DomainDeploymentManager deployMgr = domainClient.getDeploymentManager();
         org.jboss.as.controller.client.helpers.domain.DeploymentPlan plan;
         try {
-            plan = deployMgr
-                    .newDeploymentPlan()
-                    .add(deploymentName, content)
-                    .andDeploy()
-                    .build();
+            if (enabled) {
+                plan = deployMgr.newDeploymentPlan().add(deploymentName, content).andDeploy().build();
+            } else {
+                plan = deployMgr.newDeploymentPlan().add(deploymentName, content).build();
+            }
         } catch (Exception e) {
             throw new FailureException("Cannot build domain deployment plan for [" + deploymentName + "]", e);
         }

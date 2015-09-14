@@ -28,7 +28,7 @@
 
   <groupId>org.hawkular.agent</groupId>
   <artifactId>hawkular-agent-parent</artifactId>
-  <version>0.6.2.Final-SNAPSHOT</version>
+  <version>0.6.3.Final-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Hawkular Agent Parent</name>
@@ -52,9 +52,9 @@
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
-    <version.org.hawkular.accounts>1.0.12.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.accounts>1.0.13.Final</version.org.hawkular.accounts>
     <version.org.hawkular.bus>0.6.0.Final</version.org.hawkular.bus>
-    <version.org.hawkular.cmdgw>0.6.1.Final-SRC-revision-190db7febe274b82abbbf530dbbba8e40b93339a</version.org.hawkular.cmdgw>
+    <version.org.hawkular.cmdgw>0.6.1.Final</version.org.hawkular.cmdgw>
     <version.org.hawkular.commons>0.2.1.Final</version.org.hawkular.commons>
     <version.org.hawkular.inventory>0.3.3.Final</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.5.0.Final</version.org.hawkular.metrics>
