@@ -17,18 +17,20 @@
 package org.hawkular.agent.monitor.feedcomm;
 
 import org.hawkular.bus.common.BasicMessage;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 
 public interface Command<REQ extends BasicMessage, RESP extends BasicMessage> {
 
     /**
-     * Performs the command for the server.
+     * Performs the command for the server. A non-null return value will be sent back to the server.
      *
      * @param request the request that describes what needs to be executed
      * @param binaryData if not null, this contains extra binary data that came across with the command request
      * @param context contains data that can help commands do their job
-     * @return the results of the command that need to be sent back to the server - if null, nothing will be sent back.
+     * @return the results of the command that need to be sent back to the server; if null, nothing will be sent back.
      * @throws Exception if failed to execute the command
      */
-    RESP execute(REQ request, BinaryData binaryData, CommandContext context) throws Exception;
+    BasicMessageWithExtraData<RESP> execute(REQ request, BinaryData binaryData, CommandContext context)
+            throws Exception;
 }

@@ -28,6 +28,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.DeployApplicationRequest;
 import org.hawkular.cmdgw.api.DeployApplicationResponse;
@@ -42,8 +43,8 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
     public static final Class<DeployApplicationRequest> REQUEST_CLASS = DeployApplicationRequest.class;
 
     @Override
-    public DeployApplicationResponse execute(DeployApplicationRequest request, BinaryData applicationContent,
-            CommandContext context) throws Exception {
+    public BasicMessageWithExtraData<DeployApplicationResponse> execute(DeployApplicationRequest request,
+            BinaryData applicationContent, CommandContext context) throws Exception {
 
         MsgLogger.LOG.infof("Received request to deploy application [%s] on resource [%s]",
                 request.getDestinationFileName(), request.getResourcePath());
@@ -69,7 +70,8 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
         }
     }
 
-    private DeployApplicationResponse deployApplicationDMR(String resourceId, DeployApplicationRequest request,
+    private BasicMessageWithExtraData<DeployApplicationResponse> deployApplicationDMR(String resourceId,
+            DeployApplicationRequest request,
             BinaryData applicationContent, FeedCommProcessor processor, ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
@@ -103,6 +105,6 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
             response.setMessage(e.toString());
         }
 
-        return response;
+        return new BasicMessageWithExtraData<>(response, null);
     }
 }
