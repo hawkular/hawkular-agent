@@ -595,6 +595,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 ResourceTypes.DataRole.configurationSchema,
                 configSchema,
                 null);
+        final String jsonPayload = Util.toJson(dePojo);
 
         try {
             String resourceTypeId = Util.urlEncode(getInventoryId(resourceType));
@@ -607,7 +608,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append(resourceTypeId);
             url.append("/data");
 
-            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, Util.toJson(dePojo));
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
             Response response = this.httpClientBuilder.getHttpClient().newCall(request).execute();
 
             // HTTP status of 201 means success, 409 means it already exists; anything else is an error

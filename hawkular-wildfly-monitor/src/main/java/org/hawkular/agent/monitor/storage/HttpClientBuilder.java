@@ -112,6 +112,26 @@ public class HttpClientBuilder {
         return requestBuilder.post(body).build();
     }
 
+    public Request buildJsonPutRequest(String url, Map<String, String> headers, String jsonPayload) {
+        // make sure we are authenticated. see http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
+        String base64Credentials = Util.base64Encode(username + ":" + password);
+
+        Builder requestBuilder = new Request.Builder()
+                .url(url)
+                .addHeader("Authorization", "Basic " + base64Credentials)
+                .addHeader("Accept", "application/json");
+
+        if (headers != null) {
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                requestBuilder.addHeader(header.getKey(), header.getValue());
+            }
+        }
+
+        RequestBody body = RequestBody.create(MediaType.parse("application/json"), jsonPayload);
+
+        return requestBuilder.put(body).build();
+    }
+
     public WebSocketCall createWebSocketCall(String url, Map<String, String> headers) {
         String base64Credentials = Util.base64Encode(username + ":" + password);
 
