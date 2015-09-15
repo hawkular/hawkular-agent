@@ -123,6 +123,7 @@ public class MonitorService implements Service<MonitorService> {
     private PropertyChangeListener serverStateListener;
     private ExecutorService managementClientExecutor;
 
+    // the full configuration as declared in standalone.xml
     private MonitorServiceConfiguration configuration;
 
     // this is used to identify us to the Hawkular environment as a particular feed
@@ -137,7 +138,7 @@ public class MonitorService implements Service<MonitorService> {
     private StorageAdapter storageAdapter;
     private HttpClientBuilder httpClientBuilder;
 
-    // used to send data to the server over the feed communications channel
+    // used to send/receive data to the server over the feed communications channel
     private FeedCommProcessor feedComm;
 
     // scheduled metric and avail collections
@@ -306,7 +307,7 @@ public class MonitorService implements Service<MonitorService> {
 
             // try to connect to the server via command-gateway channel; if it fails, just log an error but keep going
             try {
-                connectToFeedCommChannel();
+                connectToCommandGatewayCommChannel();
             } catch (Exception e) {
                 MsgLogger.LOG.errorCannotEstablishFeedComm(e);
             }
@@ -395,12 +396,23 @@ public class MonitorService implements Service<MonitorService> {
         started = false;
     }
 
+    /**
+     * @return the directory where our agent service can write data files. This directory survives restarts.
+     */
     private File getDataDirectory() {
         File dataDir = new File(this.serverEnvironmentValue.getValue().getServerDataDir(), "hawkular-agent");
         dataDir.mkdirs();
         return dataDir;
     }
 
+    /**
+     * Reads in a data file into memory and returns its contents. Do NOT call this for very large files.
+     *
+     * @param filename the name of the file to read - its location is assumed to be under
+     *                 the {@link #getDataDirectory() data directory}.
+     * @return the full contents of the file
+     * @throws FileNotFoundException if the file does not exist
+     */
     private String slurpDataFile(String filename) throws FileNotFoundException {
         File dataFile = new File(getDataDirectory(), filename);
         FileInputStream dataFileInputStream = new FileInputStream(dataFile);
@@ -408,6 +420,14 @@ public class MonitorService implements Service<MonitorService> {
         return fileContents;
     }
 
+    /**
+     * Writes a data file to the {@link #getDataDirectory() data directory}.
+     *
+     * @param filename the name of the file - this is relative to under the data directory
+     * @param fileContents what the contents of the file should be
+     * @return the file that was written
+     * @throws FileNotFoundException if the file could not be created
+     */
     private File writeDataFile(String filename, String fileContents) throws FileNotFoundException {
         File dataFile = new File(getDataDirectory(), filename);
         FileOutputStream dataFileOutputStream = new FileOutputStream(dataFile);
@@ -461,6 +481,11 @@ public class MonitorService implements Service<MonitorService> {
         return managementClientExecutor;
     }
 
+    /**
+     * Creates and starts the storage adapter that will be used to store our inventory data and monitoring data.
+     *
+     * @throws Exception if failed to start the storage adapter
+     */
     private void startStorageAdapter() throws Exception {
         // determine what our backend storage should be and create its associated adapter
         switch (configuration.storageAdapter.type) {
@@ -658,6 +683,17 @@ public class MonitorService implements Service<MonitorService> {
         return resourcesDiscovered;
     }
 
+    /**
+     * Builds an DMR inventory manager with all metadata but with an empty set of resources.
+     *
+     * @param managedServer the managed server whose inventory will be stored in the returned manager
+     * @param dmrEndpoint the endpoint used to connect to the managed server
+     * @param dmrResourceTypeSets only resources of these types will be managed by the inventory manager
+     * @param feedId our feed ID
+     * @param monitorServiceConfig our full configuration
+     *
+     * @return the DMR inventory manager that was created
+     */
     private DMRInventoryManager buildDMRInventoryManager(ManagedServer managedServer, DMREndpoint dmrEndpoint,
             Collection<Name> dmrResourceTypeSets, String feedId, MonitorServiceConfiguration monitorServiceConfig) {
 
@@ -710,7 +746,9 @@ public class MonitorService implements Service<MonitorService> {
         return mm;
     }
 
-
+    /**
+     * @return Determines what Hawkular tenant ID should be used and returns it.
+     */
     private String determineTenantId() {
         if (configuration.storageAdapter.tenantId != null) {
             return configuration.storageAdapter.tenantId;
@@ -751,6 +789,11 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
+    /**
+     * Registers our feed with the Hawkular system.
+     *
+     * @throws Exception if failed to register feed
+     */
     private void registerFeed() throws Exception {
         String desiredFeedId = this.selfId.getFullIdentifier();
         this.feedId = desiredFeedId; // assume we will get what we want
@@ -818,7 +861,12 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
-    private void connectToFeedCommChannel() throws Exception {
+    /**
+     * Connects to the Hawkular server over the websocket command gateway.
+     *
+     * @throws Exception if failed to connect to the Hawkular server
+     */
+    private void connectToCommandGatewayCommChannel() throws Exception {
         feedComm = new FeedCommProcessor(this.httpClientBuilder, this.configuration, this.feedId,
                 this.dmrServerInventories);
         feedComm.connect();
