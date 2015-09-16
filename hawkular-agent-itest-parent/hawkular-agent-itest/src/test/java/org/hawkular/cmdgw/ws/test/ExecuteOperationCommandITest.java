@@ -87,9 +87,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         Assert.assertEquals("ExecuteOperationResponse={" + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
                 + "\"operationName\":\"Redeploy\"," + "\"status\":\"OK\"," //
         // FIXME HAWKULAR-604 the message should not be undefined
-                + "\"message\":\"undefined\"," //
-        // FIXME HAWKULAR-603 the server should not forward the authentication to UI
-                + "\"authentication\":" + authentication //
+                + "\"message\":\"undefined\"" //
                 + "}", receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(2, receivedMessages.size());

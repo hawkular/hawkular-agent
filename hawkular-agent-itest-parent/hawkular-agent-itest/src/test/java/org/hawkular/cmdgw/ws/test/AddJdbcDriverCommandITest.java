@@ -99,9 +99,7 @@ public class AddJdbcDriverCommandITest extends AbstractCommandITest {
 
         Assert.assertEquals("AddJdbcDriverResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
                 + "\"status\":\"OK\"," //
-                + "\"message\":\"Added JDBC Driver: " + driverName + "\"," //
-        // FIXME HAWKULAR-603 the server should not forward the authentication to UI
-                + "\"authentication\":" + authentication //
+                + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
                 + "}", receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(2, receivedMessages.size());
