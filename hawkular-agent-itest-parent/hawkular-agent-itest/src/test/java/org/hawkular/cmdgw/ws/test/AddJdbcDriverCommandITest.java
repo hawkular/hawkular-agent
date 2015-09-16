@@ -24,6 +24,8 @@ import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
+import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
+import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -58,8 +60,8 @@ public class AddJdbcDriverCommandITest extends AbstractCommandITest {
         final String driverName = "mysql";
 
         /* OK, h2 is there let's add a new MySQL Driver */
-        final String driverJarRawUrl =
-                "http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.36/mysql-connector-java-5.1.36.jar";
+        final String driverJarRawUrl = "http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.36/"
+                + "mysql-connector-java-5.1.36.jar";
         URL driverJarUrl = new URL(driverJarRawUrl);
         final String driverJarName = new File(driverJarUrl.getPath()).getName();
 
@@ -104,6 +106,11 @@ public class AddJdbcDriverCommandITest extends AbstractCommandITest {
 
         Assert.assertEquals(2, receivedMessages.size());
 
+        assertResourceExists(
+                new ModelNode().get(ModelDescriptionConstants.ADDRESS)
+                        .add(ModelDescriptionConstants.SUBSYSTEM, "datasources").add("jdbc-driver", driverName),
+                "The JDBC Driver " + driverName + " cannot be found after it was added: %s");
+
         // there is a good hope that https://issues.jboss.org/browse/HWKAGENT-7
         // brings a way to sync with the inventory, so that we can validate that we really added it.
         // List<Resource> driversAfter = getResources("/test/" + feedId + "/resourceTypes/JDBC%20Driver/resources", 2);
@@ -112,5 +119,6 @@ public class AddJdbcDriverCommandITest extends AbstractCommandITest {
         // driversAfter.stream().filter(r -> r.getId().endsWith("=" + driverName)).findFirst().isPresent());
 
     }
+
 
 }
