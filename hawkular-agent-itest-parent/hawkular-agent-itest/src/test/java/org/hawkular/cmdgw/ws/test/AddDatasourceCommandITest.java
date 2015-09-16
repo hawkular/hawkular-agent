@@ -104,9 +104,7 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
 
         Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
                 + "\"status\":\"OK\"," //
-                + "\"message\":\"Added Datasource: " + datasourceName + "\"," //
-        // FIXME HAWKULAR-603 the server should not forward the authentication to UI
-                + "\"authentication\":" + authentication //
+                + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
                 + "}", receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(2, receivedMessages.size());
@@ -178,9 +176,7 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
 
         Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
                 + "\"status\":\"OK\"," //
-                + "\"message\":\"Added Datasource: " + datasourceName + "\"," //
-        // FIXME HAWKULAR-603 the server should not forward the authentication to UI
-                + "\"authentication\":" + authentication //
+                + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
                 + "}", receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(2, receivedMessages.size());
