@@ -62,6 +62,20 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-agent-itest-dist</artifactId>
+      <version>0.7.1.Final-SNAPSHOT</version>
+      <scope>test</scope>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly.core</groupId>
+      <artifactId>wildfly-controller</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -82,6 +96,9 @@
       <!-- Integration tests -->
       <id>itest</id>
       <properties>
+        <hawkular.agent.itest.run.dir>${project.build.directory}/hawkular-agent-itest-dist</hawkular.agent.itest.run.dir>
+        <hawkular.agent.itest.mgmt.user>itest-admin</hawkular.agent.itest.mgmt.user>
+        <hawkular.agent.itest.mgmt.password>JGM4-74rK</hawkular.agent.itest.mgmt.password>
         <hawkular.bind.address>127.0.0.1</hawkular.bind.address>
         <hawkular.port.offset>0</hawkular.port.offset>
         <!-- $hawkular.management.port must be equal to $hawkular.port.offset + 9990 -->
@@ -109,6 +126,53 @@
       </properties>
       <build>
         <plugins>
+
+          <!-- Unzip hawkular-agent-itest-dist under target of the present module -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>unpack</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.hawkular.agent</groupId>
+                      <artifactId>hawkular-agent-itest-dist</artifactId>
+                      <type>zip</type>
+                      <outputDirectory>${hawkular.agent.itest.run.dir}</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Add a management user to the unzipped hawkular-agent-itest-dist -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <target>
+                    <property name="hawkular.agent.itest.standalone.dir" value="${hawkular.agent.itest.run.dir}/hawkular-agent-itest-dist-${project.version}/standalone/configuration"/>
+                    <!-- keep the encoded password in sync with ${hawkular.agent.itest.mgmt.password} -->
+                    <concat append="true" destfile="${hawkular.agent.itest.standalone.dir}/mgmt-users.properties">${line.separator}${hawkular.agent.itest.mgmt.user}=86788b992b0749e353d7b18fb5ca8a63</concat>
+                    <concat append="true" destfile="${hawkular.agent.itest.standalone.dir}/mgmt-groups.properties">${line.separator}${hawkular.agent.itest.mgmt.user}=</concat>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
 
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -144,13 +208,12 @@
             </executions>
           </plugin>
 
+          <!-- Start WildFly from the folder where we unzipped and configured hawkular-agent-itest-dist -->
           <plugin>
             <groupId>org.wildfly.plugins</groupId>
             <artifactId>wildfly-maven-plugin</artifactId>
             <configuration>
-              <groupId>org.hawkular.agent</groupId>
-              <artifactId>hawkular-agent-itest-dist</artifactId>
-              <version>${project.version}</version>
+              <jboss-home>${hawkular.agent.itest.run.dir}/hawkular-agent-itest-dist-${project.version}/</jboss-home>
               <skip>${skipTests}</skip>
               <startupTimeout>240</startupTimeout>
               <port>${hawkular.management.port}</port>

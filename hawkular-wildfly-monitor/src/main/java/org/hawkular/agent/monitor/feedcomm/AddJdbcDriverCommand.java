@@ -38,10 +38,12 @@ import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
 import org.hawkular.cmdgw.api.AddJdbcDriverResponse;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
+import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.dmrclient.modules.AddModuleRequest;
 import org.hawkular.dmrclient.modules.AddModuleRequest.ModuleResource;
 import org.hawkular.dmrclient.modules.Modules;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.jboss.dmr.ModelNode;
 
 /**
  * Adds an JdbcDriver on a resource.
@@ -108,9 +110,16 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
             AddModuleRequest addModuleRequest = new AddModuleRequest(request.getModuleName(), (String) null,
                     (String) null, Collections.singleton(jarResource), DEFAULT_DRIVER_MODULE_DEPENDENCIES, null);
             new Modules(Modules.findModulesDir()).add(addModuleRequest);
-            dsc.addJdbcDriver(request.getDriverName(), request.getModuleName());
-            response.setStatus("OK");
-            response.setMessage(String.format("Added JDBC Driver: %s", request.getDriverName()));
+            ModelNode result = dsc.addJdbcDriver(request.getDriverName(), request.getModuleName());
+            if (JBossASClient.isSuccess(result)) {
+                response.setStatus("OK");
+                response.setMessage(String.format("Added JDBC Driver: %s", request.getDriverName()));
+            } else {
+                response.setStatus("ERROR");
+                String msg = String.format("Could not add JDBC Driver [%s]: %s", request.getDriverName(), result);
+                response.setMessage(msg);
+                MsgLogger.LOG.debug(msg);
+            }
         } catch (Exception e) {
             MsgLogger.LOG.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
             response.setStatus("ERROR");

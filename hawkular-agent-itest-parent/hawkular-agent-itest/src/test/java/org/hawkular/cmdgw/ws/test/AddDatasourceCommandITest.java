@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
+import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
+import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -76,7 +78,7 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                                 + "\"jndiName\":\"" + jndiName + "\"," //
                                 + "\"driverName\":\"" + driverName + "\"," //
                                 + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
-                                + "\"xaDatasourceProperties\":{\"URL\":\"" + xaDataSourceUrl + "\"}," //
+                                + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl + "\"}," //
                                 + "\"userName\":\"" + userName + "\"," //
                                 + "\"password\":\"" + password + "\"" //
                                 + "}");
@@ -98,7 +100,6 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                 + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
         String msg = receivedMessages.get(i++).readUtf8();
-        System.out.println("msg = "+ msg);
         Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
         Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
@@ -109,6 +110,10 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                 + "}", receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(2, receivedMessages.size());
+
+        ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
+                .add("xa-data-source", datasourceName);
+        assertResourceExists(address, "XA Datasource " + datasourceName + " cannot be found after it was added: %s");
 
     }
 
@@ -169,7 +174,6 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                 + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
         String msg = receivedMessages.get(i++).readUtf8();
-        System.out.println("msg = "+ msg);
         Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
         Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
@@ -180,6 +184,10 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                 + "}", receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(2, receivedMessages.size());
+
+        ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
+                .add("data-source", datasourceName);
+        assertResourceExists(address, "Datasource " + datasourceName + " cannot be found after it was added: %s");
 
     }
 }
