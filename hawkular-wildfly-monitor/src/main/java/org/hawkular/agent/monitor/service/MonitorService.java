@@ -614,73 +614,88 @@ public class MonitorService implements Service<MonitorService> {
     public int discoverAllResourcesForAllManagedServers() {
         int resourcesDiscovered = 0;
 
-        // remove any old inventory data that might still be hanging around
-        this.dmrServerInventories.clear();
+        // there may be some old managed servers that we don't manage anymore - remove them now
+        this.dmrServerInventories.keySet().retainAll(this.configuration.managedServersMap.values());
 
         // go through each configured managed server and discovery all resources in them
         for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
             if (!managedServer.isEnabled()) {
                 MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
             } else {
-
-                VertexSetListener<DMRResource> dmrListener = null;
-
-                // if we are participating in a full hawkular environment,
-                // new resources and their metadata will be added to inventory
-                if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
-                    dmrListener = new VertexSetListener<DMRResource>() {
-                        @Override
-                        public void vertexRemoved(GraphVertexChangeEvent<DMRResource> e) {
-                        }
-
-                        @Override
-                        public void vertexAdded(GraphVertexChangeEvent<DMRResource> e) {
-                            final DMRResource resource = e.getVertex();
-                            final DMRResourceType resourceType = resource.getResourceType();
-                            discoveredResourcesStorageExecutor.execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
-                                        MonitorService.this.inventoryStorageProxy.storeResource(resource);
-                                    } catch (Throwable t) {
-                                        MsgLogger.LOG.errorf(t, "Failed to store resource [%s]", resource);
-                                    }
-                                }
-                            });
-                        }
-                    };
-                }
-
-                Collection<Name> resourceTypeSets = managedServer.getResourceTypeSets();
                 if (managedServer instanceof RemoteDMRManagedServer) {
                     RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
                     DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(), dmrServer.getHost(),
                             dmrServer.getPort(), dmrServer.getUsername(), dmrServer.getPassword());
-                    DMRInventoryManager im = buildDMRInventoryManager(managedServer, dmrEndpoint, resourceTypeSets,
-                            this.feedId, this.configuration);
-                    this.dmrServerInventories.put(managedServer, im);
-                    im.discoverResources(dmrListener);
-                    resourcesDiscovered += im.getResourceManager().getAllResources().size();
+                    discoverResourcesForDMRManagedServer(managedServer, dmrEndpoint);
                 } else if (managedServer instanceof LocalDMRManagedServer) {
-                    LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
-                    LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.getName().toString(),
+                    DMREndpoint dmrEndpoint = new LocalDMREndpoint(managedServer.getName().toString(),
                             createLocalClientFactory());
-                    DMRInventoryManager im = buildDMRInventoryManager(managedServer, dmrEndpoint, resourceTypeSets,
-                            this.feedId, this.configuration);
-                    this.dmrServerInventories.put(managedServer, im);
-                    im.discoverResources(dmrListener);
-                    resourcesDiscovered += im.getResourceManager().getAllResources().size();
+                    discoverResourcesForDMRManagedServer(managedServer, dmrEndpoint);
                 } else {
                     throw new IllegalArgumentException("An invalid managed server type was found. ["
                             + managedServer + "] Please report this bug.");
                 }
+                resourcesDiscovered += this.dmrServerInventories.get(managedServer).getResourceManager()
+                        .getAllResources().size();
             }
         }
 
         MsgLogger.LOG.debugf("Full discovery scan found [%d] resources", resourcesDiscovered);
 
         return resourcesDiscovered;
+    }
+
+    private VertexSetListener<DMRResource> getDMRListenerForChangedInventory(final DMRInventoryManager imOriginal) {
+        VertexSetListener<DMRResource> dmrListener = null;
+
+        // if we are participating in a full hawkular environment,
+        // new resources and their metadata will be added to inventory
+        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+            dmrListener = new VertexSetListener<DMRResource>() {
+                @Override
+                public void vertexRemoved(GraphVertexChangeEvent<DMRResource> e) {
+                }
+
+                @Override
+                public void vertexAdded(GraphVertexChangeEvent<DMRResource> e) {
+                    final DMRResource resource = e.getVertex();
+                    final DMRResourceType resourceType = resource.getResourceType();
+
+                    if (imOriginal != null) {
+                        DMRResource oldResource = imOriginal.getResourceManager().getResource(resource.getID());
+                        if (oldResource != null) {
+                            // we discovered a resource we had before. For now do nothing other than
+                            // set its persisted flag since we assume it has already been or will be persisted
+                            resource.setPersisted(true);
+                            resourceType.setPersisted(true);
+                            return;
+                        }
+                    }
+
+                    discoveredResourcesStorageExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
+                                MonitorService.this.inventoryStorageProxy.storeResource(resource);
+                            } catch (Throwable t) {
+                                MsgLogger.LOG.errorf(t, "Failed to store resource [%s]", resource);
+                            }
+                        }
+                    });
+                }
+            };
+        }
+
+        return dmrListener;
+    }
+
+    private void discoverResourcesForDMRManagedServer(ManagedServer managedServer, DMREndpoint dmrEndpoint) {
+        Collection<Name> resourceTypeSets = managedServer.getResourceTypeSets();
+        DMRInventoryManager im = buildDMRInventoryManager(managedServer, dmrEndpoint, resourceTypeSets, this.feedId,
+                this.configuration);
+        DMRInventoryManager imOriginal = this.dmrServerInventories.put(managedServer, im);
+        im.discoverResources(getDMRListenerForChangedInventory(imOriginal));
     }
 
     /**
