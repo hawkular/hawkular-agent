@@ -58,8 +58,7 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
         MsgLogger.LOG.infof("Received request to add the JDBC Driver [%s] on resource [%s]", request.getModuleName(),
                 request.getResourcePath());
 
-        FeedCommProcessor processor = context.getFeedCommProcessor();
-        MonitorServiceConfiguration config = processor.getMonitorServiceConfiguration();
+        MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
 
         // Based on the resource ID we need to know which inventory manager is handling it.
         // From the inventory manager, we can get the actual resource.
@@ -74,16 +73,17 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return addLocal(resourceId, request, jdbcDriverContent, processor, managedServer);
+            return addLocal(resourceId, request, jdbcDriverContent, context, managedServer);
         } else {
             throw new IllegalStateException("Cannot add JDBC Driver: report this bug: " + managedServer.getClass());
         }
     }
 
     private BasicMessageWithExtraData<AddJdbcDriverResponse> addLocal(String resourceId, AddJdbcDriverRequest request,
-            BinaryData jdbcDriverContent, FeedCommProcessor processor, ManagedServer managedServer) throws Exception {
+            BinaryData jdbcDriverContent, CommandContext context, ManagedServer managedServer) throws Exception {
 
-        DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
+        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
+                .get(managedServer);
         if (inventoryManager == null) {
             throw new IllegalArgumentException(
                     String.format("Cannot add JDBC Driver: missing inventory manager [%s]", managedServer));

@@ -16,9 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import java.util.Collection;
-
 import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
+import org.jgrapht.event.VertexSetListener;
 
 /**
  * Just a container that holds the different managers needed to keep track of inventory.
@@ -29,6 +28,7 @@ import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
  * @param <MTS> metric type set
  * @param <AT> avail type
  * @param <ATS> avail type set
+ * @param <O> operation type
  * @param <RCPT> resource configuration property definition
  * @param <R> resource
  * @param <ME> monitored endpoint
@@ -47,9 +47,7 @@ RCPT extends ResourceConfigurationPropertyType<RT>, //
 R extends Resource<RT, ?, ?, ?, ?>, //
 ME extends MonitoredEndpoint> {
 
-    private final ResourceTypeManager<RT, RTS> resourceTypeManager;
-    private final MetricTypeManager<MT, MTS> metricTypeManager;
-    private final AvailTypeManager<AT, ATS> availTypeManager;
+    private final MetadataManager<RT, RTS, MT, MTS, AT, ATS, O, RCPT> metadataManager;
     private final ResourceManager<R> resourceManager;
     private final ManagedServer managedServer;
     private final ME endpoint;
@@ -57,31 +55,19 @@ ME extends MonitoredEndpoint> {
 
     public InventoryManager(
             String feedId,
-            ResourceTypeManager<RT, RTS> resourceTypeManager,
-            MetricTypeManager<MT, MTS> metricTypeManager,
-            AvailTypeManager<AT, ATS> availTypeManager,
+            MetadataManager<RT, RTS, MT, MTS, AT, ATS, O, RCPT> metadataManager,
             ResourceManager<R> resourceManager,
             ManagedServer managedServer,
             ME endpoint) {
         this.feedId = feedId;
-        this.resourceTypeManager = resourceTypeManager;
-        this.metricTypeManager = metricTypeManager;
-        this.availTypeManager = availTypeManager;
+        this.metadataManager = metadataManager;
         this.resourceManager = resourceManager;
         this.managedServer = managedServer;
         this.endpoint = endpoint;
     }
 
-    public ResourceTypeManager<RT, RTS> getResourceTypeManager() {
-        return resourceTypeManager;
-    }
-
-    public MetricTypeManager<MT, MTS> getMetricTypeManager() {
-        return metricTypeManager;
-    }
-
-    public AvailTypeManager<AT, ATS> getAvailTypeManager() {
-        return availTypeManager;
+    public MetadataManager<RT, RTS, MT, MTS, AT, ATS, O, RCPT> getMetadataManager() {
+        return metadataManager;
     }
 
     public ResourceManager<R> getResourceManager() {
@@ -104,39 +90,12 @@ ME extends MonitoredEndpoint> {
     }
 
     /**
-     * Given a resource type, this will fill in its metric types and avail types.
-     *
-     * @param resourceType the type whose metric and avail types are to be retrieved
-     */
-    public void populateMetricAndAvailTypesForResourceType(RT resourceType) {
-
-        Collection<MT> metricTypes = resourceType.getMetricTypes();
-        if (metricTypes.isEmpty()) {
-            for (Name metricSetName : resourceType.getMetricSets()) {
-                MTS metricSet = getMetricTypeManager().getMetricSet(metricSetName);
-                if (metricSet != null) {
-                    metricTypes.addAll(metricSet.getMetricTypeMap().values());
-                }
-            }
-        }
-
-        Collection<AT> availTypes = resourceType.getAvailTypes();
-        if (availTypes.isEmpty()) {
-            for (Name availSetName : resourceType.getAvailSets()) {
-                ATS availSet = getAvailTypeManager().getAvailSet(availSetName);
-                if (availSet != null) {
-                    availTypes.addAll(availSet.getAvailTypeMap().values());
-                }
-            }
-        }
-    }
-
-    /**
      * Populate the inventory with resources that can be automatically discovered.
-     * Only those resources of known types (see {@link #getResourceTypeManager()}) will be discovered.
+     * Only those resources of known types (see {@link MetadataManager#getResourceTypeManager()}) will be discovered.
      *
-     * Once this returns successfully, {@link #getResourceManager()} should be populated
-     * with resources.
+     * Once this returns successfully, {@link #getResourceManager()} should be populated with resources.
+     *
+     * @param listener if not null, will be a listener that gets notified when resources are discovered
      */
-    public abstract void discoverResources();
+    public abstract void discoverResources(VertexSetListener<R> listener);
 }

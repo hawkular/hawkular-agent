@@ -16,15 +16,14 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
-import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.InventoryManager;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.MetricTypeManager;
+import org.hawkular.agent.monitor.inventory.MetadataManager;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
-import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
+import org.jgrapht.event.VertexSetListener;
 
 public class DMRInventoryManager extends InventoryManager
         <DMRResourceType,
@@ -41,28 +40,21 @@ public class DMRInventoryManager extends InventoryManager
     private final ModelControllerClientFactory dmrClientFactory;
 
     public DMRInventoryManager(String feedId,
-            ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> resourceTypeManager,
-            MetricTypeManager<DMRMetricType, DMRMetricTypeSet> metricTypeManager,
-            AvailTypeManager<DMRAvailType, DMRAvailTypeSet> availTypeManager,
+            MetadataManager<DMRResourceType, DMRResourceTypeSet, DMRMetricType, DMRMetricTypeSet,
+            DMRAvailType, DMRAvailTypeSet, DMROperation, DMRResourceConfigurationPropertyType> metadataManager,
             ResourceManager<DMRResource> resourceManager,
             ManagedServer managedServer,
             DMREndpoint dmrEndpoint,
             ModelControllerClientFactory dmrClientFactory) {
-        super(feedId,
-                resourceTypeManager,
-                metricTypeManager,
-                availTypeManager,
-                resourceManager,
-                managedServer,
-                dmrEndpoint);
+        super(feedId, metadataManager, resourceManager, managedServer, dmrEndpoint);
         this.dmrClientFactory = dmrClientFactory;
     }
 
     @Override
-    public void discoverResources() {
+    public void discoverResources(VertexSetListener<DMRResource> listener) {
         try {
-            DMRDiscovery discovery = new DMRDiscovery(this, dmrClientFactory);
-            discovery.discoverAllResources(getResourceManager());
+            DMRDiscovery discovery = new DMRDiscovery(this);
+            discovery.discoverAllResources(listener);
         } catch (Exception e) {
             MsgLogger.LOG.errorDiscoveryFailed(e, getEndpoint());
         }

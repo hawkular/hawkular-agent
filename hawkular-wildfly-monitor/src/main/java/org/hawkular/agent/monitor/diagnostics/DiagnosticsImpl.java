@@ -16,8 +16,6 @@
  */
 package org.hawkular.agent.monitor.diagnostics;
 
-import static com.codahale.metrics.MetricRegistry.name;
-
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
@@ -27,6 +25,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 
 public class DiagnosticsImpl implements Diagnostics {
+    private final MetricRegistry metricsRegistry;
+
     private final Timer dmrRequestTimer;
     private final Meter dmrDelayCounter;
     private final Meter dmrErrorCounter;
@@ -36,17 +36,28 @@ public class DiagnosticsImpl implements Diagnostics {
     private final Counter availStorageBuffer;
     private final Meter availRate;
 
-    public DiagnosticsImpl(MonitorServiceConfiguration.Diagnostics config, MetricRegistry metrics,
+    public static String name(ServerIdentifiers selfId, String name) {
+        return MetricRegistry.name(selfId + ".diagnostics." + name);
+    }
+
+    public DiagnosticsImpl(MonitorServiceConfiguration.Diagnostics config, MetricRegistry registry,
             ServerIdentifiers selfId) {
         // we don't need config now, but maybe in future - so keep "config" param here for future API consistency
-        dmrRequestTimer = metrics.timer(name(selfId + ".diagnostics.dmr-request-timer"));
-        dmrDelayCounter = metrics.meter(name(selfId + ".diagnostics.dmr-delay-rate"));
-        dmrErrorCounter = metrics.meter(name(selfId + ".diagnostics.dmr-error-rate"));
-        storageError = metrics.meter(name(selfId + ".diagnostics.storage-error-rate"));
-        metricsStorageBuffer = metrics.counter(name(selfId + ".diagnostics.metrics-storage-buffer-size"));
-        metricRate = metrics.meter(name(selfId + ".diagnostics.metric-rate"));
-        availStorageBuffer = metrics.counter(name(selfId + ".diagnostics.avail-storage-buffer-size"));
-        availRate = metrics.meter(name(selfId + ".diagnostics.avail-rate"));
+        dmrRequestTimer = registry.timer(name(selfId, "dmr.request-timer"));
+        dmrDelayCounter = registry.meter(name(selfId, "dmr.delay-rate"));
+        dmrErrorCounter = registry.meter(name(selfId, "dmr.error-rate"));
+        storageError = registry.meter(name(selfId, "storage.error-rate"));
+        metricsStorageBuffer = registry.counter(name(selfId, "metrics.storage-buffer-size"));
+        metricRate = registry.meter(name(selfId, "metric.rate"));
+        availStorageBuffer = registry.counter(name(selfId, "avail.storage-buffer-size"));
+        availRate = registry.meter(name(selfId, "avail.rate"));
+
+        this.metricsRegistry = registry;
+    }
+
+    @Override
+    public MetricRegistry getMetricRegistry() {
+        return metricsRegistry;
     }
 
     @Override
