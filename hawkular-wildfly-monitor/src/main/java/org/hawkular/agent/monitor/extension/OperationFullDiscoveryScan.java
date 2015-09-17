@@ -34,8 +34,10 @@ public class OperationFullDiscoveryScan implements OperationStepHandler {
             ServiceRegistry serviceRegistry = opContext.getServiceRegistry(true);
             MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
             if (service.isMonitorServiceStarted()) {
-                int resourceCount = service.discoverAllResourcesForAllManagedServers();
-                opContext.getResult().set(String.format("Number of resources discovered: [%d]", resourceCount));
+                long start = System.currentTimeMillis();
+                service.discoverAllResourcesForAllManagedServers();
+                long duration = System.currentTimeMillis() - start;
+                opContext.getResult().set(String.format("Full discovery completed in [%d] millseconds", duration));
             } else {
                 throw new OperationFailedException("Agent is not started");
             }

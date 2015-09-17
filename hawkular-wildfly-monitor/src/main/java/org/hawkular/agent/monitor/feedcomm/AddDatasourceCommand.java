@@ -47,8 +47,7 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
         MsgLogger.LOG.infof("Received request to add the Datasource [%s] on resource [%s]", request.getDatasourceName(),
                 request.getResourcePath());
 
-        FeedCommProcessor processor = context.getFeedCommProcessor();
-        MonitorServiceConfiguration config = processor.getMonitorServiceConfiguration();
+        MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
 
         // Based on the resource ID we need to know which inventory manager is handling it.
         // From the inventory manager, we can get the actual resource.
@@ -63,16 +62,17 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return addDmr(resourceId, request, jdbcDriverContent, processor, managedServer);
+            return addDmr(resourceId, request, jdbcDriverContent, context, managedServer);
         } else {
             throw new IllegalStateException("Cannot add Datasource: report this bug: " + managedServer.getClass());
         }
     }
 
     private AddDatasourceResponse addDmr(String resourceId, AddDatasourceRequest request,
-            BinaryData jdbcDriverContent, FeedCommProcessor processor, ManagedServer managedServer) throws Exception {
+            BinaryData jdbcDriverContent, CommandContext context, ManagedServer managedServer) throws Exception {
 
-        DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
+        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
+                .get(managedServer);
         if (inventoryManager == null) {
             throw new IllegalArgumentException(
                     String.format("Cannot add Datasource: missing inventory manager [%s]", managedServer));

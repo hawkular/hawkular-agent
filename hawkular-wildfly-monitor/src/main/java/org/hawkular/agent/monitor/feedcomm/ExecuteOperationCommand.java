@@ -54,8 +54,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         MsgLogger.LOG.infof("Received request to execute operation [%s] on resource [%s]",
                 request.getOperationName(), request.getResourcePath());
 
-        FeedCommProcessor processor = context.getFeedCommProcessor();
-        MonitorServiceConfiguration config = processor.getMonitorServiceConfiguration();
+        MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
 
         // Based on the resource ID we need to know which inventory manager is handling it.
         // From the inventory manager, we can get the actual resource.
@@ -69,16 +68,17 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return executeOperationDMR(resourceId, request, processor, managedServer);
+            return executeOperationDMR(resourceId, request, context, managedServer);
         } else {
             throw new IllegalStateException("Cannot execute operation: report this bug: " + managedServer.getClass());
         }
     }
 
     private ExecuteOperationResponse executeOperationDMR(String resourceId, ExecuteOperationRequest request,
-            FeedCommProcessor processor, ManagedServer managedServer) throws Exception {
+            CommandContext context, ManagedServer managedServer) throws Exception {
 
-        DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
+        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
+                .get(managedServer);
         if (inventoryManager == null) {
             throw new IllegalArgumentException(
                     String.format("Cannot execute operation: missing inventory manager [%s]", managedServer));

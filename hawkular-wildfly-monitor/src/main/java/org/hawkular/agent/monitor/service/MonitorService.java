@@ -28,6 +28,7 @@ import java.io.FileOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -109,7 +110,7 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
-public class MonitorService implements Service<MonitorService> {
+public class MonitorService implements Service<MonitorService>, DiscoveryService {
 
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
@@ -337,14 +338,6 @@ public class MonitorService implements Service<MonitorService> {
         // build our inventory managers and find all the resources we need to monitor
         discoverAllResourcesForAllManagedServers();
 
-        // start the scheduler - this will begin metric collection
-        try {
-            startScheduler();
-        } catch (Exception e) {
-            MsgLogger.LOG.errorCannotInitializeScheduler(e);
-            return;
-        }
-
         started = true;
     }
 
@@ -359,10 +352,7 @@ public class MonitorService implements Service<MonitorService> {
         MsgLogger.LOG.infoStopping();
 
         // shutdown scheduler
-        if (schedulerService != null) {
-            schedulerService.stop();
-            schedulerService = null;
-        }
+        stopScheduler();
 
         // disconnect from the feed comm channel
         if (feedComm != null) {
@@ -579,6 +569,25 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
+     * Stops the scheduler, which means no more metric collections or avail checks will be performed.
+     */
+    private void stopScheduler() {
+        if (schedulerService != null) {
+            schedulerService.stop();
+            schedulerService = null;
+        }
+    }
+
+    /**
+     * Convienence method that stops the scheduler if its already running, and then starts it up.
+     * @throws Exception if cannot start the scheduler
+     */
+    private void restartScheduler() throws Exception {
+        stopScheduler();
+        startScheduler();
+    }
+
+    /**
      * This prepares the given scheduler config with all the schedules needed to monitor all the resources
      * in the given inventory manager.
      * @param schedulerConfig scheduler configuration
@@ -602,16 +611,13 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
-    /**
-     * Given all managed servers defined in our configuration, this will build inventory managers
-     * for them all and discover all resources, populating the inventory managers with the discovered
-     * resources.
-     *
-     * This method is public to allow the "fullDiscoveryScan" operation to invoke it.
-     *
-     * @return the total number of resources discovered
-     */
-    public int discoverAllResourcesForAllManagedServers() {
+    @Override
+    public Map<ManagedServer, DMRInventoryManager> getDmrServerInventories() {
+        return Collections.unmodifiableMap(this.dmrServerInventories);
+    }
+
+    @Override
+    public void discoverAllResourcesForAllManagedServers() {
         int resourcesDiscovered = 0;
 
         // there may be some old managed servers that we don't manage anymore - remove them now
@@ -642,7 +648,14 @@ public class MonitorService implements Service<MonitorService> {
 
         MsgLogger.LOG.debugf("Full discovery scan found [%d] resources", resourcesDiscovered);
 
-        return resourcesDiscovered;
+        // restart the scheduler - this will begin metric collections for our new inventory
+        try {
+            restartScheduler();
+        } catch (Exception e) {
+            MsgLogger.LOG.errorCannotInitializeScheduler(e);
+        }
+
+        return;
     }
 
     private VertexSetListener<DMRResource> getDMRListenerForChangedInventory(final DMRInventoryManager imOriginal) {
@@ -882,8 +895,7 @@ public class MonitorService implements Service<MonitorService> {
      * @throws Exception if failed to connect to the Hawkular server
      */
     private void connectToCommandGatewayCommChannel() throws Exception {
-        feedComm = new FeedCommProcessor(this.httpClientBuilder, this.configuration, this.feedId,
-                this.dmrServerInventories);
+        feedComm = new FeedCommProcessor(this.httpClientBuilder, this.configuration, this.feedId, this);
         feedComm.connect();
     }
 }
