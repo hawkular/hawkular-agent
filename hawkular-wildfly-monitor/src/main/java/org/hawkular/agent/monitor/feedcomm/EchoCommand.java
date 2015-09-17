@@ -32,6 +32,6 @@ public class EchoCommand implements Command<EchoRequest, EchoResponse> {
         // return the response
         EchoResponse echoResponse = new EchoResponse();
         echoResponse.setReply(reply);
-        return new BasicMessageWithExtraData<>(echoResponse, null);
+        return new BasicMessageWithExtraData<>(echoResponse, binaryData);
     }
 }
