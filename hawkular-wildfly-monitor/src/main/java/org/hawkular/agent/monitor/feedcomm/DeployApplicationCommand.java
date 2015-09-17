@@ -48,8 +48,7 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
         MsgLogger.LOG.infof("Received request to deploy application [%s] on resource [%s]",
                 request.getDestinationFileName(), request.getResourcePath());
 
-        FeedCommProcessor processor = context.getFeedCommProcessor();
-        MonitorServiceConfiguration config = processor.getMonitorServiceConfiguration();
+        MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
 
         // Based on the resource ID we need to know which inventory manager is handling it.
         // From the inventory manager, we can get the actual resource.
@@ -63,16 +62,17 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return deployApplicationDMR(resourceId, request, applicationContent, processor, managedServer);
+            return deployApplicationDMR(resourceId, request, applicationContent, context, managedServer);
         } else {
             throw new IllegalStateException("Cannot deploy application: report this bug: " + managedServer.getClass());
         }
     }
 
     private DeployApplicationResponse deployApplicationDMR(String resourceId, DeployApplicationRequest request,
-            BinaryData applicationContent, FeedCommProcessor processor, ManagedServer managedServer) throws Exception {
+            BinaryData applicationContent, CommandContext context, ManagedServer managedServer) throws Exception {
 
-        DMRInventoryManager inventoryManager = processor.getDmrServerInventories().get(managedServer);
+        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
+                .get(managedServer);
         if (inventoryManager == null) {
             throw new IllegalArgumentException(
                     String.format("Cannot deploy application: missing inventory manager [%s]", managedServer));
@@ -98,6 +98,7 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
             client.deployStandalone(destFileName, applicationContent, enabled);
             response.setStatus("OK");
             response.setMessage(String.format("Uploaded [%s]. Enabled=[%s].", destFileName, enabled));
+            context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
         } catch (Exception e) {
             response.setStatus("ERROR");
             response.setMessage(e.toString());

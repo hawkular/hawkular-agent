@@ -16,11 +16,21 @@
  */
 package org.hawkular.agent.monitor.feedcomm;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.service.DiscoveryService;
+
 public class CommandContext {
     private final FeedCommProcessor feedComm;
+    private final MonitorServiceConfiguration config;
+    private final DiscoveryService discoveryService;
 
-    public CommandContext(FeedCommProcessor feedCommProcessor) {
+    public CommandContext(
+            FeedCommProcessor feedCommProcessor,
+            MonitorServiceConfiguration config,
+            DiscoveryService discoveryService) {
         this.feedComm = feedCommProcessor;
+        this.config = config;
+        this.discoveryService = discoveryService;
     }
 
     /**
@@ -28,5 +38,13 @@ public class CommandContext {
      */
     public FeedCommProcessor getFeedCommProcessor() {
         return feedComm;
+    }
+
+    public MonitorServiceConfiguration getMonitorServiceConfiguration() {
+        return config;
+    }
+
+    public DiscoveryService getDiscoveryService() {
+        return discoveryService;
     }
 }

@@ -24,9 +24,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.service.DiscoveryService;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.bus.common.BasicMessage;
@@ -62,7 +61,7 @@ public class FeedCommProcessor implements WebSocketListener {
 
     private final HttpClientBuilder httpClientBuilder;
     private final MonitorServiceConfiguration config;
-    private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories;
+    private final DiscoveryService discoveryService;
     private final String feedcommUrl;
     private final ExecutorService sendExecutor = Executors.newSingleThreadExecutor();
 
@@ -70,14 +69,15 @@ public class FeedCommProcessor implements WebSocketListener {
     private WebSocket webSocket;
 
     public FeedCommProcessor(HttpClientBuilder httpClientBuilder, MonitorServiceConfiguration config, String feedId,
-            Map<ManagedServer, DMRInventoryManager> dmrServerInventories) {
+            DiscoveryService discoveryService) {
+
         if (feedId == null || feedId.isEmpty()) {
             throw new IllegalArgumentException("Must have a valid feed ID to communicate with the server");
         }
 
         this.httpClientBuilder = httpClientBuilder;
         this.config = config;
-        this.dmrServerInventories = dmrServerInventories;
+        this.discoveryService = discoveryService;
 
         try {
             StringBuilder url;
@@ -88,14 +88,6 @@ public class FeedCommProcessor implements WebSocketListener {
         } catch (Exception e) {
             throw new IllegalArgumentException("Cannot build URL to the server command-gateway endpoint", e);
         }
-    }
-
-    public MonitorServiceConfiguration getMonitorServiceConfiguration() {
-        return config;
-    }
-
-    public Map<ManagedServer, DMRInventoryManager> getDmrServerInventories() {
-        return dmrServerInventories;
     }
 
     /**
@@ -258,7 +250,7 @@ public class FeedCommProcessor implements WebSocketListener {
                     response = new GenericErrorResponseBuilder().setErrorMessage(errorMessage).build();
                 } else {
                     Command command = commandClass.newInstance();
-                    CommandContext context = new CommandContext(this);
+                    CommandContext context = new CommandContext(this, this.config, this.discoveryService);
                     response = command.execute(msg, msgWithData.getBinaryData(), context);
                 }
             } finally {

@@ -28,8 +28,8 @@ import java.io.FileOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,12 +37,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
-import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
@@ -52,24 +49,20 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.feedcomm.FeedCommProcessor;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
-import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.MetricTypeManager;
 import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
-import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
+import org.hawkular.agent.monitor.inventory.dmr.DMRMetadataManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResourceConfigurationPropertyInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
@@ -78,10 +71,7 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactoryImpl;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
-import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
-import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
-import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
@@ -91,7 +81,6 @@ import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
-import org.hawkular.dmrclient.Address;
 import org.hawkular.inventory.api.model.Feed;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
@@ -102,8 +91,6 @@ import org.jboss.as.network.SocketBinding;
 import org.jboss.as.server.ServerEnvironment;
 import org.jboss.as.server.ServerEnvironmentService;
 import org.jboss.as.server.Services;
-import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
@@ -111,16 +98,19 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jgrapht.event.GraphVertexChangeEvent;
+import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.BreadthFirstIterator;
 
+import com.codahale.metrics.InstrumentedExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
-public class MonitorService implements Service<MonitorService> {
+public class MonitorService implements Service<MonitorService>, DiscoveryService {
 
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
@@ -134,6 +124,7 @@ public class MonitorService implements Service<MonitorService> {
     private PropertyChangeListener serverStateListener;
     private ExecutorService managementClientExecutor;
 
+    // the full configuration as declared in standalone.xml
     private MonitorServiceConfiguration configuration;
 
     // this is used to identify us to the Hawkular environment as a particular feed
@@ -148,7 +139,7 @@ public class MonitorService implements Service<MonitorService> {
     private StorageAdapter storageAdapter;
     private HttpClientBuilder httpClientBuilder;
 
-    // used to send data to the server over the feed communications channel
+    // used to send/receive data to the server over the feed communications channel
     private FeedCommProcessor feedComm;
 
     // scheduled metric and avail collections
@@ -161,6 +152,9 @@ public class MonitorService implements Service<MonitorService> {
 
     // our internal inventories for each monitored server
     private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories = new HashMap<>();
+
+    // this is a thread pool that requests newly discovered resources to be stored in inventory
+    private ExecutorService discoveredResourcesStorageExecutor;
 
     @Override
     public MonitorService getValue() {
@@ -254,7 +248,11 @@ public class MonitorService implements Service<MonitorService> {
         // get our self identifiers
         ModelControllerClientFactory mccFactory = createLocalClientFactory();
         LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
-        selfId = localDMREndpoint.getServerIdentifiers();
+        this.selfId = localDMREndpoint.getServerIdentifiers();
+
+        // build the diagnostics object that will be used to track our own performance
+        final MetricRegistry metricRegistry = new MetricRegistry();
+        this.diagnostics = new DiagnosticsImpl(configuration.diagnostics, metricRegistry, selfId);
 
         // determine where our Hawkular server is
         // If the user gave us a URL explicitly, that overrides everything and we use it.
@@ -271,9 +269,9 @@ public class MonitorService implements Service<MonitorService> {
                     // no URL or output socket binding - assume we are running co-located with server
                     SocketBinding socketBinding;
                     if (this.configuration.storageAdapter.useSSL) {
-                        socketBinding = httpsSocketBindingValue.getValue();
+                        socketBinding = this.httpsSocketBindingValue.getValue();
                     } else {
-                        socketBinding = httpSocketBindingValue.getValue();
+                        socketBinding = this.httpSocketBindingValue.getValue();
                     }
                     address = socketBinding.getAddress().getHostAddress();
                     if (address.equals("0.0.0.0") || address.equals("::/128")) {
@@ -281,7 +279,7 @@ public class MonitorService implements Service<MonitorService> {
                     }
                     port = socketBinding.getAbsolutePort();
                 } else {
-                    OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue.getValue();
+                    OutboundSocketBinding serverBinding = this.serverOutboundSocketBindingValue.getValue();
                     address = serverBinding.getResolvedDestinationAddress().getHostAddress();
                     port = serverBinding.getDestinationPort();
                 }
@@ -298,7 +296,8 @@ public class MonitorService implements Service<MonitorService> {
         // 1. determine our tenant ID dynamically
         // 2. register our feed ID
         // 3. connect to the server's feed comm channel
-        if (configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+        // 4. prepare the thread pool that will store discovered resources into inventory
+        if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
             try {
                 determineTenantId();
                 registerFeed();
@@ -307,15 +306,22 @@ public class MonitorService implements Service<MonitorService> {
                 return;
             }
 
-            /* try to connect to the server over the command-gateway channel
-             * - if it fails, just log an error but keep going */
+            // try to connect to the server via command-gateway channel; if it fails, just log an error but keep going
             try {
-                connectToFeedCommChannel();
+                connectToCommandGatewayCommChannel();
             } catch (Exception e) {
                 MsgLogger.LOG.errorCannotEstablishFeedComm(e);
             }
+
+            // build the thread pool that will run jobs that store inventory
+            final ThreadFactory factoryGenerator = ThreadFactoryGenerator.generateFactory(true,
+                    "Hawkular-Monitor-Discovered-Resources-Storage");
+            final ExecutorService threadPool = Executors.newFixedThreadPool(1, factoryGenerator);
+            final String metricNamePrefix = DiagnosticsImpl.name(selfId, "inventory");
+            this.discoveredResourcesStorageExecutor = new InstrumentedExecutorService(threadPool, metricRegistry,
+                    metricNamePrefix);
         } else {
-            if (configuration.storageAdapter.tenantId == null) {
+            if (this.configuration.storageAdapter.tenantId == null) {
                 MsgLogger.LOG.errorMustHaveTenantIdConfigured();
                 return;
             }
@@ -329,13 +335,8 @@ public class MonitorService implements Service<MonitorService> {
             return;
         }
 
-        // start the scheduler - this will begin metric collection
-        try {
-            startScheduler();
-        } catch (Exception e) {
-            MsgLogger.LOG.errorCannotInitializeScheduler(e);
-            return;
-        }
+        // build our inventory managers and find all the resources we need to monitor
+        discoverAllResourcesForAllManagedServers();
 
         started = true;
     }
@@ -351,10 +352,7 @@ public class MonitorService implements Service<MonitorService> {
         MsgLogger.LOG.infoStopping();
 
         // shutdown scheduler
-        if (schedulerService != null) {
-            schedulerService.stop();
-            schedulerService = null;
-        }
+        stopScheduler();
 
         // disconnect from the feed comm channel
         if (feedComm != null) {
@@ -362,11 +360,20 @@ public class MonitorService implements Service<MonitorService> {
             feedComm = null;
         }
 
+        // stop storing things to inventory
+        if (discoveredResourcesStorageExecutor != null) {
+            discoveredResourcesStorageExecutor.shutdownNow();
+            discoveredResourcesStorageExecutor = null;
+        }
+
+        // remove our inventories
+        dmrServerInventories.clear();
+
         // stop diagnostic reporting and spit out a final diagnostics report
         if (diagnosticsReporter != null) {
-            this.diagnosticsReporter.stop();
-            if (this.configuration.diagnostics.enabled) {
-                this.diagnosticsReporter.report();
+            diagnosticsReporter.stop();
+            if (configuration.diagnostics.enabled) {
+                diagnosticsReporter.report();
             }
         }
 
@@ -379,12 +386,23 @@ public class MonitorService implements Service<MonitorService> {
         started = false;
     }
 
+    /**
+     * @return the directory where our agent service can write data files. This directory survives restarts.
+     */
     private File getDataDirectory() {
         File dataDir = new File(this.serverEnvironmentValue.getValue().getServerDataDir(), "hawkular-agent");
         dataDir.mkdirs();
         return dataDir;
     }
 
+    /**
+     * Reads in a data file into memory and returns its contents. Do NOT call this for very large files.
+     *
+     * @param filename the name of the file to read - its location is assumed to be under
+     *                 the {@link #getDataDirectory() data directory}.
+     * @return the full contents of the file
+     * @throws FileNotFoundException if the file does not exist
+     */
     private String slurpDataFile(String filename) throws FileNotFoundException {
         File dataFile = new File(getDataDirectory(), filename);
         FileInputStream dataFileInputStream = new FileInputStream(dataFile);
@@ -392,6 +410,14 @@ public class MonitorService implements Service<MonitorService> {
         return fileContents;
     }
 
+    /**
+     * Writes a data file to the {@link #getDataDirectory() data directory}.
+     *
+     * @param filename the name of the file - this is relative to under the data directory
+     * @param fileContents what the contents of the file should be
+     * @return the file that was written
+     * @throws FileNotFoundException if the file could not be created
+     */
     private File writeDataFile(String filename, String fileContents) throws FileNotFoundException {
         File dataFile = new File(getDataDirectory(), filename);
         FileOutputStream dataFileOutputStream = new FileOutputStream(dataFile);
@@ -445,11 +471,12 @@ public class MonitorService implements Service<MonitorService> {
         return managementClientExecutor;
     }
 
+    /**
+     * Creates and starts the storage adapter that will be used to store our inventory data and monitoring data.
+     *
+     * @throws Exception if failed to start the storage adapter
+     */
     private void startStorageAdapter() throws Exception {
-        // build the diagnostics object that will be used to track our own performance
-        final MetricRegistry metricRegistry = new MetricRegistry();
-        this.diagnostics = new DiagnosticsImpl(configuration.diagnostics, metricRegistry, selfId);
-
         // determine what our backend storage should be and create its associated adapter
         switch (configuration.storageAdapter.type) {
             case HAWKULAR: {
@@ -476,7 +503,7 @@ public class MonitorService implements Service<MonitorService> {
         // determine where we are to store our own diagnostic reports
         switch (configuration.diagnostics.reportTo) {
             case LOG: {
-                this.diagnosticsReporter = JBossLoggingReporter.forRegistry(metricRegistry)
+                this.diagnosticsReporter = JBossLoggingReporter.forRegistry(this.diagnostics.getMetricRegistry())
                         .convertRatesTo(TimeUnit.SECONDS)
                         .convertDurationsTo(MILLISECONDS)
                         .outputTo(Logger.getLogger(getClass()))
@@ -486,7 +513,8 @@ public class MonitorService implements Service<MonitorService> {
             }
             case STORAGE: {
                 this.diagnosticsReporter = StorageReporter
-                        .forRegistry(metricRegistry, configuration.diagnostics, storageAdapter, selfId)
+                        .forRegistry(this.diagnostics.getMetricRegistry(), configuration.diagnostics, storageAdapter,
+                                selfId)
                         .convertRatesTo(TimeUnit.SECONDS)
                         .convertDurationsTo(MILLISECONDS)
                         .build();
@@ -503,54 +531,18 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
+    /**
+     * Builds the scheduler's configuraton and starts the scheduler.
+     * Do NOT call this until you know all resources have been discovered
+     * and the inventories have been built.
+     *
+     * @throws Exception
+     */
     private void startScheduler() throws Exception {
-        SchedulerConfiguration schedulerConfig = prepareSchedulerConfig();
-        schedulerService = new SchedulerService(schedulerConfig, selfId, diagnostics, storageAdapter,
-                createLocalClientFactory(), this.httpClientBuilder);
-
-        // now we can begin collecting metrics
-        schedulerService.start();
-
-        // if we are participating in a full hawkular environment, add resource and its metadata to inventory now
-        if (this.configuration.storageAdapter.type == MonitorServiceConfiguration.StorageReportTo.HAWKULAR) {
-            Runnable populateInventory = new Runnable() {
-                @Override
-                public void run() {
-                    ResourceManager<DMRResource> resourceManager;
-                    BreadthFirstIterator<DMRResource, DefaultEdge> bIter;
-
-                    try {
-                        long start = System.nanoTime();
-                        for (DMRInventoryManager im : MonitorService.this.dmrServerInventories.values()) {
-                            resourceManager = im.getResourceManager();
-                            InventoryStorage invStorage = new ServerAddressResolver(im.getManagedServer(),
-                                    inventoryStorageProxy);
-                            bIter = resourceManager.getBreadthFirstIterator();
-                            while (bIter.hasNext()) {
-                                DMRResource resource = bIter.next();
-                                invStorage.storeResourceType(resource.getResourceType());
-                                invStorage.storeResource(resource);
-                            }
-                        }
-                        long elapsed = System.nanoTime() - start;
-                        MsgLogger.LOG.infof("Inventory successfully initialized. It took "
-                                + ((double) elapsed / 1000000000.0)
-                                + " seconds.");
-                    } catch (Throwable t) {
-                        // TODO for now stop what we were doing and whatever we have in inventory is "good enough"
-                        // for prototyping, this is good enough, but we'll need better handling later
-                        MsgLogger.LOG.errorf(t,
-                                "Failed to completely add inventory - keep going with partial inventory");
-                    }
-                }
-            };
-
-            // run it in background so we don't block the subsystem startup
-            new Thread(populateInventory, "Hawkular Monitor Agent Populate Inventory").start();
+        if (this.schedulerService != null) {
+            return; // it has already been started
         }
-    }
 
-    private SchedulerConfiguration prepareSchedulerConfig() {
         SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
         schedulerConfig.setDiagnosticsConfig(this.configuration.diagnostics);
         schedulerConfig.setStorageAdapterConfig(this.configuration.storageAdapter);
@@ -561,81 +553,50 @@ public class MonitorService implements Service<MonitorService> {
         schedulerConfig.setAvailDispatcherBufferSize(this.configuration.availDispatcherBufferSize);
         schedulerConfig.setAvailDispatcherMaxBatchSize(this.configuration.availDispatcherMaxBatchSize);
 
-        // process each managed server
-        for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
-            if (!managedServer.isEnabled()) {
-                MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
-            } else {
-                Collection<Name> resourceTypeSets = managedServer.getResourceTypeSets();
-
-                if (managedServer instanceof RemoteDMRManagedServer) {
-                    RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
-                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(), dmrServer.getHost(),
-                            dmrServer.getPort(), dmrServer.getUsername(), dmrServer.getPassword());
-                    addDMRResources(schedulerConfig, managedServer, dmrEndpoint, resourceTypeSets);
-                } else if (managedServer instanceof LocalDMRManagedServer) {
-                    LocalDMRManagedServer dmrServer = (LocalDMRManagedServer) managedServer;
-                    LocalDMREndpoint dmrEndpoint = new LocalDMREndpoint(dmrServer.getName().toString(),
-                            createLocalClientFactory());
-                    addDMRResources(schedulerConfig, managedServer, dmrEndpoint, resourceTypeSets);
-                } else {
-                    throw new IllegalArgumentException("An invalid managed server type was found. ["
-                            + managedServer
-                            + "] Please report this bug.");
-                }
-            }
+        // for all the resources we have in inventory, schedule their metric and avail collections
+        for (DMRInventoryManager im : this.dmrServerInventories.values()) {
+            scheduleDMRMetricAvailCollections(schedulerConfig, im);
         }
 
-        return schedulerConfig;
+        this.schedulerService = new SchedulerService(
+                schedulerConfig,
+                this.selfId,
+                this.diagnostics,
+                this.storageAdapter,
+                createLocalClientFactory(),
+                this.httpClientBuilder);
+        this.schedulerService.start();
     }
 
-    private void addDMRResources(SchedulerConfiguration schedulerConfig, ManagedServer managedServer,
-            DMREndpoint dmrEndpoint, Collection<Name> dmrResourceTypeSets) {
-
-        // determine the client to use to connect to the managed server
-        ModelControllerClientFactory factory;
-        if (dmrEndpoint instanceof LocalDMREndpoint) {
-            factory = createLocalClientFactory();
-        } else {
-            factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
+    /**
+     * Stops the scheduler, which means no more metric collections or avail checks will be performed.
+     */
+    private void stopScheduler() {
+        if (schedulerService != null) {
+            schedulerService.stop();
+            schedulerService = null;
         }
+    }
 
-        // Build our inventory manager
-        // First build our resource type manager.
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
-        rtm = new ResourceTypeManager<>(this.configuration.dmrResourceTypeSetMap, dmrResourceTypeSets);
+    /**
+     * Convienence method that stops the scheduler if its already running, and then starts it up.
+     * @throws Exception if cannot start the scheduler
+     */
+    private void restartScheduler() throws Exception {
+        stopScheduler();
+        startScheduler();
+    }
 
-        // Now tell metric/avail managers what metric and avail types we need to use for the resource types
-        MetricTypeManager<DMRMetricType, DMRMetricTypeSet> mtm = new MetricTypeManager<>();
-        AvailTypeManager<DMRAvailType, DMRAvailTypeSet> atm = new AvailTypeManager<>();
-        BreadthFirstIterator<DMRResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
-        while (resourceTypeIter.hasNext()) {
-            DMRResourceType type = resourceTypeIter.next();
-            Collection<Name> metricSetsToUse = type.getMetricSets();
-            Collection<Name> availSetsToUse = type.getAvailSets();
-            mtm.addMetricTypes(this.configuration.dmrMetricTypeSetMap, metricSetsToUse);
-            atm.addAvailTypes(this.configuration.dmrAvailTypeSetMap, availSetsToUse);
-        }
-
-        // Create our empty resource manager - this will be filled in during discovery with our resources
-        ResourceManager<DMRResource> resourceManager = new ResourceManager<>();
-
-        // Now we can build our inventory manager and discover our resources
-        DMRInventoryManager im;
-        im = new DMRInventoryManager(this.feedId, rtm, mtm, atm, resourceManager, managedServer, dmrEndpoint, factory);
-        this.dmrServerInventories.put(managedServer, im);
-        im.discoverResources();
-
-        // now that we have our resources discovered, we need to do the following:
-        // - finish fleshing our the resource by adding their metrics and avail checks
-        // - add the resource and its metadata to inventory if applicable
-        // - schedule the metric collections and avail checks
-        BreadthFirstIterator<DMRResource, DefaultEdge> bIter = resourceManager.getBreadthFirstIterator();
+    /**
+     * This prepares the given scheduler config with all the schedules needed to monitor all the resources
+     * in the given inventory manager.
+     * @param schedulerConfig scheduler configuration
+     * @param im inventory manager
+     */
+    private void scheduleDMRMetricAvailCollections(SchedulerConfiguration schedulerConfig, DMRInventoryManager im) {
+        BreadthFirstIterator<DMRResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
         while (bIter.hasNext()) {
             DMRResource resource = bIter.next();
-
-            // flesh out the resource by adding its metrics and avails
-            addDMRMetricsAndAvails(resource, im);
 
             // schedule collections
             Collection<DMRMetricInstance> metricsToBeCollected = resource.getMetrics();
@@ -650,79 +611,172 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
-    private void addDMRMetricsAndAvails(DMRResource resource, DMRInventoryManager im) {
-
-        im.populateMetricAndAvailTypesForResourceType(resource.getResourceType());
-
-        for (DMRMetricType metricType : resource.getResourceType().getMetricTypes()) {
-            Interval interval = new Interval(metricType.getInterval(), metricType.getTimeUnits());
-            Address relativeAddress = Address.parse(metricType.getPath());
-            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
-            if (fullAddress != null) {
-                DMRPropertyReference prop = new DMRPropertyReference(fullAddress, metricType.getAttribute(), interval);
-                ID id = InventoryIdUtil.generateMetricInstanceId(resource, metricType);
-                Name name = metricType.getName();
-                DMRMetricInstance metricInstance = new DMRMetricInstance(id, name, resource, metricType, prop);
-                resource.getMetrics().add(metricInstance);
-            }
-        }
-
-        for (DMRAvailType availType : resource.getResourceType().getAvailTypes()) {
-            Interval interval = new Interval(availType.getInterval(), availType.getTimeUnits());
-            Address relativeAddress = Address.parse(availType.getPath());
-            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
-            if (fullAddress != null) {
-                AvailDMRPropertyReference prop = new AvailDMRPropertyReference(fullAddress, availType.getAttribute(),
-                        interval, availType.getUpRegex());
-                ID id = InventoryIdUtil.generateAvailInstanceId(resource, availType);
-                Name name = availType.getName();
-                DMRAvailInstance availInstance = new DMRAvailInstance(id, name, resource, availType, prop);
-                resource.getAvails().add(availInstance);
-            }
-        }
+    @Override
+    public Map<ManagedServer, DMRInventoryManager> getDmrServerInventories() {
+        return Collections.unmodifiableMap(this.dmrServerInventories);
     }
 
-    private Address getFullAddressOfChild(DMRResource parentResource, Address childRelativePath) {
-        // Some metrics/avails are collected from child resources. But sometimes resources
-        // don't have those child resources (e.g. ear deployments don't have an undertow subsystem).
-        // This means those metrics/avails cannot be collected (i.e. they are optional).
-        // We don't want to fail with errors in this case; we just want to ignore those metrics/avails
-        // since they don't exist.
-        // If the child does exist (by examining the parent resource's model), then this method
-        // will return the full address to that child resource.
+    @Override
+    public void discoverAllResourcesForAllManagedServers() {
+        int resourcesDiscovered = 0;
 
-        Address fullAddress = null;
-        if (childRelativePath.isRoot()) {
-            fullAddress = parentResource.getAddress(); // there really is no child; it is the resource itself
-        } else {
-            boolean childResourceExists = false;
-            String[] addressParts = childRelativePath.toAddressParts();
-            if (addressParts.length > 2) {
-                // we didn't query the parent's model for recursive data - so we only know direct children.
-                // if a metric/avail gets data from grandchildren or deeper, we don't know if it exists,
-                // so just assume it does.
-                childResourceExists = true;
-                MsgLogger.LOG.tracef("Cannot test long child path [%s] under resource [%s] "
-                        + "for existence so it will be assumed to exist", childRelativePath, parentResource);
+        // there may be some old managed servers that we don't manage anymore - remove them now
+        this.dmrServerInventories.keySet().retainAll(this.configuration.managedServersMap.values());
+
+        // go through each configured managed server and discovery all resources in them
+        for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
+            if (!managedServer.isEnabled()) {
+                MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
             } else {
-                ModelNode haystackNode = parentResource.getModelNode().get(addressParts[0]);
-                if (haystackNode.getType() != ModelType.UNDEFINED) {
-                    final List<ModelNode> haystackList = haystackNode.asList();
-                    for (ModelNode needleNode : haystackList) {
-                        if (needleNode.has(addressParts[1])) {
-                            childResourceExists = true;
-                            break;
+                if (managedServer instanceof RemoteDMRManagedServer) {
+                    RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
+                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(), dmrServer.getHost(),
+                            dmrServer.getPort(), dmrServer.getUsername(), dmrServer.getPassword());
+                    discoverResourcesForDMRManagedServer(managedServer, dmrEndpoint);
+                } else if (managedServer instanceof LocalDMRManagedServer) {
+                    DMREndpoint dmrEndpoint = new LocalDMREndpoint(managedServer.getName().toString(),
+                            createLocalClientFactory());
+                    discoverResourcesForDMRManagedServer(managedServer, dmrEndpoint);
+                } else {
+                    throw new IllegalArgumentException("An invalid managed server type was found. ["
+                            + managedServer + "] Please report this bug.");
+                }
+                resourcesDiscovered += this.dmrServerInventories.get(managedServer).getResourceManager()
+                        .getAllResources().size();
+            }
+        }
+
+        MsgLogger.LOG.debugf("Full discovery scan found [%d] resources", resourcesDiscovered);
+
+        // restart the scheduler - this will begin metric collections for our new inventory
+        try {
+            restartScheduler();
+        } catch (Exception e) {
+            MsgLogger.LOG.errorCannotInitializeScheduler(e);
+        }
+
+        return;
+    }
+
+    private VertexSetListener<DMRResource> getDMRListenerForChangedInventory(final DMRInventoryManager imOriginal) {
+        VertexSetListener<DMRResource> dmrListener = null;
+
+        // if we are participating in a full hawkular environment,
+        // new resources and their metadata will be added to inventory
+        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+            dmrListener = new VertexSetListener<DMRResource>() {
+                @Override
+                public void vertexRemoved(GraphVertexChangeEvent<DMRResource> e) {
+                }
+
+                @Override
+                public void vertexAdded(GraphVertexChangeEvent<DMRResource> e) {
+                    final DMRResource resource = e.getVertex();
+                    final DMRResourceType resourceType = resource.getResourceType();
+
+                    if (imOriginal != null) {
+                        DMRResource oldResource = imOriginal.getResourceManager().getResource(resource.getID());
+                        if (oldResource != null) {
+                            // we discovered a resource we had before. For now do nothing other than
+                            // set its persisted flag since we assume it has already been or will be persisted
+                            resource.setPersisted(true);
+                            resourceType.setPersisted(true);
+                            return;
                         }
                     }
+
+                    discoveredResourcesStorageExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
+                                MonitorService.this.inventoryStorageProxy.storeResource(resource);
+                            } catch (Throwable t) {
+                                MsgLogger.LOG.errorf(t, "Failed to store resource [%s]", resource);
+                            }
+                        }
+                    });
                 }
-            }
-            if (childResourceExists) {
-                fullAddress = parentResource.getAddress().clone().add(childRelativePath);
-            }
+            };
         }
-        return fullAddress;
+
+        return dmrListener;
     }
 
+    private void discoverResourcesForDMRManagedServer(ManagedServer managedServer, DMREndpoint dmrEndpoint) {
+        Collection<Name> resourceTypeSets = managedServer.getResourceTypeSets();
+        DMRInventoryManager im = buildDMRInventoryManager(managedServer, dmrEndpoint, resourceTypeSets, this.feedId,
+                this.configuration);
+        DMRInventoryManager imOriginal = this.dmrServerInventories.put(managedServer, im);
+        im.discoverResources(getDMRListenerForChangedInventory(imOriginal));
+    }
+
+    /**
+     * Builds an DMR inventory manager with all metadata but with an empty set of resources.
+     *
+     * @param managedServer the managed server whose inventory will be stored in the returned manager
+     * @param dmrEndpoint the endpoint used to connect to the managed server
+     * @param dmrResourceTypeSets only resources of these types will be managed by the inventory manager
+     * @param feedId our feed ID
+     * @param monitorServiceConfig our full configuration
+     *
+     * @return the DMR inventory manager that was created
+     */
+    private DMRInventoryManager buildDMRInventoryManager(ManagedServer managedServer, DMREndpoint dmrEndpoint,
+            Collection<Name> dmrResourceTypeSets, String feedId, MonitorServiceConfiguration monitorServiceConfig) {
+
+        DMRMetadataManager metadataMgr = buildDMRMetadataManager(dmrResourceTypeSets, monitorServiceConfig);
+
+        // Create our empty resource manager - this will be filled in during discovery with our resources
+        ResourceManager<DMRResource> resourceManager = new ResourceManager<>();
+
+        // determine the client to use to connect to the managed server
+        ModelControllerClientFactory factory;
+        if (dmrEndpoint instanceof LocalDMREndpoint) {
+            factory = createLocalClientFactory();
+        } else {
+            factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
+        }
+
+        DMRInventoryManager im;
+        im = new DMRInventoryManager(feedId, metadataMgr, resourceManager, managedServer, dmrEndpoint, factory);
+        return im;
+    }
+
+    /**
+     * Given a collection of resource type set names for DMR resources, this will build a metadata manager
+     * for all things (resource types, metric types, avail types) associated with those named type sets.
+     *
+     * @param dmrResourceTypeSets names of resource types to be used
+     * @param monitorServiceConfig configuration that contains all types known to our subsystem service
+     * @return metadata manager containing all metadata for the types in the named sets
+     */
+    private DMRMetadataManager buildDMRMetadataManager(Collection<Name> dmrResourceTypeSets,
+            MonitorServiceConfiguration monitorServiceConfig) {
+
+        // First build our metadata manager and its resource type manager, metric type manager, and avail type manager
+        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
+        rtm = new ResourceTypeManager<>(monitorServiceConfig.dmrResourceTypeSetMap, dmrResourceTypeSets);
+
+        // tell metric/avail managers what metric and avail types we need to use for the resource types
+        MetricTypeManager<DMRMetricType, DMRMetricTypeSet> mtm = new MetricTypeManager<>();
+        AvailTypeManager<DMRAvailType, DMRAvailTypeSet> atm = new AvailTypeManager<>();
+        BreadthFirstIterator<DMRResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
+        while (resourceTypeIter.hasNext()) {
+            DMRResourceType type = resourceTypeIter.next();
+            Collection<Name> metricSetsToUse = type.getMetricSets();
+            Collection<Name> availSetsToUse = type.getAvailSets();
+            mtm.addMetricTypes(monitorServiceConfig.dmrMetricTypeSetMap, metricSetsToUse);
+            atm.addAvailTypes(monitorServiceConfig.dmrAvailTypeSetMap, availSetsToUse);
+        }
+        DMRMetadataManager mm = new DMRMetadataManager(rtm, mtm, atm);
+        mm.populateMetricAndAvailTypesForAllResourceTypes();
+        return mm;
+    }
+
+    /**
+     * @return Determines what Hawkular tenant ID should be used and returns it.
+     */
     private String determineTenantId() {
         if (configuration.storageAdapter.tenantId != null) {
             return configuration.storageAdapter.tenantId;
@@ -763,6 +817,11 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
+    /**
+     * Registers our feed with the Hawkular system.
+     *
+     * @throws Exception if failed to register feed
+     */
     private void registerFeed() throws Exception {
         String desiredFeedId = this.selfId.getFullIdentifier();
         this.feedId = desiredFeedId; // assume we will get what we want
@@ -830,79 +889,13 @@ public class MonitorService implements Service<MonitorService> {
         }
     }
 
-    private void connectToFeedCommChannel() throws Exception {
-        feedComm = new FeedCommProcessor(this.httpClientBuilder, this.configuration, this.feedId,
-                this.dmrServerInventories);
-        feedComm.connect();
-    }
-
     /**
-     * A filter that replaces 0.0.0.0 server address with the list of addresses got from
-     * {@link InetAddress#getByName(String)} where the argument of {@code getByName(String)} is the host the agent uses
-     * to query the AS'es DMR.
+     * Connects to the Hawkular server over the websocket command gateway.
+     *
+     * @throws Exception if failed to connect to the Hawkular server
      */
-    private static final class ServerAddressResolver implements InventoryStorage {
-        private final InventoryStorage delegate;
-        private final ManagedServer server;
-
-        public ServerAddressResolver(ManagedServer server, InventoryStorage delegate) {
-            super();
-            this.delegate = delegate;
-            this.server = server;
-        }
-
-        private InetAddress[] resolveHost() throws UnknownHostException {
-            String host = null;
-            if (server instanceof RemoteDMRManagedServer) {
-                RemoteDMRManagedServer remoteServer = (RemoteDMRManagedServer) server;
-                host = remoteServer.getHost();
-            } else if (server instanceof LocalDMRManagedServer) {
-                host = InetAddress.getLocalHost().getCanonicalHostName();
-            } else {
-                throw new IllegalStateException("Unexpected type of managed server '" + server.getClass().getName()
-                        + "'; expected '" + RemoteDMRManagedServer.class.getName() + "' or '"
-                        + LocalDMRManagedServer.class.getName() + "'. Please report this bug.");
-            }
-            return InetAddress.getAllByName(host);
-        }
-
-        @Override
-        public void storeResourceType(ResourceType<?, ?, ?, ?> resourceType) {
-            delegate.storeResourceType(resourceType);
-        }
-
-        @Override
-        public void storeResource(Resource<?, ?, ?, ?, ?> resource) {
-            final String IP_ADDRESSES_PROPERTY_NAME = "Bound Address";
-            /* here, we used to check if "WildFly Server".equals(resource.getResourceType().getName().getNameString())
-             * but resource.getParent() == null should select the same node */
-            if (resource.getParent() == null && resource instanceof DMRResource) {
-                DMRResource dmrResource = (DMRResource) resource;
-                DMRResourceConfigurationPropertyInstance adrProp = null;
-                for (DMRResourceConfigurationPropertyInstance p : dmrResource.getResourceConfigurationProperties()) {
-                    if (IP_ADDRESSES_PROPERTY_NAME.equals(p.getName().getNameString())) {
-                        adrProp = p;
-                        break;
-                    }
-                }
-                if (adrProp != null) {
-                    String displayAddresses = null;
-                    try {
-                        InetAddress dmrAddr = InetAddress.getByName(adrProp.getValue());
-                        if (dmrAddr.isAnyLocalAddress()) {
-                            /* resolve the addresses rather than showing 0.0.0.0 */
-                            InetAddress[] resolvedAddresses = resolveHost();
-                            displayAddresses = Stream.of(resolvedAddresses).map(a -> a.getHostAddress())
-                                    .collect(Collectors.joining(", "));
-                            adrProp.setValue(displayAddresses);
-                        }
-                    } catch (UnknownHostException e) {
-                        MsgLogger.LOG.warnf(e, "Could not parse IP address [%s]", adrProp.getValue());
-                    }
-                }
-            }
-            delegate.storeResource(resource);
-        }
-
+    private void connectToCommandGatewayCommChannel() throws Exception {
+        feedComm = new FeedCommProcessor(this.httpClientBuilder, this.configuration, this.feedId, this);
+        feedComm.connect();
     }
 }

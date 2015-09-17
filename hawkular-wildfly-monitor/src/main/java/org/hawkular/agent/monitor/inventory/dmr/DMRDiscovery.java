@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory.dmr;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,12 +25,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
+import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
+import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
@@ -37,6 +46,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 import org.jboss.logging.Logger;
+import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.DepthFirstIterator;
 
@@ -50,45 +60,60 @@ public class DMRDiscovery {
     private final ModelControllerClientFactory clientFactory;
 
     /**
-     * Creates the discovery object for the given inventory manager. Only resources of known types
-     * will be discovered. To connect to and query the server endpoint, the given client factory will
-     * be used to create clients.
+     * Creates the discovery object for the given inventory manager.
+     * Only resources of known types will be discovered.
+     * To connect to and query the server endpoint, the client factory provided
+     * by the inventory manager will be used to create clients
+     * (see {@link DMRInventoryManager#getModelControllerClientFactory()}).
      *
      * @param im the inventory manager that holds information about the server to be queried and
      *           the known types to be discovered
      * @param clientFactory will create clients used to communicate with the endpoint
      */
-    public DMRDiscovery(DMRInventoryManager im, ModelControllerClientFactory clientFactory) {
+    public DMRDiscovery(DMRInventoryManager im) {
         this.inventoryManager = im;
-        this.clientFactory = clientFactory;
+        this.clientFactory = im.getModelControllerClientFactory();
     }
 
     /**
-     * Performs the discovery. A graph is returned that contains all the discovered resources.
-     * The graph is nothing more than a tree with parent resources at the top of the tree and
+     * Performs the discovery and stores the discovered inventory in this object's inventory manager.
+     * This discovers a tree with parent resources at the top of the tree and
      * children at the bottom (that is to say, a resource will have an outgoing edge to its parent
      * and incoming edges from its children).
      *
-     * @param resourceManager tree graph where all discovered resources will be stored
+     * @param listener if not null, will be a listener that gets notified when resources are discovered
      *
      * @throws Exception if discovery failed
      */
-    public void discoverAllResources(ResourceManager<DMRResource> resourceManager) throws Exception {
+    public void discoverAllResources(final VertexSetListener<DMRResource> listener) throws Exception {
+        ResourceManager<DMRResource> resourceManager = this.inventoryManager.getResourceManager();
+
+        if (listener != null) {
+            resourceManager.getResourcesGraph().addVertexSetListener(listener);
+        }
+
         try (ModelControllerClient mcc = clientFactory.createClient()) {
-            Set<DMRResourceType> rootTypes = this.inventoryManager.getResourceTypeManager().getRootResourceTypes();
+            Set<DMRResourceType> rootTypes;
+            rootTypes = this.inventoryManager.getMetadataManager().getResourceTypeManager().getRootResourceTypes();
+
+            long start = System.currentTimeMillis();
             for (DMRResourceType rootType : rootTypes) {
-                discoverChildrenOfResourceType(null, rootType, mcc, resourceManager);
+                discoverChildrenOfResourceType(null, rootType, mcc);
             }
-            logTreeGraph("Discovered resources", resourceManager);
-            return;
+            long duration = System.currentTimeMillis() - start;
+
+            logTreeGraph("Discovered resources", resourceManager, duration);
         } catch (Exception e) {
             throw new Exception("Failed to execute discovery for endpoint [" + this.inventoryManager.getEndpoint()
                     + "]", e);
+        } finally {
+            if (listener != null) {
+                resourceManager.getResourcesGraph().removeVertexSetListener(listener);
+            }
         }
     }
 
-    private void discoverChildrenOfResourceType(DMRResource parent, DMRResourceType type, ModelControllerClient mcc,
-            ResourceManager<DMRResource> resourceManager) {
+    private void discoverChildrenOfResourceType(DMRResource parent, DMRResourceType type, ModelControllerClient mcc) {
         try {
             Map<Address, ModelNode> resources;
 
@@ -116,6 +141,8 @@ public class DMRDiscovery {
                         + " [[" + results.toString() + "]]");
             }
 
+            ResourceManager<DMRResource> resourceManager = this.inventoryManager.getResourceManager();
+
             for (Map.Entry<Address, ModelNode> entry : resources.entrySet()) {
                 Address address = entry.getKey(); // this is the unique DMR address for this resource
                 Name resourceName = generateResourceName(type, address);
@@ -127,15 +154,21 @@ public class DMRDiscovery {
                         parent, address, entry.getValue());
                 LOG.debugf("Discovered [%s]", resource);
 
-                resourceManager.addResource(resource);
-
                 // get the configuration of the resource
                 discoverResourceConfiguration(resource, mcc);
+                postProcessResourceConfiguration(resource);
+
+                // populate the metrics/avails based on the resource's type
+                addMetricAndAvailInstances(resource);
+
+                // add it to our tree graph
+                resourceManager.addResource(resource);
 
                 // recursively discover children of child types
-                Set<DMRResourceType> childTypes = this.inventoryManager.getResourceTypeManager().getChildren(type);
+                Set<DMRResourceType> childTypes;
+                childTypes = this.inventoryManager.getMetadataManager().getResourceTypeManager().getChildren(type);
                 for (DMRResourceType childType : childTypes) {
-                    discoverChildrenOfResourceType(resource, childType, mcc, resourceManager);
+                    discoverChildrenOfResourceType(resource, childType, mcc);
                 }
             }
         } catch (Exception e) {
@@ -172,7 +205,52 @@ public class DMRDiscovery {
         }
     }
 
-    private void logTreeGraph(String logMsg, ResourceManager<DMRResource> resourceManager) {
+    private void postProcessResourceConfiguration(DMRResource resource) {
+        // rather than check ("WildFly Server".equals(resource.getResourceType().getName().getNameString()))
+        // instead we just know that (resource.getParent() == null) should select the same node.
+        if (resource.getParent() == null) {
+            final String IP_ADDRESSES_PROPERTY_NAME = "Bound Address";
+            DMRResourceConfigurationPropertyInstance adrProp = null;
+            for (DMRResourceConfigurationPropertyInstance p : resource.getResourceConfigurationProperties()) {
+                if (IP_ADDRESSES_PROPERTY_NAME.equals(p.getName().getNameString())) {
+                    adrProp = p;
+                    break;
+                }
+            }
+            if (adrProp != null) {
+                String displayAddresses = null;
+                try {
+                    // Replaces 0.0.0.0 server address with the list of addresses received from
+                    // InetAddress.getByName(String) where the argument of getByName(String) is the host the agent
+                    // uses to query the AS'es DMR.
+                    InetAddress dmrAddr = InetAddress.getByName(adrProp.getValue());
+                    if (dmrAddr.isAnyLocalAddress()) {
+                        String host = null;
+                        ManagedServer server = inventoryManager.getManagedServer();
+                        if (server instanceof RemoteDMRManagedServer) {
+                            RemoteDMRManagedServer remoteServer = (RemoteDMRManagedServer) server;
+                            host = remoteServer.getHost();
+                        } else if (server instanceof LocalDMRManagedServer) {
+                            host = InetAddress.getLocalHost().getCanonicalHostName();
+                        } else {
+                            throw new IllegalStateException("Unexpected type of managed server [" + server.getClass()
+                                    + "]. Please report this bug.");
+                        }
+                        InetAddress[] resolvedAddresses = InetAddress.getAllByName(host);
+                        displayAddresses = Stream.of(resolvedAddresses).map(a -> a.getHostAddress())
+                                .collect(Collectors.joining(", "));
+                        adrProp.setValue(displayAddresses);
+                    }
+                } catch (UnknownHostException e) {
+                    MsgLogger.LOG.warnf(e, "Could not parse IP address [%s]", adrProp.getValue());
+                }
+            }
+        }
+
+        return;
+    }
+
+    private void logTreeGraph(String logMsg, ResourceManager<DMRResource> resourceManager, long duration) {
         if (!LOG.isDebugEnabled()) {
             return;
         }
@@ -193,7 +271,7 @@ public class DMRDiscovery {
             graphString.append(resource).append("\n");
         }
 
-        LOG.debugf("%s\n%s", logMsg, graphString);
+        LOG.debugf("%s\n%s\nDiscovery duration: [%d]ms", logMsg, graphString, duration);
     }
 
     private Name generateResourceName(DMRResourceType type, Address address) {
@@ -222,5 +300,76 @@ public class DMRDiscovery {
                 .getNameString());
         String nameStr = String.format(nameTemplate, args.toArray());
         return new Name(nameStr);
+    }
+
+    private void addMetricAndAvailInstances(DMRResource resource) {
+
+        for (DMRMetricType metricType : resource.getResourceType().getMetricTypes()) {
+            Interval interval = new Interval(metricType.getInterval(), metricType.getTimeUnits());
+            Address relativeAddress = Address.parse(metricType.getPath());
+            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
+            if (fullAddress != null) {
+                DMRPropertyReference prop = new DMRPropertyReference(fullAddress, metricType.getAttribute(), interval);
+                ID id = InventoryIdUtil.generateMetricInstanceId(resource, metricType);
+                Name name = metricType.getName();
+                DMRMetricInstance metricInstance = new DMRMetricInstance(id, name, resource, metricType, prop);
+                resource.getMetrics().add(metricInstance);
+            }
+        }
+
+        for (DMRAvailType availType : resource.getResourceType().getAvailTypes()) {
+            Interval interval = new Interval(availType.getInterval(), availType.getTimeUnits());
+            Address relativeAddress = Address.parse(availType.getPath());
+            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
+            if (fullAddress != null) {
+                AvailDMRPropertyReference prop = new AvailDMRPropertyReference(fullAddress, availType.getAttribute(),
+                        interval, availType.getUpRegex());
+                ID id = InventoryIdUtil.generateAvailInstanceId(resource, availType);
+                Name name = availType.getName();
+                DMRAvailInstance availInstance = new DMRAvailInstance(id, name, resource, availType, prop);
+                resource.getAvails().add(availInstance);
+            }
+        }
+    }
+
+    private Address getFullAddressOfChild(DMRResource parentResource, Address childRelativePath) {
+        // Some metrics/avails are collected from child resources. But sometimes resources
+        // don't have those child resources (e.g. ear deployments don't have an undertow subsystem).
+        // This means those metrics/avails cannot be collected (i.e. they are optional).
+        // We don't want to fail with errors in this case; we just want to ignore those metrics/avails
+        // since they don't exist.
+        // If the child does exist (by examining the parent resource's model), then this method
+        // will return the full address to that child resource.
+
+        Address fullAddress = null;
+        if (childRelativePath.isRoot()) {
+            fullAddress = parentResource.getAddress(); // there really is no child; it is the resource itself
+        } else {
+            boolean childResourceExists = false;
+            String[] addressParts = childRelativePath.toAddressParts();
+            if (addressParts.length > 2) {
+                // we didn't query the parent's model for recursive data - so we only know direct children.
+                // if a metric/avail gets data from grandchildren or deeper, we don't know if it exists,
+                // so just assume it does.
+                childResourceExists = true;
+                MsgLogger.LOG.tracef("Cannot test long child path [%s] under resource [%s] "
+                        + "for existence so it will be assumed to exist", childRelativePath, parentResource);
+            } else {
+                ModelNode haystackNode = parentResource.getModelNode().get(addressParts[0]);
+                if (haystackNode.getType() != ModelType.UNDEFINED) {
+                    final List<ModelNode> haystackList = haystackNode.asList();
+                    for (ModelNode needleNode : haystackList) {
+                        if (needleNode.has(addressParts[1])) {
+                            childResourceExists = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (childResourceExists) {
+                fullAddress = parentResource.getAddress().clone().add(childRelativePath);
+            }
+        }
+        return fullAddress;
     }
 }
