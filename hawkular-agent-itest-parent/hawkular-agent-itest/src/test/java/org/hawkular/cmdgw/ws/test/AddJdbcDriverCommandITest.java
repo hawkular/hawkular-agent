@@ -75,6 +75,9 @@ public class AddJdbcDriverCommandITest extends AbstractCommandITest {
                         "AddJdbcDriverRequest={\"authentication\":" + authentication + ", " //
                                 + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
                                 + "\"driverName\":\"" + driverName + "\"," //
+                                + "\"driverClass\":\"com.mysql.jdbc.Driver\"," //
+                                + "\"driverMajorVersion\":\"5\"," //
+                                + "\"driverMinorVersion\":\"1\"," //
                                 + "\"moduleName\":\"com.mysql\"," //
                                 + "\"driverJarName\":\"" + driverJarName + "\"" //
                                 + "}",

@@ -155,12 +155,24 @@ public class DatasourceJBossASClient extends JBossASClient {
      * @return
      * @throws Exception
      */
-    public ModelNode addJdbcDriver(String driverName, String moduleName) throws Exception {
+    public ModelNode addJdbcDriver(String driverName, String moduleName, String driverClassName,
+            Integer driverMajorVersion, Integer driverMinorVersion) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, JDBC_DRIVER, driverName);
         final ModelNode driverNode = new ModelNode();
 
         driverNode.get("driver-name").set(driverName);
         driverNode.get("driver-module-name").set(moduleName);
+
+        if (driverClassName != null) {
+            driverNode.get("driver-class-name").set(driverClassName);
+        }
+        if (driverMajorVersion != null) {
+            driverNode.get("driver-major-version").set(driverMajorVersion.intValue());
+        }
+        if (driverMinorVersion != null) {
+            driverNode.get("driver-minor-version").set(driverMinorVersion.intValue());
+        }
+
         driverNode.get(OPERATION).set(ADD);
         driverNode.get(ADDRESS).set(addr.getAddressNode());
 

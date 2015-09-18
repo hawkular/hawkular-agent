@@ -110,7 +110,8 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
             AddModuleRequest addModuleRequest = new AddModuleRequest(request.getModuleName(), (String) null,
                     (String) null, Collections.singleton(jarResource), DEFAULT_DRIVER_MODULE_DEPENDENCIES, null);
             new Modules(Modules.findModulesDir()).add(addModuleRequest);
-            ModelNode result = dsc.addJdbcDriver(request.getDriverName(), request.getModuleName());
+            ModelNode result = dsc.addJdbcDriver(request.getDriverName(), request.getModuleName(),
+                    request.getDriverClass(), request.getDriverMajorVersion(), request.getDriverMinorVersion());
             if (JBossASClient.isSuccess(result)) {
                 response.setStatus("OK");
                 response.setMessage(String.format("Added JDBC Driver: %s", request.getDriverName()));
