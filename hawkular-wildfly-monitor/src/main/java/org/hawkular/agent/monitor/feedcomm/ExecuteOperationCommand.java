@@ -32,6 +32,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.ExecuteOperationRequest;
 import org.hawkular.cmdgw.api.ExecuteOperationResponse;
@@ -49,8 +50,8 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
     public static final Class<ExecuteOperationRequest> REQUEST_CLASS = ExecuteOperationRequest.class;
 
     @Override
-    public ExecuteOperationResponse execute(ExecuteOperationRequest request, BinaryData binaryData,
-            CommandContext context) throws Exception {
+    public BasicMessageWithExtraData<ExecuteOperationResponse> execute(ExecuteOperationRequest request,
+            BinaryData binaryData, CommandContext context) throws Exception {
         MsgLogger.LOG.infof("Received request to execute operation [%s] on resource [%s]",
                 request.getOperationName(), request.getResourcePath());
 
@@ -74,7 +75,8 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         }
     }
 
-    private ExecuteOperationResponse executeOperationDMR(String resourceId, ExecuteOperationRequest request,
+    private BasicMessageWithExtraData<ExecuteOperationResponse> executeOperationDMR(String resourceId,
+            ExecuteOperationRequest request,
             CommandContext context, ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
@@ -142,6 +144,6 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
             response.setMessage(e.toString());
         }
 
-        return response;
+        return new BasicMessageWithExtraData<>(response, null);
     }
 }

@@ -28,6 +28,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddDatasourceRequest;
 import org.hawkular.cmdgw.api.AddDatasourceResponse;
@@ -41,8 +42,8 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
     public static final Class<AddDatasourceRequest> REQUEST_CLASS = AddDatasourceRequest.class;
 
     @Override
-    public AddDatasourceResponse execute(AddDatasourceRequest request, BinaryData jdbcDriverContent,
-            CommandContext context) throws Exception {
+    public BasicMessageWithExtraData<AddDatasourceResponse> execute(AddDatasourceRequest request,
+            BinaryData jdbcDriverContent, CommandContext context) throws Exception {
 
         MsgLogger.LOG.infof("Received request to add the Datasource [%s] on resource [%s]", request.getDatasourceName(),
                 request.getResourcePath());
@@ -68,7 +69,7 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
         }
     }
 
-    private AddDatasourceResponse addDmr(String resourceId, AddDatasourceRequest request,
+    private BasicMessageWithExtraData<AddDatasourceResponse> addDmr(String resourceId, AddDatasourceRequest request,
             BinaryData jdbcDriverContent, CommandContext context, ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
@@ -110,7 +111,7 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
             response.setMessage(e.toString());
         }
 
-        return response;
+        return new BasicMessageWithExtraData<>(response, null);
     }
 
 }

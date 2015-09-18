@@ -33,6 +33,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
 import org.hawkular.cmdgw.api.AddJdbcDriverResponse;
@@ -51,8 +52,8 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
             .unmodifiableSet(new LinkedHashSet(Arrays.asList("javax.api", "javax.transaction.api")));
 
     @Override
-    public AddJdbcDriverResponse execute(AddJdbcDriverRequest request, BinaryData jdbcDriverContent,
-            CommandContext context) throws Exception {
+    public BasicMessageWithExtraData<AddJdbcDriverResponse> execute(AddJdbcDriverRequest request,
+            BinaryData jdbcDriverContent, CommandContext context) throws Exception {
 
         MsgLogger.LOG.infof("Received request to add the JDBC Driver [%s] on resource [%s]", request.getModuleName(),
                 request.getResourcePath());
@@ -78,7 +79,7 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
         }
     }
 
-    private AddJdbcDriverResponse addLocal(String resourceId, AddJdbcDriverRequest request,
+    private BasicMessageWithExtraData<AddJdbcDriverResponse> addLocal(String resourceId, AddJdbcDriverRequest request,
             BinaryData jdbcDriverContent, CommandContext context, ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
@@ -116,7 +117,7 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
             response.setMessage(e.toString());
         }
 
-        return response;
+        return new BasicMessageWithExtraData<>(response, null);
     }
 
 }
