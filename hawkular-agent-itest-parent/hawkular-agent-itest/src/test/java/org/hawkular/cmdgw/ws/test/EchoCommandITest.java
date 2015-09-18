@@ -60,7 +60,7 @@ public class EchoCommandITest extends AbstractCommandITest {
         verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
         ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
         verify(mockListener, Mockito.timeout(10000).times(1)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
+                Mockito.same(PayloadType.BINARY));
 
         List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
         int i = 0;

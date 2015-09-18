@@ -33,7 +33,9 @@ import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddDatasourceRequest;
 import org.hawkular.cmdgw.api.AddDatasourceResponse;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
+import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.jboss.dmr.ModelNode;
 
 /**
  * Adds an Datasource on a resource.
@@ -92,19 +94,25 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
         try (DatasourceJBossASClient dsc = new DatasourceJBossASClient(
                 inventoryManager.getModelControllerClientFactory().createClient())) {
 
+            final ModelNode result;
             if (request.isXaDatasource()) {
-                dsc.addXaDatasource(request.getDatasourceName(), request.getJndiName(), request.getDriverName(),
-                        request.getXaDataSourceClass(),
-                        request.getDatasourceProperties(), request.getUserName(), request.getPassword(),
-                        request.getSecurityDomain());
+                result = dsc.addXaDatasource(request.getDatasourceName(), request.getJndiName(),
+                        request.getDriverName(), request.getXaDataSourceClass(), request.getDatasourceProperties(),
+                        request.getUserName(), request.getPassword(), request.getSecurityDomain());
             } else {
-                dsc.addDatasource(request.getDatasourceName(), request.getJndiName(), request.getDriverName(),
-                        request.getDriverClass(), request.getConnectionUrl(),
-                        request.getDatasourceProperties(), request.getUserName(), request.getPassword());
+                result = dsc.addDatasource(request.getDatasourceName(), request.getJndiName(), request.getDriverName(),
+                        request.getDriverClass(), request.getConnectionUrl(), request.getDatasourceProperties(),
+                        request.getUserName(), request.getPassword());
             }
-
-            response.setStatus("OK");
-            response.setMessage(String.format("Added Datasource: %s", request.getDatasourceName()));
+            if (JBossASClient.isSuccess(result)) {
+                response.setStatus("OK");
+                response.setMessage(String.format("Added Datasource: %s", request.getDatasourceName()));
+            } else {
+                response.setStatus("ERROR");
+                String msg = String.format("Could not add Datasource [%s]: %s", request.getDatasourceName(), result);
+                response.setMessage(msg);
+                MsgLogger.LOG.debug(msg);
+            }
         } catch (Exception e) {
             MsgLogger.LOG.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
             response.setStatus("ERROR");

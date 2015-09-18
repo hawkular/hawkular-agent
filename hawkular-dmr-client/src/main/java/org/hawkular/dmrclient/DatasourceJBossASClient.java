@@ -150,35 +150,54 @@ public class DatasourceJBossASClient extends JBossASClient {
     }
 
     /**
-     * @param driverName the name of the JDBC driver to create, e.g. {@code "h2"}
-     * @param moduleName the name of the WIldFly module that contains the driver jar file
      * @throws Exception
      */
-    public void addJdbcDriver(String driverName, String moduleName) throws Exception {
+    /**
+     * @param driverName the name of the JDBC driver to create, e.g. {@code "h2"}
+     * @param moduleName the name of the WIldFly module that contains the driver jar file
+     * @param driverClassName a fully qualified class name of the java.sql.Driver implementation
+     * @param driverMajorVersion the driver's major version number
+     * @param driverMinorVersion the driver's minor version number
+     * @return a {@link ModelNode} containing the result of the operation
+     * @throws Exception from called DMR methods
+     */
+    public ModelNode addJdbcDriver(String driverName, String moduleName, String driverClassName,
+            Integer driverMajorVersion, Integer driverMinorVersion) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, JDBC_DRIVER, driverName);
         final ModelNode driverNode = new ModelNode();
 
         driverNode.get("driver-name").set(driverName);
         driverNode.get("driver-module-name").set(moduleName);
+
+        if (driverClassName != null) {
+            driverNode.get("driver-class-name").set(driverClassName);
+        }
+        if (driverMajorVersion != null) {
+            driverNode.get("driver-major-version").set(driverMajorVersion.intValue());
+        }
+        if (driverMinorVersion != null) {
+            driverNode.get("driver-minor-version").set(driverMinorVersion.intValue());
+        }
+
         driverNode.get(OPERATION).set(ADD);
         driverNode.get(ADDRESS).set(addr.getAddressNode());
 
-        execute(driverNode);
+        return execute(driverNode);
 
     }
 
-    public void addXaDatasource(String datasourceName, String jndiName, String driverName, String xaDataSourceClass,
-            Map<String, String> xaDatasourceProperties, String userName, String password, String securityDomain)
-                    throws Exception {
+    public ModelNode addXaDatasource(String datasourceName, String jndiName, String driverName,
+            String xaDataSourceClass, Map<String, String> xaDatasourceProperties, String userName, String password,
+            String securityDomain) throws Exception {
         Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, XA_DATA_SOURCE, datasourceName);
         final ModelNode dsNode = new ModelNode();
         dsNode.get("name").set(datasourceName);
         dsNode.get("jndi-name").set(jndiName);
         dsNode.get("driver-name").set(driverName);
-        dsNode.get("jndi-name").set(xaDataSourceClass);
+        dsNode.get("xa-datasource-class").set(xaDataSourceClass);
 
         if (userName != null) {
-            dsNode.get("user-name ").set(userName);
+            dsNode.get("user-name").set(userName);
         }
         if (password != null) {
             dsNode.get("password").set(password);
@@ -210,14 +229,14 @@ public class DatasourceJBossASClient extends JBossASClient {
             }
         }
 
-        execute(batch);
+        return execute(batch);
 
     }
 
-    public void addDatasource(String datasourceName, String jndiName, String driverName, String driverClass,
+    public ModelNode addDatasource(String datasourceName, String jndiName, String driverName, String driverClass,
             String connectionUrl, Map<String, String> xaDatasourceProperties, String userName, String password)
                     throws Exception {
-        Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, XA_DATA_SOURCE, datasourceName);
+        Address addr = Address.root().add(SUBSYSTEM, SUBSYSTEM_DATASOURCES, DATA_SOURCE, datasourceName);
         final ModelNode dsNode = new ModelNode();
         dsNode.get("name").set(datasourceName);
         dsNode.get("jndi-name").set(jndiName);
@@ -226,7 +245,7 @@ public class DatasourceJBossASClient extends JBossASClient {
         dsNode.get("connection-url").set(connectionUrl);
 
         if (userName != null) {
-            dsNode.get("user-name ").set(userName);
+            dsNode.get("user-name").set(userName);
         }
         if (password != null) {
             dsNode.get("password").set(password);
@@ -255,7 +274,7 @@ public class DatasourceJBossASClient extends JBossASClient {
             }
         }
 
-        execute(batch);
+        return execute(batch);
 
     }
 
