@@ -150,10 +150,16 @@ public class DatasourceJBossASClient extends JBossASClient {
     }
 
     /**
+     * @throws Exception
+     */
+    /**
      * @param driverName the name of the JDBC driver to create, e.g. {@code "h2"}
      * @param moduleName the name of the WIldFly module that contains the driver jar file
-     * @return
-     * @throws Exception
+     * @param driverClassName a fully qualified class name of the java.sql.Driver implementation
+     * @param driverMajorVersion the driver's major version number
+     * @param driverMinorVersion the driver's minor version number
+     * @return a {@link ModelNode} containing the result of the operation
+     * @throws Exception from called DMR methods
      */
     public ModelNode addJdbcDriver(String driverName, String moduleName, String driverClassName,
             Integer driverMajorVersion, Integer driverMinorVersion) throws Exception {
