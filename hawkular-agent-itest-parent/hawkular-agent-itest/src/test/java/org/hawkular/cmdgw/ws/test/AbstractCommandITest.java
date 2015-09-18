@@ -19,6 +19,7 @@ package org.hawkular.cmdgw.ws.test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -27,8 +28,19 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.sasl.RealmCallback;
+
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
+import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.as.controller.client.helpers.Operations;
+import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
+import org.jboss.dmr.ModelNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -125,24 +137,29 @@ public abstract class AbstractCommandITest {
             });
         }
     }
+    protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
+    protected static final String managementPasword = System.getProperty("hawkular.agent.itest.mgmt.password");
+    protected static final int managementPort;
+    protected static final String host;
 
     protected static final String authentication;
     protected static final String baseAccountsUri;
     protected static final String baseGwUri;
     protected static final String baseInvUri;
     protected static final String testPasword = "password";
-
     protected static final String testUser = "jdoe";
     protected static final int ATTEMPT_COUNT = 50;
     protected static final long ATTEMPT_DELAY = 5000;
 
     static {
-        String host = System.getProperty("hawkular.bind.address", "localhost");
-        if ("0.0.0.0".equals(host)) {
-            host = "localhost";
+        String h = System.getProperty("hawkular.bind.address", "localhost");
+        if ("0.0.0.0".equals(h)) {
+            h = "localhost";
         }
+        host = h;
         int portOffset = Integer.parseInt(System.getProperty("hawkular.port.offset", "0"));
         int httpPort = portOffset + 8080;
+        managementPort = portOffset + 9990;
         baseAccountsUri = "http://" + host + ":" + httpPort + "/hawkular/accounts";
         baseInvUri = "http://" + host + ":" + httpPort + "/hawkular/inventory";
         baseGwUri = "ws://" + host + ":" + httpPort + "/hawkular/command-gateway";
@@ -225,6 +242,33 @@ public abstract class AbstractCommandITest {
         }
     }
 
+    protected ModelControllerClient newModelControllerClient() {
+        final CallbackHandler callbackHandler = new CallbackHandler() {
+            public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+                for (Callback current : callbacks) {
+                    if (current instanceof NameCallback) {
+                        NameCallback ncb = (NameCallback) current;
+                        ncb.setName(managementUser);
+                    } else if (current instanceof PasswordCallback) {
+                        PasswordCallback pcb = (PasswordCallback) current;
+                        pcb.setPassword(managementPasword.toCharArray());
+                    } else if (current instanceof RealmCallback) {
+                        RealmCallback rcb = (RealmCallback) current;
+                        rcb.setText(rcb.getDefaultText());
+                    } else {
+                        throw new UnsupportedCallbackException(current);
+                    }
+                }
+            }
+        };
+
+        try {
+            InetAddress inetAddr = InetAddress.getByName(host);
+            return ModelControllerClient.Factory.create(inetAddr, managementPort, callbackHandler);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create management client", e);
+        }
+    }
     protected Request.Builder newAuthRequest() {
         /*
          * http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side : The Authorization header is
@@ -257,6 +301,20 @@ public abstract class AbstractCommandITest {
          * to /hawkular/inventory/environments/test should mean that all initial tasks are over
          */
         getWithRetries(baseInvUri + "/environments/test");
+    }
+
+    /**
+     * @param request
+     * @throws IOException
+     */
+    protected void assertResourceExists(ModelNode request, String message) throws IOException {
+        ModelControllerClient mcc = newModelControllerClient();
+        request.get(ModelDescriptionConstants.OP).set(ModelDescriptionConstants.READ_RESOURCE_OPERATION);
+        request.get(ModelDescriptionConstants.INCLUDE_RUNTIME).set(true);
+        ModelNode result = mcc.execute(request);
+
+        Assert.assertTrue(String.format(message, result), Operations.isSuccessfulOutcome(result));
+
     }
 
 }

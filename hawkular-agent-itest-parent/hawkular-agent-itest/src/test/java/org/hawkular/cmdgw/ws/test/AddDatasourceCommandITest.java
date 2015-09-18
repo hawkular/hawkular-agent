@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
+import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
+import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -98,17 +100,20 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                 + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
         String msg = receivedMessages.get(i++).readUtf8();
-        System.out.println("msg = "+ msg);
+        System.out.println("msg = " + msg);
         Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
         Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
                 + "\"status\":\"OK\"," //
-                + "\"message\":\"Added Datasource: " + datasourceName + "\"," //
-        // FIXME HAWKULAR-603 the server should not forward the authentication to UI
-                + "\"authentication\":" + authentication //
+                + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
                 + "}", receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(2, receivedMessages.size());
+
+        ModelNode dmrRequest = new ModelNode();
+        dmrRequest.get(ModelDescriptionConstants.ADDRESS).add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
+                .add("xa-datasource", datasourceName);
+        assertResourceExists(dmrRequest, "XA Datasource " + datasourceName + " cannot be found after it was added: %s");
 
     }
 
@@ -169,17 +174,20 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                 + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
         String msg = receivedMessages.get(i++).readUtf8();
-        System.out.println("msg = "+ msg);
+        System.out.println("msg = " + msg);
         Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
         Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
                 + "\"status\":\"OK\"," //
-                + "\"message\":\"Added Datasource: " + datasourceName + "\"," //
-        // FIXME HAWKULAR-603 the server should not forward the authentication to UI
-                + "\"authentication\":" + authentication //
+                + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
                 + "}", receivedMessages.get(i++).readUtf8());
 
         Assert.assertEquals(2, receivedMessages.size());
+
+        ModelNode dmrRequest = new ModelNode();
+        dmrRequest.get(ModelDescriptionConstants.ADDRESS).add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
+                .add("datasource", datasourceName);
+        assertResourceExists(dmrRequest, "Datasource " + datasourceName + " cannot be found after it was added: %s");
 
     }
 }
