@@ -19,6 +19,9 @@ package org.hawkular.agent.monitor.feedcomm;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
@@ -120,6 +123,7 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
 
         ExportJdrResponse response = new ExportJdrResponse();
         BinaryData binaryData = null;
+        long timestampBeforeExecution = System.currentTimeMillis();
 
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
             ModelNode opReq = JBossASClient.createRequest(actualOperationName, opAddress);
@@ -129,22 +133,37 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
 
             if (!JBossASClient.isSuccess(opResp)) {
                 response.setStatus("ERROR");
-                response.setMessage(JBossASClient.getFailureDescription(opResp));
+                String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX")
+                        .withZone(ZoneOffset.UTC)
+                        .format(Instant.ofEpochMilli(timestampBeforeExecution));
+
+                String msg = String.format(
+                        "Could not export JDR on resource [%s] requested on [%s]: %s",
+                        resourceId, formattedTimestamp, JBossASClient.getFailureDescription(opResp)
+                );
+                response.setMessage(msg);
             } else {
                 String reportLocation = opResp.get("result").get("report-location").asString();
-                String fileName = reportLocation.substring(reportLocation.lastIndexOf(File.separator)+1);
 
                 File reportFile = new File(reportLocation);
                 InputStream reportInputStream = new FileInputStream(reportFile);
                 binaryData = new BinaryData(null, reportInputStream);
 
                 response.setStatus("OK");
-                response.setFileName(fileName);
+                response.setFileName(reportFile.getName());
                 response.setMessage(JBossASClient.getResults(opResp).asString());
             }
         } catch (Exception e) {
             response.setStatus("ERROR");
-            response.setMessage(e.toString());
+            String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX")
+                    .withZone(ZoneOffset.UTC)
+                    .format(Instant.ofEpochMilli(timestampBeforeExecution));
+
+            String msg = String.format(
+                    "Exception while generating JDR on resource [%s] requested on [%s]: %s",
+                    resourceId, formattedTimestamp, e.toString()
+            );
+            response.setMessage(msg);
         }
 
         return new BasicMessageWithExtraData<>(response, binaryData);
