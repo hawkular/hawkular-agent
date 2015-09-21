@@ -107,6 +107,7 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
             if (JBossASClient.isSuccess(result)) {
                 response.setStatus("OK");
                 response.setMessage(String.format("Added Datasource: %s", request.getDatasourceName()));
+                context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
             } else {
                 response.setStatus("ERROR");
                 String failureDescription = JBossASClient.getFailureDescription(result);
