@@ -100,7 +100,7 @@
 
         <hawkular.log>INFO</hawkular.log>
         <hawkular.log.accounts>INFO</hawkular.log.accounts>
-        <hawkular.log.agent>DEBUG</hawkular.log.agent>
+        <hawkular.log.agent>INFO</hawkular.log.agent>
         <hawkular.log.alerts>INFO</hawkular.log.alerts>
         <hawkular.log.bus>INFO</hawkular.log.bus>
         <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
