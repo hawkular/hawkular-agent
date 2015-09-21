@@ -63,14 +63,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-agent-itest-dist</artifactId>
-      <version>0.7.1.Final-SNAPSHOT</version>
-      <scope>test</scope>
-      <type>zip</type>
-    </dependency>
-
-    <dependency>
       <groupId>org.wildfly.core</groupId>
       <artifactId>wildfly-controller</artifactId>
       <scope>test</scope>
@@ -124,6 +116,17 @@
         <http.log>ERROR</http.log>
         <http.log.wire>WARN</http.log.wire>
       </properties>
+
+      <dependencies>
+        <dependency>
+          <groupId>org.hawkular.agent</groupId>
+          <artifactId>hawkular-agent-itest-dist</artifactId>
+          <version>0.7.1.Final-SNAPSHOT</version>
+          <scope>test</scope>
+          <type>zip</type>
+        </dependency>
+      </dependencies>
+
       <build>
         <plugins>
 
