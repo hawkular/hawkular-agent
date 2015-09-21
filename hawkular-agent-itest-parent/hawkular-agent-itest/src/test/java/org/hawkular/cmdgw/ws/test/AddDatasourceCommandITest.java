@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
+import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
@@ -50,68 +51,72 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
         List<Resource> wfs = getResources("/test/resources", 1);
         Assert.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
-        String feedId = wfPath.ids().getFeedId();
-        // http://localhost:8080/hawkular/inventory/test/slama/resourceTypes/JDBC%20Driver/resources
-        /* Here we wait for Agent to write the built-in h2 driver to inventory */
-        List<Resource> datasources = getResources("/test/" + feedId + "/resourceTypes/Datasource/resources", 2);
-        Assert.assertEquals(2, datasources.size());
 
-        final String datasourceName = "testXaDs";
-        final String jndiName = "java:/testXaDs";
-        final String driverName = "h2";
-        final String xaDataSourceClass = "org.h2.jdbcx.JdbcDataSource";
-        final String xaDataSourceUrl = "jdbc:h2:mem:test";
-        final String userName = "sa";
-        final String password = "sa";
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
+            /* There should be zero XA datasources there */
+            assertResourceCount(mcc, datasourcesPath, "xa-data-source", 0);
 
-        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+            final String datasourceName = "testXaDs";
+            final String jndiName = "java:/testXaDs";
+            final String driverName = "h2";
+            final String xaDataSourceClass = "org.h2.jdbcx.JdbcDataSource";
+            final String xaDataSourceUrl = "jdbc:h2:mem:test";
+            final String userName = "sa";
+            final String password = "sa";
 
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                send(webSocket,
-                        "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
-                                + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                                + "\"xaDatasource\":\"true\"," //
-                                + "\"datasourceName\":\"" + datasourceName + "\"," //
-                                + "\"jndiName\":\"" + jndiName + "\"," //
-                                + "\"driverName\":\"" + driverName + "\"," //
-                                + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
-                                + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl + "\"}," //
-                                + "\"userName\":\"" + userName + "\"," //
-                                + "\"password\":\"" + password + "\"" //
-                                + "}");
-                super.onOpen(webSocket, response);
-            }
-        };
+            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
 
-        WebSocketCall.create(client, request).enqueue(openingListener);
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    send(webSocket,
+                            "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
+                                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
+                                    + "\"xaDatasource\":\"true\"," //
+                                    + "\"datasourceName\":\"" + datasourceName + "\"," //
+                                    + "\"jndiName\":\"" + jndiName + "\"," //
+                                    + "\"driverName\":\"" + driverName + "\"," //
+                                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
+                                    + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl + "\"}," //
+                                    + "\"userName\":\"" + userName + "\"," //
+                                    + "\"password\":\"" + password + "\"" //
+                                    + "}");
+                    super.onOpen(webSocket, response);
+                }
+            };
 
-        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
+            WebSocketCall.create(client, request).enqueue(openingListener);
 
-        List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-        int i = 0;
+            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
+            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
+            verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
+                    Mockito.same(PayloadType.TEXT));
 
-        String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
+            int i = 0;
 
-        String msg = receivedMessages.get(i++).readUtf8();
-        Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":"
+                    + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
-        Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
-                + "\"status\":\"OK\"," //
-                + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
-                + "}", receivedMessages.get(i++).readUtf8());
+            String msg = receivedMessages.get(i++).readUtf8();
+            Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-        Assert.assertEquals(2, receivedMessages.size());
+            Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
+                    + "\"status\":\"OK\"," //
+                    + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
+                    + "}", receivedMessages.get(i++).readUtf8());
 
-        ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
-                .add("xa-data-source", datasourceName);
-        assertResourceExists(address, "XA Datasource " + datasourceName + " cannot be found after it was added: %s");
+            Assert.assertEquals(2, receivedMessages.size());
+
+            ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
+                    .add("xa-data-source", datasourceName);
+            assertResourceExists(mcc, address,
+                    "XA Datasource " + datasourceName + " cannot be found after it was added: %s");
+            assertResourceCount(mcc, datasourcesPath, "xa-data-source", 1);
+
+        }
 
     }
 
@@ -122,68 +127,71 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
         List<Resource> wfs = getResources("/test/resources", 1);
         Assert.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
-        String feedId = wfPath.ids().getFeedId();
-        // http://localhost:8080/hawkular/inventory/test/slama/resourceTypes/JDBC%20Driver/resources
-        /* Here we wait for Agent to write the built-in h2 driver to inventory */
-        List<Resource> datasources = getResources("/test/" + feedId + "/resourceTypes/Datasource/resources", 2);
-        Assert.assertEquals(2, datasources.size());
 
-        final String datasourceName = "testH2Ds";
-        final String jndiName = "java:/testH2Ds";
-        final String driverName = "h2";
-        final String driverClass = "org.h2.Driver";
-        final String connectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1";
-        final String userName = "sa";
-        final String password = "sa";
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
+            assertResourceCount(mcc, datasourcesPath, "data-source", 2);
 
-        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+            final String datasourceName = "testH2Ds";
+            final String jndiName = "java:/testH2Ds";
+            final String driverName = "h2";
+            final String driverClass = "org.h2.Driver";
+            final String connectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1";
+            final String userName = "sa";
+            final String password = "sa";
 
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                send(webSocket,
-                        "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
-                                + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                                + "\"xaDatasource\":\"false\"," //
-                                + "\"datasourceName\":\"" + datasourceName + "\"," //
-                                + "\"jndiName\":\"" + jndiName + "\"," //
-                                + "\"driverName\":\"" + driverName + "\"," //
-                                + "\"driverClass\":\"" + driverClass + "\"," //
-                                + "\"connectionUrl\":\"" + connectionUrl + "\"," //
-                                + "\"userName\":\"" + userName + "\"," //
-                                + "\"password\":\"" + password + "\"" //
-                                + "}");
-                super.onOpen(webSocket, response);
-            }
-        };
+            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
 
-        WebSocketCall.create(client, request).enqueue(openingListener);
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    send(webSocket,
+                            "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
+                                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
+                                    + "\"xaDatasource\":\"false\"," //
+                                    + "\"datasourceName\":\"" + datasourceName + "\"," //
+                                    + "\"jndiName\":\"" + jndiName + "\"," //
+                                    + "\"driverName\":\"" + driverName + "\"," //
+                                    + "\"driverClass\":\"" + driverClass + "\"," //
+                                    + "\"connectionUrl\":\"" + connectionUrl + "\"," //
+                                    + "\"userName\":\"" + userName + "\"," //
+                                    + "\"password\":\"" + password + "\"" //
+                                    + "}");
+                    super.onOpen(webSocket, response);
+                }
+            };
 
-        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
+            WebSocketCall.create(client, request).enqueue(openingListener);
 
-        List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-        int i = 0;
+            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
+            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
+            verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
+                    Mockito.same(PayloadType.TEXT));
 
-        String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
+            int i = 0;
 
-        String msg = receivedMessages.get(i++).readUtf8();
-        Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":"
+                    + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
-        Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
-                + "\"status\":\"OK\"," //
-                + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
-                + "}", receivedMessages.get(i++).readUtf8());
+            String msg = receivedMessages.get(i++).readUtf8();
+            Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-        Assert.assertEquals(2, receivedMessages.size());
+            Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
+                    + "\"status\":\"OK\"," //
+                    + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
+                    + "}", receivedMessages.get(i++).readUtf8());
 
-        ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
-                .add("data-source", datasourceName);
-        assertResourceExists(address, "Datasource " + datasourceName + " cannot be found after it was added: %s");
+            Assert.assertEquals(2, receivedMessages.size());
 
+            ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
+                    .add("data-source", datasourceName);
+
+            assertResourceExists(mcc, address,
+                    "Datasource " + datasourceName + " cannot be found after it was added: %s");
+            assertResourceCount(mcc, datasourcesPath, "data-source", 3);
+
+        }
     }
 }
