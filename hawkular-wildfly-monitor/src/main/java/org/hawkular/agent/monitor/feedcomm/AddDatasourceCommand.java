@@ -109,7 +109,9 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
                 response.setMessage(String.format("Added Datasource: %s", request.getDatasourceName()));
             } else {
                 response.setStatus("ERROR");
-                String msg = String.format("Could not add Datasource [%s]: %s", request.getDatasourceName(), result);
+                String failureDescription = JBossASClient.getFailureDescription(result);
+                String msg = String.format("Could not add Datasource [%s]: %s", request.getDatasourceName(),
+                        failureDescription);
                 response.setMessage(msg);
                 MsgLogger.LOG.debug(msg);
             }
