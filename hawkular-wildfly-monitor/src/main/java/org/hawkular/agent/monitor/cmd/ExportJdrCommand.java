@@ -14,15 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.feedcomm;
+package org.hawkular.agent.monitor.cmd;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
-import java.util.Map;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
@@ -34,8 +38,8 @@ import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
-import org.hawkular.cmdgw.api.ExecuteOperationRequest;
-import org.hawkular.cmdgw.api.ExecuteOperationResponse;
+import org.hawkular.cmdgw.api.ExportJdrRequest;
+import org.hawkular.cmdgw.api.ExportJdrResponse;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
@@ -44,24 +48,25 @@ import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
 
 /**
- * Execute an operation on a resource.
+ * @author Juraci Paixão Kröhling
  */
-public class ExecuteOperationCommand implements Command<ExecuteOperationRequest, ExecuteOperationResponse> {
-    public static final Class<ExecuteOperationRequest> REQUEST_CLASS = ExecuteOperationRequest.class;
+public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResponse> {
+    public static final Class<ExportJdrRequest> REQUEST_CLASS = ExportJdrRequest.class;
 
     @Override
-    public BasicMessageWithExtraData<ExecuteOperationResponse> execute(ExecuteOperationRequest request,
-            BinaryData binaryData, CommandContext context) throws Exception {
-        MsgLogger.LOG.infof("Received request to execute operation [%s] on resource [%s]",
-                request.getOperationName(), request.getResourcePath());
+    public BasicMessageWithExtraData<ExportJdrResponse> execute(ExportJdrRequest request, BinaryData binaryData,
+                                                                CommandContext context)
+            throws Exception {
+        MsgLogger.LOG.infof("Received request to generate JDR on resource [%s]", request.getResourcePath());
 
+        FeedCommProcessor processor = context.getFeedCommProcessor();
         MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
 
         // Based on the resource ID we need to know which inventory manager is handling it.
         // From the inventory manager, we can get the actual resource.
         CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
         String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
-        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
+        InventoryIdUtil.ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
         ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.getManagedServerName()));
         if (managedServer == null) {
             throw new IllegalArgumentException(String.format("Cannot execute operation: unknown managed server [%s]",
@@ -75,9 +80,10 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         }
     }
 
-    private BasicMessageWithExtraData<ExecuteOperationResponse> executeOperationDMR(String resourceId,
-            ExecuteOperationRequest request,
-            CommandContext context, ManagedServer managedServer) throws Exception {
+    private BasicMessageWithExtraData<ExportJdrResponse> executeOperationDMR(String resourceId,
+                                                  ExportJdrRequest request,
+                                                  CommandContext context,
+                                                  ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
                 .get(managedServer);
@@ -97,7 +103,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         Address opAddress = null;
         String actualOperationName = null;
 
-        String requestedOpName = request.getOperationName();
+        String requestedOpName = "JDR";
         Collection<DMROperation> ops = resource.getResourceType().getOperations();
         MsgLogger.LOG.tracef("Searching for operation [%s] among operations [%s] for resource [%s].",
                 requestedOpName, ops, resource.getID());
@@ -112,38 +118,54 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         if (opAddress == null) {
             throw new IllegalArgumentException(
                     String.format("Cannot execute operation: unknown operation [%s] for resource [%s]",
-                            request.getOperationName(), resource));
+                            requestedOpName, resource));
         }
 
-        ExecuteOperationResponse response = new ExecuteOperationResponse();
-        response.setResourcePath(request.getResourcePath());
-        response.setOperationName(request.getOperationName());
+        ExportJdrResponse response = new ExportJdrResponse();
+        BinaryData binaryData = null;
+        long timestampBeforeExecution = System.currentTimeMillis();
 
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
             ModelNode opReq = JBossASClient.createRequest(actualOperationName, opAddress);
 
-            Map<String, String> params = request.getParameters();
-            if (params != null) {
-                for (Map.Entry<String, String> param : params.entrySet()) {
-                    opReq.get(param.getKey()).set(param.getValue());
-                }
-            }
-
             CoreJBossASClient client = new CoreJBossASClient(mcc);
             ModelNode opResp = client.execute(opReq);
+
             if (!JBossASClient.isSuccess(opResp)) {
                 response.setStatus("ERROR");
-                response.setMessage(JBossASClient.getFailureDescription(opResp));
+                String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX")
+                        .withZone(ZoneOffset.UTC)
+                        .format(Instant.ofEpochMilli(timestampBeforeExecution));
+
+                String msg = String.format(
+                        "Could not export JDR on resource [%s] requested on [%s]: %s",
+                        resourceId, formattedTimestamp, JBossASClient.getFailureDescription(opResp)
+                );
+                response.setMessage(msg);
             } else {
+                String reportLocation = opResp.get("result").get("report-location").asString();
+
+                File reportFile = new File(reportLocation);
+                InputStream reportInputStream = new FileInputStream(reportFile);
+                binaryData = new BinaryData(null, reportInputStream);
+
                 response.setStatus("OK");
-                // FIXME HAWKULAR-604 The message field of ExecuteOperationResponse should not be "undefined"
-                response.setMessage(JBossASClient.getResults(opResp).toString());
+                response.setFileName(reportFile.getName());
+                response.setMessage(JBossASClient.getResults(opResp).asString());
             }
         } catch (Exception e) {
             response.setStatus("ERROR");
-            response.setMessage(e.toString());
+            String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX")
+                    .withZone(ZoneOffset.UTC)
+                    .format(Instant.ofEpochMilli(timestampBeforeExecution));
+
+            String msg = String.format(
+                    "Exception while generating JDR on resource [%s] requested on [%s]: %s",
+                    resourceId, formattedTimestamp, e.toString()
+            );
+            response.setMessage(msg);
         }
 
-        return new BasicMessageWithExtraData<>(response, null);
+        return new BasicMessageWithExtraData<>(response, binaryData);
     }
 }
