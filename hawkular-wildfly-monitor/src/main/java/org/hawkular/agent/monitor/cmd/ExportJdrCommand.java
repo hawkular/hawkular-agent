@@ -35,6 +35,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMROperation;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
@@ -51,13 +52,14 @@ import org.jboss.dmr.ModelNode;
  * @author Juraci Paixão Kröhling
  */
 public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResponse> {
+    private static final MsgLogger log = AgentLoggers.getLogger(ExportJdrCommand.class);
     public static final Class<ExportJdrRequest> REQUEST_CLASS = ExportJdrRequest.class;
 
     @Override
     public BasicMessageWithExtraData<ExportJdrResponse> execute(ExportJdrRequest request, BinaryData binaryData,
                                                                 CommandContext context)
             throws Exception {
-        MsgLogger.LOG.infof("Received request to generate JDR on resource [%s]", request.getResourcePath());
+        log.infof("Received request to generate JDR on resource [%s]", request.getResourcePath());
 
         FeedCommProcessor processor = context.getFeedCommProcessor();
         MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
@@ -105,7 +107,7 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
 
         String requestedOpName = "JDR";
         Collection<DMROperation> ops = resource.getResourceType().getOperations();
-        MsgLogger.LOG.tracef("Searching for operation [%s] among operations [%s] for resource [%s].",
+        log.tracef("Searching for operation [%s] among operations [%s] for resource [%s].",
                 requestedOpName, ops, resource.getID());
         for (DMROperation op : ops) {
             if (requestedOpName.equals(op.getID().getIDString())) {

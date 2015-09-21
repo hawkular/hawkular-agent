@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
@@ -27,6 +28,7 @@ import org.hawkular.cmdgw.api.GenericErrorResponse;
  * some error condition that caused the server not be able to service one of our requests.
  */
 public class GenericErrorResponseCommand implements Command<GenericErrorResponse, BasicMessage> {
+    private static final MsgLogger log = AgentLoggers.getLogger(GenericErrorResponseCommand.class);
     public static final Class<GenericErrorResponse> REQUEST_CLASS = GenericErrorResponse.class;
 
     @Override
@@ -36,7 +38,7 @@ public class GenericErrorResponseCommand implements Command<GenericErrorResponse
         String errorMessage = errorResponse.getErrorMessage();
         String stackTrace = errorResponse.getStackTrace();
 
-        MsgLogger.LOG.warnReceivedGenericErrorResponse(errorMessage, stackTrace);
+        log.warnReceivedGenericErrorResponse(errorMessage, stackTrace);
 
         return null; // nothing to send back
     }

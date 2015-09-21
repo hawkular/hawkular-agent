@@ -67,6 +67,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactoryImpl;
@@ -111,7 +112,7 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 public class MonitorService implements Service<MonitorService>, DiscoveryService {
-
+    private static final MsgLogger log = AgentLoggers.getLogger(MonitorService.class);
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
     private final InjectedValue<ControlledProcessStateService> processStateValue = new InjectedValue<>();
@@ -243,7 +244,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             return; // we are already started
         }
 
-        MsgLogger.LOG.infoStarting();
+        log.infoStarting();
 
         // get our self identifiers
         ModelControllerClientFactory mccFactory = createLocalClientFactory();
@@ -290,7 +291,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
         }
 
-        MsgLogger.LOG.infoUsingServerSideUrl(this.configuration.storageAdapter.url);
+        log.infoUsingServerSideUrl(this.configuration.storageAdapter.url);
 
         // if we are participating in a full Hawkular environment, we need to do some additional things:
         // 1. determine our tenant ID dynamically
@@ -302,7 +303,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 determineTenantId();
                 registerFeed();
             } catch (Exception e) {
-                MsgLogger.LOG.errorCannotDoAnythingWithoutFeed(e);
+                log.errorCannotDoAnythingWithoutFeed(e);
                 return;
             }
 
@@ -310,7 +311,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             try {
                 connectToCommandGatewayCommChannel();
             } catch (Exception e) {
-                MsgLogger.LOG.errorCannotEstablishFeedComm(e);
+                log.errorCannotEstablishFeedComm(e);
             }
 
             // build the thread pool that will run jobs that store inventory
@@ -322,7 +323,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                     metricNamePrefix);
         } else {
             if (this.configuration.storageAdapter.tenantId == null) {
-                MsgLogger.LOG.errorMustHaveTenantIdConfigured();
+                log.errorMustHaveTenantIdConfigured();
                 return;
             }
         }
@@ -331,7 +332,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         try {
             startStorageAdapter();
         } catch (Exception e) {
-            MsgLogger.LOG.errorCannotStartStorageAdapter(e);
+            log.errorCannotStartStorageAdapter(e);
             return;
         }
 
@@ -349,7 +350,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             return; // we are already stopped
         }
 
-        MsgLogger.LOG.infoStopping();
+        log.infoStopping();
 
         // shutdown scheduler
         stopScheduler();
@@ -626,7 +627,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         // go through each configured managed server and discovery all resources in them
         for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
             if (!managedServer.isEnabled()) {
-                MsgLogger.LOG.infoManagedServerDisabled(managedServer.getName().toString());
+                log.infoManagedServerDisabled(managedServer.getName().toString());
             } else {
                 if (managedServer instanceof RemoteDMRManagedServer) {
                     RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
@@ -646,13 +647,13 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
         }
 
-        MsgLogger.LOG.debugf("Full discovery scan found [%d] resources", resourcesDiscovered);
+        log.debugf("Full discovery scan found [%d] resources", resourcesDiscovered);
 
         // restart the scheduler - this will begin metric collections for our new inventory
         try {
             restartScheduler();
         } catch (Exception e) {
-            MsgLogger.LOG.errorCannotInitializeScheduler(e);
+            log.errorCannotInitializeScheduler(e);
         }
 
         return;
@@ -692,7 +693,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                                 MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
                                 MonitorService.this.inventoryStorageProxy.storeResource(resource);
                             } catch (Throwable t) {
-                                MsgLogger.LOG.errorf(t, "Failed to store resource [%s]", resource);
+                                log.errorf(t, "Failed to store resource [%s]", resource);
                             }
                         }
                     });
@@ -809,7 +810,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             if (matcher.find()) {
                 configuration.storageAdapter.tenantId = matcher.group(1);
             }
-            MsgLogger.LOG.debugf("Tenant ID [%s]", configuration.storageAdapter.tenantId == null ? "unknown" :
+            log.debugf("Tenant ID [%s]", configuration.storageAdapter.tenantId == null ? "unknown" :
                     configuration.storageAdapter.tenantId);
             return configuration.storageAdapter.tenantId;
         } catch (Throwable t) {
@@ -832,7 +833,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 String feedIdFromDataFile = slurpDataFile(feedFile.getName());
                 feedIdFromDataFile = feedIdFromDataFile.trim();
                 if (!desiredFeedId.equals(feedIdFromDataFile)) {
-                    MsgLogger.LOG.warnf("Will use feed ID [%s] found in [%s];"
+                    log.warnf("Will use feed ID [%s] found in [%s];"
                             + " note that it is different than our desired feed ID [%s].",
                             feedIdFromDataFile, feedFile, desiredFeedId);
                     feedId = feedIdFromDataFile;
@@ -874,11 +875,11 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             final String feedObjectFromServer = Util.slurpStream(httpResponse.body().byteStream());
             final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
             if (desiredFeedId.equals(feed.getId())) {
-                MsgLogger.LOG.infof("Feed ID registered [%s]", feed.getId());
+                log.infof("Feed ID registered [%s]", feed.getId());
             } else {
-                MsgLogger.LOG.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
+                log.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
                 // should we throw an error here or just use the feed ID we were given?
-                MsgLogger.LOG.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file",
+                log.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file",
                         feed.getId());
             }
 

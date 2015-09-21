@@ -22,6 +22,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
@@ -30,6 +31,7 @@ import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
  * Buffers collected metric data and eventually stores them in a storage adapter.
  */
 public class MetricBufferedStorageDispatcher implements MetricCompletionHandler {
+    private static final MsgLogger log = AgentLoggers.getLogger(MetricBufferedStorageDispatcher.class);
     private final int maxBatchSize;
     private final int bufferSize;
     private final SchedulerConfiguration config;
@@ -60,7 +62,7 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
     @Override
     public void onCompleted(MetricDataPoint sample) {
         if (queue.remainingCapacity() > 0) {
-            MsgLogger.LOG.debugf("Metric collected: [%s]->[%f]", sample.getTask(), sample.getValue());
+            log.debugf("Metric collected: [%s]->[%f]", sample.getTask(), sample.getValue());
             diagnostics.getMetricsStorageBufferSize().inc();
             queue.add(sample);
         }
@@ -71,7 +73,7 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
 
     @Override
     public void onFailed(Throwable e) {
-        MsgLogger.LOG.errorMetricCollectionFailed(e);
+        log.errorMetricCollectionFailed(e);
     }
 
     public class Worker extends Thread {

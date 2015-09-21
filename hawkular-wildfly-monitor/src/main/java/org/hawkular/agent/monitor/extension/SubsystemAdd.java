@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.extension;
 import java.util.List;
 
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.jboss.as.controller.AbstractAddStepHandler;
@@ -40,7 +41,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 
 public class SubsystemAdd extends AbstractAddStepHandler {
-
+    private static final MsgLogger log = AgentLoggers.getLogger(SubsystemAdd.class);
     static final SubsystemAdd INSTANCE = new SubsystemAdd();
 
     private SubsystemAdd() {
@@ -57,7 +58,7 @@ public class SubsystemAdd extends AbstractAddStepHandler {
                 .build();
 
         if (!configuration.subsystemEnabled) {
-            MsgLogger.LOG.infoSubsystemDisabled();
+            log.infoSubsystemDisabled();
             return;
         }
 
@@ -125,15 +126,15 @@ public class SubsystemAdd extends AbstractAddStepHandler {
                 final ServiceController.Transition transition) {
             switch (transition) {
                 case STARTING_to_UP: {
-                    MsgLogger.LOG.infoBindJndiResource(jndiName, jndiObjectClassName);
+                    log.infoBindJndiResource(jndiName, jndiObjectClassName);
                     break;
                 }
                 case START_REQUESTED_to_DOWN: {
-                    MsgLogger.LOG.infoUnbindJndiResource(jndiName);
+                    log.infoUnbindJndiResource(jndiName);
                     break;
                 }
                 case REMOVING_to_REMOVED: {
-                    MsgLogger.LOG.infoUnbindJndiResource(jndiName);
+                    log.infoUnbindJndiResource(jndiName);
                     break;
                 }
                 default:

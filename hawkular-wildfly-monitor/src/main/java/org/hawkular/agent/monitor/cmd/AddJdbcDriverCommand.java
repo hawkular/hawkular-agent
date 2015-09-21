@@ -32,6 +32,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
@@ -49,6 +50,7 @@ import org.jboss.dmr.ModelNode;
  * Adds an JdbcDriver on a resource.
  */
 public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJdbcDriverResponse> {
+    private static final MsgLogger log = AgentLoggers.getLogger(AddJdbcDriverCommand.class);
     public static final Class<AddJdbcDriverRequest> REQUEST_CLASS = AddJdbcDriverRequest.class;
     public static final Set<String> DEFAULT_DRIVER_MODULE_DEPENDENCIES = Collections
             .unmodifiableSet(new LinkedHashSet(Arrays.asList("javax.api", "javax.transaction.api")));
@@ -57,7 +59,7 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
     public BasicMessageWithExtraData<AddJdbcDriverResponse> execute(AddJdbcDriverRequest request,
             BinaryData jdbcDriverContent, CommandContext context) throws Exception {
 
-        MsgLogger.LOG.infof("Received request to add the JDBC Driver [%s] on resource [%s]", request.getModuleName(),
+        log.infof("Received request to add the JDBC Driver [%s] on resource [%s]", request.getModuleName(),
                 request.getResourcePath());
 
         MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
@@ -122,10 +124,10 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
                 String msg = String.format("Could not add JDBC Driver [%s]: %s", request.getDriverName(),
                         failureDescription);
                 response.setMessage(msg);
-                MsgLogger.LOG.debug(msg);
+                log.debug(msg);
             }
         } catch (Exception e) {
-            MsgLogger.LOG.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
+            log.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
             response.setStatus("ERROR");
             response.setMessage(e.toString());
         }

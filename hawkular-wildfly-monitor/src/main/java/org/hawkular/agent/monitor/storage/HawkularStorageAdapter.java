@@ -39,6 +39,7 @@ import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstance;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceType;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
@@ -57,6 +58,7 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 public class HawkularStorageAdapter implements StorageAdapter {
+    private static final MsgLogger log = AgentLoggers.getLogger(HawkularStorageAdapter.class);
     private MonitorServiceConfiguration.StorageAdapter config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
@@ -149,7 +151,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             //diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreMetricData(t, jsonPayload);
+            log.errorFailedToStoreMetricData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
         }
     }
@@ -210,7 +212,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             //diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreAvailData(t, jsonPayload);
+            log.errorFailedToStoreAvailData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
         }
     }
@@ -234,7 +236,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             relateResourceTypeWithMetricType(resourceType, availType);
         }
 
-        MsgLogger.LOG.debugf("Stored resource type: %s", resourceType);
+        log.debugf("Stored resource type: %s", resourceType);
     }
 
     @Override
@@ -256,7 +258,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             relateResourceWithMetric(resource, availInstance);
         }
 
-        MsgLogger.LOG.debugf("Stored resource: %s", resource);
+        log.debugf("Stored resource: %s", resource);
     }
 
     private String getInventoryId(NamedObject no) {
@@ -316,7 +318,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             registerResourceConfiguration(resource);
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            log.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource: " + resource, t);
         }
 
@@ -357,7 +359,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             registerResourceTypeConfigurationSchema(resourceType);
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            log.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create resource type: " + resourceType, t);
         }
 
@@ -400,7 +402,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             measurementInstance.setPersisted(true);
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            log.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create metric type: " + metricTypeId, t);
         }
     }
@@ -464,7 +466,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             measurementType.setPersisted(true);
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            log.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot create metric type: " + metricTypeId, t);
         }
     }
@@ -495,7 +497,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
                         + response.message() + "], url=[" + request.urlString() + "]");
             }
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            log.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot associate resource [" + getResourcePath(resource) + "] with metric [ " +
                     metricId + "]", t);
         }
@@ -527,7 +529,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
                         + response.message() + "], url=[" + request.urlString() + "]");
             }
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            log.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot associate resource type with metric type: " + resourceTypeId + "/"
                     + metricTypeId, t);
         }
@@ -576,7 +578,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             }
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            log.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot register resource configuration for resource: " + resource, t);
         }
     }
@@ -618,7 +620,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             }
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreInventoryData(t);
+            log.errorFailedToStoreInventoryData(t);
             throw new RuntimeException("Cannot register resource configuration for resource: " + resourceType, t);
         }
     }

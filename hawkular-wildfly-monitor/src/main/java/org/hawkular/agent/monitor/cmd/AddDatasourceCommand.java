@@ -27,6 +27,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
@@ -41,13 +42,14 @@ import org.jboss.dmr.ModelNode;
  * Adds an Datasource on a resource.
  */
 public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDatasourceResponse> {
+    private static final MsgLogger log = AgentLoggers.getLogger(AddDatasourceCommand.class);
     public static final Class<AddDatasourceRequest> REQUEST_CLASS = AddDatasourceRequest.class;
 
     @Override
     public BasicMessageWithExtraData<AddDatasourceResponse> execute(AddDatasourceRequest request,
             BinaryData jdbcDriverContent, CommandContext context) throws Exception {
 
-        MsgLogger.LOG.infof("Received request to add the Datasource [%s] on resource [%s]", request.getDatasourceName(),
+        log.infof("Received request to add the Datasource [%s] on resource [%s]", request.getDatasourceName(),
                 request.getResourcePath());
 
         MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
@@ -114,10 +116,10 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
                 String msg = String.format("Could not add Datasource [%s]: %s", request.getDatasourceName(),
                         failureDescription);
                 response.setMessage(msg);
-                MsgLogger.LOG.debug(msg);
+                log.debug(msg);
             }
         } catch (Exception e) {
-            MsgLogger.LOG.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
+            log.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
             response.setStatus("ERROR");
             response.setMessage(e.toString());
         }
