@@ -117,7 +117,9 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
                 response.setMessage(String.format("Added JDBC Driver: %s", request.getDriverName()));
             } else {
                 response.setStatus("ERROR");
-                String msg = String.format("Could not add JDBC Driver [%s]: %s", request.getDriverName(), result);
+                String failureDescription = JBossASClient.getFailureDescription(result);
+                String msg = String.format("Could not add JDBC Driver [%s]: %s", request.getDriverName(),
+                        failureDescription);
                 response.setMessage(msg);
                 MsgLogger.LOG.debug(msg);
             }
