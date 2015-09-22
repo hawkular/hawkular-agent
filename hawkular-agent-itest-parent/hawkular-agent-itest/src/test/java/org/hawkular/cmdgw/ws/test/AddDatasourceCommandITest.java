@@ -25,10 +25,10 @@ import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
-import org.junit.Assert;
-import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.testng.AssertJUnit;
+import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -49,7 +49,7 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         List<Resource> wfs = getResources("/test/resources", 1);
-        Assert.assertEquals(1, wfs.size());
+        AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
@@ -101,14 +101,14 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                     + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
-            Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-            Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
+            AssertJUnit.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
                     + "\"status\":\"OK\"," //
                     + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            Assert.assertEquals(2, receivedMessages.size());
+            AssertJUnit.assertEquals(2, receivedMessages.size());
 
             ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
                     .add("xa-data-source", datasourceName);
@@ -125,7 +125,7 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         List<Resource> wfs = getResources("/test/resources", 1);
-        Assert.assertEquals(1, wfs.size());
+        AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
@@ -176,14 +176,14 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                     + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
-            Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-            Assert.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
+            AssertJUnit.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
                     + "\"status\":\"OK\"," //
                     + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            Assert.assertEquals(2, receivedMessages.size());
+            AssertJUnit.assertEquals(2, receivedMessages.size());
 
             ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
                     .add("data-source", datasourceName);

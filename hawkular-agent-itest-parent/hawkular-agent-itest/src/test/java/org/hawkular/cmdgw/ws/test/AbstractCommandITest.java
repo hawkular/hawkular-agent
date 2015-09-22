@@ -42,9 +42,9 @@ import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
+import org.testng.AssertJUnit;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JavaType;
@@ -172,13 +172,13 @@ public abstract class AbstractCommandITest {
     protected ObjectMapper mapper;
     protected ExecutorService writeExecutor;
 
-    @After
+    @AfterMethod
     public void after() {
         // Trigger shutdown of the dispatcher's executor so this process can exit cleanly.
         client.getDispatcher().getExecutorService().shutdown();
     }
 
-    @Before
+    @BeforeMethod
     public void before() {
         JsonFactory f = new JsonFactory();
         mapper = new ObjectMapper(f);
@@ -225,7 +225,7 @@ public abstract class AbstractCommandITest {
             try {
                 Request request = newAuthRequest().url(url).build();
                 Response response = client.newCall(request).execute();
-                org.junit.Assert.assertEquals(200, response.code());
+                AssertJUnit.assertEquals(200, response.code());
                 System.out.println("Got after " + (i + 1) + " retries: " + url);
                 return response.body().string();
             } catch (Throwable t) {
@@ -318,7 +318,7 @@ public abstract class AbstractCommandITest {
         request.get(ModelDescriptionConstants.INCLUDE_RUNTIME).set(true);
         ModelNode result = mcc.execute(request);
 
-        Assert.assertTrue(String.format(message, result), Operations.isSuccessfulOutcome(result));
+        AssertJUnit.assertTrue(String.format(message, result), Operations.isSuccessfulOutcome(result));
 
     }
 
@@ -334,9 +334,10 @@ public abstract class AbstractCommandITest {
                 .asString().equals(ModelDescriptionConstants.SUCCESS)) {
             ModelNode result = response.get(ModelDescriptionConstants.RESULT);
             List<Property> nodes = result.asPropertyList();
-            Assert.assertEquals("Number of child nodes of [" + address + "] " + response, expectedCount, nodes.size());
+            AssertJUnit.assertEquals("Number of child nodes of [" + address + "] " + response, expectedCount,
+                    nodes.size());
         } else if (expectedCount != 0) {
-            Assert.fail("Path [" + address + "] has no child nodes, expected " + expectedCount + " : " + response);
+            AssertJUnit.fail("Path [" + address + "] has no child nodes, expected " + expectedCount + " : " + response);
         }
 
     }

@@ -45,6 +45,14 @@
     </dependency>
 
     <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>6.8.8</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- required by mockito-core, can probably be removed with an upgrade to mockito-core 2.* -->
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>

@@ -27,10 +27,10 @@ import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
-import org.junit.Assert;
-import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.testng.AssertJUnit;
+import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -51,7 +51,7 @@ public class AddJdbcDriverCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         List<Resource> wfs = getResources("/test/resources", 1);
-        Assert.assertEquals(1, wfs.size());
+        AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
@@ -101,14 +101,14 @@ public class AddJdbcDriverCommandITest extends AbstractCommandITest {
                     + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
-            Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-            Assert.assertEquals("AddJdbcDriverResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
+            AssertJUnit.assertEquals("AddJdbcDriverResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
                     + "\"status\":\"OK\"," //
                     + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            Assert.assertEquals(2, receivedMessages.size());
+            AssertJUnit.assertEquals(2, receivedMessages.size());
 
             ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
                     .add("jdbc-driver", driverName);
