@@ -22,10 +22,10 @@ import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
-import org.junit.Assert;
-import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.testng.AssertJUnit;
+import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -41,12 +41,12 @@ import okio.BufferedSource;
  */
 public class ExecuteOperationCommandITest extends AbstractCommandITest {
 
-    @Test
+    @Test(dependsOnGroups = { "no-dependencies" }, groups = "exclusive-inventory-access")
     public void testExecuteOperation() throws Throwable {
         waitForAccountsAndInventory();
 
         List<Resource> wfs = getResources("/test/resources", 1);
-        Assert.assertEquals(1, wfs.size());
+        AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
         String feedId = wfPath.ids().getFeedId();
         List<Resource> deployments = getResources("/test/" + feedId + "/resourceTypes/Deployment/resources", 6);
@@ -82,15 +82,15 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
                 + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
         String msg = receivedMessages.get(i++).readUtf8();
-        Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+        AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-        Assert.assertEquals("ExecuteOperationResponse={" + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
+        AssertJUnit.assertEquals("ExecuteOperationResponse={" + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
                 + "\"operationName\":\"Redeploy\"," + "\"status\":\"OK\"," //
         // FIXME HAWKULAR-604 the message should not be undefined
                 + "\"message\":\"undefined\"" //
                 + "}", receivedMessages.get(i++).readUtf8());
 
-        Assert.assertEquals(2, receivedMessages.size());
+        AssertJUnit.assertEquals(2, receivedMessages.size());
 
     }
 

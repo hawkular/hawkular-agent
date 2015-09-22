@@ -22,6 +22,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
@@ -30,6 +31,7 @@ import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
  * Buffers availability check data and eventually stores them in a storage adapter.
  */
 public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
+    private static final MsgLogger log = AgentLoggers.getLogger(AvailBufferedStorageDispatcher.class);
     private final int maxBatchSize;
     private final int bufferSize;
     private final SchedulerConfiguration config;
@@ -60,7 +62,7 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
     @Override
     public void onCompleted(AvailDataPoint sample) {
         if (queue.remainingCapacity() > 0) {
-            MsgLogger.LOG.debugf("Availability checked: [%s]->[%s]", sample.getTask(), sample.getValue());
+            log.debugf("Availability checked: [%s]->[%s]", sample.getTask(), sample.getValue());
             diagnostics.getAvailStorageBufferSize().inc();
             queue.add(sample);
         }
@@ -71,7 +73,7 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
 
     @Override
     public void onFailed(Throwable e) {
-        MsgLogger.LOG.errorAvailCheckFailed(e);
+        log.errorAvailCheckFailed(e);
     }
 
     public class Worker extends Thread {

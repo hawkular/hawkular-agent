@@ -35,6 +35,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.as.controller.OperationContext;
@@ -48,7 +49,7 @@ import org.jboss.dmr.Property;
  * Builds a {@link MonitorServiceConfiguration} object from the service's model.
  */
 public class MonitorServiceConfigurationBuilder {
-
+    private static final MsgLogger log = AgentLoggers.getLogger(MonitorServiceConfigurationBuilder.class);
     private final MonitorServiceConfiguration theConfig = new MonitorServiceConfiguration();
 
     public MonitorServiceConfiguration build() {
@@ -63,18 +64,18 @@ public class MonitorServiceConfigurationBuilder {
 
         boolean hasEnabledMetrics = determineMetricSetDmr(config, context);
         if (!hasEnabledMetrics) {
-            MsgLogger.LOG.infoNoEnabledMetricsConfigured();
+            log.infoNoEnabledMetricsConfigured();
         }
 
         boolean hasEnabledAvails = determineAvailSetDmr(config, context);
         if (!hasEnabledAvails) {
-            MsgLogger.LOG.infoNoEnabledAvailsConfigured();
+            log.infoNoEnabledAvailsConfigured();
         }
 
         // make sure to call this AFTER the metric sets and avail sets have been determined
         boolean hasEnabledResourceTypes = determineResourceTypeSetDmr(config, context);
         if (!hasEnabledResourceTypes) {
-            MsgLogger.LOG.infoNoEnabledResourceTypesConfigured();
+            log.infoNoEnabledResourceTypesConfigured();
         }
 
         // make sure to call this AFTER the resource type sets have been determined
@@ -93,7 +94,7 @@ public class MonitorServiceConfigurationBuilder {
             for (Property metricSetProperty : metricSetsList) {
                 String metricSetName = metricSetProperty.getName();
                 if (metricSetName.indexOf(',') > -1) {
-                    MsgLogger.LOG.warnCommaInName(metricSetName);
+                    log.warnCommaInName(metricSetName);
                 }
                 DMRMetricTypeSet metricSet = new DMRMetricTypeSet(ID.NULL_ID, new Name(metricSetName));
                 theConfig.dmrMetricTypeSetMap.put(metricSet.getName(), metricSet);
@@ -143,7 +144,7 @@ public class MonitorServiceConfigurationBuilder {
             for (Property availSetProperty : availSetsList) {
                 String availSetName = availSetProperty.getName();
                 if (availSetName.indexOf(',') > -1) {
-                    MsgLogger.LOG.warnCommaInName(availSetName);
+                    log.warnCommaInName(availSetName);
                 }
                 DMRAvailTypeSet availSet = new DMRAvailTypeSet(ID.NULL_ID, new Name(availSetName));
                 theConfig.dmrAvailTypeSetMap.put(availSet.getName(), availSet);
@@ -176,14 +177,14 @@ public class MonitorServiceConfigurationBuilder {
     private void determineDiagnosticsConfig(ModelNode config, OperationContext context)
             throws OperationFailedException {
         if (!config.hasDefined(DiagnosticsDefinition.DIAGNOSTICS)) {
-            MsgLogger.LOG.infoNoDiagnosticsConfig();
+            log.infoNoDiagnosticsConfig();
             theConfig.diagnostics.enabled = false;
             return;
         }
 
         List<Property> asPropertyList = config.get(DiagnosticsDefinition.DIAGNOSTICS).asPropertyList();
         if (asPropertyList.size() == 0) {
-            MsgLogger.LOG.infoNoDiagnosticsConfig();
+            log.infoNoDiagnosticsConfig();
             theConfig.diagnostics.enabled = false;
             return;
         } else if (asPropertyList.size() > 1) {
@@ -220,7 +221,7 @@ public class MonitorServiceConfigurationBuilder {
         theConfig.storageAdapter.url = getString(storageAdapterConfig, context, StorageAttributes.URL);
         if (theConfig.storageAdapter.url != null) {
             theConfig.storageAdapter.useSSL = theConfig.storageAdapter.url.startsWith("https");
-            MsgLogger.LOG.infoUsingSSL(theConfig.storageAdapter.url, theConfig.storageAdapter.useSSL);
+            log.infoUsingSSL(theConfig.storageAdapter.url, theConfig.storageAdapter.useSSL);
         } else {
             theConfig.storageAdapter.useSSL = getBoolean(storageAdapterConfig, context, StorageAttributes.USE_SSL);
         }
@@ -286,7 +287,7 @@ public class MonitorServiceConfigurationBuilder {
                 String resourceTypeSetName = resourceTypeSetProperty.getName();
                 DMRResourceTypeSet resourceTypeSet = new DMRResourceTypeSet(ID.NULL_ID, new Name(resourceTypeSetName));
                 if (resourceTypeSetName.indexOf(',') > -1) {
-                    MsgLogger.LOG.warnCommaInName(resourceTypeSetName);
+                    log.warnCommaInName(resourceTypeSetName);
                 }
                 theConfig.dmrResourceTypeSetMap.put(resourceTypeSet.getName(), resourceTypeSet);
                 ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
@@ -316,13 +317,13 @@ public class MonitorServiceConfigurationBuilder {
                         // verify that the metric sets and avail sets exist
                         for (Name metricSetName : metricSets) {
                             if (!theConfig.dmrMetricTypeSetMap.containsKey(metricSetName)) {
-                                MsgLogger.LOG.warnMetricSetDoesNotExist(resourceTypeName.toString(),
+                                log.warnMetricSetDoesNotExist(resourceTypeName.toString(),
                                         metricSetName.toString());
                             }
                         }
                         for (Name availSetName : availSets) {
                             if (!theConfig.dmrAvailTypeSetMap.containsKey(availSetName)) {
-                                MsgLogger.LOG.warnAvailSetDoesNotExist(resourceTypeName.toString(),
+                                log.warnAvailSetDoesNotExist(resourceTypeName.toString(),
                                         availSetName.toString());
                             }
                         }
@@ -409,7 +410,7 @@ public class MonitorServiceConfigurationBuilder {
                     // verify that the resource type sets exist
                     for (Name resourceTypeSetName : resourceTypeSets) {
                         if (!theConfig.dmrResourceTypeSetMap.containsKey(resourceTypeSetName)) {
-                            MsgLogger.LOG.warnResourceTypeSetDoesNotExist(name.toString(),
+                            log.warnResourceTypeSetDoesNotExist(name.toString(),
                                     resourceTypeSetName.toString());
                         }
                     }
@@ -442,7 +443,7 @@ public class MonitorServiceConfigurationBuilder {
                 // verify that the metric sets and avail sets exist
                 for (Name resourceTypeSetName : resourceTypeSets) {
                     if (!theConfig.dmrResourceTypeSetMap.containsKey(resourceTypeSetName)) {
-                        MsgLogger.LOG.warnResourceTypeSetDoesNotExist(name.toString(), resourceTypeSetName.toString());
+                        log.warnResourceTypeSetDoesNotExist(name.toString(), resourceTypeSetName.toString());
                     }
                 }
 

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.feedcomm;
+package org.hawkular.agent.monitor.cmd;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.DiscoveryService;
 import org.hawkular.agent.monitor.service.Util;
@@ -48,7 +49,7 @@ import okio.BufferedSink;
 import okio.BufferedSource;
 
 public class FeedCommProcessor implements WebSocketListener {
-
+    private static final MsgLogger log = AgentLoggers.getLogger(FeedCommProcessor.class);
     private static final Map<String, Class<? extends Command<?, ?>>> VALID_COMMANDS;
     static {
         VALID_COMMANDS = new HashMap<>();
@@ -89,7 +90,7 @@ public class FeedCommProcessor implements WebSocketListener {
             url = Util.getContextUrlString(config.storageAdapter.url, config.storageAdapter.feedcommContext);
             url.append("feed/").append(feedId);
             this.feedcommUrl = url.toString().replaceFirst("https?:", (config.storageAdapter.useSSL) ? "wss:" : "ws:");
-            MsgLogger.LOG.infoFeedCommUrl(this.feedcommUrl);
+            log.infoFeedCommUrl(this.feedcommUrl);
         } catch (Exception e) {
             throw new IllegalArgumentException("Cannot build URL to the server command-gateway endpoint", e);
         }
@@ -114,7 +115,7 @@ public class FeedCommProcessor implements WebSocketListener {
             try {
                 webSocket.close(disconnectCode, disconnectReason);
             } catch (Exception e) {
-                MsgLogger.LOG.warnFailedToCloseWebSocket(disconnectCode, disconnectReason, e);
+                log.warnFailedToCloseWebSocket(disconnectCode, disconnectReason, e);
             }
             webSocket = null;
         }
@@ -123,7 +124,7 @@ public class FeedCommProcessor implements WebSocketListener {
             try {
                 webSocketCall.cancel();
             } catch (Exception e) {
-                MsgLogger.LOG.errorCannotCloseWebSocketCall(e);
+                log.errorCannotCloseWebSocketCall(e);
             }
             webSocketCall = null;
         }
@@ -164,7 +165,7 @@ public class FeedCommProcessor implements WebSocketListener {
                         }
                     }
                 } catch (Throwable t) {
-                    MsgLogger.LOG.errorFailedToSendOverFeedComm(message.getClass().getName(), t);
+                    log.errorFailedToSendOverFeedComm(message.getClass().getName(), t);
                 }
             }
         });
@@ -217,13 +218,13 @@ public class FeedCommProcessor implements WebSocketListener {
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
         this.webSocket = webSocket;
-        MsgLogger.LOG.infoOpenedFeedComm();
+        log.infoOpenedFeedComm();
     }
 
     @Override
     public void onClose(int reasonCode, String reason) {
         webSocket = null;
-        MsgLogger.LOG.infoClosedFeedComm(reasonCode, reason);
+        log.infoClosedFeedComm(reasonCode, reason);
 
         // We always want a connection - so try to get another one.
         // Note that we don't try to get another connection if we think we'll never get one;
@@ -238,7 +239,7 @@ public class FeedCommProcessor implements WebSocketListener {
                     try {
                         connect();
                     } catch (Exception e) {
-                        MsgLogger.LOG.errorCannotReconnectToWebSocket(e);
+                        log.errorCannotReconnectToWebSocket(e);
                     }
                     break;
                 }
@@ -248,7 +249,7 @@ public class FeedCommProcessor implements WebSocketListener {
 
     @Override
     public void onFailure(IOException e, Response response) {
-        MsgLogger.LOG.warnFeedCommFailure((response != null) ? response.toString() : "?", e);
+        log.warnFeedCommFailure((response != null) ? response.toString() : "?", e);
     }
 
     @Override
@@ -280,14 +281,14 @@ public class FeedCommProcessor implements WebSocketListener {
                     }
                 }
 
-                MsgLogger.LOG.debug("Received message from server");
+                log.debug("Received message from server");
 
                 BasicMessage msg = msgWithData.getBasicMessage();
                 requestClassName = msg.getClass().getName();
 
                 Class<? extends Command<?, ?>> commandClass = VALID_COMMANDS.get(requestClassName);
                 if (commandClass == null) {
-                    MsgLogger.LOG.errorInvalidCommandRequestFeed(requestClassName);
+                    log.errorInvalidCommandRequestFeed(requestClassName);
                     String errorMessage = "Invalid command request: " + requestClassName;
                     GenericErrorResponse errorMsg = new GenericErrorResponseBuilder().setErrorMessage(errorMessage)
                             .build();
@@ -302,7 +303,7 @@ public class FeedCommProcessor implements WebSocketListener {
                 payload.close();
             }
         } catch (Throwable t) {
-            MsgLogger.LOG.errorCommandExecutionFailureFeed(requestClassName, t);
+            log.errorCommandExecutionFailureFeed(requestClassName, t);
             String errorMessage = "Command failed [" + requestClassName + "]";
             GenericErrorResponse errorMsg = new GenericErrorResponseBuilder()
                     .setThrowable(t)
@@ -316,7 +317,7 @@ public class FeedCommProcessor implements WebSocketListener {
             try {
                 sendSync(response);
             } catch (Exception e) {
-                MsgLogger.LOG.errorFailedToSendOverFeedComm(response.getClass().getName(), e);
+                log.errorFailedToSendOverFeedComm(response.getClass().getName(), e);
             }
         }
     }

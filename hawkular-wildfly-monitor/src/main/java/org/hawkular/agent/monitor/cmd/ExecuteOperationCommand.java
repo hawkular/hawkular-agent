@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.feedcomm;
+package org.hawkular.agent.monitor.cmd;
 
 import java.util.Collection;
 import java.util.Map;
@@ -31,6 +31,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMROperation;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
@@ -47,12 +48,13 @@ import org.jboss.dmr.ModelNode;
  * Execute an operation on a resource.
  */
 public class ExecuteOperationCommand implements Command<ExecuteOperationRequest, ExecuteOperationResponse> {
+    private static final MsgLogger log = AgentLoggers.getLogger(ExecuteOperationCommand.class);
     public static final Class<ExecuteOperationRequest> REQUEST_CLASS = ExecuteOperationRequest.class;
 
     @Override
     public BasicMessageWithExtraData<ExecuteOperationResponse> execute(ExecuteOperationRequest request,
             BinaryData binaryData, CommandContext context) throws Exception {
-        MsgLogger.LOG.infof("Received request to execute operation [%s] on resource [%s]",
+        log.infof("Received request to execute operation [%s] on resource [%s]",
                 request.getOperationName(), request.getResourcePath());
 
         MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
@@ -99,7 +101,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
 
         String requestedOpName = request.getOperationName();
         Collection<DMROperation> ops = resource.getResourceType().getOperations();
-        MsgLogger.LOG.tracef("Searching for operation [%s] among operations [%s] for resource [%s].",
+        log.tracef("Searching for operation [%s] among operations [%s] for resource [%s].",
                 requestedOpName, ops, resource.getID());
         for (DMROperation op : ops) {
             if (requestedOpName.equals(op.getID().getIDString())) {

@@ -29,6 +29,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.Util;
 
@@ -45,6 +46,7 @@ import com.squareup.okhttp.ws.WebSocketCall;
  * This builder also has methods that you can use to build requests.
  */
 public class HttpClientBuilder {
+    private static final MsgLogger log = AgentLoggers.getLogger(HttpClientBuilder.class);
     private final String password;
     private final String username;
     private final boolean useSSL;
@@ -195,7 +197,7 @@ public class HttpClientBuilder {
         char[] password = this.keystorePassword.toCharArray();
         File file = new File(this.keystorePath);
 
-        MsgLogger.LOG.infoUseKeystore(file.getAbsolutePath());
+        log.infoUseKeystore(file.getAbsolutePath());
 
         try (FileInputStream fis = new FileInputStream(file)) {
             ks.load(fis, password);
@@ -206,7 +208,7 @@ public class HttpClientBuilder {
     private class NullHostNameVerifier implements HostnameVerifier {
         @Override
         public boolean verify(String hostname, SSLSession session) {
-            MsgLogger.LOG.debugf("HTTP client is blindly approving cert for [%s]", hostname);
+            log.debugf("HTTP client is blindly approving cert for [%s]", hostname);
             return true;
         }
     }

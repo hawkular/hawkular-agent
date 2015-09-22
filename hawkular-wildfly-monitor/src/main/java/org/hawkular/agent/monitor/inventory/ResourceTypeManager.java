@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.jgrapht.alg.DirectedNeighborIndex;
 import org.jgrapht.graph.DefaultEdge;
@@ -32,7 +33,7 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 public class ResourceTypeManager<T extends ResourceType<?, ?, ?, ?>, S extends ResourceTypeSet<T>> {
-
+    private static final MsgLogger log = AgentLoggers.getLogger(ResourceTypeManager.class);
     private final Map<Name, S> resourceTypeSetMap;
     private final ListenableDirectedGraph<T, DefaultEdge> resourceTypesGraph;
     private final DirectedNeighborIndex<T, DefaultEdge> index;
@@ -198,7 +199,7 @@ public class ResourceTypeManager<T extends ResourceType<?, ?, ?, ?>, S extends R
         for (T disabledType : disabledTypes) {
             toBeDisabled.add(disabledType);
             getDeepChildrenList(disabledType, toBeDisabled);
-            MsgLogger.LOG.infoDisablingResourceTypes(disabledType, toBeDisabled);
+            log.infoDisablingResourceTypes(disabledType, toBeDisabled);
         }
         resourceTypesGraph.removeAllVertices(toBeDisabled);
     }

@@ -20,6 +20,7 @@ import org.hawkular.agent.monitor.inventory.InventoryManager;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.MetadataManager;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
@@ -36,7 +37,7 @@ public class DMRInventoryManager extends InventoryManager
         DMRResourceConfigurationPropertyType,
         DMRResource,
         DMREndpoint> {
-
+    private static final MsgLogger log = AgentLoggers.getLogger(DMRInventoryManager.class);
     private final ModelControllerClientFactory dmrClientFactory;
 
     public DMRInventoryManager(String feedId,
@@ -56,7 +57,7 @@ public class DMRInventoryManager extends InventoryManager
             DMRDiscovery discovery = new DMRDiscovery(this);
             discovery.discoverAllResources(listener);
         } catch (Exception e) {
-            MsgLogger.LOG.errorDiscoveryFailed(e, getEndpoint());
+            log.errorDiscoveryFailed(e, getEndpoint());
         }
     }
 

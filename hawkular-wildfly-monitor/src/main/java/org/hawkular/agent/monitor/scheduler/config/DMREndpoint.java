@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.scheduler.config;
 
 import java.util.Properties;
 
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactoryImpl;
@@ -29,7 +30,7 @@ import org.hawkular.dmrclient.CoreJBossASClient;
  * Represents a remote endpoint that can process DMR requests.
  */
 public class DMREndpoint extends MonitoredEndpoint {
-
+    private static final MsgLogger log = AgentLoggers.getLogger(DMREndpoint.class);
     private final String host;
     private final int port;
     private final String username;
@@ -90,7 +91,7 @@ public class DMREndpoint extends MonitoredEndpoint {
 
                 this.serverId = new ServerIdentifiers(hostName, serverName, nodeName, uuid);
             } catch (Exception e) {
-                MsgLogger.LOG.warnCannotObtainServerIdentifiersForDMREndpoint(this.toString(), e.toString());
+                log.warnCannotObtainServerIdentifiersForDMREndpoint(this.toString(), e.toString());
             }
         }
 

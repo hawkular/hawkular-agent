@@ -41,9 +41,10 @@ import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
+import org.jboss.dmr.Property;
+import org.testng.AssertJUnit;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JavaType;
@@ -125,7 +126,7 @@ public abstract class AbstractCommandITest {
                                 int b;
                                 while ((b = in.read()) != -1) {
                                     b1.writeByte(b);
-                                    //System.out.println("Writing binary data");
+                                    // System.out.println("Writing binary data");
                                 }
                             }
                         }
@@ -137,6 +138,7 @@ public abstract class AbstractCommandITest {
             });
         }
     }
+
     protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
     protected static final String managementPasword = System.getProperty("hawkular.agent.itest.mgmt.password");
     protected static final int managementPort;
@@ -170,13 +172,13 @@ public abstract class AbstractCommandITest {
     protected ObjectMapper mapper;
     protected ExecutorService writeExecutor;
 
-    @After
+    @AfterMethod
     public void after() {
         // Trigger shutdown of the dispatcher's executor so this process can exit cleanly.
         client.getDispatcher().getExecutorService().shutdown();
     }
 
-    @Before
+    @BeforeMethod
     public void before() {
         JsonFactory f = new JsonFactory();
         mapper = new ObjectMapper(f);
@@ -223,7 +225,7 @@ public abstract class AbstractCommandITest {
             try {
                 Request request = newAuthRequest().url(url).build();
                 Response response = client.newCall(request).execute();
-                Assert.assertEquals(200, response.code());
+                AssertJUnit.assertEquals(200, response.code());
                 System.out.println("Got after " + (i + 1) + " retries: " + url);
                 return response.body().string();
             } catch (Throwable t) {
@@ -269,6 +271,7 @@ public abstract class AbstractCommandITest {
             throw new RuntimeException("Failed to create management client", e);
         }
     }
+
     protected Request.Builder newAuthRequest() {
         /*
          * http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side : The Authorization header is
@@ -307,15 +310,35 @@ public abstract class AbstractCommandITest {
      * @param request
      * @throws IOException
      */
-    protected void assertResourceExists(ModelNode address, String message) throws IOException {
-        ModelControllerClient mcc = newModelControllerClient();
+    protected void assertResourceExists(ModelControllerClient mcc, ModelNode address, String message)
+            throws IOException {
         ModelNode request = new ModelNode();
         request.get(ModelDescriptionConstants.ADDRESS).set(address);
         request.get(ModelDescriptionConstants.OP).set(ModelDescriptionConstants.READ_RESOURCE_OPERATION);
         request.get(ModelDescriptionConstants.INCLUDE_RUNTIME).set(true);
         ModelNode result = mcc.execute(request);
 
-        Assert.assertTrue(String.format(message, result), Operations.isSuccessfulOutcome(result));
+        AssertJUnit.assertTrue(String.format(message, result), Operations.isSuccessfulOutcome(result));
+
+    }
+
+    protected void assertResourceCount(ModelControllerClient mcc, ModelNode address, String childType,
+            int expectedCount) throws IOException {
+        ModelNode request = new ModelNode();
+        request.get(ModelDescriptionConstants.ADDRESS).set(address);
+        request.get(ModelDescriptionConstants.OP).set(ModelDescriptionConstants.READ_CHILDREN_RESOURCES_OPERATION);
+        request.get(ModelDescriptionConstants.CHILD_TYPE).set(childType);
+        request.get(ModelDescriptionConstants.INCLUDE_RUNTIME).set(true);
+        ModelNode response = mcc.execute(request);
+        if (response.hasDefined(ModelDescriptionConstants.OUTCOME) && response.get(ModelDescriptionConstants.OUTCOME)
+                .asString().equals(ModelDescriptionConstants.SUCCESS)) {
+            ModelNode result = response.get(ModelDescriptionConstants.RESULT);
+            List<Property> nodes = result.asPropertyList();
+            AssertJUnit.assertEquals("Number of child nodes of [" + address + "] " + response, expectedCount,
+                    nodes.size());
+        } else if (expectedCount != 0) {
+            AssertJUnit.fail("Path [" + address + "] has no child nodes, expected " + expectedCount + " : " + response);
+        }
 
     }
 

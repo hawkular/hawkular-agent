@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.feedcomm;
+package org.hawkular.agent.monitor.cmd;
 
 /**
  * An exception that commands can throw if they receive an invalid request.

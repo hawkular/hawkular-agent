@@ -21,11 +21,10 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.testng.AssertJUnit;
+import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -40,7 +39,7 @@ import okio.BufferedSource;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class EchoCommandITest extends AbstractCommandITest {
-    @Test
+    @Test(groups = { "no-dependencies" })
     public void testEcho() throws InterruptedException, IOException {
 
         Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
@@ -64,15 +63,14 @@ public class EchoCommandITest extends AbstractCommandITest {
 
         List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
         int i = 0;
-        Assert.assertEquals("EchoResponse={\"reply\":\"ECHO [Yodel Ay EEE Oooo]\"}",
+        AssertJUnit.assertEquals("EchoResponse={\"reply\":\"ECHO [Yodel Ay EEE Oooo]\"}",
                 receivedMessages.get(i++).readUtf8());
 
-        Assert.assertEquals(1, receivedMessages.size());
+        AssertJUnit.assertEquals(1, receivedMessages.size());
 
     }
 
-    @Test
-    @Ignore // created as a proof of concept of a ws test. Can be removed later
+    @Test(enabled = false, groups = { "no-dependencies" })
     public void testWsOrg() throws InterruptedException, IOException {
 
         Request request = new Request.Builder().url("ws://echo.websocket.org").build();
@@ -92,7 +90,7 @@ public class EchoCommandITest extends AbstractCommandITest {
         ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
         verify(mockListener, Mockito.timeout(10000).times(1)).onMessage(bufferedSourceCaptor.capture(),
                 Mockito.same(PayloadType.TEXT));
-        Assert.assertEquals("whatever", bufferedSourceCaptor.getValue().readUtf8());
+        AssertJUnit.assertEquals("whatever", bufferedSourceCaptor.getValue().readUtf8());
 
     }
 }

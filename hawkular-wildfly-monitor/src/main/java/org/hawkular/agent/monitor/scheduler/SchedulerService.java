@@ -23,6 +23,7 @@ import java.util.Map;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
@@ -48,7 +49,7 @@ import org.hawkular.agent.monitor.storage.StorageAdapter;
  * The core service that schedules tasks and stores the data resulting from those tasks to its storage adapter.
  */
 public class SchedulerService {
-
+    private static final MsgLogger log = AgentLoggers.getLogger(SchedulerService.class);
     private final SchedulerConfiguration schedulerConfig;
     private final ServerIdentifiers selfId;
     private final ModelControllerClientFactory localDMRClientFactory;
@@ -108,7 +109,7 @@ public class SchedulerService {
             return; // already started
         }
 
-        MsgLogger.LOG.infoStartingScheduler();
+        log.infoStartingScheduler();
 
         // turn metric DMR refs into Tasks and schedule them now
         List<Task> metricTasks = createMetricDMRTasks(schedulerConfig.getDMRMetricsToBeCollected());
@@ -128,7 +129,7 @@ public class SchedulerService {
             return; // already stopped
         }
 
-        MsgLogger.LOG.infoStoppingScheduler();
+        log.infoStoppingScheduler();
 
         // stop completion handlers
         this.metricCompletionHandler.shutdown();

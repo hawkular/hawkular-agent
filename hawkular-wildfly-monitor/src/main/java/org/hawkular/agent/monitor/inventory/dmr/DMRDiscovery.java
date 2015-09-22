@@ -33,6 +33,7 @@ import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
@@ -45,7 +46,6 @@ import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
-import org.jboss.logging.Logger;
 import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.DepthFirstIterator;
@@ -54,7 +54,7 @@ import org.jgrapht.traverse.DepthFirstIterator;
  * Discovers resources for a given DMR endpoint.
  */
 public class DMRDiscovery {
-    private static final Logger LOG = Logger.getLogger(DMRDiscovery.class);
+    private static final MsgLogger log = AgentLoggers.getLogger(DMRDiscovery.class);
 
     private final DMRInventoryManager inventoryManager;
     private final ModelControllerClientFactory clientFactory;
@@ -121,7 +121,7 @@ public class DMRDiscovery {
             Address parentAddr = (parent == null) ? Address.root() : parent.getAddress().clone();
             Address addr = parentAddr.add(Address.parse(type.getPath()));
 
-            LOG.debugf("Discovering children of [%s] of type [%s] using address query [%s]", parent, type, addr);
+            log.debugf("Discovering children of [%s] of type [%s] using address query [%s]", parent, type, addr);
 
             // can return a single resource (type of OBJECT) or a list of them (type of LIST whose items are OBJECTS)
             ModelNode results = client.readResource(addr);
@@ -152,7 +152,7 @@ public class DMRDiscovery {
                         address.toAddressPathString());
                 DMRResource resource = new DMRResource(id, resourceName, this.inventoryManager.getEndpoint(), type,
                         parent, address, entry.getValue());
-                LOG.debugf("Discovered [%s]", resource);
+                log.debugf("Discovered [%s]", resource);
 
                 // get the configuration of the resource
                 discoverResourceConfiguration(resource, mcc);
@@ -172,7 +172,7 @@ public class DMRDiscovery {
                 }
             }
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to discover resources in [%s]", this.inventoryManager.getEndpoint());
+            log.errorf(e, "Failed to discover resources in [%s]", this.inventoryManager.getEndpoint());
         }
     }
 
@@ -200,7 +200,7 @@ public class DMRDiscovery {
                 cpi.setValue((value != null && value.isDefined()) ? value.asString() : null);
                 resource.addResourceConfigurationProperty(cpi);
             } catch (Exception e) {
-                LOG.warnf(e, "Failed to discover config [%s] for resource [%s]", configPropType, resource);
+                log.warnf(e, "Failed to discover config [%s] for resource [%s]", configPropType, resource);
             }
         }
     }
@@ -242,7 +242,7 @@ public class DMRDiscovery {
                         adrProp.setValue(displayAddresses);
                     }
                 } catch (UnknownHostException e) {
-                    MsgLogger.LOG.warnf(e, "Could not parse IP address [%s]", adrProp.getValue());
+                    log.warnf(e, "Could not parse IP address [%s]", adrProp.getValue());
                 }
             }
         }
@@ -251,7 +251,7 @@ public class DMRDiscovery {
     }
 
     private void logTreeGraph(String logMsg, ResourceManager<DMRResource> resourceManager, long duration) {
-        if (!LOG.isDebugEnabled()) {
+        if (!log.isDebugEnabled()) {
             return;
         }
 
@@ -271,7 +271,7 @@ public class DMRDiscovery {
             graphString.append(resource).append("\n");
         }
 
-        LOG.debugf("%s\n%s\nDiscovery duration: [%d]ms", logMsg, graphString, duration);
+        log.debugf("%s\n%s\nDiscovery duration: [%d]ms", logMsg, graphString, duration);
     }
 
     private Name generateResourceName(DMRResourceType type, Address address) {
@@ -352,7 +352,7 @@ public class DMRDiscovery {
                 // if a metric/avail gets data from grandchildren or deeper, we don't know if it exists,
                 // so just assume it does.
                 childResourceExists = true;
-                MsgLogger.LOG.tracef("Cannot test long child path [%s] under resource [%s] "
+                log.tracef("Cannot test long child path [%s] under resource [%s] "
                         + "for existence so it will be assumed to exist", childRelativePath, parentResource);
             } else {
                 ModelNode haystackNode = parentResource.getModelNode().get(addressParts[0]);

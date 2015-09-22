@@ -24,12 +24,13 @@ import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
+import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
-import org.junit.Assert;
-import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.testng.AssertJUnit;
+import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -45,81 +46,77 @@ import okio.BufferedSource;
  */
 public class AddJdbcDriverCommandITest extends AbstractCommandITest {
 
-    @Test
+    @Test(dependsOnGroups = { "exclusive-inventory-access" })
     public void testAddJdbcDriver() throws Throwable {
         waitForAccountsAndInventory();
 
         List<Resource> wfs = getResources("/test/resources", 1);
-        Assert.assertEquals(1, wfs.size());
+        AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
-        String feedId = wfPath.ids().getFeedId();
-        // http://localhost:8080/hawkular/inventory/test/slama/resourceTypes/JDBC%20Driver/resources
-        /* Here we wait for Agent to write the built-in h2 driver to inventory */
-        List<Resource> drivers = getResources("/test/" + feedId + "/resourceTypes/JDBC%20Driver/resources", 1);
-        Assert.assertEquals(1, drivers.size());
-        final String driverName = "mysql";
 
-        /* OK, h2 is there let's add a new MySQL Driver */
-        final String driverJarRawUrl = "http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.36/"
-                + "mysql-connector-java-5.1.36.jar";
-        URL driverJarUrl = new URL(driverJarRawUrl);
-        final String driverJarName = new File(driverJarUrl.getPath()).getName();
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
+            assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 1);
 
-        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+            final String driverName = "mysql";
 
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                send(webSocket,
-                        "AddJdbcDriverRequest={\"authentication\":" + authentication + ", " //
-                                + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                                + "\"driverName\":\"" + driverName + "\"," //
-                                + "\"driverClass\":\"com.mysql.jdbc.Driver\"," //
-                                + "\"driverMajorVersion\":\"5\"," //
-                                + "\"driverMinorVersion\":\"1\"," //
-                                + "\"moduleName\":\"com.mysql\"," //
-                                + "\"driverJarName\":\"" + driverJarName + "\"" //
-                                + "}",
-                        driverJarUrl);
-                super.onOpen(webSocket, response);
-            }
-        };
+            /* OK, h2 is there let's add a new MySQL Driver */
+            final String driverJarRawUrl = "http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.36/"
+                    + "mysql-connector-java-5.1.36.jar";
+            URL driverJarUrl = new URL(driverJarRawUrl);
+            final String driverJarName = new File(driverJarUrl.getPath()).getName();
 
-        WebSocketCall.create(client, request).enqueue(openingListener);
+            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
 
-        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    send(webSocket,
+                            "AddJdbcDriverRequest={\"authentication\":" + authentication + ", " //
+                                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
+                                    + "\"driverName\":\"" + driverName + "\"," //
+                                    + "\"driverClass\":\"com.mysql.jdbc.Driver\"," //
+                                    + "\"driverMajorVersion\":\"5\"," //
+                                    + "\"driverMinorVersion\":\"1\"," //
+                                    + "\"moduleName\":\"com.mysql\"," //
+                                    + "\"driverJarName\":\"" + driverJarName + "\"" //
+                                    + "}",
+                            driverJarUrl);
+                    super.onOpen(webSocket, response);
+                }
+            };
 
-        List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-        int i = 0;
+            WebSocketCall.create(client, request).enqueue(openingListener);
 
-        String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
+            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
+            verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
+                    Mockito.same(PayloadType.TEXT));
 
-        String msg = receivedMessages.get(i++).readUtf8();
-        Assert.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
+            int i = 0;
 
-        Assert.assertEquals("AddJdbcDriverResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
-                + "\"status\":\"OK\"," //
-                + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
-                + "}", receivedMessages.get(i++).readUtf8());
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":"
+                    + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
-        Assert.assertEquals(2, receivedMessages.size());
+            String msg = receivedMessages.get(i++).readUtf8();
+            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-        ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
-                .add("jdbc-driver", driverName);
-        assertResourceExists(address, "The JDBC Driver " + driverName + " cannot be found after it was added: %s");
+            AssertJUnit.assertEquals("AddJdbcDriverResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
+                    + "\"status\":\"OK\"," //
+                    + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
+                    + "}", receivedMessages.get(i++).readUtf8());
 
-        // there is a good hope that https://issues.jboss.org/browse/HWKAGENT-7
-        // brings a way to sync with the inventory, so that we can validate that we really added it.
-        // List<Resource> driversAfter = getResources("/test/" + feedId + "/resourceTypes/JDBC%20Driver/resources", 2);
-        // Assert.assertEquals(2, driversAfter.size());
-        // Assert.assertTrue("The [" + driverName + "] could not be found after it was added",
-        // driversAfter.stream().filter(r -> r.getId().endsWith("=" + driverName)).findFirst().isPresent());
+            AssertJUnit.assertEquals(2, receivedMessages.size());
 
+            ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
+                    .add("jdbc-driver", driverName);
+            assertResourceExists(mcc, address,
+                    "The JDBC Driver " + driverName + " cannot be found after it was added: %s");
+
+            assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 2);
+        }
     }
 
 }

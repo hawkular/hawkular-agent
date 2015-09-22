@@ -45,6 +45,14 @@
     </dependency>
 
     <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>6.8.8</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- required by mockito-core, can probably be removed with an upgrade to mockito-core 2.* -->
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -100,7 +108,7 @@
 
         <hawkular.log>INFO</hawkular.log>
         <hawkular.log.accounts>INFO</hawkular.log.accounts>
-        <hawkular.log.agent>INFO</hawkular.log.agent>
+        <hawkular.log.agent>DEBUG</hawkular.log.agent>
         <hawkular.log.alerts>INFO</hawkular.log.alerts>
         <hawkular.log.bus>INFO</hawkular.log.bus>
         <hawkular.log.availcreator>INFO</hawkular.log.availcreator>

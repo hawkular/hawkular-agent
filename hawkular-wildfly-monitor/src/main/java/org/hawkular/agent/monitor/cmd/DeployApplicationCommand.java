@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.feedcomm;
+package org.hawkular.agent.monitor.cmd;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
@@ -27,6 +27,7 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
@@ -40,13 +41,14 @@ import org.jboss.as.controller.client.ModelControllerClient;
  * Deploys an application on a resource.
  */
 public class DeployApplicationCommand implements Command<DeployApplicationRequest, DeployApplicationResponse> {
+    private static final MsgLogger log = AgentLoggers.getLogger(DeployApplicationCommand.class);
     public static final Class<DeployApplicationRequest> REQUEST_CLASS = DeployApplicationRequest.class;
 
     @Override
     public BasicMessageWithExtraData<DeployApplicationResponse> execute(DeployApplicationRequest request,
             BinaryData applicationContent, CommandContext context) throws Exception {
 
-        MsgLogger.LOG.infof("Received request to deploy application [%s] on resource [%s]",
+        log.infof("Received request to deploy application [%s] on resource [%s]",
                 request.getDestinationFileName(), request.getResourcePath());
 
         MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();

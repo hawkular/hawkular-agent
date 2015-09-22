@@ -27,6 +27,7 @@ import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceType;
+import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
@@ -37,6 +38,7 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 public class MetricsOnlyStorageAdapter implements StorageAdapter {
+    private static final MsgLogger log = AgentLoggers.getLogger(MetricsOnlyStorageAdapter.class);
     private MonitorServiceConfiguration.StorageAdapter config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
@@ -109,7 +111,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    MsgLogger.LOG.errorFailedToStoreMetricData(e, jsonPayloadFinal);
+                    log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
                     diagnostics.getStorageErrorRate().mark(1);
                 }
 
@@ -119,7 +121,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
                     if (response.code() != 200) {
                         IOException e = new IOException("status-code=[" + response.code() + "], reason=["
                                 + response.message() + "], url=[" + request.urlString() + "]");
-                        MsgLogger.LOG.errorFailedToStoreMetricData(e, jsonPayloadFinal);
+                        log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
                         diagnostics.getStorageErrorRate().mark(1);
                         throw e;
                     }
@@ -131,7 +133,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             });
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreMetricData(t, jsonPayload);
+            log.errorFailedToStoreMetricData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
         }
     }
@@ -176,7 +178,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    MsgLogger.LOG.errorFailedToStoreAvailData(e, jsonPayloadFinal);
+                    log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
                     diagnostics.getStorageErrorRate().mark(1);
                 }
 
@@ -186,7 +188,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
                     if (response.code() != 200) {
                         IOException e = new IOException("status-code=[" + response.code() + "], reason=["
                                 + response.message() + "], url=[" + request.urlString() + "]");
-                        MsgLogger.LOG.errorFailedToStoreAvailData(e, jsonPayloadFinal);
+                        log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
                         diagnostics.getStorageErrorRate().mark(1);
                         throw e;
                     }
@@ -198,7 +200,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             });
 
         } catch (Throwable t) {
-            MsgLogger.LOG.errorFailedToStoreAvailData(t, jsonPayload);
+            log.errorFailedToStoreAvailData(t, jsonPayload);
             diagnostics.getStorageErrorRate().mark(1);
         }
     }
