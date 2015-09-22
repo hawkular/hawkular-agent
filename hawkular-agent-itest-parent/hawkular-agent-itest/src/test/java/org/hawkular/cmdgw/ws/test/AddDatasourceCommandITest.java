@@ -44,7 +44,7 @@ import okio.BufferedSource;
  */
 public class AddDatasourceCommandITest extends AbstractCommandITest {
 
-    @Test
+    @Test(dependsOnGroups = { "exclusive-inventory-access" })
     public void testAddXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -120,7 +120,7 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
 
     }
 
-    @Test
+    @Test(dependsOnGroups = { "exclusive-inventory-access" })
     public void testAddDatasource() throws Throwable {
         waitForAccountsAndInventory();
 

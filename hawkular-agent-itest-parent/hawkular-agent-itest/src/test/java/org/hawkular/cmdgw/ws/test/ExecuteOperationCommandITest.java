@@ -41,7 +41,7 @@ import okio.BufferedSource;
  */
 public class ExecuteOperationCommandITest extends AbstractCommandITest {
 
-    @Test
+    @Test(dependsOnGroups = { "no-dependencies" }, groups = "exclusive-inventory-access")
     public void testExecuteOperation() throws Throwable {
         waitForAccountsAndInventory();
 

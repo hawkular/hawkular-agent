@@ -39,7 +39,7 @@ import okio.BufferedSource;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class EchoCommandITest extends AbstractCommandITest {
-    @Test
+    @Test(groups = { "no-dependencies" })
     public void testEcho() throws InterruptedException, IOException {
 
         Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
@@ -70,7 +70,7 @@ public class EchoCommandITest extends AbstractCommandITest {
 
     }
 
-    @Test(enabled = false)
+    @Test(enabled = false, groups = { "no-dependencies" })
     public void testWsOrg() throws InterruptedException, IOException {
 
         Request request = new Request.Builder().url("ws://echo.websocket.org").build();

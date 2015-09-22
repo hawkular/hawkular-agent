@@ -46,7 +46,7 @@ import okio.BufferedSource;
  */
 public class AddJdbcDriverCommandITest extends AbstractCommandITest {
 
-    @Test
+    @Test(dependsOnGroups = { "exclusive-inventory-access" })
     public void testAddJdbcDriver() throws Throwable {
         waitForAccountsAndInventory();
 
