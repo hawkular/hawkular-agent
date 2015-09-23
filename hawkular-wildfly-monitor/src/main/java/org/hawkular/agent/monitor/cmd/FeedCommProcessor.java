@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.AgentLoggers;
@@ -70,6 +71,7 @@ public class FeedCommProcessor implements WebSocketListener {
     private final DiscoveryService discoveryService;
     private final String feedcommUrl;
     private final ExecutorService sendExecutor = Executors.newSingleThreadExecutor();
+    private final AtomicReference<ReconnectJobThread> reconnectJobThread = new AtomicReference<>();
 
     private WebSocketCall webSocketCall;
     private WebSocket webSocket;
@@ -103,6 +105,10 @@ public class FeedCommProcessor implements WebSocketListener {
         return webSocket != null;
     }
 
+    /**
+     * Connects to the websocket endpoint. This first attempts to disconnect to any existing connection.
+     * @throws Exception on failure
+     */
     public void connect() throws Exception {
         disconnect(); // disconnect to any old connection we had
 
@@ -218,6 +224,7 @@ public class FeedCommProcessor implements WebSocketListener {
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
         this.webSocket = webSocket;
+        stopReconnectJobThread();
         log.infoOpenedFeedComm();
     }
 
@@ -236,11 +243,7 @@ public class FeedCommProcessor implements WebSocketListener {
                     break;
                 }
                 default: {
-                    try {
-                        connect();
-                    } catch (Exception e) {
-                        log.errorCannotReconnectToWebSocket(e);
-                    }
+                    startReconnectJobThread();
                     break;
                 }
             }
@@ -343,5 +346,56 @@ public class FeedCommProcessor implements WebSocketListener {
         auth.setUsername(this.config.storageAdapter.username);
         auth.setPassword(this.config.storageAdapter.password);
         authMessage.setAuthentication(auth);
+    }
+
+    private void startReconnectJobThread() {
+        ReconnectJobThread newReconnectJob = new ReconnectJobThread();
+        ReconnectJobThread oldReconnectJob = reconnectJobThread.getAndSet(newReconnectJob);
+        if (oldReconnectJob != null) {
+            oldReconnectJob.interrupt();
+        }
+        newReconnectJob.start();
+    }
+
+    private void stopReconnectJobThread() {
+        ReconnectJobThread reconnectJob = reconnectJobThread.getAndSet(null);
+        if (reconnectJob != null) {
+            reconnectJob.interrupt();
+        }
+    }
+
+    private class ReconnectJobThread extends Thread {
+        public ReconnectJobThread() {
+            super("Hawkular WildFly Monitor Websocket Reconnect Thread");
+            setDaemon(true);
+        }
+
+        @Override
+        public void run() {
+            int attemptCount = 0;
+            final long sleepInterval = 1000L;
+            boolean keepTrying = true;
+            while (keepTrying) {
+                try {
+                    attemptCount++;
+                    Thread.sleep(sleepInterval);
+                    if (!isConnected()) {
+                        // only log a message for each minute that passes in which we couldn't reconnect
+                        if (attemptCount % 60 == 0) {
+                            log.errorCannotReconnectToWebSocket(new Exception("Attempt #" + attemptCount));
+                        }
+                        connect();
+                    } else {
+                        keepTrying = false;
+                    }
+                } catch (InterruptedException ie) {
+                    keepTrying = false;
+                } catch (Exception e) {
+                    if (attemptCount % 60 == 0) {
+                        log.errorCannotReconnectToWebSocket(e);
+                    }
+                }
+            }
+        }
     }
 }
