@@ -510,6 +510,7 @@
       <resource-config-dmr name="Version"
                            attribute="release-version" />
       <operation-dmr name="Reload Server" operationName="reload" path="/" />
+      <operation-dmr name="JDR" operationName="generate-jdr-report" path="/subsystem=jdr" />
     </resource-type-dmr>
   </resource-type-set-dmr>
 
