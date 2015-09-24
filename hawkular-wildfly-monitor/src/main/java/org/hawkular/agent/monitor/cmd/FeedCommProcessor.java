@@ -252,7 +252,14 @@ public class FeedCommProcessor implements WebSocketListener {
 
     @Override
     public void onFailure(IOException e, Response response) {
-        log.warnFeedCommFailure((response != null) ? response.toString() : "?", e);
+        if (response == null) {
+            // don't flood the log with these at the WARN level - its probably just because the server is down
+            // and we can't reconnect - while the server is down, our reconnect logic will cause this error
+            // to occur periodically. Our reconnect logic will log other messages.
+            log.tracef("Feed communications had a failure - a reconnection is likely required: %s", e);
+        } else {
+            log.warnFeedCommFailure(response.toString(), e);
+        }
     }
 
     @Override
