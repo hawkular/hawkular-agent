@@ -38,6 +38,7 @@ import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
 import org.hawkular.cmdgw.api.AddJdbcDriverResponse;
+import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.dmrclient.modules.AddModuleRequest;
@@ -53,7 +54,7 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
     private static final MsgLogger log = AgentLoggers.getLogger(AddJdbcDriverCommand.class);
     public static final Class<AddJdbcDriverRequest> REQUEST_CLASS = AddJdbcDriverRequest.class;
     public static final Set<String> DEFAULT_DRIVER_MODULE_DEPENDENCIES = Collections
-            .unmodifiableSet(new LinkedHashSet(Arrays.asList("javax.api", "javax.transaction.api")));
+            .unmodifiableSet(new LinkedHashSet<>(Arrays.asList("javax.api", "javax.transaction.api")));
 
     @Override
     public BasicMessageWithExtraData<AddJdbcDriverResponse> execute(AddJdbcDriverRequest request,
@@ -101,7 +102,8 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
         }
 
         AddJdbcDriverResponse response = new AddJdbcDriverResponse();
-        response.setResourcePath(request.getResourcePath());
+        MessageUtils.prepareResourcePathResponse(request, response);
+        response.setDriverName(request.getDriverName());
 
         try (DatasourceJBossASClient dsc = new DatasourceJBossASClient(
                 inventoryManager.getModelControllerClientFactory().createClient())) {

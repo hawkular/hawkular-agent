@@ -37,6 +37,7 @@ import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.ExecuteOperationRequest;
 import org.hawkular.cmdgw.api.ExecuteOperationResponse;
+import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
@@ -118,7 +119,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
         }
 
         ExecuteOperationResponse response = new ExecuteOperationResponse();
-        response.setResourcePath(request.getResourcePath());
+        MessageUtils.prepareResourcePathResponse(request, response);
         response.setOperationName(request.getOperationName());
 
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {

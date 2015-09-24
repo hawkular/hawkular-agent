@@ -33,6 +33,7 @@ import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddDatasourceRequest;
 import org.hawkular.cmdgw.api.AddDatasourceResponse;
+import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
@@ -91,7 +92,9 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
         }
 
         AddDatasourceResponse response = new AddDatasourceResponse();
-        response.setResourcePath(request.getResourcePath());
+        MessageUtils.prepareResourcePathResponse(request, response);
+        response.setDatasourceName(request.getDatasourceName());
+        response.setXaDatasource(request.isXaDatasource());
 
         try (DatasourceJBossASClient dsc = new DatasourceJBossASClient(
                 inventoryManager.getModelControllerClientFactory().createClient())) {

@@ -41,6 +41,7 @@ import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.ExportJdrRequest;
 import org.hawkular.cmdgw.api.ExportJdrResponse;
+import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
@@ -124,6 +125,8 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
         }
 
         ExportJdrResponse response = new ExportJdrResponse();
+        MessageUtils.prepareResourcePathResponse(request, response);
+
         BinaryData binaryData = null;
         long timestampBeforeExecution = System.currentTimeMillis();
 

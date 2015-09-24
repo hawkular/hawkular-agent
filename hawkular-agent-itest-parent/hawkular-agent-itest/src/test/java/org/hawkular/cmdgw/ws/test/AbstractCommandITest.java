@@ -24,9 +24,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -35,6 +37,9 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.RealmCallback;
 
+import org.hawkular.bus.common.BasicMessageWithExtraData;
+import org.hawkular.cmdgw.api.ApiDeserializer;
+import org.hawkular.cmdgw.api.WelcomeResponse;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -187,6 +192,38 @@ public abstract class AbstractCommandITest {
         this.client = new OkHttpClient();
     }
 
+    protected Resource getResource(String listPath, Predicate<Resource> predicate) throws Throwable {
+        String url = baseInvUri + listPath;
+        Throwable e = null;
+        for (int i = 0; i < ATTEMPT_COUNT; i++) {
+            try {
+                String body = getWithRetries(url);
+                TypeFactory tf = mapper.getTypeFactory();
+                JavaType listType = tf.constructCollectionType(ArrayList.class, Resource.class);
+                JsonNode node = mapper.readTree(body);
+                List<Resource> result = mapper.readValue(node.traverse(), listType);
+                Optional<Resource> found = result.stream().filter(predicate).findFirst();
+                if (found.isPresent()) {
+                    return found.get();
+                }
+                System.out.println("Could not find the right resource among " + result.size() + " resources on "
+                        + (i + 1) + " of " + ATTEMPT_COUNT + " attempts for URL [" + url + "]");
+                // System.out.println(body);
+            } catch (Throwable t) {
+                /* some initial attempts may fail */
+                e = t;
+                System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + ATTEMPT_COUNT
+                        + " attempts, about to retry after " + ATTEMPT_DELAY + " ms");
+            }
+            /* sleep one second */
+            Thread.sleep(ATTEMPT_DELAY);
+        }
+        if (e != null) {
+            throw e;
+        } else {
+            throw new AssertionError("Could not get [" + url + "]");
+        }
+    }
     protected List<Resource> getResources(String path, int minCount) throws Throwable {
         String url = baseInvUri + path;
         Throwable e = null;
@@ -342,4 +379,14 @@ public abstract class AbstractCommandITest {
 
     }
 
+    /**
+     * @param msg
+     * @return
+     */
+    protected String assertWelcomeResponse(String msg) {
+        String welcomeRe = "\\QWelcomeResponse={\"sessionId\":\"\\E.*";
+        AssertJUnit.assertTrue("[" + msg + "] does not match [" + welcomeRe + "]", msg.matches(welcomeRe));
+        BasicMessageWithExtraData<WelcomeResponse> bigMessage = new ApiDeserializer().deserialize(msg);
+        return bigMessage.getBasicMessage().getSessionId();
+    }
 }

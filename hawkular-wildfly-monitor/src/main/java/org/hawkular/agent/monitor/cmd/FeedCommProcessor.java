@@ -276,8 +276,7 @@ public class FeedCommProcessor implements WebSocketListener {
                 switch (payloadType) {
                     case TEXT: {
                         String nameAndJsonStr = payload.readUtf8();
-                        BasicMessage msgFromJson = new ApiDeserializer().deserialize(nameAndJsonStr);
-                        msgWithData = new BasicMessageWithExtraData<BasicMessage>(msgFromJson, null);
+                        msgWithData = new ApiDeserializer().deserialize(nameAndJsonStr);
                         break;
                     }
                     case BINARY: {

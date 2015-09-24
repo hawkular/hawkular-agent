@@ -73,7 +73,7 @@ public class AddJdbcDriverCommandITest extends AbstractCommandITest {
                 @Override
                 public void onOpen(WebSocket webSocket, Response response) {
                     send(webSocket,
-                            "AddJdbcDriverRequest={\"authentication\":" + authentication + ", " //
+                            "AddJdbcDriverRequest={\"authentication\":" + authentication + "," //
                                     + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
                                     + "\"driverName\":\"" + driverName + "\"," //
                                     + "\"driverClass\":\"com.mysql.jdbc.Driver\"," //
@@ -91,24 +91,27 @@ public class AddJdbcDriverCommandITest extends AbstractCommandITest {
 
             verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
             ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
+            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
                     Mockito.same(PayloadType.TEXT));
 
             List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
             int i = 0;
+            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
 
             String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                    + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+                    + "\"The request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
             AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-            AssertJUnit.assertEquals("AddJdbcDriverResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
-                    + "\"status\":\"OK\"," //
-                    + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
-                    + "}", receivedMessages.get(i++).readUtf8());
+            AssertJUnit.assertEquals("AddJdbcDriverResponse={" //
+                                    + "\"driverName\":\"" + driverName + "\"," //
+                                    + "\"resourcePath\":\"" + wfPath + "\"," //
+                                    + "\"destinationSessionId\":\""+ sessionId +"\"," //
+                                    + "\"status\":\"OK\"," //
+                                    + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
+                                    + "}", receivedMessages.get(i++).readUtf8());
 
-            AssertJUnit.assertEquals(2, receivedMessages.size());
 
             ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
                     .add("jdbc-driver", driverName);
