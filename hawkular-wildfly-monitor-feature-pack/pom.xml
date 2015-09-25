@@ -32,7 +32,7 @@
   <description>A feature pack to be able to deploy a Hawkular WildFly Monitor Agent in a WildFly server.</description>
 
   <properties>
-    <version.org.wildfly.build>1.1.0.CR2-SNAPSHOT</version.org.wildfly.build>
+    <version.org.wildfly.build>1.1.0.CR1</version.org.wildfly.build>
 
     <!-- used to replace the variables in module.xml -->
     <moduleName>org.hawkular.agent.monitor</moduleName>
@@ -53,15 +53,40 @@
         <groupId>org.wildfly.build</groupId>
         <artifactId>wildfly-feature-pack-build-maven-plugin</artifactId>
         <version>${version.org.wildfly.build}</version>
-        <configuration>
-        </configuration>
         <executions>
           <execution>
             <id>feature-pack-build</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>build</goal>
+            </goals>
+            <configuration>
+              <config-file>feature-pack-build.xml</config-file>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>assemble</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assembly.xml</descriptor>
+              </descriptors>
+              <finalName>${project.build.finalName}</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+              <workDirectory>${project.build.directory}/assembly/work</workDirectory>
+              <tarLongFileMode>gnu</tarLongFileMode>
+            </configuration>
           </execution>
         </executions>
       </plugin>
