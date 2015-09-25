@@ -45,6 +45,22 @@
       <artifactId>hawkular-monitor</artifactId>
       <version>0.9.1.Final-SNAPSHOT</version>
     </dependency>
+
+    <!-- feature pack dependencies -->
+
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-servlet-feature-pack</artifactId>
+      <version>${version.org.wildfly}</version>
+      <type>zip</type>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
   </dependencies>
 
   <build>
