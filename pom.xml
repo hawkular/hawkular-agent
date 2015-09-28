@@ -52,7 +52,7 @@
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
-    <version.org.hawkular.accounts>1.0.14.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.accounts>1.0.15.Final-SRC-revision-7953101033587f988309632d69824dde1432aa9d</version.org.hawkular.accounts>
     <version.org.hawkular.bus>0.6.1.Final</version.org.hawkular.bus>
     <version.org.hawkular.cmdgw>0.8.0.Final</version.org.hawkular.cmdgw>
     <version.org.hawkular.commons>0.2.1.Final</version.org.hawkular.commons>
