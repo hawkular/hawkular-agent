@@ -170,12 +170,12 @@ public interface MsgLogger extends BasicLogger {
     void errorCommandExecutionFailureFeed(String requestClassName, @Cause Throwable t);
 
     @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 10034, value = "Feed communications channel to the server has been opened")
-    void infoOpenedFeedComm();
+    @Message(id = 10034, value = "Opened feed WebSocket connection to endpoint [%s]")
+    void infoOpenedFeedComm(String endpoint);
 
     @LogMessage(level = Logger.Level.INFO)
-    @Message(id = 10035, value = "Feed communications channel to the server has been closed. Code=[%d], Reason=[%s]")
-    void infoClosedFeedComm(int reasonCode, String reason);
+    @Message(id = 10035, value = "Closed feed WebSocket connection to endpoint [%s]. Code=[%d], Reason=[%s]")
+    void infoClosedFeedComm(String endpoint, int reasonCode, String reason);
 
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 10036, value = "Feed communications channel encountered a failure. Response=[%s]")

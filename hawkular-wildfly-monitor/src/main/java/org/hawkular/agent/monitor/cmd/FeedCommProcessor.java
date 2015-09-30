@@ -112,6 +112,8 @@ public class FeedCommProcessor implements WebSocketListener {
     public void connect() throws Exception {
         disconnect(); // disconnect to any old connection we had
 
+        log.debugf("About to connect a feed WebSocket client to endpoint [%s]", feedcommUrl);
+
         webSocketCall = httpClientBuilder.createWebSocketCall(feedcommUrl, null);
         webSocketCall.enqueue(this);
     }
@@ -225,13 +227,13 @@ public class FeedCommProcessor implements WebSocketListener {
     public void onOpen(WebSocket webSocket, Response response) {
         this.webSocket = webSocket;
         stopReconnectJobThread();
-        log.infoOpenedFeedComm();
+        log.infoOpenedFeedComm(feedcommUrl);
     }
 
     @Override
     public void onClose(int reasonCode, String reason) {
         webSocket = null;
-        log.infoClosedFeedComm(reasonCode, reason);
+        log.infoClosedFeedComm(feedcommUrl, reasonCode, reason);
 
         // We always want a connection - so try to get another one.
         // Note that we don't try to get another connection if we think we'll never get one;
