@@ -53,8 +53,8 @@
     <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
     <version.org.hawkular.accounts>1.0.15.Final-SRC-revision-7953101033587f988309632d69824dde1432aa9d</version.org.hawkular.accounts>
-    <version.org.hawkular.bus>0.6.1.Final</version.org.hawkular.bus>
-    <version.org.hawkular.cmdgw>0.8.0.Final</version.org.hawkular.cmdgw>
+    <version.org.hawkular.bus>0.6.2.Final-SRC-revision-b60b3758395c60540c0eeb42406493d94ff38fb8</version.org.hawkular.bus>
+    <version.org.hawkular.cmdgw>0.8.1.Final-SRC-revision-62e9a22747aaf590e3bceaf1a8feddb8ccb665a3</version.org.hawkular.cmdgw>
     <version.org.hawkular.commons>0.2.1.Final</version.org.hawkular.commons>
     <version.org.hawkular.inventory>0.3.3.Final</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.5.0.Final</version.org.hawkular.metrics>

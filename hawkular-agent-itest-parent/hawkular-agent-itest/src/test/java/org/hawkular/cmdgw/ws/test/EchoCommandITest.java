@@ -58,15 +58,14 @@ public class EchoCommandITest extends AbstractCommandITest {
 
         verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
         ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(1)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.BINARY));
+        verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
+                Mockito.same(PayloadType.TEXT));
 
         List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
         int i = 0;
+        assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
         AssertJUnit.assertEquals("EchoResponse={\"reply\":\"ECHO [Yodel Ay EEE Oooo]\"}",
                 receivedMessages.get(i++).readUtf8());
-
-        AssertJUnit.assertEquals(1, receivedMessages.size());
 
     }
 

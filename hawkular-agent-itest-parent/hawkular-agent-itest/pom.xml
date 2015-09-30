@@ -71,6 +71,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.cmdgw</groupId>
+      <artifactId>hawkular-command-gateway-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.wildfly.core</groupId>
       <artifactId>wildfly-controller</artifactId>
       <scope>test</scope>
@@ -108,9 +114,10 @@
 
         <hawkular.log>INFO</hawkular.log>
         <hawkular.log.accounts>INFO</hawkular.log.accounts>
-        <hawkular.log.agent>DEBUG</hawkular.log.agent>
+        <hawkular.log.agent>INFO</hawkular.log.agent>
         <hawkular.log.alerts>INFO</hawkular.log.alerts>
         <hawkular.log.bus>INFO</hawkular.log.bus>
+        <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
         <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
         <hawkular.log.pinger>INFO</hawkular.log.pinger>
         <hawkular.log.inventory>INFO</hawkular.log.inventory>
@@ -243,6 +250,7 @@
                 <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
                 <javaOpt>-Dhawkular.log.alerts=${hawkular.log.alerts}</javaOpt>
                 <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
+                <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>
                 <javaOpt>-Dhawkular.log.availcreator=${hawkular.log.availcreator}</javaOpt>
                 <javaOpt>-Dhawkular.log.pinger=${hawkular.log.pinger}</javaOpt>
                 <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>

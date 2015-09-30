@@ -33,6 +33,7 @@ import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.DeployApplicationRequest;
 import org.hawkular.cmdgw.api.DeployApplicationResponse;
+import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.dmrclient.DeploymentJBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -95,7 +96,8 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
 
         // find the operation we need to execute - make sure it exists and get the address for the resource to invoke
         DeployApplicationResponse response = new DeployApplicationResponse();
-        response.setResourcePath(resourcePath);
+        MessageUtils.prepareResourcePathResponse(request, response);
+        response.setDestinationFileName(request.getDestinationFileName());
 
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
             DeploymentJBossASClient client = new DeploymentJBossASClient(mcc);

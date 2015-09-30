@@ -91,24 +91,29 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
 
             verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
             ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
+            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
                     Mockito.same(PayloadType.TEXT));
 
             List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
             int i = 0;
 
+            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
+
             String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                    + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+                    + "\"The request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
             AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-            AssertJUnit.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
-                    + "\"status\":\"OK\"," //
-                    + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
+            AssertJUnit.assertEquals("AddDatasourceResponse={"//
+                    + "\"xaDatasource\":true,"//
+                    + "\"datasourceName\":\"" + datasourceName + "\","//
+                    + "\"resourcePath\":\"" + wfPath + "\","//
+                    + "\"destinationSessionId\":\""+ sessionId +"\","//
+                    + "\"status\":\"OK\","//
+                    + "\"message\":\"Added Datasource: " + datasourceName + "\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            AssertJUnit.assertEquals(2, receivedMessages.size());
 
             ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
                     .add("xa-data-source", datasourceName);
@@ -166,24 +171,29 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
 
             verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
             ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
+            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
                     Mockito.same(PayloadType.TEXT));
 
             List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
             int i = 0;
 
+            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
+
             String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                    + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+                    + "\"The request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
             AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-            AssertJUnit.assertEquals("AddDatasourceResponse={" + "\"resourcePath\":\"" + wfPath + "\"," //
-                    + "\"status\":\"OK\"," //
-                    + "\"message\":\"Added Datasource: " + datasourceName + "\"" //
+            AssertJUnit.assertEquals("AddDatasourceResponse={"//
+                    + "\"xaDatasource\":false,"//
+                    + "\"datasourceName\":\"" + datasourceName + "\","//
+                    + "\"resourcePath\":\"" + wfPath + "\","//
+                    + "\"destinationSessionId\":\""+ sessionId +"\","//
+                    + "\"status\":\"OK\","//
+                    + "\"message\":\"Added Datasource: " + datasourceName + "\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            AssertJUnit.assertEquals(2, receivedMessages.size());
 
             ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
                     .add("data-source", datasourceName);

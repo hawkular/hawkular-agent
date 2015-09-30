@@ -49,10 +49,9 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
         String feedId = wfPath.ids().getFeedId();
-        List<Resource> deployments = getResources("/test/" + feedId + "/resourceTypes/Deployment/resources", 6);
         final String deploymentName = "hawkular-helloworld-war.war";
-        Resource deployment = deployments.stream().filter(r -> r.getId().endsWith("=" + deploymentName)).findFirst()
-                .get();
+        Resource deployment = getResource("/test/" + feedId + "/resourceTypes/Deployment/resources",
+                (r -> r.getId().endsWith("=" + deploymentName)));
 
         Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
         WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -72,25 +71,28 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
 
         verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
         ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
+        verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
                 Mockito.same(PayloadType.TEXT));
 
         List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
         int i = 0;
 
-        String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                + "\"The execution request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+        String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
+
+        String successRe = "\\QGenericSuccessResponse={\"message\":"
+                + "\"The request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
 
         String msg = receivedMessages.get(i++).readUtf8();
-        AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+        AssertJUnit.assertTrue("[" + msg + "] does not match [" + successRe + "]", msg.matches(successRe));
 
-        AssertJUnit.assertEquals("ExecuteOperationResponse={" + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
-                + "\"operationName\":\"Redeploy\"," + "\"status\":\"OK\"," //
+        AssertJUnit.assertEquals("ExecuteOperationResponse={" //
+                + "\"operationName\":\"Redeploy\"," //
+                + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
+                + "\"destinationSessionId\":\""+ sessionId +"\"," //
+                + "\"status\":\"OK\"," //
         // FIXME HAWKULAR-604 the message should not be undefined
                 + "\"message\":\"undefined\"" //
                 + "}", receivedMessages.get(i++).readUtf8());
-
-        AssertJUnit.assertEquals(2, receivedMessages.size());
 
     }
 
