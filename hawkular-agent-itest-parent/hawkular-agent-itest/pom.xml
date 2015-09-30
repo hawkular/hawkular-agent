@@ -114,10 +114,10 @@
 
         <hawkular.log>INFO</hawkular.log>
         <hawkular.log.accounts>INFO</hawkular.log.accounts>
-        <hawkular.log.agent>TRACE</hawkular.log.agent>
+        <hawkular.log.agent>INFO</hawkular.log.agent>
         <hawkular.log.alerts>INFO</hawkular.log.alerts>
         <hawkular.log.bus>INFO</hawkular.log.bus>
-        <hawkular.log.cmdgw>TRACE</hawkular.log.cmdgw>
+        <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
         <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
         <hawkular.log.pinger>INFO</hawkular.log.pinger>
         <hawkular.log.inventory>INFO</hawkular.log.inventory>
