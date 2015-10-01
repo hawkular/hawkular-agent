@@ -866,25 +866,31 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             Response httpResponse = httpclient.newCall(request).execute();
 
             // HTTP status of 201 means success; 409 means it already exists, anything else is an error
-            if (httpResponse.code() != 201 && httpResponse.code() != 409) {
+            if (httpResponse.code() == 201) {
+
+                // success - store our feed ID so we remember it the next time
+                final String feedObjectFromServer = Util.slurpStream(httpResponse.body().byteStream());
+                final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
+                if (desiredFeedId.equals(feed.getId())) {
+                    log.infof("Feed ID registered [%s]", feed.getId());
+                } else {
+                    log.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
+                    // should we throw an error here or just use the feed ID we were given?
+                    log.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file", feed.getId());
+                }
+
+                this.feedId = feed.getId();
+
+            } else if (httpResponse.code() == 409) {
+                log.infof("Feed ID [%s] was already registered; it will be reused", this.feedId);
+            } else {
                 throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
                         + httpResponse.message() + "], url=[" + request.urlString() + "]");
             }
 
-            // success - store our feed ID so we remember it the next time
-            final String feedObjectFromServer = Util.slurpStream(httpResponse.body().byteStream());
-            final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
-            if (desiredFeedId.equals(feed.getId())) {
-                log.infof("Feed ID registered [%s]", feed.getId());
-            } else {
-                log.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
-                // should we throw an error here or just use the feed ID we were given?
-                log.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file",
-                        feed.getId());
-            }
-
-            this.feedId = feed.getId();
+            // persist our feed ID so we can remember it the next time we start up
             writeDataFile(feedFile.getName(), feedId);
+
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot create feed [%s]", desiredFeedId), t);
         }
