@@ -614,10 +614,10 @@
   </managed-servers>
 
   <platform enabled="true">
-    <file-stores enabled="true"/>
-    <memory enabled="true"/>
-    <processors enabled="true"/>
-    <power-sources enabled="true"/>
+    <file-stores   enabled="true" interval="10" timeUnits="minutes" />
+    <memory        enabled="true" interval="1"  timeUnits="minutes" />
+    <processors    enabled="true" interval="1"  timeUnits="minutes" />
+    <power-sources enabled="true" interval="10" timeUnits="minutes" />
   </platform>
 
 </subsystem>
