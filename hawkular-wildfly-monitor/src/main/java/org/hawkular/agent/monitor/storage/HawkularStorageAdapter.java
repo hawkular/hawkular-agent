@@ -48,10 +48,10 @@ import org.hawkular.bus.restclient.RestClient;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.api.model.CanonicalPath.FeedBuilder;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
-import org.hawkular.inventory.api.model.Path.FeedBuilder;
 import org.hawkular.inventory.api.model.StructuredData;
 
 import com.squareup.okhttp.Request;
@@ -671,9 +671,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
     }
 
-    // TODO: when we move to inventory 0.4.x, this is what we want
-    //    private FeedBuilder getCanonicalPathBuilderStartingByFeed() {
-    private FeedBuilder<CanonicalPath> getCanonicalPathBuilderStartingByFeed() {
-        return CanonicalPath.of().tenant(config.tenantId).environment("test").feed(getFeedId());
+    private FeedBuilder getCanonicalPathBuilderStartingByFeed() {
+        FeedBuilder fb = CanonicalPath.of().tenant(config.tenantId).environment("test").feed(getFeedId());
+        return fb;
     }
 }
