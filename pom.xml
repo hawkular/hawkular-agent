@@ -48,6 +48,7 @@
   </scm>
 
   <properties>
+    <version.com.github.dblock>1.5</version.com.github.dblock>
     <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
@@ -69,6 +70,12 @@
       <!-- - Do not declare <scope> (exception: import) or <optional>: a child module will declare scope/optional itself. -->
       <!-- - Always extract the version as a property. -->
       <!-- - A element's inner order is <groupId>, <artifactId>, [<type>,] [<classifier>,] <version> -->
+
+      <dependency>
+        <groupId>com.github.dblock</groupId>
+        <artifactId>oshi-core</artifactId>
+        <version>${version.com.github.dblock}</version>
+      </dependency>
 
       <dependency>
         <groupId>io.dropwizard.metrics</groupId>

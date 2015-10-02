@@ -35,6 +35,11 @@
     <resource-root path="jackson-core.jar"/>
     <resource-root path="jackson-databind.jar"/>
     <resource-root path="rxjava.jar"/>
+
+    <!-- oshi deps -->
+    <resource-root path="jna.jar"/>
+    <resource-root path="jna-platform.jar"/>
+    <resource-root path="oshi-core.jar"/>
   </resources>
 
   <dependencies>
