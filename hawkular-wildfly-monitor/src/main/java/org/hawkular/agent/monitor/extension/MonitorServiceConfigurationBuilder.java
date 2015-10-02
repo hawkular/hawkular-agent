@@ -61,6 +61,7 @@ public class MonitorServiceConfigurationBuilder {
         determineGlobalConfig(config, context);
         determineStorageAdapterConfig(config, context);
         determineDiagnosticsConfig(config, context);
+        determinePlatformConfig(config, context);
 
         boolean hasEnabledMetrics = determineMetricSetDmr(config, context);
         if (!hasEnabledMetrics) {
@@ -172,6 +173,77 @@ public class MonitorServiceConfigurationBuilder {
         }
 
         return hasEnabledAvails;
+    }
+
+    private void determinePlatformConfig(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+
+        // assume they are disabled unless configured otherwise
+        theConfig.platform.allEnabled = false;
+        theConfig.platform.fileStoresEnabled = false;
+        theConfig.platform.memoryEnabled = false;
+        theConfig.platform.processorsEnabled = false;
+        theConfig.platform.powerSourcesEnabled = false;
+
+        if (!config.hasDefined(PlatformDefinition.PLATFORM)) {
+            log.infoNoPlatformConfig();
+            return;
+        }
+
+        List<Property> asPropertyList = config.get(PlatformDefinition.PLATFORM).asPropertyList();
+        if (asPropertyList.size() == 0) {
+            log.infoNoPlatformConfig();
+            return;
+        } else if (asPropertyList.size() > 1) {
+            throw new IllegalArgumentException("Only one platform config allowed: " + config.toJSONString(true));
+        }
+
+        ModelNode platformValueNode = asPropertyList.get(0).getValue();
+        theConfig.platform.allEnabled = getBoolean(platformValueNode, context, PlatformAttributes.ENABLED);
+
+        if (platformValueNode.hasDefined(FileStoresDefinition.FILE_STORES)) {
+            asPropertyList = platformValueNode.get(FileStoresDefinition.FILE_STORES).asPropertyList();
+            if (asPropertyList.size() == 1) {
+                theConfig.platform.fileStoresEnabled = getBoolean(asPropertyList.get(0).getValue(),
+                        context, FileStoresAttributes.ENABLED);
+            } else if (asPropertyList.size() > 1) {
+                throw new IllegalArgumentException("Only one platform.file-stores config allowed: "
+                        + platformValueNode.toJSONString(true));
+            }
+        }
+
+        if (platformValueNode.hasDefined(MemoryDefinition.MEMORY)) {
+            asPropertyList = platformValueNode.get(MemoryDefinition.MEMORY).asPropertyList();
+            if (asPropertyList.size() == 1) {
+                theConfig.platform.memoryEnabled = getBoolean(asPropertyList.get(0).getValue(),
+                        context, MemoryAttributes.ENABLED);
+            } else if (asPropertyList.size() > 1) {
+                throw new IllegalArgumentException("Only one platform.memory config allowed: "
+                        + platformValueNode.toJSONString(true));
+            }
+        }
+
+        if (platformValueNode.hasDefined(ProcessorsDefinition.PROCESSORS)) {
+            asPropertyList = platformValueNode.get(ProcessorsDefinition.PROCESSORS).asPropertyList();
+            if (asPropertyList.size() == 1) {
+                theConfig.platform.processorsEnabled = getBoolean(asPropertyList.get(0).getValue(),
+                        context, ProcessorsAttributes.ENABLED);
+            } else if (asPropertyList.size() > 1) {
+                throw new IllegalArgumentException("Only one platform.processors config allowed: "
+                        + platformValueNode.toJSONString(true));
+            }
+        }
+
+        if (platformValueNode.hasDefined(PowerSourcesDefinition.POWER_SOURCES)) {
+            asPropertyList = platformValueNode.get(PowerSourcesDefinition.POWER_SOURCES).asPropertyList();
+            if (asPropertyList.size() == 1) {
+                theConfig.platform.powerSourcesEnabled = getBoolean(asPropertyList.get(0).getValue(),
+                        context, PowerSourcesAttributes.ENABLED);
+            } else if (asPropertyList.size() > 1) {
+                throw new IllegalArgumentException("Only one platform.power-sources config allowed: "
+                        + platformValueNode.toJSONString(true));
+            }
+        }
     }
 
     private void determineDiagnosticsConfig(ModelNode config, OperationContext context)

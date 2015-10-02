@@ -613,4 +613,11 @@
 
   </managed-servers>
 
+  <platform enabled="true">
+    <file-stores enabled="true"/>
+    <memory enabled="true"/>
+    <processors enabled="true"/>
+    <power-sources enabled="true"/>
+  </platform>
+
 </subsystem>

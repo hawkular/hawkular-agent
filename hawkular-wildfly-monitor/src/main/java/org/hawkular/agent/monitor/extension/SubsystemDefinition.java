@@ -82,6 +82,7 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
         return Arrays.asList(
                 StorageDefinition.INSTANCE,
                 DiagnosticsDefinition.INSTANCE,
+                PlatformDefinition.INSTANCE,
                 ManagedServersDefinition.INSTANCE,
                 DMRResourceTypeSetDefinition.INSTANCE,
                 DMRMetricSetDefinition.INSTANCE,

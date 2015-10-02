@@ -96,4 +96,11 @@
                resourceTypeSets="Main" />
   </managed-servers>
 
+  <platform enabled="false">
+    <file-stores enabled="false"/>
+    <memory enabled="false"/>
+    <processors enabled="false"/>
+    <power-sources enabled="false"/>
+  </platform>
+
 </subsystem>

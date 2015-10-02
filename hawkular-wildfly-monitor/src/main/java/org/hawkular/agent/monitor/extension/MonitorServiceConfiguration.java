@@ -53,6 +53,7 @@ public class MonitorServiceConfiguration {
     public int availDispatcherMaxBatchSize;
     public StorageAdapter storageAdapter = new StorageAdapter();
     public Diagnostics diagnostics = new Diagnostics();
+    public Platform platform = new Platform();
     public Map<Name, DMRMetricTypeSet> dmrMetricTypeSetMap = new HashMap<>();
     public Map<Name, DMRAvailTypeSet> dmrAvailTypeSetMap = new HashMap<>();
     public Map<Name, DMRResourceTypeSet> dmrResourceTypeSetMap = new HashMap<>();
@@ -80,5 +81,13 @@ public class MonitorServiceConfiguration {
         public boolean enabled;
         public int interval;
         public TimeUnit timeUnits;
+    }
+
+    public static class Platform {
+        public boolean allEnabled; // if this is false, it overrides the individual enabled flags
+        public boolean fileStoresEnabled;
+        public boolean memoryEnabled;
+        public boolean processorsEnabled;
+        public boolean powerSourcesEnabled;
     }
 }

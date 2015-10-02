@@ -213,4 +213,8 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10044, value = "Failed to execute [%s] for request [%s]")
     void errorFailedToExecuteCommand(@Cause Exception e, String commandClassName, Object request);
 
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10045, value = "No platform configuration - platform metrics will be disabled")
+    void infoNoPlatformConfig();
+
 }
