@@ -21,8 +21,8 @@
     <resource-root path="clients-common.jar"/>
     <resource-root path="hawkular-bus-common.jar"/>
     <resource-root path="hawkular-bus-rest-client.jar"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES -->
-    <resource-root path="hawkular-dmr-client.jar"/>
     <resource-root path="hawkular-command-gateway-api.jar"/>
+    <resource-root path="hawkular-dmr-client.jar"/>
     <resource-root path="hawkular-inventory-json-helper.jar"/>
     <resource-root path="hawkular-monitor.jar"/>
     <resource-root path="hawkular-inventory-api.jar"/>
@@ -34,7 +34,25 @@
     <resource-root path="jackson-annotations.jar"/>
     <resource-root path="jackson-core.jar"/>
     <resource-root path="jackson-databind.jar"/>
+
+    <!-- These are pulled in due to hawkular-inventory-json-helper.jar.
+         It is probable that we really don't need all of these,
+         but without knowing which are really used by hawkular-inventory-json-helper
+         it is best we include all of them. -->
+    <resource-root path="activation.jar"/>
+    <resource-root path="btf.jar"/>
+    <resource-root path="jackson-coreutils.jar"/>
+    <resource-root path="joda-time.jar"/>
+    <resource-root path="jopt-simple.jar"/>
+    <resource-root path="json-schema-core.jar"/>
+    <resource-root path="json-schema-validator.jar"/>
+    <resource-root path="jsr305.jar"/>
+    <resource-root path="libphonenumber.jar"/>
+    <resource-root path="mailapi.jar"/>
+    <resource-root path="msg-simple.jar"/>
+    <resource-root path="rhino.jar"/>
     <resource-root path="rxjava.jar"/>
+    <resource-root path="uri-template.jar"/>
   </resources>
 
   <dependencies>
@@ -49,6 +67,7 @@
     <module name="org.jboss.vfs"/>
 
     <!-- other dependencies we need -->
+    <module name="com.google.guava"/>
     <module name="org.apache.httpcomponents"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>
