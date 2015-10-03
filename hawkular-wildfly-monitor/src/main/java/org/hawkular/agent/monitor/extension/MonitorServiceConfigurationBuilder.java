@@ -215,6 +215,8 @@ public class MonitorServiceConfigurationBuilder {
         PlatformResourceTypeSet rootTypeSet = new PlatformResourceTypeSet(null, Constants.OPERATING_SYSTEM);
         rootTypeSet.setEnabled(true);
         PlatformResourceType rootType = new PlatformResourceType(null, Constants.OPERATING_SYSTEM);
+        rootType.setResourceNameTemplate("%s");
+        rootTypeSet.getResourceTypeMap().put(rootType.getName(), rootType);
         theConfig.platform.resourceTypeSetMap.put(rootTypeSet.getName(), rootTypeSet);
 
         // now add children types if they are enabled
@@ -251,6 +253,8 @@ public class MonitorServiceConfigurationBuilder {
                     PlatformResourceType type = new PlatformResourceType(null, Constants.FILE_STORE);
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(fileStoreMetrics.getName()));
+                    type.setResourceNameTemplate(Constants.FILE_STORE + " [%s]");
+                    typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
             } else if (asPropertyList.size() > 1) {
@@ -291,6 +295,8 @@ public class MonitorServiceConfigurationBuilder {
                     PlatformResourceType type = new PlatformResourceType(null, Constants.MEMORY);
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(memoryMetrics.getName()));
+                    type.setResourceNameTemplate(Constants.MEMORY + " [%s]");
+                    typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
             } else if (asPropertyList.size() > 1) {
@@ -325,6 +331,8 @@ public class MonitorServiceConfigurationBuilder {
                     PlatformResourceType type = new PlatformResourceType(null, Constants.PROCESSOR);
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(processorMetrics.getName()));
+                    type.setResourceNameTemplate(Constants.PROCESSOR + " [%s]");
+                    typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
             } else if (asPropertyList.size() > 1) {
@@ -368,6 +376,8 @@ public class MonitorServiceConfigurationBuilder {
                     PlatformResourceType type = new PlatformResourceType(null, Constants.POWER_SOURCE);
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(powerSourceMetrics.getName()));
+                    type.setResourceNameTemplate(Constants.POWER_SOURCE + " [%s]");
+                    typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
             } else if (asPropertyList.size() > 1) {

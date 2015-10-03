@@ -639,6 +639,10 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
     private void schedulePlatformMetricAvailCollections(SchedulerConfiguration schedulerConfig,
             PlatformInventoryManager im) {
+        if (im == null) {
+            return; // platform resources are not to be monitored, do nothing and return
+        }
+
         BreadthFirstIterator<PlatformResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
         while (bIter.hasNext()) {
             PlatformResource resource = bIter.next();
