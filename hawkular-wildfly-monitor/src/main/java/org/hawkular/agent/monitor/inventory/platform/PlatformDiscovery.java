@@ -134,11 +134,13 @@ public class PlatformDiscovery {
                         PlatformResource fileStoreResource = new PlatformResource(
                                 null, new Name(fileStore.getName()), endpoint, type, parent);
                         addMetricInstances(fileStoreResource);
+                        resourceManager.addResource(fileStoreResource);
                     }
                 } else if (type.getName().equals(Constants.MEMORY)) {
                     PlatformResource memoryResource = new PlatformResource(null, Constants.MEMORY,
                             endpoint, type, parent);
                     addMetricInstances(memoryResource);
+                    resourceManager.addResource(memoryResource);
                 } else if (type.getName().equals(Constants.PROCESSOR)) {
                     Processor[] processors = sysInfo.getHardware().getProcessors();
                     for (Processor processor : processors) {
@@ -146,6 +148,7 @@ public class PlatformDiscovery {
                                 null, new Name(String.valueOf(processor.getProcessorNumber())),
                                 endpoint, type, parent);
                         addMetricInstances(processorResource);
+                        resourceManager.addResource(processorResource);
                     }
                 } else if (type.getName().equals(Constants.POWER_SOURCE)) {
                     PowerSource[] powerSources = sysInfo.getHardware().getPowerSources();
@@ -153,6 +156,7 @@ public class PlatformDiscovery {
                         PlatformResource powerSourceResource = new PlatformResource(
                                 null, new Name(powerSource.getName()), endpoint, type, parent);
                         addMetricInstances(powerSourceResource);
+                        resourceManager.addResource(powerSourceResource);
                     }
                 }
             }
