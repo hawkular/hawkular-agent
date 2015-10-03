@@ -692,9 +692,13 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         // build the inventory manager
         PlatformInventoryManager im = new PlatformInventoryManager(feedId, mm, rm, new PlatformManagedServer(
                 null, Constants.PLATFORM), new PlatformEndpoint(Constants.PLATFORM.getNameString()));
+        this.platformInventory.set(im);
 
         // discover our platform resources now
         im.discoverResources(null);
+
+        log.debugf("Full discovery scan of platform found [%d] resources",
+                im.getResourceManager().getAllResources().size());
     }
 
     @Override
@@ -730,7 +734,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
         }
 
-        log.debugf("Full discovery scan found [%d] resources", resourcesDiscovered);
+        log.debugf("Full discovery scan of managed servers found [%d] resources", resourcesDiscovered);
 
         // restart the scheduler - this will begin metric collections for our new inventory
         try {
@@ -868,7 +872,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         try {
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                configuration.storageAdapter.accountsContext);
+                    configuration.storageAdapter.accountsContext);
             url.append("personas/current");
 
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
@@ -876,7 +880,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             // TODO: next three lines are only temporary and should be deleted when inventory no longer needs this.
             // make the call to the inventory to pre-create the test environment and other assumed entities
             String tenantUrl = Util.getContextUrlString(configuration.storageAdapter.url,
-                configuration.storageAdapter.inventoryContext).append("tenant").toString();
+                    configuration.storageAdapter.inventoryContext).append("tenant").toString();
             httpclient.newCall(this.httpClientBuilder.buildJsonGetRequest(tenantUrl, null)).execute();
 
             Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), null);
