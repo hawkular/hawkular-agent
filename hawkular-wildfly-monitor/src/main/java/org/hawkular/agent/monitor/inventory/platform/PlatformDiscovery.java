@@ -113,8 +113,8 @@ public class PlatformDiscovery {
             if (parent == null) {
                 // we are being asked to discover the top-most resource - the operating system resource
                 OperatingSystem os = sysInfo.getOperatingSystem();
-                PlatformResource osResource = new PlatformResource(
-                        null, new Name(os.toString()), endpoint, type, null);
+                String name = String.format(type.getResourceNameTemplate(), os.toString());
+                PlatformResource osResource = new PlatformResource(null, new Name(name), endpoint, type, null);
                 log.debugf("Discovered [%s]", osResource);
 
                 // add it to our tree graph
@@ -131,30 +131,34 @@ public class PlatformDiscovery {
                 if (type.getName().equals(Constants.FILE_STORE)) {
                     OSFileStore[] fileStores = sysInfo.getHardware().getFileStores();
                     for (OSFileStore fileStore : fileStores) {
-                        PlatformResource fileStoreResource = new PlatformResource(
-                                null, new Name(fileStore.getName()), endpoint, type, parent);
+                        String name = String.format(type.getResourceNameTemplate(), fileStore.getName());
+                        PlatformResource fileStoreResource =
+                                new PlatformResource(null, new Name(name), endpoint, type, parent);
                         addMetricInstances(fileStoreResource);
                         resourceManager.addResource(fileStoreResource);
                     }
                 } else if (type.getName().equals(Constants.MEMORY)) {
-                    PlatformResource memoryResource = new PlatformResource(null, Constants.MEMORY,
-                            endpoint, type, parent);
+                    String name = String.format(type.getResourceNameTemplate());
+                    PlatformResource memoryResource =
+                            new PlatformResource(null, new Name(name), endpoint, type, parent);
                     addMetricInstances(memoryResource);
                     resourceManager.addResource(memoryResource);
                 } else if (type.getName().equals(Constants.PROCESSOR)) {
                     Processor[] processors = sysInfo.getHardware().getProcessors();
                     for (Processor processor : processors) {
-                        PlatformResource processorResource = new PlatformResource(
-                                null, new Name(String.valueOf(processor.getProcessorNumber())),
-                                endpoint, type, parent);
+                        String name = String.format(type.getResourceNameTemplate(),
+                                String.valueOf(processor.getProcessorNumber()));
+                        PlatformResource processorResource =
+                                new PlatformResource(null, new Name(name), endpoint, type, parent);
                         addMetricInstances(processorResource);
                         resourceManager.addResource(processorResource);
                     }
                 } else if (type.getName().equals(Constants.POWER_SOURCE)) {
                     PowerSource[] powerSources = sysInfo.getHardware().getPowerSources();
                     for (PowerSource powerSource : powerSources) {
-                        PlatformResource powerSourceResource = new PlatformResource(
-                                null, new Name(powerSource.getName()), endpoint, type, parent);
+                        String name = String.format(type.getResourceNameTemplate(), powerSource.getName());
+                        PlatformResource powerSourceResource =
+                                new PlatformResource(null, new Name(name), endpoint, type, parent);
                         addMetricInstances(powerSourceResource);
                         resourceManager.addResource(powerSourceResource);
                     }

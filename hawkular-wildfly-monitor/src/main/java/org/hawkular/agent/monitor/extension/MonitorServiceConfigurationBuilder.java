@@ -253,7 +253,7 @@ public class MonitorServiceConfigurationBuilder {
                     PlatformResourceType type = new PlatformResourceType(null, Constants.FILE_STORE);
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(fileStoreMetrics.getName()));
-                    type.setResourceNameTemplate(Constants.FILE_STORE + " [%s]");
+                    type.setResourceNameTemplate(Constants.FILE_STORE.getNameString() + " [%s]");
                     typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
@@ -295,7 +295,7 @@ public class MonitorServiceConfigurationBuilder {
                     PlatformResourceType type = new PlatformResourceType(null, Constants.MEMORY);
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(memoryMetrics.getName()));
-                    type.setResourceNameTemplate(Constants.MEMORY + " [%s]");
+                    type.setResourceNameTemplate(Constants.MEMORY.getNameString());
                     typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
@@ -331,7 +331,7 @@ public class MonitorServiceConfigurationBuilder {
                     PlatformResourceType type = new PlatformResourceType(null, Constants.PROCESSOR);
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(processorMetrics.getName()));
-                    type.setResourceNameTemplate(Constants.PROCESSOR + " [%s]");
+                    type.setResourceNameTemplate(Constants.PROCESSOR.getNameString() + " [%s]");
                     typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
@@ -376,7 +376,7 @@ public class MonitorServiceConfigurationBuilder {
                     PlatformResourceType type = new PlatformResourceType(null, Constants.POWER_SOURCE);
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(powerSourceMetrics.getName()));
-                    type.setResourceNameTemplate(Constants.POWER_SOURCE + " [%s]");
+                    type.setResourceNameTemplate(Constants.POWER_SOURCE.getNameString() + " [%s]");
                     typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
