@@ -217,4 +217,8 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10045, value = "No platform configuration - platform metrics will be disabled")
     void infoNoPlatformConfig();
 
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10046, value = "Got response code [%d] when storing entity of type [%s] under path [%s] to inventory")
+    void errorFailedToStorePathToInventory(int code, String entityType, String path);
+
 }
