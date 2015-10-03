@@ -44,7 +44,8 @@ public class PlatformInventoryManager extends InventoryManager
 
     public PlatformInventoryManager(String feedId,
             MetadataManager<PlatformResourceType, PlatformResourceTypeSet, PlatformMetricType, PlatformMetricTypeSet,
-            PlatformAvailType, PlatformAvailTypeSet, PlatformOperation, PlatformResourceConfigurationPropertyType> metadataManager,
+            PlatformAvailType, PlatformAvailTypeSet, PlatformOperation,
+            PlatformResourceConfigurationPropertyType> metadataManager,
             ResourceManager<PlatformResource> resourceManager,
             ManagedServer managedServer,
             PlatformEndpoint endpoint) {
