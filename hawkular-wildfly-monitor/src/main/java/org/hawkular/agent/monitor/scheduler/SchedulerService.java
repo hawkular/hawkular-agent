@@ -19,16 +19,22 @@ package org.hawkular.agent.monitor.scheduler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailInstance;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricInstance;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.AvailPlatformPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
+import org.hawkular.agent.monitor.scheduler.config.PlatformEndpoint;
+import org.hawkular.agent.monitor.scheduler.config.PlatformPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.polling.IntervalBasedScheduler;
 import org.hawkular.agent.monitor.scheduler.polling.Scheduler;
@@ -39,6 +45,8 @@ import org.hawkular.agent.monitor.scheduler.polling.dmr.AvailDMRTaskGroupRunnabl
 import org.hawkular.agent.monitor.scheduler.polling.dmr.DMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
+import org.hawkular.agent.monitor.scheduler.polling.platform.MetricPlatformTask;
+import org.hawkular.agent.monitor.scheduler.polling.platform.MetricPlatformTaskGroupRunnable;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
@@ -113,11 +121,20 @@ public class SchedulerService {
 
         // turn metric DMR refs into Tasks and schedule them now
         List<Task> metricTasks = createMetricDMRTasks(schedulerConfig.getDMRMetricsToBeCollected());
-        this.metricCompletionHandler.start();
-        this.metricScheduler.schedule(metricTasks);
+
+        // turn platform metrics into Tasks and schedule them now
+        metricTasks.addAll(createMetricPlatformTasks(schedulerConfig.getPlatformMetricsToBeCollected()));
 
         // turn avail DMR refs into Tasks and schedule them now
         List<Task> availTasks = createAvailDMRTasks(schedulerConfig.getDMRAvailsToBeChecked());
+
+        // turn platform avails into Tasks and schedule them now
+        availTasks.addAll(createAvailPlatformTasks(schedulerConfig.getPlatformAvailsToBeChecked()));
+
+        // start the collections
+        this.metricCompletionHandler.start();
+        this.metricScheduler.schedule(metricTasks);
+
         this.availCompletionHandler.start();
         this.availScheduler.schedule(availTasks);
 
@@ -157,6 +174,8 @@ public class SchedulerService {
                         factory = new ModelControllerClientFactoryImpl(endpoint);
                     }
                     return new MetricDMRTaskGroupRunnable(group, metricCompletionHandler, getDiagnostics(), factory);
+                } else if (MetricPlatformTask.class.isInstance(firstTask)) {
+                    return new MetricPlatformTaskGroupRunnable(group, metricCompletionHandler, diagnostics);
                 } else {
                     throw new UnsupportedOperationException("Unsupported metric group: " + group);
                 }
@@ -234,6 +253,35 @@ public class SchedulerService {
 
                 tasks.add(new AvailDMRTask(propRef.getInterval(), dmrEndpoint, propRef.getAddress(), attribute,
                         subref, instance, propRef.getUpRegex()));
+            }
+        }
+
+        return tasks;
+    }
+
+    private List<Task> createMetricPlatformTasks(Map<PlatformEndpoint, List<PlatformMetricInstance>> map) {
+        List<Task> tasks = new ArrayList<>();
+
+        for (Entry<PlatformEndpoint, List<PlatformMetricInstance>> entry : map.entrySet()) {
+            PlatformEndpoint endpoint = entry.getKey();
+            for (PlatformMetricInstance instance : entry.getValue()) {
+                PlatformPropertyReference propRef = instance.getProperty();
+                tasks.add(new MetricPlatformTask(propRef.getInterval(), endpoint, instance));
+            }
+        }
+
+        return tasks;
+    }
+
+    private List<Task> createAvailPlatformTasks(Map<PlatformEndpoint, List<PlatformAvailInstance>> map) {
+        List<Task> tasks = new ArrayList<>();
+
+        for (Entry<PlatformEndpoint, List<PlatformAvailInstance>> entry : map.entrySet()) {
+            PlatformEndpoint endpoint = entry.getKey();
+            for (PlatformAvailInstance instance : entry.getValue()) {
+                AvailPlatformPropertyReference propRef = instance.getProperty();
+                throw new UnsupportedOperationException("Platform avail checking not yet supported");
+                //tasks.add(new AvailPlatformTask(propRef.getInterval(), endpoint, instance));
             }
         }
 

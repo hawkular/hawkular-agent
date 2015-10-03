@@ -25,6 +25,7 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformResourceTypeSet;
 
@@ -88,6 +89,7 @@ public class MonitorServiceConfiguration {
     public static class Platform {
         public boolean allEnabled; // if this is false, no platform resources will be monitored
         public Map<Name, PlatformMetricTypeSet> metricTypeSetMap = new HashMap<>();
+        public Map<Name, PlatformAvailTypeSet> availTypeSetMap = new HashMap<>(0); // we don't have any of these yet
         public Map<Name, PlatformResourceTypeSet> resourceTypeSetMap = new HashMap<>();
     }
 }

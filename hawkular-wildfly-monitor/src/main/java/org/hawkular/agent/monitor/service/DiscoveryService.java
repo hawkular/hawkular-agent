@@ -26,12 +26,6 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
  */
 public interface DiscoveryService {
     /**
-     * If platform discovery is enabled in the service configuration, this will attempt
-     * to collect updated data on all enabled platform resources.
-     */
-    void discoverPlatformData();
-
-    /**
      * This will build inventory managers for every configured managed
      * and discover all resources in those managed servers, populating
      * the inventory managers with the discovered resources.

@@ -25,6 +25,8 @@ import java.util.Map;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailInstance;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricInstance;
 
 public class SchedulerConfiguration {
 
@@ -48,6 +50,9 @@ public class SchedulerConfiguration {
     private final Map<DMREndpoint, List<DMRMetricInstance>> dmrMetricsToBeCollected = new HashMap<>();
     private final Map<DMREndpoint, List<DMRAvailInstance>> dmrAvailsToBeChecked = new HashMap<>();
 
+    private final Map<PlatformEndpoint, List<PlatformMetricInstance>> platformMetricsToBeCollected = new HashMap<>();
+    private final Map<PlatformEndpoint, List<PlatformAvailInstance>> platformAvailsToBeChecked = new HashMap<>();
+
     private MonitorServiceConfiguration.StorageAdapter storageAdapterConfig;
     private MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
 
@@ -57,6 +62,14 @@ public class SchedulerConfiguration {
 
     public Map<DMREndpoint, List<DMRAvailInstance>> getDMRAvailsToBeChecked() {
         return Collections.unmodifiableMap(dmrAvailsToBeChecked);
+    }
+
+    public Map<PlatformEndpoint, List<PlatformMetricInstance>> getPlatformMetricsToBeCollected() {
+        return Collections.unmodifiableMap(platformMetricsToBeCollected);
+    }
+
+    public Map<PlatformEndpoint, List<PlatformAvailInstance>> getPlatformAvailsToBeChecked() {
+        return Collections.unmodifiableMap(platformAvailsToBeChecked);
     }
 
     public void addMetricToBeCollected(DMREndpoint endpoint, DMRMetricInstance metricToBeCollected) {
@@ -74,6 +87,26 @@ public class SchedulerConfiguration {
         if (map == null) {
             map = new ArrayList<DMRAvailInstance>();
             dmrAvailsToBeChecked.put(endpoint, map);
+        }
+
+        map.add(availToBeCollected);
+    }
+
+    public void addMetricToBeCollected(PlatformEndpoint endpoint, PlatformMetricInstance metricToBeCollected) {
+        List<PlatformMetricInstance> map = platformMetricsToBeCollected.get(endpoint);
+        if (map == null) {
+            map = new ArrayList<PlatformMetricInstance>();
+            platformMetricsToBeCollected.put(endpoint, map);
+        }
+
+        map.add(metricToBeCollected);
+    }
+
+    public void addAvailToBeChecked(PlatformEndpoint endpoint, PlatformAvailInstance availToBeCollected) {
+        List<PlatformAvailInstance> map = platformAvailsToBeChecked.get(endpoint);
+        if (map == null) {
+            map = new ArrayList<PlatformAvailInstance>();
+            platformAvailsToBeChecked.put(endpoint, map);
         }
 
         map.add(availToBeCollected);

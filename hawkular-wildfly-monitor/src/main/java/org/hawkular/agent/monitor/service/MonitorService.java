@@ -70,11 +70,13 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.platform.Constants;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailInstance;
 import org.hawkular.agent.monitor.inventory.platform.PlatformAvailType;
 import org.hawkular.agent.monitor.inventory.platform.PlatformAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformInventoryManager;
 import org.hawkular.agent.monitor.inventory.platform.PlatformManagedServer;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetadataManager;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricInstance;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformResource;
@@ -580,8 +582,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             scheduleDMRMetricAvailCollections(schedulerConfig, im);
         }
 
-        // TODO
-        //schedulePlatformMetricAvailCollections(schedulerConfig, this.platformInventory.get());
+        schedulePlatformMetricAvailCollections(schedulerConfig, this.platformInventory.get());
 
         this.schedulerService = new SchedulerService(
                 schedulerConfig,
@@ -636,13 +637,31 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         }
     }
 
+    private void schedulePlatformMetricAvailCollections(SchedulerConfiguration schedulerConfig,
+            PlatformInventoryManager im) {
+        BreadthFirstIterator<PlatformResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
+        while (bIter.hasNext()) {
+            PlatformResource resource = bIter.next();
+
+            // schedule collections
+            Collection<PlatformMetricInstance> metricsToBeCollected = resource.getMetrics();
+            for (PlatformMetricInstance metricToBeCollected : metricsToBeCollected) {
+                schedulerConfig.addMetricToBeCollected(resource.getEndpoint(), metricToBeCollected);
+            }
+
+            Collection<PlatformAvailInstance> availsToBeCollected = resource.getAvails();
+            for (PlatformAvailInstance availToBeCollected : availsToBeCollected) {
+                schedulerConfig.addAvailToBeChecked(resource.getEndpoint(), availToBeCollected);
+            }
+        }
+    }
+
     @Override
     public Map<ManagedServer, DMRInventoryManager> getDmrServerInventories() {
         return Collections.unmodifiableMap(this.dmrServerInventories);
     }
 
-    @Override
-    public void discoverPlatformData() {
+    private void discoverPlatformData() {
         Platform config = this.configuration.platform;
 
         if (config.allEnabled == false) {
@@ -656,14 +675,10 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         // tell metric/avail managers what metric and avail types we need to use for the resource types
         MetricTypeManager<PlatformMetricType, PlatformMetricTypeSet> mtm = new MetricTypeManager<>();
         AvailTypeManager<PlatformAvailType, PlatformAvailTypeSet> atm = new AvailTypeManager<>();
-        BreadthFirstIterator<PlatformResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
-        while (resourceTypeIter.hasNext()) {
-            PlatformResourceType type = resourceTypeIter.next();
-            Collection<Name> metricSetsToUse = type.getMetricSets();
-            Collection<Name> availSetsToUse = type.getAvailSets();
-            mtm.addMetricTypes(config.metricTypeSetMap, null);
-            //atm.addAvailTypes(config.availTypeSetMap, null); // no support yet for platform resource avails
-        }
+
+        mtm.addMetricTypes(config.metricTypeSetMap, null);
+        atm.addAvailTypes(config.availTypeSetMap, null);
+
         PlatformMetadataManager mm = new PlatformMetadataManager(rtm, mtm, atm);
         mm.populateMetricAndAvailTypesForAllResourceTypes();
 
@@ -676,13 +691,14 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         // discover our platform resources now
         im.discoverResources(null);
-
-        // TODO how do we schedule them?
     }
 
     @Override
     public void discoverAllResourcesForAllManagedServers() {
         int resourcesDiscovered = 0;
+
+        // first discover platform data if we are configured to do so
+        discoverPlatformData();
 
         // there may be some old managed servers that we don't manage anymore - remove them now
         this.dmrServerInventories.keySet().retainAll(this.configuration.managedServersMap.values());
