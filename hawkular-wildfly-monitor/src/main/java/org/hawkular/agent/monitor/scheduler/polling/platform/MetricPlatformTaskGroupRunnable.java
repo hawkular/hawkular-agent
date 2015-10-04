@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.platform;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,6 +25,7 @@ import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.platform.Constants;
+import org.hawkular.agent.monitor.inventory.platform.Constants.PlatformResourceType;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricInstance;
 import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
@@ -32,6 +35,10 @@ import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.logging.Logger;
 
 import oshi.SystemInfo;
+import oshi.hardware.Memory;
+import oshi.hardware.PowerSource;
+import oshi.hardware.Processor;
+import oshi.software.os.OSFileStore;
 
 public class MetricPlatformTaskGroupRunnable implements Runnable {
     private static final Logger LOG = Logger.getLogger(MetricPlatformTaskGroupRunnable.class);
@@ -51,6 +58,7 @@ public class MetricPlatformTaskGroupRunnable implements Runnable {
     public void run() {
         try {
             SystemInfo sysInfo = new SystemInfo();
+            Map<Constants.PlatformResourceType, Object> sysInfoCache = new HashMap<>(4);
 
             for (Task groupTask : group) {
                 final MetricPlatformTask platformTask = (MetricPlatformTask) groupTask;
@@ -59,26 +67,29 @@ public class MetricPlatformTaskGroupRunnable implements Runnable {
 
                 String itemName = parseBracketedNameValue(metricInstance.getResource().getID());
                 Name typeName = metricInstance.getResource().getResourceType().getName();
-                String metricToCollect = metricInstance.getMeasurementType().getID().getIDString();
+                Name metricToCollect = metricInstance.getMeasurementType().getName();
+
+                Double value = null;
 
                 if (typeName.equals(Constants.PlatformResourceType.FILE_STORE.getName())) {
-                    LOG.warnf("=======~~~~~~~~~~ COLLECT FILE_STORE %s", itemName);
-
+                    value = getFileStoreMetric(itemName, metricToCollect, sysInfoCache, sysInfo);
                 } else if (typeName.equals(Constants.PlatformResourceType.MEMORY.getName())) {
-                    LOG.warnf("=======~~~~~~~~~~ COLLECT MEMORY %s", itemName);
-
+                    value = getMemoryMetric(metricToCollect, sysInfoCache, sysInfo);
                 } else if (typeName.equals(Constants.PlatformResourceType.PROCESSOR.getName())) {
-                    LOG.warnf("=======~~~~~~~~~~ COLLECT PROCESSOR %s", itemName);
-
+                    value = getProcessorMetric(itemName, metricToCollect, sysInfoCache, sysInfo);
                 } else if (typeName.equals(Constants.PlatformResourceType.POWER_SOURCE.getName())) {
-                    LOG.warnf("=======~~~~~~~~~~ COLLECT POWER SOURCE %s", itemName);
-
+                    value = getPowerSourceMetric(itemName, metricToCollect, sysInfoCache, sysInfo);
                 } else {
                     LOG.errorf("Invalid platform type [%s]; cannot collect metric: [%s]", typeName, metricInstance);
                 }
 
-                double value = 0.0; // TODO
-                completionHandler.onCompleted(new MetricDataPoint(platformTask, value, metricType));
+                if (value != null) {
+                    completionHandler.onCompleted(new MetricDataPoint(platformTask, value.doubleValue(), metricType));
+                } else {
+                    completionHandler.onFailed(new Exception(
+                            String.format("Cannot collect platform metric [%s][%s][%s]", typeName, metricToCollect,
+                                    itemName)));
+                }
             }
         } catch (Throwable e) {
             completionHandler.onFailed(e);
@@ -92,6 +103,106 @@ public class MetricPlatformTaskGroupRunnable implements Runnable {
             return m.group(1);
         } else {
             return id.getIDString(); // Memory doesn't have a bracketed name
+        }
+    }
+
+    private Double getPowerSourceMetric(String itemName, Name metricToCollect,
+            Map<PlatformResourceType, Object> sysInfoCache, SystemInfo sysInfo) {
+
+        Map<String, PowerSource> cache =
+                (Map<String, PowerSource>) sysInfoCache.get(Constants.PlatformResourceType.POWER_SOURCE);
+        if (cache == null) {
+            cache = new HashMap<>();
+            PowerSource[] arr = sysInfo.getHardware().getPowerSources();
+            for (PowerSource item : arr) {
+                cache.put(item.getName(), item);
+            }
+            sysInfoCache.put(Constants.PlatformResourceType.POWER_SOURCE, cache);
+        }
+
+        PowerSource powerSource = cache.get(itemName);
+        if (powerSource == null) {
+            return null;
+        }
+
+        if (Constants.POWER_SOURCE_REMAINING_CAPACITY.equals(metricToCollect)) {
+            return powerSource.getRemainingCapacity();
+        } else if (Constants.POWER_SOURCE_TIME_REMAINING.equals(metricToCollect)) {
+            return powerSource.getTimeRemaining();
+        } else {
+            throw new UnsupportedOperationException("Invalid power source metric to collect: " + metricToCollect);
+        }
+    }
+
+    private Double getProcessorMetric(String itemName, Name metricToCollect,
+            Map<PlatformResourceType, Object> sysInfoCache, SystemInfo sysInfo) {
+
+        Map<String, Processor> cache =
+                (Map<String, Processor>) sysInfoCache.get(Constants.PlatformResourceType.PROCESSOR);
+        if (cache == null) {
+            cache = new HashMap<>();
+            Processor[] arr = sysInfo.getHardware().getProcessors();
+            for (Processor item : arr) {
+                cache.put(String.valueOf(item.getProcessorNumber()), item);
+            }
+            sysInfoCache.put(Constants.PlatformResourceType.PROCESSOR, cache);
+        }
+
+        Processor processor = cache.get(itemName);
+        if (processor == null) {
+            return null;
+        }
+
+        if (Constants.PROCESSOR_CPU_USAGE.equals(metricToCollect)) {
+            return processor.getProcessorCpuLoadBetweenTicks();
+        } else {
+            throw new UnsupportedOperationException("Invalid processor metric to collect: " + metricToCollect);
+        }
+    }
+
+    private Double getFileStoreMetric(String itemName, Name metricToCollect,
+            Map<PlatformResourceType, Object> sysInfoCache, SystemInfo sysInfo) {
+
+        Map<String, OSFileStore> cache =
+                (Map<String, OSFileStore>) sysInfoCache.get(Constants.PlatformResourceType.FILE_STORE);
+        if (cache == null) {
+            cache = new HashMap<>();
+            OSFileStore[] arr = sysInfo.getHardware().getFileStores();
+            for (OSFileStore item : arr) {
+                cache.put(item.getName(), item);
+            }
+            sysInfoCache.put(Constants.PlatformResourceType.FILE_STORE, cache);
+        }
+
+        OSFileStore fileStore = cache.get(itemName);
+        if (fileStore == null) {
+            return null;
+        }
+
+        if (Constants.FILE_STORE_TOTAL_SPACE.equals(metricToCollect)) {
+            return Double.valueOf(fileStore.getTotalSpace());
+        } else if (Constants.FILE_STORE_USABLE_SPACE.equals(metricToCollect)) {
+            return Double.valueOf(fileStore.getUsableSpace());
+        } else {
+            throw new UnsupportedOperationException("Invalid file store metric to collect: " + metricToCollect);
+        }
+    }
+
+    private Double getMemoryMetric(Name metricToCollect, Map<Constants.PlatformResourceType, Object> sysInfoCache,
+            SystemInfo sysInfo) {
+
+        Memory mem = (Memory) sysInfoCache.get(Constants.PlatformResourceType.MEMORY);
+        if (mem == null) {
+            mem = sysInfo.getHardware().getMemory();
+            sysInfoCache.put(Constants.PlatformResourceType.MEMORY, mem);
+        }
+
+        if (Constants.MEMORY_AVAILABLE.equals(metricToCollect)) {
+            return Double.valueOf(mem.getAvailable());
+        } else if (Constants.MEMORY_TOTAL.equals(metricToCollect)) {
+            return Double.valueOf(mem.getTotal());
+        } else {
+            throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
         }
     }
 }
