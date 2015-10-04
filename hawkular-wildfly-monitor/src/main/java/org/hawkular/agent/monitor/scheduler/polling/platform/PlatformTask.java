@@ -85,7 +85,7 @@ public abstract class PlatformTask implements Task {
 
     @Override
     public String toString() {
-        StringBuilder str = new StringBuilder("PlatformTask: ");
+        StringBuilder str = new StringBuilder();
         str.append("endpoint=[").append(endpoint).append("]");
         str.append(", type=[").append(type).append("]");
         str.append(", interval=[").append(interval).append("]");

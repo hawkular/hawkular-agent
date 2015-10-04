@@ -57,6 +57,7 @@ public class MetricPlatformTask extends PlatformTask {
     public String toString() {
         StringBuilder str = new StringBuilder("MetricPlatformTask: ");
         str.append(super.toString());
+        str.append(", metricInstance=[").append(getMetricInstance()).append("]");
         return str.toString();
     }
 }
