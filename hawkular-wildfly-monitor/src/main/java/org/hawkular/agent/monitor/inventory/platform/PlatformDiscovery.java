@@ -128,7 +128,7 @@ public class PlatformDiscovery {
                 }
             } else {
                 // we are being asked to discover children of the top-level resource
-                if (type.getName().equals(Constants.FILE_STORE)) {
+                if (type.getName().equals(Constants.PlatformResourceType.FILE_STORE.getName())) {
                     OSFileStore[] fileStores = sysInfo.getHardware().getFileStores();
                     for (OSFileStore fileStore : fileStores) {
                         String name = String.format(type.getResourceNameTemplate(), fileStore.getName());
@@ -137,13 +137,13 @@ public class PlatformDiscovery {
                         addMetricInstances(fileStoreResource);
                         resourceManager.addResource(fileStoreResource);
                     }
-                } else if (type.getName().equals(Constants.MEMORY)) {
+                } else if (type.getName().equals(Constants.PlatformResourceType.MEMORY.getName())) {
                     String name = String.format(type.getResourceNameTemplate());
                     PlatformResource memoryResource =
                             new PlatformResource(null, new Name(name), endpoint, type, parent);
                     addMetricInstances(memoryResource);
                     resourceManager.addResource(memoryResource);
-                } else if (type.getName().equals(Constants.PROCESSOR)) {
+                } else if (type.getName().equals(Constants.PlatformResourceType.PROCESSOR.getName())) {
                     Processor[] processors = sysInfo.getHardware().getProcessors();
                     for (Processor processor : processors) {
                         String name = String.format(type.getResourceNameTemplate(),
@@ -153,7 +153,7 @@ public class PlatformDiscovery {
                         addMetricInstances(processorResource);
                         resourceManager.addResource(processorResource);
                     }
-                } else if (type.getName().equals(Constants.POWER_SOURCE)) {
+                } else if (type.getName().equals(Constants.PlatformResourceType.POWER_SOURCE.getName())) {
                     PowerSource[] powerSources = sysInfo.getHardware().getPowerSources();
                     for (PowerSource powerSource : powerSources) {
                         String name = String.format(type.getResourceNameTemplate(), powerSource.getName());
@@ -162,6 +162,8 @@ public class PlatformDiscovery {
                         addMetricInstances(powerSourceResource);
                         resourceManager.addResource(powerSourceResource);
                     }
+                } else {
+                    throw new IllegalArgumentException("Invalid type - please report this: " + type);
                 }
             }
 

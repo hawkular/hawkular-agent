@@ -20,8 +20,8 @@ package org.hawkular.agent.monitor.scheduler.config;
  * Represents an endpoint that can process requests to access platform native data.
  */
 public class PlatformEndpoint extends MonitoredEndpoint {
-    public PlatformEndpoint(String name) {
-        super(name);
+    public PlatformEndpoint(String feedId) {
+        super(feedId);
     }
 
     @Override

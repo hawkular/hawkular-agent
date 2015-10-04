@@ -23,14 +23,7 @@ import org.hawkular.agent.monitor.scheduler.polling.Task;
  * Resolve data input attributes to final storage name.
  */
 public abstract class PlatformTaskKeyGenerator implements KeyGenerator {
-
-    /**
-     * This is used to generate keys for tasks that are not associated with any inventoried resource.
-     * @param task the task whose key is to be generated
-     * @return the generated key that uniquely identifies the data that is collected by the task
-     */
     protected String generateDefaultKey(Task task) {
-        PlatformTask platformTask = (PlatformTask) task;
-        return "TODO";
+        throw new UnsupportedOperationException("Cannot generate default key platform task");
     }
 }

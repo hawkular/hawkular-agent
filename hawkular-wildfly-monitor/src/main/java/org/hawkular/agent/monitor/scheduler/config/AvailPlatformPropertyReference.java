@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.scheduler.config;
 
-
 /**
  * A Platform resource reference that is to be checked for availability.
  */

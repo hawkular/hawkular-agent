@@ -212,9 +212,11 @@ public class MonitorServiceConfigurationBuilder {
 
         // since platform monitoring is enabled, we will always have at least the root OS type
 
-        PlatformResourceTypeSet rootTypeSet = new PlatformResourceTypeSet(null, Constants.OPERATING_SYSTEM);
+        PlatformResourceTypeSet rootTypeSet = new PlatformResourceTypeSet(null,
+                Constants.PlatformResourceType.OPERATING_SYSTEM.getName());
         rootTypeSet.setEnabled(true);
-        PlatformResourceType rootType = new PlatformResourceType(null, Constants.OPERATING_SYSTEM);
+        PlatformResourceType rootType = new PlatformResourceType(null,
+                Constants.PlatformResourceType.OPERATING_SYSTEM.getName());
         rootType.setResourceNameTemplate("%s");
         rootTypeSet.getResourceTypeMap().put(rootType.getName(), rootType);
         theConfig.platform.resourceTypeSetMap.put(rootTypeSet.getName(), rootTypeSet);
@@ -231,7 +233,8 @@ public class MonitorServiceConfigurationBuilder {
                     TimeUnit timeUnit = TimeUnit.valueOf(getString(fileStoresNode, context,
                             FileStoresAttributes.TIME_UNITS).toUpperCase());
 
-                    PlatformMetricTypeSet fileStoreMetrics = new PlatformMetricTypeSet(null, Constants.FILE_STORE);
+                    PlatformMetricTypeSet fileStoreMetrics = new PlatformMetricTypeSet(null,
+                            Constants.PlatformResourceType.FILE_STORE.getName());
                     theConfig.platform.metricTypeSetMap.put(fileStoreMetrics.getName(), fileStoreMetrics);
 
                     PlatformMetricType usableSpace = new PlatformMetricType(null, Constants.FILE_STORE_USABLE_SPACE);
@@ -248,12 +251,15 @@ public class MonitorServiceConfigurationBuilder {
                     totalSpace.setMetricType(MetricType.GAUGE);
                     fileStoreMetrics.getMetricTypeMap().put(totalSpace.getName(), totalSpace);
 
-                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null, Constants.FILE_STORE);
+                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                            Constants.PlatformResourceType.FILE_STORE.getName());
                     typeSet.setEnabled(true);
-                    PlatformResourceType type = new PlatformResourceType(null, Constants.FILE_STORE);
+                    PlatformResourceType type = new PlatformResourceType(null,
+                            Constants.PlatformResourceType.FILE_STORE.getName());
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(fileStoreMetrics.getName()));
-                    type.setResourceNameTemplate(Constants.FILE_STORE.getNameString() + " [%s]");
+                    type.setResourceNameTemplate(
+                            Constants.PlatformResourceType.FILE_STORE.getName().getNameString() + " [%s]");
                     typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
@@ -273,7 +279,8 @@ public class MonitorServiceConfigurationBuilder {
                     TimeUnit timeUnit = TimeUnit.valueOf(getString(memoryNode, context,
                             MemoryAttributes.TIME_UNITS).toUpperCase());
 
-                    PlatformMetricTypeSet memoryMetrics = new PlatformMetricTypeSet(null, Constants.MEMORY);
+                    PlatformMetricTypeSet memoryMetrics = new PlatformMetricTypeSet(null,
+                            Constants.PlatformResourceType.MEMORY.getName());
                     theConfig.platform.metricTypeSetMap.put(memoryMetrics.getName(), memoryMetrics);
 
                     PlatformMetricType available = new PlatformMetricType(null, Constants.MEMORY_AVAILABLE);
@@ -290,12 +297,15 @@ public class MonitorServiceConfigurationBuilder {
                     total.setMetricType(MetricType.GAUGE);
                     memoryMetrics.getMetricTypeMap().put(total.getName(), total);
 
-                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null, Constants.MEMORY);
+                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                            Constants.PlatformResourceType.MEMORY.getName());
                     typeSet.setEnabled(true);
-                    PlatformResourceType type = new PlatformResourceType(null, Constants.MEMORY);
+                    PlatformResourceType type = new PlatformResourceType(null,
+                            Constants.PlatformResourceType.MEMORY.getName());
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(memoryMetrics.getName()));
-                    type.setResourceNameTemplate(Constants.MEMORY.getNameString());
+                    type.setResourceNameTemplate(
+                            Constants.PlatformResourceType.MEMORY.getName().getNameString());
                     typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
@@ -315,7 +325,8 @@ public class MonitorServiceConfigurationBuilder {
                     TimeUnit timeUnit = TimeUnit.valueOf(getString(processorsNode, context,
                             ProcessorsAttributes.TIME_UNITS).toUpperCase());
 
-                    PlatformMetricTypeSet processorMetrics = new PlatformMetricTypeSet(null, Constants.PROCESSOR);
+                    PlatformMetricTypeSet processorMetrics = new PlatformMetricTypeSet(null,
+                            Constants.PlatformResourceType.PROCESSOR.getName());
                     theConfig.platform.metricTypeSetMap.put(processorMetrics.getName(), processorMetrics);
 
                     // this is the Processor.getProcessorCpuLoadBetweenTicks value
@@ -326,12 +337,15 @@ public class MonitorServiceConfigurationBuilder {
                     cpuUsage.setMetricType(MetricType.GAUGE);
                     processorMetrics.getMetricTypeMap().put(cpuUsage.getName(), cpuUsage);
 
-                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null, Constants.PROCESSOR);
+                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                            Constants.PlatformResourceType.PROCESSOR.getName());
                     typeSet.setEnabled(true);
-                    PlatformResourceType type = new PlatformResourceType(null, Constants.PROCESSOR);
+                    PlatformResourceType type = new PlatformResourceType(null,
+                            Constants.PlatformResourceType.PROCESSOR.getName());
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(processorMetrics.getName()));
-                    type.setResourceNameTemplate(Constants.PROCESSOR.getNameString() + " [%s]");
+                    type.setResourceNameTemplate(
+                            Constants.PlatformResourceType.PROCESSOR.getName().getNameString() + " [%s]");
                     typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
@@ -352,7 +366,7 @@ public class MonitorServiceConfigurationBuilder {
                             PowerSourcesAttributes.TIME_UNITS).toUpperCase());
 
                     PlatformMetricTypeSet powerSourceMetrics = new PlatformMetricTypeSet(null,
-                            Constants.POWER_SOURCE);
+                            Constants.PlatformResourceType.POWER_SOURCE.getName());
                     theConfig.platform.metricTypeSetMap.put(powerSourceMetrics.getName(), powerSourceMetrics);
 
                     PlatformMetricType remainingCap = new PlatformMetricType(null,
@@ -371,12 +385,15 @@ public class MonitorServiceConfigurationBuilder {
                     timeRemaining.setMetricType(MetricType.GAUGE);
                     powerSourceMetrics.getMetricTypeMap().put(timeRemaining.getName(), timeRemaining);
 
-                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null, Constants.POWER_SOURCE);
+                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                            Constants.PlatformResourceType.POWER_SOURCE.getName());
                     typeSet.setEnabled(true);
-                    PlatformResourceType type = new PlatformResourceType(null, Constants.POWER_SOURCE);
+                    PlatformResourceType type = new PlatformResourceType(null,
+                            Constants.PlatformResourceType.POWER_SOURCE.getName());
                     type.setParents(Collections.singletonList(rootType.getName()));
                     type.setMetricSets(Collections.singletonList(powerSourceMetrics.getName()));
-                    type.setResourceNameTemplate(Constants.POWER_SOURCE.getNameString() + " [%s]");
+                    type.setResourceNameTemplate(
+                            Constants.PlatformResourceType.POWER_SOURCE.getName().getNameString() + " [%s]");
                     typeSet.getResourceTypeMap().put(type.getName(), type);
                     theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }

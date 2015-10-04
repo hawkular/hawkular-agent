@@ -24,22 +24,37 @@ import org.hawkular.agent.monitor.inventory.Name;
  */
 public interface Constants {
 
+    // these list the names of all the known resource types for platform resources
+    enum PlatformResourceType {
+        OPERATING_SYSTEM("Operating System"),
+        FILE_STORE("File Store"),
+        MEMORY("Memory"),
+        PROCESSOR("Processor"),
+        POWER_SOURCE("Power Source");
+
+        private final Name name;
+
+        PlatformResourceType(String label) {
+            this.name = new Name(label);
+        }
+
+        public Name getName() {
+            return name;
+        }
+
+    }
+
     Name PLATFORM = new Name("Platform");
 
-    Name OPERATING_SYSTEM = new Name("Operating System");
-
-    Name FILE_STORE = new Name("File Store");
+    // names of all known metrics of all known platform resource types
     Name FILE_STORE_USABLE_SPACE = new Name("Usable Space");
     Name FILE_STORE_TOTAL_SPACE = new Name("Total Space");
 
-    Name MEMORY = new Name("Memory");
     Name MEMORY_AVAILABLE = new Name("Available Memory");
     Name MEMORY_TOTAL = new Name("Total Memory");
 
-    Name PROCESSOR = new Name("Processor");
     Name PROCESSOR_CPU_USAGE = new Name("CPU Usage");
 
-    Name POWER_SOURCE = new Name("Power Source");
     Name POWER_SOURCE_REMAINING_CAPACITY = new Name("Remaining Capacity");
     Name POWER_SOURCE_TIME_REMAINING = new Name("Time Remaining");
 }

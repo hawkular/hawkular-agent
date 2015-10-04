@@ -691,7 +691,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         // build the inventory manager
         PlatformInventoryManager im = new PlatformInventoryManager(feedId, mm, rm, new PlatformManagedServer(
-                null, Constants.PLATFORM), new PlatformEndpoint(Constants.PLATFORM.getNameString()));
+                null, Constants.PLATFORM), new PlatformEndpoint(this.feedId));
         this.platformInventory.set(im);
 
         // discover our platform resources now

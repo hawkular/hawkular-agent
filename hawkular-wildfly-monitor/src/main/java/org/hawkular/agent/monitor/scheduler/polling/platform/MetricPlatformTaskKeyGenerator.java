@@ -29,7 +29,9 @@ public class MetricPlatformTaskKeyGenerator extends PlatformTaskKeyGenerator {
             return generateDefaultKey(task);
         }
 
-        return metricInstance.getID().getIDString();
+        String endpointName = platformTask.getEndpoint().getName();
+        String metricId = metricInstance.getID().getIDString();
+        return String.format("%s~%s", endpointName, metricId);
     }
 
 }
