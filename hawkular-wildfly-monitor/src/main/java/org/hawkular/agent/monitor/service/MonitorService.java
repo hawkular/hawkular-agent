@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,6 +48,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Platform;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
@@ -67,6 +69,19 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.inventory.platform.Constants;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailInstance;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailType;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailTypeSet;
+import org.hawkular.agent.monitor.inventory.platform.PlatformInventoryManager;
+import org.hawkular.agent.monitor.inventory.platform.PlatformManagedServer;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetadataManager;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricInstance;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
+import org.hawkular.agent.monitor.inventory.platform.PlatformResource;
+import org.hawkular.agent.monitor.inventory.platform.PlatformResourceType;
+import org.hawkular.agent.monitor.inventory.platform.PlatformResourceTypeSet;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
@@ -74,6 +89,7 @@ import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactoryImpl;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
+import org.hawkular.agent.monitor.scheduler.config.PlatformEndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
@@ -153,6 +169,9 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
     // our internal inventories for each monitored server
     private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories = new HashMap<>();
+
+    // inventory manager for the platform resources
+    private final AtomicReference<PlatformInventoryManager> platformInventory = new AtomicReference<>();
 
     // this is a thread pool that requests newly discovered resources to be stored in inventory
     private ExecutorService discoveredResourcesStorageExecutor;
@@ -369,6 +388,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         // remove our inventories
         dmrServerInventories.clear();
+        platformInventory.set(null);
 
         // stop diagnostic reporting and spit out a final diagnostics report
         if (diagnosticsReporter != null) {
@@ -559,6 +579,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             scheduleDMRMetricAvailCollections(schedulerConfig, im);
         }
 
+        schedulePlatformMetricAvailCollections(schedulerConfig, this.platformInventory.get());
+
         this.schedulerService = new SchedulerService(
                 schedulerConfig,
                 this.selfId,
@@ -612,14 +634,76 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         }
     }
 
+    private void schedulePlatformMetricAvailCollections(SchedulerConfiguration schedulerConfig,
+            PlatformInventoryManager im) {
+        if (im == null) {
+            return; // platform resources are not to be monitored, do nothing and return
+        }
+
+        BreadthFirstIterator<PlatformResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
+        while (bIter.hasNext()) {
+            PlatformResource resource = bIter.next();
+
+            // schedule collections
+            Collection<PlatformMetricInstance> metricsToBeCollected = resource.getMetrics();
+            for (PlatformMetricInstance metricToBeCollected : metricsToBeCollected) {
+                schedulerConfig.addMetricToBeCollected(resource.getEndpoint(), metricToBeCollected);
+            }
+
+            Collection<PlatformAvailInstance> availsToBeCollected = resource.getAvails();
+            for (PlatformAvailInstance availToBeCollected : availsToBeCollected) {
+                schedulerConfig.addAvailToBeChecked(resource.getEndpoint(), availToBeCollected);
+            }
+        }
+    }
+
     @Override
     public Map<ManagedServer, DMRInventoryManager> getDmrServerInventories() {
         return Collections.unmodifiableMap(this.dmrServerInventories);
     }
 
+    private void discoverPlatformData() {
+        Platform config = this.configuration.platform;
+
+        if (config.allEnabled == false) {
+            return;
+        }
+
+        // build the metadata manager
+        ResourceTypeManager<PlatformResourceType, PlatformResourceTypeSet> rtm;
+        rtm = new ResourceTypeManager<>(config.resourceTypeSetMap);
+
+        // tell metric/avail managers what metric and avail types we need to use for the resource types
+        MetricTypeManager<PlatformMetricType, PlatformMetricTypeSet> mtm = new MetricTypeManager<>();
+        AvailTypeManager<PlatformAvailType, PlatformAvailTypeSet> atm = new AvailTypeManager<>();
+
+        mtm.addMetricTypes(config.metricTypeSetMap, null);
+        atm.addAvailTypes(config.availTypeSetMap, null);
+
+        PlatformMetadataManager mm = new PlatformMetadataManager(rtm, mtm, atm);
+        mm.populateMetricAndAvailTypesForAllResourceTypes();
+
+        // Create our empty resource manager - this will be filled in during discovery with our resources
+        ResourceManager<PlatformResource> rm = new ResourceManager<>();
+
+        // build the inventory manager
+        PlatformInventoryManager im = new PlatformInventoryManager(feedId, mm, rm, new PlatformManagedServer(
+                null, Constants.PLATFORM), new PlatformEndpoint(this.feedId));
+        PlatformInventoryManager imOriginal = this.platformInventory.getAndSet(im);
+
+        // discover our platform resources now
+        im.discoverResources(getPlatformListenerForChangedInventory(imOriginal));
+
+        log.debugf("Full discovery scan of platform found [%d] resources",
+                im.getResourceManager().getAllResources().size());
+    }
+
     @Override
     public void discoverAllResourcesForAllManagedServers() {
         int resourcesDiscovered = 0;
+
+        // first discover platform data if we are configured to do so
+        discoverPlatformData();
 
         // there may be some old managed servers that we don't manage anymore - remove them now
         this.dmrServerInventories.keySet().retainAll(this.configuration.managedServersMap.values());
@@ -647,7 +731,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
         }
 
-        log.debugf("Full discovery scan found [%d] resources", resourcesDiscovered);
+        log.debugf("Full discovery scan of managed servers found [%d] resources", resourcesDiscovered);
 
         // restart the scheduler - this will begin metric collections for our new inventory
         try {
@@ -657,6 +741,53 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         }
 
         return;
+    }
+
+    private VertexSetListener<PlatformResource> getPlatformListenerForChangedInventory(
+            final PlatformInventoryManager imOriginal) {
+
+        VertexSetListener<PlatformResource> platformListener = null;
+
+        // if we are participating in a full hawkular environment,
+        // new resources and their metadata will be added to inventory
+        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+            platformListener = new VertexSetListener<PlatformResource>() {
+                @Override
+                public void vertexRemoved(GraphVertexChangeEvent<PlatformResource> e) {
+                }
+
+                @Override
+                public void vertexAdded(GraphVertexChangeEvent<PlatformResource> e) {
+                    final PlatformResource resource = e.getVertex();
+                    final PlatformResourceType resourceType = resource.getResourceType();
+
+                    if (imOriginal != null) {
+                        PlatformResource oldResource = imOriginal.getResourceManager().getResource(resource.getID());
+                        if (oldResource != null) {
+                            // we discovered a resource we had before. For now do nothing other than
+                            // set its persisted flag since we assume it has already been or will be persisted
+                            resource.setPersisted(true);
+                            resourceType.setPersisted(true);
+                            return;
+                        }
+                    }
+
+                    discoveredResourcesStorageExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
+                                MonitorService.this.inventoryStorageProxy.storeResource(resource);
+                            } catch (Throwable t) {
+                                log.errorf(t, "Failed to store platform resource [%s]", resource);
+                            }
+                        }
+                    });
+                }
+            };
+        }
+
+        return platformListener;
     }
 
     private VertexSetListener<DMRResource> getDMRListenerForChangedInventory(final DMRInventoryManager imOriginal) {
@@ -693,7 +824,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                                 MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
                                 MonitorService.this.inventoryStorageProxy.storeResource(resource);
                             } catch (Throwable t) {
-                                log.errorf(t, "Failed to store resource [%s]", resource);
+                                log.errorf(t, "Failed to store DMR resource [%s]", resource);
                             }
                         }
                     });
@@ -785,7 +916,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         try {
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                configuration.storageAdapter.accountsContext);
+                    configuration.storageAdapter.accountsContext);
             url.append("personas/current");
 
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
@@ -793,7 +924,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             // TODO: next three lines are only temporary and should be deleted when inventory no longer needs this.
             // make the call to the inventory to pre-create the test environment and other assumed entities
             String tenantUrl = Util.getContextUrlString(configuration.storageAdapter.url,
-                configuration.storageAdapter.inventoryContext).append("tenant").toString();
+                    configuration.storageAdapter.inventoryContext).append("tenant").toString();
             httpclient.newCall(this.httpClientBuilder.buildJsonGetRequest(tenantUrl, null)).execute();
 
             Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), null);

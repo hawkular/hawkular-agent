@@ -25,6 +25,9 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailTypeSet;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
+import org.hawkular.agent.monitor.inventory.platform.PlatformResourceTypeSet;
 
 /**
  * This represents the monitor service extension's XML configuration in a more consumable form.
@@ -53,6 +56,7 @@ public class MonitorServiceConfiguration {
     public int availDispatcherMaxBatchSize;
     public StorageAdapter storageAdapter = new StorageAdapter();
     public Diagnostics diagnostics = new Diagnostics();
+    public Platform platform = new Platform();
     public Map<Name, DMRMetricTypeSet> dmrMetricTypeSetMap = new HashMap<>();
     public Map<Name, DMRAvailTypeSet> dmrAvailTypeSetMap = new HashMap<>();
     public Map<Name, DMRResourceTypeSet> dmrResourceTypeSetMap = new HashMap<>();
@@ -80,5 +84,12 @@ public class MonitorServiceConfiguration {
         public boolean enabled;
         public int interval;
         public TimeUnit timeUnits;
+    }
+
+    public static class Platform {
+        public boolean allEnabled; // if this is false, no platform resources will be monitored
+        public Map<Name, PlatformMetricTypeSet> metricTypeSetMap = new HashMap<>();
+        public Map<Name, PlatformAvailTypeSet> availTypeSetMap = new HashMap<>(0); // we don't have any of these yet
+        public Map<Name, PlatformResourceTypeSet> resourceTypeSetMap = new HashMap<>();
     }
 }

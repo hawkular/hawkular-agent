@@ -35,7 +35,7 @@ RCPT extends ResourceConfigurationPropertyType<? extends ResourceType<?, ?, ?, ?
     }
 
     private String resourceNameTemplate;
-    private Collection<Name> parents;
+    private Collection<Name> parents = new HashSet<>();
     private Collection<Name> metricSetNames = new HashSet<>();
     private Collection<Name> availSetNames = new HashSet<>();
     private Collection<MT> metricTypes = new HashSet<>();

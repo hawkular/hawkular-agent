@@ -52,6 +52,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.github.dblock</groupId>
+      <artifactId>oshi-core</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.squareup.okhttp</groupId>
       <artifactId>okhttp</artifactId>
     </dependency>

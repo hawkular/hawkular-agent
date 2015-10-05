@@ -96,4 +96,11 @@
                resourceTypeSets="Main" />
   </managed-servers>
 
+  <platform enabled="false">
+    <file-stores   enabled="false" interval="30" timeUnits="seconds" />
+    <memory        enabled="false" interval="60"  timeUnits="seconds" />
+    <processors    enabled="false" interval="1"  timeUnits="minutes" />
+    <power-sources enabled="false" interval="10" timeUnits="minutes" />
+  </platform>
+
 </subsystem>

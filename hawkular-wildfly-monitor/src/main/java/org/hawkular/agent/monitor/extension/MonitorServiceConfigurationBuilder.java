@@ -35,6 +35,11 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.inventory.platform.Constants;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
+import org.hawkular.agent.monitor.inventory.platform.PlatformResourceType;
+import org.hawkular.agent.monitor.inventory.platform.PlatformResourceTypeSet;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.metrics.client.common.MetricType;
@@ -61,6 +66,7 @@ public class MonitorServiceConfigurationBuilder {
         determineGlobalConfig(config, context);
         determineStorageAdapterConfig(config, context);
         determineDiagnosticsConfig(config, context);
+        determinePlatformConfig(config, context);
 
         boolean hasEnabledMetrics = determineMetricSetDmr(config, context);
         if (!hasEnabledMetrics) {
@@ -172,6 +178,230 @@ public class MonitorServiceConfigurationBuilder {
         }
 
         return hasEnabledAvails;
+    }
+
+    private void determinePlatformConfig(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+
+        // assume they are disabled unless configured otherwise
+        theConfig.platform.allEnabled = false;
+        theConfig.platform.resourceTypeSetMap.clear();
+        theConfig.platform.metricTypeSetMap.clear();
+
+        if (!config.hasDefined(PlatformDefinition.PLATFORM)) {
+            log.infoNoPlatformConfig();
+            return;
+        }
+
+        List<Property> asPropertyList = config.get(PlatformDefinition.PLATFORM).asPropertyList();
+        if (asPropertyList.size() == 0) {
+            log.infoNoPlatformConfig();
+            return;
+        } else if (asPropertyList.size() > 1) {
+            throw new IllegalArgumentException("Only one platform config allowed: " + config.toJSONString(true));
+        }
+
+        ModelNode platformValueNode = asPropertyList.get(0).getValue();
+        theConfig.platform.allEnabled = getBoolean(platformValueNode, context, PlatformAttributes.ENABLED);
+        if (theConfig.platform.allEnabled == false) {
+            log.debugf("Platform monitoring is disabled");
+            return;
+        }
+
+        // all the type metadata is dependent upon the capabilities of the oshi SystemInfo API
+
+        // since platform monitoring is enabled, we will always have at least the root OS type
+
+        PlatformResourceTypeSet rootTypeSet = new PlatformResourceTypeSet(null,
+                Constants.PlatformResourceType.OPERATING_SYSTEM.getName());
+        rootTypeSet.setEnabled(true);
+        PlatformResourceType rootType = new PlatformResourceType(null,
+                Constants.PlatformResourceType.OPERATING_SYSTEM.getName());
+        rootType.setResourceNameTemplate("%s");
+        rootTypeSet.getResourceTypeMap().put(rootType.getName(), rootType);
+        theConfig.platform.resourceTypeSetMap.put(rootTypeSet.getName(), rootTypeSet);
+
+        // now add children types if they are enabled
+
+        if (platformValueNode.hasDefined(FileStoresDefinition.FILE_STORES)) {
+            asPropertyList = platformValueNode.get(FileStoresDefinition.FILE_STORES).asPropertyList();
+            if (asPropertyList.size() == 1) {
+                ModelNode fileStoresNode = asPropertyList.get(0).getValue();
+                boolean enabled = getBoolean(fileStoresNode, context, FileStoresAttributes.ENABLED);
+                if (enabled) {
+                    int interval = getInt(fileStoresNode, context, FileStoresAttributes.INTERVAL);
+                    TimeUnit timeUnit = TimeUnit.valueOf(getString(fileStoresNode, context,
+                            FileStoresAttributes.TIME_UNITS).toUpperCase());
+
+                    PlatformMetricTypeSet fileStoreMetrics = new PlatformMetricTypeSet(null,
+                            Constants.PlatformResourceType.FILE_STORE.getName());
+                    theConfig.platform.metricTypeSetMap.put(fileStoreMetrics.getName(), fileStoreMetrics);
+
+                    PlatformMetricType usableSpace = new PlatformMetricType(null, Constants.FILE_STORE_USABLE_SPACE);
+                    usableSpace.setInterval(interval);
+                    usableSpace.setTimeUnits(timeUnit);
+                    usableSpace.setMetricUnits(MeasurementUnit.BYTES);
+                    usableSpace.setMetricType(MetricType.GAUGE);
+                    fileStoreMetrics.getMetricTypeMap().put(usableSpace.getName(), usableSpace);
+
+                    PlatformMetricType totalSpace = new PlatformMetricType(null, Constants.FILE_STORE_TOTAL_SPACE);
+                    totalSpace.setInterval(interval);
+                    totalSpace.setTimeUnits(timeUnit);
+                    totalSpace.setMetricUnits(MeasurementUnit.BYTES);
+                    totalSpace.setMetricType(MetricType.GAUGE);
+                    fileStoreMetrics.getMetricTypeMap().put(totalSpace.getName(), totalSpace);
+
+                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                            Constants.PlatformResourceType.FILE_STORE.getName());
+                    typeSet.setEnabled(true);
+                    PlatformResourceType type = new PlatformResourceType(null,
+                            Constants.PlatformResourceType.FILE_STORE.getName());
+                    type.setParents(Collections.singletonList(rootType.getName()));
+                    type.setMetricSets(Collections.singletonList(fileStoreMetrics.getName()));
+                    type.setResourceNameTemplate(
+                            Constants.PlatformResourceType.FILE_STORE.getName().getNameString() + " [%s]");
+                    typeSet.getResourceTypeMap().put(type.getName(), type);
+                    theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
+                }
+            } else if (asPropertyList.size() > 1) {
+                throw new IllegalArgumentException("Only one platform.file-stores config allowed: "
+                        + platformValueNode.toJSONString(true));
+            }
+        }
+
+        if (platformValueNode.hasDefined(MemoryDefinition.MEMORY)) {
+            asPropertyList = platformValueNode.get(MemoryDefinition.MEMORY).asPropertyList();
+            if (asPropertyList.size() == 1) {
+                ModelNode memoryNode = asPropertyList.get(0).getValue();
+                boolean enabled = getBoolean(memoryNode, context, MemoryAttributes.ENABLED);
+                if (enabled) {
+                    int interval = getInt(memoryNode, context, MemoryAttributes.INTERVAL);
+                    TimeUnit timeUnit = TimeUnit.valueOf(getString(memoryNode, context,
+                            MemoryAttributes.TIME_UNITS).toUpperCase());
+
+                    PlatformMetricTypeSet memoryMetrics = new PlatformMetricTypeSet(null,
+                            Constants.PlatformResourceType.MEMORY.getName());
+                    theConfig.platform.metricTypeSetMap.put(memoryMetrics.getName(), memoryMetrics);
+
+                    PlatformMetricType available = new PlatformMetricType(null, Constants.MEMORY_AVAILABLE);
+                    available.setInterval(interval);
+                    available.setTimeUnits(timeUnit);
+                    available.setMetricUnits(MeasurementUnit.BYTES);
+                    available.setMetricType(MetricType.GAUGE);
+                    memoryMetrics.getMetricTypeMap().put(available.getName(), available);
+
+                    PlatformMetricType total = new PlatformMetricType(null, Constants.MEMORY_TOTAL);
+                    total.setInterval(interval);
+                    total.setTimeUnits(timeUnit);
+                    total.setMetricUnits(MeasurementUnit.BYTES);
+                    total.setMetricType(MetricType.GAUGE);
+                    memoryMetrics.getMetricTypeMap().put(total.getName(), total);
+
+                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                            Constants.PlatformResourceType.MEMORY.getName());
+                    typeSet.setEnabled(true);
+                    PlatformResourceType type = new PlatformResourceType(null,
+                            Constants.PlatformResourceType.MEMORY.getName());
+                    type.setParents(Collections.singletonList(rootType.getName()));
+                    type.setMetricSets(Collections.singletonList(memoryMetrics.getName()));
+                    type.setResourceNameTemplate(
+                            Constants.PlatformResourceType.MEMORY.getName().getNameString());
+                    typeSet.getResourceTypeMap().put(type.getName(), type);
+                    theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
+                }
+            } else if (asPropertyList.size() > 1) {
+                throw new IllegalArgumentException("Only one platform.memory config allowed: "
+                        + platformValueNode.toJSONString(true));
+            }
+        }
+
+        if (platformValueNode.hasDefined(ProcessorsDefinition.PROCESSORS)) {
+            asPropertyList = platformValueNode.get(ProcessorsDefinition.PROCESSORS).asPropertyList();
+            if (asPropertyList.size() == 1) {
+                ModelNode processorsNode = asPropertyList.get(0).getValue();
+                boolean enabled = getBoolean(processorsNode, context, ProcessorsAttributes.ENABLED);
+                if (enabled) {
+                    int interval = getInt(processorsNode, context, ProcessorsAttributes.INTERVAL);
+                    TimeUnit timeUnit = TimeUnit.valueOf(getString(processorsNode, context,
+                            ProcessorsAttributes.TIME_UNITS).toUpperCase());
+
+                    PlatformMetricTypeSet processorMetrics = new PlatformMetricTypeSet(null,
+                            Constants.PlatformResourceType.PROCESSOR.getName());
+                    theConfig.platform.metricTypeSetMap.put(processorMetrics.getName(), processorMetrics);
+
+                    // this is the Processor.getProcessorCpuLoadBetweenTicks value
+                    PlatformMetricType cpuUsage = new PlatformMetricType(null, Constants.PROCESSOR_CPU_USAGE);
+                    cpuUsage.setInterval(interval);
+                    cpuUsage.setTimeUnits(timeUnit);
+                    cpuUsage.setMetricUnits(MeasurementUnit.PERCENTAGE);
+                    cpuUsage.setMetricType(MetricType.GAUGE);
+                    processorMetrics.getMetricTypeMap().put(cpuUsage.getName(), cpuUsage);
+
+                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                            Constants.PlatformResourceType.PROCESSOR.getName());
+                    typeSet.setEnabled(true);
+                    PlatformResourceType type = new PlatformResourceType(null,
+                            Constants.PlatformResourceType.PROCESSOR.getName());
+                    type.setParents(Collections.singletonList(rootType.getName()));
+                    type.setMetricSets(Collections.singletonList(processorMetrics.getName()));
+                    type.setResourceNameTemplate(
+                            Constants.PlatformResourceType.PROCESSOR.getName().getNameString() + " [%s]");
+                    typeSet.getResourceTypeMap().put(type.getName(), type);
+                    theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
+                }
+            } else if (asPropertyList.size() > 1) {
+                throw new IllegalArgumentException("Only one platform.processors config allowed: "
+                        + platformValueNode.toJSONString(true));
+            }
+        }
+
+        if (platformValueNode.hasDefined(PowerSourcesDefinition.POWER_SOURCES)) {
+            asPropertyList = platformValueNode.get(PowerSourcesDefinition.POWER_SOURCES).asPropertyList();
+            if (asPropertyList.size() == 1) {
+                ModelNode powerSourcesNode = asPropertyList.get(0).getValue();
+                boolean enabled = getBoolean(powerSourcesNode, context, PowerSourcesAttributes.ENABLED);
+                if (enabled) {
+                    int interval = getInt(powerSourcesNode, context, PowerSourcesAttributes.INTERVAL);
+                    TimeUnit timeUnit = TimeUnit.valueOf(getString(powerSourcesNode, context,
+                            PowerSourcesAttributes.TIME_UNITS).toUpperCase());
+
+                    PlatformMetricTypeSet powerSourceMetrics = new PlatformMetricTypeSet(null,
+                            Constants.PlatformResourceType.POWER_SOURCE.getName());
+                    theConfig.platform.metricTypeSetMap.put(powerSourceMetrics.getName(), powerSourceMetrics);
+
+                    PlatformMetricType remainingCap = new PlatformMetricType(null,
+                            Constants.POWER_SOURCE_REMAINING_CAPACITY);
+                    remainingCap.setInterval(interval);
+                    remainingCap.setTimeUnits(timeUnit);
+                    remainingCap.setMetricUnits(MeasurementUnit.PERCENTAGE);
+                    remainingCap.setMetricType(MetricType.GAUGE);
+                    powerSourceMetrics.getMetricTypeMap().put(remainingCap.getName(), remainingCap);
+
+                    PlatformMetricType timeRemaining = new PlatformMetricType(null,
+                            Constants.POWER_SOURCE_TIME_REMAINING);
+                    timeRemaining.setInterval(interval);
+                    timeRemaining.setTimeUnits(timeUnit);
+                    timeRemaining.setMetricUnits(MeasurementUnit.SECONDS);
+                    timeRemaining.setMetricType(MetricType.GAUGE);
+                    powerSourceMetrics.getMetricTypeMap().put(timeRemaining.getName(), timeRemaining);
+
+                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                            Constants.PlatformResourceType.POWER_SOURCE.getName());
+                    typeSet.setEnabled(true);
+                    PlatformResourceType type = new PlatformResourceType(null,
+                            Constants.PlatformResourceType.POWER_SOURCE.getName());
+                    type.setParents(Collections.singletonList(rootType.getName()));
+                    type.setMetricSets(Collections.singletonList(powerSourceMetrics.getName()));
+                    type.setResourceNameTemplate(
+                            Constants.PlatformResourceType.POWER_SOURCE.getName().getNameString() + " [%s]");
+                    typeSet.getResourceTypeMap().put(type.getName(), type);
+                    theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
+                }
+            } else if (asPropertyList.size() > 1) {
+                throw new IllegalArgumentException("Only one platform.power-sources config allowed: "
+                        + platformValueNode.toJSONString(true));
+            }
+        }
     }
 
     private void determineDiagnosticsConfig(ModelNode config, OperationContext context)

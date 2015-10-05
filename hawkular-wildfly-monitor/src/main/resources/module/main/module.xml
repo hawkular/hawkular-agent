@@ -53,6 +53,11 @@
     <resource-root path="rhino.jar"/>
     <resource-root path="rxjava.jar"/>
     <resource-root path="uri-template.jar"/>
+
+    <!-- oshi deps -->
+    <resource-root path="jna.jar"/>
+    <resource-root path="jna-platform.jar"/>
+    <resource-root path="oshi-core.jar"/>
   </resources>
 
   <dependencies>
