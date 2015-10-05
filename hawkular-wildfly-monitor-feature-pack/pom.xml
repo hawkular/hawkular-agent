@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-agent-parent</artifactId>
-    <version>0.9.1.Final-SNAPSHOT</version>
+    <version>0.10.1.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-monitor-feature-pack</artifactId>
@@ -43,14 +43,40 @@
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-monitor</artifactId>
-      <version>0.9.1.Final-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- feature pack dependencies -->
 
     <dependency>
+      <groupId>org.wildfly.core</groupId>
+      <artifactId>wildfly-core-feature-pack</artifactId>
+      <version>${version.org.wildfly.core}</version>
+      <type>zip</type>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
       <groupId>org.wildfly</groupId>
       <artifactId>wildfly-servlet-feature-pack</artifactId>
+      <version>${version.org.wildfly}</version>
+      <type>zip</type>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-feature-pack</artifactId>
       <version>${version.org.wildfly}</version>
       <type>zip</type>
       <exclusions>
