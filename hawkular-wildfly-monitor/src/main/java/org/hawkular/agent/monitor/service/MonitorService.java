@@ -358,9 +358,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         // build our inventory managers and find all the resources we need to monitor
         discoverAllResourcesForAllManagedServers();
 
-        // discovery our native platform data
-        discoverPlatformData();
-
         started = true;
     }
 
@@ -692,10 +689,10 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         // build the inventory manager
         PlatformInventoryManager im = new PlatformInventoryManager(feedId, mm, rm, new PlatformManagedServer(
                 null, Constants.PLATFORM), new PlatformEndpoint(this.feedId));
-        this.platformInventory.set(im);
+        PlatformInventoryManager imOriginal = this.platformInventory.getAndSet(im);
 
         // discover our platform resources now
-        im.discoverResources(null);
+        im.discoverResources(getPlatformListenerForChangedInventory(imOriginal));
 
         log.debugf("Full discovery scan of platform found [%d] resources",
                 im.getResourceManager().getAllResources().size());
@@ -746,6 +743,53 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         return;
     }
 
+    private VertexSetListener<PlatformResource> getPlatformListenerForChangedInventory(
+            final PlatformInventoryManager imOriginal) {
+
+        VertexSetListener<PlatformResource> platformListener = null;
+
+        // if we are participating in a full hawkular environment,
+        // new resources and their metadata will be added to inventory
+        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+            platformListener = new VertexSetListener<PlatformResource>() {
+                @Override
+                public void vertexRemoved(GraphVertexChangeEvent<PlatformResource> e) {
+                }
+
+                @Override
+                public void vertexAdded(GraphVertexChangeEvent<PlatformResource> e) {
+                    final PlatformResource resource = e.getVertex();
+                    final PlatformResourceType resourceType = resource.getResourceType();
+
+                    if (imOriginal != null) {
+                        PlatformResource oldResource = imOriginal.getResourceManager().getResource(resource.getID());
+                        if (oldResource != null) {
+                            // we discovered a resource we had before. For now do nothing other than
+                            // set its persisted flag since we assume it has already been or will be persisted
+                            resource.setPersisted(true);
+                            resourceType.setPersisted(true);
+                            return;
+                        }
+                    }
+
+                    discoveredResourcesStorageExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
+                                MonitorService.this.inventoryStorageProxy.storeResource(resource);
+                            } catch (Throwable t) {
+                                log.errorf(t, "Failed to store platform resource [%s]", resource);
+                            }
+                        }
+                    });
+                }
+            };
+        }
+
+        return platformListener;
+    }
+
     private VertexSetListener<DMRResource> getDMRListenerForChangedInventory(final DMRInventoryManager imOriginal) {
         VertexSetListener<DMRResource> dmrListener = null;
 
@@ -780,7 +824,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                                 MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
                                 MonitorService.this.inventoryStorageProxy.storeResource(resource);
                             } catch (Throwable t) {
-                                log.errorf(t, "Failed to store resource [%s]", resource);
+                                log.errorf(t, "Failed to store DMR resource [%s]", resource);
                             }
                         }
                     });
