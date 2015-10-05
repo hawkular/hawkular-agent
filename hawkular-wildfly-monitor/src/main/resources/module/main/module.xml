@@ -31,9 +31,6 @@
     <resource-root path="okhttp.jar"/>
     <resource-root path="okhttp-ws.jar"/>
     <resource-root path="okio.jar"/>
-    <resource-root path="jackson-annotations.jar"/>
-    <resource-root path="jackson-core.jar"/>
-    <resource-root path="jackson-databind.jar"/>
 
     <!-- These are pulled in due to hawkular-inventory-json-helper.jar.
          It is probable that we really don't need all of these,
@@ -83,6 +80,9 @@
     <module name="org.slf4j"/>
     <module name="org.wildfly.security.manager"/>
     <module name="sun.jdk"/> <!-- codahale needs sun.misc.Unsafe -->
+    <module name="com.fasterxml.jackson.core.jackson-core"/>
+    <module name="com.fasterxml.jackson.core.jackson-databind"/>
+    <module name="com.fasterxml.jackson.core.jackson-annotations"/>
 
     <system export="true">
       <paths>
