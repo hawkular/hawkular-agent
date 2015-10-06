@@ -26,7 +26,6 @@ import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
@@ -206,12 +205,13 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeResourceType(ResourceType<?, ?, ?, ?> resourceType) {
+    public void storeResource(Resource<?, ?, ?, ?, ?> resourceType) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 
     @Override
-    public void storeResource(Resource<?, ?, ?, ?, ?> resourceType) {
+    public void shutdown() {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
+
 }
