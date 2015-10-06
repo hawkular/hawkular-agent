@@ -25,9 +25,4 @@ public interface InventoryStorage {
      * @param resource to be stored
      */
     void storeResource(Resource<?, ?, ?, ?, ?> resource);
-
-    /**
-     * Called on application shutdown.
-     */
-    void shutdown();
 }

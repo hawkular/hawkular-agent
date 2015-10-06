@@ -34,6 +34,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import org.hawkular.agent.monitor.api.InventoryStorage;
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter;
 import org.hawkular.agent.monitor.inventory.AvailInstance;
@@ -65,21 +67,22 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.StructuredData;
 
+import com.codahale.metrics.InstrumentedExecutorService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 /**
- * An {@link InventoryStorage} that sends the resources submitted via {@link #storeResource(Resource)} asynchronously to
- * inventory.
+ * An {@link InventoryStorage} that sends the resources submitted via {@link #storeResource(Resource)} asynchronously
+ * to inventory.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class AsyncInventoryStorage implements InventoryStorage {
 
     /**
-     * A builder of a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory. See the docs inside
-     * {@code org.hawkular.inventory.rest.RestBulk} in Inventory source tree.
+     * A builder of a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory. See the docs
+     * inside {@code org.hawkular.inventory.rest.RestBulk} in Inventory source tree.
      */
     private static class BulkPayloadBuilder {
 
@@ -344,7 +347,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
          */
         private static String toKey(Class<? extends AbstractElement<?, ?>> cl) {
             String src = cl.getSimpleName();
-            return new StringBuilder(src.length()).append(Character.toLowerCase(src.charAt(0))).append(src.substring(1))
+            return new StringBuilder(src.length())
+                    .append(Character.toLowerCase(src.charAt(0)))
+                    .append(src.substring(1))
                     .toString();
         }
     }
@@ -354,7 +359,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
      */
     private class QueueFlush implements Runnable {
 
-        /** @see java.lang.Runnable#run() */
         @Override
         public void run() {
 
@@ -449,8 +453,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 }
             }
 
+            return; // end run()
         }
-
     }
 
     private static final MsgLogger log = AgentLoggers.getLogger(AsyncInventoryStorage.class);
@@ -475,12 +479,14 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
     /** A counter to help to roughly see how many resources are sent per batch */
     private int resourceCounter = 0;
+
     /** A counter to help to roughly see how many resources are sent per batch */
     private int batchCounter = 0;
 
     private final ServerIdentifiers selfId;
 
-    public AsyncInventoryStorage(ServerIdentifiers selfId, StorageAdapter config, HttpClientBuilder httpClientBuilder) {
+    public AsyncInventoryStorage(ServerIdentifiers selfId, StorageAdapter config, HttpClientBuilder httpClientBuilder,
+            Diagnostics diagnostics) {
         super();
         this.selfId = selfId;
         this.config = config;
@@ -488,8 +494,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
         final ThreadFactory factoryGenerator = ThreadFactoryGenerator.generateFactory(true,
                 "Hawkular-Monitor-Discovered-Resources-Storage");
-        this.executor = Executors.newFixedThreadPool(1, factoryGenerator);
-
+        final ExecutorService threadPool = Executors.newFixedThreadPool(1, factoryGenerator);
+        final String metricNamePrefix = DiagnosticsImpl.name(selfId, "inventory");
+        this.executor = new InstrumentedExecutorService(threadPool, diagnostics.getMetricRegistry(), metricNamePrefix);
     }
 
     /**

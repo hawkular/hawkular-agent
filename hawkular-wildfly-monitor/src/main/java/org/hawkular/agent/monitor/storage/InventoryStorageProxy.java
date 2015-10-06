@@ -40,12 +40,4 @@ public class InventoryStorageProxy implements InventoryStorage {
         }
         storageAdapter.storeResource(resource);
     }
-
-    @Override
-    public void shutdown() {
-        if (storageAdapter == null) {
-            throw new IllegalStateException("Storage infrastructure is not ready yet");
-        }
-        storageAdapter.shutdown();
-    }
 }

@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
-import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
@@ -39,7 +38,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
     private HttpClientBuilder httpClientBuilder;
-    private InventoryStorage inventoryStorage;
+    private AsyncInventoryStorage inventoryStorage;
 
     public HawkularStorageAdapter() {
     }
@@ -51,7 +50,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         this.diagnostics = diag;
         this.selfId = selfId;
         this.httpClientBuilder = httpClientBuilder;
-        this.inventoryStorage = new AsyncInventoryStorage(selfId, config, httpClientBuilder);
+        this.inventoryStorage = new AsyncInventoryStorage(selfId, config, httpClientBuilder, diagnostics);
     }
 
     @Override

@@ -369,9 +369,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             feedComm = null;
         }
 
-
-        inventoryStorageProxy.shutdown();
-
         // remove our inventories
         dmrServerInventories.clear();
         platformInventory.set(null);
@@ -383,6 +380,9 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 diagnosticsReporter.report();
             }
         }
+
+        // now stop the storage adapter
+        stopStorageAdapter();
 
         // cleanup the state listener
         if (serverStateListener != null) {
@@ -535,6 +535,15 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         if (this.configuration.diagnostics.enabled) {
             diagnosticsReporter.start(this.configuration.diagnostics.interval,
                     this.configuration.diagnostics.timeUnits);
+        }
+    }
+
+    /**
+     * Shuts down the internals of the storage adapter.
+     */
+    private void stopStorageAdapter() {
+        if (storageAdapter != null) {
+            storageAdapter.shutdown();
         }
     }
 
