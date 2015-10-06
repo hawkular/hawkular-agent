@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
@@ -30,6 +31,7 @@ import org.hawkular.inventory.json.InventoryJacksonConfig;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -71,6 +73,17 @@ public class Util {
         return obj;
     }
 
+    public static <T> T fromJson(Reader in, TypeReference<T> typeReference) {
+        final T obj;
+        try {
+            obj = mapper.readValue(in, typeReference);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("JSON message cannot be converted to object of type:" + typeReference,
+                    e);
+        }
+        return obj;
+    }
+
     /**
      * Encodes the given string so it can be placed inside a URL.
      *
@@ -88,11 +101,11 @@ public class Util {
     }
 
     /**
-     * Given a base URL (like 'http://localhost:8080') this will append the given
-     * context string to it and will return the URL with a forward-slash as its last character.
+     * Given a base URL (like 'http://localhost:8080') this will append the given context string to it and will return
+     * the URL with a forward-slash as its last character.
      *
-     * This returns a StringBuilder so the caller can continue building its desired URL
-     * by appending to it additional context paths, query strings, and the like.
+     * This returns a StringBuilder so the caller can continue building its desired URL by appending to it additional
+     * context paths, query strings, and the like.
      *
      * @param baseUrl base URL to append the given context to
      * @param context the context to add to the given base URL
@@ -115,7 +128,7 @@ public class Util {
     }
 
     // TODO this is to support some kind of bug where inventory won't let use talk to it over https;
-    //      we need to fix that problem and get rid of this hack
+    // we need to fix that problem and get rid of this hack
     @Deprecated
     public static StringBuilder convertToNonSecureUrl(String url) {
         if (url.startsWith("http:")) {
@@ -180,9 +193,8 @@ public class Util {
     }
 
     /**
-     * Given an input stream, its data will be slurped in memory and returned as a String.
-     * The input stream will be closed when this method returns.
-     * WARNING: do not slurp large streams to avoid out-of-memory errors.
+     * Given an input stream, its data will be slurped in memory and returned as a String. The input stream will be
+     * closed when this method returns. WARNING: do not slurp large streams to avoid out-of-memory errors.
      *
      * @param input the input stream to slup
      * @return the input stream data as a String
