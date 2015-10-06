@@ -39,6 +39,14 @@
       <directoryMode>0755</directoryMode>
     </fileSet>
   </fileSets>
+  <files>
+    <file>
+      <source>${project.basedir}/src/main/assembly/subsystem.xml</source>
+      <outputDirectory>/${moduleDir}/main</outputDirectory>
+      <destName>subsystem-snippet.xml</destName>
+    </file>
+  </files>
+
 
   <dependencySets>
     <dependencySet>

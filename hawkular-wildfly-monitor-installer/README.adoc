@@ -1,0 +1,35 @@
+= Hawkular Wildfly Monitor Installer
+:source-language: java
+
+== About
+
+Hawkular Wildfly Monitor Installer is a standalone java application to install Hawkular Agent into stock Wildfly Server.
+
+== Running using Maven
+
+Installer is configured via maven exec plugin so it installs Hawkular Agent from this repository into local Wildfly located in `${wildfly.home}`
+
+    mvn exec:java -Dwildfly.home=/opt/wildfly-9.0.0.Final
+
+== Running as standalone java application
+
+=== Building standalone jar
+
+    mvn package assembly:single
+
+=== Running
+
+Command line parameter `module` is required unless installer retrieves Hawkular Monitor module from `hawkular-server-url`
+
+   java -jar target/hawkular-wildfly-monitor-installer-0.10.1.Final-SNAPSHOT-standalone.jar \
+     --module=/path/to/module.zip \
+     --wildfly-home=/opt/wildfly-9.0.0.Final \
+     --hawkular-server-url=http://localhost:8080
+
+Hawkular Agent is then installed to Wildfly Server `/opt/wildfly-9.0.0.Final` as a module and is able to report to Hawkular Server located at `http://localhost:8080`.
+
+=== Setting up SSL
+
+If needed, installer can setup secured connection between Hawkular Wildfly Monitor and Hawkular server. By specifying `https` scheme  (ie. `--server-url=https://localhost:8443`)
+following command-line options become required `--keystore-path` and `--key-alias`. Installer also needs `--keystore-password` and `--key-password` options
+but they can be omitted in case you run it in console (in such case, installer will prompt for passwords). For more details see http://www.hawkular.org/docs/user/secure-comm.html[Secure Communications].
