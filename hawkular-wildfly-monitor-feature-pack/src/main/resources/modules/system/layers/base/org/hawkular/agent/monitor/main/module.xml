@@ -16,45 +16,25 @@
     limitations under the License.
 
 -->
-<module xmlns="urn:jboss:module:1.3" name="${moduleName}">
+<module xmlns="urn:jboss:module:1.3" name="org.hawkular.agent.monitor">
   <resources>
-    <resource-root path="clients-common.jar"/>
-    <resource-root path="hawkular-bus-common.jar"/>
-    <resource-root path="hawkular-bus-rest-client.jar"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES -->
-    <resource-root path="hawkular-command-gateway-api.jar"/>
-    <resource-root path="hawkular-dmr-client.jar"/>
-    <resource-root path="hawkular-inventory-json-helper.jar"/>
-    <resource-root path="hawkular-monitor.jar"/>
-    <resource-root path="hawkular-inventory-api.jar"/>
-    <resource-root path="jgrapht-core.jar"/>
-    <resource-root path="metrics-core.jar"/>
-    <resource-root path="okhttp.jar"/>
-    <resource-root path="okhttp-ws.jar"/>
-    <resource-root path="okio.jar"/>
-
-    <!-- These are pulled in due to hawkular-inventory-json-helper.jar.
-         It is probable that we really don't need all of these,
-         but without knowing which are really used by hawkular-inventory-json-helper
-         it is best we include all of them. -->
-    <resource-root path="activation.jar"/>
-    <resource-root path="btf.jar"/>
-    <resource-root path="jackson-coreutils.jar"/>
-    <resource-root path="joda-time.jar"/>
-    <resource-root path="jopt-simple.jar"/>
-    <resource-root path="json-schema-core.jar"/>
-    <resource-root path="json-schema-validator.jar"/>
-    <resource-root path="jsr305.jar"/>
-    <resource-root path="libphonenumber.jar"/>
-    <resource-root path="mailapi.jar"/>
-    <resource-root path="msg-simple.jar"/>
-    <resource-root path="rhino.jar"/>
-    <resource-root path="rxjava.jar"/>
-    <resource-root path="uri-template.jar"/>
-
-    <!-- oshi deps -->
-    <resource-root path="jna.jar"/>
-    <resource-root path="jna-platform.jar"/>
-    <resource-root path="oshi-core.jar"/>
+    <artifact name="${org.hawkular.metrics:clients-common}"/>
+    <artifact name="${org.hawkular.bus:hawkular-bus-common}"/>
+    <artifact name="${org.hawkular.bus:hawkular-bus-rest-client}"/>
+    <artifact name="${org.hawkular.agent:hawkular-dmr-client}"/>
+    <artifact name="${org.hawkular.agent:hawkular-monitor}"/>
+    <artifact name="${org.hawkular.cmdgw:hawkular-command-gateway-api}"/>
+    <artifact name="${org.hawkular.inventory:hawkular-inventory-json-helper}"/>
+    <artifact name="${org.hawkular.inventory:hawkular-inventory-api}"/>
+    <artifact name="${org.jgrapht:jgrapht-core}"/>
+    <artifact name="${io.dropwizard.metrics:metrics-core}"/>
+    <artifact name="${com.squareup.okhttp:okhttp}"/>
+    <artifact name="${com.squareup.okhttp:okhttp-ws}"/>
+    <artifact name="${com.squareup.okio:okio}"/>
+    <artifact name="${io.reactivex:rxjava}"/>
+    <artifact name="${com.github.dblock:oshi-core}"/>
+    <artifact name="${net.java.dev.jna:jna-platform}"/>
+    <artifact name="${net.java.dev.jna:jna}"/>
   </resources>
 
   <dependencies>
@@ -69,17 +49,16 @@
     <module name="org.jboss.vfs"/>
 
     <!-- other dependencies we need -->
-    <module name="com.google.guava"/>
     <module name="org.apache.httpcomponents"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>
     <module name="org.jboss.as.threads"/>
-    <module name="org.jboss.common-core"/>
     <module name="org.jboss.logmanager" services="import"/>
     <module name="org.jboss.threads"/>
     <module name="org.slf4j"/>
     <module name="org.wildfly.security.manager"/>
     <module name="sun.jdk"/> <!-- codahale needs sun.misc.Unsafe -->
+
     <module name="com.fasterxml.jackson.core.jackson-core"/>
     <module name="com.fasterxml.jackson.core.jackson-databind"/>
     <module name="com.fasterxml.jackson.core.jackson-annotations"/>
