@@ -26,5 +26,8 @@ public interface InventoryStorage {
      */
     void storeResource(Resource<?, ?, ?, ?, ?> resource);
 
+    /**
+     * Called on application shutdown.
+     */
     void shutdown();
 }

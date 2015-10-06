@@ -55,6 +55,7 @@ import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.inventory.api.Relationships.Direction;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.AbstractElement;
+import org.hawkular.inventory.api.model.AbstractElement.Blueprint;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
@@ -69,18 +70,27 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 /**
+ * An {@link InventoryStorage} that sends the resources submitted via {@link #storeResource(Resource)} asynchronously to
+ * inventory.
+ *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class AsyncInventoryStorage implements InventoryStorage {
+
+    /**
+     * A builder of a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory. See the docs inside
+     * {@code org.hawkular.inventory.rest.RestBulk} in Inventory source tree.
+     */
     private static class BulkPayloadBuilder {
 
-        private Map<String, Map<String, List<AbstractElement.Blueprint>>> entities = new LinkedHashMap<>();
+        /** The result */
+        private Map<String, Map<String, List<AbstractElement.Blueprint>>> result = new LinkedHashMap<>();
+
+        /** A set of entity IDs already added to the currently built request */
         private Set<String> addedIds = new HashSet<>();
 
         private final String environmentId;
-
         private final String feedId;
-
         private final String tenantId;
 
         public BulkPayloadBuilder(String tenantId, String environmentId, String feedId) {
@@ -90,43 +100,65 @@ public class AsyncInventoryStorage implements InventoryStorage {
             this.feedId = feedId;
         }
 
+        /**
+         * Returns a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory. See the docs inside
+         * {@code org.hawkular.inventory.rest.RestBulk} in Inventory source tree.
+         *
+         * @return a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory
+         */
         public Map<String, Map<String, List<AbstractElement.Blueprint>>> build() {
-            return entities;
+            Map<String, Map<String, List<Blueprint>>> result = this.result;
+            this.result = new LinkedHashMap<>();
+            this.addedIds = new HashSet<>();
+            return result;
         }
 
-        private BulkPayloadBuilder entity(Entity.Blueprint newObject, Class<? extends Entity<?, ?>> entityClass) {
-
-            String id = newObject.getId();
+        /**
+         * Adds an {@link Entity.Blueprint} unless its ID is available in {@link #addedIds}.
+         *
+         * @param blueprint the blueprint to add
+         * @param entityClass the class of the blueprint's {@link Entity}
+         * @return this builder
+         */
+        private BulkPayloadBuilder entity(Entity.Blueprint blueprint, Class<? extends Entity<?, ?>> entityClass) {
+            String id = blueprint.getId();
             if (!addedIds.contains(id)) {
                 String path = newPathPrefix().get().toString();
-                relationshipOrEntity(path, newObject, entityClass);
+                relationshipOrEntity(path, entityClass, blueprint);
                 addedIds.add(id);
             }
-
             return this;
         }
 
-        private void metric(MeasurementInstance<?, ?, ?> measurementInstance) {
+        /**
+         * Adds the given {@code metric} to the {@link #result}.
+         *
+         * @param metric the {@link MeasurementInstance} to add
+         */
+        private void metric(MeasurementInstance<?, ?, ?> metric) {
 
-            String metricId = getInventoryId(measurementInstance);
-            String metricTypeId = getInventoryId(measurementInstance.getMeasurementType());
+            String metricId = getInventoryId(metric);
+            String metricTypeId = getInventoryId(metric.getMeasurementType());
             String metricTypePath = newPathPrefix().metricType(metricTypeId).get().toString();
 
-            org.hawkular.inventory.api.model.Metric.Blueprint mPojo;
-            mPojo = new org.hawkular.inventory.api.model.Metric.Blueprint(metricTypePath, metricId,
-                    measurementInstance.getProperties());
+            Metric.Blueprint blueprint = new Metric.Blueprint(metricTypePath, metricId, metric.getProperties());
 
-            entity(mPojo, Metric.class);
+            entity(blueprint, Metric.class);
 
         }
 
-        private void metricType(MeasurementType measurementType) {
+        /**
+         * Adds the given {@code metricType} to the {@link #result}.
+         *
+         * @param metricType the {@link MeasurementType} to add
+         */
+        private void metricType(MeasurementType metricType) {
             MetricUnit mu = MetricUnit.NONE;
             MetricDataType metricDataType = MetricDataType.GAUGE;
-            if (measurementType instanceof MetricType) {
-                mu = MetricUnit.valueOf(((MetricType) measurementType).getMetricUnits().name());
+            if (metricType instanceof MetricType) {
+                mu = MetricUnit.valueOf(((MetricType) metricType).getMetricUnits().name());
                 // we need to translate from metric API type to inventory API type
-                switch (((MetricType) measurementType).getMetricType()) {
+                switch (((MetricType) metricType).getMetricType()) {
                 case GAUGE:
                     metricDataType = MetricDataType.GAUGE;
                     break;
@@ -140,30 +172,45 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 }
             }
 
-            // TODO: correctly map the MetricDataType from the MeasurementType instance type (avail from AvailType etc.)
             org.hawkular.inventory.api.model.MetricType.Blueprint blueprint = //
-            new org.hawkular.inventory.api.model.MetricType.Blueprint(getInventoryId(measurementType), mu,
-                    metricDataType, measurementType.getProperties());
+            new org.hawkular.inventory.api.model.MetricType.Blueprint(getInventoryId(metricType), mu, metricDataType,
+                    metricType.getProperties());
 
             entity(blueprint, org.hawkular.inventory.api.model.MetricType.class);
 
         }
 
+        /**
+         * @return a new {@link CanonicalPath} made of {@link #tenantId}, {@link #environmentId} and {@link #feedId}
+         */
         private CanonicalPath.FeedBuilder newPathPrefix() {
             return CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId);
         }
 
-        private BulkPayloadBuilder relationship(CanonicalPath parent, Relationship.Blueprint child) {
-            return relationshipOrEntity(parent.toString(), child, Relationship.class);
+        /**
+         * Add the given {@link Relationship.Blueprint} to the {@link #result}.
+         *
+         * @param parent the path to link {@code child under}
+         * @param child the {@link Relationship} to create
+         */
+        private void relationship(CanonicalPath parent, Relationship.Blueprint child) {
+            relationshipOrEntity(parent.toString(), Relationship.class, child);
         }
 
-        private BulkPayloadBuilder relationshipOrEntity(String path, AbstractElement.Blueprint newObject,
-                Class<? extends AbstractElement<?, ?>> entityClass) {
+        /**
+         * Puts the given {@code blueprint} at a proper location into {@link #result}.
+         *
+         * @param path the first level key
+         * @param entityClass the base for the second level key (see {@link #toKey(Class)})
+         * @param blueprint the blueprint to add
+         */
+        private void relationshipOrEntity(String path, Class<? extends AbstractElement<?, ?>> entityClass,
+                AbstractElement.Blueprint blueprint) {
 
-            Map<String, List<AbstractElement.Blueprint>> pathEntities = entities.get(path);
+            Map<String, List<AbstractElement.Blueprint>> pathEntities = result.get(path);
             if (pathEntities == null) {
                 pathEntities = new LinkedHashMap<>();
-                entities.put(path, pathEntities);
+                result.put(path, pathEntities);
             }
 
             final String key = toKey(entityClass);
@@ -172,16 +219,17 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 list = new ArrayList<>();
                 pathEntities.put(key, list);
             }
-            list.add(newObject);
-
-            return this;
+            list.add(blueprint);
 
         }
 
         /**
-         * @param resource
+         * Adds the given {@code resource}, its metrics, availabilities and configurations to {@link #result}.
+         *
+         * @param resource the {@link Resource} to add
+         * @return this builder
          */
-        public void resource(Resource<?, ?, ?, ?, ?> resource) {
+        public BulkPayloadBuilder resource(Resource<?, ?, ?, ?, ?> resource) {
 
             // get the payload in JSON format
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
@@ -202,8 +250,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     : CanonicalPath.fromPartiallyUntypedString(parentPath.toString(), newPathPrefix().get(),
                             org.hawkular.inventory.api.model.Resource.class);
 
-            relationshipOrEntity(parentCanonicalPath.toString(), rPojo,
-                    org.hawkular.inventory.api.model.Resource.class);
+            relationshipOrEntity(parentCanonicalPath.toString(), org.hawkular.inventory.api.model.Resource.class,
+                    rPojo);
 
             String resourcePath = parentPath.toString() + "/" + Util.urlEncode(resource.getID().getIDString());
             CanonicalPath resourceCanonicalPath = CanonicalPath.fromPartiallyUntypedString(resourcePath,
@@ -223,7 +271,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 new org.hawkular.inventory.api.model.DataEntity.Blueprint<>(Resources.DataRole.configuration,
                         structDataBuilder.build(), null);
 
-                relationshipOrEntity(resourceCanonicalPath.toString(), dataEntity, DataEntity.class);
+                relationshipOrEntity(resourceCanonicalPath.toString(), DataEntity.class, dataEntity);
             }
 
             Collection<? extends MetricInstance<?, ?, ?>> metricInstances = resource.getMetrics();
@@ -231,7 +279,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 metric(metric);
                 CanonicalPath metricPath = newPathPrefix().metric(getInventoryId(metric)).get();
                 Relationship.Blueprint bp = new Relationship.Blueprint(Direction.outgoing, incorporates.toString(),
-                        metricPath, metric.getProperties());
+                        metricPath, Collections.emptyMap());
                 relationship(resourceCanonicalPath, bp);
             }
             Collection<? extends AvailInstance<?, ?, ?>> availInstances = resource.getAvails();
@@ -239,12 +287,20 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 metric(metric);
                 CanonicalPath metricPath = newPathPrefix().metric(getInventoryId(metric)).get();
                 Relationship.Blueprint bp = new Relationship.Blueprint(Direction.outgoing, incorporates.toString(),
-                        metricPath, metric.getProperties());
+                        metricPath, Collections.emptyMap());
                 relationship(resourceCanonicalPath, bp);
             }
 
+            return this;
         }
 
+        /**
+         * Adds the given {@code resourceType} and its metric types and availability types to {@link #result} linking
+         * them properly together.
+         *
+         * @param resourceType the {@link ResourceType} to add
+         * @return this builder
+         */
         public BulkPayloadBuilder resourceType(ResourceType<?, ?, ?, ?> resourceType) {
 
             org.hawkular.inventory.api.model.ResourceType.Blueprint blueprint = //
@@ -280,13 +336,22 @@ public class AsyncInventoryStorage implements InventoryStorage {
             return this;
         }
 
-        private String toKey(Class<? extends AbstractElement<?, ?>> cl) {
+        /**
+         * Returns the simple class name of {@code cl} with first character made lower case.
+         *
+         * @param cl the class to use as a base for the result of this method
+         * @return the simple class name of {@code cl} with first character made lower case
+         */
+        private static String toKey(Class<? extends AbstractElement<?, ?>> cl) {
             String src = cl.getSimpleName();
             return new StringBuilder(src.length()).append(Character.toLowerCase(src.charAt(0))).append(src.substring(1))
                     .toString();
         }
     }
 
+    /**
+     * A simple {@link Runnable} to flush {@link AsyncInventoryStorage#resourceQueue}.
+     */
     private class QueueFlush implements Runnable {
 
         /** @see java.lang.Runnable#run() */
@@ -299,7 +364,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 if (!resourceQueue.isEmpty()) {
                     resources = resourceQueue;
                     resourceQueue = new ArrayList<>();
-                    batchConter++;
+                    batchCounter++;
                 }
             }
 
@@ -313,14 +378,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     builder.resourceType(resourceType);
 
-                    log.debugf("Storing resource type in Inventory: %s", resourceType);
-
                     if (resource.getParent() != null) {
                         storeResource(resource.getParent());
                     }
                     builder.resource(resource);
 
-                    log.debugf("Storing resource type in Inventory: %s", resource);
+                    log.debugf("Storing resource and eventually its type in Inventory: %s", resource);
 
                     Map<String, Map<String, List<AbstractElement.Blueprint>>> payload = builder.build();
                     if (!payload.isEmpty()) {
@@ -409,8 +472,11 @@ public class AsyncInventoryStorage implements InventoryStorage {
     private final HttpClientBuilder httpClientBuilder;
     private final Object queueLock = new Object();
     private volatile List<Resource<?, ?, ?, ?, ?>> resourceQueue = new ArrayList<>();
-    private int resourceConter = 0;
-    private int batchConter = 0;
+
+    /** A counter to help to roughly see how many resources are sent per batch */
+    private int resourceCounter = 0;
+    /** A counter to help to roughly see how many resources are sent per batch */
+    private int batchCounter = 0;
 
     private final ServerIdentifiers selfId;
 
@@ -426,18 +492,26 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
     }
 
-    /** @see InventoryStorage#storeResource(org.hawkular.agent.monitor.inventory.Resource) */
+    /**
+     * Puts the given {@code resource} to {@link #resourceQueue} and submits a new {@link QueueFlush} to the
+     * {@link #executor}.
+     *
+     * @param resource to be stored
+     */
     @Override
     public void storeResource(Resource<?, ?, ?, ?, ?> resource) {
         synchronized (queueLock) {
             resourceQueue.add(resource);
-            resourceConter++;
+            resourceCounter++;
         }
         executor.submit(new QueueFlush());
     }
 
+    /**
+     * Stops the {@link #executor}.
+     */
     public void shutdown() {
-        log.debugf("About to shut down. Stored [%d] resources in [%d] batches", resourceConter, batchConter);
+        log.debugf("Shutting down. Stored [%d] resources in [%d] batches", resourceCounter, batchCounter);
         executor.shutdownNow();
     }
 
