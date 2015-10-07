@@ -44,7 +44,6 @@ public class RemoveDatasourceCommand
 
     @Override
     protected void validate(String modelNodePath, RemoveDatasourceRequest request) {
-        super.validate(modelNodePath, request);
         DatasourceJBossASClient.checkDatasourcePath(modelNodePath);
     }
 

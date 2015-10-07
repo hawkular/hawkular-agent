@@ -43,7 +43,6 @@ public class RemoveJdbcDriverCommand
 
     @Override
     protected void validate(String modelNodePath, RemoveJdbcDriverRequest request) {
-        super.validate(modelNodePath, request);
         DatasourceJBossASClient.checkJdbcDriverPath(modelNodePath);
     }
 
