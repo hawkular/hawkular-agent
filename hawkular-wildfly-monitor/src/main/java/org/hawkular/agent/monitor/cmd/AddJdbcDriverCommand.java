@@ -39,6 +39,7 @@ import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
 import org.hawkular.cmdgw.api.AddJdbcDriverResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
+import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.dmrclient.modules.AddModuleRequest;
@@ -117,11 +118,11 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
             ModelNode result = dsc.addJdbcDriver(request.getDriverName(), request.getModuleName(),
                     request.getDriverClass(), request.getDriverMajorVersion(), request.getDriverMinorVersion());
             if (JBossASClient.isSuccess(result)) {
-                response.setStatus("OK");
+                response.setStatus(ResponseStatus.OK);
                 response.setMessage(String.format("Added JDBC Driver: %s", request.getDriverName()));
                 context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
             } else {
-                response.setStatus("ERROR");
+                response.setStatus(ResponseStatus.ERROR);
                 String failureDescription = JBossASClient.getFailureDescription(result);
                 String msg = String.format("Could not add JDBC Driver [%s]: %s", request.getDriverName(),
                         failureDescription);
@@ -130,7 +131,7 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
             }
         } catch (Exception e) {
             log.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
-            response.setStatus("ERROR");
+            response.setStatus(ResponseStatus.ERROR);
             response.setMessage(e.toString());
         }
 

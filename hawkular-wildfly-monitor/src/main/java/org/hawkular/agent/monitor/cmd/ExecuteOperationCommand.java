@@ -38,6 +38,7 @@ import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.ExecuteOperationRequest;
 import org.hawkular.cmdgw.api.ExecuteOperationResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
+import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
@@ -135,15 +136,15 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
             CoreJBossASClient client = new CoreJBossASClient(mcc);
             ModelNode opResp = client.execute(opReq);
             if (!JBossASClient.isSuccess(opResp)) {
-                response.setStatus("ERROR");
+                response.setStatus(ResponseStatus.ERROR);
                 response.setMessage(JBossASClient.getFailureDescription(opResp));
             } else {
-                response.setStatus("OK");
+                response.setStatus(ResponseStatus.OK);
                 // FIXME HAWKULAR-604 The message field of ExecuteOperationResponse should not be "undefined"
                 response.setMessage(JBossASClient.getResults(opResp).toString());
             }
         } catch (Exception e) {
-            response.setStatus("ERROR");
+            response.setStatus(ResponseStatus.ERROR);
             response.setMessage(e.toString());
         }
 

@@ -34,6 +34,7 @@ import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.DeployApplicationRequest;
 import org.hawkular.cmdgw.api.DeployApplicationResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
+import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmrclient.DeploymentJBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -102,11 +103,11 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
         try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
             DeploymentJBossASClient client = new DeploymentJBossASClient(mcc);
             client.deployStandalone(destFileName, applicationContent, enabled);
-            response.setStatus("OK");
+            response.setStatus(ResponseStatus.OK);
             response.setMessage(String.format("Uploaded [%s]. Enabled=[%s].", destFileName, enabled));
             context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
         } catch (Exception e) {
-            response.setStatus("ERROR");
+            response.setStatus(ResponseStatus.ERROR);
             response.setMessage(e.toString());
         }
 
