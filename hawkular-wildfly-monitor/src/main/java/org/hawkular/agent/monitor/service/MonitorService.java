@@ -120,7 +120,6 @@ import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.BreadthFirstIterator;
 
-import com.codahale.metrics.InstrumentedExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.squareup.okhttp.OkHttpClient;
@@ -172,9 +171,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
     // inventory manager for the platform resources
     private final AtomicReference<PlatformInventoryManager> platformInventory = new AtomicReference<>();
-
-    // this is a thread pool that requests newly discovered resources to be stored in inventory
-    private ExecutorService discoveredResourcesStorageExecutor;
 
     @Override
     public MonitorService getValue() {
@@ -333,13 +329,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 log.errorCannotEstablishFeedComm(e);
             }
 
-            // build the thread pool that will run jobs that store inventory
-            final ThreadFactory factoryGenerator = ThreadFactoryGenerator.generateFactory(true,
-                    "Hawkular-Monitor-Discovered-Resources-Storage");
-            final ExecutorService threadPool = Executors.newFixedThreadPool(1, factoryGenerator);
-            final String metricNamePrefix = DiagnosticsImpl.name(selfId, "inventory");
-            this.discoveredResourcesStorageExecutor = new InstrumentedExecutorService(threadPool, metricRegistry,
-                    metricNamePrefix);
         } else {
             if (this.configuration.storageAdapter.tenantId == null) {
                 log.errorMustHaveTenantIdConfigured();
@@ -380,12 +369,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             feedComm = null;
         }
 
-        // stop storing things to inventory
-        if (discoveredResourcesStorageExecutor != null) {
-            discoveredResourcesStorageExecutor.shutdownNow();
-            discoveredResourcesStorageExecutor = null;
-        }
-
         // remove our inventories
         dmrServerInventories.clear();
         platformInventory.set(null);
@@ -397,6 +380,9 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 diagnosticsReporter.report();
             }
         }
+
+        // now stop the storage adapter
+        stopStorageAdapter();
 
         // cleanup the state listener
         if (serverStateListener != null) {
@@ -549,6 +535,15 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         if (this.configuration.diagnostics.enabled) {
             diagnosticsReporter.start(this.configuration.diagnostics.interval,
                     this.configuration.diagnostics.timeUnits);
+        }
+    }
+
+    /**
+     * Shuts down the internals of the storage adapter.
+     */
+    private void stopStorageAdapter() {
+        if (storageAdapter != null) {
+            storageAdapter.shutdown();
         }
     }
 
@@ -772,17 +767,11 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                         }
                     }
 
-                    discoveredResourcesStorageExecutor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
-                                MonitorService.this.inventoryStorageProxy.storeResource(resource);
-                            } catch (Throwable t) {
-                                log.errorf(t, "Failed to store platform resource [%s]", resource);
-                            }
-                        }
-                    });
+                    try {
+                        MonitorService.this.inventoryStorageProxy.storeResource(resource);
+                    } catch (Throwable t) {
+                        log.errorf(t, "Failed to store platform resource [%s]", resource);
+                    }
                 }
             };
         }
@@ -817,17 +806,11 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                         }
                     }
 
-                    discoveredResourcesStorageExecutor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                MonitorService.this.inventoryStorageProxy.storeResourceType(resourceType);
-                                MonitorService.this.inventoryStorageProxy.storeResource(resource);
-                            } catch (Throwable t) {
-                                log.errorf(t, "Failed to store DMR resource [%s]", resource);
-                            }
-                        }
-                    });
+                    try {
+                        MonitorService.this.inventoryStorageProxy.storeResource(resource);
+                    } catch (Throwable t) {
+                        log.errorf(t, "Failed to store DMR resource [%s]", resource);
+                    }
                 }
             };
         }

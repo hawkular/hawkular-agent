@@ -38,6 +38,14 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
     void initialize(MonitorServiceConfiguration.StorageAdapter config, Diagnostics diag, ServerIdentifiers selfId,
             HttpClientBuilder httpClientBuilder);
 
+    /**
+     * Clean up and stop whatever the storage adapter is doing.
+     */
+    void shutdown();
+
+    /**
+     * @return the storage adapter's configuration settings
+     */
     MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration();
 
     /**

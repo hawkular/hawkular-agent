@@ -18,7 +18,6 @@ package org.hawkular.agent.monitor.storage;
 
 import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceType;
 
 /**
  * A proxy that delegates to a {@link StorageAdapter}.
@@ -32,14 +31,6 @@ public class InventoryStorageProxy implements InventoryStorage {
 
     public void setStorageAdapter(StorageAdapter storageAdapter) {
         this.storageAdapter = storageAdapter;
-    }
-
-    @Override
-    public void storeResourceType(ResourceType<?, ?, ?, ?> resourceType) {
-        if (storageAdapter == null) {
-            throw new IllegalStateException("Storage infrastructure is not ready yet");
-        }
-        storageAdapter.storeResourceType(resourceType);
     }
 
     @Override

@@ -61,6 +61,11 @@ public interface Diagnostics {
     Counter getAvailStorageBufferSize();
 
     /**
+     * @return tracks the size of the buffer that holds resources waiting to get stored in inventory
+     */
+    Counter getInventoryStorageBufferSize();
+
+    /**
      * @return tracks the number of metrics that have been stored
      */
     Meter getMetricRate();
@@ -69,4 +74,14 @@ public interface Diagnostics {
      * @return tracks the number of availability statuses that have been stored
      */
     Meter getAvailRate();
+
+    /**
+     * @return tracks the number of resources that have been stored in inventory over time
+     */
+    Meter getInventoryRate();
+
+    /**
+     * @return time it takes to execute inventory storage requests
+     */
+    Timer getInventoryStorageRequestTimer();
 }
