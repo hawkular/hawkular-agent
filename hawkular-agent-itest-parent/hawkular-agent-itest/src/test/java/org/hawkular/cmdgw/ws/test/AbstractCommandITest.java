@@ -40,6 +40,7 @@ import javax.security.sasl.RealmCallback;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.ApiDeserializer;
 import org.hawkular.cmdgw.api.WelcomeResponse;
+import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -144,19 +145,19 @@ public abstract class AbstractCommandITest {
         }
     }
 
-    protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
-    protected static final String managementPasword = System.getProperty("hawkular.agent.itest.mgmt.password");
-    protected static final int managementPort;
-    protected static final String host;
-
-    protected static final String authentication;
-    protected static final String baseAccountsUri;
-    protected static final String baseGwUri;
-    protected static final String baseInvUri;
-    protected static final String testPasword = "password";
-    protected static final String testUser = "jdoe";
     protected static final int ATTEMPT_COUNT = 50;
     protected static final long ATTEMPT_DELAY = 5000;
+    protected static final String authentication;
+    protected static final String baseAccountsUri;
+
+    protected static final String baseGwUri;
+    protected static final String baseInvUri;
+    protected static final String host;
+    protected static final String managementPasword = System.getProperty("hawkular.agent.itest.mgmt.password");
+    protected static final int managementPort;
+    protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
+    protected static final String testPasword = "password";
+    protected static final String testUser = "jdoe";
 
     static {
         String h = System.getProperty("hawkular.bind.address", "localhost");
@@ -183,6 +184,56 @@ public abstract class AbstractCommandITest {
         client.getDispatcher().getExecutorService().shutdown();
     }
 
+    protected void assertResourceCount(ModelControllerClient mcc, ModelNode address, String childType,
+            int expectedCount) throws IOException {
+        ModelNode request = new ModelNode();
+        request.get(ModelDescriptionConstants.ADDRESS).set(address);
+        request.get(ModelDescriptionConstants.OP).set(ModelDescriptionConstants.READ_CHILDREN_RESOURCES_OPERATION);
+        request.get(ModelDescriptionConstants.CHILD_TYPE).set(childType);
+        request.get(ModelDescriptionConstants.INCLUDE_RUNTIME).set(true);
+        ModelNode response = mcc.execute(request);
+        if (response.hasDefined(ModelDescriptionConstants.OUTCOME) && response.get(ModelDescriptionConstants.OUTCOME)
+                .asString().equals(ModelDescriptionConstants.SUCCESS)) {
+            ModelNode result = response.get(ModelDescriptionConstants.RESULT);
+            List<Property> nodes = result.asPropertyList();
+            AssertJUnit.assertEquals("Number of child nodes of [" + address + "] " + response, expectedCount,
+                    nodes.size());
+        } else if (expectedCount != 0) {
+            AssertJUnit.fail("Path [" + address + "] has no child nodes, expected " + expectedCount + " : " + response);
+        }
+
+    }
+
+    /**
+     * @param request
+     * @throws IOException
+     */
+    protected void assertResourceExists(ModelControllerClient mcc, ModelNode address, boolean expectedExists)
+            throws IOException {
+        ModelNode request = new ModelNode();
+        request.get(ModelDescriptionConstants.ADDRESS).set(address);
+        request.get(ModelDescriptionConstants.OP).set(ModelDescriptionConstants.READ_RESOURCE_OPERATION);
+        request.get(ModelDescriptionConstants.INCLUDE_RUNTIME).set(true);
+        ModelNode result = mcc.execute(request);
+
+        String message = String.format("Model node [%s] %s unexpectedly", address.toString(),
+                (expectedExists ? "does not exist" : "exists"));
+        AssertJUnit.assertTrue(String.format(message, result),
+                Operations.isSuccessfulOutcome(result) == expectedExists);
+
+    }
+
+    /**
+     * @param msg
+     * @return
+     */
+    protected String assertWelcomeResponse(String msg) {
+        String welcomeRe = "\\QWelcomeResponse={\"sessionId\":\"\\E.*";
+        AssertJUnit.assertTrue("[" + msg + "] does not match [" + welcomeRe + "]", msg.matches(welcomeRe));
+        BasicMessageWithExtraData<WelcomeResponse> bigMessage = new ApiDeserializer().deserialize(msg);
+        return bigMessage.getBasicMessage().getSessionId();
+    }
+
     @BeforeMethod
     public void before() {
         JsonFactory f = new JsonFactory();
@@ -190,6 +241,17 @@ public abstract class AbstractCommandITest {
         InventoryJacksonConfig.configure(mapper);
         this.writeExecutor = Executors.newSingleThreadExecutor();
         this.client = new OkHttpClient();
+    }
+
+    /**
+     * @return the {@link CanonicalPath} or the only AS server present in inventory
+     * @throws Throwable
+     */
+    protected CanonicalPath getCurrentASPath() throws Throwable {
+        List<Resource> wfs = getResources("/test/resources", 1);
+        AssertJUnit.assertEquals(1, wfs.size());
+        CanonicalPath wfPath = wfs.get(0).getPath();
+        return wfPath;
     }
 
     protected Resource getResource(String listPath, Predicate<Resource> predicate) throws Throwable {
@@ -224,6 +286,7 @@ public abstract class AbstractCommandITest {
             throw new AssertionError("Could not get [" + url + "]");
         }
     }
+
     protected List<Resource> getResources(String path, int minCount) throws Throwable {
         String url = baseInvUri + path;
         Throwable e = null;
@@ -281,6 +344,24 @@ public abstract class AbstractCommandITest {
         }
     }
 
+    protected Request.Builder newAuthRequest() {
+        /*
+         * http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side : The Authorization header is
+         * constructed as follows: * Username and password are combined into a string "username:password" * The
+         * resulting string is then encoded using the RFC2045-MIME variant of Base64, except not limited to 76
+         * char/line[9] * The authorization method and a space i.e. "Basic " is then put before the encoded string.
+         */
+        try {
+            String encodedCredentials = Base64.getMimeEncoder()
+                    .encodeToString((testUser + ":" + testPasword).getBytes("utf-8"));
+            return new Request.Builder() //
+                    .addHeader("Authorization", "Basic " + encodedCredentials) //
+                    .addHeader("Accept", "application/json");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     protected ModelControllerClient newModelControllerClient() {
         final CallbackHandler callbackHandler = new CallbackHandler() {
             public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
@@ -309,24 +390,6 @@ public abstract class AbstractCommandITest {
         }
     }
 
-    protected Request.Builder newAuthRequest() {
-        /*
-         * http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side : The Authorization header is
-         * constructed as follows: * Username and password are combined into a string "username:password" * The
-         * resulting string is then encoded using the RFC2045-MIME variant of Base64, except not limited to 76
-         * char/line[9] * The authorization method and a space i.e. "Basic " is then put before the encoded string.
-         */
-        try {
-            String encodedCredentials = Base64.getMimeEncoder()
-                    .encodeToString((testUser + ":" + testPasword).getBytes("utf-8"));
-            return new Request.Builder() //
-                    .addHeader("Authorization", "Basic " + encodedCredentials) //
-                    .addHeader("Accept", "application/json");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     protected void waitForAccountsAndInventory() throws Throwable {
         Thread.sleep(10000);
         /*
@@ -341,52 +404,5 @@ public abstract class AbstractCommandITest {
          * to /hawkular/inventory/environments/test should mean that all initial tasks are over
          */
         getWithRetries(baseInvUri + "/environments/test");
-    }
-
-    /**
-     * @param request
-     * @throws IOException
-     */
-    protected void assertResourceExists(ModelControllerClient mcc, ModelNode address, String message)
-            throws IOException {
-        ModelNode request = new ModelNode();
-        request.get(ModelDescriptionConstants.ADDRESS).set(address);
-        request.get(ModelDescriptionConstants.OP).set(ModelDescriptionConstants.READ_RESOURCE_OPERATION);
-        request.get(ModelDescriptionConstants.INCLUDE_RUNTIME).set(true);
-        ModelNode result = mcc.execute(request);
-
-        AssertJUnit.assertTrue(String.format(message, result), Operations.isSuccessfulOutcome(result));
-
-    }
-
-    protected void assertResourceCount(ModelControllerClient mcc, ModelNode address, String childType,
-            int expectedCount) throws IOException {
-        ModelNode request = new ModelNode();
-        request.get(ModelDescriptionConstants.ADDRESS).set(address);
-        request.get(ModelDescriptionConstants.OP).set(ModelDescriptionConstants.READ_CHILDREN_RESOURCES_OPERATION);
-        request.get(ModelDescriptionConstants.CHILD_TYPE).set(childType);
-        request.get(ModelDescriptionConstants.INCLUDE_RUNTIME).set(true);
-        ModelNode response = mcc.execute(request);
-        if (response.hasDefined(ModelDescriptionConstants.OUTCOME) && response.get(ModelDescriptionConstants.OUTCOME)
-                .asString().equals(ModelDescriptionConstants.SUCCESS)) {
-            ModelNode result = response.get(ModelDescriptionConstants.RESULT);
-            List<Property> nodes = result.asPropertyList();
-            AssertJUnit.assertEquals("Number of child nodes of [" + address + "] " + response, expectedCount,
-                    nodes.size());
-        } else if (expectedCount != 0) {
-            AssertJUnit.fail("Path [" + address + "] has no child nodes, expected " + expectedCount + " : " + response);
-        }
-
-    }
-
-    /**
-     * @param msg
-     * @return
-     */
-    protected String assertWelcomeResponse(String msg) {
-        String welcomeRe = "\\QWelcomeResponse={\"sessionId\":\"\\E.*";
-        AssertJUnit.assertTrue("[" + msg + "] does not match [" + welcomeRe + "]", msg.matches(welcomeRe));
-        BasicMessageWithExtraData<WelcomeResponse> bigMessage = new ApiDeserializer().deserialize(msg);
-        return bigMessage.getBasicMessage().getSessionId();
     }
 }

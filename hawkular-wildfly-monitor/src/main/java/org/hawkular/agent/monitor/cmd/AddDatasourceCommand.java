@@ -41,7 +41,7 @@ import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.dmr.ModelNode;
 
 /**
- * Adds an Datasource on a resource.
+ * Adds a Datasource on a resource.
  */
 public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDatasourceResponse> {
     private static final MsgLogger log = AgentLoggers.getLogger(AddDatasourceCommand.class);
