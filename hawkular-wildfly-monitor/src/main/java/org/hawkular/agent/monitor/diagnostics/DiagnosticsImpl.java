@@ -35,6 +35,9 @@ public class DiagnosticsImpl implements Diagnostics {
     private final Meter metricRate;
     private final Counter availStorageBuffer;
     private final Meter availRate;
+    private final Counter inventoryStorageBuffer;
+    private final Meter inventoryRate;
+    private final Timer inventoryStorageRequestTimer;
 
     public static String name(ServerIdentifiers selfId, String name) {
         return MetricRegistry.name(selfId + ".diagnostics." + name);
@@ -51,6 +54,9 @@ public class DiagnosticsImpl implements Diagnostics {
         metricRate = registry.meter(name(selfId, "metric.rate"));
         availStorageBuffer = registry.counter(name(selfId, "avail.storage-buffer-size"));
         availRate = registry.meter(name(selfId, "avail.rate"));
+        inventoryStorageBuffer = registry.counter(name(selfId, "inventory.storage-buffer-size"));
+        inventoryRate = registry.meter(name(selfId, "inventory.rate"));
+        inventoryStorageRequestTimer = registry.timer(name(selfId, "inventory.storage-request-timer"));
 
         this.metricsRegistry = registry;
     }
@@ -98,5 +104,20 @@ public class DiagnosticsImpl implements Diagnostics {
     @Override
     public Meter getAvailRate() {
         return availRate;
+    }
+
+    @Override
+    public Counter getInventoryStorageBufferSize() {
+        return inventoryStorageBuffer;
+    }
+
+    @Override
+    public Meter getInventoryRate() {
+        return inventoryRate;
+    }
+
+    @Override
+    public Timer getInventoryStorageRequestTimer() {
+        return inventoryStorageRequestTimer;
     }
 }
