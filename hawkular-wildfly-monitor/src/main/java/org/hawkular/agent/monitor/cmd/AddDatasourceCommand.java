@@ -34,13 +34,14 @@ import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddDatasourceRequest;
 import org.hawkular.cmdgw.api.AddDatasourceResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
+import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.dmr.ModelNode;
 
 /**
- * Adds an Datasource on a resource.
+ * Adds a Datasource on a resource.
  */
 public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDatasourceResponse> {
     private static final MsgLogger log = AgentLoggers.getLogger(AddDatasourceCommand.class);
@@ -110,11 +111,11 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
                         request.getUserName(), request.getPassword());
             }
             if (JBossASClient.isSuccess(result)) {
-                response.setStatus("OK");
+                response.setStatus(ResponseStatus.OK);
                 response.setMessage(String.format("Added Datasource: %s", request.getDatasourceName()));
                 context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
             } else {
-                response.setStatus("ERROR");
+                response.setStatus(ResponseStatus.ERROR);
                 String failureDescription = JBossASClient.getFailureDescription(result);
                 String msg = String.format("Could not add Datasource [%s]: %s", request.getDatasourceName(),
                         failureDescription);
@@ -123,7 +124,7 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
             }
         } catch (Exception e) {
             log.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
-            response.setStatus("ERROR");
+            response.setStatus(ResponseStatus.ERROR);
             response.setMessage(e.toString());
         }
 

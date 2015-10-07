@@ -18,10 +18,10 @@ package org.hawkular.cmdgw.ws.test;
 
 import static org.mockito.Mockito.verify;
 
+import java.net.URLEncoder;
 import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
-import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -42,28 +42,96 @@ import okio.BufferedSource;
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public class AddDatasourceCommandITest extends AbstractCommandITest {
+public class DatasourceCommandITest extends AbstractCommandITest {
+    private static final String datasourceConnectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1";
+    private static final String datasourceJndiName = "java:/testH2Ds";
+    private static final String datasourceName = "testH2Ds";
+    private static final String driverClass = "org.h2.Driver";
+    private static final String driverName = "h2";
+    private static final String password = "sa";
+    private static final String userName = "sa";
+    private static final String xaDataSourceClass = "org.h2.jdbcx.JdbcDataSource";
+    private static final String xaDatasourceJndiName = "java:/testXaDs";
+    private static final String xaDatasourceName = "testXaDs";
+    private static final String xaDataSourceUrl = "jdbc:h2:mem:test";
+
+    private static ModelNode datasourceAddess(String dsName, boolean isXaDatasource) {
+        return new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
+                .add(isXaDatasource ? "xa-data-source" : "data-source", dsName);
+    }
+
+    @Test(dependsOnGroups = { "exclusive-inventory-access" })
+    public void testAddDatasource() throws Throwable {
+        waitForAccountsAndInventory();
+
+        CanonicalPath wfPath = getCurrentASPath();
+
+
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            assertResourceExists(mcc, datasourceAddess(datasourceName, false), false);
+
+            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    send(webSocket,
+                            "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
+                                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
+                                    + "\"xaDatasource\":\"false\"," //
+                                    + "\"datasourceName\":\"" + datasourceName + "\"," //
+                                    + "\"jndiName\":\"" + datasourceJndiName + "\"," //
+                                    + "\"driverName\":\"" + driverName + "\"," //
+                                    + "\"driverClass\":\"" + driverClass + "\"," //
+                                    + "\"connectionUrl\":\"" + datasourceConnectionUrl + "\"," //
+                                    + "\"userName\":\"" + userName + "\"," //
+                                    + "\"password\":\"" + password + "\"" //
+                                    + "}");
+                    super.onOpen(webSocket, response);
+                }
+            };
+
+            WebSocketCall.create(client, request).enqueue(openingListener);
+
+            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
+            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
+            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
+                    Mockito.same(PayloadType.TEXT));
+
+            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
+            int i = 0;
+
+            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
+
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                    + wfPath.ids().getFeedId() + "] (\\E.*";
+
+            String msg = receivedMessages.get(i++).readUtf8();
+            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+
+            AssertJUnit.assertEquals("AddDatasourceResponse={"//
+                    + "\"xaDatasource\":false,"//
+                    + "\"datasourceName\":\"" + datasourceName + "\","//
+                    + "\"resourcePath\":\"" + wfPath + "\","//
+                    + "\"destinationSessionId\":\"" + sessionId + "\","//
+                    + "\"status\":\"OK\","//
+                    + "\"message\":\"Added Datasource: " + datasourceName + "\""//
+                    + "}", receivedMessages.get(i++).readUtf8());
+
+            assertResourceExists(mcc, datasourceAddess(datasourceName, false), true);
+
+        }
+    }
 
     @Test(dependsOnGroups = { "exclusive-inventory-access" })
     public void testAddXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
-        List<Resource> wfs = getResources("/test/resources", 1);
-        AssertJUnit.assertEquals(1, wfs.size());
-        CanonicalPath wfPath = wfs.get(0).getPath();
+        CanonicalPath wfPath = getCurrentASPath();
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
-            /* There should be zero XA datasources there */
-            assertResourceCount(mcc, datasourcesPath, "xa-data-source", 0);
-
-            final String datasourceName = "testXaDs";
-            final String jndiName = "java:/testXaDs";
-            final String driverName = "h2";
-            final String xaDataSourceClass = "org.h2.jdbcx.JdbcDataSource";
-            final String xaDataSourceUrl = "jdbc:h2:mem:test";
-            final String userName = "sa";
-            final String password = "sa";
+            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), false);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -75,8 +143,8 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                             "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
                                     + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
                                     + "\"xaDatasource\":\"true\"," //
-                                    + "\"datasourceName\":\"" + datasourceName + "\"," //
-                                    + "\"jndiName\":\"" + jndiName + "\"," //
+                                    + "\"datasourceName\":\"" + xaDatasourceName + "\"," //
+                                    + "\"jndiName\":\"" + xaDatasourceJndiName + "\"," //
                                     + "\"driverName\":\"" + driverName + "\"," //
                                     + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
                                     + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl + "\"}," //
@@ -99,51 +167,38 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
 
             String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
 
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                    + "\"The request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                    + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
             AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
             AssertJUnit.assertEquals("AddDatasourceResponse={"//
                     + "\"xaDatasource\":true,"//
-                    + "\"datasourceName\":\"" + datasourceName + "\","//
+                    + "\"datasourceName\":\"" + xaDatasourceName + "\","//
                     + "\"resourcePath\":\"" + wfPath + "\","//
-                    + "\"destinationSessionId\":\""+ sessionId +"\","//
+                    + "\"destinationSessionId\":\"" + sessionId + "\","//
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Added Datasource: " + datasourceName + "\""//
+                    + "\"message\":\"Added Datasource: " + xaDatasourceName + "\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-
-            ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
-                    .add("xa-data-source", datasourceName);
-            assertResourceExists(mcc, address,
-                    "XA Datasource " + datasourceName + " cannot be found after it was added: %s");
-            assertResourceCount(mcc, datasourcesPath, "xa-data-source", 1);
+            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), true);
 
         }
 
     }
 
-    @Test(dependsOnGroups = { "exclusive-inventory-access" })
-    public void testAddDatasource() throws Throwable {
+    @Test(dependsOnMethods = { "testAddDatasource" })
+    public void testRemoveDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
-        List<Resource> wfs = getResources("/test/resources", 1);
-        AssertJUnit.assertEquals(1, wfs.size());
-        CanonicalPath wfPath = wfs.get(0).getPath();
+        CanonicalPath wfPath = getCurrentASPath();
+
+        String removePath = wfPath.toString().replaceFirst("\\~+$", "")
+                + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
-            assertResourceCount(mcc, datasourcesPath, "data-source", 2);
-
-            final String datasourceName = "testH2Ds";
-            final String jndiName = "java:/testH2Ds";
-            final String driverName = "h2";
-            final String driverClass = "org.h2.Driver";
-            final String connectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1";
-            final String userName = "sa";
-            final String password = "sa";
+            assertResourceExists(mcc, datasourceAddess(datasourceName, false), true);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -152,16 +207,8 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
                 @Override
                 public void onOpen(WebSocket webSocket, Response response) {
                     send(webSocket,
-                            "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
-                                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                                    + "\"xaDatasource\":\"false\"," //
-                                    + "\"datasourceName\":\"" + datasourceName + "\"," //
-                                    + "\"jndiName\":\"" + jndiName + "\"," //
-                                    + "\"driverName\":\"" + driverName + "\"," //
-                                    + "\"driverClass\":\"" + driverClass + "\"," //
-                                    + "\"connectionUrl\":\"" + connectionUrl + "\"," //
-                                    + "\"userName\":\"" + userName + "\"," //
-                                    + "\"password\":\"" + password + "\"" //
+                            "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
+                                    + "\"resourcePath\":\"" + removePath + "\"" //
                                     + "}");
                     super.onOpen(webSocket, response);
                 }
@@ -179,29 +226,22 @@ public class AddDatasourceCommandITest extends AbstractCommandITest {
 
             String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
 
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                    + "\"The request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                    + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
             AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
-            AssertJUnit.assertEquals("AddDatasourceResponse={"//
-                    + "\"xaDatasource\":false,"//
-                    + "\"datasourceName\":\"" + datasourceName + "\","//
-                    + "\"resourcePath\":\"" + wfPath + "\","//
-                    + "\"destinationSessionId\":\""+ sessionId +"\","//
+            AssertJUnit.assertEquals("RemoveDatasourceResponse={"//
+                    + "\"resourcePath\":\"" + removePath.toString() + "\"," //
+                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Added Datasource: " + datasourceName + "\""//
+                    + "\"message\":\"Removed [Datasource] given by Inventory path [" + removePath + "]\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-
-            ModelNode address = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
-                    .add("data-source", datasourceName);
-
-            assertResourceExists(mcc, address,
-                    "Datasource " + datasourceName + " cannot be found after it was added: %s");
-            assertResourceCount(mcc, datasourcesPath, "data-source", 3);
+            assertResourceExists(mcc, datasourceAddess(datasourceName, false), false);
 
         }
     }
+
 }

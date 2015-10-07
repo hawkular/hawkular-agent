@@ -42,6 +42,7 @@ import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.ExportJdrRequest;
 import org.hawkular.cmdgw.api.ExportJdrResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
+import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.JBossASClient;
@@ -137,7 +138,7 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
             ModelNode opResp = client.execute(opReq);
 
             if (!JBossASClient.isSuccess(opResp)) {
-                response.setStatus("ERROR");
+                response.setStatus(ResponseStatus.ERROR);
                 String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX")
                         .withZone(ZoneOffset.UTC)
                         .format(Instant.ofEpochMilli(timestampBeforeExecution));
@@ -154,12 +155,12 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
                 InputStream reportInputStream = new FileInputStream(reportFile);
                 binaryData = new BinaryData(null, reportInputStream);
 
-                response.setStatus("OK");
+                response.setStatus(ResponseStatus.OK);
                 response.setFileName(reportFile.getName());
                 response.setMessage(JBossASClient.getResults(opResp).asString());
             }
         } catch (Exception e) {
-            response.setStatus("ERROR");
+            response.setStatus(ResponseStatus.ERROR);
             String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX")
                     .withZone(ZoneOffset.UTC)
                     .format(Instant.ofEpochMilli(timestampBeforeExecution));

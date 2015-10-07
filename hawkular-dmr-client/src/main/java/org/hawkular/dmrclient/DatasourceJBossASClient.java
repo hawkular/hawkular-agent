@@ -37,6 +37,35 @@ public class DatasourceJBossASClient extends JBossASClient {
     public static final String CONNECTION_PROPERTIES = "connection-properties";
     public static final String XA_DATASOURCE_PROPERTIES = "xa-datasource-properties";
     public static final String OP_ENABLE = "enable";
+    public static final String DATASOURCE_PATH_PREFIX = "/subsystem=datasources/data-source=";
+    public static final String XA_DATASOURCE_PATH_PREFIX = "/subsystem=datasources/xa-data-source=";
+    public static final String JDBC_DRIVER_PATH_PREFIX = "/subsystem=datasources/jdbc-driver=";
+
+    /**
+     * Checks if the {@code path} has one of the expected prefixes {@link #DATASOURCE_PATH_PREFIX} or
+     * {@link #XA_DATASOURCE_PATH_PREFIX}.
+     *
+     * @param modelNodePath the path to check
+     * @throws IllegalArgumentException is the {@code path} is not valid
+     */
+    public static void checkDatasourcePath(String modelNodePath) {
+        if (!modelNodePath.startsWith(DATASOURCE_PATH_PREFIX) && !modelNodePath.startsWith(XA_DATASOURCE_PATH_PREFIX)) {
+            String msg = String.format("[%s] is not a datasource path. It must start with either [%s] or [%s]",
+                    modelNodePath, DATASOURCE_PATH_PREFIX, XA_DATASOURCE_PATH_PREFIX);
+            throw new IllegalArgumentException(msg);
+        }
+    }
+
+    /**
+     * @param modelNodePath
+     */
+    public static void checkJdbcDriverPath(String modelNodePath) {
+        if (!modelNodePath.startsWith(JDBC_DRIVER_PATH_PREFIX)) {
+            String msg = String.format("[%s] is not a datasource path. It must start with [%s]", modelNodePath,
+                    JDBC_DRIVER_PATH_PREFIX);
+            throw new IllegalArgumentException(msg);
+        }
+    }
 
     public DatasourceJBossASClient(ModelControllerClient client) {
         super(client);
@@ -509,4 +538,5 @@ public class DatasourceJBossASClient extends JBossASClient {
 
         return result;
     }
+
 }
