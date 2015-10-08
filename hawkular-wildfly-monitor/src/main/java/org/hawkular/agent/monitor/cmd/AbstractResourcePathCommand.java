@@ -24,7 +24,6 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.cmdgw.api.ResourcePathRequest;
 import org.hawkular.cmdgw.api.ResourcePathResponse;
@@ -61,9 +60,10 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
     }
 
     @Override
-    public BasicMessageWithExtraData<RESP> execute(REQ request, BinaryData ignored, CommandContext context)
+    public BasicMessageWithExtraData<RESP> execute(BasicMessageWithExtraData<REQ> envelope, CommandContext context)
             throws Exception {
 
+        REQ request = envelope.getBasicMessage();
         String rawResourcePath = request.getResourcePath();
         log.infof("Received request to perform [%s] on a [%s] given by inventory path [%s]", operationName, entityType,
                 rawResourcePath);
@@ -73,7 +73,7 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
 
         C controllerClient = null;
         try {
-            validate(request);
+            validate(envelope);
 
             // Based on the resource ID we need to know which inventory manager is handling it.
             // From the inventory manager, we can get the actual resource.
@@ -82,19 +82,17 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
             String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
             ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
             String modelNodePath = idParts.getIdPart();
-            validate(modelNodePath, request);
+            validate(modelNodePath, envelope);
 
             MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
 
             String managedServerName = idParts.getManagedServerName();
             ManagedServer managedServer = config.managedServersMap.get(new Name(managedServerName));
-            validate(request, managedServerName, managedServer);
+            validate(envelope, managedServerName, managedServer);
 
             controllerClient = createControllerClient(managedServer, context);
 
-            execute(controllerClient, managedServer, modelNodePath, request, response, context);
-
-            afterModelNodeRemoved(request, response);
+            execute(controllerClient, managedServer, modelNodePath, envelope, response, context);
 
         } catch (Exception e) {
             response.setStatus(ResponseStatus.ERROR);
@@ -121,13 +119,13 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
      *        {@link #createControllerClient(ManagedServer, CommandContext)}
      * @param managedServer a {@link ManagedServer} instance acquired from {@link ResourcePathRequest#getResourcePath()}
      * @param modelNodePath a DMR path acquired from {@link ResourcePathRequest#getResourcePath()}
-     * @param request the request
+     * @param envelope the request
      * @param response the response
      * @param context the {@link CommandContext}
      * @throws Exception if anything goes wrong
      */
-    protected abstract void execute(C controllerClient, ManagedServer managedServer, String modelNodePath, REQ request,
-            RESP response, CommandContext context) throws Exception;
+    protected abstract void execute(C controllerClient, ManagedServer managedServer, String modelNodePath,
+            BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context) throws Exception;
 
     /**
      * Returns a new instance of the appropriate subclass of {@link JBossASClient}.
@@ -142,20 +140,20 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
      * {@code modelNodePath} validation for subclasses.
      *
      * @param modelNodePath a DMR path to check
-     * @param request the request the {@code modelNodePath} comes from
+     * @param envelope the request the {@code modelNodePath} comes from
      */
-    protected abstract void validate(String modelNodePath, REQ request);
+    protected abstract void validate(String modelNodePath, BasicMessageWithExtraData<REQ> envelope);
 
     /**
      * Checks if the {@code request} has {@code resourcePath} field set. Subclasses may want to add more {@code request}
      * validations in their overrides.
      *
-     * @param request the request to validate
+     * @param envelope the request to validate
      */
-    protected void validate(REQ request) {
-        if (request.getResourcePath() == null) {
+    protected void validate(BasicMessageWithExtraData<REQ> envelope) {
+        if (envelope.getBasicMessage().getResourcePath() == null) {
             throw new IllegalArgumentException(
-                    String.format("resourcePath of a [%s] cannot be null", request.getClass().getName()));
+                    String.format("resourcePath of a [%s] cannot be null", envelope.getClass().getName()));
         }
     }
 
@@ -166,7 +164,8 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
      * @param managedServerName the name of the {@code managedServer}
      * @param managedServer the managed server to validate
      */
-    protected void validate(REQ request, String managedServerName, ManagedServer managedServer) {
+    protected void validate(BasicMessageWithExtraData<REQ> envelope, String managedServerName,
+            ManagedServer managedServer) {
         if (managedServer == null) {
             throw new IllegalArgumentException(String.format(
                     "Cannot perform [%s] on a [%s] given by inventory path [%s]: unknown managed server [%s]",
@@ -178,18 +177,5 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
      * @return a new instance of the appropriate {@link ResourcePathResponse} subclass
      */
     protected abstract RESP createResponse();
-
-    /**
-     * Sets the {@link ResponseStatus#OK} state together with a message informing about the successful removal to
-     * {@code response}. Subclasses may want to perform more modifications on {@code response}.
-     *
-     * @param request the request the present command is processing
-     * @param response the response that will be sent back to the client
-     */
-    protected void afterModelNodeRemoved(REQ request, RESP response) {
-        response.setStatus(ResponseStatus.OK);
-        String msg = String.format("Removed [%s] given by Inventory path [%s]", entityType, request.getResourcePath());
-        response.setMessage(msg);
-    }
 
 }

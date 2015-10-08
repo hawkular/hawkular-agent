@@ -48,9 +48,9 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
     public static final Class<AddDatasourceRequest> REQUEST_CLASS = AddDatasourceRequest.class;
 
     @Override
-    public BasicMessageWithExtraData<AddDatasourceResponse> execute(AddDatasourceRequest request,
-            BinaryData jdbcDriverContent, CommandContext context) throws Exception {
-
+    public BasicMessageWithExtraData<AddDatasourceResponse> execute(
+            BasicMessageWithExtraData<AddDatasourceRequest> envelope, CommandContext context) throws Exception {
+        AddDatasourceRequest request = envelope.getBasicMessage();
         log.infof("Received request to add the Datasource [%s] on resource [%s]", request.getDatasourceName(),
                 request.getResourcePath());
 
@@ -69,7 +69,7 @@ public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDa
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return addDmr(resourceId, request, jdbcDriverContent, context, managedServer);
+            return addDmr(resourceId, request, envelope.getBinaryData(), context, managedServer);
         } else {
             throw new IllegalStateException("Cannot add Datasource: report this bug: " + managedServer.getClass());
         }

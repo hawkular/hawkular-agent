@@ -20,21 +20,20 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.GenericErrorResponse;
 
 /**
- * The server is responding to our agent with some generic error message, probably due to
- * some error condition that caused the server not be able to service one of our requests.
+ * The server is responding to our agent with some generic error message, probably due to some error condition that
+ * caused the server not be able to service one of our requests.
  */
 public class GenericErrorResponseCommand implements Command<GenericErrorResponse, BasicMessage> {
     private static final MsgLogger log = AgentLoggers.getLogger(GenericErrorResponseCommand.class);
     public static final Class<GenericErrorResponse> REQUEST_CLASS = GenericErrorResponse.class;
 
     @Override
-    public BasicMessageWithExtraData<BasicMessage> execute(GenericErrorResponse errorResponse, BinaryData binaryData,
+    public BasicMessageWithExtraData<BasicMessage> execute(BasicMessageWithExtraData<GenericErrorResponse> envelope,
             CommandContext context) throws Exception {
-
+        GenericErrorResponse errorResponse = envelope.getBasicMessage();
         String errorMessage = errorResponse.getErrorMessage();
         String stackTrace = errorResponse.getStackTrace();
 

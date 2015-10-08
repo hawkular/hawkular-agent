@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.cmd;
 
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.ResourcePathRequest;
 import org.hawkular.cmdgw.api.ResourcePathResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
@@ -63,11 +64,25 @@ public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathReq
 
     @Override
     protected void execute(JBossASClient controllerClient, ManagedServer managedServer, String modelNodePath,
-            REQ request, RESP response, CommandContext context) throws Exception {
+            BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context) throws Exception {
         Address addr = Address.parse(modelNodePath);
         controllerClient.remove(addr);
 
-        afterModelNodeRemoved(request, response);
+        afterModelNodeRemoved(envelope, response);
+    }
+
+    /**
+     * Sets the {@link ResponseStatus#OK} state together with a message informing about the successful removal to
+     * {@code response}. Subclasses may want to perform more modifications on {@code response}.
+     *
+     * @param request the request the present command is processing
+     * @param response the response that will be sent back to the client
+     */
+    protected void afterModelNodeRemoved(BasicMessageWithExtraData<REQ> envelope, RESP response) {
+        response.setStatus(ResponseStatus.OK);
+        String msg = String.format("Removed [%s] given by Inventory path [%s]", entityType,
+                envelope.getBasicMessage().getResourcePath());
+        response.setMessage(msg);
     }
 
 }

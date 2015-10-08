@@ -52,6 +52,7 @@ import okio.BufferedSource;
 public class FeedCommProcessor implements WebSocketListener {
     private static final MsgLogger log = AgentLoggers.getLogger(FeedCommProcessor.class);
     private static final Map<String, Class<? extends Command<?, ?>>> VALID_COMMANDS;
+
     static {
         VALID_COMMANDS = new HashMap<>();
         VALID_COMMANDS.put(EchoCommand.REQUEST_CLASS.getName(), EchoCommand.class);
@@ -109,6 +110,7 @@ public class FeedCommProcessor implements WebSocketListener {
 
     /**
      * Connects to the websocket endpoint. This first attempts to disconnect to any existing connection.
+     *
      * @throws Exception on failure
      */
     public void connect() throws Exception {
@@ -141,8 +143,8 @@ public class FeedCommProcessor implements WebSocketListener {
     }
 
     /**
-     * Sends a message to the server asynchronously. This method returns immediately; the message
-     * may not go out until some time in the future.
+     * Sends a message to the server asynchronously. This method returns immediately; the message may not go out until
+     * some time in the future.
      *
      * @param message the message to send
      */
@@ -243,13 +245,13 @@ public class FeedCommProcessor implements WebSocketListener {
         // We also don't try to get another one if we were explicitly told to disconnect.
         if (!(disconnectCode == reasonCode && disconnectReason.equals(reason))) {
             switch (reasonCode) {
-                case 1008: { // VIOLATED POLICY - don't try again since it probably will fail again (bad credentials?)
-                    break;
-                }
-                default: {
-                    startReconnectJobThread();
-                    break;
-                }
+            case 1008: { // VIOLATED POLICY - don't try again since it probably will fail again (bad credentials?)
+                break;
+            }
+            default: {
+                startReconnectJobThread();
+                break;
+            }
             }
         }
     }
@@ -278,20 +280,19 @@ public class FeedCommProcessor implements WebSocketListener {
                 BasicMessageWithExtraData<? extends BasicMessage> msgWithData;
 
                 switch (payloadType) {
-                    case TEXT: {
-                        String nameAndJsonStr = payload.readUtf8();
-                        msgWithData = new ApiDeserializer().deserialize(nameAndJsonStr);
-                        break;
-                    }
-                    case BINARY: {
-                        InputStream input = payload.inputStream();
-                        msgWithData = new ApiDeserializer().deserialize(input);
-                        break;
-                    }
-                    default: {
-                        throw new IllegalArgumentException("Unknown payload type, please report this bug: "
-                                + payloadType);
-                    }
+                case TEXT: {
+                    String nameAndJsonStr = payload.readUtf8();
+                    msgWithData = new ApiDeserializer().deserialize(nameAndJsonStr);
+                    break;
+                }
+                case BINARY: {
+                    InputStream input = payload.inputStream();
+                    msgWithData = new ApiDeserializer().deserialize(input);
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException("Unknown payload type, please report this bug: " + payloadType);
+                }
                 }
 
                 log.debug("Received message from server");
@@ -309,7 +310,7 @@ public class FeedCommProcessor implements WebSocketListener {
                 } else {
                     Command command = commandClass.newInstance();
                     CommandContext context = new CommandContext(this, this.config, this.discoveryService);
-                    response = command.execute(msg, msgWithData.getBinaryData(), context);
+                    response = command.execute(msgWithData, context);
                 }
             } finally {
                 // must ensure payload is closed; this assumes if it was a stream that the command is finished with it
@@ -318,10 +319,8 @@ public class FeedCommProcessor implements WebSocketListener {
         } catch (Throwable t) {
             log.errorCommandExecutionFailureFeed(requestClassName, t);
             String errorMessage = "Command failed [" + requestClassName + "]";
-            GenericErrorResponse errorMsg = new GenericErrorResponseBuilder()
-                    .setThrowable(t)
-                    .setErrorMessage(errorMessage)
-                    .build();
+            GenericErrorResponse errorMsg = new GenericErrorResponseBuilder().setThrowable(t)
+                    .setErrorMessage(errorMessage).build();
             response = new BasicMessageWithExtraData<BasicMessage>(errorMsg, null);
         }
 

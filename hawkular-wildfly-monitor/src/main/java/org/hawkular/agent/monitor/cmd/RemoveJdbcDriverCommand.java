@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.cmd;
 
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.RemoveJdbcDriverRequest;
 import org.hawkular.cmdgw.api.RemoveJdbcDriverResponse;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
@@ -42,13 +43,14 @@ public class RemoveJdbcDriverCommand
     }
 
     @Override
-    protected void validate(String modelNodePath, RemoveJdbcDriverRequest request) {
+    protected void validate(String modelNodePath, BasicMessageWithExtraData<RemoveJdbcDriverRequest> envelope) {
         DatasourceJBossASClient.checkJdbcDriverPath(modelNodePath);
     }
 
     @Override
-    protected void validate(RemoveJdbcDriverRequest request, String managedServerName, ManagedServer managedServer) {
-        super.validate(request, managedServerName, managedServer);
+    protected void validate(BasicMessageWithExtraData<RemoveJdbcDriverRequest> envelope, String managedServerName,
+            ManagedServer managedServer) {
+        super.validate(envelope, managedServerName, managedServer);
         if (!(managedServer instanceof LocalDMRManagedServer)) {
             throw new IllegalStateException(String.format("Cannot remove [%s] from [%s]. Only [%s] is supported",
                     entityType, managedServer.getClass().getName(), LocalDMRManagedServer.class.getName()));

@@ -58,9 +58,9 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
             .unmodifiableSet(new LinkedHashSet<>(Arrays.asList("javax.api", "javax.transaction.api")));
 
     @Override
-    public BasicMessageWithExtraData<AddJdbcDriverResponse> execute(AddJdbcDriverRequest request,
-            BinaryData jdbcDriverContent, CommandContext context) throws Exception {
-
+    public BasicMessageWithExtraData<AddJdbcDriverResponse> execute(
+            BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, CommandContext context) throws Exception {
+        AddJdbcDriverRequest request = envelope.getBasicMessage();
         log.infof("Received request to add the JDBC Driver [%s] on resource [%s]", request.getModuleName(),
                 request.getResourcePath());
 
@@ -79,7 +79,7 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return addLocal(resourceId, request, jdbcDriverContent, context, managedServer);
+            return addLocal(resourceId, request, envelope.getBinaryData(), context, managedServer);
         } else {
             throw new IllegalStateException("Cannot add JDBC Driver: report this bug: " + managedServer.getClass());
         }
@@ -137,6 +137,5 @@ public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJd
 
         return new BasicMessageWithExtraData<>(response, null);
     }
-
 
 }

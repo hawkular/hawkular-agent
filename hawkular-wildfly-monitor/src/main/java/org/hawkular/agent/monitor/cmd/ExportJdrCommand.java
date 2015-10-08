@@ -58,9 +58,9 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
     public static final Class<ExportJdrRequest> REQUEST_CLASS = ExportJdrRequest.class;
 
     @Override
-    public BasicMessageWithExtraData<ExportJdrResponse> execute(ExportJdrRequest request, BinaryData binaryData,
-                                                                CommandContext context)
-            throws Exception {
+    public BasicMessageWithExtraData<ExportJdrResponse> execute(BasicMessageWithExtraData<ExportJdrRequest> envelope,
+            CommandContext context) throws Exception {
+        ExportJdrRequest request = envelope.getBasicMessage();
         log.infof("Received request to generate JDR on resource [%s]", request.getResourcePath());
 
         FeedCommProcessor processor = context.getFeedCommProcessor();
@@ -85,9 +85,7 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
     }
 
     private BasicMessageWithExtraData<ExportJdrResponse> executeOperationDMR(String resourceId,
-                                                  ExportJdrRequest request,
-                                                  CommandContext context,
-                                                  ManagedServer managedServer) throws Exception {
+            ExportJdrRequest request, CommandContext context, ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
                 .get(managedServer);
@@ -109,8 +107,8 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
 
         String requestedOpName = "JDR";
         Collection<DMROperation> ops = resource.getResourceType().getOperations();
-        log.tracef("Searching for operation [%s] among operations [%s] for resource [%s].",
-                requestedOpName, ops, resource.getID());
+        log.tracef("Searching for operation [%s] among operations [%s] for resource [%s].", requestedOpName, ops,
+                resource.getID());
         for (DMROperation op : ops) {
             if (requestedOpName.equals(op.getID().getIDString())) {
                 opAddress = resource.getAddress().clone().add(Address.parse(op.getPath()));
@@ -120,9 +118,8 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
         }
 
         if (opAddress == null) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot execute operation: unknown operation [%s] for resource [%s]",
-                            requestedOpName, resource));
+            throw new IllegalArgumentException(String.format(
+                    "Cannot execute operation: unknown operation [%s] for resource [%s]", requestedOpName, resource));
         }
 
         ExportJdrResponse response = new ExportJdrResponse();
@@ -139,14 +136,11 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
 
             if (!JBossASClient.isSuccess(opResp)) {
                 response.setStatus(ResponseStatus.ERROR);
-                String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX")
-                        .withZone(ZoneOffset.UTC)
+                String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX").withZone(ZoneOffset.UTC)
                         .format(Instant.ofEpochMilli(timestampBeforeExecution));
 
-                String msg = String.format(
-                        "Could not export JDR on resource [%s] requested on [%s]: %s",
-                        resourceId, formattedTimestamp, JBossASClient.getFailureDescription(opResp)
-                );
+                String msg = String.format("Could not export JDR on resource [%s] requested on [%s]: %s", resourceId,
+                        formattedTimestamp, JBossASClient.getFailureDescription(opResp));
                 response.setMessage(msg);
             } else {
                 String reportLocation = opResp.get("result").get("report-location").asString();
@@ -161,14 +155,11 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
             }
         } catch (Exception e) {
             response.setStatus(ResponseStatus.ERROR);
-            String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX")
-                    .withZone(ZoneOffset.UTC)
+            String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX").withZone(ZoneOffset.UTC)
                     .format(Instant.ofEpochMilli(timestampBeforeExecution));
 
-            String msg = String.format(
-                    "Exception while generating JDR on resource [%s] requested on [%s]: %s",
-                    resourceId, formattedTimestamp, e.toString()
-            );
+            String msg = String.format("Exception while generating JDR on resource [%s] requested on [%s]: %s",
+                    resourceId, formattedTimestamp, e.toString());
             response.setMessage(msg);
         }
 
