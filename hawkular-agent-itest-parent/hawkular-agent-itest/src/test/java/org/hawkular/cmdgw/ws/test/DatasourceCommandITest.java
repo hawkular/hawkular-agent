@@ -244,4 +244,60 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
+    @Test(dependsOnMethods = { "testAddXaDatasource" })
+    public void testRemoveXaDatasource() throws Throwable {
+        waitForAccountsAndInventory();
+
+        CanonicalPath wfPath = getCurrentASPath();
+
+        String removePath = wfPath.toString().replaceFirst("\\~+$", "")
+                + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
+
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), true);
+
+            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    send(webSocket,
+                            "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
+                                    + "\"resourcePath\":\"" + removePath + "\"" //
+                                    + "}");
+                    super.onOpen(webSocket, response);
+                }
+            };
+
+            WebSocketCall.create(client, request).enqueue(openingListener);
+
+            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
+            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
+            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
+                    Mockito.same(PayloadType.TEXT));
+
+            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
+            int i = 0;
+
+            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
+
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                    + wfPath.ids().getFeedId() + "] (\\E.*";
+
+            String msg = receivedMessages.get(i++).readUtf8();
+            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+
+            AssertJUnit.assertEquals("RemoveDatasourceResponse={"//
+                    + "\"resourcePath\":\"" + removePath.toString() + "\"," //
+                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"status\":\"OK\","//
+                    + "\"message\":\"Removed [Datasource] given by Inventory path [" + removePath + "]\""//
+                    + "}", receivedMessages.get(i++).readUtf8());
+
+            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), false);
+
+        }
+    }
+
 }
