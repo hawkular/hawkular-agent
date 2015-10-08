@@ -17,13 +17,15 @@
 package org.hawkular.agent.monitor.cmd;
 
 import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.ResourcePathRequest;
 import org.hawkular.cmdgw.api.ResourcePathResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
-import org.hawkular.dmrclient.Address;
-import org.hawkular.dmrclient.JBossASClient;
+import org.hawkular.dmr.api.DmrApiException;
+import org.hawkular.dmr.api.OperationBuilder;
+import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
  * A base for {@link Command}s removing nodes from the DMR tree.
@@ -31,58 +33,26 @@ import org.hawkular.dmrclient.JBossASClient;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathRequest, RESP extends ResourcePathResponse>
-        extends AbstractResourcePathCommand<REQ, RESP, JBossASClient> {
+        extends AbstractResourcePathCommand<REQ, RESP> {
+    private static final MsgLogger log = AgentLoggers.getLogger(AbstractRemoveModelNodeCommand.class);
 
     public AbstractRemoveModelNodeCommand(String entityType) {
         super("Remove", entityType);
     }
 
-    /**
-     * Sets the {@link ResponseStatus#OK} state together with a message informing about the successful removal to
-     * {@code response}. Subclasses may want to perform more modifications on {@code response}.
-     *
-     * @param request the request the present command is processing
-     * @param response the response that will be sent back to the client
-     */
-    protected void afterModelNodeRemoved(REQ request, RESP response) {
-        response.setStatus(ResponseStatus.OK);
-        String msg = String.format("Removed [%s] given by Inventory path [%s]", entityType, request.getResourcePath());
-        response.setMessage(msg);
-    }
-
-    /**
-     * @param context
-     * @param managedServer
-     * @return
-     */
     @Override
-    protected JBossASClient createControllerClient(ManagedServer managedServer, CommandContext context) {
-        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
-                .get(managedServer);
-        return new JBossASClient(inventoryManager.getModelControllerClientFactory().createClient());
-    }
-
-    @Override
-    protected void execute(JBossASClient controllerClient, ManagedServer managedServer, String modelNodePath,
+    protected void execute(ModelControllerClient controllerClient, ManagedServer managedServer, String modelNodePath,
             BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context) throws Exception {
-        Address addr = Address.parse(modelNodePath);
-        controllerClient.remove(addr);
-
-        afterModelNodeRemoved(envelope, response);
-    }
-
-    /**
-     * Sets the {@link ResponseStatus#OK} state together with a message informing about the successful removal to
-     * {@code response}. Subclasses may want to perform more modifications on {@code response}.
-     *
-     * @param request the request the present command is processing
-     * @param response the response that will be sent back to the client
-     */
-    protected void afterModelNodeRemoved(BasicMessageWithExtraData<REQ> envelope, RESP response) {
-        response.setStatus(ResponseStatus.OK);
-        String msg = String.format("Removed [%s] given by Inventory path [%s]", entityType,
-                envelope.getBasicMessage().getResourcePath());
-        response.setMessage(msg);
+        try {
+            OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
+                    .assertSuccess();
+        } catch (DmrApiException e) {
+            /* A workaround for https://issues.jboss.org/browse/WFLY-5528 */
+            log.warn("Trying to remove xa-data-source for the second time,"
+                    + " see https://issues.jboss.org/browse/WFLY-5528");
+            OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
+                    .assertSuccess();
+        }
     }
 
 }

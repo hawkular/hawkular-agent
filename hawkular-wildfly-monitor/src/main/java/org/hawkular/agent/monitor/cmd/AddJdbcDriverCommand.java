@@ -21,121 +21,76 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.ResourceManager;
-import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
-import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
-import org.hawkular.agent.monitor.log.AgentLoggers;
-import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
 import org.hawkular.cmdgw.api.AddJdbcDriverResponse;
-import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.cmdgw.api.ResponseStatus;
-import org.hawkular.dmrclient.DatasourceJBossASClient;
-import org.hawkular.dmrclient.JBossASClient;
+import org.hawkular.dmr.api.OperationBuilder;
+import org.hawkular.dmr.api.SubsystemDatasourceConstants;
+import org.hawkular.dmr.api.SubsystemDatasourceConstants.JdbcDriverNodeConstants;
 import org.hawkular.dmrclient.modules.AddModuleRequest;
 import org.hawkular.dmrclient.modules.AddModuleRequest.ModuleResource;
 import org.hawkular.dmrclient.modules.Modules;
-import org.hawkular.inventory.api.model.CanonicalPath;
-import org.jboss.dmr.ModelNode;
+import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
- * Adds an JdbcDriver on a resource.
+ * Adds an JdbcDriver to an Application Server instance.
  */
-public class AddJdbcDriverCommand implements Command<AddJdbcDriverRequest, AddJdbcDriverResponse> {
-    private static final MsgLogger log = AgentLoggers.getLogger(AddJdbcDriverCommand.class);
-    public static final Class<AddJdbcDriverRequest> REQUEST_CLASS = AddJdbcDriverRequest.class;
+public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDriverRequest, AddJdbcDriverResponse>
+        implements SubsystemDatasourceConstants, JdbcDriverNodeConstants {
     public static final Set<String> DEFAULT_DRIVER_MODULE_DEPENDENCIES = Collections
             .unmodifiableSet(new LinkedHashSet<>(Arrays.asList("javax.api", "javax.transaction.api")));
 
-    @Override
-    public BasicMessageWithExtraData<AddJdbcDriverResponse> execute(
-            BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, CommandContext context) throws Exception {
-        AddJdbcDriverRequest request = envelope.getBasicMessage();
-        log.infof("Received request to add the JDBC Driver [%s] on resource [%s]", request.getModuleName(),
-                request.getResourcePath());
+    public static final Class<AddJdbcDriverRequest> REQUEST_CLASS = AddJdbcDriverRequest.class;
 
-        MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
-
-        // Based on the resource ID we need to know which inventory manager is handling it.
-        // From the inventory manager, we can get the actual resource.
-        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
-        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
-        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
-        ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.getManagedServerName()));
-
-        if (managedServer == null) {
-            throw new IllegalArgumentException(String.format("Cannot add JDBC Driver: unknown managed server [%s]",
-                    idParts.getManagedServerName()));
-        }
-
-        if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return addLocal(resourceId, request, envelope.getBinaryData(), context, managedServer);
-        } else {
-            throw new IllegalStateException("Cannot add JDBC Driver: report this bug: " + managedServer.getClass());
-        }
+    public AddJdbcDriverCommand() {
+        super("Add", "JDBC Driver");
     }
 
-    private BasicMessageWithExtraData<AddJdbcDriverResponse> addLocal(String resourceId, AddJdbcDriverRequest request,
-            BinaryData jdbcDriverContent, CommandContext context, ManagedServer managedServer) throws Exception {
+    /** @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#createResponse() */
+    @Override
+    protected AddJdbcDriverResponse createResponse() {
+        return new AddJdbcDriverResponse();
+    }
 
-        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
-                .get(managedServer);
-        if (inventoryManager == null) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot add JDBC Driver: missing inventory manager [%s]", managedServer));
-        }
-
-        ResourceManager<DMRResource> resourceManager = inventoryManager.getResourceManager();
-        DMRResource resource = resourceManager.getResource(new ID(resourceId));
-        if (resource == null) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot add JDBC Driver: unknown resource [%s]", request.getResourcePath()));
-        }
-
-        AddJdbcDriverResponse response = new AddJdbcDriverResponse();
-        MessageUtils.prepareResourcePathResponse(request, response);
+    /**
+     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#execute(org.hawkular.dmrclient.JBossASClient,
+     *      org.hawkular.agent.monitor.inventory.ManagedServer, java.lang.String,
+     *      org.hawkular.cmdgw.api.ResourcePathRequest, org.hawkular.cmdgw.api.ResourcePathResponse,
+     *      org.hawkular.agent.monitor.cmd.CommandContext)
+     */
+    @Override
+    protected void execute(ModelControllerClient controllerClient, ManagedServer managedServer, String modelNodePath,
+            BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, AddJdbcDriverResponse response,
+            CommandContext context) throws Exception {
+        AddJdbcDriverRequest request = envelope.getBasicMessage();
         response.setDriverName(request.getDriverName());
 
-        try (DatasourceJBossASClient dsc = new DatasourceJBossASClient(
-                inventoryManager.getModelControllerClientFactory().createClient())) {
+        ModuleResource jarResource = new AddModuleRequest.ModuleResource(envelope.getBinaryData(),
+                request.getDriverJarName());
 
-            ModuleResource jarResource = new AddModuleRequest.ModuleResource(jdbcDriverContent,
-                    request.getDriverJarName());
+        AddModuleRequest addModuleRequest = new AddModuleRequest(request.getModuleName(), (String) null, (String) null,
+                Collections.singleton(jarResource), DEFAULT_DRIVER_MODULE_DEPENDENCIES, null);
+        new Modules(Modules.findModulesDir()).add(addModuleRequest);
 
-            AddModuleRequest addModuleRequest = new AddModuleRequest(request.getModuleName(), (String) null,
-                    (String) null, Collections.singleton(jarResource), DEFAULT_DRIVER_MODULE_DEPENDENCIES, null);
-            new Modules(Modules.findModulesDir()).add(addModuleRequest);
-            ModelNode result = dsc.addJdbcDriver(request.getDriverName(), request.getModuleName(),
-                    request.getDriverClass(), request.getDriverMajorVersion(), request.getDriverMinorVersion());
-            if (JBossASClient.isSuccess(result)) {
-                response.setStatus(ResponseStatus.OK);
-                response.setMessage(String.format("Added JDBC Driver: %s", request.getDriverName()));
-                context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
-            } else {
-                response.setStatus(ResponseStatus.ERROR);
-                String failureDescription = JBossASClient.getFailureDescription(result);
-                String msg = String.format("Could not add JDBC Driver [%s]: %s", request.getDriverName(),
-                        failureDescription);
-                response.setMessage(msg);
-                log.debug(msg);
-            }
-        } catch (Exception e) {
-            log.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
-            response.setStatus(ResponseStatus.ERROR);
-            response.setMessage(e.toString());
-        }
+        OperationBuilder.add() //
+                .address().segments(modelNodePath).segment(JDBC_DRIVER, request.getDriverName()).parentBuilder()
+                .attribute(JdbcDriverNodeConstants.DRIVER_NAME, request.getDriverName())
+                .attribute(JdbcDriverNodeConstants.DRIVER_MODULE_NAME, request.getModuleName())
+                .attribute(JdbcDriverNodeConstants.DRIVER_CLASS_NAME, request.getDriverClass())
+                .attribute(JdbcDriverNodeConstants.DRIVER_MAJOR_VERSION, request.getDriverMajorVersion())
+                .attribute(JdbcDriverNodeConstants.DRIVER_MINOR_VERSION, request.getDriverMinorVersion())
+                .execute(controllerClient) //
+                .assertSuccess();
+    }
 
-        return new BasicMessageWithExtraData<>(response, null);
+    /**
+     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#validate(java.lang.String,
+     *      org.hawkular.cmdgw.api.ResourcePathRequest)
+     */
+    @Override
+    protected void validate(String modelNodePath, BasicMessageWithExtraData<AddJdbcDriverRequest> envelope) {
     }
 
 }

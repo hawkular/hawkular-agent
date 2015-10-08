@@ -21,6 +21,9 @@ import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
+import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
+import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
@@ -30,6 +33,7 @@ import org.hawkular.cmdgw.api.ResourcePathResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
+import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
  * A base for {@link Command}s initiated by subclasses of {@link ResourcePathRequest}.
@@ -37,7 +41,7 @@ import org.hawkular.inventory.api.model.CanonicalPath;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public abstract class AbstractResourcePathCommand<REQ extends ResourcePathRequest, //
-RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<REQ, RESP> {
+RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
     private static final MsgLogger log = AgentLoggers.getLogger(AbstractResourcePathCommand.class);
 
     /**
@@ -71,7 +75,7 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
         RESP response = createResponse();
         MessageUtils.prepareResourcePathResponse(request, response);
 
-        C controllerClient = null;
+        ModelControllerClient controllerClient = null;
         try {
             validate(envelope);
 
@@ -96,7 +100,8 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
 
         } catch (Exception e) {
             response.setStatus(ResponseStatus.ERROR);
-            String msg = String.format("Could not remove [%s] [%s]: %s", entityType, rawResourcePath, e.getMessage());
+            String msg = String.format("Could not perform [%s] on a [%s] given by inventory path [%s]: %s", entityType,
+                    rawResourcePath, e.getMessage());
             response.setMessage(msg);
         } finally {
             if (controllerClient != null) {
@@ -124,17 +129,22 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
      * @param context the {@link CommandContext}
      * @throws Exception if anything goes wrong
      */
-    protected abstract void execute(C controllerClient, ManagedServer managedServer, String modelNodePath,
-            BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context) throws Exception;
+    protected abstract void execute(ModelControllerClient controllerClient, ManagedServer managedServer,
+            String modelNodePath, BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context)
+                    throws Exception;
 
     /**
-     * Returns a new instance of the appropriate subclass of {@link JBossASClient}.
+     * Returns a freshly opened {@link ModelControllerClient}.
      *
      * @param context the {@link CommandContext}
      * @param managedServer a {@link ManagedServer} instance acquired from {@link ResourcePathRequest#getResourcePath()}
-     * @return a new instance of the appropriate subclass of {@link JBossASClient}
+     * @return a freshly opened {@link ModelControllerClient}
      */
-    protected abstract C createControllerClient(ManagedServer managedServer, CommandContext context);
+    protected ModelControllerClient createControllerClient(ManagedServer managedServer, CommandContext context) {
+        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
+                .get(managedServer);
+        return inventoryManager.getModelControllerClientFactory().createClient();
+    }
 
     /**
      * {@code modelNodePath} validation for subclasses.
@@ -178,4 +188,20 @@ RESP extends ResourcePathResponse, C extends JBossASClient> implements Command<R
      */
     protected abstract RESP createResponse();
 
+    protected void assertLocalOrRemoteServer(ManagedServer managedServer) {
+        if (!(managedServer instanceof LocalDMRManagedServer) && !(managedServer instanceof RemoteDMRManagedServer)) {
+            throw new IllegalStateException(String.format(
+                    "Cannot perform [%s] on a [%s] on a instance of [%s]. Only [%s] and [%s] is supported",
+                    operationName, entityType, managedServer.getClass().getName(),
+                    LocalDMRManagedServer.class.getName(), RemoteDMRManagedServer.class.getName()));
+        }
+    }
+
+    protected void assertLocalServer(ManagedServer managedServer) {
+        if (!(managedServer instanceof LocalDMRManagedServer)) {
+            throw new IllegalStateException(String.format(
+                    "Cannot perform [%s] on a [%s] on a instance of [%s]. Only [%s] is supported", operationName,
+                    entityType, managedServer.getClass().getName(), LocalDMRManagedServer.class.getName()));
+        }
+    }
 }

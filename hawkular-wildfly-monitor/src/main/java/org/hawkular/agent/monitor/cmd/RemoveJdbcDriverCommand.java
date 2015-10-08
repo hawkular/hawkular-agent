@@ -17,7 +17,6 @@
 package org.hawkular.agent.monitor.cmd;
 
 import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.RemoveJdbcDriverRequest;
 import org.hawkular.cmdgw.api.RemoveJdbcDriverResponse;
@@ -51,10 +50,7 @@ public class RemoveJdbcDriverCommand
     protected void validate(BasicMessageWithExtraData<RemoveJdbcDriverRequest> envelope, String managedServerName,
             ManagedServer managedServer) {
         super.validate(envelope, managedServerName, managedServer);
-        if (!(managedServer instanceof LocalDMRManagedServer)) {
-            throw new IllegalStateException(String.format("Cannot remove [%s] from [%s]. Only [%s] is supported",
-                    entityType, managedServer.getClass().getName(), LocalDMRManagedServer.class.getName()));
-        }
+        assertLocalServer(managedServer);
     }
 
 }
