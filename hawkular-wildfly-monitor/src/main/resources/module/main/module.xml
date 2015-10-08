@@ -74,7 +74,6 @@
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>
     <module name="org.jboss.as.threads"/>
-    <module name="org.jboss.common-core"/>
     <module name="org.jboss.logmanager" services="import"/>
     <module name="org.jboss.threads"/>
     <module name="org.slf4j"/>
