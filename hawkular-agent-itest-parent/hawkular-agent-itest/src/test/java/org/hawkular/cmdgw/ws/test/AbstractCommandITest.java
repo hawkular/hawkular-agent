@@ -159,6 +159,10 @@ public abstract class AbstractCommandITest {
     protected static final String testPasword = "password";
     protected static final String testUser = "jdoe";
 
+    private static final Object waitForAccountsLock = new Object();
+
+    private static volatile boolean accountsAndInventoryReady = false;
+
     static {
         String h = System.getProperty("hawkular.bind.address", "localhost");
         if ("0.0.0.0".equals(h)) {
@@ -391,18 +395,25 @@ public abstract class AbstractCommandITest {
     }
 
     protected void waitForAccountsAndInventory() throws Throwable {
-        Thread.sleep(10000);
-        /*
-         * Make sure we can access the tenant first. We will do several attempts because race conditions may happen
-         * between this script and WildFly Agent who may have triggered the same initial tasks in Accounts
-         */
-        getWithRetries(baseAccountsUri + "/personas/current");
 
-        /*
-         * Ensure the "test" env was autocreated. We will do several attempts because race conditions may happen between
-         * this script and WildFly Agent who may have triggered the same initial tasks in Inventory. A successfull GET
-         * to /hawkular/inventory/environments/test should mean that all initial tasks are over
-         */
-        getWithRetries(baseInvUri + "/environments/test");
+        synchronized (waitForAccountsLock) {
+            if (!accountsAndInventoryReady) {
+                Thread.sleep(10000);
+                /*
+                 * Make sure we can access the tenant first. We will do several attempts because race conditions may
+                 * happen between this script and WildFly Agent who may have triggered the same initial tasks in
+                 * Accounts
+                 */
+                getWithRetries(baseAccountsUri + "/personas/current");
+
+                /*
+                 * Ensure the "test" env was autocreated. We will do several attempts because race conditions may happen
+                 * between this script and WildFly Agent who may have triggered the same initial tasks in Inventory. A
+                 * successfull GET to /hawkular/inventory/environments/test should mean that all initial tasks are over
+                 */
+                getWithRetries(baseInvUri + "/environments/test");
+                accountsAndInventoryReady = true;
+            }
+        }
     }
 }
