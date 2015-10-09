@@ -65,10 +65,10 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
-
+        ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertResourceExists(mcc, datasourceAddess(datasourceName, false), false);
+            assertResourceExists(mcc, dsAddress, false);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -82,6 +82,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                                     + "\"xaDatasource\":\"false\"," //
                                     + "\"datasourceName\":\"" + datasourceName + "\"," //
                                     + "\"jndiName\":\"" + datasourceJndiName + "\"," //
+                                    + "\"datasourceProperties\":{\"prop1\":\"val1\",\"prop2\":\"val2\"}," //
                                     + "\"driverName\":\"" + driverName + "\"," //
                                     + "\"driverClass\":\"" + driverClass + "\"," //
                                     + "\"connectionUrl\":\"" + datasourceConnectionUrl + "\"," //
@@ -119,7 +120,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"message\":\"Added Datasource: " + datasourceName + "\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            assertResourceExists(mcc, datasourceAddess(datasourceName, false), true);
+            assertResourceExists(mcc, dsAddress, true);
 
         }
     }
@@ -127,11 +128,11 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     @Test(dependsOnGroups = { "exclusive-inventory-access" })
     public void testAddXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
-
+        ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
         CanonicalPath wfPath = getCurrentASPath();
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), false);
+            assertResourceExists(mcc, dsAddress, false);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -182,23 +183,25 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"message\":\"Added Datasource: " + xaDatasourceName + "\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), true);
+            assertResourceExists(mcc, dsAddress, true);
 
         }
 
     }
 
-    @Test(dependsOnMethods = { "testAddDatasource" })
+
+    @Test(dependsOnMethods = { "testUpdateDatasource" })
     public void testRemoveDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
+        ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
                 + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertResourceExists(mcc, datasourceAddess(datasourceName, false), true);
+            assertResourceExists(mcc, dsAddress, true);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -236,10 +239,11 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourcePath\":\"" + removePath.toString() + "\"," //
                     + "\"destinationSessionId\":\"" + sessionId + "\"," //
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Removed [Datasource] given by Inventory path [" + removePath + "]\""//
+                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
+                    + "]\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            assertResourceExists(mcc, datasourceAddess(datasourceName, false), false);
+            assertResourceExists(mcc, dsAddress, false);
 
         }
     }
@@ -249,12 +253,13 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
+        ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
                 + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), true);
+            assertResourceExists(mcc, dsAddress, true);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -292,10 +297,11 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourcePath\":\"" + removePath.toString() + "\"," //
                     + "\"destinationSessionId\":\"" + sessionId + "\"," //
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Removed [Datasource] given by Inventory path [" + removePath + "]\""//
+                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
+                    + "]\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), false);
+            assertResourceExists(mcc, dsAddress, false);
 
         }
     }

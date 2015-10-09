@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,6 +41,8 @@ import javax.security.sasl.RealmCallback;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.ApiDeserializer;
 import org.hawkular.cmdgw.api.WelcomeResponse;
+import org.hawkular.dmr.api.OperationBuilder;
+import org.hawkular.dmr.api.SubsystemLoggingConstants;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
@@ -48,6 +51,7 @@ import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
+import org.jboss.logging.Logger.Level;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -416,4 +420,42 @@ public abstract class AbstractCommandITest {
             }
         }
     }
+
+    public void trace(Class<?> cl) {
+        setLogger(cl.getName(), Level.TRACE);
+    }
+
+    public void setLogger(String category, org.jboss.logging.Logger.Level level) {
+        try (ModelControllerClient cl = newModelControllerClient()) {
+            // ModelNode loggingBefore = OperationBuilder.readResource().address().subsystemLogging().parentBuilder()
+            // .recursive().includeRuntime().execute(cl).assertSuccess().getResultNode();
+            // System.out.println("logging before = " + loggingBefore.toString());
+
+            Set<String> availCategories = OperationBuilder.readChildrenNames().address().subsystemLogging()
+                    .parentBuilder().childType(SubsystemLoggingConstants.LOGGER).execute(cl).getHashSet();
+
+            // System.out.println("availCategories = "+ availCategories);
+
+            if (!availCategories.contains(category)) {
+                OperationBuilder.add() //
+                        .address().subsystemLogging().segment(SubsystemLoggingConstants.LOGGER, category)
+                        .parentBuilder() //
+                        .attribute(SubsystemLoggingConstants.LoggerNodeConstants.CATEGORY, category)
+                        .attribute(SubsystemLoggingConstants.LoggerNodeConstants.LEVEL, level.name())
+                        .attribute(SubsystemLoggingConstants.LoggerNodeConstants.USE_PARENT_HANDLERS, true) //
+                        .execute(cl).assertSuccess();
+            } else {
+                OperationBuilder.writeAttribute() //
+                        .address().subsystemLogging().segment(SubsystemLoggingConstants.LOGGER, category)
+                        .parentBuilder() //
+                        .attribute(SubsystemLoggingConstants.LoggerNodeConstants.LEVEL, level.name()) //
+                        .execute(cl).assertSuccess();
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
 }

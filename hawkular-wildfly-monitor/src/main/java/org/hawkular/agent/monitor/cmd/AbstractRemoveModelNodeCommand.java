@@ -22,7 +22,6 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.ResourcePathRequest;
 import org.hawkular.cmdgw.api.ResourcePathResponse;
-import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmr.api.DmrApiException;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.jboss.as.controller.client.ModelControllerClient;

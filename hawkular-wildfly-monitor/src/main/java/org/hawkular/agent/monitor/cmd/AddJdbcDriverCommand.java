@@ -75,7 +75,7 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
         new Modules(Modules.findModulesDir()).add(addModuleRequest);
 
         OperationBuilder.add() //
-                .address().segments(modelNodePath).segment(JDBC_DRIVER, request.getDriverName()).parentBuilder()
+                .address().subsystemDatasources().segment(JDBC_DRIVER, request.getDriverName()).parentBuilder()
                 .attribute(JdbcDriverNodeConstants.DRIVER_NAME, request.getDriverName())
                 .attribute(JdbcDriverNodeConstants.DRIVER_MODULE_NAME, request.getModuleName())
                 .attribute(JdbcDriverNodeConstants.DRIVER_CLASS_NAME, request.getDriverClass())
@@ -83,6 +83,12 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
                 .attribute(JdbcDriverNodeConstants.DRIVER_MINOR_VERSION, request.getDriverMinorVersion())
                 .execute(controllerClient) //
                 .assertSuccess();
+    }
+
+    @Override
+    protected void success(BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, AddJdbcDriverResponse response) {
+        response.setStatus(ResponseStatus.OK);
+        response.setMessage(String.format("Added JDBC Driver: %s", envelope.getBasicMessage().getDriverName()));
     }
 
     /**

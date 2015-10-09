@@ -23,6 +23,7 @@ import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.AddDatasourceRequest;
 import org.hawkular.cmdgw.api.AddDatasourceResponse;
+import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.CompositeOperationBuilder;
 import org.hawkular.dmr.api.SubsystemDatasourceConstants;
@@ -113,6 +114,12 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
         batch.execute(controllerClient).assertSuccess();
         context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
 
+    }
+
+    @Override
+    protected void success(BasicMessageWithExtraData<AddDatasourceRequest> envelope, AddDatasourceResponse response) {
+        response.setStatus(ResponseStatus.OK);
+        response.setMessage(String.format("Added Datasource: %s", envelope.getBasicMessage().getDatasourceName()));
     }
 
     @Override

@@ -53,7 +53,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
 
     /**
      * A natural language name of the operation the present command is performing, such as {@code Updade}, {@code Add}
-     * or {@code Remove}
+     * or {@code Remove}. {@link #operationName} is supposed to be used in log and exception messages primarily.
      */
     protected final String operationName;
 
@@ -97,12 +97,14 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             controllerClient = createControllerClient(managedServer, context);
 
             execute(controllerClient, managedServer, modelNodePath, envelope, response, context);
+            success(envelope, response);
 
         } catch (Exception e) {
             response.setStatus(ResponseStatus.ERROR);
-            String msg = String.format("Could not perform [%s] on a [%s] given by inventory path [%s]: %s", entityType,
-                    rawResourcePath, e.getMessage());
+            String msg = String.format("Could not perform [%s] on a [%s] given by inventory path [%s]: %s",
+                    operationName, entityType, rawResourcePath, e.getMessage());
             response.setMessage(msg);
+            log.debug(msg);
         } finally {
             if (controllerClient != null) {
                 try {
@@ -179,7 +181,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
         if (managedServer == null) {
             throw new IllegalArgumentException(String.format(
                     "Cannot perform [%s] on a [%s] given by inventory path [%s]: unknown managed server [%s]",
-                    entityType, managedServerName));
+                    operationName, entityType, managedServerName));
         }
     }
 
@@ -187,6 +189,14 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
      * @return a new instance of the appropriate {@link ResourcePathResponse} subclass
      */
     protected abstract RESP createResponse();
+
+    protected void success(BasicMessageWithExtraData<REQ> envelope, RESP response) {
+        response.setStatus(ResponseStatus.OK);
+        String msg = String.format("Performed [%s] on a [%s] given by Inventory path [%s]", operationName, entityType,
+                envelope.getBasicMessage().getResourcePath());
+        response.setMessage(msg);
+
+    }
 
     protected void assertLocalOrRemoteServer(ManagedServer managedServer) {
         if (!(managedServer instanceof LocalDMRManagedServer) && !(managedServer instanceof RemoteDMRManagedServer)) {
