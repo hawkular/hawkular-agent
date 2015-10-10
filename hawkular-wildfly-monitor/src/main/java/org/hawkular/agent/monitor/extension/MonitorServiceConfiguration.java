@@ -71,12 +71,13 @@ public class MonitorServiceConfiguration {
         public boolean useSSL;
         public String serverOutboundSocketBindingRef;
         public String accountsContext;
-        public String busContext;
+        public String busContext; // TODO remove this when we don't do double send of metrics
         public String inventoryContext;
         public String metricsContext;
         public String feedcommContext;
         public String keystorePath;
         public String keystorePassword;
+        public String securityRealm;
     }
 
     public static class Diagnostics {
