@@ -35,7 +35,6 @@
                    username="jdoe"
                    password="password"
                    url="http://localhost:8080"
-                   busContext="/hawkular-bus/message/"
                    inventoryContext="/hawkular/inventory/"
                    metricsContext="/hawkular/metrics/" />
 

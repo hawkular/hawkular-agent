@@ -101,14 +101,6 @@ public interface StorageAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    SimpleAttributeDefinition BUS_CONTEXT = new SimpleAttributeDefinitionBuilder("busContext",
-            ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setDefaultValue(new ModelNode("/hawkular-bus/message/"))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
     SimpleAttributeDefinition INVENTORY_CONTEXT = new SimpleAttributeDefinitionBuilder(
             "inventoryContext",
             ModelType.STRING)
@@ -144,7 +136,6 @@ public interface StorageAttributes {
             KEYSTORE_PATH,
             KEYSTORE_PASSWORD,
             SERVER_OUTBOUND_SOCKET_BINDING_REF,
-            BUS_CONTEXT,
             INVENTORY_CONTEXT,
             METRICS_CONTEXT,
             FEEDCOMM_CONTEXT

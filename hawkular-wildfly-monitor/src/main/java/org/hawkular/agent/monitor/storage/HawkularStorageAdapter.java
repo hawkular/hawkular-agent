@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.net.URL;
 import java.util.Set;
 
 import org.hawkular.agent.monitor.api.Avail;
@@ -29,8 +28,6 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
-import org.hawkular.agent.monitor.service.Util;
-import org.hawkular.bus.restclient.RestClient;
 
 public class HawkularStorageAdapter implements StorageAdapter {
     private static final MsgLogger log = AgentLoggers.getLogger(HawkularStorageAdapter.class);
@@ -94,39 +91,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String tenantId = this.config.tenantId;
         ((HawkularMetricDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
 
-        // for now, we need to send it twice:
-        // 1) directly to metrics for storage
-        // 2) on the message bus for further processing
-
         // send to metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
         metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, selfId, httpClientBuilder);
         metricsAdapter.store(((HawkularMetricDataPayloadBuilder) payloadBuilder)
                 .toMetricsOnlyMetricDataPayloadBuilder());
 
-        // send to bus
-        String jsonPayload = null;
-        try {
-            // build the URL to the bus interface
-            StringBuilder urlStr = Util.getContextUrlString(this.config.url, this.config.busContext);
-            urlStr = Util.convertToNonSecureUrl(urlStr.toString());
-            URL url = new URL(urlStr.toString());
-
-            // build the bus client
-            RestClient busClient = new RestClient(url);
-
-            // send the message to the bus
-            jsonPayload = payloadBuilder.toPayload().toString();
-            busClient.postTopicMessage("HawkularMetricData", jsonPayload, null);
-
-            // looks like everything stored successfully
-            // the metrics storage adapter already did this, so don't duplicate the stats here
-            //diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
-
-        } catch (Throwable t) {
-            log.errorFailedToStoreMetricData(t, jsonPayload);
-            diagnostics.getStorageErrorRate().mark(1);
-        }
+        // looks like everything stored successfully
+        // the metrics storage adapter already did this, so don't duplicate the stats here
+        //diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
     }
 
     @Override
@@ -155,39 +128,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String tenantId = this.config.tenantId;
         ((HawkularAvailDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
 
-        // for now, we need to send it twice:
-        // 1) directly to h-metrics for storage
-        // 2) on the message bus for further processing
-
         // send to h-metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
         metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, selfId, httpClientBuilder);
         metricsAdapter.store(((HawkularAvailDataPayloadBuilder) payloadBuilder)
                 .toMetricsOnlyAvailDataPayloadBuilder());
 
-        // send to bus
-        String jsonPayload = null;
-        try {
-            // build the URL to the bus interface
-            StringBuilder urlStr = Util.getContextUrlString(this.config.url, this.config.busContext);
-            urlStr = Util.convertToNonSecureUrl(urlStr.toString());
-            URL url = new URL(urlStr.toString());
-
-            // build the bus client
-            RestClient busClient = new RestClient(url);
-
-            // send the message to the bus
-            jsonPayload = payloadBuilder.toPayload().toString();
-            busClient.postTopicMessage("HawkularAvailData", jsonPayload, null);
-
-            // looks like everything stored successfully
-            // the metrics storage adapter already did this, so don't duplicate the stats here
-            //diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
-
-        } catch (Throwable t) {
-            log.errorFailedToStoreAvailData(t, jsonPayload);
-            diagnostics.getStorageErrorRate().mark(1);
-        }
+        // looks like everything stored successfully
+        // the metrics storage adapter already did this, so don't duplicate the stats here
+        //diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
     }
 
     @Override

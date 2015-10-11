@@ -20,7 +20,6 @@
   <resources>
     <artifact name="${org.hawkular.metrics:clients-common}"/>
     <artifact name="${org.hawkular.bus:hawkular-bus-common}"/>
-    <artifact name="${org.hawkular.bus:hawkular-bus-rest-client}"/>
     <artifact name="${org.hawkular.agent:hawkular-dmr-client}"/>
     <artifact name="${org.hawkular.agent:hawkular-monitor}"/>
     <artifact name="${org.hawkular.cmdgw:hawkular-command-gateway-api}"/>
@@ -49,7 +48,6 @@
     <module name="org.jboss.vfs"/>
 
     <!-- other dependencies we need -->
-    <module name="org.apache.httpcomponents"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>
     <module name="org.jboss.as.threads"/>
