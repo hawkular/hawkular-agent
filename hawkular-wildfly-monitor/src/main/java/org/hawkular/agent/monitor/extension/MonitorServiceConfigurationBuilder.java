@@ -455,6 +455,8 @@ public class MonitorServiceConfigurationBuilder {
         } else {
             theConfig.storageAdapter.useSSL = getBoolean(storageAdapterConfig, context, StorageAttributes.USE_SSL);
         }
+        theConfig.storageAdapter.securityRealm = getString(storageAdapterConfig, context,
+                StorageAttributes.SECURITY_REALM);
         theConfig.storageAdapter.keystorePath = getString(storageAdapterConfig, context,
                 StorageAttributes.KEYSTORE_PATH);
         theConfig.storageAdapter.keystorePassword = getString(storageAdapterConfig, context,
@@ -478,11 +480,15 @@ public class MonitorServiceConfigurationBuilder {
         theConfig.storageAdapter.type = MonitorServiceConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
 
         if (theConfig.storageAdapter.useSSL) {
-            if (theConfig.storageAdapter.keystorePath == null) {
-                throw new IllegalArgumentException("In order to use SSL, a keystore file path must be specified");
-            }
-            if (theConfig.storageAdapter.keystorePassword == null) {
-                throw new IllegalArgumentException("In order to use SSL, a keystore password must be specified");
+            if (theConfig.storageAdapter.securityRealm == null) {
+                if (theConfig.storageAdapter.keystorePath == null) {
+                    throw new IllegalArgumentException(
+                            "In order to use SSL, a securityRealm or keystorePath must be specified");
+                }
+                if (theConfig.storageAdapter.keystorePassword == null) {
+                    throw new IllegalArgumentException(
+                            "In order to use SSL, a securityRealm or keystorePassword must be specified");
+                }
             }
         }
     }

@@ -71,6 +71,7 @@
     <!-- other dependencies we need -->
     <module name="com.google.guava"/>
     <module name="org.apache.httpcomponents"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES PER METRIC -->
+    <module name="org.jboss.as.domain-management"/>
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>
     <module name="org.jboss.as.threads"/>

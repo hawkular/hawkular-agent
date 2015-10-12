@@ -52,16 +52,37 @@ public class HttpClientBuilder {
     private final boolean useSSL;
     private final String keystorePath;
     private final String keystorePassword;
+    private final SSLContext sslContext;
 
     // holds the last built client
     private OkHttpClient httpClient;
 
-    public HttpClientBuilder(MonitorServiceConfiguration configuration) {
-        username = configuration.storageAdapter.username;
-        password = configuration.storageAdapter.password;
-        useSSL = configuration.storageAdapter.useSSL;
-        keystorePath = configuration.storageAdapter.keystorePath;
-        keystorePassword = configuration.storageAdapter.keystorePassword;
+    /**
+     * Creates the object that can be used to build HTTP clients.
+     * Note that if sslContext is null, this object will use the configured keystorePath
+     * and keystorePassword to build one itself. If sslContext is provided (not-null)
+     * then the configuration's keystorePath and keystorePassword are ignored.
+     *
+     * Note that if the configuration tells use to NOT use SSL in the first place,
+     * the given SSL context (if any) as well as the configured keystorePath and keystorePassword
+     * will all be ignored since we are being told to not use SSL.
+     *
+     * @param configuration configuration settings to determine things about the HTTP connections
+     *                      any built clients will be asked to make
+     * @param sslContext if not null, and if the configuration tells use to use SSL, this will
+     *                   be the SSL context to use.
+     */
+    public HttpClientBuilder(MonitorServiceConfiguration configuration, SSLContext sslContext) {
+        this.username = configuration.storageAdapter.username;
+        this.password = configuration.storageAdapter.password;
+        this.useSSL = configuration.storageAdapter.useSSL;
+        this.keystorePath = configuration.storageAdapter.keystorePath;
+        this.keystorePassword = configuration.storageAdapter.keystorePassword;
+        if (this.useSSL) {
+            this.sslContext = (sslContext == null) ? buildSSLContext() : sslContext;
+        } else {
+            this.sslContext = null;
+        }
     }
 
     /**
@@ -165,29 +186,33 @@ public class HttpClientBuilder {
         OkHttpClient httpClient = new OkHttpClient();
 
         if (this.useSSL) {
+            httpClient.setSslSocketFactory(this.sslContext.getSocketFactory());
+
             // does not perform any hostname verification when looking at the remote end's cert
             httpClient.setHostnameVerifier(new NullHostNameVerifier());
-
-            // Read the servers cert from the keystore
-            setKeystore(httpClient);
         }
 
         this.httpClient = httpClient;
         return httpClient;
     }
 
-    private void setKeystore(OkHttpClient client) throws Exception {
-        KeyStore keyStore = readKeyStore();
-        SSLContext sslContext = SSLContext.getInstance("SSL");
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
-                TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keyStore);
-        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keyStore, this.keystorePassword.toCharArray());
-        sslContext.init(keyManagerFactory.getKeyManagers(),
-                trustManagerFactory.getTrustManagers(),
-                new SecureRandom());
-        client.setSslSocketFactory(sslContext.getSocketFactory());
+    private SSLContext buildSSLContext() {
+        try {
+            KeyStore keyStore = readKeyStore();
+            SSLContext sslContext = SSLContext.getInstance("SSL");
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                    TrustManagerFactory.getDefaultAlgorithm());
+            trustManagerFactory.init(keyStore);
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory
+                    .getDefaultAlgorithm());
+            keyManagerFactory.init(keyStore, this.keystorePassword.toCharArray());
+            sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(),
+                    new SecureRandom());
+            return sslContext;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    String.format("Cannot create SSL context from keystore [%s]", this.keystorePath), e);
+        }
     }
 
     private KeyStore readKeyStore() throws Exception {

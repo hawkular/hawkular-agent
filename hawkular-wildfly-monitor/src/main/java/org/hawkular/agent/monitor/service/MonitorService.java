@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.net.ssl.SSLContext;
+
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
 import org.hawkular.agent.monitor.cmd.FeedCommProcessor;
@@ -103,6 +105,8 @@ import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.as.domain.management.SecurityRealm;
+import org.jboss.as.domain.management.security.SSLContextService;
 import org.jboss.as.network.OutboundSocketBinding;
 import org.jboss.as.network.SocketBinding;
 import org.jboss.as.server.ServerEnvironment;
@@ -134,6 +138,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     private final InjectedValue<SocketBinding> httpSocketBindingValue = new InjectedValue<>();
     private final InjectedValue<SocketBinding> httpsSocketBindingValue = new InjectedValue<>();
     private final InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue = new InjectedValue<>();
+    private final InjectedValue<SSLContext> trustOnlySSLContextValue = new InjectedValue<>();
 
     private boolean started = false;
 
@@ -196,9 +201,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         }
 
         this.configuration = config;
-
-        // the config has everything we need to build the http clients
-        this.httpClientBuilder = new HttpClientBuilder(config);
     }
 
     /**
@@ -220,6 +222,15 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             bldr.addDependency(OutboundSocketBinding.OUTBOUND_SOCKET_BINDING_BASE_SERVICE_NAME
                     .append(this.configuration.storageAdapter.serverOutboundSocketBindingRef),
                     OutboundSocketBinding.class, serverOutboundSocketBindingValue);
+        }
+        if (this.configuration.storageAdapter.securityRealm != null) {
+            // if we ever need our own private key, we can add another dependency with trustStoreOnly=false
+            boolean trustStoreOnly = true;
+            SSLContextService.ServiceUtil.addDependency(
+                    bldr,
+                    trustOnlySSLContextValue,
+                    SecurityRealm.ServiceUtil.createServiceName(this.configuration.storageAdapter.securityRealm),
+                    trustStoreOnly);
         }
     }
 
@@ -260,6 +271,10 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         }
 
         log.infoStarting();
+
+        // prepare the builder that will create our HTTP/REST clients
+        this.httpClientBuilder = new HttpClientBuilder(this.configuration,
+                this.trustOnlySSLContextValue.getOptionalValue());
 
         // get our self identifiers
         ModelControllerClientFactory mccFactory = createLocalClientFactory();
