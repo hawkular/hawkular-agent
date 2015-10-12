@@ -466,7 +466,6 @@ public class MonitorServiceConfigurationBuilder {
         theConfig.storageAdapter.tenantId = getString(storageAdapterConfig, context, StorageAttributes.TENANT_ID);
         theConfig.storageAdapter.accountsContext = getString(storageAdapterConfig, context,
                 StorageAttributes.ACCOUNTS_CONTEXT);
-        // TODO remove this when we dont need double send of metrics
         theConfig.storageAdapter.busContext = getString(storageAdapterConfig, context,
                 StorageAttributes.BUS_CONTEXT);
         theConfig.storageAdapter.inventoryContext = getString(storageAdapterConfig, context,

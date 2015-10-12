@@ -108,7 +108,6 @@ public interface StorageAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    // TODO remove this when we don't do double send of metrics
     SimpleAttributeDefinition BUS_CONTEXT = new SimpleAttributeDefinitionBuilder("busContext",
             ModelType.STRING)
             .setAllowNull(true)
