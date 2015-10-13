@@ -414,7 +414,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         try {
                             StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.url,
                                     AsyncInventoryStorage.this.config.inventoryContext);
-                            url = Util.convertToNonSecureUrl(url.toString());
                             url.append("bulk");
                             String jsonPayload = Util.toJson(payload);
 

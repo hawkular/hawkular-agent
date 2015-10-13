@@ -127,19 +127,6 @@ public class Util {
         return urlStr;
     }
 
-    // TODO this is to support some kind of bug where inventory won't let use talk to it over https;
-    // we need to fix that problem and get rid of this hack
-    @Deprecated
-    public static StringBuilder convertToNonSecureUrl(String url) {
-        if (url.startsWith("http:")) {
-            return new StringBuilder(url); // it already is non-secure
-        }
-        String securePort = System.getProperty("hawkular.hack.secure-port", "8443");
-        String nonsecurePort = System.getProperty("hawkular.hack.nonsecure-port", "8080");
-        url = url.replace("https:", "http:").replace(":" + securePort, ":" + nonsecurePort);
-        return new StringBuilder(url);
-    }
-
     /**
      * Given a string builder, this ensures its last character is a forward-slash.
      *

@@ -109,7 +109,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // build the URL to the bus interface
             StringBuilder urlStr = Util.getContextUrlString(this.config.url, this.config.busContext);
-            urlStr = Util.convertToNonSecureUrl(urlStr.toString());
             URL url = new URL(urlStr.toString());
 
             // build the bus client
@@ -170,7 +169,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
         try {
             // build the URL to the bus interface
             StringBuilder urlStr = Util.getContextUrlString(this.config.url, this.config.busContext);
-            urlStr = Util.convertToNonSecureUrl(urlStr.toString());
             URL url = new URL(urlStr.toString());
 
             // build the bus client
