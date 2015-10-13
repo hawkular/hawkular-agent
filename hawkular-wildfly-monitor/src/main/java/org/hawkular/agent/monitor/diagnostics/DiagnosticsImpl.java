@@ -30,6 +30,9 @@ public class DiagnosticsImpl implements Diagnostics {
     private final Timer dmrRequestTimer;
     private final Meter dmrDelayCounter;
     private final Meter dmrErrorCounter;
+    private final Timer jmxRequestTimer;
+    private final Meter jmxDelayCounter;
+    private final Meter jmxErrorCounter;
     private final Meter storageError;
     private final Counter metricsStorageBuffer;
     private final Meter metricRate;
@@ -49,6 +52,9 @@ public class DiagnosticsImpl implements Diagnostics {
         dmrRequestTimer = registry.timer(name(selfId, "dmr.request-timer"));
         dmrDelayCounter = registry.meter(name(selfId, "dmr.delay-rate"));
         dmrErrorCounter = registry.meter(name(selfId, "dmr.error-rate"));
+        jmxRequestTimer = registry.timer(name(selfId, "jmx.request-timer"));
+        jmxDelayCounter = registry.meter(name(selfId, "jmx.delay-rate"));
+        jmxErrorCounter = registry.meter(name(selfId, "jmx.error-rate"));
         storageError = registry.meter(name(selfId, "storage.error-rate"));
         metricsStorageBuffer = registry.counter(name(selfId, "metrics.storage-buffer-size"));
         metricRate = registry.meter(name(selfId, "metric.rate"));
@@ -79,6 +85,21 @@ public class DiagnosticsImpl implements Diagnostics {
     @Override
     public Meter getDMRErrorRate() {
         return dmrErrorCounter;
+    }
+
+    @Override
+    public Timer getJMXRequestTimer() {
+        return jmxRequestTimer;
+    }
+
+    @Override
+    public Meter getJMXDelayedRate() {
+        return jmxDelayCounter;
+    }
+
+    @Override
+    public Meter getJMXErrorRate() {
+        return jmxErrorCounter;
     }
 
     @Override

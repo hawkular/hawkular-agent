@@ -46,6 +46,21 @@ public interface Diagnostics {
     Meter getDMRDelayedRate();
 
     /**
+     * @return time it takes to execute JMX requests
+     */
+    Timer getJMXRequestTimer();
+
+    /**
+     * @return tracks the number of JMX failures
+     */
+    Meter getJMXErrorRate();
+
+    /**
+     * @return tracks how many JMX requests missed their intervals
+     */
+    Meter getJMXDelayedRate();
+
+    /**
      * @return tracks how many errors occurred while trying to store data
      */
     Meter getStorageErrorRate();
