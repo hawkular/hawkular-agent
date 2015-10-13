@@ -35,6 +35,7 @@
                    username="jdoe"
                    password="password"
                    url="http://localhost:8080"
+                   securityRealm="HawkularSecurityRealm"
                    inventoryContext="/hawkular/inventory/"
                    metricsContext="/hawkular/metrics/" />
 

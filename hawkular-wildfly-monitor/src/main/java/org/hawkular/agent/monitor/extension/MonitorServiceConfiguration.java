@@ -76,6 +76,7 @@ public class MonitorServiceConfiguration {
         public String feedcommContext;
         public String keystorePath;
         public String keystorePassword;
+        public String securityRealm;
     }
 
     public static class Diagnostics {

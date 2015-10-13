@@ -70,6 +70,13 @@ public interface StorageAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition SECURITY_REALM = new SimpleAttributeDefinitionBuilder("securityRealm",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     SimpleAttributeDefinition KEYSTORE_PATH = new SimpleAttributeDefinitionBuilder("keystorePath",
             ModelType.STRING)
             .setAllowNull(true)
@@ -133,6 +140,7 @@ public interface StorageAttributes {
             TENANT_ID,
             URL,
             USE_SSL,
+            SECURITY_REALM,
             KEYSTORE_PATH,
             KEYSTORE_PASSWORD,
             SERVER_OUTBOUND_SOCKET_BINDING_REF,

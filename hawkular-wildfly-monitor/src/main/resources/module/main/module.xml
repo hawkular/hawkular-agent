@@ -69,6 +69,7 @@
 
     <!-- other dependencies we need -->
     <module name="com.google.guava"/>
+    <module name="org.jboss.as.domain-management"/>
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>
     <module name="org.jboss.as.threads"/>
