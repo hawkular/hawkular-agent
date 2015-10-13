@@ -18,39 +18,30 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class ManagedServersDefinition extends PersistentResourceDefinition {
+public class RemoteJMXDefinition extends PersistentResourceDefinition {
 
-    public static final ManagedServersDefinition INSTANCE = new ManagedServersDefinition();
+    public static final RemoteJMXDefinition INSTANCE = new RemoteJMXDefinition();
 
-    static final String MANAGED_SERVERS = "managed-servers";
+    static final String REMOTE_JMX = "remote-jmx";
 
-    private ManagedServersDefinition() {
-        super(PathElement.pathElement(MANAGED_SERVERS, "default"),
-                SubsystemExtension.getResourceDescriptionResolver(MANAGED_SERVERS),
-                ManagedServersAdd.INSTANCE,
-                ManagedServersRemove.INSTANCE,
+    private RemoteJMXDefinition() {
+        super(PathElement.pathElement(REMOTE_JMX),
+                SubsystemExtension.getResourceDescriptionResolver(ManagedServersDefinition.MANAGED_SERVERS,
+                        REMOTE_JMX),
+                RemoteJMXAdd.INSTANCE,
+                RemoteJMXRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ManagedServersAttributes.ATTRIBUTES);
-    }
-
-    @Override
-    protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(
-                LocalDMRDefinition.INSTANCE,
-                RemoteDMRDefinition.INSTANCE,
-                LocalJMXDefinition.INSTANCE,
-                RemoteJMXDefinition.INSTANCE);
+        return Arrays.asList(RemoteJMXAttributes.ATTRIBUTES);
     }
 }

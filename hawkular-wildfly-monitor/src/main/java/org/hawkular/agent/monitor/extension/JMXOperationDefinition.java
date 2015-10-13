@@ -18,39 +18,30 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class ManagedServersDefinition extends PersistentResourceDefinition {
+public class JMXOperationDefinition extends PersistentResourceDefinition {
 
-    public static final ManagedServersDefinition INSTANCE = new ManagedServersDefinition();
+    public static final JMXOperationDefinition INSTANCE = new JMXOperationDefinition();
 
-    static final String MANAGED_SERVERS = "managed-servers";
+    static final String OPERATION = "operation-jmx";
 
-    private ManagedServersDefinition() {
-        super(PathElement.pathElement(MANAGED_SERVERS, "default"),
-                SubsystemExtension.getResourceDescriptionResolver(MANAGED_SERVERS),
-                ManagedServersAdd.INSTANCE,
-                ManagedServersRemove.INSTANCE,
+    private JMXOperationDefinition() {
+        super(PathElement.pathElement(OPERATION),
+                SubsystemExtension.getResourceDescriptionResolver(JMXResourceTypeSetDefinition.RESOURCE_TYPE_SET,
+                        JMXResourceTypeDefinition.RESOURCE_TYPE, OPERATION),
+                JMXOperationAdd.INSTANCE,
+                JMXOperationRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ManagedServersAttributes.ATTRIBUTES);
-    }
-
-    @Override
-    protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(
-                LocalDMRDefinition.INSTANCE,
-                RemoteDMRDefinition.INSTANCE,
-                LocalJMXDefinition.INSTANCE,
-                RemoteJMXDefinition.INSTANCE);
+        return Arrays.asList(JMXOperationAttributes.ATTRIBUTES);
     }
 }

@@ -18,39 +18,30 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class ManagedServersDefinition extends PersistentResourceDefinition {
+public class LocalJMXDefinition extends PersistentResourceDefinition {
 
-    public static final ManagedServersDefinition INSTANCE = new ManagedServersDefinition();
+    public static final LocalJMXDefinition INSTANCE = new LocalJMXDefinition();
 
-    static final String MANAGED_SERVERS = "managed-servers";
+    static final String LOCAL_JMX = "local-jmx";
 
-    private ManagedServersDefinition() {
-        super(PathElement.pathElement(MANAGED_SERVERS, "default"),
-                SubsystemExtension.getResourceDescriptionResolver(MANAGED_SERVERS),
-                ManagedServersAdd.INSTANCE,
-                ManagedServersRemove.INSTANCE,
+    private LocalJMXDefinition() {
+        super(PathElement.pathElement(LOCAL_JMX),
+                SubsystemExtension.getResourceDescriptionResolver(ManagedServersDefinition.MANAGED_SERVERS,
+                        LOCAL_JMX),
+                LocalJMXAdd.INSTANCE,
+                LocalJMXRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ManagedServersAttributes.ATTRIBUTES);
-    }
-
-    @Override
-    protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(
-                LocalDMRDefinition.INSTANCE,
-                RemoteDMRDefinition.INSTANCE,
-                LocalJMXDefinition.INSTANCE,
-                RemoteJMXDefinition.INSTANCE);
+        return Arrays.asList(LocalJMXAttributes.ATTRIBUTES);
     }
 }
