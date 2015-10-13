@@ -981,7 +981,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             // start with the protocol, host, and port, plus context
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
                     configuration.storageAdapter.inventoryContext);
-            url = Util.convertToNonSecureUrl(url.toString());
 
             // the REST URL requires environment ID next in the path
             url.append(environmentId);
