@@ -65,29 +65,29 @@ public class JMXEndpoint extends MonitoredEndpoint {
      * @see #getServerIdentifiers()
      */
     public ServerIdentifiers getServerIdentifiers() {
-        //        if (this.serverId == null) {
-        //            try (CoreJBossASClient client = new CoreJBossASClient(getModelControllerClientFactory().createClient())) {
-        //                Address rootResource = Address.root();
-        //                boolean isDomainMode = client.getStringAttribute("launch-type", rootResource)
-        //                        .equalsIgnoreCase("domain");
-        //                String hostName = (isDomainMode) ? client.getStringAttribute("host", rootResource) : null;
-        //                String serverName = client.getStringAttribute("name", rootResource);
-        //                Properties sysprops = client.getSystemProperties();
-        //                String nodeName = sysprops.getProperty("jboss.node.name");
-        //
-        //                // this is a new attribute that only exists in Wildfly 10 and up. If we can't get it, just use null.
-        //                String uuid;
-        //                try {
-        //                    uuid = client.getStringAttribute("uuid", rootResource);
-        //                } catch (Exception ignore) {
-        //                    uuid = null;
-        //                }
-        //
-        //                this.serverId = new ServerIdentifiers(hostName, serverName, nodeName, uuid);
-        //            } catch (Exception e) {
-        //                log.warnCannotObtainServerIdentifiersForDMREndpoint(this.toString(), e.toString());
-        //            }
-        //        }
+//        if (this.serverId == null) {
+//            try (CoreJBossASClient client = new CoreJBossASClient(getModelControllerClientFactory().createClient())) {
+//                Address rootResource = Address.root();
+//                boolean isDomainMode = client.getStringAttribute("launch-type", rootResource)
+//                        .equalsIgnoreCase("domain");
+//                String hostName = (isDomainMode) ? client.getStringAttribute("host", rootResource) : null;
+//                String serverName = client.getStringAttribute("name", rootResource);
+//                Properties sysprops = client.getSystemProperties();
+//                String nodeName = sysprops.getProperty("jboss.node.name");
+//
+//                // this is a new attribute that only exists in Wildfly 10 and up. If we can't get it, just use null.
+//                String uuid;
+//                try {
+//                    uuid = client.getStringAttribute("uuid", rootResource);
+//                } catch (Exception ignore) {
+//                    uuid = null;
+//                }
+//
+//                this.serverId = new ServerIdentifiers(hostName, serverName, nodeName, uuid);
+//            } catch (Exception e) {
+//                log.warnCannotObtainServerIdentifiersForDMREndpoint(this.toString(), e.toString());
+//            }
+//        }
 
         return this.serverId;
     }

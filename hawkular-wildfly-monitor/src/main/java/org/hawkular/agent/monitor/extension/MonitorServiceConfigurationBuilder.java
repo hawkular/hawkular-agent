@@ -35,6 +35,16 @@ import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.inventory.jmx.JMXAvailType;
+import org.hawkular.agent.monitor.inventory.jmx.JMXAvailTypeSet;
+import org.hawkular.agent.monitor.inventory.jmx.JMXMetricType;
+import org.hawkular.agent.monitor.inventory.jmx.JMXMetricTypeSet;
+import org.hawkular.agent.monitor.inventory.jmx.JMXOperation;
+import org.hawkular.agent.monitor.inventory.jmx.JMXResourceConfigurationPropertyType;
+import org.hawkular.agent.monitor.inventory.jmx.JMXResourceType;
+import org.hawkular.agent.monitor.inventory.jmx.JMXResourceTypeSet;
+import org.hawkular.agent.monitor.inventory.jmx.LocalJMXManagedServer;
+import org.hawkular.agent.monitor.inventory.jmx.RemoteJMXManagedServer;
 import org.hawkular.agent.monitor.inventory.platform.Constants;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
@@ -68,20 +78,34 @@ public class MonitorServiceConfigurationBuilder {
         determineDiagnosticsConfig(config, context);
         determinePlatformConfig(config, context);
 
-        boolean hasEnabledMetrics = determineMetricSetDmr(config, context);
-        if (!hasEnabledMetrics) {
-            log.infoNoEnabledMetricsConfigured();
-        }
+        boolean hasEnabledMetricsDmr = determineMetricSetDmr(config, context);
+        boolean hasEnabledAvailsDmr = determineAvailSetDmr(config, context);
 
-        boolean hasEnabledAvails = determineAvailSetDmr(config, context);
-        if (!hasEnabledAvails) {
-            log.infoNoEnabledAvailsConfigured();
+        boolean hasEnabledMetricsJmx = determineMetricSetJmx(config, context);
+        boolean hasEnabledAvailsJmx = determineAvailSetJmx(config, context);
+
+        if (!hasEnabledMetricsDmr) {
+            log.infoNoEnabledMetricsConfigured("DMR");
+        }
+        if (!hasEnabledAvailsDmr) {
+            log.infoNoEnabledAvailsConfigured("DMR");
+        }
+        if (!hasEnabledMetricsJmx) {
+            log.infoNoEnabledMetricsConfigured("JMX");
+        }
+        if (!hasEnabledAvailsJmx) {
+            log.infoNoEnabledAvailsConfigured("JMX");
         }
 
         // make sure to call this AFTER the metric sets and avail sets have been determined
-        boolean hasEnabledResourceTypes = determineResourceTypeSetDmr(config, context);
-        if (!hasEnabledResourceTypes) {
-            log.infoNoEnabledResourceTypesConfigured();
+        boolean hasEnabledResourceTypesDmr = determineResourceTypeSetDmr(config, context);
+        boolean hasEnabledResourceTypesJmx = determineResourceTypeSetJmx(config, context);
+
+        if (!hasEnabledResourceTypesDmr) {
+            log.infoNoEnabledResourceTypesConfigured("DMR");
+        }
+        if (!hasEnabledResourceTypesJmx) {
+            log.infoNoEnabledResourceTypesConfigured("JMX");
         }
 
         // make sure to call this AFTER the resource type sets have been determined
@@ -169,6 +193,96 @@ public class MonitorServiceConfigurationBuilder {
                         String availTimeUnitsStr = getString(availValueNode, context, DMRAvailAttributes.TIME_UNITS);
                         avail.setTimeUnits(TimeUnit.valueOf(availTimeUnitsStr.toUpperCase()));
                         avail.setUpRegex(getString(availValueNode, context, DMRAvailAttributes.UP_REGEX));
+                    }
+                    if (availSet.isEnabled() && !availSet.getAvailTypeMap().isEmpty()) {
+                        hasEnabledAvails = true;
+                    }
+                }
+            }
+        }
+
+        return hasEnabledAvails;
+    }
+
+    private boolean determineMetricSetJmx(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+
+        boolean hasEnabledMetrics = false;
+
+        if (config.hasDefined(JMXMetricSetDefinition.METRIC_SET)) {
+            List<Property> metricSetsList = config.get(JMXMetricSetDefinition.METRIC_SET).asPropertyList();
+            for (Property metricSetProperty : metricSetsList) {
+                String metricSetName = metricSetProperty.getName();
+                if (metricSetName.indexOf(',') > -1) {
+                    log.warnCommaInName(metricSetName);
+                }
+                JMXMetricTypeSet metricSet = new JMXMetricTypeSet(ID.NULL_ID, new Name(metricSetName));
+                theConfig.jmxMetricTypeSetMap.put(metricSet.getName(), metricSet);
+                ModelNode metricSetValueNode = metricSetProperty.getValue();
+                metricSet.setEnabled(getBoolean(metricSetValueNode, context, JMXMetricSetAttributes.ENABLED));
+                if (metricSetValueNode.hasDefined(JMXMetricDefinition.METRIC)) {
+                    List<Property> metricsList = metricSetValueNode.get(JMXMetricDefinition.METRIC).asPropertyList();
+                    for (Property metricProperty : metricsList) {
+                        String metricName = metricSet.getName() + "~" + metricProperty.getName();
+                        JMXMetricType metric = new JMXMetricType(ID.NULL_ID, new Name(metricName));
+                        metricSet.getMetricTypeMap().put(metric.getName(), metric);
+                        ModelNode metricValueNode = metricProperty.getValue();
+                        metric.setPath(getString(metricValueNode, context, JMXMetricAttributes.PATH));
+                        metric.setAttribute(getString(metricValueNode, context, JMXMetricAttributes.ATTRIBUTE));
+                        String metricTypeStr = getString(metricValueNode, context, JMXMetricAttributes.METRIC_TYPE);
+                        if (metricTypeStr == null) {
+                            metric.setMetricType(MetricType.GAUGE);
+                        } else {
+                            metric.setMetricType(MetricType.valueOf(metricTypeStr.toUpperCase(Locale.ENGLISH)));
+                        }
+                        String metricUnitsStr = getString(metricValueNode, context, JMXMetricAttributes.METRIC_UNITS);
+                        if (metricUnitsStr == null) {
+                            metric.setMetricUnits(MeasurementUnit.NONE);
+                        } else {
+                            metric.setMetricUnits(MeasurementUnit.valueOf(metricUnitsStr.toUpperCase(Locale.ENGLISH)));
+                        }
+                        metric.setInterval(getInt(metricValueNode, context, JMXMetricAttributes.INTERVAL));
+                        String metricTimeUnitsStr = getString(metricValueNode, context,
+                                JMXMetricAttributes.TIME_UNITS);
+                        metric.setTimeUnits(TimeUnit.valueOf(metricTimeUnitsStr.toUpperCase()));
+                    }
+                    if (metricSet.isEnabled() && !metricSet.getMetricTypeMap().isEmpty()) {
+                        hasEnabledMetrics = true;
+                    }
+                }
+            }
+        }
+
+        return hasEnabledMetrics;
+    }
+
+    private boolean determineAvailSetJmx(ModelNode config, OperationContext context) throws OperationFailedException {
+        boolean hasEnabledAvails = false;
+
+        if (config.hasDefined(JMXAvailSetDefinition.AVAIL_SET)) {
+            List<Property> availSetsList = config.get(JMXAvailSetDefinition.AVAIL_SET).asPropertyList();
+            for (Property availSetProperty : availSetsList) {
+                String availSetName = availSetProperty.getName();
+                if (availSetName.indexOf(',') > -1) {
+                    log.warnCommaInName(availSetName);
+                }
+                JMXAvailTypeSet availSet = new JMXAvailTypeSet(ID.NULL_ID, new Name(availSetName));
+                theConfig.jmxAvailTypeSetMap.put(availSet.getName(), availSet);
+                ModelNode availSetValueNode = availSetProperty.getValue();
+                availSet.setEnabled(getBoolean(availSetValueNode, context, JMXAvailSetAttributes.ENABLED));
+                if (availSetValueNode.hasDefined(JMXAvailDefinition.AVAIL)) {
+                    List<Property> availsList = availSetValueNode.get(JMXAvailDefinition.AVAIL).asPropertyList();
+                    for (Property availProperty : availsList) {
+                        String availName = availSet.getName() + "~" + availProperty.getName();
+                        JMXAvailType avail = new JMXAvailType(ID.NULL_ID, new Name(availName));
+                        availSet.getAvailTypeMap().put(avail.getName(), avail);
+                        ModelNode availValueNode = availProperty.getValue();
+                        avail.setPath(getString(availValueNode, context, JMXAvailAttributes.PATH));
+                        avail.setAttribute(getString(availValueNode, context, JMXAvailAttributes.ATTRIBUTE));
+                        avail.setInterval(getInt(availValueNode, context, JMXAvailAttributes.INTERVAL));
+                        String availTimeUnitsStr = getString(availValueNode, context, JMXAvailAttributes.TIME_UNITS);
+                        avail.setTimeUnits(TimeUnit.valueOf(availTimeUnitsStr.toUpperCase()));
+                        avail.setUpRegex(getString(availValueNode, context, JMXAvailAttributes.UP_REGEX));
                     }
                     if (availSet.isEnabled() && !availSet.getAvailTypeMap().isEmpty()) {
                         hasEnabledAvails = true;
@@ -617,6 +731,113 @@ public class MonitorServiceConfigurationBuilder {
         return hasEnabledResourceTypes;
     }
 
+    private boolean determineResourceTypeSetJmx(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+        boolean hasEnabledResourceTypes = false;
+
+        if (config.hasDefined(JMXResourceTypeSetDefinition.RESOURCE_TYPE_SET)) {
+            List<Property> resourceTypeSetsList = config.get(JMXResourceTypeSetDefinition.RESOURCE_TYPE_SET)
+                    .asPropertyList();
+            for (Property resourceTypeSetProperty : resourceTypeSetsList) {
+                String resourceTypeSetName = resourceTypeSetProperty.getName();
+                JMXResourceTypeSet resourceTypeSet = new JMXResourceTypeSet(ID.NULL_ID, new Name(resourceTypeSetName));
+                if (resourceTypeSetName.indexOf(',') > -1) {
+                    log.warnCommaInName(resourceTypeSetName);
+                }
+                theConfig.jmxResourceTypeSetMap.put(resourceTypeSet.getName(), resourceTypeSet);
+                ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
+                resourceTypeSet.setEnabled(getBoolean(resourceTypeSetValueNode, context,
+                        JMXResourceTypeSetAttributes.ENABLED));
+                if (resourceTypeSetValueNode.hasDefined(JMXResourceTypeDefinition.RESOURCE_TYPE)) {
+                    List<Property> resourceTypesList = resourceTypeSetValueNode.get(
+                            JMXResourceTypeDefinition.RESOURCE_TYPE).asPropertyList();
+                    for (Property resourceTypeProperty : resourceTypesList) {
+                        ModelNode resourceTypeValueNode = resourceTypeProperty.getValue();
+
+                        String resourceTypeName = resourceTypeProperty.getName();
+                        JMXResourceType resourceType = new JMXResourceType(ID.NULL_ID, new Name(resourceTypeName));
+                        resourceTypeSet.getResourceTypeMap().put(resourceType.getName(), resourceType);
+                        resourceType.setResourceNameTemplate(getString(resourceTypeValueNode, context,
+                                JMXResourceTypeAttributes.RESOURCE_NAME_TEMPLATE));
+                        resourceType.setPath(getString(resourceTypeValueNode, context,
+                                JMXResourceTypeAttributes.PATH));
+                        resourceType.setParents(getNameListFromString(resourceTypeValueNode, context,
+                                JMXResourceTypeAttributes.PARENTS));
+
+                        List<Name> metricSets = getNameListFromString(resourceTypeValueNode, context,
+                                JMXResourceTypeAttributes.METRIC_SETS);
+                        List<Name> availSets = getNameListFromString(resourceTypeValueNode, context,
+                                JMXResourceTypeAttributes.AVAIL_SETS);
+
+                        // verify that the metric sets and avail sets exist
+                        for (Name metricSetName : metricSets) {
+                            if (!theConfig.jmxMetricTypeSetMap.containsKey(metricSetName)) {
+                                log.warnMetricSetDoesNotExist(resourceTypeName.toString(),
+                                        metricSetName.toString());
+                            }
+                        }
+                        for (Name availSetName : availSets) {
+                            if (!theConfig.jmxAvailTypeSetMap.containsKey(availSetName)) {
+                                log.warnAvailSetDoesNotExist(resourceTypeName.toString(),
+                                        availSetName.toString());
+                            }
+                        }
+
+                        resourceType.setMetricSets(metricSets);
+                        resourceType.setAvailSets(availSets);
+
+                        // get operations
+                        ModelNode opModelNode = resourceTypeValueNode.get(JMXOperationDefinition.OPERATION);
+                        if (opModelNode != null && opModelNode.isDefined()) {
+                            List<Property> operationList = opModelNode.asPropertyList();
+                            for (Property operationProperty : operationList) {
+                                ModelNode operationValueNode = operationProperty.getValue();
+                                String operationName = operationProperty.getName();
+                                JMXOperation op = new JMXOperation(ID.NULL_ID, new Name(operationName), resourceType);
+                                op.setPath(getString(operationValueNode, context, JMXOperationAttributes.PATH));
+                                op.setOperationName(getString(operationValueNode, context,
+                                        JMXOperationAttributes.OPERATION_NAME));
+                                resourceType.addOperation(op);
+                            }
+                        }
+
+                        // get resource config properties
+                        ModelNode configModelNode = resourceTypeValueNode
+                                .get(JMXResourceConfigDefinition.RESOURCE_CONFIG);
+                        if (configModelNode != null && configModelNode.isDefined()) {
+                            List<Property> configList = configModelNode.asPropertyList();
+                            for (Property configProperty : configList) {
+                                ModelNode configValueNode = configProperty.getValue();
+                                String configName = configProperty.getName();
+                                JMXResourceConfigurationPropertyType configType =
+                                        new JMXResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName),
+                                                resourceType);
+                                configType.setPath(getString(configValueNode, context,
+                                        JMXResourceConfigAttributes.PATH));
+                                configType.setAttribute(getString(configValueNode, context,
+                                        JMXResourceConfigAttributes.ATTRIBUTE));
+                                resourceType.addResourceConfigurationPropertyType(configType);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // build a graph of the full type hierarchy just to test to make sure it all is valid
+            try {
+                ResourceTypeManager<JMXResourceType, JMXResourceTypeSet> rtm;
+                rtm = new ResourceTypeManager<>(theConfig.jmxResourceTypeSetMap);
+                if (!rtm.getAllResourceTypes().isEmpty()) {
+                    hasEnabledResourceTypes = true;
+                }
+            } catch (Exception e) {
+                throw new OperationFailedException(e);
+            }
+        }
+
+        return hasEnabledResourceTypes;
+    }
+
     private void determineManagedServers(ModelNode config, OperationContext context) throws OperationFailedException {
         if (config.hasDefined(ManagedServersDefinition.MANAGED_SERVERS)) {
             List<Property> asPropertyList = config.get(ManagedServersDefinition.MANAGED_SERVERS).asPropertyList();
@@ -626,6 +847,8 @@ public class MonitorServiceConfigurationBuilder {
             }
 
             ModelNode managedServersValueNode = asPropertyList.get(0).getValue();
+
+            // DMR
 
             if (managedServersValueNode.hasDefined(RemoteDMRDefinition.REMOTE_DMR)) {
                 List<Property> remoteDMRsList = managedServersValueNode.get(RemoteDMRDefinition.REMOTE_DMR)
@@ -687,7 +910,68 @@ public class MonitorServiceConfigurationBuilder {
                 theConfig.managedServersMap.put(res.getName(), res);
             }
 
-            // TODO get remote JMX entries now
+            // JMX
+
+            if (managedServersValueNode.hasDefined(RemoteJMXDefinition.REMOTE_JMX)) {
+                List<Property> remoteJMXsList = managedServersValueNode.get(RemoteJMXDefinition.REMOTE_JMX)
+                        .asPropertyList();
+                for (Property remoteJMXProperty : remoteJMXsList) {
+                    String name = remoteJMXProperty.getName();
+                    ModelNode remoteJMXValueNode = remoteJMXProperty.getValue();
+                    boolean enabled = getBoolean(remoteJMXValueNode, context, RemoteJMXAttributes.ENABLED);
+                    String host = getString(remoteJMXValueNode, context, RemoteJMXAttributes.HOST);
+                    int port = getInt(remoteJMXValueNode, context, RemoteJMXAttributes.PORT);
+                    String username = getString(remoteJMXValueNode, context, RemoteJMXAttributes.USERNAME);
+                    String password = getString(remoteJMXValueNode, context, RemoteJMXAttributes.PASSWORD);
+                    List<Name> resourceTypeSets = getNameListFromString(remoteJMXValueNode, context,
+                            RemoteJMXAttributes.RESOURCE_TYPE_SETS);
+
+                    // verify that the resource type sets exist
+                    for (Name resourceTypeSetName : resourceTypeSets) {
+                        if (!theConfig.jmxResourceTypeSetMap.containsKey(resourceTypeSetName)) {
+                            log.warnResourceTypeSetDoesNotExist(name.toString(),
+                                    resourceTypeSetName.toString());
+                        }
+                    }
+
+                    RemoteJMXManagedServer res = new RemoteJMXManagedServer(ID.NULL_ID, new Name(name));
+                    res.setEnabled(enabled);
+                    res.setHost(host);
+                    res.setPort(port);
+                    res.setUsername(username);
+                    res.setPassword(password);
+                    res.getResourceTypeSets().addAll(resourceTypeSets);
+                    theConfig.managedServersMap.put(res.getName(), res);
+                }
+            }
+
+            if (managedServersValueNode.hasDefined(LocalJMXDefinition.LOCAL_JMX)) {
+                List<Property> localJMXsList = managedServersValueNode.get(LocalJMXDefinition.LOCAL_JMX)
+                        .asPropertyList();
+                if (localJMXsList.size() > 1) {
+                    throw new IllegalArgumentException("Can only have one <local-jmx>: " + config.toJSONString(true));
+                }
+
+                Property localJMXProperty = localJMXsList.get(0);
+                String name = localJMXProperty.getName();
+                ModelNode localJMXValueNode = localJMXProperty.getValue();
+                boolean enabled = getBoolean(localJMXValueNode, context, LocalJMXAttributes.ENABLED);
+                List<Name> resourceTypeSets = getNameListFromString(localJMXValueNode, context,
+                        LocalJMXAttributes.RESOURCE_TYPE_SETS);
+
+                // verify that the metric sets and avail sets exist
+                for (Name resourceTypeSetName : resourceTypeSets) {
+                    if (!theConfig.jmxResourceTypeSetMap.containsKey(resourceTypeSetName)) {
+                        log.warnResourceTypeSetDoesNotExist(name.toString(), resourceTypeSetName.toString());
+                    }
+                }
+
+                LocalJMXManagedServer res = new LocalJMXManagedServer(ID.NULL_ID, new Name(name));
+                res.setEnabled(enabled);
+                res.getResourceTypeSets().addAll(resourceTypeSets);
+                theConfig.managedServersMap.put(res.getName(), res);
+            }
+
         }
     }
 
