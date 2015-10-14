@@ -39,6 +39,7 @@ public abstract class DMRTaskKeyGenerator implements KeyGenerator {
         }
         key.append(serverId.getFullIdentifier());
         key.append(".").append(dmrTask.getAddress().toAddressPathString());
+        key.append(".").append(dmrTask.getAttribute());
         if (dmrTask.getSubref() != null && !dmrTask.getSubref().isEmpty()) {
             key.append(".").append(dmrTask.getSubref());
         }
