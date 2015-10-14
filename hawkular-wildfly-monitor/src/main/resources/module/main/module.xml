@@ -20,7 +20,6 @@
   <resources>
     <resource-root path="clients-common.jar"/>
     <resource-root path="hawkular-bus-common.jar"/>
-    <resource-root path="hawkular-bus-rest-client.jar"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES -->
     <resource-root path="hawkular-command-gateway-api.jar"/>
     <resource-root path="hawkular-dmr-client.jar"/>
     <resource-root path="hawkular-inventory-json-helper.jar"/>
@@ -70,7 +69,6 @@
 
     <!-- other dependencies we need -->
     <module name="com.google.guava"/>
-    <module name="org.apache.httpcomponents"/> <!-- DELETE THIS ONCE WE NO LONGER SEND TWO MESSAGES PER METRIC -->
     <module name="org.jboss.as.domain-management"/>
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>

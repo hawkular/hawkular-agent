@@ -36,7 +36,6 @@
                    password="password"
                    url="http://localhost:8080"
                    securityRealm="HawkularSecurityRealm"
-                   busContext="/hawkular-bus/message/"
                    inventoryContext="/hawkular/inventory/"
                    metricsContext="/hawkular/metrics/" />
 

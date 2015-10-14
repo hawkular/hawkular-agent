@@ -466,8 +466,6 @@ public class MonitorServiceConfigurationBuilder {
         theConfig.storageAdapter.tenantId = getString(storageAdapterConfig, context, StorageAttributes.TENANT_ID);
         theConfig.storageAdapter.accountsContext = getString(storageAdapterConfig, context,
                 StorageAttributes.ACCOUNTS_CONTEXT);
-        theConfig.storageAdapter.busContext = getString(storageAdapterConfig, context,
-                StorageAttributes.BUS_CONTEXT);
         theConfig.storageAdapter.inventoryContext = getString(storageAdapterConfig, context,
                 StorageAttributes.INVENTORY_CONTEXT);
         theConfig.storageAdapter.metricsContext = getString(storageAdapterConfig, context,

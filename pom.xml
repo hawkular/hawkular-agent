@@ -52,8 +52,6 @@
     <version.com.github.dblock>1.5</version.com.github.dblock>
     <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
-    <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
-    <version.org.apache.httpcomponents>4.4.1</version.org.apache.httpcomponents>
     <version.org.hawkular.accounts>1.0.15.Final</version.org.hawkular.accounts>
     <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
     <version.org.hawkular.cmdgw>0.9.1.Final-SRC-revision-1a7168966259c9abaf054236c97a6369f07f9446</version.org.hawkular.cmdgw>
@@ -84,13 +82,6 @@
         <version>${version.io.dropwizard.metrics}</version>
       </dependency>
 
-      <!-- TODO DELETE THIS WHEN WE NO LONGER SEND TWO MESSAGES PER METRIC -->
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>${version.org.apache.httpcomponents}</version>
-      </dependency>
-
       <dependency>
         <groupId>com.squareup.okhttp</groupId>
         <artifactId>okhttp</artifactId>
@@ -107,18 +98,6 @@
         <groupId>org.hawkular.cmdgw</groupId>
         <artifactId>hawkular-command-gateway-api</artifactId>
         <version>${version.org.hawkular.cmdgw}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.hawkular.bus</groupId>
-        <artifactId>hawkular-bus-rest-client</artifactId>
-        <version>${version.org.hawkular.bus}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
