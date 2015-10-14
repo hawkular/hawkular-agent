@@ -88,14 +88,10 @@ public class HawkularStorageAdapter implements StorageAdapter {
     @Override
     public void store(MetricDataPayloadBuilder payloadBuilder) {
 
-        String tenantId = this.config.tenantId;
-        ((HawkularMetricDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
-
         // send to metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
         metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, selfId, httpClientBuilder);
-        metricsAdapter.store(((HawkularMetricDataPayloadBuilder) payloadBuilder)
-                .toMetricsOnlyMetricDataPayloadBuilder());
+        metricsAdapter.store(payloadBuilder);
 
         // looks like everything stored successfully
         // the metrics storage adapter already did this, so don't duplicate the stats here
@@ -125,14 +121,10 @@ public class HawkularStorageAdapter implements StorageAdapter {
     @Override
     public void store(AvailDataPayloadBuilder payloadBuilder) {
 
-        String tenantId = this.config.tenantId;
-        ((HawkularAvailDataPayloadBuilder) payloadBuilder).setTenantId(tenantId);
-
-        // send to h-metrics
+        // send to metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
         metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, selfId, httpClientBuilder);
-        metricsAdapter.store(((HawkularAvailDataPayloadBuilder) payloadBuilder)
-                .toMetricsOnlyAvailDataPayloadBuilder());
+        metricsAdapter.store(payloadBuilder);
 
         // looks like everything stored successfully
         // the metrics storage adapter already did this, so don't duplicate the stats here

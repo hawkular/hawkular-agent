@@ -16,15 +16,8 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
-import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.metrics.client.common.MetricType;
-import org.hawkular.metrics.client.common.SingleMetric;
 
 /**
  * Allows one to build up a payload request to send to Hawkular by adding
@@ -34,19 +27,9 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
 
     private MetricsOnlyMetricDataPayloadBuilder metricsOnlyMetricPayloadBuilder =
             new MetricsOnlyMetricDataPayloadBuilder();
-    private String tenantId = null;
-
-    public void setTenantId(String tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    public MetricsOnlyMetricDataPayloadBuilder toMetricsOnlyMetricDataPayloadBuilder() {
-        return metricsOnlyMetricPayloadBuilder;
-    }
 
     @Override
     public void addDataPoint(String key, long timestamp, double value, MetricType metricType) {
-        // delegate
         metricsOnlyMetricPayloadBuilder.addDataPoint(key, timestamp, value, metricType);
     }
 
@@ -57,56 +40,6 @@ public class HawkularMetricDataPayloadBuilder implements MetricDataPayloadBuilde
 
     @Override
     public String toPayload() {
-        final String jsonPayload = Util.toJson(toMessageBusObject());
-        return jsonPayload;
-    }
-
-    // THIS SHOULD EVENTUALLY GO AWAY WHEN I DON'T HAVE TO SEND BUS MESSAGES TO ALERTS
-    public Map<String, Object> toMessageBusObject() {
-        if (tenantId == null) {
-            throw new IllegalStateException("Do not know the tenant ID");
-        }
-
-        List<SingleMetric> singleMetrics = new ArrayList<>();
-
-        Map<String, List<Map<String, Object>>> gaugesAndCounters = metricsOnlyMetricPayloadBuilder.toObjectPayload();
-
-        // list of maps where map is keyed on metric ID ("id") and value is "data"
-        // where "data" is another List<Map<String, Number>> that is the list of metric data.
-        // That inner map is keyed on either "timestamp" or "value" (both are Numbers).
-        List<Map<String, Object>> allMetrics = gaugesAndCounters.get("gauges");
-        if (allMetrics != null) {
-            for (Map<String, Object> metric : allMetrics) {
-                String metricId = (String) metric.get("id");
-                List<Map<String, Number>> metricListData = (List<Map<String, Number>>) metric.get("data");
-                for (Map<String, Number> singleMetricData : metricListData) {
-                    long timestamp = singleMetricData.get("timestamp").longValue();
-                    double value = singleMetricData.get("value").doubleValue();
-                    singleMetrics.add(new SingleMetric(metricId, timestamp, value, MetricType.GAUGE));
-                }
-            }
-        }
-
-        allMetrics = gaugesAndCounters.get("counters");
-        if (allMetrics != null) {
-            for (Map<String, Object> metric : allMetrics) {
-                String metricId = (String) metric.get("id");
-                List<Map<String, Number>> metricListData = (List<Map<String, Number>>) metric.get("data");
-                for (Map<String, Number> singleMetricData : metricListData) {
-                    long timestamp = singleMetricData.get("timestamp").longValue();
-                    double value = singleMetricData.get("value").doubleValue();
-                    singleMetrics.add(new SingleMetric(metricId, timestamp, value, MetricType.COUNTER));
-                }
-            }
-        }
-
-        Map<String, Object> data = new HashMap<>(2);
-        data.put("tenantId", tenantId);
-        data.put("data", singleMetrics);
-
-        Map<String, Object> outerBusObject = new HashMap<>(1);
-        outerBusObject.put("metricData", data);
-
-        return outerBusObject;
+        return metricsOnlyMetricPayloadBuilder.toPayload();
     }
 }
