@@ -16,13 +16,42 @@
  */
 package org.hawkular.agent.monitor.inventory.jmx;
 
+import java.net.URL;
+
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
 
 public class LocalJMXManagedServer extends ManagedServer {
-
     public LocalJMXManagedServer(ID id, Name name) {
         super(id, name);
+    }
+
+    private URL url;
+    private String username;
+    private String password;
+
+    public URL getUrl() {
+        return url;
+    }
+
+    public void setURL(URL url) {
+        this.url = url;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

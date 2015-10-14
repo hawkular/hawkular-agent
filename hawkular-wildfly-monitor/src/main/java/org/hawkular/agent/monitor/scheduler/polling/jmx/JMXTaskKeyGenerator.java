@@ -18,7 +18,6 @@ package org.hawkular.agent.monitor.scheduler.polling.jmx;
 
 import org.hawkular.agent.monitor.scheduler.polling.KeyGenerator;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 /**
  * Resolve data input attributes to final storage name.
@@ -33,12 +32,13 @@ public abstract class JMXTaskKeyGenerator implements KeyGenerator {
     protected String generateDefaultKey(Task task) {
         JMXTask jmxTask = (JMXTask) task;
         StringBuilder key = new StringBuilder();
-        ServerIdentifiers serverId = jmxTask.getEndpoint().getServerIdentifiers();
+        String serverId = jmxTask.getEndpoint().getServerIdentifier();
         if (serverId == null) {
             throw new RuntimeException(String.format("Cannot generate key for task [%s]", task));
         }
-        key.append(serverId.getFullIdentifier());
-        key.append(".").append(jmxTask.getAddress().toAddressPathString());
+        key.append(serverId);
+        key.append(".").append(jmxTask.getObjectName().getCanonicalName());
+        key.append(".").append(jmxTask.getAttribute());
         if (jmxTask.getSubref() != null && !jmxTask.getSubref().isEmpty()) {
             key.append(".").append(jmxTask.getSubref());
         }

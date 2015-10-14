@@ -20,15 +20,13 @@ import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.registry.AttributeAccess;
-import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
 public interface JMXOperationAttributes {
 
-    SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
+    SimpleAttributeDefinition OBJECT_NAME = new SimpleAttributeDefinitionBuilder("objectName",
             ModelType.STRING)
             .setAllowNull(true)
-            .setDefaultValue(new ModelNode("/"))
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
@@ -41,7 +39,7 @@ public interface JMXOperationAttributes {
             .build();
 
     AttributeDefinition[] ATTRIBUTES = {
-            PATH,
+            OBJECT_NAME,
             OPERATION_NAME
     };
 }

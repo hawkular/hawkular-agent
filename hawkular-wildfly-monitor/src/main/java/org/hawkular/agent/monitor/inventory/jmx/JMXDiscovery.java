@@ -35,20 +35,14 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.scheduler.JmxClientFactory;
 import org.hawkular.agent.monitor.scheduler.config.AvailJMXPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.JMXPropertyReference;
-import org.hawkular.dmrclient.Address;
-import org.hawkular.dmrclient.CoreJBossASClient;
-import org.hawkular.dmrclient.JBossASClient;
-import org.jboss.as.controller.client.ModelControllerClient;
-import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
-import org.jboss.dmr.Property;
 import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.DepthFirstIterator;
+import org.jolokia.client.J4pClient;
 
 /**
  * Discovers resources for a given DMR endpoint.
@@ -57,14 +51,14 @@ public class JMXDiscovery {
     private static final MsgLogger log = AgentLoggers.getLogger(JMXDiscovery.class);
 
     private final JMXInventoryManager inventoryManager;
-    private final ModelControllerClientFactory clientFactory;
+    private final JmxClientFactory clientFactory;
 
     /**
      * Creates the discovery object for the given inventory manager.
      * Only resources of known types will be discovered.
      * To connect to and query the server endpoint, the client factory provided
      * by the inventory manager will be used to create clients
-     * (see {@link JMXInventoryManager#getModelControllerClientFactory()}).
+     * (see {@link JMXInventoryManager#getJmxClientFactory()}).
      *
      * @param im the inventory manager that holds information about the server to be queried and
      *           the known types to be discovered
@@ -72,7 +66,7 @@ public class JMXDiscovery {
      */
     public JMXDiscovery(JMXInventoryManager im) {
         this.inventoryManager = im;
-        this.clientFactory = im.getModelControllerClientFactory();
+        this.clientFactory = im.getJmxClientFactory();
     }
 
     /**
@@ -92,17 +86,19 @@ public class JMXDiscovery {
             resourceManager.getResourcesGraph().addVertexSetListener(listener);
         }
 
-        try (ModelControllerClient mcc = clientFactory.createClient()) {
+        J4pClient client = clientFactory.createClient();
+
+        try {
             Set<JMXResourceType> rootTypes;
             rootTypes = this.inventoryManager.getMetadataManager().getResourceTypeManager().getRootResourceTypes();
 
             long start = System.currentTimeMillis();
             for (JMXResourceType rootType : rootTypes) {
-                discoverChildrenOfResourceType(null, rootType, mcc);
+                discoverChildrenOfResourceType(null, rootType, client);
             }
             long duration = System.currentTimeMillis() - start;
 
-            logTreeGraph("Discovered resources", resourceManager, duration);
+            logTreeGraph("Discovered JMX resources", resourceManager, duration);
         } catch (Exception e) {
             throw new Exception("Failed to execute discovery for endpoint [" + this.inventoryManager.getEndpoint()
                     + "]", e);
@@ -113,11 +109,10 @@ public class JMXDiscovery {
         }
     }
 
-    private void discoverChildrenOfResourceType(JMXResource parent, JMXResourceType type, ModelControllerClient mcc) {
+    private void discoverChildrenOfResourceType(JMXResource parent, JMXResourceType type, J4pClient client) {
         try {
             Map<Address, ModelNode> resources;
 
-            CoreJBossASClient client = new CoreJBossASClient(mcc); // don't close this - the caller will
             Address parentAddr = (parent == null) ? Address.root() : parent.getAddress().clone();
             Address addr = parentAddr.add(Address.parse(type.getPath()));
 
@@ -155,7 +150,7 @@ public class JMXDiscovery {
                 log.debugf("Discovered [%s]", resource);
 
                 // get the configuration of the resource
-                discoverResourceConfiguration(resource, mcc);
+                discoverResourceConfiguration(resource, client);
                 postProcessResourceConfiguration(resource);
 
                 // populate the metrics/avails based on the resource's type
@@ -168,7 +163,7 @@ public class JMXDiscovery {
                 Set<JMXResourceType> childTypes;
                 childTypes = this.inventoryManager.getMetadataManager().getResourceTypeManager().getChildren(type);
                 for (JMXResourceType childType : childTypes) {
-                    discoverChildrenOfResourceType(resource, childType, mcc);
+                    discoverChildrenOfResourceType(resource, childType, client);
                 }
             }
         } catch (Exception e) {

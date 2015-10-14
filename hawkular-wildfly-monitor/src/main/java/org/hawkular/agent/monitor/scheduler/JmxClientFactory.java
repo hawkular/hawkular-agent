@@ -14,19 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.scheduler.config;
+package org.hawkular.agent.monitor.scheduler;
 
-import java.net.URL;
+import org.jolokia.client.J4pClient;
 
-/**
- * Represent the endpoint to the local JMX server.
- */
-public class LocalJMXEndpoint extends JMXEndpoint {
-
-    // TODO: there really isn't anything "local" about this
-    //       should look into possibility of using some intra-vm connector?
-    public LocalJMXEndpoint(String name, URL url, String username, String password) {
-        super(name, url, username, password);
-    }
-
+public interface JmxClientFactory {
+    J4pClient createClient();
 }

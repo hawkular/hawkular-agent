@@ -90,7 +90,7 @@
                 interval="30"
                 timeUnits="seconds"
                 metricUnits="bytes"
-                path="/foo"
+                objectName="domain:foo=bar"
                 attribute="yAttribute" />
   </metric-set-jmx>
 
@@ -98,7 +98,7 @@
     <avail-jmx name="A Avail"
                interval="30"
                timeUnits="seconds"
-               path="/foo"
+               objectName="domain:foo=bar"
                attribute="yAttribute"
                upRegex="run.*" />
   </avail-set-jmx>
@@ -106,13 +106,13 @@
   <resource-type-set-jmx name="R Resource Type Set" enabled="false">
     <resource-type-jmx name="R Resource Type"
                        resourceNameTemplate="R Resource Name"
-                       path="/foo"
+                       objectName="domain:foo=bar"
                        metricSets="M Metric Set"
                        availSets="A Avail Set">
       <resource-config-jmx name="Config NAme"
-                           path="/foo"
+                           objectName="domain:foo=bar"
                            attribute="configAttribute" />
-      <operation-jmx name="O Operation" operationName="oOperation" path="/foo"/>
+      <operation-jmx name="O Operation" operationName="oOperation" objectName="domain:foo=bar" />
     </resource-type-jmx>
   </resource-type-set-jmx>
 
@@ -128,8 +128,7 @@
 
     <remote-jmx name="Remote JMX"
                 enabled="false"
-                host="localhost"
-                port="9990"
+                url="http://localhost:8080/jolokia"
                 resourceTypeSets="R Resource Type Set" />
 
     <local-jmx name="Local JMX"

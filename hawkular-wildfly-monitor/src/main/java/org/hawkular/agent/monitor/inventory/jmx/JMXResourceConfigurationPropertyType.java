@@ -22,19 +22,19 @@ import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 
 public class JMXResourceConfigurationPropertyType extends ResourceConfigurationPropertyType<JMXResourceType> {
 
-    private String path;
+    private String objectName;
     private String attribute;
 
     public JMXResourceConfigurationPropertyType(ID id, Name name, JMXResourceType resourceType) {
         super(id, name, resourceType);
     }
 
-    public String getPath() {
-        return path;
+    public String getObjectName() {
+        return objectName;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setObjectName(String objectName) {
+        this.objectName = objectName;
     }
 
     public String getAttribute() {
@@ -47,7 +47,7 @@ public class JMXResourceConfigurationPropertyType extends ResourceConfigurationP
 
     @Override
     public String toString() {
-        return String.format("%s[path=%s][attribute=%s]", super.toString(), getPath(), getAttribute());
+        return String.format("%s[path=%s][attribute=%s]", super.toString(), getObjectName(), getAttribute());
     }
 
 }

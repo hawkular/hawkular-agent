@@ -16,13 +16,14 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.jmx;
 
+import javax.management.ObjectName;
+
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.JMXEndpoint;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
-import org.hawkular.dmrclient.Address;
 
 /**
- * Represents a task that is to be executed on a JMX resource with an absolute address within a domain.
+ * Represents a task that is to be executed on a JMX resource.
  */
 public abstract class JMXTask implements Task {
 
@@ -33,8 +34,7 @@ public abstract class JMXTask implements Task {
             StringBuilder idBuilder = new StringBuilder();
             idBuilder.append(us.getClass().getName()).append(":");
             idBuilder.append(us.getType()).append(":");
-            idBuilder.append(us.getEndpoint().getHost()).append(":");
-            idBuilder.append(us.getEndpoint().getPort()).append(":");
+            idBuilder.append(us.getEndpoint().getURL()).append(":");
             idBuilder.append(us.getEndpoint().getUsername());
             id = idBuilder.toString();
         }
@@ -47,7 +47,7 @@ public abstract class JMXTask implements Task {
 
     private final JMXEndpoint endpoint;
     private final Type type;
-    private final Address address;
+    private final ObjectName objectName;
     private final String attribute;
     private final String subref;
     private final Interval interval;
@@ -56,7 +56,7 @@ public abstract class JMXTask implements Task {
             Type type,
             Interval interval,
             JMXEndpoint endpoint,
-            Address address,
+            ObjectName objectName,
             String attribute,
             String subref) {
 
@@ -72,14 +72,14 @@ public abstract class JMXTask implements Task {
             throw new IllegalArgumentException("endpoint cannot be null");
         }
 
-        if (address == null) {
-            throw new IllegalArgumentException("address cannot be null");
+        if (objectName == null) {
+            throw new IllegalArgumentException("object name cannot be null");
         }
 
         this.type = type;
         this.interval = interval;
         this.endpoint = endpoint;
-        this.address = address;
+        this.objectName = objectName;
         this.attribute = attribute;
         this.subref = subref;
     }
@@ -103,8 +103,8 @@ public abstract class JMXTask implements Task {
         return endpoint;
     }
 
-    public Address getAddress() {
-        return address;
+    public ObjectName getObjectName() {
+        return objectName;
     }
 
     public String getAttribute() {
@@ -121,7 +121,7 @@ public abstract class JMXTask implements Task {
         str.append("endpoint=[").append(endpoint).append("]");
         str.append(", type=[").append(type).append("]");
         str.append(", interval=[").append(interval).append("]");
-        str.append(", address=[").append(address).append("]");
+        str.append(", objectName=[").append(objectName).append("]");
         str.append(", attribute=[").append(attribute).append("]");
         str.append(", subref=[").append(subref).append("]");
         str.append(", kind=[").append(getKind().getId()).append("]");

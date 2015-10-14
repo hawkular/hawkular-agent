@@ -16,35 +16,37 @@
  */
 package org.hawkular.agent.monitor.scheduler.config;
 
+import java.net.URL;
+
+import javax.net.ssl.SSLContext;
+
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
+import org.jolokia.client.BasicAuthenticator;
+import org.jolokia.client.J4pClient;
 
 /**
  * Represents a remote endpoint that can process JMX requests.
  */
 public class JMXEndpoint extends MonitoredEndpoint {
     private static final MsgLogger log = AgentLoggers.getLogger(JMXEndpoint.class);
-    private final String host;
-    private final int port;
+    private final URL url;
     private final String username;
     private final String password;
-    private ServerIdentifiers serverId;
+    private final String serverId;
 
-    public JMXEndpoint(String name, String host, int port, String username, String password) {
+    public JMXEndpoint(String name, URL url, String username, String password) {
         super(name);
-        this.host = host;
-        this.port = port;
+        this.url = url;
         this.username = username;
         this.password = password;
+        this.serverId = String.format("%s:%d", url.getHost(), url.getPort());
     }
 
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
+    public URL getURL() {
+        return url;
     }
 
     public String getUsername() {
@@ -64,42 +66,45 @@ public class JMXEndpoint extends MonitoredEndpoint {
      *
      * @see #getServerIdentifiers()
      */
-    public ServerIdentifiers getServerIdentifiers() {
-//        if (this.serverId == null) {
-//            try (CoreJBossASClient client = new CoreJBossASClient(getModelControllerClientFactory().createClient())) {
-//                Address rootResource = Address.root();
-//                boolean isDomainMode = client.getStringAttribute("launch-type", rootResource)
-//                        .equalsIgnoreCase("domain");
-//                String hostName = (isDomainMode) ? client.getStringAttribute("host", rootResource) : null;
-//                String serverName = client.getStringAttribute("name", rootResource);
-//                Properties sysprops = client.getSystemProperties();
-//                String nodeName = sysprops.getProperty("jboss.node.name");
-//
-//                // this is a new attribute that only exists in Wildfly 10 and up. If we can't get it, just use null.
-//                String uuid;
-//                try {
-//                    uuid = client.getStringAttribute("uuid", rootResource);
-//                } catch (Exception ignore) {
-//                    uuid = null;
-//                }
-//
-//                this.serverId = new ServerIdentifiers(hostName, serverName, nodeName, uuid);
-//            } catch (Exception e) {
-//                log.warnCannotObtainServerIdentifiersForDMREndpoint(this.toString(), e.toString());
-//            }
-//        }
-
+    public String getServerIdentifier() {
         return this.serverId;
     }
 
-    // TODO GET REMOTE JMX CONNECTION
-    //    protected ModelControllerClientFactory getModelControllerClientFactory() {
-    //        return new ModelControllerClientFactoryImpl(this);
-    //    }
+    public J4pClient getJmxClient(SSLContext sslContext) {
+        BasicAuthenticator authenticator;
+
+        if (sslContext != null && getURL().getProtocol().equalsIgnoreCase("https")) {
+            authenticator = new SecureBasicAuthenticator(sslContext);
+        } else {
+            authenticator = new BasicAuthenticator();
+        }
+
+        J4pClient client = J4pClient
+                .user(getUsername())
+                .password(getPassword())
+                .authenticator(authenticator.preemptive())
+                .connectionTimeout(60000)
+                .build();
+        return client;
+    }
 
     @Override
     public String toString() {
-        return "JMXEndpoint[name=" + getName() + ", host=" + host + ", port=" + port + ", username=" + username
-                + ", serverId=" + serverId + "]";
+        return "JMXEndpoint[name=" + getName() + ", url=" + url + ", username=" + username + ", serverId=" + serverId
+                + "]";
+    }
+
+    private class SecureBasicAuthenticator extends BasicAuthenticator {
+        private SSLContext sslContext;
+
+        public SecureBasicAuthenticator(SSLContext sslContext) {
+            this.sslContext = sslContext;
+        }
+
+        @Override
+        public void authenticate(HttpClientBuilder pBuilder, String pUser, String pPassword) {
+            pBuilder.setSSLSocketFactory(new SSLConnectionSocketFactory(sslContext));
+            super.authenticate(pBuilder, pUser, pPassword);
+        }
     }
 }

@@ -28,7 +28,7 @@ import org.jboss.dmr.ModelType;
 
 public interface JMXMetricAttributes {
 
-    SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
+    SimpleAttributeDefinition OBJECT_NAME = new SimpleAttributeDefinitionBuilder("objectName",
             ModelType.STRING)
             .setAllowNull(false)
             .setAllowExpression(true)
@@ -76,7 +76,7 @@ public interface JMXMetricAttributes {
             .build();
 
     AttributeDefinition[] ATTRIBUTES = {
-            PATH,
+            OBJECT_NAME,
             ATTRIBUTE,
             METRIC_TYPE,
             INTERVAL,

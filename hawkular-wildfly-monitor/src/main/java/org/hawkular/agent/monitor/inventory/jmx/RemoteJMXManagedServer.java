@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory.jmx;
 
+import java.net.URL;
+
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -25,25 +27,16 @@ public class RemoteJMXManagedServer extends ManagedServer {
         super(id, name);
     }
 
-    private String host;
-    private int port;
+    private URL url;
     private String username;
     private String password;
 
-    public String getHost() {
-        return host;
+    public URL getUrl() {
+        return url;
     }
 
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
+    public void setURL(URL url) {
+        this.url = url;
     }
 
     public String getUsername() {

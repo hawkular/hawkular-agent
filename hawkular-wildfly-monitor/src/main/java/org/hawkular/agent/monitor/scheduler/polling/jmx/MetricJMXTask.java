@@ -16,11 +16,12 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.jmx;
 
+import javax.management.ObjectName;
+
 import org.hawkular.agent.monitor.inventory.jmx.JMXMetricInstance;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.JMXEndpoint;
 import org.hawkular.agent.monitor.scheduler.polling.KeyGenerator;
-import org.hawkular.dmrclient.Address;
 
 /**
  * Represents a JMX task that is to be used to collect a metric.
@@ -32,12 +33,12 @@ public class MetricJMXTask extends JMXTask {
     public MetricJMXTask(
             Interval interval,
             JMXEndpoint endpoint,
-            Address address,
+            ObjectName objectName,
             String attribute,
             String subref,
             JMXMetricInstance metricInstance) {
 
-        super(Type.METRIC, interval, endpoint, address, attribute, subref);
+        super(Type.METRIC, interval, endpoint, objectName, attribute, subref);
         this.metricInstance = metricInstance;
     }
 

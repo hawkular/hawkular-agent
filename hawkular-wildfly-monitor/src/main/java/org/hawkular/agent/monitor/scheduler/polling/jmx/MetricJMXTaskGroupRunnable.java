@@ -16,20 +16,22 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.jmx;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
-import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.scheduler.JmxClientFactory;
 import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
+import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
-import org.hawkular.agent.monitor.scheduler.polling.dmr.ReadAttributeOperationBuilder;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
-import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.metrics.client.common.MetricType;
-import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.ModelType;
 import org.jboss.logging.Logger;
+import org.jolokia.client.J4pClient;
+import org.jolokia.client.request.J4pReadRequest;
+import org.jolokia.client.request.J4pResponse;
 
 import com.codahale.metrics.Timer;
 
@@ -39,80 +41,78 @@ public class MetricJMXTaskGroupRunnable implements Runnable {
     private final TaskGroup group;
     private final MetricCompletionHandler completionHandler;
     private final Diagnostics diagnostics;
-    private final ModelControllerClientFactory mccFactory;
-    private final ModelNode[] operations;
+    private final JmxClientFactory jmxClientFactory;
 
     public MetricJMXTaskGroupRunnable(TaskGroup group, MetricCompletionHandler completionHandler,
-            Diagnostics diagnostics, ModelControllerClientFactory mccFactory) {
+            Diagnostics diagnostics, JmxClientFactory jmxClientFactory) {
         this.group = group;
         this.completionHandler = completionHandler;
         this.diagnostics = diagnostics;
-        this.mccFactory = mccFactory;
-
-        // for the lifetime of this runnable, the operation is immutable and can be re-used
-        this.operations = new ReadAttributeOperationBuilder().createOperations(group);
+        this.jmxClientFactory = jmxClientFactory;
     }
 
     @Override
     public void run() {
-        try (final JBossASClient client = new JBossASClient(mccFactory.createClient())) {
+        try {
+            final J4pClient client = jmxClientFactory.createClient();
+
+            ArrayList<J4pReadRequest> reqs = new ArrayList<>(this.group.size());
+
+            this.group.forEach(new Consumer<Task>() {
+                @Override
+                public void accept(Task t) {
+                    MetricJMXTask jmxTask = (MetricJMXTask) t;
+                    String jmxAttrib = jmxTask.getAttribute();
+                    if (jmxTask.getSubref() != null) {
+                        jmxAttrib = jmxAttrib + "/" + jmxTask.getSubref();
+                    }
+                    J4pReadRequest req = new J4pReadRequest(jmxTask.getObjectName(), jmxAttrib);
+                    reqs.add(req);
+                }
+            });
+
+            // execute the JMX request
+            final Timer.Context requestContext = diagnostics.getJMXRequestTimer().time();
+            List<J4pResponse<J4pReadRequest>> responses = client.execute(reqs);
+            final long durationNanos = requestContext.stop();
+            final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
+            if (durationMs > group.getInterval().millis()) {
+                diagnostics.getJMXDelayedRate().mark(1);
+            }
 
             int i = 0;
-            for (ModelNode operation : this.operations) {
+            for (J4pResponse<J4pReadRequest> response : responses) {
+                final MetricJMXTask task = (MetricJMXTask) group.getTask(i++);
+                final MetricType metricType = task.getMetricInstance().getMetricType().getMetricType();
 
-                // execute request
-                final Timer.Context requestContext = diagnostics.getJMXRequestTimer().time();
-                final ModelNode response = client.execute(operation);
-                final long durationNanos = requestContext.stop();
-                final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
+                // TODO get value from results - might need to aggregate
+                double value = 0.0;
+                completionHandler.onCompleted(new MetricDataPoint(task, value, metricType));
 
-                if (JBossASClient.isSuccess(response)) {
-
-                    if (durationMs > group.getInterval().millis()) {
-                        diagnostics.getJMXDelayedRate().mark(1);
-                    }
-
-                    final MetricJMXTask task = (MetricJMXTask) group.getTask(i++);
-                    final MetricType metricType = task.getMetricInstance().getMetricType().getMetricType();
-
-                    // deconstruct model node
-                    final ModelNode result = JBossASClient.getResults(response);
-                    if (result.getType() != ModelType.UNDEFINED) {
-                        if (result.getType() == ModelType.LIST) {
-                            // a metric request that asked to aggregate a metric across potentially multiple resources
-                            LOG.tracef("Task [%s] resulted in aggregated metric: %s", task, result);
-                            double aggregate = 0.0;
-                            List<ModelNode> listNodes = result.asList();
-                            for (ModelNode listNode : listNodes) {
-                                if (JBossASClient.isSuccess(listNode)) {
-                                    final ModelNode listNodeResult = JBossASClient.getResults(listNode);
-                                    final ModelNode listNodeValueNode =
-                                            (task.getSubref() == null) ? listNodeResult : listNodeResult.get(task
-                                                    .getSubref());
-                                    if (listNode.getType() != ModelType.UNDEFINED) {
-                                        aggregate += listNodeValueNode.asDouble();
-                                    }
-                                } else {
-                                    // a resources failed to report metric but keep going and aggregate the others
-                                    this.diagnostics.getDMRErrorRate().mark(1);
-                                    LOG.debugf("Failed to fully aggregate metric for task [%s]: %s ", task, listNode);
-                                }
-                            }
-                            completionHandler.onCompleted(new MetricDataPoint(task, aggregate, metricType));
-                        } else {
-                            // a metric was requested from a single resource
-                            final ModelNode valueNode =
-                                    (task.getSubref() == null) ? result : result.get(task.getSubref());
-                            final Double value = valueNode.asDouble();
-                            completionHandler.onCompleted(new MetricDataPoint(task, value, metricType));
-                        }
-                    }
-
-                } else {
-                    this.diagnostics.getJMXErrorRate().mark(1);
-                    completionHandler.onFailed(new RuntimeException(JBossASClient.getFailureDescription(response)));
-                }
             }
+
+            // // a metric request that asked to aggregate a metric across potentially multiple resources
+            // LOG.tracef("Task [%s] resulted in aggregated metric: %s", task, result);
+            // double aggregate = 0.0;
+            // List<ModelNode> listNodes = result.asList();
+            // for (ModelNode listNode : listNodes) {
+            //     if (JBossASClient.isSuccess(listNode)) {
+            //         final ModelNode listNodeResult = JBossASClient.getResults(listNode);
+            //         final ModelNode listNodeValueNode =
+            //             (task.getSubref() == null) ? listNodeResult : listNodeResult.get(task.getSubref());
+            //         if (listNode.getType() != ModelType.UNDEFINED) {
+            //             aggregate += listNodeValueNode.asDouble();
+            //         } else {
+            //             // a resources failed to report metric but keep going and aggregate the others
+            //             this.diagnostics.getDMRErrorRate().mark(1);
+            //             LOG.debugf("Failed to fully aggregate metric for task [%s]: %s ", task, listNode);
+            //         }
+            //     }
+            // }
+
+            // TODO on error
+            //this.diagnostics.getJMXErrorRate().mark(1);
+            //completionHandler.onFailed(new RuntimeException(JBossASClient.getFailureDescription(response)));
 
         } catch (Throwable e) {
             this.diagnostics.getDMRErrorRate().mark(1);

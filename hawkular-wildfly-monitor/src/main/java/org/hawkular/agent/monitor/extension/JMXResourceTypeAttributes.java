@@ -24,7 +24,7 @@ import org.jboss.dmr.ModelType;
 
 public interface JMXResourceTypeAttributes {
 
-    SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
+    SimpleAttributeDefinition OBJECT_NAME = new SimpleAttributeDefinitionBuilder("objectName",
             ModelType.STRING)
             .setAllowNull(false)
             .setAllowExpression(true)
@@ -61,7 +61,7 @@ public interface JMXResourceTypeAttributes {
 
     AttributeDefinition[] ATTRIBUTES = {
             RESOURCE_NAME_TEMPLATE,
-            PATH,
+            OBJECT_NAME,
             PARENTS,
             METRIC_SETS,
             AVAIL_SETS

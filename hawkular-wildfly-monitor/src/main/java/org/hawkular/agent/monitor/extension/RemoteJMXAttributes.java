@@ -33,15 +33,8 @@ public interface RemoteJMXAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
-    SimpleAttributeDefinition HOST = new SimpleAttributeDefinitionBuilder("host",
+    SimpleAttributeDefinition URL = new SimpleAttributeDefinitionBuilder("url",
             ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    SimpleAttributeDefinition PORT = new SimpleAttributeDefinitionBuilder("port",
-            ModelType.INT)
             .setAllowNull(false)
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
@@ -71,8 +64,7 @@ public interface RemoteJMXAttributes {
 
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
-            HOST,
-            PORT,
+            URL,
             USERNAME,
             PASSWORD,
             RESOURCE_TYPE_SETS

@@ -22,7 +22,7 @@ import org.hawkular.agent.monitor.inventory.MetadataManager;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.scheduler.JmxClientFactory;
 import org.hawkular.agent.monitor.scheduler.config.JMXEndpoint;
 import org.jgrapht.event.VertexSetListener;
 
@@ -38,7 +38,7 @@ public class JMXInventoryManager extends InventoryManager
         JMXResource,
         JMXEndpoint> {
     private static final MsgLogger log = AgentLoggers.getLogger(JMXInventoryManager.class);
-    private final ModelControllerClientFactory dmrClientFactory;
+    private final JmxClientFactory jmxClientFactory;
 
     public JMXInventoryManager(String feedId,
             MetadataManager<JMXResourceType, JMXResourceTypeSet, JMXMetricType, JMXMetricTypeSet,
@@ -46,9 +46,9 @@ public class JMXInventoryManager extends InventoryManager
             ResourceManager<JMXResource> resourceManager,
             ManagedServer managedServer,
             JMXEndpoint dmrEndpoint,
-            ModelControllerClientFactory dmrClientFactory) {
+            JmxClientFactory jmxClientFactory) {
         super(feedId, metadataManager, resourceManager, managedServer, dmrEndpoint);
-        this.dmrClientFactory = dmrClientFactory;
+        this.jmxClientFactory = jmxClientFactory;
     }
 
     @Override
@@ -64,7 +64,7 @@ public class JMXInventoryManager extends InventoryManager
     /**
      * @return factory that can be used to build clients that can talk to the server
      */
-    public ModelControllerClientFactory getModelControllerClientFactory() {
-        return dmrClientFactory;
+    public JmxClientFactory getJmxClientFactory() {
+        return jmxClientFactory;
     }
 }

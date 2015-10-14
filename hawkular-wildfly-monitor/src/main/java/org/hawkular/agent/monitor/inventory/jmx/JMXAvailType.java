@@ -26,16 +26,16 @@ public class JMXAvailType extends AvailType {
         super(id, name);
     }
 
-    private String path;
+    private String objectName;
     private String attribute;
     private String upRegex;
 
-    public String getPath() {
-        return path;
+    public String getObjectName() {
+        return objectName;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setObjectName(String objectName) {
+        this.objectName = objectName;
     }
 
     public String getAttribute() {

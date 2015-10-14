@@ -28,7 +28,7 @@ import org.jboss.dmr.ModelType;
 
 public interface JMXAvailAttributes {
 
-    SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
+    SimpleAttributeDefinition OBJECT_NAME = new SimpleAttributeDefinitionBuilder("objectName",
             ModelType.STRING)
             .setAllowNull(false)
             .setAllowExpression(true)
@@ -67,7 +67,7 @@ public interface JMXAvailAttributes {
             .build();
 
     AttributeDefinition[] ATTRIBUTES = {
-            PATH,
+            OBJECT_NAME,
             ATTRIBUTE,
             UP_REGEX,
             INTERVAL,

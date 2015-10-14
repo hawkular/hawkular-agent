@@ -16,11 +16,12 @@
  */
 package org.hawkular.agent.monitor.scheduler.polling.jmx;
 
+import javax.management.ObjectName;
+
 import org.hawkular.agent.monitor.inventory.jmx.JMXAvailInstance;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.JMXEndpoint;
 import org.hawkular.agent.monitor.scheduler.polling.KeyGenerator;
-import org.hawkular.dmrclient.Address;
 
 /**
  * Represents a JMX task that is to be used to check availability.
@@ -33,13 +34,13 @@ public class AvailJMXTask extends JMXTask {
     public AvailJMXTask(
             Interval interval,
             JMXEndpoint endpoint,
-            Address address,
+            ObjectName objectName,
             String attribute,
             String subref,
             JMXAvailInstance availInstance,
             String upRegex) {
 
-        super(Type.AVAIL, interval, endpoint, address, attribute, subref);
+        super(Type.AVAIL, interval, endpoint, objectName, attribute, subref);
         this.availInstance = availInstance;
         this.upRegex = upRegex;
     }

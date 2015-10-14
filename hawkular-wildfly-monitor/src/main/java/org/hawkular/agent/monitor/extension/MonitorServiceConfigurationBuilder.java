@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -227,7 +228,7 @@ public class MonitorServiceConfigurationBuilder {
                         JMXMetricType metric = new JMXMetricType(ID.NULL_ID, new Name(metricName));
                         metricSet.getMetricTypeMap().put(metric.getName(), metric);
                         ModelNode metricValueNode = metricProperty.getValue();
-                        metric.setPath(getString(metricValueNode, context, JMXMetricAttributes.PATH));
+                        metric.setObjectName(getString(metricValueNode, context, JMXMetricAttributes.OBJECT_NAME));
                         metric.setAttribute(getString(metricValueNode, context, JMXMetricAttributes.ATTRIBUTE));
                         String metricTypeStr = getString(metricValueNode, context, JMXMetricAttributes.METRIC_TYPE);
                         if (metricTypeStr == null) {
@@ -277,7 +278,7 @@ public class MonitorServiceConfigurationBuilder {
                         JMXAvailType avail = new JMXAvailType(ID.NULL_ID, new Name(availName));
                         availSet.getAvailTypeMap().put(avail.getName(), avail);
                         ModelNode availValueNode = availProperty.getValue();
-                        avail.setPath(getString(availValueNode, context, JMXAvailAttributes.PATH));
+                        avail.setObjectName(getString(availValueNode, context, JMXAvailAttributes.OBJECT_NAME));
                         avail.setAttribute(getString(availValueNode, context, JMXAvailAttributes.ATTRIBUTE));
                         avail.setInterval(getInt(availValueNode, context, JMXAvailAttributes.INTERVAL));
                         String availTimeUnitsStr = getString(availValueNode, context, JMXAvailAttributes.TIME_UNITS);
@@ -759,8 +760,8 @@ public class MonitorServiceConfigurationBuilder {
                         resourceTypeSet.getResourceTypeMap().put(resourceType.getName(), resourceType);
                         resourceType.setResourceNameTemplate(getString(resourceTypeValueNode, context,
                                 JMXResourceTypeAttributes.RESOURCE_NAME_TEMPLATE));
-                        resourceType.setPath(getString(resourceTypeValueNode, context,
-                                JMXResourceTypeAttributes.PATH));
+                        resourceType.setObjectName(getString(resourceTypeValueNode, context,
+                                JMXResourceTypeAttributes.OBJECT_NAME));
                         resourceType.setParents(getNameListFromString(resourceTypeValueNode, context,
                                 JMXResourceTypeAttributes.PARENTS));
 
@@ -794,7 +795,8 @@ public class MonitorServiceConfigurationBuilder {
                                 ModelNode operationValueNode = operationProperty.getValue();
                                 String operationName = operationProperty.getName();
                                 JMXOperation op = new JMXOperation(ID.NULL_ID, new Name(operationName), resourceType);
-                                op.setPath(getString(operationValueNode, context, JMXOperationAttributes.PATH));
+                                op.setObjectName(getString(operationValueNode, context,
+                                        JMXOperationAttributes.OBJECT_NAME));
                                 op.setOperationName(getString(operationValueNode, context,
                                         JMXOperationAttributes.OPERATION_NAME));
                                 resourceType.addOperation(op);
@@ -812,8 +814,8 @@ public class MonitorServiceConfigurationBuilder {
                                 JMXResourceConfigurationPropertyType configType =
                                         new JMXResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName),
                                                 resourceType);
-                                configType.setPath(getString(configValueNode, context,
-                                        JMXResourceConfigAttributes.PATH));
+                                configType.setObjectName(getString(configValueNode, context,
+                                        JMXResourceConfigAttributes.OBJECT_NAME));
                                 configType.setAttribute(getString(configValueNode, context,
                                         JMXResourceConfigAttributes.ATTRIBUTE));
                                 resourceType.addResourceConfigurationPropertyType(configType);
@@ -919,8 +921,7 @@ public class MonitorServiceConfigurationBuilder {
                     String name = remoteJMXProperty.getName();
                     ModelNode remoteJMXValueNode = remoteJMXProperty.getValue();
                     boolean enabled = getBoolean(remoteJMXValueNode, context, RemoteJMXAttributes.ENABLED);
-                    String host = getString(remoteJMXValueNode, context, RemoteJMXAttributes.HOST);
-                    int port = getInt(remoteJMXValueNode, context, RemoteJMXAttributes.PORT);
+                    String urlStr = getString(remoteJMXValueNode, context, RemoteJMXAttributes.URL);
                     String username = getString(remoteJMXValueNode, context, RemoteJMXAttributes.USERNAME);
                     String password = getString(remoteJMXValueNode, context, RemoteJMXAttributes.PASSWORD);
                     List<Name> resourceTypeSets = getNameListFromString(remoteJMXValueNode, context,
@@ -934,10 +935,17 @@ public class MonitorServiceConfigurationBuilder {
                         }
                     }
 
+                    // make sure the URL is at least syntactically valid
+                    URL url;
+                    try {
+                        url = new URL(urlStr);
+                    } catch (Exception e) {
+                        throw new OperationFailedException("Invalid remote JMX URL: " + urlStr, e);
+                    }
+
                     RemoteJMXManagedServer res = new RemoteJMXManagedServer(ID.NULL_ID, new Name(name));
                     res.setEnabled(enabled);
-                    res.setHost(host);
-                    res.setPort(port);
+                    res.setURL(url);
                     res.setUsername(username);
                     res.setPassword(password);
                     res.getResourceTypeSets().addAll(resourceTypeSets);
