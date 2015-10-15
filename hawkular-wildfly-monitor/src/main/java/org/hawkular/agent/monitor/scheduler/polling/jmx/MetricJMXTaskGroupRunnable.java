@@ -17,9 +17,12 @@
 package org.hawkular.agent.monitor.scheduler.polling.jmx;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
+import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.scheduler.JmxClientFactory;
@@ -30,6 +33,7 @@ import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.logging.Logger;
 import org.jolokia.client.J4pClient;
+import org.jolokia.client.exception.J4pBulkRemoteException;
 import org.jolokia.client.request.J4pReadRequest;
 import org.jolokia.client.request.J4pReadResponse;
 
@@ -63,68 +67,74 @@ public class MetricJMXTaskGroupRunnable implements Runnable {
                 public void accept(Task t) {
                     MetricJMXTask jmxTask = (MetricJMXTask) t;
                     String jmxAttrib = jmxTask.getAttribute();
-                    if (jmxTask.getSubref() != null) {
-                        jmxAttrib = jmxAttrib + "/" + jmxTask.getSubref();
-                    }
                     J4pReadRequest req = new J4pReadRequest(jmxTask.getObjectName(), jmxAttrib);
+                    if (jmxTask.getSubref() != null) {
+                        req.setPath(jmxTask.getSubref());
+                    }
                     reqs.add(req);
                 }
             });
 
             // execute the JMX request
             final Timer.Context requestContext = diagnostics.getJMXRequestTimer().time();
-            List<J4pReadResponse> responses = client.execute(reqs);
+            List<J4pReadResponse> responses;
+            try {
+                responses = client.execute(reqs);
+            } catch (J4pBulkRemoteException bulkError) {
+                responses = bulkError.getResponses();
+                if (responses == null || responses.isEmpty()) {
+                    throw new Exception("Failed to execute bulk JMX request", bulkError);
+                } else {
+                    // some, but not all, failed - we will just process the successful ones
+                    // but at least we mark an error in our diagnostics
+                    this.diagnostics.getJMXErrorRate().mark(1);
+                }
+            }
             final long durationNanos = requestContext.stop();
             final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
             if (durationMs > group.getInterval().millis()) {
                 diagnostics.getJMXDelayedRate().mark(1);
             }
 
+            // process the responses
             int i = 0;
             for (J4pReadResponse response : responses) {
                 final MetricJMXTask task = (MetricJMXTask) group.getTask(i++);
                 final MetricType metricType = task.getMetricInstance().getMetricType().getMetricType();
 
-                // TODO get value from results - might need to aggregate
                 double value;
-                Object valueObject = response.getValue();
-                if (valueObject == null) {
-                    value = Double.NaN;
-                } else if (valueObject instanceof Number) {
-                    value = ((Number) valueObject).doubleValue();
+
+                Collection<ObjectName> responseObjectNames = response.getObjectNames();
+                if (responseObjectNames.size() > 1) {
+                    // we need to aggregate them
+                    value = 0.0;
+                    for (ObjectName responseObjectName : responseObjectNames) {
+                        Object valueObject = response.getValue(responseObjectName, task.getAttribute());
+                        value += getDoubleValue(valueObject);
+                    }
                 } else {
-                    value = Double.valueOf(valueObject.toString());
+                    Object valueObject = response.getValue();
+                    value = getDoubleValue(valueObject);
                 }
+
                 completionHandler.onCompleted(new MetricDataPoint(task, value, metricType));
 
             }
-
-            // // a metric request that asked to aggregate a metric across potentially multiple resources
-            // LOG.tracef("Task [%s] resulted in aggregated metric: %s", task, result);
-            // double aggregate = 0.0;
-            // List<ModelNode> listNodes = result.asList();
-            // for (ModelNode listNode : listNodes) {
-            //     if (JBossASClient.isSuccess(listNode)) {
-            //         final ModelNode listNodeResult = JBossASClient.getResults(listNode);
-            //         final ModelNode listNodeValueNode =
-            //             (task.getSubref() == null) ? listNodeResult : listNodeResult.get(task.getSubref());
-            //         if (listNode.getType() != ModelType.UNDEFINED) {
-            //             aggregate += listNodeValueNode.asDouble();
-            //         } else {
-            //             // a resources failed to report metric but keep going and aggregate the others
-            //             this.diagnostics.getDMRErrorRate().mark(1);
-            //             LOG.debugf("Failed to fully aggregate metric for task [%s]: %s ", task, listNode);
-            //         }
-            //     }
-            // }
-
-            // TODO on error
-            //this.diagnostics.getJMXErrorRate().mark(1);
-            //completionHandler.onFailed(new RuntimeException(JBossASClient.getFailureDescription(response)));
-
         } catch (Throwable e) {
-            this.diagnostics.getDMRErrorRate().mark(1);
+            this.diagnostics.getJMXErrorRate().mark(1);
             completionHandler.onFailed(e);
         }
+    }
+
+    private double getDoubleValue(Object valueObject) {
+        double value;
+        if (valueObject == null) {
+            value = Double.NaN;
+        } else if (valueObject instanceof Number) {
+            value = ((Number) valueObject).doubleValue();
+        } else {
+            value = Double.valueOf(valueObject.toString());
+        }
+        return value;
     }
 }

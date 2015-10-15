@@ -17,9 +17,12 @@
 package org.hawkular.agent.monitor.scheduler.polling.jmx;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
+import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
@@ -30,9 +33,9 @@ import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.jboss.logging.Logger;
 import org.jolokia.client.J4pClient;
+import org.jolokia.client.exception.J4pBulkRemoteException;
 import org.jolokia.client.request.J4pReadRequest;
 import org.jolokia.client.request.J4pReadResponse;
-import org.jolokia.client.request.J4pResponse;
 
 import com.codahale.metrics.Timer;
 
@@ -62,19 +65,32 @@ public class AvailJMXTaskGroupRunnable implements Runnable {
             this.group.forEach(new Consumer<Task>() {
                 @Override
                 public void accept(Task t) {
-                    MetricJMXTask jmxTask = (MetricJMXTask) t;
+                    AvailJMXTask jmxTask = (AvailJMXTask) t;
                     String jmxAttrib = jmxTask.getAttribute();
-                    if (jmxTask.getSubref() != null) {
-                        jmxAttrib = jmxAttrib + "/" + jmxTask.getSubref();
-                    }
                     J4pReadRequest req = new J4pReadRequest(jmxTask.getObjectName(), jmxAttrib);
+                    if (jmxTask.getSubref() != null) {
+                        req.setPath(jmxTask.getSubref());
+                    }
                     reqs.add(req);
                 }
             });
 
             // execute the JMX request
             final Timer.Context requestContext = diagnostics.getJMXRequestTimer().time();
-            List<J4pReadResponse> responses = client.execute(reqs);
+            List<J4pReadResponse> responses;
+            try {
+                responses = client.execute(reqs);
+            } catch (J4pBulkRemoteException bulkError) {
+                responses = bulkError.getResponses();
+                if (responses == null || responses.isEmpty()) {
+                    throw new Exception("Failed to execute bulk JMX request", bulkError);
+                } else {
+                    // some, but not all, failed - we will just process the successful ones
+                    // but at least we mark an error in our diagnostics
+                    // TODO: how do we know which task failed so we can mark as UNKNOWN?
+                    this.diagnostics.getJMXErrorRate().mark(1);
+                }
+            }
             final long durationNanos = requestContext.stop();
             final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
             if (durationMs > group.getInterval().millis()) {
@@ -83,14 +99,36 @@ public class AvailJMXTaskGroupRunnable implements Runnable {
 
             // process the responses
             int i = 0;
-            for (J4pResponse<J4pReadRequest> response : responses) {
+            for (J4pReadResponse response : responses) {
                 final AvailJMXTask task = (AvailJMXTask) group.getTask(i++);
 
-                // TODO get value from results - might need to aggregate
-                String valueString = String.valueOf(response.getValue());
-                Avail avail = getAvailFromResponse(valueString, task);
-                completionHandler.onCompleted(new AvailDataPoint(task, avail));
+                Avail avail;
 
+                Collection<ObjectName> responseObjectNames = response.getObjectNames();
+                if (responseObjectNames.size() > 1) {
+                    // we need to aggregate them
+                    Avail aggregate = null;
+                    for (ObjectName responseObjectName : responseObjectNames) {
+                        Object value = response.getValue(responseObjectName, task.getAttribute());
+                        String valueString = String.valueOf(value);
+                        Avail currentAvail = getAvailFromResponse(valueString, task);
+                        // If we don't know the avail yet, set it to the first avail result we get.
+                        // Otherwise, if the aggregate is down, it stays down (we don't have the
+                        // concept of MIXED). The aggregate stays as it was unless the new avail
+                        // is down in which case aggregate goes down.
+                        if (aggregate == null) {
+                            aggregate = currentAvail;
+                        } else {
+                            aggregate = (currentAvail == Avail.DOWN) ? Avail.DOWN : aggregate;
+                        }
+                    }
+                    avail = aggregate;
+                } else {
+                    String valueString = String.valueOf(response.getValue());
+                    avail = getAvailFromResponse(valueString, task);
+                }
+
+                completionHandler.onCompleted(new AvailDataPoint(task, avail));
             }
         } catch (Throwable e) {
             this.diagnostics.getJMXErrorRate().mark(1);
