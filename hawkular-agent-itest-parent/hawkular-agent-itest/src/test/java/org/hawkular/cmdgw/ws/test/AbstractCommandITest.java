@@ -16,8 +16,15 @@
  */
 package org.hawkular.cmdgw.ws.test;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URL;
@@ -25,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,6 +48,8 @@ import javax.security.sasl.RealmCallback;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.ApiDeserializer;
 import org.hawkular.cmdgw.api.WelcomeResponse;
+import org.hawkular.dmr.api.OperationBuilder;
+import org.hawkular.dmr.api.SubsystemLoggingConstants;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
@@ -48,6 +58,8 @@ import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
+import org.jboss.logging.Logger.Level;
+import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -145,11 +157,12 @@ public abstract class AbstractCommandITest {
         }
     }
 
+    private static volatile boolean accountsAndInventoryReady = false;
     protected static final int ATTEMPT_COUNT = 50;
     protected static final long ATTEMPT_DELAY = 5000;
     protected static final String authentication;
-    protected static final String baseAccountsUri;
 
+    protected static final String baseAccountsUri;
     protected static final String baseGwUri;
     protected static final String baseInvUri;
     protected static final String host;
@@ -157,7 +170,10 @@ public abstract class AbstractCommandITest {
     protected static final int managementPort;
     protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
     protected static final String testPasword = "password";
+
     protected static final String testUser = "jdoe";
+
+    private static final Object waitForAccountsLock = new Object();
 
     static {
         String h = System.getProperty("hawkular.bind.address", "localhost");
@@ -174,6 +190,43 @@ public abstract class AbstractCommandITest {
         authentication = "{\"username\":\"" + testUser + "\",\"password\":\"" + testPasword + "\"}";
     }
 
+    public static String readNode(Class<?> caller, String nodeFileName) throws IOException {
+        URL url = caller.getResource(caller.getSimpleName() + "." + nodeFileName);
+
+        StringBuilder result = new StringBuilder();
+        try (Reader r = new InputStreamReader(url.openStream(), "utf-8")) {
+            char[] buff = new char[1024];
+            int len = 0;
+            while ((len = r.read(buff, 0, buff.length)) != -1) {
+                result.append(buff, 0, len);
+            }
+        }
+        return result.toString();
+    }
+
+    public static void writeNode(Class<?> caller, ModelNode node, String nodeFileName)
+            throws UnsupportedEncodingException, FileNotFoundException {
+        URL callerUrl = caller.getResource(caller.getSimpleName() + ".class");
+        if (!callerUrl.getProtocol().equals("file")) {
+            throw new IllegalStateException(AbstractCommandITest.class.getName()
+                    + ".store() works only if the caller's class file is loaded using a file:// URL.");
+        }
+        String callerUrlPath = callerUrl.getPath();
+
+        String nodePath = callerUrlPath.replaceAll("\\.class$", "." + nodeFileName);
+        nodePath = nodePath.replace("/target/test-classes/", "/src/test/resources/");
+        System.out.println("Storing a node to [" + nodePath + "]");
+
+        File outputFile = new File(nodePath);
+        if (!outputFile.getParentFile().exists()) {
+            outputFile.getParentFile().mkdirs();
+        }
+
+        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "utf-8"))) {
+            node.writeString(out, false);
+        }
+    }
+
     protected OkHttpClient client;
     protected ObjectMapper mapper;
     protected ExecutorService writeExecutor;
@@ -182,6 +235,26 @@ public abstract class AbstractCommandITest {
     public void after() {
         // Trigger shutdown of the dispatcher's executor so this process can exit cleanly.
         client.getDispatcher().getExecutorService().shutdown();
+    }
+
+    protected void assertNodeEquals(ModelControllerClient mcc, ModelNode addressActual, Class<?> caller,
+            String expectedNodeFileName) {
+        assertNodeEquals(mcc, addressActual, caller, expectedNodeFileName, false);
+    }
+
+    protected void assertNodeEquals(ModelControllerClient mcc, ModelNode addressActual, Class<?> caller,
+            String expectedNodeFileName, boolean saveActual) {
+        try {
+            ModelNode actual = OperationBuilder.readResource().address(addressActual).includeRuntime().includeDefaults()
+                    .recursive().execute(mcc).assertSuccess().getResultNode();
+            if (saveActual) {
+                writeNode(caller, actual, expectedNodeFileName + ".actual.txt");
+            }
+            String expected = readNode(caller, expectedNodeFileName);
+            Assert.assertEquals(actual.toString(), expected);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void assertResourceCount(ModelControllerClient mcc, ModelNode address, String childType,
@@ -241,6 +314,10 @@ public abstract class AbstractCommandITest {
         InventoryJacksonConfig.configure(mapper);
         this.writeExecutor = Executors.newSingleThreadExecutor();
         this.client = new OkHttpClient();
+
+        trace(OperationBuilder.class);
+        setLogger("org.hawkular.agent.monitor.cmd", Level.TRACE);
+
     }
 
     /**
@@ -390,19 +467,100 @@ public abstract class AbstractCommandITest {
         }
     }
 
-    protected void waitForAccountsAndInventory() throws Throwable {
-        Thread.sleep(10000);
-        /*
-         * Make sure we can access the tenant first. We will do several attempts because race conditions may happen
-         * between this script and WildFly Agent who may have triggered the same initial tasks in Accounts
-         */
-        getWithRetries(baseAccountsUri + "/personas/current");
+    protected void reload() {
+        // System.out.println("About to reload");
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            OperationBuilder.reload().execute(mcc).assertSuccess();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        final long timeoutMillis = 10 * 60 * 1000;
+        final long start = System.currentTimeMillis();
+        // System.out.println("Waiting for the server to come up");
+        while (true) {
+            try (ModelControllerClient reconnectedMcc = newModelControllerClient()) {
+                String status = OperationBuilder.readAttribute().address().parentBuilder().name("server-state")
+                        .execute(reconnectedMcc).assertSuccess().getResultNode().asString();
+                // System.out.println("Status = "+ status);
+                if ("RUNNING".equals(status)) {
+                    return;
+                }
+            } catch (Exception e) {
+                // System.out.println("Could not connect while reloading");
+                e.printStackTrace();
+            }
 
-        /*
-         * Ensure the "test" env was autocreated. We will do several attempts because race conditions may happen between
-         * this script and WildFly Agent who may have triggered the same initial tasks in Inventory. A successfull GET
-         * to /hawkular/inventory/environments/test should mean that all initial tasks are over
-         */
-        getWithRetries(baseInvUri + "/environments/test");
+            if (start + timeoutMillis < System.currentTimeMillis()) {
+                throw new RuntimeException(
+                        "Server reload timeouted after " + (System.currentTimeMillis() - start) + " ms");
+            }
+            try {
+                // System.out.println("Sleeping");
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
+
+    public void setLogger(String category, org.jboss.logging.Logger.Level level) {
+        try (ModelControllerClient cl = newModelControllerClient()) {
+            // ModelNode loggingBefore = OperationBuilder.readResource().address().subsystemLogging().parentBuilder()
+            // .recursive().includeRuntime().execute(cl).assertSuccess().getResultNode();
+            // System.out.println("logging before = " + loggingBefore.toString());
+
+            Set<String> availCategories = OperationBuilder.readChildrenNames().address().subsystemLogging()
+                    .parentBuilder().childType(SubsystemLoggingConstants.LOGGER).execute(cl).getHashSet();
+
+            // System.out.println("availCategories = "+ availCategories);
+
+            if (!availCategories.contains(category)) {
+                OperationBuilder.add() //
+                        .address().subsystemLogging().segment(SubsystemLoggingConstants.LOGGER, category)
+                        .parentBuilder() //
+                        .attribute(SubsystemLoggingConstants.LoggerNodeConstants.CATEGORY, category)
+                        .attribute(SubsystemLoggingConstants.LoggerNodeConstants.LEVEL, level.name())
+                        .attribute(SubsystemLoggingConstants.LoggerNodeConstants.USE_PARENT_HANDLERS, true) //
+                        .execute(cl).assertSuccess();
+            } else {
+                OperationBuilder.writeAttribute() //
+                        .address().subsystemLogging().segment(SubsystemLoggingConstants.LOGGER, category)
+                        .parentBuilder() //
+                        .attribute(SubsystemLoggingConstants.LoggerNodeConstants.LEVEL, level.name()) //
+                        .execute(cl).assertSuccess();
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public void trace(Class<?> cl) {
+        setLogger(cl.getName(), Level.TRACE);
+    }
+
+    protected void waitForAccountsAndInventory() throws Throwable {
+
+        synchronized (waitForAccountsLock) {
+            if (!accountsAndInventoryReady) {
+                Thread.sleep(10000);
+                /*
+                 * Make sure we can access the tenant first. We will do several attempts because race conditions may
+                 * happen between this script and WildFly Agent who may have triggered the same initial tasks in
+                 * Accounts
+                 */
+                getWithRetries(baseAccountsUri + "/personas/current");
+
+                /*
+                 * Ensure the "test" env was autocreated. We will do several attempts because race conditions may happen
+                 * between this script and WildFly Agent who may have triggered the same initial tasks in Inventory. A
+                 * successfull GET to /hawkular/inventory/environments/test should mean that all initial tasks are over
+                 */
+                getWithRetries(baseInvUri + "/environments/test");
+                accountsAndInventoryReady = true;
+            }
+        }
     }
 }

@@ -48,8 +48,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
     private static final String driverName = "mysql";
 
     private static ModelNode driverAddress() {
-        return new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
-                .add("jdbc-driver", driverName);
+        return new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources").add("jdbc-driver", driverName);
     }
 
     @Test(dependsOnGroups = { "exclusive-inventory-access" })
@@ -99,19 +98,19 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             int i = 0;
             String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
 
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":"
-                    + "\"The request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                    + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
             AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
             AssertJUnit.assertEquals("AddJdbcDriverResponse={" //
-                                    + "\"driverName\":\"" + driverName + "\"," //
-                                    + "\"resourcePath\":\"" + wfPath + "\"," //
-                                    + "\"destinationSessionId\":\""+ sessionId +"\"," //
-                                    + "\"status\":\"OK\"," //
-                                    + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
-                                    + "}", receivedMessages.get(i++).readUtf8());
+                    + "\"driverName\":\"" + driverName + "\"," //
+                    + "\"resourcePath\":\"" + wfPath + "\"," //
+                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"status\":\"OK\"," //
+                    + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
+                    + "}", receivedMessages.get(i++).readUtf8());
 
             assertResourceExists(mcc, driverAddress(), true);
         }
@@ -164,10 +163,11 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
 
             AssertJUnit.assertEquals("RemoveJdbcDriverResponse={"//
-                    + "\"resourcePath\":\""+ removePath.toString() +"\"," //
-                    + "\"destinationSessionId\":\""+ sessionId +"\"," //
+                    + "\"resourcePath\":\"" + removePath.toString() + "\"," //
+                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Removed [JDBC Driver] given by Inventory path [" + removePath + "]\""//
+                    + "\"message\":\"Performed [Remove] on a [JDBC Driver] given by Inventory path [" + removePath
+                    + "]\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
             assertResourceExists(mcc, driverAddress(), false);
@@ -176,4 +176,3 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
     }
 
 }
-

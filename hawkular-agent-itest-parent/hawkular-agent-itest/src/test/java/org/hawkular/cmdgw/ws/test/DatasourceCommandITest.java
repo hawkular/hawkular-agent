@@ -48,12 +48,24 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     private static final String datasourceName = "testH2Ds";
     private static final String driverClass = "org.h2.Driver";
     private static final String driverName = "h2";
+    private static final String dsFileNameAfterAdd;
+    private static final String dsFileNameAfterUpdate;
     private static final String password = "sa";
     private static final String userName = "sa";
     private static final String xaDataSourceClass = "org.h2.jdbcx.JdbcDataSource";
     private static final String xaDatasourceJndiName = "java:/testXaDs";
+
     private static final String xaDatasourceName = "testXaDs";
     private static final String xaDataSourceUrl = "jdbc:h2:mem:test";
+    private static final String xaDsFileNameAfterAdd;
+    private static final String xaDsFileNameAfterUpdate;
+
+    static {
+        dsFileNameAfterAdd = datasourceName + "-after-add.node.txt";
+        dsFileNameAfterUpdate = datasourceName + "-after-update.node.txt";
+        xaDsFileNameAfterAdd = xaDatasourceName + "-after-add.node.txt";
+        xaDsFileNameAfterUpdate = xaDatasourceName + "-after-update.node.txt";
+    }
 
     private static ModelNode datasourceAddess(String dsName, boolean isXaDatasource) {
         return new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources")
@@ -65,10 +77,10 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
-
+        ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertResourceExists(mcc, datasourceAddess(datasourceName, false), false);
+            assertResourceExists(mcc, dsAddress, false);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -82,6 +94,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                                     + "\"xaDatasource\":\"false\"," //
                                     + "\"datasourceName\":\"" + datasourceName + "\"," //
                                     + "\"jndiName\":\"" + datasourceJndiName + "\"," //
+                                    + "\"datasourceProperties\":{\"prop1\":\"val1\",\"prop2\":\"val2\"}," //
                                     + "\"driverName\":\"" + driverName + "\"," //
                                     + "\"driverClass\":\"" + driverClass + "\"," //
                                     + "\"connectionUrl\":\"" + datasourceConnectionUrl + "\"," //
@@ -119,7 +132,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"message\":\"Added Datasource: " + datasourceName + "\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            assertResourceExists(mcc, datasourceAddess(datasourceName, false), true);
+            assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
 
         }
     }
@@ -127,11 +140,11 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     @Test(dependsOnGroups = { "exclusive-inventory-access" })
     public void testAddXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
-
+        ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
         CanonicalPath wfPath = getCurrentASPath();
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), false);
+            assertResourceExists(mcc, dsAddress, false);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -147,8 +160,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                                     + "\"jndiName\":\"" + xaDatasourceJndiName + "\"," //
                                     + "\"driverName\":\"" + driverName + "\"," //
                                     + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
-                                    + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl + "\"}," //
-                                    + "\"userName\":\"" + userName + "\"," //
+                                    + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl
+                                    + "\",\"xaProp2\":\"xaVal2\"}," + "\"userName\":\"" + userName + "\"," //
                                     + "\"password\":\"" + password + "\"" //
                                     + "}");
                     super.onOpen(webSocket, response);
@@ -182,23 +195,24 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"message\":\"Added Datasource: " + xaDatasourceName + "\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            assertResourceExists(mcc, datasourceAddess(xaDatasourceName, true), true);
+            assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
 
         }
 
     }
 
-    @Test(dependsOnMethods = { "testAddDatasource" })
+    @Test(dependsOnMethods = { "testUpdateDatasource" })
     public void testRemoveDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
+        ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
                 + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertResourceExists(mcc, datasourceAddess(datasourceName, false), true);
+            assertResourceExists(mcc, dsAddress, true);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -236,10 +250,212 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourcePath\":\"" + removePath.toString() + "\"," //
                     + "\"destinationSessionId\":\"" + sessionId + "\"," //
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Removed [Datasource] given by Inventory path [" + removePath + "]\""//
+                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
+                    + "]\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            assertResourceExists(mcc, datasourceAddess(datasourceName, false), false);
+            assertResourceExists(mcc, dsAddress, false);
+
+        }
+    }
+
+    @Test(dependsOnMethods = { "testUpdateXaDatasource" })
+    public void testRemoveXaDatasource() throws Throwable {
+        waitForAccountsAndInventory();
+
+        CanonicalPath wfPath = getCurrentASPath();
+        ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
+
+        String removePath = wfPath.toString().replaceFirst("\\~+$", "")
+                + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
+
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            assertResourceExists(mcc, dsAddress, true);
+
+            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    send(webSocket,
+                            "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
+                                    + "\"resourcePath\":\"" + removePath + "\"" //
+                                    + "}");
+                    super.onOpen(webSocket, response);
+                }
+            };
+
+            WebSocketCall.create(client, request).enqueue(openingListener);
+
+            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
+            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
+            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
+                    Mockito.same(PayloadType.TEXT));
+
+            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
+            int i = 0;
+
+            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
+
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                    + wfPath.ids().getFeedId() + "] (\\E.*";
+
+            String msg = receivedMessages.get(i++).readUtf8();
+            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+
+            AssertJUnit.assertEquals("RemoveDatasourceResponse={"//
+                    + "\"resourcePath\":\"" + removePath.toString() + "\"," //
+                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"status\":\"OK\","//
+                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
+                    + "]\""//
+                    + "}", receivedMessages.get(i++).readUtf8());
+
+            assertResourceExists(mcc, dsAddress, false);
+
+        }
+    }
+
+    @Test(dependsOnMethods = { "testAddDatasource" })
+    public void testUpdateDatasource() throws Throwable {
+        waitForAccountsAndInventory();
+
+        CanonicalPath wfPath = getCurrentASPath();
+        ModelNode dsAddress = datasourceAddess(datasourceName, false);
+
+        String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
+                + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
+
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
+
+            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+
+            final String changedConnectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
+
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    send(webSocket,
+                            "UpdateDatasourceRequest={\"authentication\":" + authentication + ", " //
+                                    + "\"resourcePath\":\"" + dsPath + "\"," //
+                                    + "\"datasourceName\":\"" + datasourceName + "\"," //
+                                    + "\"jndiName\":\"" + datasourceJndiName + "\"," //
+                                    + "\"datasourceProperties\":{\"prop1\":\"val1.1\",\"prop3\":\"val3\"}," //
+                                    + "\"driverName\":\"" + driverName + "\"," //
+                                    + "\"driverClass\":\"" + driverClass + "\"," //
+                                    + "\"connectionUrl\":\"" + changedConnectionUrl + "\"," //
+                                    + "\"userName\":\"" + userName + "\"," //
+                                    + "\"password\":\"" + password + "\"" //
+                                    + "}");
+                    super.onOpen(webSocket, response);
+                }
+            };
+
+            WebSocketCall.create(client, request).enqueue(openingListener);
+
+            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
+            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
+            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
+                    Mockito.same(PayloadType.TEXT));
+
+            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
+            int i = 0;
+
+            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
+
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                    + wfPath.ids().getFeedId() + "] (\\E.*";
+
+            String msg = receivedMessages.get(i++).readUtf8();
+            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+
+            AssertJUnit.assertEquals("UpdateDatasourceResponse={"//
+                    + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
+                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"status\":\"OK\","//
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""//
+                    + "}", receivedMessages.get(i++).readUtf8());
+
+            assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterUpdate);
+
+            // reload causes that shut down hook of WF plugin shuts down the server
+            // reload();
+
+        }
+    }
+
+    @Test(dependsOnMethods = { "testAddXaDatasource" })
+    public void testUpdateXaDatasource() throws Throwable {
+        waitForAccountsAndInventory();
+
+        CanonicalPath wfPath = getCurrentASPath();
+        ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
+
+        String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
+                + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
+
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
+
+            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
+            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
+
+            final String changedXaDatasourceJndiName = xaDatasourceJndiName + "_changed";
+            final String changedXaDsUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
+
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    send(webSocket,
+                            "UpdateDatasourceRequest={\"authentication\":" + authentication + ", " //
+                                    + "\"resourcePath\":\"" + dsPath + "\"," //
+                                    + "\"datasourceName\":\"" + xaDatasourceName + "\"," //
+                                    + "\"jndiName\":\"" + changedXaDatasourceJndiName + "\"," //
+                    // changing or removing of props seems to be broken
+                                    + "\"datasourceProperties\":{\"URL\":\"" + changedXaDsUrl
+                                    + "\",\"xaProp3\":\"xaVal3\"}," //
+                                    + "\"driverName\":\"" + driverName + "\"," //
+                                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
+                                    + "\"userName\":\"" + userName + "\"," //
+                                    + "\"password\":\"" + password + "\"" //
+                                    + "}");
+                    super.onOpen(webSocket, response);
+                }
+            };
+
+            WebSocketCall.create(client, request).enqueue(openingListener);
+
+            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
+            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
+            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
+                    Mockito.same(PayloadType.TEXT));
+
+            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
+            int i = 0;
+
+            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
+
+            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                    + wfPath.ids().getFeedId() + "] (\\E.*";
+
+            String msg = receivedMessages.get(i++).readUtf8();
+            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
+
+            AssertJUnit.assertEquals("UpdateDatasourceResponse={"//
+                    + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
+                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"status\":\"OK\","//
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""//
+                    + "}", receivedMessages.get(i++).readUtf8());
+
+            assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterUpdate, false);
+
+            // reload causes that shut down hook of WF plugin shuts down the server
+            // reload();
 
         }
     }

@@ -359,23 +359,6 @@
             </executions>
           </plugin>
 
-          <plugin>
-            <groupId>com.spotify</groupId>
-            <artifactId>docker-maven-plugin</artifactId>
-            <version>0.2.12</version>
-            <configuration>
-              <imageName>hawkular:snapshot</imageName>
-              <dockerDirectory>docker</dockerDirectory>
-              <resources>
-                <resource>
-                  <targetPath>/</targetPath>
-                  <directory>${project.build.directory}</directory>
-                  <include>hawkular-${project.version}.zip</include>
-                </resource>
-              </resources>
-            </configuration>
-          </plugin>
-
           <!-- Generate some keys for Keycloak integration, so that we don't ship with default credentials -->
           <plugin>
             <groupId>org.codehaus.gmaven</groupId>

@@ -17,8 +17,7 @@
 package org.hawkular.agent.monitor.cmd;
 
 import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.RemoveDatasourceRequest;
 import org.hawkular.cmdgw.api.RemoveDatasourceResponse;
 import org.hawkular.dmrclient.DatasourceJBossASClient;
@@ -43,18 +42,15 @@ public class RemoveDatasourceCommand
     }
 
     @Override
-    protected void validate(String modelNodePath, RemoveDatasourceRequest request) {
-        super.validate(modelNodePath, request);
+    protected void validate(String modelNodePath, BasicMessageWithExtraData<RemoveDatasourceRequest> envelope) {
         DatasourceJBossASClient.checkDatasourcePath(modelNodePath);
     }
 
     @Override
-    protected void validate(RemoveDatasourceRequest request, String managedServerName, ManagedServer managedServer) {
-        super.validate(request, managedServerName, managedServer);
-        if (!(managedServer instanceof LocalDMRManagedServer) && !(managedServer instanceof RemoteDMRManagedServer)) {
-            throw new IllegalStateException(String.format("Cannot remove [%s] from [%s]. Only [%s] is supported",
-                    entityType, managedServer.getClass().getName(), LocalDMRManagedServer.class.getName()));
-        }
+    protected void validate(BasicMessageWithExtraData<RemoveDatasourceRequest> envelope, String managedServerName,
+            ManagedServer managedServer) {
+        super.validate(envelope, managedServerName, managedServer);
+        assertLocalOrRemoteServer(managedServer);
     }
 
 }

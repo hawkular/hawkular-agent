@@ -17,7 +17,6 @@
 package org.hawkular.agent.monitor.cmd;
 
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.EchoRequest;
 import org.hawkular.cmdgw.api.EchoResponse;
 
@@ -25,13 +24,13 @@ public class EchoCommand implements Command<EchoRequest, EchoResponse> {
     public static final Class<EchoRequest> REQUEST_CLASS = EchoRequest.class;
 
     @Override
-    public BasicMessageWithExtraData<EchoResponse> execute(EchoRequest echoRequest, BinaryData binaryData,
+    public BasicMessageWithExtraData<EchoResponse> execute(BasicMessageWithExtraData<EchoRequest> envelope,
             CommandContext context) {
-        String reply = String.format("WildFly Monitor Agent Echo: [%s]", echoRequest.getEchoMessage());
+        String reply = String.format("WildFly Monitor Agent Echo: [%s]", envelope.getBasicMessage().getEchoMessage());
 
         // return the response
         EchoResponse echoResponse = new EchoResponse();
         echoResponse.setReply(reply);
-        return new BasicMessageWithExtraData<>(echoResponse, binaryData);
+        return new BasicMessageWithExtraData<>(echoResponse, envelope.getBinaryData());
     }
 }

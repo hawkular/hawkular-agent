@@ -47,11 +47,11 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
     public static final Class<DeployApplicationRequest> REQUEST_CLASS = DeployApplicationRequest.class;
 
     @Override
-    public BasicMessageWithExtraData<DeployApplicationResponse> execute(DeployApplicationRequest request,
-            BinaryData applicationContent, CommandContext context) throws Exception {
-
-        log.infof("Received request to deploy application [%s] on resource [%s]",
-                request.getDestinationFileName(), request.getResourcePath());
+    public BasicMessageWithExtraData<DeployApplicationResponse> execute(
+            BasicMessageWithExtraData<DeployApplicationRequest> envelope, CommandContext context) throws Exception {
+        DeployApplicationRequest request = envelope.getBasicMessage();
+        log.infof("Received request to deploy application [%s] on resource [%s]", request.getDestinationFileName(),
+                request.getResourcePath());
 
         MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
 
@@ -67,15 +67,15 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
         }
 
         if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return deployApplicationDMR(resourceId, request, applicationContent, context, managedServer);
+            return deployApplicationDMR(resourceId, request, envelope.getBinaryData(), context, managedServer);
         } else {
             throw new IllegalStateException("Cannot deploy application: report this bug: " + managedServer.getClass());
         }
     }
 
     private BasicMessageWithExtraData<DeployApplicationResponse> deployApplicationDMR(String resourceId,
-            DeployApplicationRequest request,
-            BinaryData applicationContent, CommandContext context, ManagedServer managedServer) throws Exception {
+            DeployApplicationRequest request, BinaryData applicationContent, CommandContext context,
+            ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
                 .get(managedServer);

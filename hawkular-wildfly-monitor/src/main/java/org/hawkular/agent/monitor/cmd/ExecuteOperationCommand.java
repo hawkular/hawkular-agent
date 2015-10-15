@@ -34,7 +34,6 @@ import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.ExecuteOperationRequest;
 import org.hawkular.cmdgw.api.ExecuteOperationResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
@@ -54,10 +53,11 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
     public static final Class<ExecuteOperationRequest> REQUEST_CLASS = ExecuteOperationRequest.class;
 
     @Override
-    public BasicMessageWithExtraData<ExecuteOperationResponse> execute(ExecuteOperationRequest request,
-            BinaryData binaryData, CommandContext context) throws Exception {
-        log.infof("Received request to execute operation [%s] on resource [%s]",
-                request.getOperationName(), request.getResourcePath());
+    public BasicMessageWithExtraData<ExecuteOperationResponse> execute(
+            BasicMessageWithExtraData<ExecuteOperationRequest> envelope, CommandContext context) throws Exception {
+        ExecuteOperationRequest request = envelope.getBasicMessage();
+        log.infof("Received request to execute operation [%s] on resource [%s]", request.getOperationName(),
+                request.getResourcePath());
 
         MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
 
@@ -80,8 +80,7 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
     }
 
     private BasicMessageWithExtraData<ExecuteOperationResponse> executeOperationDMR(String resourceId,
-            ExecuteOperationRequest request,
-            CommandContext context, ManagedServer managedServer) throws Exception {
+            ExecuteOperationRequest request, CommandContext context, ManagedServer managedServer) throws Exception {
 
         DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
                 .get(managedServer);
@@ -103,8 +102,8 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
 
         String requestedOpName = request.getOperationName();
         Collection<DMROperation> ops = resource.getResourceType().getOperations();
-        log.tracef("Searching for operation [%s] among operations [%s] for resource [%s].",
-                requestedOpName, ops, resource.getID());
+        log.tracef("Searching for operation [%s] among operations [%s] for resource [%s].", requestedOpName, ops,
+                resource.getID());
         for (DMROperation op : ops) {
             if (requestedOpName.equals(op.getID().getIDString())) {
                 opAddress = resource.getAddress().clone().add(Address.parse(op.getPath()));
