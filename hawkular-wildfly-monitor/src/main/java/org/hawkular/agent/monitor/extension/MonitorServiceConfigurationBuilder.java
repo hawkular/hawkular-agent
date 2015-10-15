@@ -878,6 +878,10 @@ public class MonitorServiceConfigurationBuilder {
                         }
                     }
 
+                    if (useSsl && securityRealm == null) {
+                        throw new OperationFailedException("If using SSL, you must define a security realm: " + name);
+                    }
+
                     RemoteDMRManagedServer res = new RemoteDMRManagedServer(ID.NULL_ID, new Name(name));
                     res.setEnabled(enabled);
                     res.setHost(host);
@@ -930,6 +934,7 @@ public class MonitorServiceConfigurationBuilder {
                     String urlStr = getString(remoteJMXValueNode, context, RemoteJMXAttributes.URL);
                     String username = getString(remoteJMXValueNode, context, RemoteJMXAttributes.USERNAME);
                     String password = getString(remoteJMXValueNode, context, RemoteJMXAttributes.PASSWORD);
+                    String securityRealm = getString(remoteJMXValueNode, context, RemoteJMXAttributes.SECURITY_REALM);
                     List<Name> resourceTypeSets = getNameListFromString(remoteJMXValueNode, context,
                             RemoteJMXAttributes.RESOURCE_TYPE_SETS);
 
@@ -949,11 +954,16 @@ public class MonitorServiceConfigurationBuilder {
                         throw new OperationFailedException("Invalid remote JMX URL: " + urlStr, e);
                     }
 
+                    if (url.getProtocol().equalsIgnoreCase("https") && securityRealm == null) {
+                        throw new OperationFailedException("If using SSL, you must define a security realm: " + name);
+                    }
+
                     RemoteJMXManagedServer res = new RemoteJMXManagedServer(ID.NULL_ID, new Name(name));
                     res.setEnabled(enabled);
                     res.setURL(url);
                     res.setUsername(username);
                     res.setPassword(password);
+                    res.setSecurityRealm(securityRealm);
                     res.getResourceTypeSets().addAll(resourceTypeSets);
                     theConfig.managedServersMap.put(res.getName(), res);
                 }

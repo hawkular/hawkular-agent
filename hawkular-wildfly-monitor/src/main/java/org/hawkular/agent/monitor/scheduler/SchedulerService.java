@@ -76,7 +76,6 @@ public class SchedulerService {
     private final Scheduler availScheduler;
     private final MetricBufferedStorageDispatcher metricCompletionHandler;
     private final AvailBufferedStorageDispatcher availCompletionHandler;
-    private final JmxClientFactory jmxClientFactory;
 
     private boolean started = false;
 
@@ -85,8 +84,7 @@ public class SchedulerService {
             ServerIdentifiers selfId,
             Diagnostics diagnostics,
             StorageAdapter storageAdapter,
-            ModelControllerClientFactory localDMRClientFactory,
-            JmxClientFactory jmxClientFactory) {
+            ModelControllerClientFactory localDMRClientFactory) {
 
         this.schedulerConfig = configuration;
 
@@ -98,9 +96,6 @@ public class SchedulerService {
 
         // metrics for our own internals
         this.diagnostics = diagnostics;
-
-        // used to send requests to the JMX servers
-        this.jmxClientFactory = jmxClientFactory;
 
         // create the schedulers - we use two: one for metric collections and one for avail checks
         this.metricCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
@@ -195,7 +190,7 @@ public class SchedulerService {
                 } else if (JMXTask.class.isInstance(firstTask)) {
                     JMXEndpoint endpoint = ((JMXTask) firstTask).getEndpoint();
                     return new MetricJMXTaskGroupRunnable(group, metricCompletionHandler, diagnostics,
-                            jmxClientFactory.newFactory(endpoint));
+                            new JmxClientFactoryImpl(endpoint));
                 } else {
                     throw new UnsupportedOperationException("Unsupported metric group: " + group);
                 }
@@ -219,7 +214,7 @@ public class SchedulerService {
                 } else if (JMXTask.class.isInstance(firstTask)) {
                     JMXEndpoint endpoint = ((JMXTask) firstTask).getEndpoint();
                     return new AvailJMXTaskGroupRunnable(group, availCompletionHandler, diagnostics,
-                            jmxClientFactory.newFactory(endpoint));
+                            new JmxClientFactoryImpl(endpoint));
                 } else {
                     throw new UnsupportedOperationException("Unsupported avail group: " + group);
                 }

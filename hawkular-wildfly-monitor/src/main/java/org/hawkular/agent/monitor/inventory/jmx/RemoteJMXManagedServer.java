@@ -30,6 +30,7 @@ public class RemoteJMXManagedServer extends ManagedServer {
     private URL url;
     private String username;
     private String password;
+    private String securityRealm;
 
     public URL getUrl() {
         return url;
@@ -53,6 +54,14 @@ public class RemoteJMXManagedServer extends ManagedServer {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getSecurityRealm() {
+        return securityRealm;
+    }
+
+    public void setSecurityRealm(String securityRealm) {
+        this.securityRealm = securityRealm;
     }
 
 }

@@ -255,25 +255,31 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                     trustStoreOnly);
         }
 
-        // get the security realms for any configured remote DMR servers that require ssl
+        // get the security realms for any configured remote DMR and JMX servers that require ssl
         for (Map.Entry<Name, ManagedServer> entry : this.configuration.managedServersMap.entrySet()) {
+            String securityRealm = null;
+
             ManagedServer managedServer = entry.getValue();
             if (managedServer instanceof RemoteDMRManagedServer) {
                 RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
-                String securityRealm = dmrServer.getSecurityRealm();
-                if (securityRealm != null) {
-                    if (!this.trustOnlySSLContextValues.containsKey(securityRealm)) {
-                        // if we haven't added a dependency on the security realm yet, add it now
-                        InjectedValue<SSLContext> iv = new InjectedValue<>();
-                        this.trustOnlySSLContextValues.put(securityRealm, iv);
+                securityRealm = dmrServer.getSecurityRealm();
+            } else if (managedServer instanceof RemoteJMXManagedServer) {
+                RemoteJMXManagedServer jmxServer = (RemoteJMXManagedServer) managedServer;
+                securityRealm = jmxServer.getSecurityRealm();
+            }
 
-                        boolean trustStoreOnly = true;
-                        SSLContextService.ServiceUtil.addDependency(
-                                bldr,
-                                iv,
-                                SecurityRealm.ServiceUtil.createServiceName(securityRealm),
-                                trustStoreOnly);
-                    }
+            if (securityRealm != null) {
+                if (!this.trustOnlySSLContextValues.containsKey(securityRealm)) {
+                    // if we haven't added a dependency on the security realm yet, add it now
+                    InjectedValue<SSLContext> iv = new InjectedValue<>();
+                    this.trustOnlySSLContextValues.put(securityRealm, iv);
+
+                    boolean trustStoreOnly = true;
+                    SSLContextService.ServiceUtil.addDependency(
+                            bldr,
+                            iv,
+                            SecurityRealm.ServiceUtil.createServiceName(securityRealm),
+                            trustStoreOnly);
                 }
             }
         }
@@ -649,8 +655,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 this.selfId,
                 this.diagnostics,
                 this.storageAdapter,
-                createLocalClientFactory(),
-                new JmxClientFactoryImpl(null, this.trustOnlySSLContextValue.getOptionalValue()));
+                createLocalClientFactory());
         this.schedulerService.start();
     }
 
@@ -831,8 +836,16 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                             .getAllResources().size();
                 } else if (managedServer instanceof RemoteJMXManagedServer) {
                     RemoteJMXManagedServer jmxServer = (RemoteJMXManagedServer) managedServer;
-                    JMXEndpoint jmxEndpoint = new JMXEndpoint(jmxServer.getName().toString(), jmxServer.getUrl(),
-                            jmxServer.getUsername(), jmxServer.getPassword());
+                    SSLContext sslContext = null;
+                    if (jmxServer.getUrl().getProtocol().equalsIgnoreCase("https")) {
+                        sslContext = this.trustOnlySSLContextValues.get(jmxServer.getSecurityRealm())
+                                .getOptionalValue();
+                    }
+                    JMXEndpoint jmxEndpoint = new JMXEndpoint(jmxServer.getName().toString(),
+                            jmxServer.getUrl(),
+                            jmxServer.getUsername(),
+                            jmxServer.getPassword(),
+                            sslContext);
                     discoverResourcesForJMXManagedServer(managedServer, jmxEndpoint);
                     resourcesDiscovered += this.jmxServerInventories.get(managedServer).getResourceManager()
                             .getAllResources().size();
@@ -1042,8 +1055,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         ResourceManager<JMXResource> resourceManager = new ResourceManager<>();
 
         // determine the client to use to connect to the managed server
-        JmxClientFactory factory = new JmxClientFactoryImpl(jmxEndpoint,
-                this.trustOnlySSLContextValue.getOptionalValue());
+        JmxClientFactory factory = new JmxClientFactoryImpl(jmxEndpoint);
 
         JMXInventoryManager im;
         im = new JMXInventoryManager(feedId, metadataMgr, resourceManager, managedServer, jmxEndpoint, factory);

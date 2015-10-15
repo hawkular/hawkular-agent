@@ -36,12 +36,14 @@ public class JMXEndpoint extends MonitoredEndpoint {
     private final String username;
     private final String password;
     private final String serverId;
+    private final SSLContext sslContext;
 
-    public JMXEndpoint(String name, URL url, String username, String password) {
+    public JMXEndpoint(String name, URL url, String username, String password, SSLContext sslContext) {
         super(name);
         this.url = url;
         this.username = username;
         this.password = password;
+        this.sslContext = sslContext;
         this.serverId = String.format("%s:%d", url.getHost(), url.getPort());
     }
 
@@ -57,6 +59,10 @@ public class JMXEndpoint extends MonitoredEndpoint {
         return password;
     }
 
+    public SSLContext getSSLContext() {
+        return sslContext;
+    }
+
     /**
      * Returns the server identification, connecting to the endpoint if it
      * has not been obtained yet. This will be null if the endpoint could not
@@ -70,7 +76,7 @@ public class JMXEndpoint extends MonitoredEndpoint {
         return this.serverId;
     }
 
-    public J4pClient getJmxClient(SSLContext sslContext) {
+    public J4pClient getJmxClient() {
         BasicAuthenticator authenticator;
 
         if (sslContext != null && getURL().getProtocol().equalsIgnoreCase("https")) {
@@ -96,7 +102,7 @@ public class JMXEndpoint extends MonitoredEndpoint {
     }
 
     private class SecureBasicAuthenticator extends BasicAuthenticator {
-        private SSLContext sslContext;
+        private final SSLContext sslContext;
 
         public SecureBasicAuthenticator(SSLContext sslContext) {
             this.sslContext = sslContext;
