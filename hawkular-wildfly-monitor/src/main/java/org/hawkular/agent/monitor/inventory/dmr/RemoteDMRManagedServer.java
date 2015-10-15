@@ -29,6 +29,8 @@ public class RemoteDMRManagedServer extends ManagedServer {
     private int port;
     private String username;
     private String password;
+    private boolean useSSL;
+    private String securityRealm;
 
     public String getHost() {
         return host;
@@ -60,6 +62,22 @@ public class RemoteDMRManagedServer extends ManagedServer {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean getUseSSL() {
+        return useSSL;
+
+    }
+    public void setUseSSL(boolean useSsl) {
+        this.useSSL = useSsl;
+    }
+
+    public String getSecurityRealm() {
+        return securityRealm;
+    }
+
+    public void setSecurityRealm(String securityRealm) {
+        this.securityRealm = securityRealm;
     }
 
 }

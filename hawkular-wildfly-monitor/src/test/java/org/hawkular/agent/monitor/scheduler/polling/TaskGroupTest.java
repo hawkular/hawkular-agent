@@ -130,24 +130,24 @@ public class TaskGroupTest {
 
         // the task "kind" is the same - same task class, type, and endpoint - so only one group
         allTasks.clear();
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p", false, null)));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p", false, null)));
         groups = new IntervalGrouping().separateIntoGroups(allTasks);
         Assert.assertEquals(1, groups.size());
         Assert.assertEquals(2, groups.get(0).size());
 
         // the task "kind" is the same (name of endpoint and password doesn't matter even if different) - so 1 group
         allTasks.clear();
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("nONE", "h", 1, "u", "pONE")));
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("nTWO", "h", 1, "u", "pTWO")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("nONE", "h", 1, "u", "pONE", false, null)));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("nTWO", "h", 1, "u", "pTWO", false, null)));
         groups = new IntervalGrouping().separateIntoGroups(allTasks);
         Assert.assertEquals(1, groups.size());
         Assert.assertEquals(2, groups.get(0).size());
 
         // the task "kind" is the same, but interval is different, so two groups
         allTasks.clear();
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
-        allTasks.add(createDMRTask(Type.METRIC, 2, new DMREndpoint("n", "h", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p", false, null)));
+        allTasks.add(createDMRTask(Type.METRIC, 2, new DMREndpoint("n", "h", 1, "u", "p", false, null)));
         groups = new IntervalGrouping().separateIntoGroups(allTasks);
         Assert.assertEquals(2, groups.size());
         Assert.assertEquals(1, groups.get(0).size());
@@ -155,8 +155,8 @@ public class TaskGroupTest {
 
         // the task "kind" is different (type is different), so two groups
         allTasks.clear();
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
-        allTasks.add(createDMRTask(Type.AVAIL, 1, new DMREndpoint("n", "h", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p", false, null)));
+        allTasks.add(createDMRTask(Type.AVAIL, 1, new DMREndpoint("n", "h", 1, "u", "p", false, null)));
         groups = new IntervalGrouping().separateIntoGroups(allTasks);
         Assert.assertEquals(2, groups.size());
         Assert.assertEquals(1, groups.get(0).size());
@@ -164,8 +164,8 @@ public class TaskGroupTest {
 
         // the task "kind" is different (endpoint host is different), so two groups
         allTasks.clear();
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hONE", 1, "u", "p")));
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hTWO", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hONE", 1, "u", "p", false, null)));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hTWO", 1, "u", "p", false, null)));
         groups = new IntervalGrouping().separateIntoGroups(allTasks);
         Assert.assertEquals(2, groups.size());
         Assert.assertEquals(1, groups.get(0).size());
@@ -173,8 +173,8 @@ public class TaskGroupTest {
 
         // the task "kind" is different (endpoint port is different), so two groups
         allTasks.clear();
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p")));
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 2, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "u", "p", false, null)));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 2, "u", "p", false, null)));
         groups = new IntervalGrouping().separateIntoGroups(allTasks);
         Assert.assertEquals(2, groups.size());
         Assert.assertEquals(1, groups.get(0).size());
@@ -182,8 +182,8 @@ public class TaskGroupTest {
 
         // the task "kind" is different (endpoint username is different), so two groups
         allTasks.clear();
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "uONE", "p")));
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "uTWO", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "uONE", "p", false, null)));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "h", 1, "uTWO", "p", false, null)));
         groups = new IntervalGrouping().separateIntoGroups(allTasks);
         Assert.assertEquals(2, groups.size());
         Assert.assertEquals(1, groups.get(0).size());
@@ -191,10 +191,10 @@ public class TaskGroupTest {
 
         // just make sure we can handle groups with more than 1 task in them
         allTasks.clear();
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hONE", 1, "u", "p")));
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hONE", 1, "u", "p")));
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hTWO", 1, "u", "p")));
-        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hTWO", 1, "u", "p")));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hONE", 1, "u", "p", false, null)));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hONE", 1, "u", "p", false, null)));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hTWO", 1, "u", "p", false, null)));
+        allTasks.add(createDMRTask(Type.METRIC, 1, new DMREndpoint("n", "hTWO", 1, "u", "p", false, null)));
         groups = new IntervalGrouping().separateIntoGroups(allTasks);
         Assert.assertEquals(2, groups.size());
         Assert.assertEquals(2, groups.get(0).size());

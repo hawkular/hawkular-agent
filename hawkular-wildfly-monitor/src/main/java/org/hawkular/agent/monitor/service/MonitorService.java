@@ -138,7 +138,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     private final InjectedValue<SocketBinding> httpSocketBindingValue = new InjectedValue<>();
     private final InjectedValue<SocketBinding> httpsSocketBindingValue = new InjectedValue<>();
     private final InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue = new InjectedValue<>();
-    private final InjectedValue<SSLContext> trustOnlySSLContextValue = new InjectedValue<>();
+    // key=securityRealm
+    private final Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues = new HashMap<>();
 
     private boolean started = false;
 
@@ -223,14 +224,42 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                     .append(this.configuration.storageAdapter.serverOutboundSocketBindingRef),
                     OutboundSocketBinding.class, serverOutboundSocketBindingValue);
         }
+
+        // get the security realm ssl context for the storage adapter
         if (this.configuration.storageAdapter.securityRealm != null) {
+            InjectedValue<SSLContext> iv = new InjectedValue<>();
+            this.trustOnlySSLContextValues.put(this.configuration.storageAdapter.securityRealm, iv);
+
             // if we ever need our own private key, we can add another dependency with trustStoreOnly=false
             boolean trustStoreOnly = true;
             SSLContextService.ServiceUtil.addDependency(
                     bldr,
-                    trustOnlySSLContextValue,
+                    iv,
                     SecurityRealm.ServiceUtil.createServiceName(this.configuration.storageAdapter.securityRealm),
                     trustStoreOnly);
+        }
+
+        // get the security realms for any configured remote DMR servers that require ssl
+        for (Map.Entry<Name, ManagedServer> entry : this.configuration.managedServersMap.entrySet()) {
+            ManagedServer managedServer = entry.getValue();
+            if (managedServer instanceof RemoteDMRManagedServer) {
+                RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
+                String securityRealm = dmrServer.getSecurityRealm();
+                if (securityRealm != null) {
+                    if (!this.trustOnlySSLContextValues.containsKey(securityRealm)) {
+                        // if we haven't added a dependency on the security realm yet, add it now
+                        InjectedValue<SSLContext> iv = new InjectedValue<>();
+                        this.trustOnlySSLContextValues.put(securityRealm, iv);
+
+                        boolean trustStoreOnly = true;
+                        SSLContextService.ServiceUtil.addDependency(
+                                bldr,
+                                iv,
+                                SecurityRealm.ServiceUtil.createServiceName(securityRealm),
+                                trustStoreOnly);
+                    }
+                }
+            }
         }
     }
 
@@ -272,9 +301,13 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         log.infoStarting();
 
-        // prepare the builder that will create our HTTP/REST clients
-        this.httpClientBuilder = new HttpClientBuilder(this.configuration,
-                this.trustOnlySSLContextValue.getOptionalValue());
+        // prepare the builder that will create our HTTP/REST clients to the hawkular server infrastructure
+        SSLContext ssl = null;
+        if (this.configuration.storageAdapter.securityRealm != null) {
+            ssl = this.trustOnlySSLContextValues.get(this.configuration.storageAdapter.securityRealm)
+                    .getOptionalValue();
+        }
+        this.httpClientBuilder = new HttpClientBuilder(this.configuration, ssl);
 
         // get our self identifiers
         ModelControllerClientFactory mccFactory = createLocalClientFactory();
@@ -725,8 +758,18 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             } else {
                 if (managedServer instanceof RemoteDMRManagedServer) {
                     RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
-                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(), dmrServer.getHost(),
-                            dmrServer.getPort(), dmrServer.getUsername(), dmrServer.getPassword());
+                    SSLContext sslContext = null;
+                    if (dmrServer.getUseSSL()) {
+                        sslContext = this.trustOnlySSLContextValues.get(dmrServer.getSecurityRealm())
+                                .getOptionalValue();
+                    }
+                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(),
+                            dmrServer.getHost(),
+                            dmrServer.getPort(),
+                            dmrServer.getUsername(),
+                            dmrServer.getPassword(),
+                            dmrServer.getUseSSL(),
+                            sslContext);
                     discoverResourcesForDMRManagedServer(managedServer, dmrEndpoint);
                 } else if (managedServer instanceof LocalDMRManagedServer) {
                     DMREndpoint dmrEndpoint = new LocalDMREndpoint(managedServer.getName().toString(),

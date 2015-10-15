@@ -90,6 +90,8 @@
                 enabled="false"
                 host="localhost"
                 port="9990"
+                useSSL="false"
+                securityRealm="HawkularRealm"
                 resourceTypeSets="Main" />
 
     <local-dmr name="Self"

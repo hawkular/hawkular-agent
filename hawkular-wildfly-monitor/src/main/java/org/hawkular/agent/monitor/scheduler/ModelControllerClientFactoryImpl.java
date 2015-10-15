@@ -17,7 +17,6 @@
 package org.hawkular.agent.monitor.scheduler;
 
 import java.io.IOException;
-import java.net.InetAddress;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -28,6 +27,7 @@ import javax.security.sasl.RealmCallback;
 
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.as.controller.client.ModelControllerClientConfiguration;
 
 /**
  * Can create clients to remote servers.
@@ -67,8 +67,15 @@ public class ModelControllerClientFactoryImpl implements ModelControllerClientFa
         };
 
         try {
-            InetAddress inetAddr = InetAddress.getByName(endpoint.getHost());
-            return ModelControllerClient.Factory.create(inetAddr, endpoint.getPort(), callbackHandler);
+            ModelControllerClientConfiguration config = new ModelControllerClientConfiguration.Builder()
+                    .setProtocol(endpoint.getUseSSL() ? "https-remoting" : "http-remoting")
+                    .setHostName(endpoint.getHost())
+                    .setPort(endpoint.getPort())
+                    .setSslContext(endpoint.getSSLContext())
+                    .setHandler(callbackHandler)
+                    .build();
+
+            return ModelControllerClient.Factory.create(config);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create management client", e);
         }

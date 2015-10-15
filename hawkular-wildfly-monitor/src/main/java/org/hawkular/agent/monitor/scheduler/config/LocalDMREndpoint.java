@@ -37,7 +37,7 @@ public class LocalDMREndpoint extends DMREndpoint {
      * @param localClientFactory creates clients that will talk to the WildFly instance we are running in
      */
     public LocalDMREndpoint(String name, ModelControllerClientFactory localClientFactory) {
-        super(name, null, 0, null, null);
+        super(name, null, 0, null, null, false, null);
         this.localClientFactory = localClientFactory;
         this.localId = null;
     }
@@ -52,7 +52,7 @@ public class LocalDMREndpoint extends DMREndpoint {
      * @param selfId the known identification of the WildFly instance we are running in
      */
     public LocalDMREndpoint(String name, ServerIdentifiers selfId) {
-        super(name, null, 0, null, null);
+        super(name, null, 0, null, null, false, null);
         this.localClientFactory = null;
         this.localId = selfId;
     }
