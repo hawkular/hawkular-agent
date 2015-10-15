@@ -74,6 +74,7 @@ public interface RemoteJMXAttributes {
             URL,
             USERNAME,
             PASSWORD,
+            SECURITY_REALM,
             RESOURCE_TYPE_SETS
     };
 }

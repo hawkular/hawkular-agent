@@ -130,7 +130,8 @@
 
     <remote-jmx name="Remote JMX"
                 enabled="false"
-                url="http://localhost:8080/jolokia"
+                url="https://localhost:8080/jolokia"
+                securityRealm="HawkularRealm"
                 resourceTypeSets="R Resource Type Set" />
   </managed-servers>
 
