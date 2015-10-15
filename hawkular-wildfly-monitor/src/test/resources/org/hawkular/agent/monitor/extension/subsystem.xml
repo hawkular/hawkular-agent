@@ -85,37 +85,6 @@
     </resource-type-dmr>
   </resource-type-set-dmr>
 
-  <metric-set-jmx name="M Metric Set">
-    <metric-jmx name="M Metric"
-                interval="30"
-                timeUnits="seconds"
-                metricUnits="bytes"
-                objectName="domain:foo=bar"
-                attribute="yAttribute" />
-  </metric-set-jmx>
-
-  <avail-set-jmx name="A Avail Set" enabled="false">
-    <avail-jmx name="A Avail"
-               interval="30"
-               timeUnits="seconds"
-               objectName="domain:foo=bar"
-               attribute="yAttribute"
-               upRegex="run.*" />
-  </avail-set-jmx>
-
-  <resource-type-set-jmx name="R Resource Type Set" enabled="false">
-    <resource-type-jmx name="R Resource Type"
-                       resourceNameTemplate="R Resource Name"
-                       objectName="domain:foo=bar"
-                       metricSets="M Metric Set"
-                       availSets="A Avail Set">
-      <resource-config-jmx name="Config NAme"
-                           objectName="domain:foo=bar"
-                           attribute="configAttribute" />
-      <operation-jmx name="O Operation" operationName="oOperation" objectName="domain:foo=bar" />
-    </resource-type-jmx>
-  </resource-type-set-jmx>
-
   <managed-servers>
     <remote-dmr name="Local Host"
                 enabled="false"
@@ -127,11 +96,6 @@
 
     <local-dmr name="Self"
                resourceTypeSets="Main" />
-
-    <remote-jmx name="Remote JMX"
-                enabled="false"
-                url="http://localhost:8080/jolokia"
-                resourceTypeSets="R Resource Type Set" />
   </managed-servers>
 
   <platform enabled="false">
