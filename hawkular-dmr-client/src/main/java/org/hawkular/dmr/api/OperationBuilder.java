@@ -143,9 +143,9 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         /**
          * If {@code value == null}, no entry is added. Otherwise, the attribute will be added.
          *
-         * @param name
-         * @param value
-         * @return
+         * @param name the name of the attribute
+         * @param value the value of the attribute
+         * @return this builder
          */
         @SuppressWarnings("unchecked")
         public T attribute(String name, Integer value) {
@@ -158,9 +158,9 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         /**
          * If {@code value == null}, no entry is added. Otherwise, the attribute will be added.
          *
-         * @param name
-         * @param value
-         * @return
+         * @param name the name of the attribute
+         * @param value the value of the attribute
+         * @return this builder
          */
         @SuppressWarnings("unchecked")
         public T attribute(String name, String value) {
@@ -320,7 +320,8 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
 
         @SuppressWarnings("unchecked")
         public WriteAttributeOperationBuilder<WriteAttributeOperationBuilder<?>> writeAttribute() {
-            return new WriteAttributeOperationBuilder<>((CompositeOperationBuilder<CompositeOperationBuilder<?>>) this);
+            return new WriteAttributeOperationBuilder<>(
+                    (CompositeOperationBuilder<CompositeOperationBuilder<?>>) this);
         }
 
     }
@@ -369,8 +370,7 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
     /**
      * A result of a DMR operation.
      *
-     * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
-     * @param <R>
+     * @param <R> the current type to return from fluent methods
      */
     public static class OperationResult<R extends OperationResult<?>> {
         protected final ModelNode requestNode;
@@ -383,7 +383,7 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         }
 
         /**
-         * Asserts that the {@link ModelDescriptionConstants#OUTCOME} fielf of {@link #responseNode} is equal to
+         * Asserts that the {@link ModelDescriptionConstants#OUTCOME} field of {@link #responseNode} is equal to
          * {@link ModelDescriptionConstants#SUCCESS}.
          *
          * @return this result
@@ -660,7 +660,8 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
 
         public Set<String> getLinkedHashSet() {
             return Collections.unmodifiableSet(
-                    getNodeList().stream().map(n -> n.asString()).collect(Collectors.toCollection(LinkedHashSet::new)));
+                    getNodeList().stream().map(n -> n.asString())
+                            .collect(Collectors.toCollection(LinkedHashSet::new)));
         }
 
         public List<String> getList() {
@@ -679,9 +680,9 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         /**
          * If {@code value == null}, the attribute will be removed. Otherwise, the attribute will be written.
          *
-         * @param name
-         * @param value
-         * @return
+         * @param name the name of the attribute
+         * @param value the value of the attribute
+         * @return this builder
          */
         @SuppressWarnings("unchecked")
         public T attribute(String name, String value) {

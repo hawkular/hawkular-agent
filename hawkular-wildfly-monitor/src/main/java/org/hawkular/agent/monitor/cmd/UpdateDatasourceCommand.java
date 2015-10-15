@@ -120,7 +120,8 @@ public class UpdateDatasourceCommand
                     .writeAttribute().address(adr).attribute(JNDI_NAME, request.getJndiName()).parentBuilder() //
                     .writeAttribute().address(adr).attribute(DRIVER_NAME, request.getDriverName()).parentBuilder() //
                     .writeAttribute().address(adr).attribute(DRIVER_CLASS, request.getDriverClass()).parentBuilder() //
-                    .writeAttribute().address(adr).attribute(CONNECTION_URL, request.getConnectionUrl()).parentBuilder()
+                    .writeAttribute().address(adr).attribute(CONNECTION_URL, request.getConnectionUrl())
+                    .parentBuilder()
                     .writeAttribute().address(adr).attribute(USER_NAME, request.getUserName()).parentBuilder() //
                     .writeAttribute().address(adr).attribute(PASSWORD, request.getPassword()).parentBuilder() //
                     ;
@@ -144,15 +145,15 @@ public class UpdateDatasourceCommand
         List<Property> props = adr.asPropertyList();
         Property lastProp = props.get(props.size() - 1);
         switch (lastProp.getName()) {
-        case XA_DATASOURCE:
-            return true;
-        case DATASOURCE:
-            return false;
-        default:
-            String msg = String.format(
-                    "DMR Address [%s] was supposed to be either a [%s] or [%s] address, which it is not",
-                    adr.toString(), XA_DATASOURCE, DATASOURCE);
-            throw new IllegalStateException(msg);
+            case XA_DATASOURCE:
+                return true;
+            case DATASOURCE:
+                return false;
+            default:
+                String msg = String.format(
+                        "DMR Address [%s] was supposed to be either a [%s] or [%s] address, which it is not",
+                        adr.toString(), XA_DATASOURCE, DATASOURCE);
+                throw new IllegalStateException(msg);
         }
     }
 
@@ -203,7 +204,8 @@ public class UpdateDatasourceCommand
                 updatedPropNames.add(availPropName);
             } else {
                 /* no change */
-                log.tracef("No change for [%s=%s]: [%s].equals([%s])", propType, availPropName, newVal, availPropValue);
+                log.tracef("No change for [%s=%s]: [%s].equals([%s])", propType, availPropName, newVal,
+                        availPropValue);
                 updatedPropNames.add(availPropName);
             }
         }

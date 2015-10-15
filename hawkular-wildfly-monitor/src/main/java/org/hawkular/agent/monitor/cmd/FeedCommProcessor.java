@@ -246,13 +246,13 @@ public class FeedCommProcessor implements WebSocketListener {
         // We also don't try to get another one if we were explicitly told to disconnect.
         if (!(disconnectCode == reasonCode && disconnectReason.equals(reason))) {
             switch (reasonCode) {
-            case 1008: { // VIOLATED POLICY - don't try again since it probably will fail again (bad credentials?)
-                break;
-            }
-            default: {
-                startReconnectJobThread();
-                break;
-            }
+                case 1008: { // VIOLATED POLICY - don't try again since it probably will fail again (bad credentials?)
+                    break;
+                }
+                default: {
+                    startReconnectJobThread();
+                    break;
+                }
             }
         }
     }
@@ -281,19 +281,20 @@ public class FeedCommProcessor implements WebSocketListener {
                 BasicMessageWithExtraData<? extends BasicMessage> msgWithData;
 
                 switch (payloadType) {
-                case TEXT: {
-                    String nameAndJsonStr = payload.readUtf8();
-                    msgWithData = new ApiDeserializer().deserialize(nameAndJsonStr);
-                    break;
-                }
-                case BINARY: {
-                    InputStream input = payload.inputStream();
-                    msgWithData = new ApiDeserializer().deserialize(input);
-                    break;
-                }
-                default: {
-                    throw new IllegalArgumentException("Unknown payload type, please report this bug: " + payloadType);
-                }
+                    case TEXT: {
+                        String nameAndJsonStr = payload.readUtf8();
+                        msgWithData = new ApiDeserializer().deserialize(nameAndJsonStr);
+                        break;
+                    }
+                    case BINARY: {
+                        InputStream input = payload.inputStream();
+                        msgWithData = new ApiDeserializer().deserialize(input);
+                        break;
+                    }
+                    default: {
+                        throw new IllegalArgumentException(
+                                "Unknown payload type, please report this bug: " + payloadType);
+                    }
                 }
 
                 log.debug("Received message from server");
