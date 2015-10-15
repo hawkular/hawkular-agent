@@ -865,6 +865,8 @@ public class MonitorServiceConfigurationBuilder {
                     int port = getInt(remoteDMRValueNode, context, RemoteDMRAttributes.PORT);
                     String username = getString(remoteDMRValueNode, context, RemoteDMRAttributes.USERNAME);
                     String password = getString(remoteDMRValueNode, context, RemoteDMRAttributes.PASSWORD);
+                    boolean useSsl = getBoolean(remoteDMRValueNode, context, RemoteDMRAttributes.USE_SSL);
+                    String securityRealm = getString(remoteDMRValueNode, context, RemoteDMRAttributes.SECURITY_REALM);
                     List<Name> resourceTypeSets = getNameListFromString(remoteDMRValueNode, context,
                             RemoteDMRAttributes.RESOURCE_TYPE_SETS);
 
@@ -882,6 +884,8 @@ public class MonitorServiceConfigurationBuilder {
                     res.setPort(port);
                     res.setUsername(username);
                     res.setPassword(password);
+                    res.setUseSSL(useSsl);
+                    res.setSecurityRealm(securityRealm);
                     res.getResourceTypeSets().addAll(resourceTypeSets);
                     theConfig.managedServersMap.put(res.getName(), res);
                 }

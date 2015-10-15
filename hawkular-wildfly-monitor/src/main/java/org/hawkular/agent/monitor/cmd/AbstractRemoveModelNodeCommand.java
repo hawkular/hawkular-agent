@@ -16,23 +16,15 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.bus.common.BinaryData;
-import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.cmdgw.api.ResourcePathRequest;
 import org.hawkular.cmdgw.api.ResourcePathResponse;
-import org.hawkular.cmdgw.api.ResponseStatus;
-import org.hawkular.dmrclient.Address;
-import org.hawkular.dmrclient.JBossASClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.dmr.api.DmrApiException;
+import org.hawkular.dmr.api.OperationBuilder;
+import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
  * A base for {@link Command}s removing nodes from the DMR tree.
@@ -40,111 +32,26 @@ import org.hawkular.inventory.api.model.CanonicalPath;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathRequest, RESP extends ResourcePathResponse>
-        implements Command<REQ, RESP> {
+        extends AbstractResourcePathCommand<REQ, RESP> {
     private static final MsgLogger log = AgentLoggers.getLogger(AbstractRemoveModelNodeCommand.class);
 
-    protected final String entityType;
-
     public AbstractRemoveModelNodeCommand(String entityType) {
-        super();
-        this.entityType = entityType;
+        super("Remove", entityType);
     }
 
     @Override
-    public BasicMessageWithExtraData<RESP> execute(REQ request, BinaryData ignored, CommandContext context)
-            throws Exception {
-
-        String rawResourcePath = request.getResourcePath();
-        log.infof("Received request to remove [%s] given by inventory path [%s]", entityType, rawResourcePath);
-
-        MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
-
-        // Based on the resource ID we need to know which inventory manager is handling it.
-        // From the inventory manager, we can get the actual resource.
-        CanonicalPath canonicalPath = CanonicalPath.fromString(rawResourcePath);
-
-        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
-        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
-        String modelNodePath = idParts.getIdPart();
-
-        RESP response = createResponse();
-        MessageUtils.prepareResourcePathResponse(request, response);
-
-        JBossASClient dsc = null;
+    protected void execute(ModelControllerClient controllerClient, ManagedServer managedServer, String modelNodePath,
+            BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context) throws Exception {
         try {
-            String managedServerName = idParts.getManagedServerName();
-            ManagedServer managedServer = config.managedServersMap.get(new Name(managedServerName));
-            validate(request, managedServerName, managedServer);
-
-            validate(modelNodePath, request);
-            DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
-                    .get(managedServer);
-            dsc = new JBossASClient(inventoryManager.getModelControllerClientFactory().createClient());
-
-            Address addr = Address.parse(modelNodePath);
-            dsc.remove(addr);
-
-            afterModelNodeRemoved(request, response);
-
-        } catch (Exception e) {
-            response.setStatus(ResponseStatus.ERROR);
-            String msg = String.format("Could not remove [%s] [%s]: %s", entityType, rawResourcePath, e.getMessage());
-            response.setMessage(msg);
-        } finally {
-            if (dsc != null) {
-                try {
-                    dsc.close();
-                } catch (Exception e) {
-                    log.errorf(e, "Could not close a DatasourceJBossASClient");
-                }
-            }
+            OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
+                    .assertSuccess();
+        } catch (DmrApiException e) {
+            /* A workaround for https://issues.jboss.org/browse/WFLY-5528 */
+            log.warn("Trying to remove xa-data-source for the second time,"
+                    + " see https://issues.jboss.org/browse/WFLY-5528");
+            OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
+                    .assertSuccess();
         }
-
-        return new BasicMessageWithExtraData<>(response, null);
-
-    }
-
-    /**
-     * Subclasses can put some {@code request} validation here.
-     * <p>
-     * Does nothing in this implementation.
-     *
-     * @param modelNodePath
-     * @param request
-     */
-    protected void validate(String modelNodePath, REQ request) {
-    }
-
-    /**
-     * Throws an {@link IllegalArgumentException} if {@code managedServer} is {@code null}. Subclasses can add more
-     * checks.
-     *
-     * @param managedServerName the name of the {@code managedServer}
-     * @param managedServer the managed server to validate
-     */
-    protected void validate(REQ request, String managedServerName, ManagedServer managedServer) {
-        if (managedServer == null) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot add [%s]: unknown managed server [%s]", entityType, managedServerName));
-        }
-    }
-
-    /**
-     * @return a new instance of the appropriate {@link ResourcePathResponse} subclass
-     */
-    protected abstract RESP createResponse();
-
-    /**
-     * Sets the {@link ResponseStatus#OK} state together with a message informing about the successful removal to
-     * {@code response}. Subclasses may want to perform more modifications on {@code response}.
-     *
-     * @param request the request the present command is processing
-     * @param response the response that will be sent back to the client
-     */
-    protected void afterModelNodeRemoved(REQ request, RESP response) {
-        response.setStatus(ResponseStatus.OK);
-        String msg = String.format("Removed [%s] given by Inventory path [%s]", entityType, request.getResourcePath());
-        response.setMessage(msg);
     }
 
 }

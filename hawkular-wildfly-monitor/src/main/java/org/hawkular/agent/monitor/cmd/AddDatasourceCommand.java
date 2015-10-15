@@ -16,119 +16,125 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.ResourceManager;
-import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
-import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
-import org.hawkular.agent.monitor.log.AgentLoggers;
-import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddDatasourceRequest;
 import org.hawkular.cmdgw.api.AddDatasourceResponse;
-import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.cmdgw.api.ResponseStatus;
-import org.hawkular.dmrclient.DatasourceJBossASClient;
-import org.hawkular.dmrclient.JBossASClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.dmr.api.OperationBuilder;
+import org.hawkular.dmr.api.OperationBuilder.CompositeOperationBuilder;
+import org.hawkular.dmr.api.SubsystemDatasourceConstants;
+import org.hawkular.dmr.api.SubsystemDatasourceConstants.DatasourceNodeConstants;
+import org.hawkular.dmr.api.SubsystemDatasourceConstants.XaDatasourceNodeConstants;
+import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
 
 /**
- * Adds a Datasource on a resource.
+ * Adds a Datasource to an Application Server instance.
  */
-public class AddDatasourceCommand implements Command<AddDatasourceRequest, AddDatasourceResponse> {
-    private static final MsgLogger log = AgentLoggers.getLogger(AddDatasourceCommand.class);
+public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasourceRequest, AddDatasourceResponse>
+        implements DatasourceNodeConstants, XaDatasourceNodeConstants, SubsystemDatasourceConstants {
+
     public static final Class<AddDatasourceRequest> REQUEST_CLASS = AddDatasourceRequest.class;
 
-    @Override
-    public BasicMessageWithExtraData<AddDatasourceResponse> execute(AddDatasourceRequest request,
-            BinaryData jdbcDriverContent, CommandContext context) throws Exception {
-
-        log.infof("Received request to add the Datasource [%s] on resource [%s]", request.getDatasourceName(),
-                request.getResourcePath());
-
-        MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
-
-        // Based on the resource ID we need to know which inventory manager is handling it.
-        // From the inventory manager, we can get the actual resource.
-        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
-        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
-        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
-        ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.getManagedServerName()));
-
-        if (managedServer == null) {
-            throw new IllegalArgumentException(String.format("Cannot add Datasource: unknown managed server [%s]",
-                    idParts.getManagedServerName()));
-        }
-
-        if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return addDmr(resourceId, request, jdbcDriverContent, context, managedServer);
-        } else {
-            throw new IllegalStateException("Cannot add Datasource: report this bug: " + managedServer.getClass());
-        }
+    public AddDatasourceCommand() {
+        super("Add", "Datasource");
     }
 
-    private BasicMessageWithExtraData<AddDatasourceResponse> addDmr(String resourceId, AddDatasourceRequest request,
-            BinaryData jdbcDriverContent, CommandContext context, ManagedServer managedServer) throws Exception {
+    /** @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#createResponse() */
+    @Override
+    protected AddDatasourceResponse createResponse() {
+        return new AddDatasourceResponse();
+    }
 
-        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
-                .get(managedServer);
-        if (inventoryManager == null) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot add Datasource: missing inventory manager [%s]", managedServer));
-        }
-
-        ResourceManager<DMRResource> resourceManager = inventoryManager.getResourceManager();
-        DMRResource resource = resourceManager.getResource(new ID(resourceId));
-        if (resource == null) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot add Datasource: unknown resource [%s]", request.getResourcePath()));
-        }
-
-        AddDatasourceResponse response = new AddDatasourceResponse();
-        MessageUtils.prepareResourcePathResponse(request, response);
+    /**
+     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#execute(org.hawkular.dmrclient.JBossASClient,
+     *      org.hawkular.agent.monitor.inventory.ManagedServer, java.lang.String,
+     *      org.hawkular.cmdgw.api.ResourcePathRequest, org.hawkular.cmdgw.api.ResourcePathResponse,
+     *      org.hawkular.agent.monitor.cmd.CommandContext)
+     */
+    @Override
+    protected void execute(ModelControllerClient controllerClient, ManagedServer managedServer, String modelNodePath,
+            BasicMessageWithExtraData<AddDatasourceRequest> envelope, AddDatasourceResponse response,
+            CommandContext context) throws Exception {
+        AddDatasourceRequest request = envelope.getBasicMessage();
         response.setDatasourceName(request.getDatasourceName());
         response.setXaDatasource(request.isXaDatasource());
 
-        try (DatasourceJBossASClient dsc = new DatasourceJBossASClient(
-                inventoryManager.getModelControllerClientFactory().createClient())) {
+        Map<String, String> props = request.getDatasourceProperties();
+        final String dsDmrResourceType;
+        final String dsPropsDmrResourceType;
+        final ModelNode dsAdr;
+        final CompositeOperationBuilder<?> batch;
+        if (request.isXaDatasource()) {
+            dsDmrResourceType = XA_DATASOURCE;
+            dsPropsDmrResourceType = XA_DATASOURCE_PROPERTIES;
+            dsAdr = OperationBuilder.address().subsystemDatasources()
+                    .segment(dsDmrResourceType, request.getDatasourceName()).build();
 
-            final ModelNode result;
-            if (request.isXaDatasource()) {
-                result = dsc.addXaDatasource(request.getDatasourceName(), request.getJndiName(),
-                        request.getDriverName(), request.getXaDataSourceClass(), request.getDatasourceProperties(),
-                        request.getUserName(), request.getPassword(), request.getSecurityDomain());
-            } else {
-                result = dsc.addDatasource(request.getDatasourceName(), request.getJndiName(), request.getDriverName(),
-                        request.getDriverClass(), request.getConnectionUrl(), request.getDatasourceProperties(),
-                        request.getUserName(), request.getPassword());
+            batch = OperationBuilder.composite() //
+                    .add() //
+                    .address(dsAdr) //
+                    .attribute(JNDI_NAME, request.getJndiName()) //
+                    .attribute(DRIVER_NAME, request.getDriverName()) //
+                    .attribute(XA_DATASOURCE_CLASS, request.getXaDataSourceClass()) //
+                    .attribute(USER_NAME, request.getUserName()) //
+                    .attribute(PASSWORD, request.getPassword()) //
+                    .parentBuilder();
+        } else {
+            dsDmrResourceType = DATASOURCE;
+            dsPropsDmrResourceType = CONNECTION_PROPERTIES;
+            dsAdr = OperationBuilder.address().subsystemDatasources()
+                    .segment(dsDmrResourceType, request.getDatasourceName()).build();
+
+            batch = OperationBuilder.composite() //
+                    .add() //
+                    .address(dsAdr) //
+                    .attribute(JNDI_NAME, request.getJndiName()) //
+                    .attribute(DRIVER_NAME, request.getDriverName()) //
+                    .attribute(DRIVER_CLASS, request.getDriverClass()) //
+                    .attribute(CONNECTION_URL, request.getConnectionUrl()) //
+                    .attribute(USER_NAME, request.getUserName()) //
+                    .attribute(PASSWORD, request.getPassword()) //
+                    .parentBuilder();
+
+        }
+        if (!props.isEmpty()) {
+            for (Entry<String, String> prop : props.entrySet()) {
+                batch.add() //
+                        .address().segments(dsAdr).segment(dsPropsDmrResourceType, prop.getKey()).parentBuilder() //
+                        .attribute(ModelDescriptionConstants.VALUE, prop.getValue()).parentBuilder();
             }
-            if (JBossASClient.isSuccess(result)) {
-                response.setStatus(ResponseStatus.OK);
-                response.setMessage(String.format("Added Datasource: %s", request.getDatasourceName()));
-                context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
-            } else {
-                response.setStatus(ResponseStatus.ERROR);
-                String failureDescription = JBossASClient.getFailureDescription(result);
-                String msg = String.format("Could not add Datasource [%s]: %s", request.getDatasourceName(),
-                        failureDescription);
-                response.setMessage(msg);
-                log.debug(msg);
-            }
-        } catch (Exception e) {
-            log.errorFailedToExecuteCommand(e, this.getClass().getName(), request);
-            response.setStatus(ResponseStatus.ERROR);
-            response.setMessage(e.toString());
         }
 
-        return new BasicMessageWithExtraData<>(response, null);
+        batch.execute(controllerClient).assertSuccess();
+        context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
+
+    }
+
+    @Override
+    protected void success(BasicMessageWithExtraData<AddDatasourceRequest> envelope, AddDatasourceResponse response) {
+        response.setStatus(ResponseStatus.OK);
+        response.setMessage(String.format("Added Datasource: %s", envelope.getBasicMessage().getDatasourceName()));
+    }
+
+    @Override
+    protected void validate(BasicMessageWithExtraData<AddDatasourceRequest> envelope, String managedServerName,
+            ManagedServer managedServer) {
+        super.validate(envelope, managedServerName, managedServer);
+        assertLocalOrRemoteServer(managedServer);
+    }
+
+    /**
+     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#validate(java.lang.String,
+     *      org.hawkular.cmdgw.api.ResourcePathRequest)
+     */
+    @Override
+    protected void validate(String modelNodePath, BasicMessageWithExtraData<AddDatasourceRequest> envelope) {
     }
 
 }

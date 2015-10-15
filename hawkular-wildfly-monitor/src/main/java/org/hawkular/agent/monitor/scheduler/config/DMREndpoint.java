@@ -18,6 +18,8 @@ package org.hawkular.agent.monitor.scheduler.config;
 
 import java.util.Properties;
 
+import javax.net.ssl.SSLContext;
+
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
@@ -35,14 +37,19 @@ public class DMREndpoint extends MonitoredEndpoint {
     private final int port;
     private final String username;
     private final String password;
+    private final boolean useSSL;
+    private final SSLContext sslContext;
     private ServerIdentifiers serverId;
 
-    public DMREndpoint(String name, String host, int port, String username, String password) {
+    public DMREndpoint(String name, String host, int port, String username, String password, boolean useSSL,
+            SSLContext sslContext) {
         super(name);
         this.host = host;
         this.port = port;
         this.username = username;
         this.password = password;
+        this.useSSL = useSSL;
+        this.sslContext = sslContext;
     }
 
     public String getHost() {
@@ -59,6 +66,14 @@ public class DMREndpoint extends MonitoredEndpoint {
 
     public String getPassword() {
         return password;
+    }
+
+    public boolean getUseSSL() {
+        return useSSL;
+    }
+
+    public SSLContext getSSLContext() {
+        return sslContext;
     }
 
     /**
@@ -105,6 +120,6 @@ public class DMREndpoint extends MonitoredEndpoint {
     @Override
     public String toString() {
         return "DMREndpoint[name=" + getName() + ", host=" + host + ", port=" + port + ", username=" + username
-                + ", serverId=" + serverId + "]";
+                + ", serverId=" + serverId + ", useSSL=" + useSSL + "]";
     }
 }

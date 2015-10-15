@@ -61,6 +61,20 @@ public interface RemoteDMRAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition USE_SSL = new SimpleAttributeDefinitionBuilder("useSSL",
+            ModelType.BOOLEAN)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    SimpleAttributeDefinition SECURITY_REALM = new SimpleAttributeDefinitionBuilder("securityRealm",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
     SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder(
             "resourceTypeSets",
             ModelType.STRING)
@@ -75,6 +89,8 @@ public interface RemoteDMRAttributes {
             PORT,
             USERNAME,
             PASSWORD,
+            USE_SSL,
+            SECURITY_REALM,
             RESOURCE_TYPE_SETS
     };
 }

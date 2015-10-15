@@ -54,9 +54,9 @@
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <version.org.hawkular.accounts>1.0.15.Final</version.org.hawkular.accounts>
     <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
-    <version.org.hawkular.cmdgw>0.9.1.Final-SRC-revision-1a7168966259c9abaf054236c97a6369f07f9446</version.org.hawkular.cmdgw>
+    <version.org.hawkular.cmdgw>0.9.1.Final-SRC-revision-7a5aae31107aa17ec8469e155aa72d5053b19766</version.org.hawkular.cmdgw>
     <version.org.hawkular.commons>0.2.2.Final-SRC-revision-1a725b961ec22eee5a81375aff4c016c73cd95e4</version.org.hawkular.commons>
-    <version.org.hawkular.inventory>0.6.0.Final-SRC-revision-0cfed2a0583246f8d6372501bd8a9204ea25d09d</version.org.hawkular.inventory>
+    <version.org.hawkular.inventory>0.6.0.Final</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.5.0.Final</version.org.hawkular.metrics>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.2</version.org.jolokia>
