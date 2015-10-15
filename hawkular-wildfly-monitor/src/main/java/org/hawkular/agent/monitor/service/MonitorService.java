@@ -82,7 +82,6 @@ import org.hawkular.agent.monitor.inventory.jmx.JMXMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResource;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResourceType;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResourceTypeSet;
-import org.hawkular.agent.monitor.inventory.jmx.LocalJMXManagedServer;
 import org.hawkular.agent.monitor.inventory.jmx.RemoteJMXManagedServer;
 import org.hawkular.agent.monitor.inventory.platform.Constants;
 import org.hawkular.agent.monitor.inventory.platform.PlatformAvailInstance;
@@ -107,7 +106,6 @@ import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.JMXEndpoint;
 import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
-import org.hawkular.agent.monitor.scheduler.config.LocalJMXEndpoint;
 import org.hawkular.agent.monitor.scheduler.config.PlatformEndpoint;
 import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
@@ -619,7 +617,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 this.diagnostics,
                 this.storageAdapter,
                 createLocalClientFactory(),
-                this.httpClientBuilder);
+                new JmxClientFactoryImpl(null, this.trustOnlySSLContextValue.getOptionalValue()));
         this.schedulerService.start();
     }
 
@@ -792,13 +790,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                     RemoteJMXManagedServer jmxServer = (RemoteJMXManagedServer) managedServer;
                     JMXEndpoint jmxEndpoint = new JMXEndpoint(jmxServer.getName().toString(), jmxServer.getUrl(),
                             jmxServer.getUsername(), jmxServer.getPassword());
-                    discoverResourcesForJMXManagedServer(managedServer, jmxEndpoint);
-                    resourcesDiscovered += this.jmxServerInventories.get(managedServer).getResourceManager()
-                            .getAllResources().size();
-                } else if (managedServer instanceof LocalJMXManagedServer) {
-                    LocalJMXManagedServer jmxServer = (LocalJMXManagedServer) managedServer;
-                    JMXEndpoint jmxEndpoint = new LocalJMXEndpoint(managedServer.getName().toString(),
-                            jmxServer.getUrl(), jmxServer.getUsername(), jmxServer.getPassword());
                     discoverResourcesForJMXManagedServer(managedServer, jmxEndpoint);
                     resourcesDiscovered += this.jmxServerInventories.get(managedServer).getResourceManager()
                             .getAllResources().size();
@@ -1008,13 +999,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         ResourceManager<JMXResource> resourceManager = new ResourceManager<>();
 
         // determine the client to use to connect to the managed server
-        JmxClientFactory factory;
-        if (jmxEndpoint instanceof LocalJMXEndpoint) {
-            // TODO can we do something else for local?
-            factory = new JmxClientFactoryImpl(jmxEndpoint, this.trustOnlySSLContextValue.getOptionalValue());
-        } else {
-            factory = new JmxClientFactoryImpl(jmxEndpoint, this.trustOnlySSLContextValue.getOptionalValue());
-        }
+        JmxClientFactory factory = new JmxClientFactoryImpl(jmxEndpoint,
+                this.trustOnlySSLContextValue.getOptionalValue());
 
         JMXInventoryManager im;
         im = new JMXInventoryManager(feedId, metadataMgr, resourceManager, managedServer, jmxEndpoint, factory);

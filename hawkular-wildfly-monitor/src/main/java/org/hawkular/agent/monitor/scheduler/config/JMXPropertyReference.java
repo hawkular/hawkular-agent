@@ -16,24 +16,24 @@
  */
 package org.hawkular.agent.monitor.scheduler.config;
 
-import org.hawkular.dmrclient.Address;
+import javax.management.ObjectName;
 
 /**
  * A JMX resource reference that is to be monitored.
  */
 public class JMXPropertyReference extends MonitoredPropertyReference {
 
-    private final Address address;
+    private final ObjectName objectName;
     private final String attribute;
 
-    public JMXPropertyReference(final Address address, final String attribute, final Interval interval) {
+    public JMXPropertyReference(final ObjectName objectName, final String attribute, final Interval interval) {
         super(interval);
-        this.address = address;
+        this.objectName = objectName;
         this.attribute = attribute;
     }
 
-    public Address getAddress() {
-        return address;
+    public ObjectName getObjectName() {
+        return objectName;
     }
 
     public String getAttribute() {
@@ -42,7 +42,7 @@ public class JMXPropertyReference extends MonitoredPropertyReference {
 
     @Override
     public String toString() {
-        return "JMXPropertyReference[address=" + address + ", attrib=" + attribute + ", interval=" + getInterval()
-                + "]";
+        return "JMXPropertyReference[objectName=" + objectName + ", attrib=" + attribute + ", interval="
+                + getInterval() + "]";
     }
 }

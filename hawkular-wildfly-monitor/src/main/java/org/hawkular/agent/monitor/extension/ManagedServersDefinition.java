@@ -50,7 +50,6 @@ public class ManagedServersDefinition extends PersistentResourceDefinition {
         return Arrays.asList(
                 LocalDMRDefinition.INSTANCE,
                 RemoteDMRDefinition.INSTANCE,
-                LocalJMXDefinition.INSTANCE,
                 RemoteJMXDefinition.INSTANCE);
     }
 }

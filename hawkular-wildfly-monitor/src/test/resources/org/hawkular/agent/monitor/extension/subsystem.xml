@@ -130,9 +130,6 @@
                 enabled="false"
                 url="http://localhost:8080/jolokia"
                 resourceTypeSets="R Resource Type Set" />
-
-    <local-jmx name="Local JMX"
-               resourceTypeSets="R Resource Type Set" />
   </managed-servers>
 
   <platform enabled="false">

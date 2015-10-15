@@ -16,8 +16,15 @@
  */
 package org.hawkular.agent.monitor.scheduler;
 
+import org.hawkular.agent.monitor.scheduler.config.JMXEndpoint;
 import org.jolokia.client.J4pClient;
 
 public interface JmxClientFactory {
     J4pClient createClient();
+
+    /**
+     * @return A new factory that is configured the same as this one except for the endpoint.
+     *         The returned factory will create clients that connect to the given endpoint.
+     */
+    JmxClientFactory newFactory(JMXEndpoint endpoint);
 }

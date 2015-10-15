@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
@@ -44,7 +47,6 @@ import org.hawkular.agent.monitor.inventory.jmx.JMXOperation;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResourceType;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResourceTypeSet;
-import org.hawkular.agent.monitor.inventory.jmx.LocalJMXManagedServer;
 import org.hawkular.agent.monitor.inventory.jmx.RemoteJMXManagedServer;
 import org.hawkular.agent.monitor.inventory.platform.Constants;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
@@ -228,7 +230,7 @@ public class MonitorServiceConfigurationBuilder {
                         JMXMetricType metric = new JMXMetricType(ID.NULL_ID, new Name(metricName));
                         metricSet.getMetricTypeMap().put(metric.getName(), metric);
                         ModelNode metricValueNode = metricProperty.getValue();
-                        metric.setObjectName(getString(metricValueNode, context, JMXMetricAttributes.OBJECT_NAME));
+                        metric.setObjectName(getObjectName(metricValueNode, context, JMXMetricAttributes.OBJECT_NAME));
                         metric.setAttribute(getString(metricValueNode, context, JMXMetricAttributes.ATTRIBUTE));
                         String metricTypeStr = getString(metricValueNode, context, JMXMetricAttributes.METRIC_TYPE);
                         if (metricTypeStr == null) {
@@ -278,7 +280,7 @@ public class MonitorServiceConfigurationBuilder {
                         JMXAvailType avail = new JMXAvailType(ID.NULL_ID, new Name(availName));
                         availSet.getAvailTypeMap().put(avail.getName(), avail);
                         ModelNode availValueNode = availProperty.getValue();
-                        avail.setObjectName(getString(availValueNode, context, JMXAvailAttributes.OBJECT_NAME));
+                        avail.setObjectName(getObjectName(availValueNode, context, JMXAvailAttributes.OBJECT_NAME));
                         avail.setAttribute(getString(availValueNode, context, JMXAvailAttributes.ATTRIBUTE));
                         avail.setInterval(getInt(availValueNode, context, JMXAvailAttributes.INTERVAL));
                         String availTimeUnitsStr = getString(availValueNode, context, JMXAvailAttributes.TIME_UNITS);
@@ -760,7 +762,7 @@ public class MonitorServiceConfigurationBuilder {
                         resourceTypeSet.getResourceTypeMap().put(resourceType.getName(), resourceType);
                         resourceType.setResourceNameTemplate(getString(resourceTypeValueNode, context,
                                 JMXResourceTypeAttributes.RESOURCE_NAME_TEMPLATE));
-                        resourceType.setObjectName(getString(resourceTypeValueNode, context,
+                        resourceType.setObjectName(getObjectName(resourceTypeValueNode, context,
                                 JMXResourceTypeAttributes.OBJECT_NAME));
                         resourceType.setParents(getNameListFromString(resourceTypeValueNode, context,
                                 JMXResourceTypeAttributes.PARENTS));
@@ -795,7 +797,7 @@ public class MonitorServiceConfigurationBuilder {
                                 ModelNode operationValueNode = operationProperty.getValue();
                                 String operationName = operationProperty.getName();
                                 JMXOperation op = new JMXOperation(ID.NULL_ID, new Name(operationName), resourceType);
-                                op.setObjectName(getString(operationValueNode, context,
+                                op.setObjectName(getObjectName(operationValueNode, context,
                                         JMXOperationAttributes.OBJECT_NAME));
                                 op.setOperationName(getString(operationValueNode, context,
                                         JMXOperationAttributes.OPERATION_NAME));
@@ -814,7 +816,7 @@ public class MonitorServiceConfigurationBuilder {
                                 JMXResourceConfigurationPropertyType configType =
                                         new JMXResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName),
                                                 resourceType);
-                                configType.setObjectName(getString(configValueNode, context,
+                                configType.setObjectName(getObjectName(configValueNode, context,
                                         JMXResourceConfigAttributes.OBJECT_NAME));
                                 configType.setAttribute(getString(configValueNode, context,
                                         JMXResourceConfigAttributes.ATTRIBUTE));
@@ -953,33 +955,6 @@ public class MonitorServiceConfigurationBuilder {
                 }
             }
 
-            if (managedServersValueNode.hasDefined(LocalJMXDefinition.LOCAL_JMX)) {
-                List<Property> localJMXsList = managedServersValueNode.get(LocalJMXDefinition.LOCAL_JMX)
-                        .asPropertyList();
-                if (localJMXsList.size() > 1) {
-                    throw new IllegalArgumentException("Can only have one <local-jmx>: " + config.toJSONString(true));
-                }
-
-                Property localJMXProperty = localJMXsList.get(0);
-                String name = localJMXProperty.getName();
-                ModelNode localJMXValueNode = localJMXProperty.getValue();
-                boolean enabled = getBoolean(localJMXValueNode, context, LocalJMXAttributes.ENABLED);
-                List<Name> resourceTypeSets = getNameListFromString(localJMXValueNode, context,
-                        LocalJMXAttributes.RESOURCE_TYPE_SETS);
-
-                // verify that the metric sets and avail sets exist
-                for (Name resourceTypeSetName : resourceTypeSets) {
-                    if (!theConfig.jmxResourceTypeSetMap.containsKey(resourceTypeSetName)) {
-                        log.warnResourceTypeSetDoesNotExist(name.toString(), resourceTypeSetName.toString());
-                    }
-                }
-
-                LocalJMXManagedServer res = new LocalJMXManagedServer(ID.NULL_ID, new Name(name));
-                res.setEnabled(enabled);
-                res.getResourceTypeSets().addAll(resourceTypeSets);
-                theConfig.managedServersMap.put(res.getName(), res);
-            }
-
         }
     }
 
@@ -999,6 +974,21 @@ public class MonitorServiceConfigurationBuilder {
             throws OperationFailedException {
         ModelNode value = attrib.resolveModelAttribute(context, modelNode);
         return (value.isDefined()) ? value.asInt() : 0;
+    }
+
+    private String getObjectName(ModelNode modelNode, OperationContext context, SimpleAttributeDefinition attrib)
+            throws OperationFailedException {
+        String value = getString(modelNode, context, attrib);
+        if (value != null && !value.isEmpty()) {
+            // just make sure it follows valid object name syntax rules
+            try {
+                new ObjectName(value);
+            } catch (MalformedObjectNameException e) {
+                throw new OperationFailedException(
+                        String.format("Attribute [%s] is an invalid object name [%s]", attrib.getName(), value), e);
+            }
+        }
+        return value;
     }
 
     private List<Name> getNameListFromString(ModelNode modelNode, OperationContext context,

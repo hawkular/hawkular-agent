@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.scheduler.config;
 
-import org.hawkular.dmrclient.Address;
+import javax.management.ObjectName;
 
 /**
  * A JMX resource reference that is to be checked for availability.
@@ -25,9 +25,9 @@ public class AvailJMXPropertyReference extends JMXPropertyReference {
 
     private final String upRegex;
 
-    public AvailJMXPropertyReference(final Address address, final String attribute, final Interval interval,
+    public AvailJMXPropertyReference(final ObjectName objectName, final String attribute, final Interval interval,
             final String upRegex) {
-        super(address, attribute, interval);
+        super(objectName, attribute, interval);
         this.upRegex = upRegex;
     }
 
@@ -37,6 +37,6 @@ public class AvailJMXPropertyReference extends JMXPropertyReference {
 
     @Override
     public String toString() {
-        return "AvailJMXPropertyReference[dmrPropRef=" + super.toString() + ", upRegex=" + upRegex + "]";
+        return "AvailJMXPropertyReference[jmxPropRef=" + super.toString() + ", upRegex=" + upRegex + "]";
     }
 }

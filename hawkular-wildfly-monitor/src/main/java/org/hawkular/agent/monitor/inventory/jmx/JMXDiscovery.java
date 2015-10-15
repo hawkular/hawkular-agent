@@ -16,21 +16,15 @@
  */
 package org.hawkular.agent.monitor.inventory.jmx;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
-import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
@@ -43,6 +37,10 @@ import org.jgrapht.event.VertexSetListener;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jolokia.client.J4pClient;
+import org.jolokia.client.request.J4pReadRequest;
+import org.jolokia.client.request.J4pReadResponse;
+import org.jolokia.client.request.J4pSearchRequest;
+import org.jolokia.client.request.J4pSearchResponse;
 
 /**
  * Discovers resources for a given DMR endpoint.
@@ -111,47 +109,26 @@ public class JMXDiscovery {
 
     private void discoverChildrenOfResourceType(JMXResource parent, JMXResourceType type, J4pClient client) {
         try {
-            Map<Address, ModelNode> resources;
+            String objectNameQuery = type.getObjectName();
+            log.debugf("Discovering children of [%s] of type [%s] using query [%s]", parent, type, objectNameQuery);
 
-            Address parentAddr = (parent == null) ? Address.root() : parent.getAddress().clone();
-            Address addr = parentAddr.add(Address.parse(type.getPath()));
-
-            log.debugf("Discovering children of [%s] of type [%s] using address query [%s]", parent, type, addr);
-
-            // can return a single resource (type of OBJECT) or a list of them (type of LIST whose items are OBJECTS)
-            ModelNode results = client.readResource(addr);
-            if (results == null) {
-                resources = Collections.emptyMap();
-            } else if (results.getType() == ModelType.OBJECT) {
-                resources = new HashMap<>(1);
-                resources.put(addr, results);
-            } else if (results.getType() == ModelType.LIST) {
-                resources = new HashMap<>();
-                List<ModelNode> list = results.asList();
-                for (ModelNode item : list) {
-                    resources.put(Address.fromModelNodeWrapper(item, "address"), JBossASClient.getResults(item));
-                }
-            } else {
-                throw new IllegalStateException("Invalid type - please report this bug: " + results.getType()
-                        + " [[" + results.toString() + "]]");
-            }
+            J4pSearchRequest searchReq = new J4pSearchRequest(objectNameQuery);
+            J4pSearchResponse searchResponse = client.execute(searchReq);
 
             ResourceManager<JMXResource> resourceManager = this.inventoryManager.getResourceManager();
 
-            for (Map.Entry<Address, ModelNode> entry : resources.entrySet()) {
-                Address address = entry.getKey(); // this is the unique JMX address for this resource
-                Name resourceName = generateResourceName(type, address);
+            for (ObjectName objectName : searchResponse.getObjectNames()) {
+                Name resourceName = generateResourceName(type, objectName);
                 ID id = InventoryIdUtil.generateResourceId(
                         this.inventoryManager.getFeedId(),
                         this.inventoryManager.getManagedServer(),
-                        address.toAddressPathString());
+                        objectName.getCanonicalName());
                 JMXResource resource = new JMXResource(id, resourceName, this.inventoryManager.getEndpoint(), type,
-                        parent, address, entry.getValue());
+                        parent, objectName);
                 log.debugf("Discovered [%s]", resource);
 
                 // get the configuration of the resource
                 discoverResourceConfiguration(resource, client);
-                postProcessResourceConfiguration(resource);
 
                 // populate the metrics/avails based on the resource's type
                 addMetricAndAvailInstances(resource);
@@ -171,78 +148,31 @@ public class JMXDiscovery {
         }
     }
 
-    private void discoverResourceConfiguration(JMXResource resource, ModelControllerClient mcc) {
+    private void discoverResourceConfiguration(JMXResource resource, J4pClient client) {
         JMXResourceType rt = resource.getResourceType();
         Collection<JMXResourceConfigurationPropertyType> configPropTypes = rt.getResourceConfigurationPropertyTypes();
         for (JMXResourceConfigurationPropertyType configPropType : configPropTypes) {
             try {
-                ModelNode value;
-                String configPath = configPropType.getPath();
-                String[] attribute = configPropType.getAttribute().split("#");
-                if (configPath == null || configPath.equals("/")) {
-                    value = resource.getModelNode().get(attribute[0]);
+                ObjectName configObjectName;
+                if (configPropType.getObjectName() == null || configPropType.getObjectName().isEmpty()) {
+                    configObjectName = resource.getObjectName();
                 } else {
-                    Address addr = resource.getAddress().clone().add(Address.parse(configPath));
-                    value = new CoreJBossASClient(mcc).getAttribute(true, attribute[0], addr);
+                    configObjectName = new ObjectName(configPropType.getObjectName());
                 }
 
-                if (attribute.length > 1 && value != null && value.isDefined()) {
-                    value = value.get(attribute[1]);
-                }
-
+                // jolokia API allows for sub-references using "/" notation
+                String attribute = configPropType.getAttribute().replaceFirst("#", "/");
+                J4pReadRequest request = new J4pReadRequest(configObjectName, attribute);
+                J4pReadResponse response = client.execute(request);
+                String value = response.getValue();
                 JMXResourceConfigurationPropertyInstance cpi = new JMXResourceConfigurationPropertyInstance(
                         ID.NULL_ID, configPropType.getName(), configPropType);
-                cpi.setValue((value != null && value.isDefined()) ? value.asString() : null);
+                cpi.setValue(value);
                 resource.addResourceConfigurationProperty(cpi);
             } catch (Exception e) {
                 log.warnf(e, "Failed to discover config [%s] for resource [%s]", configPropType, resource);
             }
         }
-    }
-
-    private void postProcessResourceConfiguration(JMXResource resource) {
-        // rather than check ("WildFly Server".equals(resource.getResourceType().getName().getNameString()))
-        // instead we just know that (resource.getParent() == null) should select the same node.
-        if (resource.getParent() == null) {
-            final String IP_ADDRESSES_PROPERTY_NAME = "Bound Address";
-            JMXResourceConfigurationPropertyInstance adrProp = null;
-            for (JMXResourceConfigurationPropertyInstance p : resource.getResourceConfigurationProperties()) {
-                if (IP_ADDRESSES_PROPERTY_NAME.equals(p.getName().getNameString())) {
-                    adrProp = p;
-                    break;
-                }
-            }
-            if (adrProp != null) {
-                String displayAddresses = null;
-                try {
-                    // Replaces 0.0.0.0 server address with the list of addresses received from
-                    // InetAddress.getByName(String) where the argument of getByName(String) is the host the agent
-                    // uses to query the AS'es JMX.
-                    InetAddress dmrAddr = InetAddress.getByName(adrProp.getValue());
-                    if (dmrAddr.isAnyLocalAddress()) {
-                        String host = null;
-                        ManagedServer server = inventoryManager.getManagedServer();
-                        if (server instanceof RemoteJMXManagedServer) {
-                            RemoteJMXManagedServer remoteServer = (RemoteJMXManagedServer) server;
-                            host = remoteServer.getHost();
-                        } else if (server instanceof LocalJMXManagedServer) {
-                            host = InetAddress.getLocalHost().getCanonicalHostName();
-                        } else {
-                            throw new IllegalStateException("Unexpected type of managed server [" + server.getClass()
-                                    + "]. Please report this bug.");
-                        }
-                        InetAddress[] resolvedAddresses = InetAddress.getAllByName(host);
-                        displayAddresses = Stream.of(resolvedAddresses).map(a -> a.getHostAddress())
-                                .collect(Collectors.joining(", "));
-                        adrProp.setValue(displayAddresses);
-                    }
-                } catch (UnknownHostException e) {
-                    log.warnf(e, "Could not parse IP address [%s]", adrProp.getValue());
-                }
-            }
-        }
-
-        return;
     }
 
     private void logTreeGraph(String logMsg, ResourceManager<JMXResource> resourceManager, long duration) {
@@ -269,102 +199,70 @@ public class JMXDiscovery {
         log.debugf("%s\n%s\nDiscovery duration: [%d]ms", logMsg, graphString, duration);
     }
 
-    private Name generateResourceName(JMXResourceType type, Address address) {
-        ArrayList<String> args = new ArrayList<>();
-        if (!address.isRoot()) {
-            List<Property> parts = address.getAddressNode().asPropertyList();
-            for (Property part : parts) {
-                args.add(part.getName());
-                args.add(part.getValue().asString());
-            }
-        }
-
-        // The name template can have %# where # is the index number of the address part that should be substituted.
-        // For example, suppose a resource has an address of "/hello=world/foo=bar" and the template is "Name [%2]".
-        // The %2 will get substituted with the second address part (which is "world" - indices start at 1).
-        // String.format() requires "$s" after the "%#" to denote the type of value is a string (all our address
-        // parts are strings, so we know "$s" is what we want).
-        // This replaceAll just replaces all occurrances of "%#" with "%#$s" so String.format will work.
-        // We also allow for the special %- notation to mean "the last address part" since that's usually the one we
-        // want and sometimes you can't know its positional value.
-        // We also support %ManagedServerName which can help distinguish similar resources running in different servers.
+    private Name generateResourceName(JMXResourceType type, ObjectName objectName) {
+        // The name template can have %X% where X is a key in the object name.
+        // This will be substituted with the value of that key in the resource name.
+        // For example, suppose a resource has an object name of "domain:abc=xyz" and the template is "Name [%abc%]".
+        // The %abc% will get substituted with the value of that "abc" key from the object name
+        // (in this case, the value is "xyz") so the resource name would be generated as "Name [xyz]".
+        // Also supported is the substitution key "%_ManagedServerName%" which can help distinguish similar
+        // resources running in different servers.
         String nameTemplate = type.getResourceNameTemplate();
-        nameTemplate = nameTemplate.replaceAll("%(\\d+)", "%$1\\$s");
-        nameTemplate = nameTemplate.replaceAll("%(-)", "%" + args.size() + "\\$s");
-        nameTemplate = nameTemplate.replaceAll("%ManagedServerName", inventoryManager.getManagedServer().getName()
-                .getNameString());
-        String nameStr = String.format(nameTemplate, args.toArray());
-        return new Name(nameStr);
+        nameTemplate = nameTemplate.replace("%_ManagedServerName%",
+                inventoryManager.getManagedServer().getName().getNameString());
+        for (Map.Entry<String, String> entry : objectName.getKeyPropertyList().entrySet()) {
+            if (nameTemplate.indexOf("%") == -1) {
+                break; // no sense continuing if the nameTemplate doesn't have any tokens left
+            }
+            String key = entry.getKey();
+            String value = entry.getValue();
+            nameTemplate = nameTemplate.replace("%" + key + "%", value);
+        }
+        return new Name(nameTemplate);
     }
 
     private void addMetricAndAvailInstances(JMXResource resource) {
 
         for (JMXMetricType metricType : resource.getResourceType().getMetricTypes()) {
             Interval interval = new Interval(metricType.getInterval(), metricType.getTimeUnits());
-            Address relativeAddress = Address.parse(metricType.getPath());
-            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
-            if (fullAddress != null) {
-                JMXPropertyReference prop = new JMXPropertyReference(fullAddress, metricType.getAttribute(), interval);
-                ID id = InventoryIdUtil.generateMetricInstanceId(resource, metricType);
-                Name name = metricType.getName();
-                JMXMetricInstance metricInstance = new JMXMetricInstance(id, name, resource, metricType, prop);
-                resource.getMetrics().add(metricInstance);
+            ObjectName objectName;
+            if (metricType.getObjectName() == null || metricType.getObjectName().isEmpty()) {
+                objectName = resource.getObjectName();
+            } else {
+                try {
+                    objectName = new ObjectName(metricType.getObjectName());
+                } catch (MalformedObjectNameException e) {
+                    log.errorf(e, "Bad object name [%s] for metric type [%s]", metricType.getObjectName(), metricType);
+                    continue;
+                }
             }
+
+            JMXPropertyReference prop = new JMXPropertyReference(objectName, metricType.getAttribute(), interval);
+            ID id = InventoryIdUtil.generateMetricInstanceId(resource, metricType);
+            Name name = metricType.getName();
+            JMXMetricInstance metricInstance = new JMXMetricInstance(id, name, resource, metricType, prop);
+            resource.getMetrics().add(metricInstance);
         }
 
         for (JMXAvailType availType : resource.getResourceType().getAvailTypes()) {
             Interval interval = new Interval(availType.getInterval(), availType.getTimeUnits());
-            Address relativeAddress = Address.parse(availType.getPath());
-            Address fullAddress = getFullAddressOfChild(resource, relativeAddress);
-            if (fullAddress != null) {
-                AvailJMXPropertyReference prop = new AvailJMXPropertyReference(fullAddress, availType.getAttribute(),
-                        interval, availType.getUpRegex());
-                ID id = InventoryIdUtil.generateAvailInstanceId(resource, availType);
-                Name name = availType.getName();
-                JMXAvailInstance availInstance = new JMXAvailInstance(id, name, resource, availType, prop);
-                resource.getAvails().add(availInstance);
-            }
-        }
-    }
-
-    private Address getFullAddressOfChild(JMXResource parentResource, Address childRelativePath) {
-        // Some metrics/avails are collected from child resources. But sometimes resources
-        // don't have those child resources (e.g. ear deployments don't have an undertow subsystem).
-        // This means those metrics/avails cannot be collected (i.e. they are optional).
-        // We don't want to fail with errors in this case; we just want to ignore those metrics/avails
-        // since they don't exist.
-        // If the child does exist (by examining the parent resource's model), then this method
-        // will return the full address to that child resource.
-
-        Address fullAddress = null;
-        if (childRelativePath.isRoot()) {
-            fullAddress = parentResource.getAddress(); // there really is no child; it is the resource itself
-        } else {
-            boolean childResourceExists = false;
-            String[] addressParts = childRelativePath.toAddressParts();
-            if (addressParts.length > 2) {
-                // we didn't query the parent's model for recursive data - so we only know direct children.
-                // if a metric/avail gets data from grandchildren or deeper, we don't know if it exists,
-                // so just assume it does.
-                childResourceExists = true;
-                log.tracef("Cannot test long child path [%s] under resource [%s] "
-                        + "for existence so it will be assumed to exist", childRelativePath, parentResource);
+            ObjectName objectName;
+            if (availType.getObjectName() == null || availType.getObjectName().isEmpty()) {
+                objectName = resource.getObjectName();
             } else {
-                ModelNode haystackNode = parentResource.getModelNode().get(addressParts[0]);
-                if (haystackNode.getType() != ModelType.UNDEFINED) {
-                    final List<ModelNode> haystackList = haystackNode.asList();
-                    for (ModelNode needleNode : haystackList) {
-                        if (needleNode.has(addressParts[1])) {
-                            childResourceExists = true;
-                            break;
-                        }
-                    }
+                try {
+                    objectName = new ObjectName(availType.getObjectName());
+                } catch (MalformedObjectNameException e) {
+                    log.errorf(e, "Bad object name [%s] for avail type [%s]", availType.getObjectName(), availType);
+                    continue;
                 }
             }
-            if (childResourceExists) {
-                fullAddress = parentResource.getAddress().clone().add(childRelativePath);
-            }
+            AvailJMXPropertyReference prop = new AvailJMXPropertyReference(objectName, availType.getAttribute(),
+                    interval, availType.getUpRegex());
+            ID id = InventoryIdUtil.generateAvailInstanceId(resource, availType);
+            Name name = availType.getName();
+            JMXAvailInstance availInstance = new JMXAvailInstance(id, name, resource, availType, prop);
+            resource.getAvails().add(availInstance);
         }
-        return fullAddress;
     }
 }

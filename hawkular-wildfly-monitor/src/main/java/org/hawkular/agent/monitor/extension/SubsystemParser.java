@@ -135,10 +135,6 @@ public class SubsystemParser implements XMLStreamConstants, XMLElementReader<Lis
                                             .setXmlElementName(RemoteJMXDefinition.REMOTE_JMX)
                                             .addAttributes(RemoteJMXAttributes.ATTRIBUTES)
                                     )
-                                    .addChild(builder(LocalJMXDefinition.INSTANCE)
-                                            .setXmlElementName(LocalJMXDefinition.LOCAL_JMX)
-                                            .addAttributes(LocalJMXAttributes.ATTRIBUTES)
-                                    )
                             )
 
                             .addChild(builder(PlatformDefinition.INSTANCE)

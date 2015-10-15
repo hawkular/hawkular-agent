@@ -35,11 +35,20 @@ public class JmxClientFactoryImpl implements JmxClientFactory {
     }
 
     @Override
+    public JmxClientFactory newFactory(JMXEndpoint endpoint) {
+        return new JmxClientFactoryImpl(endpoint, sslContext);
+    }
+
+    @Override
     public J4pClient createClient() {
         return createClient(defaultEndpoint, sslContext);
     }
 
     protected J4pClient createClient(final JMXEndpoint endpoint, SSLContext sslContext) {
+        if (endpoint == null) {
+            throw new IllegalArgumentException("Must have an endpoint to create a JMX client");
+        }
+
         try {
             J4pClient client = endpoint.getJmxClient(sslContext);
             return client;

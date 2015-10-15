@@ -16,12 +16,12 @@
  */
 package org.hawkular.agent.monitor.inventory.jmx;
 
+import javax.management.ObjectName;
+
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.scheduler.config.JMXEndpoint;
-import org.hawkular.dmrclient.Address;
-import org.jboss.dmr.ModelNode;
 
 public class JMXResource extends Resource
         <JMXResourceType,
@@ -30,26 +30,20 @@ public class JMXResource extends Resource
         JMXAvailInstance,
         JMXResourceConfigurationPropertyInstance> {
 
-    private final Address address;
-    private final ModelNode modelNode;
+    private final ObjectName objectName;
 
     public JMXResource(ID id, Name name, JMXEndpoint endpoint, JMXResourceType type, JMXResource parent,
-            Address address, ModelNode modelNode) {
+            ObjectName objectName) {
         super(id, name, endpoint, type, parent);
-        this.address = address;
-        this.modelNode = modelNode;
+        this.objectName = objectName;
     }
 
-    public Address getAddress() {
-        return address;
-    }
-
-    public ModelNode getModelNode() {
-        return modelNode;
+    public ObjectName getObjectName() {
+        return objectName;
     }
 
     @Override
     public String toString() {
-        return String.format("%s[address=%s]", super.toString(), this.address);
+        return String.format("%s[objectName=%s]", super.toString(), this.objectName);
     }
 }

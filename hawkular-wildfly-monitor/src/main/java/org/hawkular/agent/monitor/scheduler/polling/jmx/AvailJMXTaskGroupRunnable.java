@@ -28,10 +28,10 @@ import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
 import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.agent.monitor.scheduler.polling.TaskGroup;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
-import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.logging.Logger;
 import org.jolokia.client.J4pClient;
 import org.jolokia.client.request.J4pReadRequest;
+import org.jolokia.client.request.J4pReadResponse;
 import org.jolokia.client.request.J4pResponse;
 
 import com.codahale.metrics.Timer;
@@ -74,7 +74,7 @@ public class AvailJMXTaskGroupRunnable implements Runnable {
 
             // execute the JMX request
             final Timer.Context requestContext = diagnostics.getJMXRequestTimer().time();
-            List<J4pResponse<J4pReadRequest>> responses = client.execute(reqs);
+            List<J4pReadResponse> responses = client.execute(reqs);
             final long durationNanos = requestContext.stop();
             final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
             if (durationMs > group.getInterval().millis()) {
@@ -84,11 +84,11 @@ public class AvailJMXTaskGroupRunnable implements Runnable {
             // process the responses
             int i = 0;
             for (J4pResponse<J4pReadRequest> response : responses) {
-                final MetricJMXTask task = (MetricJMXTask) group.getTask(i++);
-                final MetricType metricType = task.getMetricInstance().getMetricType().getMetricType();
+                final AvailJMXTask task = (AvailJMXTask) group.getTask(i++);
 
                 // TODO get value from results - might need to aggregate
-                Avail avail = Avail.UP;
+                String valueString = String.valueOf(response.getValue());
+                Avail avail = getAvailFromResponse(valueString, task);
                 completionHandler.onCompleted(new AvailDataPoint(task, avail));
 
             }

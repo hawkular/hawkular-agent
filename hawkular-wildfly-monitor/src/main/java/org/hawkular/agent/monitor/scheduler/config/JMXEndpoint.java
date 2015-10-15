@@ -80,6 +80,7 @@ public class JMXEndpoint extends MonitoredEndpoint {
         }
 
         J4pClient client = J4pClient
+                .url(getURL().toExternalForm())
                 .user(getUsername())
                 .password(getPassword())
                 .authenticator(authenticator.preemptive())

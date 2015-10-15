@@ -31,7 +31,7 @@ import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.logging.Logger;
 import org.jolokia.client.J4pClient;
 import org.jolokia.client.request.J4pReadRequest;
-import org.jolokia.client.request.J4pResponse;
+import org.jolokia.client.request.J4pReadResponse;
 
 import com.codahale.metrics.Timer;
 
@@ -73,7 +73,7 @@ public class MetricJMXTaskGroupRunnable implements Runnable {
 
             // execute the JMX request
             final Timer.Context requestContext = diagnostics.getJMXRequestTimer().time();
-            List<J4pResponse<J4pReadRequest>> responses = client.execute(reqs);
+            List<J4pReadResponse> responses = client.execute(reqs);
             final long durationNanos = requestContext.stop();
             final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
             if (durationMs > group.getInterval().millis()) {
@@ -81,12 +81,20 @@ public class MetricJMXTaskGroupRunnable implements Runnable {
             }
 
             int i = 0;
-            for (J4pResponse<J4pReadRequest> response : responses) {
+            for (J4pReadResponse response : responses) {
                 final MetricJMXTask task = (MetricJMXTask) group.getTask(i++);
                 final MetricType metricType = task.getMetricInstance().getMetricType().getMetricType();
 
                 // TODO get value from results - might need to aggregate
-                double value = 0.0;
+                double value;
+                Object valueObject = response.getValue();
+                if (valueObject == null) {
+                    value = Double.NaN;
+                } else if (valueObject instanceof Number) {
+                    value = ((Number) valueObject).doubleValue();
+                } else {
+                    value = Double.valueOf(valueObject.toString());
+                }
                 completionHandler.onCompleted(new MetricDataPoint(task, value, metricType));
 
             }
