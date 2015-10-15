@@ -160,14 +160,17 @@ public class JMXDiscovery {
                     configObjectName = new ObjectName(configPropType.getObjectName());
                 }
 
-                // jolokia API allows for sub-references using "/" notation
-                String attribute = configPropType.getAttribute().replaceFirst("#", "/");
-                J4pReadRequest request = new J4pReadRequest(configObjectName, attribute);
+                String[] attribute = configPropType.getAttribute().split("#");
+                J4pReadRequest request = new J4pReadRequest(configObjectName, attribute[0]);
+                if (attribute.length > 1) {
+                    request.setPath(attribute[1]); // this is the sub-reference
+                }
                 J4pReadResponse response = client.execute(request);
-                String value = response.getValue();
+                Object value = response.getValue();
+                String valueString = String.valueOf(value);
                 JMXResourceConfigurationPropertyInstance cpi = new JMXResourceConfigurationPropertyInstance(
                         ID.NULL_ID, configPropType.getName(), configPropType);
-                cpi.setValue(value);
+                cpi.setValue(valueString);
                 resource.addResourceConfigurationProperty(cpi);
             } catch (Exception e) {
                 log.warnf(e, "Failed to discover config [%s] for resource [%s]", configPropType, resource);
