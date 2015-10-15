@@ -25,6 +25,9 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
+import org.hawkular.agent.monitor.inventory.jmx.JMXAvailTypeSet;
+import org.hawkular.agent.monitor.inventory.jmx.JMXMetricTypeSet;
+import org.hawkular.agent.monitor.inventory.jmx.JMXResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformResourceTypeSet;
@@ -60,6 +63,9 @@ public class MonitorServiceConfiguration {
     public Map<Name, DMRMetricTypeSet> dmrMetricTypeSetMap = new HashMap<>();
     public Map<Name, DMRAvailTypeSet> dmrAvailTypeSetMap = new HashMap<>();
     public Map<Name, DMRResourceTypeSet> dmrResourceTypeSetMap = new HashMap<>();
+    public Map<Name, JMXMetricTypeSet> jmxMetricTypeSetMap = new HashMap<>();
+    public Map<Name, JMXAvailTypeSet> jmxAvailTypeSetMap = new HashMap<>();
+    public Map<Name, JMXResourceTypeSet> jmxResourceTypeSetMap = new HashMap<>();
     public Map<Name, ManagedServer> managedServersMap = new HashMap<>();
 
     public static class StorageAdapter {

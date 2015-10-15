@@ -25,6 +25,8 @@ import java.util.Map;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
+import org.hawkular.agent.monitor.inventory.jmx.JMXAvailInstance;
+import org.hawkular.agent.monitor.inventory.jmx.JMXMetricInstance;
 import org.hawkular.agent.monitor.inventory.platform.PlatformAvailInstance;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricInstance;
 
@@ -50,6 +52,9 @@ public class SchedulerConfiguration {
     private final Map<DMREndpoint, List<DMRMetricInstance>> dmrMetricsToBeCollected = new HashMap<>();
     private final Map<DMREndpoint, List<DMRAvailInstance>> dmrAvailsToBeChecked = new HashMap<>();
 
+    private final Map<JMXEndpoint, List<JMXMetricInstance>> jmxMetricsToBeCollected = new HashMap<>();
+    private final Map<JMXEndpoint, List<JMXAvailInstance>> jmxAvailsToBeChecked = new HashMap<>();
+
     private final Map<PlatformEndpoint, List<PlatformMetricInstance>> platformMetricsToBeCollected = new HashMap<>();
     private final Map<PlatformEndpoint, List<PlatformAvailInstance>> platformAvailsToBeChecked = new HashMap<>();
 
@@ -62,6 +67,14 @@ public class SchedulerConfiguration {
 
     public Map<DMREndpoint, List<DMRAvailInstance>> getDMRAvailsToBeChecked() {
         return Collections.unmodifiableMap(dmrAvailsToBeChecked);
+    }
+
+    public Map<JMXEndpoint, List<JMXMetricInstance>> getJMXMetricsToBeCollected() {
+        return Collections.unmodifiableMap(jmxMetricsToBeCollected);
+    }
+
+    public Map<JMXEndpoint, List<JMXAvailInstance>> getJMXAvailsToBeChecked() {
+        return Collections.unmodifiableMap(jmxAvailsToBeChecked);
     }
 
     public Map<PlatformEndpoint, List<PlatformMetricInstance>> getPlatformMetricsToBeCollected() {
@@ -87,6 +100,26 @@ public class SchedulerConfiguration {
         if (map == null) {
             map = new ArrayList<DMRAvailInstance>();
             dmrAvailsToBeChecked.put(endpoint, map);
+        }
+
+        map.add(availToBeCollected);
+    }
+
+    public void addMetricToBeCollected(JMXEndpoint endpoint, JMXMetricInstance metricToBeCollected) {
+        List<JMXMetricInstance> map = jmxMetricsToBeCollected.get(endpoint);
+        if (map == null) {
+            map = new ArrayList<JMXMetricInstance>();
+            jmxMetricsToBeCollected.put(endpoint, map);
+        }
+
+        map.add(metricToBeCollected);
+    }
+
+    public void addAvailToBeChecked(JMXEndpoint endpoint, JMXAvailInstance availToBeCollected) {
+        List<JMXAvailInstance> map = jmxAvailsToBeChecked.get(endpoint);
+        if (map == null) {
+            map = new ArrayList<JMXAvailInstance>();
+            jmxAvailsToBeChecked.put(endpoint, map);
         }
 
         map.add(availToBeCollected);

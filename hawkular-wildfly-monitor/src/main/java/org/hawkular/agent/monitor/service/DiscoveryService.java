@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
+import org.hawkular.agent.monitor.inventory.jmx.JMXInventoryManager;
 
 /**
  * A simple interface that provides methods used to discover resources.
@@ -33,7 +34,12 @@ public interface DiscoveryService {
     void discoverAllResourcesForAllManagedServers();
 
     /**
-     * @return the discovered inventories of all managed servers
+     * @return the discovered inventories of all DMR managed servers
      */
     Map<ManagedServer, DMRInventoryManager> getDmrServerInventories();
+
+    /**
+     * @return the discovered inventories of all JMX managed servers
+     */
+    Map<ManagedServer, JMXInventoryManager> getJmxServerInventories();
 }
