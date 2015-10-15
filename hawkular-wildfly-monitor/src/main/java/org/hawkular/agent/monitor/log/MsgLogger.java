@@ -58,12 +58,12 @@ public interface MsgLogger extends BasicLogger {
     void infoNoDiagnosticsConfig();
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10006, value = "There are no enabled %s metric sets")
-    void infoNoEnabledMetricsConfigured(String type);
+    @Message(id = 10006, value = "There are no enabled metric sets")
+    void infoNoEnabledMetricsConfigured();
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10007, value = "There are no enabled %s availability check sets")
-    void infoNoEnabledAvailsConfigured(String type);
+    @Message(id = 10007, value = "There are no enabled availability check sets")
+    void infoNoEnabledAvailsConfigured();
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10008, value = "A metric collection failed")
@@ -118,8 +118,8 @@ public interface MsgLogger extends BasicLogger {
     void warnResourceTypeSetDoesNotExist(String managedServerName, String resourceTypeSetName);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10021, value = "There are no enabled %s resource type sets")
-    void infoNoEnabledResourceTypesConfigured(String type);
+    @Message(id = 10021, value = "There are no enabled resource type sets")
+    void infoNoEnabledResourceTypesConfigured();
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10022, value = "Resource type [%s] is disabled - all if its child types will also be disabled: %s")
