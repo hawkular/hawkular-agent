@@ -47,6 +47,9 @@ public class ManagedServersDefinition extends PersistentResourceDefinition {
 
     @Override
     protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(LocalDMRDefinition.INSTANCE, RemoteDMRDefinition.INSTANCE);
+        return Arrays.asList(
+                LocalDMRDefinition.INSTANCE,
+                RemoteDMRDefinition.INSTANCE,
+                RemoteJMXDefinition.INSTANCE);
     }
 }

@@ -24,14 +24,19 @@ import java.util.Map.Entry;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
+import org.hawkular.agent.monitor.inventory.jmx.JMXAvailInstance;
+import org.hawkular.agent.monitor.inventory.jmx.JMXMetricInstance;
 import org.hawkular.agent.monitor.inventory.platform.PlatformAvailInstance;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricInstance;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.config.AvailDMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.AvailJMXPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.AvailPlatformPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.DMRPropertyReference;
+import org.hawkular.agent.monitor.scheduler.config.JMXEndpoint;
+import org.hawkular.agent.monitor.scheduler.config.JMXPropertyReference;
 import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
 import org.hawkular.agent.monitor.scheduler.config.PlatformEndpoint;
 import org.hawkular.agent.monitor.scheduler.config.PlatformPropertyReference;
@@ -45,11 +50,16 @@ import org.hawkular.agent.monitor.scheduler.polling.dmr.AvailDMRTaskGroupRunnabl
 import org.hawkular.agent.monitor.scheduler.polling.dmr.DMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
 import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTaskGroupRunnable;
+import org.hawkular.agent.monitor.scheduler.polling.jmx.AvailJMXTask;
+import org.hawkular.agent.monitor.scheduler.polling.jmx.AvailJMXTaskGroupRunnable;
+import org.hawkular.agent.monitor.scheduler.polling.jmx.JMXTask;
+import org.hawkular.agent.monitor.scheduler.polling.jmx.MetricJMXTask;
+import org.hawkular.agent.monitor.scheduler.polling.jmx.MetricJMXTaskGroupRunnable;
 import org.hawkular.agent.monitor.scheduler.polling.platform.MetricPlatformTask;
 import org.hawkular.agent.monitor.scheduler.polling.platform.MetricPlatformTaskGroupRunnable;
+import org.hawkular.agent.monitor.scheduler.polling.platform.PlatformTask;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
-import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 
@@ -66,7 +76,6 @@ public class SchedulerService {
     private final Scheduler availScheduler;
     private final MetricBufferedStorageDispatcher metricCompletionHandler;
     private final AvailBufferedStorageDispatcher availCompletionHandler;
-    private final HttpClientBuilder httpClientBuilder;
 
     private boolean started = false;
 
@@ -75,8 +84,7 @@ public class SchedulerService {
             ServerIdentifiers selfId,
             Diagnostics diagnostics,
             StorageAdapter storageAdapter,
-            ModelControllerClientFactory localDMRClientFactory,
-            HttpClientBuilder httpClientBuilder) {
+            ModelControllerClientFactory localDMRClientFactory) {
 
         this.schedulerConfig = configuration;
 
@@ -88,9 +96,6 @@ public class SchedulerService {
 
         // metrics for our own internals
         this.diagnostics = diagnostics;
-
-        // used to send requests to the server
-        this.httpClientBuilder = httpClientBuilder;
 
         // create the schedulers - we use two: one for metric collections and one for avail checks
         this.metricCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
@@ -122,6 +127,9 @@ public class SchedulerService {
         // turn metric DMR refs into Tasks and schedule them now
         List<Task> metricTasks = createMetricDMRTasks(schedulerConfig.getDMRMetricsToBeCollected());
 
+        // turn metric JMX refs into Tasks and schedule them now
+        metricTasks.addAll(createMetricJMXTasks(schedulerConfig.getJMXMetricsToBeCollected()));
+
         // turn platform metrics into Tasks and schedule them now
         metricTasks.addAll(createMetricPlatformTasks(schedulerConfig.getPlatformMetricsToBeCollected()));
 
@@ -130,6 +138,9 @@ public class SchedulerService {
 
         // turn platform avails into Tasks and schedule them now
         availTasks.addAll(createAvailPlatformTasks(schedulerConfig.getPlatformAvailsToBeChecked()));
+
+        // turn avail JMX refs into Tasks and schedule them now
+        availTasks.addAll(createAvailJMXTasks(schedulerConfig.getJMXAvailsToBeChecked()));
 
         // start the collections
         this.metricCompletionHandler.start();
@@ -174,8 +185,12 @@ public class SchedulerService {
                         factory = new ModelControllerClientFactoryImpl(endpoint);
                     }
                     return new MetricDMRTaskGroupRunnable(group, metricCompletionHandler, getDiagnostics(), factory);
-                } else if (MetricPlatformTask.class.isInstance(firstTask)) {
+                } else if (PlatformTask.class.isInstance(firstTask)) {
                     return new MetricPlatformTaskGroupRunnable(group, metricCompletionHandler, diagnostics);
+                } else if (JMXTask.class.isInstance(firstTask)) {
+                    JMXEndpoint endpoint = ((JMXTask) firstTask).getEndpoint();
+                    return new MetricJMXTaskGroupRunnable(group, metricCompletionHandler, diagnostics,
+                            new JmxClientFactoryImpl(endpoint));
                 } else {
                     throw new UnsupportedOperationException("Unsupported metric group: " + group);
                 }
@@ -194,6 +209,12 @@ public class SchedulerService {
                         factory = new ModelControllerClientFactoryImpl(endpoint);
                     }
                     return new AvailDMRTaskGroupRunnable(group, availCompletionHandler, getDiagnostics(), factory);
+                } else if (PlatformTask.class.isInstance(firstTask)) {
+                    new UnsupportedOperationException("Avail checks for platform resources are not supported");
+                } else if (JMXTask.class.isInstance(firstTask)) {
+                    JMXEndpoint endpoint = ((JMXTask) firstTask).getEndpoint();
+                    return new AvailJMXTaskGroupRunnable(group, availCompletionHandler, diagnostics,
+                            new JmxClientFactoryImpl(endpoint));
                 } else {
                     throw new UnsupportedOperationException("Unsupported avail group: " + group);
                 }
@@ -252,6 +273,60 @@ public class SchedulerService {
                 }
 
                 tasks.add(new AvailDMRTask(propRef.getInterval(), dmrEndpoint, propRef.getAddress(), attribute,
+                        subref, instance, propRef.getUpRegex()));
+            }
+        }
+
+        return tasks;
+    }
+
+    private List<Task> createMetricJMXTasks(Map<JMXEndpoint, List<JMXMetricInstance>> map) {
+        List<Task> tasks = new ArrayList<>();
+
+        for (Map.Entry<JMXEndpoint, List<JMXMetricInstance>> entry : map.entrySet()) {
+            JMXEndpoint jmxEndpoint = entry.getKey();
+            for (JMXMetricInstance instance : entry.getValue()) {
+                // parse sub references (complex attribute support)
+                JMXPropertyReference propRef = instance.getProperty();
+                String attribute = propRef.getAttribute();
+                String subref = null;
+
+                if (attribute != null) {
+                    int i = attribute.indexOf("#");
+                    if (i > 0) {
+                        subref = attribute.substring(i + 1, attribute.length());
+                        attribute = attribute.substring(0, i);
+                    }
+                }
+
+                tasks.add(new MetricJMXTask(propRef.getInterval(), jmxEndpoint, propRef.getObjectName(), attribute,
+                        subref, instance));
+            }
+        }
+
+        return tasks;
+    }
+
+    private List<Task> createAvailJMXTasks(Map<JMXEndpoint, List<JMXAvailInstance>> map) {
+        List<Task> tasks = new ArrayList<>();
+
+        for (Map.Entry<JMXEndpoint, List<JMXAvailInstance>> entry : map.entrySet()) {
+            JMXEndpoint jmxEndpoint = entry.getKey();
+            for (JMXAvailInstance instance : entry.getValue()) {
+                // parse sub references (complex attribute support)
+                AvailJMXPropertyReference propRef = instance.getProperty();
+                String attribute = propRef.getAttribute();
+                String subref = null;
+
+                if (attribute != null) {
+                    int i = attribute.indexOf("#");
+                    if (i > 0) {
+                        subref = attribute.substring(i + 1, attribute.length());
+                        attribute = attribute.substring(0, i);
+                    }
+                }
+
+                tasks.add(new AvailJMXTask(propRef.getInterval(), jmxEndpoint, propRef.getObjectName(), attribute,
                         subref, instance, propRef.getUpRegex()));
             }
         }

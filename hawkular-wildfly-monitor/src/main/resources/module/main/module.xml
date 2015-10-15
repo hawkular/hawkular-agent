@@ -54,6 +54,17 @@
     <resource-root path="jna.jar"/>
     <resource-root path="jna-platform.jar"/>
     <resource-root path="oshi-core.jar"/>
+
+    <!-- jolokia deps (TODO trim and see if any are provided by WF) -->
+    <resource-root path="commons-codec.jar" />
+    <resource-root path="commons-logging.jar" />
+    <resource-root path="fluent-hc.jar" />
+    <resource-root path="httpclient-cache.jar" />
+    <resource-root path="httpclient-osgi.jar" />
+    <resource-root path="httpcore.jar" />
+    <resource-root path="httpmime.jar" />
+    <resource-root path="jolokia-client-java.jar" />
+    <resource-root path="json-simple.jar" />
   </resources>
 
   <dependencies>
