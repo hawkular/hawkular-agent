@@ -124,7 +124,8 @@ public class AvailJMXTaskGroupRunnable implements Runnable {
                     }
                     avail = aggregate;
                 } else {
-                    String valueString = String.valueOf(response.getValue());
+                    Object value = response.getValue();
+                    String valueString = String.valueOf(value);
                     avail = getAvailFromResponse(valueString, task);
                 }
 
