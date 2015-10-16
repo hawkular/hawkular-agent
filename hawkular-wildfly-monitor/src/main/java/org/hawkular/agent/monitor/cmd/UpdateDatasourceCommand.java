@@ -27,7 +27,6 @@ import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.cmdgw.api.UpdateDatasourceRequest;
 import org.hawkular.cmdgw.api.UpdateDatasourceResponse;
 import org.hawkular.dmr.api.DmrApiException;
@@ -51,20 +50,6 @@ public class UpdateDatasourceCommand
 
     public UpdateDatasourceCommand() {
         super("Update", "Datasource");
-    }
-
-    /**
-     * @param adr
-     * @param datasourceName
-     */
-    private void assertNotRename(ModelNode adr, String newName) {
-        List<Property> adrProps = adr.asPropertyList();
-        String nameFromPath = adrProps.get(adrProps.size() - 1).getValue().asString();
-        if (!nameFromPath.equals(newName)) {
-            String msg = String.format("Renaming a [%s] is not supported. Old name: [%s], new name: [%s]", entityType,
-                    nameFromPath, newName);
-            throw new IllegalArgumentException(msg);
-        }
     }
 
     /** @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#createResponse() */
@@ -131,8 +116,6 @@ public class UpdateDatasourceCommand
 
         }
 
-        response.setStatus(ResponseStatus.OK);
-        response.setMessage(String.format("Updated Datasource: %s", request.getDatasourceName()));
         context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
 
     }

@@ -654,19 +654,19 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         }
 
         public Set<String> getHashSet() {
-            return Collections
-                    .unmodifiableSet(getNodeList().stream().map(n -> n.asString()).collect(Collectors.toSet()));
+            Set<String> result = getNodeList().stream().map(n -> n.asString()).collect(Collectors.toSet());
+            return Collections.unmodifiableSet(result);
         }
 
         public Set<String> getLinkedHashSet() {
-            return Collections.unmodifiableSet(
-                    getNodeList().stream().map(n -> n.asString())
-                            .collect(Collectors.toCollection(LinkedHashSet::new)));
+            Set<String> result = getNodeList().stream().map(n -> n.asString())
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            return Collections.unmodifiableSet(result);
         }
 
         public List<String> getList() {
-            return Collections
-                    .unmodifiableList(getNodeList().stream().map(n -> n.asString()).collect(Collectors.toList()));
+            List<String> result = getNodeList().stream().map(n -> n.asString()).collect(Collectors.toList());
+            return Collections.unmodifiableList(result);
         }
     }
 
@@ -675,6 +675,22 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
 
         private WriteAttributeOperationBuilder(CompositeOperationBuilder<CompositeOperationBuilder<?>> bb) {
             super(bb, ModelDescriptionConstants.WRITE_ATTRIBUTE_OPERATION);
+        }
+
+        /**
+         * If {@code value == null}, no entry is added. Otherwise, the attribute will be added.
+         *
+         * @param name the name of the attribute
+         * @param value the value of the attribute
+         * @return this builder
+         */
+        @SuppressWarnings("unchecked")
+        public T attribute(String name, Integer value) {
+            baseNode.get(ModelDescriptionConstants.NAME).set(name);
+            if (value != null) {
+                baseNode.get(ModelDescriptionConstants.VALUE).set(value);
+            }
+            return (T) this;
         }
 
         /**

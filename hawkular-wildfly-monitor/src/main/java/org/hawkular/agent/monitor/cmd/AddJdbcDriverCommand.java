@@ -67,7 +67,7 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
         AddJdbcDriverRequest request = envelope.getBasicMessage();
         response.setDriverName(request.getDriverName());
 
-        ModuleResource jarResource = new AddModuleRequest.ModuleResource(envelope.getBinaryData(),
+        ModuleResource jarResource = new ModuleResource(envelope.getBinaryData(),
                 request.getDriverJarName());
 
         AddModuleRequest addModuleRequest = new AddModuleRequest(request.getModuleName(), (String) null, (String) null,
