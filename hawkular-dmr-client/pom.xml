@@ -33,11 +33,10 @@
   <description>A library for working as a management client to a Wildfly container</description>
 
   <dependencies>
+
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.4</version>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

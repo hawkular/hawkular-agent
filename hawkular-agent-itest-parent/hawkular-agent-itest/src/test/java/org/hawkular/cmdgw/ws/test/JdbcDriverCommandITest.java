@@ -45,6 +45,7 @@ import okio.BufferedSource;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class JdbcDriverCommandITest extends AbstractCommandITest {
+    private static final String driverFileNameAfterAdd = "driver-after-add.node.txt";
     private static final String driverName = "mysql";
 
     private static ModelNode driverAddress() {
@@ -56,9 +57,10 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
+        final ModelNode driverAddress = driverAddress();
 
         try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertResourceExists(mcc, driverAddress(), false);
+            assertResourceExists(mcc, driverAddress, false);
 
             /* OK, h2 is there let's add a new MySQL Driver */
             final String driverJarRawUrl = "http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.36/"
@@ -69,7 +71,6 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
             WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-
                 @Override
                 public void onOpen(WebSocket webSocket, Response response) {
                     send(webSocket,
@@ -112,7 +113,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            assertResourceExists(mcc, driverAddress(), true);
+            assertNodeEquals(mcc, driverAddress, getClass(), driverFileNameAfterAdd, false);
         }
     }
 
@@ -121,6 +122,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
+        final ModelNode driverAddress = driverAddress();
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
                 + URLEncoder.encode("~/subsystem=datasources/jdbc-driver=" + driverName, "UTF-8");
@@ -128,7 +130,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
             assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 2);
-            assertResourceExists(mcc, driverAddress(), true);
+            assertResourceExists(mcc, driverAddress, true);
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
@@ -170,7 +172,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     + "]\""//
                     + "}", receivedMessages.get(i++).readUtf8());
 
-            assertResourceExists(mcc, driverAddress(), false);
+            assertResourceExists(mcc, driverAddress, false);
 
         }
     }

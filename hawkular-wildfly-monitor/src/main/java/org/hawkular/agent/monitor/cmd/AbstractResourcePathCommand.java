@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
+import java.util.List;
+
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
@@ -34,6 +36,8 @@ import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.Property;
 
 /**
  * A base for {@link Command}s initiated by subclasses of {@link ResourcePathRequest}.
@@ -104,7 +108,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             String msg = String.format("Could not perform [%s] on a [%s] given by inventory path [%s]: %s",
                     operationName, entityType, rawResourcePath, e.getMessage());
             response.setMessage(msg);
-            log.debug(msg);
+            log.debug(msg, e);
         } finally {
             if (controllerClient != null) {
                 try {
@@ -212,6 +216,16 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             throw new IllegalStateException(String.format(
                     "Cannot perform [%s] on a [%s] on a instance of [%s]. Only [%s] is supported", operationName,
                     entityType, managedServer.getClass().getName(), LocalDMRManagedServer.class.getName()));
+        }
+    }
+
+    protected void assertNotRename(ModelNode adr, String newName) {
+        List<Property> adrProps = adr.asPropertyList();
+        String nameFromPath = adrProps.get(adrProps.size() - 1).getValue().asString();
+        if (!nameFromPath.equals(newName)) {
+            String msg = String.format("Renaming a [%s] is not supported. Old name: [%s], new name: [%s]", entityType,
+                    nameFromPath, newName);
+            throw new IllegalArgumentException(msg);
         }
     }
 }
