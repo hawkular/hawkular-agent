@@ -20,7 +20,7 @@ package org.hawkular.agent.monitor.inventory;
  * An object that has an associated name as well as an ID.
  */
 public abstract class NamedObject extends IDObject {
-    public static final String NAME = "name"; // the property name where the object's name is stored
+    private final Name name;
 
     /**
      * Creates a named object.
@@ -37,10 +37,10 @@ public abstract class NamedObject extends IDObject {
         if (name.getNameString() == null) {
             throw new IllegalArgumentException("name string cannot be null");
         }
-        addProperty(NAME, name.getNameString());
+        this.name = name;
     }
 
     public Name getName() {
-        return new Name(getProperties().get(NAME).toString());
+        return this.name;
     }
 }
