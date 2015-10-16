@@ -44,6 +44,7 @@ import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.NamedObject;
+import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstance;
 import org.hawkular.agent.monitor.inventory.ResourceType;
@@ -61,6 +62,7 @@ import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.StructuredData;
 
@@ -181,6 +183,18 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         /**
+         * Adds the given {@code operation} to the {@link #result}.
+         *
+         * @param operation the {@link Operation} to add
+         */
+        private void operation(Operation<? extends ResourceType<?, ?, ?, ?>> operation) {
+            OperationType.Blueprint blueprint = new OperationType.Blueprint(getInventoryId(operation),
+                    operation.getProperties());
+
+            entity(blueprint, OperationType.class);
+        }
+
+        /**
          * @return a new {@link CanonicalPath} made of {@link #tenantId}, {@link #environmentId} and {@link #feedId}
          */
         private CanonicalPath.FeedBuilder newPathPrefix() {
@@ -231,7 +245,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
          */
         public BulkPayloadBuilder resource(Resource<?, ?, ?, ?, ?> resource) {
 
-            // get the payload in JSON format
+            // resource
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
             String resourceTypePath = newPathPrefix().resourceType(getInventoryId(resource.getResourceType())).get()
                     .toString();
@@ -258,11 +272,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
             CanonicalPath resourceCanonicalPath = CanonicalPath.fromPartiallyUntypedString(resourcePath,
                     newPathPrefix().get(), org.hawkular.inventory.api.model.Resource.class);
 
-            // now that the resource is registered, immediately register its configuration
+            // resource configuration
             Collection<? extends ResourceConfigurationPropertyInstance<?>> resConfigInstances = resource
                     .getResourceConfigurationProperties();
             if (resConfigInstances != null && !resConfigInstances.isEmpty()) {
-                // get the payload in JSON format
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
                 for (ResourceConfigurationPropertyInstance<?> resConfigInstance : resConfigInstances) {
                     structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
@@ -275,6 +288,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 relationshipOrEntity(resourceCanonicalPath.toString(), DataEntity.class, dataEntity);
             }
 
+            // metrics and avails (which are just metrics, too)
             Collection<? extends MetricInstance<?, ?, ?>> metricInstances = resource.getMetrics();
             for (MetricInstance<?, ?, ?> metric : metricInstances) {
                 metric(metric);
@@ -296,8 +310,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         /**
-         * Adds the given {@code resourceType} and its metric types and availability types to {@link #result} linking
-         * them properly together.
+         * Adds the given {@code resourceType}, its metric types (including availability) and operations
+         * to {@link #result} linking them properly together.
          *
          * @param resourceType the {@link ResourceType} to add
          * @return this builder
@@ -332,6 +346,11 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 Relationship.Blueprint bp = new Relationship.Blueprint(Direction.outgoing, incorporates.toString(),
                         metricTypePath, Collections.emptyMap());
                 relationship(parentPath, bp);
+            }
+
+            Collection<? extends Operation<? extends ResourceType<?, ?, ?, ?>>> ops = resourceType.getOperations();
+            for (Operation<? extends ResourceType<?, ?, ?, ?>> op : ops) {
+                operation(op);
             }
 
             return this;
