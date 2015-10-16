@@ -715,6 +715,31 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
 
     }
 
+    public static class ByNameOperationBuilder <T extends ByNameOperationBuilder<?>>
+            extends AbstractSingleOperationBuilder<T, OperationResult<?>> {
+
+        public ByNameOperationBuilder(CompositeOperationBuilder<CompositeOperationBuilder<?>> bb,
+                String operationName) {
+            super(bb, operationName);
+        }
+
+        /**
+         * If {@code value == null}, no entry is added. Otherwise, the attribute will be added.
+         *
+         * @param name the name of the attribute
+         * @param value the value of the attribute
+         * @return this builder
+         */
+        @SuppressWarnings("unchecked")
+        public T attribute(String name, String value) {
+            if (value != null) {
+                baseNode.get(name).set(value);
+            }
+            return (T) this;
+        }
+
+    }
+
     private static final MsgLogger log = DmrApiLoggers.getLogger(OperationBuilder.class);
 
     public static AddOperationBuilder<AddOperationBuilder<?>> add() {
@@ -765,4 +790,8 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         return new WriteAttributeOperationBuilder<>(null);
     }
 
+    @SuppressWarnings("unchecked")
+    public static ByNameOperationBuilder<ByNameOperationBuilder<?>> byName(String operationName) {
+        return new ByNameOperationBuilder<>(null, operationName);
+    }
 }

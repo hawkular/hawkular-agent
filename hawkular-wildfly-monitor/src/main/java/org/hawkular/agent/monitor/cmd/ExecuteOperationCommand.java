@@ -19,68 +19,66 @@ package org.hawkular.agent.monitor.cmd;
 import java.util.Collection;
 import java.util.Map;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
-import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMROperation;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
-import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.ExecuteOperationRequest;
 import org.hawkular.cmdgw.api.ExecuteOperationResponse;
-import org.hawkular.cmdgw.api.MessageUtils;
-import org.hawkular.cmdgw.api.ResponseStatus;
+import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.dmrclient.CoreJBossASClient;
-import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
-import org.jboss.dmr.ModelNode;
 
 /**
  * Execute an operation on a resource.
  */
-public class ExecuteOperationCommand implements Command<ExecuteOperationRequest, ExecuteOperationResponse> {
+public class ExecuteOperationCommand extends
+        AbstractResourcePathCommand<ExecuteOperationRequest, ExecuteOperationResponse> {
     private static final MsgLogger log = AgentLoggers.getLogger(ExecuteOperationCommand.class);
     public static final Class<ExecuteOperationRequest> REQUEST_CLASS = ExecuteOperationRequest.class;
 
-    @Override
-    public BasicMessageWithExtraData<ExecuteOperationResponse> execute(
-            BasicMessageWithExtraData<ExecuteOperationRequest> envelope, CommandContext context) throws Exception {
-        ExecuteOperationRequest request = envelope.getBasicMessage();
-        log.infof("Received request to execute operation [%s] on resource [%s]", request.getOperationName(),
-                request.getResourcePath());
-
-        MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
-
-        // Based on the resource ID we need to know which inventory manager is handling it.
-        // From the inventory manager, we can get the actual resource.
-        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
-        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
-        ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
-        ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.getManagedServerName()));
-        if (managedServer == null) {
-            throw new IllegalArgumentException(String.format("Cannot execute operation: unknown managed server [%s]",
-                    idParts.getManagedServerName()));
-        }
-
-        if (managedServer instanceof LocalDMRManagedServer || managedServer instanceof RemoteDMRManagedServer) {
-            return executeOperationDMR(resourceId, request, context, managedServer);
-        } else {
-            throw new IllegalStateException("Cannot execute operation: report this bug: " + managedServer.getClass());
-        }
+    public ExecuteOperationCommand() {
+        super("Execute Operation", "DMR Node");
     }
 
-    private BasicMessageWithExtraData<ExecuteOperationResponse> executeOperationDMR(String resourceId,
-            ExecuteOperationRequest request, CommandContext context, ManagedServer managedServer) throws Exception {
+    /** @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#createResponse() */
+    @Override
+    protected ExecuteOperationResponse createResponse() {
+        return new ExecuteOperationResponse();
+    }
+
+    @Override
+    protected String getOperationName(BasicMessageWithExtraData<ExecuteOperationRequest> envelope) {
+        return envelope.getBasicMessage().getOperationName();
+    }
+
+    /**
+     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#validate(java.lang.String,
+     *      org.hawkular.cmdgw.api.ResourcePathRequest)
+     */
+    @Override
+    protected void validate(String modelNodePath, BasicMessageWithExtraData<ExecuteOperationRequest> envelope) {
+    }
+
+    /**
+     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#execute(org.hawkular.dmrclient.JBossASClient,
+     *      org.hawkular.agent.monitor.inventory.ManagedServer, java.lang.String,
+     *      org.hawkular.cmdgw.api.ResourcePathRequest, org.hawkular.cmdgw.api.ResourcePathResponse,
+     *      org.hawkular.agent.monitor.cmd.CommandContext)
+     */
+    @Override
+    protected void execute(ModelControllerClient controllerClient, ManagedServer managedServer, String modelNodePath,
+            BasicMessageWithExtraData<ExecuteOperationRequest> envelope, ExecuteOperationResponse response,
+            CommandContext context) throws Exception {
+        ExecuteOperationRequest request = envelope.getBasicMessage();
+        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
+        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
 
         DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
                 .get(managedServer);
@@ -118,35 +116,20 @@ public class ExecuteOperationCommand implements Command<ExecuteOperationRequest,
                             request.getOperationName(), resource));
         }
 
-        ExecuteOperationResponse response = new ExecuteOperationResponse();
-        MessageUtils.prepareResourcePathResponse(request, response);
         response.setOperationName(request.getOperationName());
 
-        try (ModelControllerClient mcc = inventoryManager.getModelControllerClientFactory().createClient()) {
-            ModelNode opReq = JBossASClient.createRequest(actualOperationName, opAddress);
+        final OperationBuilder.ByNameOperationBuilder<?> operation;
+        operation = OperationBuilder.byName(actualOperationName) //
+                .address(opAddress.getAddressNode());
 
-            Map<String, String> params = request.getParameters();
-            if (params != null) {
-                for (Map.Entry<String, String> param : params.entrySet()) {
-                    opReq.get(param.getKey()).set(param.getValue());
-                }
+        Map<String, String> params = request.getParameters();
+        if (params != null) {
+            for (Map.Entry<String, String> param : params.entrySet()) {
+                operation.attribute(param.getKey(), param.getValue());
             }
-
-            CoreJBossASClient client = new CoreJBossASClient(mcc);
-            ModelNode opResp = client.execute(opReq);
-            if (!JBossASClient.isSuccess(opResp)) {
-                response.setStatus(ResponseStatus.ERROR);
-                response.setMessage(JBossASClient.getFailureDescription(opResp));
-            } else {
-                response.setStatus(ResponseStatus.OK);
-                // FIXME HAWKULAR-604 The message field of ExecuteOperationResponse should not be "undefined"
-                response.setMessage(JBossASClient.getResults(opResp).toString());
-            }
-        } catch (Exception e) {
-            response.setStatus(ResponseStatus.ERROR);
-            response.setMessage(e.toString());
         }
 
-        return new BasicMessageWithExtraData<>(response, null);
+        operation.execute(controllerClient).assertSuccess();
     }
+
 }

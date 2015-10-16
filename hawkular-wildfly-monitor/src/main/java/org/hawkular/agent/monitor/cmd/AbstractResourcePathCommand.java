@@ -67,14 +67,18 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
         this.entityType = entityType;
     }
 
+    protected String getOperationName(BasicMessageWithExtraData<REQ> envelope) {
+        return this.operationName;
+    }
+
     @Override
     public BasicMessageWithExtraData<RESP> execute(BasicMessageWithExtraData<REQ> envelope, CommandContext context)
             throws Exception {
 
         REQ request = envelope.getBasicMessage();
         String rawResourcePath = request.getResourcePath();
-        log.infof("Received request to perform [%s] on a [%s] given by inventory path [%s]", operationName, entityType,
-                rawResourcePath);
+        log.infof("Received request to perform [%s] on a [%s] given by inventory path [%s]",
+                this.getOperationName(envelope), entityType, rawResourcePath);
 
         RESP response = createResponse();
         MessageUtils.prepareResourcePathResponse(request, response);
@@ -106,7 +110,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
         } catch (Exception e) {
             response.setStatus(ResponseStatus.ERROR);
             String msg = String.format("Could not perform [%s] on a [%s] given by inventory path [%s]: %s",
-                    operationName, entityType, rawResourcePath, e.getMessage());
+                    this.getOperationName(envelope), entityType, rawResourcePath, e.getMessage());
             response.setMessage(msg);
             log.debug(msg, e);
         } finally {
@@ -185,7 +189,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
         if (managedServer == null) {
             throw new IllegalArgumentException(String.format(
                     "Cannot perform [%s] on a [%s] given by inventory path [%s]: unknown managed server [%s]",
-                    operationName, entityType, managedServerName));
+                    this.getOperationName(envelope), entityType, managedServerName));
         }
     }
 
@@ -196,8 +200,8 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
 
     protected void success(BasicMessageWithExtraData<REQ> envelope, RESP response) {
         response.setStatus(ResponseStatus.OK);
-        String msg = String.format("Performed [%s] on a [%s] given by Inventory path [%s]", operationName, entityType,
-                envelope.getBasicMessage().getResourcePath());
+        String msg = String.format("Performed [%s] on a [%s] given by Inventory path [%s]",
+                this.getOperationName(envelope), entityType, envelope.getBasicMessage().getResourcePath());
         response.setMessage(msg);
 
     }

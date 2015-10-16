@@ -90,8 +90,8 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
                 + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
                 + "\"destinationSessionId\":\""+ sessionId +"\"," //
                 + "\"status\":\"OK\"," //
-        // FIXME HAWKULAR-604 the message should not be undefined
-                + "\"message\":\"undefined\"" //
+                + "\"message\":\"Performed [Redeploy] on a [DMR Node] given by Inventory path [" //
+                + deployment.getPath() + "]\"" //
                 + "}", receivedMessages.get(i++).readUtf8());
 
     }
