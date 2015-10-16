@@ -32,6 +32,7 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
+import org.apache.commons.io.FileUtils;
 import org.hawkular.dmrclient.modules.AddModuleRequest.ModuleResource;
 
 /**
@@ -302,6 +303,11 @@ public class Modules {
     File getModulePath(final String moduleName, String slot) {
         return new File(modulesDir,
                 moduleName.replace('.', File.separatorChar) + File.separatorChar + (slot == null ? "main" : slot));
+    }
+
+    public void remove(String moduleName, String slot) throws Exception {
+        File modulePath = getModulePath(moduleName, slot);
+        FileUtils.deleteDirectory(modulePath);
     }
 
     void validate(AddModuleRequest addModuleRequest) throws IllegalArgumentException {

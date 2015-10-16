@@ -43,7 +43,7 @@ public class ModulesTest {
         props.put("k2", "v2");
 
         ByteArrayInputStream in = new ByteArrayInputStream("deadbeef".getBytes("utf-8"));
-        ModuleResource resource = new AddModuleRequest.ModuleResource(in, "complicated.jar");
+        ModuleResource resource = new ModuleResource(in, "complicated.jar");
 
         return new AddModuleRequest("complicated", "custom-slot", "complicated.Main",
                 new HashSet<ModuleResource>(Arrays.asList(resource)),
@@ -63,7 +63,7 @@ public class ModulesTest {
 
     private static AddModuleRequest createUsual() throws IOException {
         ByteArrayInputStream in = new ByteArrayInputStream("deadbeef".getBytes("utf-8"));
-        ModuleResource resource = new AddModuleRequest.ModuleResource(in, "usual.jar");
+        ModuleResource resource = new ModuleResource(in, "usual.jar");
 
         return new AddModuleRequest("usual", null, null,
                 new HashSet<ModuleResource>(Arrays.asList(resource)),
