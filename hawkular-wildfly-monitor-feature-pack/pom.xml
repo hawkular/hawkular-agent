@@ -27,6 +27,7 @@
   </parent>
 
   <artifactId>hawkular-monitor-feature-pack</artifactId>
+  <packaging>pom</packaging>
 
   <name>Hawkular Monitor WildFly Subsystem Feature Pack</name>
   <description>A feature pack to be able to deploy a Hawkular WildFly Monitor Agent in a WildFly server.</description>
