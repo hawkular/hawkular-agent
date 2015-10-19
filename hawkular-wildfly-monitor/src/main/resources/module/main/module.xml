@@ -18,7 +18,7 @@
 -->
 <module xmlns="urn:jboss:module:1.3" name="${moduleName}">
   <resources>
-    <resource-root path="clients-common.jar"/>
+    <resource-root path="hawkular-metrics-clients-common.jar"/>
     <resource-root path="hawkular-bus-common.jar"/>
     <resource-root path="hawkular-command-gateway-api.jar"/>
     <resource-root path="hawkular-dmr-client.jar"/>
