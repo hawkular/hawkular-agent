@@ -123,10 +123,23 @@ public class AsyncInventoryStorage implements InventoryStorage {
          * @return this builder
          */
         private BulkPayloadBuilder entity(Entity.Blueprint blueprint, Class<? extends Entity<?, ?>> entityClass) {
+            String parentPath = newPathPrefix().get().toString();
+            return entity(blueprint, entityClass, parentPath);
+        }
+
+        /**
+         * Adds an {@link Entity.Blueprint} unless its ID is available in {@link #addedIds}.
+         *
+         * @param blueprint the blueprint to add
+         * @param entityClass the class of the blueprint's {@link Entity}
+         * @param parentPath the inventory path of the parent entity to add the given {@code blueprint} under
+         * @return this builder
+         */
+        private BulkPayloadBuilder entity(Entity.Blueprint blueprint, Class<? extends Entity<?, ?>> entityClass,
+                String parentPath) {
             String id = blueprint.getId();
             if (!addedIds.contains(id)) {
-                String path = newPathPrefix().get().toString();
-                relationshipOrEntity(path, entityClass, blueprint);
+                relationshipOrEntity(parentPath, entityClass, blueprint);
                 addedIds.add(id);
             }
             return this;
@@ -186,12 +199,13 @@ public class AsyncInventoryStorage implements InventoryStorage {
          * Adds the given {@code operation} to the {@link #result}.
          *
          * @param operation the {@link Operation} to add
+         * @param resourceTypePath the inventory path of the resourceType to add the given {@code operation} under
          */
-        private void operation(Operation<? extends ResourceType<?, ?, ?, ?>> operation) {
+        private void operation(Operation<? extends ResourceType<?, ?, ?, ?>> operation, String resourceTypePath) {
             OperationType.Blueprint blueprint = new OperationType.Blueprint(getInventoryId(operation),
                     operation.getProperties());
 
-            entity(blueprint, OperationType.class);
+            entity(blueprint, OperationType.class, resourceTypePath);
         }
 
         /**
@@ -318,8 +332,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
          */
         public BulkPayloadBuilder resourceType(ResourceType<?, ?, ?, ?> resourceType) {
 
+            String resourceTypeId = getInventoryId(resourceType);
             org.hawkular.inventory.api.model.ResourceType.Blueprint blueprint = //
-            new org.hawkular.inventory.api.model.ResourceType.Blueprint(getInventoryId(resourceType),
+            new org.hawkular.inventory.api.model.ResourceType.Blueprint(resourceTypeId,
                     resourceType.getProperties());
             entity(blueprint, org.hawkular.inventory.api.model.ResourceType.class);
 
@@ -348,9 +363,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 relationship(parentPath, bp);
             }
 
+            String resourceTypePath = newPathPrefix().resourceType(resourceTypeId).get().toString();
             Collection<? extends Operation<? extends ResourceType<?, ?, ?, ?>>> ops = resourceType.getOperations();
             for (Operation<? extends ResourceType<?, ?, ?, ?>> op : ops) {
-                operation(op);
+                operation(op, resourceTypePath);
             }
 
             return this;
