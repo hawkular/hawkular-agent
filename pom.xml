@@ -52,7 +52,7 @@
     <version.com.github.dblock>1.5</version.com.github.dblock>
     <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
-    <version.org.hawkular.accounts>1.0.15.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.accounts>1.0.16.Final</version.org.hawkular.accounts>
     <version.org.hawkular.bus>0.7.0.Final</version.org.hawkular.bus>
     <version.org.hawkular.cmdgw>0.10.0.Final</version.org.hawkular.cmdgw>
     <version.org.hawkular.commons>0.2.2.Final</version.org.hawkular.commons>
