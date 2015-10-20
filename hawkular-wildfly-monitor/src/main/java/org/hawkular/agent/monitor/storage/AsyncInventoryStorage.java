@@ -204,7 +204,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
          * @param operation the {@link Operation} to add
          * @param resourceTypePath the inventory path of the resourceType to add the given {@code operation} under
          */
-        private void operation(Operation<? extends ResourceType<?, ?, ?, ?>> operation, String resourceTypePath) {
+        private void operation(Operation operation, String resourceTypePath) {
             OperationType.Blueprint blueprint = new OperationType.Blueprint(getInventoryId(operation),
                     operation.getName().getNameString(), operation.getProperties(), null, null);
 
@@ -374,8 +374,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             // operations
             String resourceTypePath = newPathPrefix().resourceType(resourceTypeId).get().toString();
-            Collection<? extends Operation<? extends ResourceType<?, ?, ?, ?>>> ops = resourceType.getOperations();
-            for (Operation<? extends ResourceType<?, ?, ?, ?>> op : ops) {
+            Collection<? extends Operation> ops = resourceType.getOperations();
+            for (Operation op : ops) {
                 operation(op, resourceTypePath);
             }
 

@@ -23,7 +23,7 @@ import java.util.HashSet;
 public abstract class ResourceType< //
 MT extends MetricType, //
 AT extends AvailType, //
-O extends Operation<? extends ResourceType<?, ?, ?, ?>>, //
+O extends Operation, //
 RCPT extends ResourceConfigurationPropertyType<? extends ResourceType<?, ?, ?, ?>>>
         extends NamedObject {
 

@@ -36,7 +36,7 @@ public abstract class InventoryManager< //
 RT extends ResourceType<MT, AT, O, RCPT>, //
 MT extends MetricType, //
 AT extends AvailType, //
-O extends Operation<RT>, //
+O extends Operation, //
 RCPT extends ResourceConfigurationPropertyType<RT>, //
 R extends Resource<RT, ?, ?, ?, ?>, //
 ME extends MonitoredEndpoint> {

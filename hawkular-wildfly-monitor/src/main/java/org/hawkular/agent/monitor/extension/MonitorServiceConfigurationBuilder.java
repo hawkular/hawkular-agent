@@ -682,7 +682,7 @@ public class MonitorServiceConfigurationBuilder {
                             for (Property operationProperty : operationList) {
                                 ModelNode operationValueNode = operationProperty.getValue();
                                 String operationName = operationProperty.getName();
-                                DMROperation op = new DMROperation(ID.NULL_ID, new Name(operationName), resourceType);
+                                DMROperation op = new DMROperation(ID.NULL_ID, new Name(operationName));
                                 op.setPath(getString(operationValueNode, context, DMROperationAttributes.PATH));
                                 op.setOperationName(getString(operationValueNode, context,
                                         DMROperationAttributes.OPERATION_NAME));
@@ -789,7 +789,7 @@ public class MonitorServiceConfigurationBuilder {
                             for (Property operationProperty : operationList) {
                                 ModelNode operationValueNode = operationProperty.getValue();
                                 String operationName = operationProperty.getName();
-                                JMXOperation op = new JMXOperation(ID.NULL_ID, new Name(operationName), resourceType);
+                                JMXOperation op = new JMXOperation(ID.NULL_ID, new Name(operationName));
                                 op.setObjectName(getObjectName(operationValueNode, context,
                                         JMXOperationAttributes.OBJECT_NAME));
                                 op.setOperationName(getString(operationValueNode, context,
