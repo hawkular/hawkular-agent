@@ -380,12 +380,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
 
             // resource configuration
-            Collection<? extends ResourceConfigurationPropertyType<? extends ResourceType<?, ?, ?, ?>>> rcpts = //
+            Collection<? extends ResourceConfigurationPropertyType> rcpts = //
             resourceType.getResourceConfigurationPropertyTypes();
 
             if (rcpts != null && !rcpts.isEmpty()) {
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
-                for (ResourceConfigurationPropertyType<? extends ResourceType<?, ?, ?, ?>> rcpt : rcpts) {
+                for (ResourceConfigurationPropertyType rcpt : rcpts) {
                     structDataBuilder.putString(rcpt.getID().getIDString(), rcpt.getName().getNameString());
                 }
 

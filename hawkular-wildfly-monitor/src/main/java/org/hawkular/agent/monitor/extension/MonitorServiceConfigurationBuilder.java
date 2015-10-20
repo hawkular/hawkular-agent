@@ -699,8 +699,7 @@ public class MonitorServiceConfigurationBuilder {
                                 ModelNode configValueNode = configProperty.getValue();
                                 String configName = configProperty.getName();
                                 DMRResourceConfigurationPropertyType configType =
-                                        new DMRResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName),
-                                                resourceType);
+                                        new DMRResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName));
                                 configType.setPath(getString(configValueNode, context,
                                         DMRResourceConfigAttributes.PATH));
                                 configType.setAttribute(getString(configValueNode, context,
@@ -807,8 +806,7 @@ public class MonitorServiceConfigurationBuilder {
                                 ModelNode configValueNode = configProperty.getValue();
                                 String configName = configProperty.getName();
                                 JMXResourceConfigurationPropertyType configType =
-                                        new JMXResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName),
-                                                resourceType);
+                                        new JMXResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName));
                                 configType.setObjectName(getObjectName(configValueNode, context,
                                         JMXResourceConfigAttributes.OBJECT_NAME));
                                 configType.setAttribute(getString(configValueNode, context,

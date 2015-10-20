@@ -24,7 +24,7 @@ public abstract class ResourceType< //
 MT extends MetricType, //
 AT extends AvailType, //
 O extends Operation, //
-RCPT extends ResourceConfigurationPropertyType<? extends ResourceType<?, ?, ?, ?>>>
+RCPT extends ResourceConfigurationPropertyType>
         extends NamedObject {
 
     public ResourceType(ID id, Name name) {

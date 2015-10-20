@@ -37,7 +37,7 @@ RT extends ResourceType<MT, AT, O, RCPT>, //
 MT extends MetricType, //
 AT extends AvailType, //
 O extends Operation, //
-RCPT extends ResourceConfigurationPropertyType<RT>, //
+RCPT extends ResourceConfigurationPropertyType, //
 R extends Resource<RT, ?, ?, ?, ?>, //
 ME extends MonitoredEndpoint> {
 
