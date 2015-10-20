@@ -16,8 +16,6 @@
  */
 package org.hawkular.agent.monitor.service;
 
-import java.util.ArrayList;
-
 /**
  * Identification strings used to identify a Wildfly server.
  */
@@ -26,12 +24,38 @@ public class ServerIdentifiers {
     private final String server;
     private final String nodeName;
     private final String uuid;
+    private final String fullIdentifier;
 
     public ServerIdentifiers(String host, String server, String nodeName, String uuid) {
         this.host = (host != null) ? host : "";
         this.server = (server != null) ? server : "";
         this.nodeName = (nodeName != null) ? nodeName : "";
         this.uuid = uuid;
+
+        if (uuid != null) {
+            this.fullIdentifier = uuid;
+        } else {
+            StringBuilder fullId = new StringBuilder();
+            if (!this.host.isEmpty()) {
+                if (fullId.length() > 0) {
+                    fullId.append('.');
+                }
+                fullId.append(this.host);
+            }
+            if (!this.server.isEmpty()) {
+                if (fullId.length() > 0) {
+                    fullId.append('.');
+                }
+                fullId.append(this.server);
+            }
+            if (!this.nodeName.isEmpty() && !this.nodeName.equals(this.server)) {
+                if (fullId.length() > 0) {
+                    fullId.append('.');
+                }
+                fullId.append(this.nodeName);
+            }
+            this.fullIdentifier = fullId.toString();
+        }
     }
 
     /**
@@ -75,32 +99,12 @@ public class ServerIdentifiers {
      * @return UUID or (if that is null) the string "[host.]server[.nodeName]"
      */
     public String getFullIdentifier() {
-        if (uuid != null) {
-            return uuid;
-        }
-
-        ArrayList<String> ids = new ArrayList<>();
-        if (!host.isEmpty()) {
-            ids.add(host);
-        }
-        if (!server.isEmpty()) {
-            ids.add(server);
-        }
-        if (!nodeName.isEmpty() && !nodeName.equals(server)) {
-            ids.add(nodeName);
-        }
-        StringBuilder fullId = new StringBuilder();
-        for (String id : ids) {
-            if (fullId.length() > 0) {
-                fullId.append(".");
-            }
-            fullId.append(id);
-        }
-        return fullId.toString();
+        return fullIdentifier;
     }
 
+    /** @return same as {@link #getFullIdentifier()} */
     @Override
     public String toString() {
-        return getFullIdentifier();
+        return fullIdentifier;
     }
 }
