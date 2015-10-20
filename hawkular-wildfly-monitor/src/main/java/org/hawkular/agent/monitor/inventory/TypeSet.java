@@ -14,16 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.inventory.jmx;
+package org.hawkular.agent.monitor.inventory;
 
-import org.hawkular.agent.monitor.inventory.AvailTypeSet;
-import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.Name;
+import java.util.HashMap;
+import java.util.Map;
 
-public class JMXAvailTypeSet extends AvailTypeSet<JMXAvailType> {
-
-    public JMXAvailTypeSet(ID id, Name name) {
+public class TypeSet<T extends NamedObject> extends NamedObject {
+    public TypeSet(ID id, Name name) {
         super(id, name);
+    }
+
+    private boolean enabled;
+    private Map<Name, T> resourceTypeMap = new HashMap<>();
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public Map<Name, T> getTypeMap() {
+        return resourceTypeMap;
+    }
+
+    public void setResourceTypeMap(Map<Name, T> map) {
+        this.resourceTypeMap = map;
     }
 
 }

@@ -60,42 +60,33 @@ import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetadataManager;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.jmx.JMXAvailInstance;
 import org.hawkular.agent.monitor.inventory.jmx.JMXAvailType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.jmx.JMXInventoryManager;
 import org.hawkular.agent.monitor.inventory.jmx.JMXMetadataManager;
 import org.hawkular.agent.monitor.inventory.jmx.JMXMetricInstance;
 import org.hawkular.agent.monitor.inventory.jmx.JMXMetricType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResource;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResourceType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.jmx.RemoteJMXManagedServer;
 import org.hawkular.agent.monitor.inventory.platform.Constants;
 import org.hawkular.agent.monitor.inventory.platform.PlatformAvailInstance;
 import org.hawkular.agent.monitor.inventory.platform.PlatformAvailType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformInventoryManager;
 import org.hawkular.agent.monitor.inventory.platform.PlatformManagedServer;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetadataManager;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricInstance;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformResource;
 import org.hawkular.agent.monitor.inventory.platform.PlatformResourceType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformResourceTypeSet;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.scheduler.JmxClientFactory;
@@ -767,12 +758,12 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         }
 
         // build the metadata manager
-        ResourceTypeManager<PlatformResourceType, PlatformResourceTypeSet> rtm;
+        ResourceTypeManager<PlatformResourceType> rtm;
         rtm = new ResourceTypeManager<>(config.resourceTypeSetMap);
 
         // tell metric/avail managers what metric and avail types we need to use for the resource types
-        MetricTypeManager<PlatformMetricType, PlatformMetricTypeSet> mtm = new MetricTypeManager<>();
-        AvailTypeManager<PlatformAvailType, PlatformAvailTypeSet> atm = new AvailTypeManager<>();
+        MetricTypeManager<PlatformMetricType> mtm = new MetricTypeManager<>();
+        AvailTypeManager<PlatformAvailType> atm = new AvailTypeManager<>();
 
         mtm.addMetricTypes(config.metricTypeSetMap, null);
         atm.addAvailTypes(config.availTypeSetMap, null);
@@ -1074,12 +1065,12 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             MonitorServiceConfiguration monitorServiceConfig) {
 
         // First build our metadata manager and its resource type manager, metric type manager, and avail type manager
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
+        ResourceTypeManager<DMRResourceType> rtm;
         rtm = new ResourceTypeManager<>(monitorServiceConfig.dmrResourceTypeSetMap, dmrResourceTypeSets);
 
         // tell metric/avail managers what metric and avail types we need to use for the resource types
-        MetricTypeManager<DMRMetricType, DMRMetricTypeSet> mtm = new MetricTypeManager<>();
-        AvailTypeManager<DMRAvailType, DMRAvailTypeSet> atm = new AvailTypeManager<>();
+        MetricTypeManager<DMRMetricType> mtm = new MetricTypeManager<>();
+        AvailTypeManager<DMRAvailType> atm = new AvailTypeManager<>();
         BreadthFirstIterator<DMRResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
         while (resourceTypeIter.hasNext()) {
             DMRResourceType type = resourceTypeIter.next();
@@ -1105,12 +1096,12 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             MonitorServiceConfiguration monitorServiceConfig) {
 
         // First build our metadata manager and its resource type manager, metric type manager, and avail type manager
-        ResourceTypeManager<JMXResourceType, JMXResourceTypeSet> rtm;
+        ResourceTypeManager<JMXResourceType> rtm;
         rtm = new ResourceTypeManager<>(monitorServiceConfig.jmxResourceTypeSetMap, jmxResourceTypeSets);
 
         // tell metric/avail managers what metric and avail types we need to use for the resource types
-        MetricTypeManager<JMXMetricType, JMXMetricTypeSet> mtm = new MetricTypeManager<>();
-        AvailTypeManager<JMXAvailType, JMXAvailTypeSet> atm = new AvailTypeManager<>();
+        MetricTypeManager<JMXMetricType> mtm = new MetricTypeManager<>();
+        AvailTypeManager<JMXAvailType> atm = new AvailTypeManager<>();
         BreadthFirstIterator<JMXResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
         while (resourceTypeIter.hasNext()) {
             JMXResourceType type = resourceTypeIter.next();

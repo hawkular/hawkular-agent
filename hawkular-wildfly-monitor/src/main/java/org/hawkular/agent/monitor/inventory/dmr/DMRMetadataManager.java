@@ -23,18 +23,15 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 
 public class DMRMetadataManager extends MetadataManager
         <DMRResourceType,
-        DMRResourceTypeSet,
         DMRMetricType,
-        DMRMetricTypeSet,
         DMRAvailType,
-        DMRAvailTypeSet,
         DMROperation,
         DMRResourceConfigurationPropertyType> {
 
     public DMRMetadataManager(
-            ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> resourceTypeManager,
-            MetricTypeManager<DMRMetricType, DMRMetricTypeSet> metricTypeManager,
-            AvailTypeManager<DMRAvailType, DMRAvailTypeSet> availTypeManager) {
+            ResourceTypeManager<DMRResourceType> resourceTypeManager,
+            MetricTypeManager<DMRMetricType> metricTypeManager,
+            AvailTypeManager<DMRAvailType> availTypeManager) {
         super(resourceTypeManager, metricTypeManager, availTypeManager);
     }
 }

@@ -23,18 +23,15 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 
 public class PlatformMetadataManager extends MetadataManager
         <PlatformResourceType,
-        PlatformResourceTypeSet,
         PlatformMetricType,
-        PlatformMetricTypeSet,
         PlatformAvailType,
-        PlatformAvailTypeSet,
         PlatformOperation,
         PlatformResourceConfigurationPropertyType> {
 
     public PlatformMetadataManager(
-            ResourceTypeManager<PlatformResourceType, PlatformResourceTypeSet> resourceTypeManager,
-            MetricTypeManager<PlatformMetricType, PlatformMetricTypeSet> metricTypeManager,
-            AvailTypeManager<PlatformAvailType, PlatformAvailTypeSet> availTypeManager) {
+            ResourceTypeManager<PlatformResourceType> resourceTypeManager,
+            MetricTypeManager<PlatformMetricType> metricTypeManager,
+            AvailTypeManager<PlatformAvailType> availTypeManager) {
         super(resourceTypeManager, metricTypeManager, availTypeManager);
     }
 

@@ -29,11 +29,8 @@ import oshi.SystemInfo;
 
 public class PlatformInventoryManager extends InventoryManager
         <PlatformResourceType,
-        PlatformResourceTypeSet,
         PlatformMetricType,
-        PlatformMetricTypeSet,
         PlatformAvailType,
-        PlatformAvailTypeSet,
         PlatformOperation,
         PlatformResourceConfigurationPropertyType,
         PlatformResource,
@@ -43,8 +40,8 @@ public class PlatformInventoryManager extends InventoryManager
     private final SystemInfo systemInfo;
 
     public PlatformInventoryManager(String feedId,
-            MetadataManager<PlatformResourceType, PlatformResourceTypeSet, PlatformMetricType, PlatformMetricTypeSet,
-            PlatformAvailType, PlatformAvailTypeSet, PlatformOperation,
+            MetadataManager<PlatformResourceType, PlatformMetricType,
+            PlatformAvailType, PlatformOperation,
             PlatformResourceConfigurationPropertyType> metadataManager,
             ResourceManager<PlatformResource> resourceManager,
             ManagedServer managedServer,

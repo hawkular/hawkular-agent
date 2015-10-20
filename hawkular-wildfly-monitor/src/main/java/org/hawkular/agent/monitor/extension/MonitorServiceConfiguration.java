@@ -22,15 +22,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
-import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
-import org.hawkular.agent.monitor.inventory.jmx.JMXAvailTypeSet;
-import org.hawkular.agent.monitor.inventory.jmx.JMXMetricTypeSet;
-import org.hawkular.agent.monitor.inventory.jmx.JMXResourceTypeSet;
-import org.hawkular.agent.monitor.inventory.platform.PlatformAvailTypeSet;
-import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
-import org.hawkular.agent.monitor.inventory.platform.PlatformResourceTypeSet;
+import org.hawkular.agent.monitor.inventory.TypeSet;
+import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
+import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
+import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
+import org.hawkular.agent.monitor.inventory.jmx.JMXAvailType;
+import org.hawkular.agent.monitor.inventory.jmx.JMXMetricType;
+import org.hawkular.agent.monitor.inventory.jmx.JMXResourceType;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailType;
+import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
+import org.hawkular.agent.monitor.inventory.platform.PlatformResourceType;
 
 /**
  * This represents the monitor service extension's XML configuration in a more consumable form.
@@ -60,12 +61,12 @@ public class MonitorServiceConfiguration {
     public StorageAdapter storageAdapter = new StorageAdapter();
     public Diagnostics diagnostics = new Diagnostics();
     public Platform platform = new Platform();
-    public Map<Name, DMRMetricTypeSet> dmrMetricTypeSetMap = new HashMap<>();
-    public Map<Name, DMRAvailTypeSet> dmrAvailTypeSetMap = new HashMap<>();
-    public Map<Name, DMRResourceTypeSet> dmrResourceTypeSetMap = new HashMap<>();
-    public Map<Name, JMXMetricTypeSet> jmxMetricTypeSetMap = new HashMap<>();
-    public Map<Name, JMXAvailTypeSet> jmxAvailTypeSetMap = new HashMap<>();
-    public Map<Name, JMXResourceTypeSet> jmxResourceTypeSetMap = new HashMap<>();
+    public Map<Name, TypeSet<DMRMetricType>> dmrMetricTypeSetMap = new HashMap<>();
+    public Map<Name, TypeSet<DMRAvailType>> dmrAvailTypeSetMap = new HashMap<>();
+    public Map<Name, TypeSet<DMRResourceType>> dmrResourceTypeSetMap = new HashMap<>();
+    public Map<Name, TypeSet<JMXMetricType>> jmxMetricTypeSetMap = new HashMap<>();
+    public Map<Name, TypeSet<JMXAvailType>> jmxAvailTypeSetMap = new HashMap<>();
+    public Map<Name, TypeSet<JMXResourceType>> jmxResourceTypeSetMap = new HashMap<>();
     public Map<Name, ManagedServer> managedServersMap = new HashMap<>();
 
     public static class StorageAdapter {
@@ -94,8 +95,9 @@ public class MonitorServiceConfiguration {
 
     public static class Platform {
         public boolean allEnabled; // if this is false, no platform resources will be monitored
-        public Map<Name, PlatformMetricTypeSet> metricTypeSetMap = new HashMap<>();
-        public Map<Name, PlatformAvailTypeSet> availTypeSetMap = new HashMap<>(0); // we don't have any of these yet
-        public Map<Name, PlatformResourceTypeSet> resourceTypeSetMap = new HashMap<>();
+        public Map<Name, TypeSet<PlatformMetricType>> metricTypeSetMap = new HashMap<>();
+        // we don't have any of these yet
+        public Map<Name, TypeSet<PlatformAvailType>> availTypeSetMap = new HashMap<>(0);
+        public Map<Name, TypeSet<PlatformResourceType>> resourceTypeSetMap = new HashMap<>();
     }
 }

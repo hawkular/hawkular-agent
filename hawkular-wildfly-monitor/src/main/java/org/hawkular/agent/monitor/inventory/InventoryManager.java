@@ -23,11 +23,8 @@ import org.jgrapht.event.VertexSetListener;
  * Just a container that holds the different managers needed to keep track of inventory.
  *
  * @param <RT> resource type
- * @param <RTS> resource type set
  * @param <MT> metric type
- * @param <MTS> metric type set
  * @param <AT> avail type
- * @param <ATS> avail type set
  * @param <O> operation type
  * @param <RCPT> resource configuration property definition
  * @param <R> resource
@@ -37,17 +34,14 @@ import org.jgrapht.event.VertexSetListener;
  */
 public abstract class InventoryManager< //
 RT extends ResourceType<MT, AT, O, RCPT>, //
-RTS extends ResourceTypeSet<RT>, //
 MT extends MetricType, //
-MTS extends MetricTypeSet<MT>, //
 AT extends AvailType, //
-ATS extends AvailTypeSet<AT>, //
 O extends Operation<RT>, //
 RCPT extends ResourceConfigurationPropertyType<RT>, //
 R extends Resource<RT, ?, ?, ?, ?>, //
 ME extends MonitoredEndpoint> {
 
-    private final MetadataManager<RT, RTS, MT, MTS, AT, ATS, O, RCPT> metadataManager;
+    private final MetadataManager<RT, MT, AT, O, RCPT> metadataManager;
     private final ResourceManager<R> resourceManager;
     private final ManagedServer managedServer;
     private final ME endpoint;
@@ -55,7 +49,7 @@ ME extends MonitoredEndpoint> {
 
     public InventoryManager(
             String feedId,
-            MetadataManager<RT, RTS, MT, MTS, AT, ATS, O, RCPT> metadataManager,
+            MetadataManager<RT, MT, AT, O, RCPT> metadataManager,
             ResourceManager<R> resourceManager,
             ManagedServer managedServer,
             ME endpoint) {
@@ -66,7 +60,7 @@ ME extends MonitoredEndpoint> {
         this.endpoint = endpoint;
     }
 
-    public MetadataManager<RT, RTS, MT, MTS, AT, ATS, O, RCPT> getMetadataManager() {
+    public MetadataManager<RT, MT, AT, O, RCPT> getMetadataManager() {
         return metadataManager;
     }
 

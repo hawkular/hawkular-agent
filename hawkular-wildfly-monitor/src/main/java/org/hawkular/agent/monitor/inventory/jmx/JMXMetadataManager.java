@@ -23,18 +23,15 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 
 public class JMXMetadataManager extends MetadataManager
         <JMXResourceType,
-        JMXResourceTypeSet,
         JMXMetricType,
-        JMXMetricTypeSet,
         JMXAvailType,
-        JMXAvailTypeSet,
         JMXOperation,
         JMXResourceConfigurationPropertyType> {
 
     public JMXMetadataManager(
-            ResourceTypeManager<JMXResourceType, JMXResourceTypeSet> resourceTypeManager,
-            MetricTypeManager<JMXMetricType, JMXMetricTypeSet> metricTypeManager,
-            AvailTypeManager<JMXAvailType, JMXAvailTypeSet> availTypeManager) {
+            ResourceTypeManager<JMXResourceType> resourceTypeManager,
+            MetricTypeManager<JMXMetricType> metricTypeManager,
+            AvailTypeManager<JMXAvailType> availTypeManager) {
         super(resourceTypeManager, metricTypeManager, availTypeManager);
     }
 }

@@ -22,9 +22,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class MetricTypeManager<T extends MetricType, S extends MetricTypeSet<T>> {
+public class MetricTypeManager<T extends MetricType> {
 
-    private final Map<Name, S> metricTypeSetMap = new HashMap<Name, S>();
+    private final Map<Name, TypeSet<T>> metricTypeSetMap = new HashMap<Name, TypeSet<T>>();
 
     /**
      * Adds the given types to the manager. If a set is not enabled, it will be ignored.
@@ -33,7 +33,7 @@ public class MetricTypeManager<T extends MetricType, S extends MetricTypeSet<T>>
      * @param setsToUse optional set of type names that the manager cares about - it will ignore others it finds.
      *                  If null, then the full set is used (by "full set" it means the metricTypeSetMap param).
      */
-    public void addMetricTypes(Map<Name, S> metricTypeSetMap, Collection<Name> setsToUse) {
+    public void addMetricTypes(Map<Name, TypeSet<T>> metricTypeSetMap, Collection<Name> setsToUse) {
         // If setsToUse is null, that means we need to use all the ones in the incoming map.
         // If setsToUse is not null, just use those named sets and ignore the others.
         if (setsToUse == null) {
@@ -41,7 +41,7 @@ public class MetricTypeManager<T extends MetricType, S extends MetricTypeSet<T>>
         } else {
             for (Name setToUse : setsToUse) {
                 if (metricTypeSetMap.containsKey(setToUse)) {
-                    S metricSet = metricTypeSetMap.get(setToUse);
+                    TypeSet<T> metricSet = metricTypeSetMap.get(setToUse);
                     if (metricSet.isEnabled()) {
                         this.metricTypeSetMap.put(setToUse, metricSet);
                     }
@@ -57,13 +57,13 @@ public class MetricTypeManager<T extends MetricType, S extends MetricTypeSet<T>>
      *
      * @return the metric set, or null if the set was disabled
      */
-    public S getMetricSet(Name metricSetName) {
+    public TypeSet<T> getMetricSet(Name metricSetName) {
         return this.metricTypeSetMap.get(metricSetName);
     }
 
-    public Collection<S> getAllMetricTypes() {
-        Set<S> metricTypes = new HashSet<>();
-        for (S metricType : this.metricTypeSetMap.values()) {
+    public Collection<TypeSet<T>> getAllMetricTypes() {
+        Set<TypeSet<T>> metricTypes = new HashSet<>();
+        for (TypeSet<T> metricType : this.metricTypeSetMap.values()) {
             metricTypes.add(metricType);
         }
         return metricTypes;

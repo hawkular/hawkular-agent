@@ -28,11 +28,8 @@ import org.jgrapht.event.VertexSetListener;
 
 public class JMXInventoryManager extends InventoryManager
         <JMXResourceType,
-        JMXResourceTypeSet,
         JMXMetricType,
-        JMXMetricTypeSet,
         JMXAvailType,
-        JMXAvailTypeSet,
         JMXOperation,
         JMXResourceConfigurationPropertyType,
         JMXResource,
@@ -41,8 +38,8 @@ public class JMXInventoryManager extends InventoryManager
     private final JmxClientFactory jmxClientFactory;
 
     public JMXInventoryManager(String feedId,
-            MetadataManager<JMXResourceType, JMXResourceTypeSet, JMXMetricType, JMXMetricTypeSet,
-            JMXAvailType, JMXAvailTypeSet, JMXOperation, JMXResourceConfigurationPropertyType> metadataManager,
+            MetadataManager<JMXResourceType, JMXMetricType,
+            JMXAvailType, JMXOperation, JMXResourceConfigurationPropertyType> metadataManager,
             ResourceManager<JMXResource> resourceManager,
             ManagedServer managedServer,
             JMXEndpoint dmrEndpoint,
