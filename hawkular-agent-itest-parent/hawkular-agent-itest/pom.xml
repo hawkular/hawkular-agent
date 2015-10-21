@@ -229,6 +229,7 @@
                 <org.apache.commons.logging.simplelog.log.org.apache.http.wire>
                   ${http.log.wire}
                 </org.apache.commons.logging.simplelog.log.org.apache.http.wire>
+                <java.util.logging.config.file>${project.build.testOutputDirectory}/logging.properties</java.util.logging.config.file>
               </systemPropertyVariables>
               <!--<argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y</argLine>-->
             </configuration>
