@@ -16,13 +16,12 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.TypeSet;
+import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
@@ -49,55 +48,117 @@ public class MonitorServiceConfiguration {
         STORAGE // stores the diagnostics as metrics to the storage adapter
     }
 
-    public boolean subsystemEnabled;
-    public String apiJndi;
-    public int numMetricSchedulerThreads;
-    public int numAvailSchedulerThreads;
-    public int numDmrSchedulerThreads;
-    public int metricDispatcherBufferSize;
-    public int metricDispatcherMaxBatchSize;
-    public int availDispatcherBufferSize;
-    public int availDispatcherMaxBatchSize;
-    public StorageAdapter storageAdapter = new StorageAdapter();
-    public Diagnostics diagnostics = new Diagnostics();
-    public Platform platform = new Platform();
-    public Map<Name, TypeSet<DMRMetricType>> dmrMetricTypeSetMap = new HashMap<>();
-    public Map<Name, TypeSet<DMRAvailType>> dmrAvailTypeSetMap = new HashMap<>();
-    public Map<Name, TypeSet<DMRResourceType>> dmrResourceTypeSetMap = new HashMap<>();
-    public Map<Name, TypeSet<JMXMetricType>> jmxMetricTypeSetMap = new HashMap<>();
-    public Map<Name, TypeSet<JMXAvailType>> jmxAvailTypeSetMap = new HashMap<>();
-    public Map<Name, TypeSet<JMXResourceType>> jmxResourceTypeSetMap = new HashMap<>();
-    public Map<Name, ManagedServer> managedServersMap = new HashMap<>();
+    public final boolean subsystemEnabled;
+    public final String apiJndi;
+    public final int numMetricSchedulerThreads;
+    public final int numAvailSchedulerThreads;
+    public final int numDmrSchedulerThreads;
+    public final int metricDispatcherBufferSize;
+    public final int metricDispatcherMaxBatchSize;
+    public final int availDispatcherBufferSize;
+    public final int availDispatcherMaxBatchSize;
+    public final StorageAdapter storageAdapter;
+    public final Diagnostics diagnostics;
+
+    private final TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> dmrTypeSets;
+    private final TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets;
+    private final TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets;
+
+    public final Map<Name, ManagedServer> managedServersMap;
+
+    public MonitorServiceConfiguration(boolean subsystemEnabled, String apiJndi, int numMetricSchedulerThreads,
+            int numAvailSchedulerThreads, int numDmrSchedulerThreads, int metricDispatcherBufferSize,
+            int metricDispatcherMaxBatchSize, int availDispatcherBufferSize, int availDispatcherMaxBatchSize,
+            Diagnostics diagnostics, StorageAdapter storageAdapter,
+            TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> dmrTypeSets,
+            TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets,
+            TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets,
+            Map<Name, ManagedServer> managedServersMap) {
+        super();
+        this.subsystemEnabled = subsystemEnabled;
+        this.apiJndi = apiJndi;
+        this.numMetricSchedulerThreads = numMetricSchedulerThreads;
+        this.numAvailSchedulerThreads = numAvailSchedulerThreads;
+        this.numDmrSchedulerThreads = numDmrSchedulerThreads;
+        this.metricDispatcherBufferSize = metricDispatcherBufferSize;
+        this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
+        this.availDispatcherBufferSize = availDispatcherBufferSize;
+        this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
+
+        this.diagnostics = diagnostics;
+        this.storageAdapter = storageAdapter;
+
+        this.dmrTypeSets = dmrTypeSets;
+        this.jmxTypeSets = jmxTypeSets;
+        this.platformTypeSets = platformTypeSets;
+
+        this.managedServersMap = managedServersMap;
+    }
 
     public static class StorageAdapter {
-        public StorageReportTo type;
-        public String username;
-        public String password;
+        public final StorageReportTo type;
+        public final String username;
+        public final String password;
         public String tenantId;
         public String url;
-        public boolean useSSL;
-        public String serverOutboundSocketBindingRef;
-        public String accountsContext;
-        public String inventoryContext;
-        public String metricsContext;
-        public String feedcommContext;
-        public String keystorePath;
-        public String keystorePassword;
-        public String securityRealm;
+        public final boolean useSSL;
+        public final String serverOutboundSocketBindingRef;
+        public final String accountsContext;
+        public final String inventoryContext;
+        public final String metricsContext;
+        public final String feedcommContext;
+        public final String keystorePath;
+        public final String keystorePassword;
+        public final String securityRealm;
+
+        public StorageAdapter(StorageReportTo type, String username, String password, String tenantId, String url,
+                boolean useSSL, String serverOutboundSocketBindingRef, String accountsContext, String inventoryContext,
+                String metricsContext, String feedcommContext, String keystorePath, String keystorePassword,
+                String securityRealm) {
+            super();
+            this.type = type;
+            this.username = username;
+            this.password = password;
+            this.tenantId = tenantId;
+            this.url = url;
+            this.useSSL = useSSL;
+            this.serverOutboundSocketBindingRef = serverOutboundSocketBindingRef;
+            this.accountsContext = accountsContext;
+            this.inventoryContext = inventoryContext;
+            this.metricsContext = metricsContext;
+            this.feedcommContext = feedcommContext;
+            this.keystorePath = keystorePath;
+            this.keystorePassword = keystorePassword;
+            this.securityRealm = securityRealm;
+        }
     }
 
     public static class Diagnostics {
-        public DiagnosticsReportTo reportTo;
-        public boolean enabled;
-        public int interval;
-        public TimeUnit timeUnits;
+        public static final Diagnostics EMPTY = new Diagnostics(false, null, 0, null);
+        public final boolean enabled;
+        public final DiagnosticsReportTo reportTo;
+        public final int interval;
+        public final TimeUnit timeUnits;
+
+        public Diagnostics(boolean enabled, DiagnosticsReportTo reportTo, int interval, TimeUnit timeUnits) {
+            super();
+            this.enabled = enabled;
+            this.reportTo = reportTo;
+            this.interval = interval;
+            this.timeUnits = timeUnits;
+        }
     }
 
-    public static class Platform {
-        public boolean allEnabled; // if this is false, no platform resources will be monitored
-        public Map<Name, TypeSet<PlatformMetricType>> metricTypeSetMap = new HashMap<>();
-        // we don't have any of these yet
-        public Map<Name, TypeSet<PlatformAvailType>> availTypeSetMap = new HashMap<>(0);
-        public Map<Name, TypeSet<PlatformResourceType>> resourceTypeSetMap = new HashMap<>();
+    public TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> getDmrTypeSets() {
+        return dmrTypeSets;
     }
+
+    public TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> getJmxTypeSets() {
+        return jmxTypeSets;
+    }
+
+    public TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> getPlatformTypeSets() {
+        return platformTypeSets;
+    }
+
 }

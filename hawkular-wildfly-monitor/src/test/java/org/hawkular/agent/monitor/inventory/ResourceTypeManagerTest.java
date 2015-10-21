@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.inventory.TypeSet.TypeSetBuilder;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -273,16 +274,17 @@ public class ResourceTypeManagerTest {
     }
 
     private TypeSet<DMRResourceType> createResourceTypeSetDMR(String name, boolean enabled, DMRResourceType... types) {
-        TypeSet<DMRResourceType> set = new TypeSet<>(new ID(name), new Name(name));
-        set.setEnabled(enabled);
-        set.setResourceTypeMap(new HashMap<Name, DMRResourceType>());
+        TypeSetBuilder<DMRResourceType> typeSetBuilder = TypeSet.<DMRResourceType> builder() //
+                .id(new ID(name)) //
+                .name(new Name(name)) //
+                .enabled(enabled);
 
         if (types != null) {
             for (DMRResourceType type : types) {
-                set.getTypeMap().put(type.getName(), type);
+                typeSetBuilder.type(type);
             }
         }
-        return set;
+        return typeSetBuilder.build();
     }
 
     private DMRResourceType createResourceTypeDMR(String name, String path, Name... parents) {

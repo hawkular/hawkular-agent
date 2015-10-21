@@ -16,31 +16,79 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TypeSet<T extends NamedObject> extends NamedObject {
-    public TypeSet(ID id, Name name) {
-        super(id, name);
+
+    public static class TypeSetBuilder<BT extends NamedObject> {
+        private boolean enabled = true;
+        private ID id;
+        private Name name;
+        private Map<Name, BT> typeMap = new HashMap<>();
+
+        private TypeSetBuilder() {
+            super();
+        }
+
+        public TypeSet<BT> build() {
+            return new TypeSet<BT>(id, name, enabled, Collections.unmodifiableMap(typeMap));
+        }
+
+        public TypeSetBuilder<BT> enabled(boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public TypeSetBuilder<BT> id(ID id) {
+            this.id = id;
+            return this;
+        }
+
+        public TypeSetBuilder<BT> name(Name name) {
+            this.name = name;
+            return this;
+        }
+
+        public TypeSetBuilder<BT> type(BT type) {
+            this.typeMap.put(type.getName(), type);
+            return this;
+        }
     }
 
-    private boolean enabled;
-    private Map<Name, T> resourceTypeMap = new HashMap<>();
+    private static final TypeSet<NamedObject> EMPTY = new TypeSet<NamedObject>(ID.NULL_ID,
+            new Name(TypeSet.class.getSimpleName() + ".EMPTY"), false, Collections.emptyMap());
+
+    public static <T extends NamedObject> TypeSetBuilder<T> builder() {
+        return new TypeSetBuilder<T>();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends NamedObject> TypeSet<T> empty() {
+        return (TypeSet<T>) EMPTY;
+    }
+
+    private final boolean enabled;
+
+    private final Map<Name, T> typeMap;
+
+    private TypeSet(ID id, Name name, boolean enabled, Map<Name, T> typeMap) {
+        super(id, name);
+        this.enabled = enabled;
+        this.typeMap = typeMap;
+    }
+
+    public Map<Name, T> getTypeMap() {
+        return typeMap;
+    }
 
     public boolean isEnabled() {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public Map<Name, T> getTypeMap() {
-        return resourceTypeMap;
-    }
-
-    public void setResourceTypeMap(Map<Name, T> map) {
-        this.resourceTypeMap = map;
+    public boolean isDisabledOrEmpty() {
+        return !isEnabled() || typeMap == null || typeMap.isEmpty();
     }
 
 }

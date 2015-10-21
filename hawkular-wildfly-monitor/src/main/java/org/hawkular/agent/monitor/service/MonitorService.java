@@ -50,7 +50,6 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Platform;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AvailTypeManager;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
@@ -58,6 +57,7 @@ import org.hawkular.agent.monitor.inventory.MetricTypeManager;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
+import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
@@ -751,22 +751,23 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     }
 
     private void discoverPlatformData() {
-        Platform config = this.configuration.platform;
+        TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> config = this.configuration
+                .getPlatformTypeSets();
 
-        if (config.allEnabled == false) {
+        if (!config.isEnabled()) {
             return;
         }
 
         // build the metadata manager
         ResourceTypeManager<PlatformResourceType> rtm;
-        rtm = new ResourceTypeManager<>(config.resourceTypeSetMap);
+        rtm = new ResourceTypeManager<>(config.getResourceTypeSets());
 
         // tell metric/avail managers what metric and avail types we need to use for the resource types
         MetricTypeManager<PlatformMetricType> mtm = new MetricTypeManager<>();
         AvailTypeManager<PlatformAvailType> atm = new AvailTypeManager<>();
 
-        mtm.addMetricTypes(config.metricTypeSetMap, null);
-        atm.addAvailTypes(config.availTypeSetMap, null);
+        mtm.addMetricTypes(config.getMetricTypeSets(), null);
+        atm.addAvailTypes(config.getAvailTypeSets(), null);
 
         PlatformMetadataManager mm = new PlatformMetadataManager(rtm, mtm, atm);
         mm.populateMetricAndAvailTypesForAllResourceTypes();
@@ -1066,7 +1067,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         // First build our metadata manager and its resource type manager, metric type manager, and avail type manager
         ResourceTypeManager<DMRResourceType> rtm;
-        rtm = new ResourceTypeManager<>(monitorServiceConfig.dmrResourceTypeSetMap, dmrResourceTypeSets);
+        TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> typeSets = monitorServiceConfig.getDmrTypeSets();
+        rtm = new ResourceTypeManager<>(typeSets.getResourceTypeSets(), dmrResourceTypeSets);
 
         // tell metric/avail managers what metric and avail types we need to use for the resource types
         MetricTypeManager<DMRMetricType> mtm = new MetricTypeManager<>();
@@ -1076,8 +1078,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             DMRResourceType type = resourceTypeIter.next();
             Collection<Name> metricSetsToUse = type.getMetricSets();
             Collection<Name> availSetsToUse = type.getAvailSets();
-            mtm.addMetricTypes(monitorServiceConfig.dmrMetricTypeSetMap, metricSetsToUse);
-            atm.addAvailTypes(monitorServiceConfig.dmrAvailTypeSetMap, availSetsToUse);
+            mtm.addMetricTypes(typeSets.getMetricTypeSets(), metricSetsToUse);
+            atm.addAvailTypes(typeSets.getAvailTypeSets(), availSetsToUse);
         }
         DMRMetadataManager mm = new DMRMetadataManager(rtm, mtm, atm);
         mm.populateMetricAndAvailTypesForAllResourceTypes();
@@ -1096,8 +1098,9 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             MonitorServiceConfiguration monitorServiceConfig) {
 
         // First build our metadata manager and its resource type manager, metric type manager, and avail type manager
+        TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> typeSets = monitorServiceConfig.getJmxTypeSets();
         ResourceTypeManager<JMXResourceType> rtm;
-        rtm = new ResourceTypeManager<>(monitorServiceConfig.jmxResourceTypeSetMap, jmxResourceTypeSets);
+        rtm = new ResourceTypeManager<>(typeSets.getResourceTypeSets(), jmxResourceTypeSets);
 
         // tell metric/avail managers what metric and avail types we need to use for the resource types
         MetricTypeManager<JMXMetricType> mtm = new MetricTypeManager<>();
@@ -1107,8 +1110,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             JMXResourceType type = resourceTypeIter.next();
             Collection<Name> metricSetsToUse = type.getMetricSets();
             Collection<Name> availSetsToUse = type.getAvailSets();
-            mtm.addMetricTypes(monitorServiceConfig.jmxMetricTypeSetMap, metricSetsToUse);
-            atm.addAvailTypes(monitorServiceConfig.jmxAvailTypeSetMap, availSetsToUse);
+            mtm.addMetricTypes(typeSets.getMetricTypeSets(), metricSetsToUse);
+            atm.addAvailTypes(typeSets.getAvailTypeSets(), availSetsToUse);
         }
         JMXMetadataManager mm = new JMXMetadataManager(rtm, mtm, atm);
         mm.populateMetricAndAvailTypesForAllResourceTypes();
@@ -1150,8 +1153,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             if (matcher.find()) {
                 configuration.storageAdapter.tenantId = matcher.group(1);
             }
-            log.debugf("Tenant ID [%s]", configuration.storageAdapter.tenantId == null ? "unknown" :
-                    configuration.storageAdapter.tenantId);
+            log.debugf("Tenant ID [%s]",
+                    configuration.storageAdapter.tenantId == null ? "unknown" : configuration.storageAdapter.tenantId);
             return configuration.storageAdapter.tenantId;
         } catch (Throwable t) {
             throw new RuntimeException("Cannot get tenant ID", t);
