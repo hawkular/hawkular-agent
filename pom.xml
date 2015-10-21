@@ -39,6 +39,8 @@
     <module>hawkular-wildfly-monitor</module>
     <module>hawkular-wildfly-monitor-feature-pack</module>
     <module>hawkular-agent-itest-parent</module>
+    <module>wildfly-module-installer</module>
+    <module>hawkular-wildfly-monitor-installer</module>
   </modules>
 
   <scm>
