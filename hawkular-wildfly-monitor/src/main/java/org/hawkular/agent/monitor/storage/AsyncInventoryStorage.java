@@ -47,12 +47,14 @@ import org.hawkular.agent.monitor.inventory.NamedObject;
 import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstance;
+import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.ServerIdentifiers;
 import org.hawkular.agent.monitor.service.Util;
 import org.hawkular.inventory.api.Relationships.Direction;
+import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.AbstractElement.Blueprint;
@@ -300,9 +302,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
                 }
 
-                org.hawkular.inventory.api.model.DataEntity.Blueprint<Resources.DataRole> dataEntity = //
-                new org.hawkular.inventory.api.model.DataEntity.Blueprint<>(Resources.DataRole.configuration,
-                        structDataBuilder.build(), null);
+                DataEntity.Blueprint<Resources.DataRole> dataEntity = new DataEntity.Blueprint<>(
+                        Resources.DataRole.configuration, structDataBuilder.build(), null);
 
                 relationshipOrEntity(resourceCanonicalPath.toString(), DataEntity.class, dataEntity);
             }
@@ -337,6 +338,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
          */
         public BulkPayloadBuilder resourceType(ResourceType<?, ?, ?, ?> resourceType) {
 
+            // resource type
             String resourceTypeId = getInventoryId(resourceType);
             org.hawkular.inventory.api.model.ResourceType.Blueprint blueprint = //
             new org.hawkular.inventory.api.model.ResourceType.Blueprint(resourceTypeId,
@@ -345,6 +347,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             CanonicalPath parentPath = newPathPrefix().resourceType(getInventoryId(resourceType)).get();
 
+            // metrics
             Collection<? extends MetricType> metricTypes = resourceType.getMetricTypes();
             for (MetricType metricType : metricTypes) {
                 metricType(metricType);
@@ -357,6 +360,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 relationship(parentPath, bp);
             }
 
+            // avails (which are just metrics, too)
             Collection<? extends AvailType> availTypes = resourceType.getAvailTypes();
             for (AvailType availType : availTypes) {
                 metricType(availType);
@@ -368,10 +372,27 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 relationship(parentPath, bp);
             }
 
+            // operations
             String resourceTypePath = newPathPrefix().resourceType(resourceTypeId).get().toString();
             Collection<? extends Operation<? extends ResourceType<?, ?, ?, ?>>> ops = resourceType.getOperations();
             for (Operation<? extends ResourceType<?, ?, ?, ?>> op : ops) {
                 operation(op, resourceTypePath);
+            }
+
+            // resource configuration
+            Collection<? extends ResourceConfigurationPropertyType<? extends ResourceType<?, ?, ?, ?>>> rcpts = //
+            resourceType.getResourceConfigurationPropertyTypes();
+
+            if (rcpts != null && !rcpts.isEmpty()) {
+                StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
+                for (ResourceConfigurationPropertyType<? extends ResourceType<?, ?, ?, ?>> rcpt : rcpts) {
+                    structDataBuilder.putString(rcpt.getID().getIDString(), rcpt.getName().getNameString());
+                }
+
+                DataEntity.Blueprint<ResourceTypes.DataRole> dataEntity = new DataEntity.Blueprint<>(
+                        ResourceTypes.DataRole.configurationSchema, structDataBuilder.build(), null);
+
+                relationshipOrEntity(parentPath.toString(), DataEntity.class, dataEntity);
             }
 
             return this;
