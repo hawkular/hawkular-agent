@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-agent-itest-parent</artifactId>
-    <version>0.11.1.Final-SNAPSHOT</version>
+    <version>0.11.1.Final</version>
   </parent>
 
   <artifactId>hawkular-agent-itest-dist</artifactId>
@@ -43,14 +43,14 @@
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-monitor</artifactId>
-      <version>0.11.1.Final-SNAPSHOT</version>
+      <version>0.11.1.Final</version>
       <classifier>module</classifier>
       <type>zip</type>
     </dependency>
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-helloworld-war</artifactId>
-      <version>0.11.1.Final-SNAPSHOT</version>
+      <version>0.11.1.Final</version>
       <type>war</type>
     </dependency>
     <dependency>
