@@ -54,7 +54,6 @@ public class AgentInstaller {
 
     private static Options OPTIONS;
     private static InstallerDefaults defaults;
-    private static String hawkularServerUrl;
 
     public static void main(String[] args) throws Exception {
         try {
@@ -64,7 +63,7 @@ public class AgentInstaller {
 
             String jbossHome = commandLine.getOptionValue(OPTION_WILDFLY_HOME);
             String moduleZip = commandLine.getOptionValue(OPTION_MODULE, defaults.getModule());
-            hawkularServerUrl = commandLine.getOptionValue(OPTION_HAWKULAR_SERVER_URL,
+            String hawkularServerUrl = commandLine.getOptionValue(OPTION_HAWKULAR_SERVER_URL,
                     defaults.getHawkularServerUrl());
 
             URL moduleUrl = null;
@@ -161,6 +160,7 @@ public class AgentInstaller {
             else {
                 configuration.addXmlEdit(createStorageAdapter(false));
             }
+            configuration.addXmlEdit(createManagedServers());
             new ExtensionDeployer().install(configuration.build());
         } catch (ParseException pe) {
             log.warn(pe);
@@ -246,6 +246,20 @@ public class AgentInstaller {
         // TODO cleanup temp file
         Files.write(tempFile, xml.toString().getBytes());
         return tempFile.toUri().toURL();
+    }
+
+
+    private static XmlEdit createManagedServers() {
+        String select = "/server/profile/"
+                + "*[namespace-uri()='urn:org.hawkular.agent.monitor:monitor:1.0']/";
+        StringBuilder xml = new StringBuilder("<managed-servers>")
+                .append("<local-dmr name=\"Local\" enabled=\"true\" "
+                        + "resourceTypeSets=\"Main,Deployment,Web Component,EJB,Datasource,"
+                        + "XA Datasource,JDBC Driver,Transaction Manager,Hawkular\" />")
+                .append("</managed-servers>");
+        // this will replace <managed-servers> under urn:org.hawkular.agent.monitor:monitor:1.0 subsystem
+        // with above content
+        return new XmlEdit(select, xml.toString());
     }
 
     /**
