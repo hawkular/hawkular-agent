@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-agent-parent</artifactId>
-    <version>0.11.2.Final-SNAPSHOT</version>
+    <version>0.12.0.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-monitor-feature-pack</artifactId>
