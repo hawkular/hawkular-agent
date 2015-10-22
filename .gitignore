@@ -16,6 +16,7 @@ hs_err_pid*
 target/
 pom.xml.releaseBackup
 release.properties
+pom.xml.versionsBackup
 
 # IDE files
 .project
