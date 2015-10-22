@@ -31,6 +31,11 @@
   <name>Hawkular Agent Integration Tests</name>
   <description>A module containing integration tests of Command Gateway and Agent</description>
 
+  <properties>
+    <debug.failsafe.argLine/>
+    <debug.wildfly.argLine/>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -231,7 +236,7 @@
                 </org.apache.commons.logging.simplelog.log.org.apache.http.wire>
                 <java.util.logging.config.file>${project.build.testOutputDirectory}/logging.properties</java.util.logging.config.file>
               </systemPropertyVariables>
-              <!--<argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y</argLine>-->
+              <argLine>${debug.failsafe.argLine}</argLine>
             </configuration>
             <executions>
               <execution>
@@ -279,8 +284,7 @@
                 <javaOpt>-Dhawkular.log.ejb3=${hawkular.log.ejb3}</javaOpt>
                 <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
                 <javaOpt>-Dhawkular.log.rewrite=${hawkular.log.rewrite}</javaOpt>
-                <!--<javaOpt>-Xdebug</javaOpt>-->
-                <!--<javaOpt>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</javaOpt>-->
+                <javaOpt>${debug.wildfly.argLine}</javaOpt>
               </javaOpts>
             </configuration>
             <executions>
@@ -306,6 +310,14 @@
 
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <id>itest.debug</id>
+      <properties>
+        <debug.failsafe.argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5007,server=y,suspend=n</debug.failsafe.argLine>
+        <debug.wildfly.argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n</debug.wildfly.argLine>
+      </properties>
     </profile>
   </profiles>
 </project>
