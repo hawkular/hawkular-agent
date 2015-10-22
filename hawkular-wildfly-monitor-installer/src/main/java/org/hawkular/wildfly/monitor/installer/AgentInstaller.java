@@ -54,6 +54,7 @@ public class AgentInstaller {
 
     private static Options OPTIONS;
     private static InstallerDefaults defaults;
+    private static String hawkularServerUrl;
 
     public static void main(String[] args) throws Exception {
         try {
@@ -63,7 +64,7 @@ public class AgentInstaller {
 
             String jbossHome = commandLine.getOptionValue(OPTION_WILDFLY_HOME);
             String moduleZip = commandLine.getOptionValue(OPTION_MODULE, defaults.getModule());
-            String hawkularServerUrl = commandLine.getOptionValue(OPTION_HAWKULAR_SERVER_URL,
+            hawkularServerUrl = commandLine.getOptionValue(OPTION_HAWKULAR_SERVER_URL,
                     defaults.getHawkularServerUrl());
 
             URL moduleUrl = null;
@@ -155,7 +156,10 @@ public class AgentInstaller {
                 // setup security-realm and storage-adapter (within hawkular-wildfly-monitor subsystem)
                 String securityRealm = createSecurityRealm(keystoreSrcFile.getName(), keystorePass, keyPass, keyAlias);
                 configuration.addXmlEdit(new XmlEdit("/server/management/security-realms", securityRealm));
-                configuration.addXmlEdit(createStorageAdapter());
+                configuration.addXmlEdit(createStorageAdapter(true));
+            }
+            else {
+                configuration.addXmlEdit(createStorageAdapter(false));
             }
             new ExtensionDeployer().install(configuration.build());
         } catch (ParseException pe) {
@@ -205,17 +209,22 @@ public class AgentInstaller {
      * creates XML edit which sets up hawkular.agent.monitor storage-adapter, creates reference
      * to security-realm and enables SSL.
      * @return
+     * @param withHttps
      */
-    private static XmlEdit createStorageAdapter() {
+    private static XmlEdit createStorageAdapter(boolean withHttps) {
         String select = "/server/profile/"
                 + "*[namespace-uri()='urn:org.hawkular.agent.monitor:monitor:1.0']/";
         StringBuilder xml = new StringBuilder("<storage-adapter")
-                .append(" type=\"HAWKULAR\"")
-                .append(" useSSL=\"true\"")
-                .append(" username=\"" + defaults.getHawkularUsername() + "\"")
-                .append(" password=\"" + defaults.getHawkularPassword() + "\"")
-                .append(" securityRealm=\"" + SECURITY_REALM_NAME + "\"")
-                .append("/>");
+                .append(" type=\"HAWKULAR\"");
+        if (withHttps) {
+            xml.append(" securityRealm=\"" + SECURITY_REALM_NAME + "\"")
+                    .append(" useSSL=\"true\"");
+        }
+        xml
+            .append(" username=\"" + defaults.getHawkularUsername() + "\"")
+            .append(" password=\"" + defaults.getHawkularPassword() + "\"")
+            .append(" serverOutboundSocketBindingRef=\"hawkular\"")
+            .append("/>");
         // this will replace <storage-adapter type="HAWKULAR" under urn:org.hawkular.agent.monitor:monitor:1.0 subsystem
         // with above content
         return new XmlEdit(select, xml.toString()).withAttribute("type");
