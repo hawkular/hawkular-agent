@@ -71,7 +71,9 @@ public class MetricPlatformTaskGroupRunnable implements Runnable {
 
                 Double value = null;
 
-                if (typeName.equals(Constants.PlatformResourceType.FILE_STORE.getName())) {
+                if (typeName.equals(Constants.PlatformResourceType.OPERATING_SYSTEM.getName())) {
+                    value = getOperatingSystemMetric(metricToCollect, sysInfoCache, sysInfo);
+                } else if (typeName.equals(Constants.PlatformResourceType.FILE_STORE.getName())) {
                     value = getFileStoreMetric(itemName, metricToCollect, sysInfoCache, sysInfo);
                 } else if (typeName.equals(Constants.PlatformResourceType.MEMORY.getName())) {
                     value = getMemoryMetric(metricToCollect, sysInfoCache, sysInfo);
@@ -106,21 +108,27 @@ public class MetricPlatformTaskGroupRunnable implements Runnable {
         }
     }
 
+    private Double getOperatingSystemMetric(Name metricToCollect, Map<PlatformResourceType, Object> sysInfoCache,
+            SystemInfo sysInfo) {
+
+        Processor processor = getProcessor(null, sysInfoCache, sysInfo);
+        if (processor == null) {
+            return null;
+        }
+
+        if (Constants.OPERATING_SYSTEM_SYS_CPU_LOAD.equals(metricToCollect)) {
+            return processor.getSystemCpuLoad();
+        } else if (Constants.OPERATING_SYSTEM_SYS_LOAD_AVG.equals(metricToCollect)) {
+            return processor.getSystemLoadAverage();
+        } else {
+            throw new UnsupportedOperationException("Invalid processor metric to collect: " + metricToCollect);
+        }
+    }
+
     private Double getPowerSourceMetric(String itemName, Name metricToCollect,
             Map<PlatformResourceType, Object> sysInfoCache, SystemInfo sysInfo) {
 
-        Map<String, PowerSource> cache =
-                (Map<String, PowerSource>) sysInfoCache.get(Constants.PlatformResourceType.POWER_SOURCE);
-        if (cache == null) {
-            cache = new HashMap<>();
-            PowerSource[] arr = sysInfo.getHardware().getPowerSources();
-            for (PowerSource item : arr) {
-                cache.put(item.getName(), item);
-            }
-            sysInfoCache.put(Constants.PlatformResourceType.POWER_SOURCE, cache);
-        }
-
-        PowerSource powerSource = cache.get(itemName);
+        PowerSource powerSource = getPowerSource(itemName, sysInfoCache, sysInfo);
         if (powerSource == null) {
             return null;
         }
@@ -137,18 +145,7 @@ public class MetricPlatformTaskGroupRunnable implements Runnable {
     private Double getProcessorMetric(String itemName, Name metricToCollect,
             Map<PlatformResourceType, Object> sysInfoCache, SystemInfo sysInfo) {
 
-        Map<String, Processor> cache =
-                (Map<String, Processor>) sysInfoCache.get(Constants.PlatformResourceType.PROCESSOR);
-        if (cache == null) {
-            cache = new HashMap<>();
-            Processor[] arr = sysInfo.getHardware().getProcessors();
-            for (Processor item : arr) {
-                cache.put(String.valueOf(item.getProcessorNumber()), item);
-            }
-            sysInfoCache.put(Constants.PlatformResourceType.PROCESSOR, cache);
-        }
-
-        Processor processor = cache.get(itemName);
+        Processor processor = getProcessor(itemName, sysInfoCache, sysInfo);
         if (processor == null) {
             return null;
         }
@@ -163,18 +160,7 @@ public class MetricPlatformTaskGroupRunnable implements Runnable {
     private Double getFileStoreMetric(String itemName, Name metricToCollect,
             Map<PlatformResourceType, Object> sysInfoCache, SystemInfo sysInfo) {
 
-        Map<String, OSFileStore> cache =
-                (Map<String, OSFileStore>) sysInfoCache.get(Constants.PlatformResourceType.FILE_STORE);
-        if (cache == null) {
-            cache = new HashMap<>();
-            OSFileStore[] arr = sysInfo.getHardware().getFileStores();
-            for (OSFileStore item : arr) {
-                cache.put(item.getName(), item);
-            }
-            sysInfoCache.put(Constants.PlatformResourceType.FILE_STORE, cache);
-        }
-
-        OSFileStore fileStore = cache.get(itemName);
+        OSFileStore fileStore = getFileStore(itemName, sysInfoCache, sysInfo);
         if (fileStore == null) {
             return null;
         }
@@ -191,11 +177,7 @@ public class MetricPlatformTaskGroupRunnable implements Runnable {
     private Double getMemoryMetric(Name metricToCollect, Map<Constants.PlatformResourceType, Object> sysInfoCache,
             SystemInfo sysInfo) {
 
-        Memory mem = (Memory) sysInfoCache.get(Constants.PlatformResourceType.MEMORY);
-        if (mem == null) {
-            mem = sysInfo.getHardware().getMemory();
-            sysInfoCache.put(Constants.PlatformResourceType.MEMORY, mem);
-        }
+        Memory mem = getMemory(sysInfoCache, sysInfo);
 
         if (Constants.MEMORY_AVAILABLE.equals(metricToCollect)) {
             return Double.valueOf(mem.getAvailable());
@@ -204,5 +186,73 @@ public class MetricPlatformTaskGroupRunnable implements Runnable {
         } else {
             throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
         }
+    }
+
+    private PowerSource getPowerSource(String itemName, Map<PlatformResourceType, Object> sysInfoCache,
+            SystemInfo sysInfo) {
+        Map<String, PowerSource> cache =
+                (Map<String, PowerSource>) sysInfoCache.get(Constants.PlatformResourceType.POWER_SOURCE);
+        if (cache == null) {
+            cache = new HashMap<>();
+            PowerSource[] arr = sysInfo.getHardware().getPowerSources();
+            for (PowerSource item : arr) {
+                cache.put(item.getName(), item);
+            }
+            sysInfoCache.put(Constants.PlatformResourceType.POWER_SOURCE, cache);
+        }
+
+        PowerSource powerSource = cache.get(itemName);
+        return powerSource;
+    }
+
+    private Processor getProcessor(String itemName, Map<PlatformResourceType, Object> sysInfoCache,
+            SystemInfo sysInfo) {
+        Map<String, Processor> cache =
+                (Map<String, Processor>) sysInfoCache.get(Constants.PlatformResourceType.PROCESSOR);
+        if (cache == null) {
+            cache = new HashMap<>();
+            Processor[] arr = sysInfo.getHardware().getProcessors();
+            for (Processor item : arr) {
+                cache.put(String.valueOf(item.getProcessorNumber()), item);
+            }
+            sysInfoCache.put(Constants.PlatformResourceType.PROCESSOR, cache);
+        }
+
+        // note if itemName is null, we just need to get "a" processor, doesn't matter which one.
+        Processor processor = null;
+        if (!cache.isEmpty()) {
+            if (itemName == null) {
+                processor = cache.values().iterator().next();
+            } else {
+                processor = cache.get(itemName);
+            }
+        }
+        return processor;
+    }
+
+    private OSFileStore getFileStore(String itemName, Map<PlatformResourceType, Object> sysInfoCache,
+            SystemInfo sysInfo) {
+        Map<String, OSFileStore> cache =
+                (Map<String, OSFileStore>) sysInfoCache.get(Constants.PlatformResourceType.FILE_STORE);
+        if (cache == null) {
+            cache = new HashMap<>();
+            OSFileStore[] arr = sysInfo.getHardware().getFileStores();
+            for (OSFileStore item : arr) {
+                cache.put(item.getName(), item);
+            }
+            sysInfoCache.put(Constants.PlatformResourceType.FILE_STORE, cache);
+        }
+
+        OSFileStore fileStore = cache.get(itemName);
+        return fileStore;
+    }
+
+    private Memory getMemory(Map<Constants.PlatformResourceType, Object> sysInfoCache, SystemInfo sysInfo) {
+        Memory mem = (Memory) sysInfoCache.get(Constants.PlatformResourceType.MEMORY);
+        if (mem == null) {
+            mem = sysInfo.getHardware().getMemory();
+            sysInfoCache.put(Constants.PlatformResourceType.MEMORY, mem);
+        }
+        return mem;
     }
 }
