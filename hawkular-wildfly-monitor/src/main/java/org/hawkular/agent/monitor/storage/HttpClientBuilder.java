@@ -54,8 +54,8 @@ public class HttpClientBuilder {
     private final String keystorePassword;
     private final SSLContext sslContext;
 
-    // holds the last built client
-    private OkHttpClient httpClient;
+    /** The configured client singleton */
+    private final OkHttpClient httpClient;
 
     /**
      * Creates the object that can be used to build HTTP clients.
@@ -78,11 +78,19 @@ public class HttpClientBuilder {
         this.useSSL = storageAdapter.isUseSSL();
         this.keystorePath = storageAdapter.getKeystorePath();
         this.keystorePassword = storageAdapter.getKeystorePassword();
+        OkHttpClient httpClient = new OkHttpClient();
         if (this.useSSL) {
             this.sslContext = (sslContext == null) ? buildSSLContext() : sslContext;
+            httpClient.setSslSocketFactory(this.sslContext.getSocketFactory());
+
+            // does not perform any hostname verification when looking at the remote end's cert
+            httpClient.setHostnameVerifier(new NullHostNameVerifier());
         } else {
             this.sslContext = null;
         }
+
+        this.httpClient = httpClient;
+
     }
 
     /**
@@ -92,9 +100,6 @@ public class HttpClientBuilder {
      * @throws Exception
      */
     public OkHttpClient getHttpClient() throws Exception {
-        if (httpClient == null) {
-            build();
-        }
         return httpClient;
     }
 
@@ -172,28 +177,6 @@ public class HttpClientBuilder {
         Request request = requestBuilder.build();
         WebSocketCall wsc = WebSocketCall.create(httpClient, request);
         return wsc;
-    }
-
-    /**
-     * Builds and returns an HTTP client. If successfully built, the returned client
-     * will be cached and returned by this object via {@link #getHttpClient()}.
-     *
-     * @return the newly built client
-     * @throws Exception
-     */
-    public OkHttpClient build() throws Exception {
-
-        OkHttpClient httpClient = new OkHttpClient();
-
-        if (this.useSSL) {
-            httpClient.setSslSocketFactory(this.sslContext.getSocketFactory());
-
-            // does not perform any hostname verification when looking at the remote end's cert
-            httpClient.setHostnameVerifier(new NullHostNameVerifier());
-        }
-
-        this.httpClient = httpClient;
-        return httpClient;
     }
 
     private SSLContext buildSSLContext() {
