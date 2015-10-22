@@ -474,12 +474,15 @@ public abstract class AbstractCommandITest {
                 for (Callback current : callbacks) {
                     if (current instanceof NameCallback) {
                         NameCallback ncb = (NameCallback) current;
+                        log.fine("ModelControllerClient is sending a username ["+ managementUser +"]");
                         ncb.setName(managementUser);
                     } else if (current instanceof PasswordCallback) {
                         PasswordCallback pcb = (PasswordCallback) current;
+                        log.fine("ModelControllerClient is sending a password ["+ managementPasword +"]");
                         pcb.setPassword(managementPasword.toCharArray());
                     } else if (current instanceof RealmCallback) {
                         RealmCallback rcb = (RealmCallback) current;
+                        log.fine("ModelControllerClient is sending a realm ["+ rcb.getDefaultText() +"]");
                         rcb.setText(rcb.getDefaultText());
                     } else {
                         throw new UnsupportedCallbackException(current);
@@ -490,6 +493,7 @@ public abstract class AbstractCommandITest {
 
         try {
             InetAddress inetAddr = InetAddress.getByName(host);
+            log.fine("Connecting a ModelControllerClient to ["+ host + ":" + managementPort +"]");
             return ModelControllerClient.Factory.create(inetAddr, managementPort, callbackHandler);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create management client", e);
