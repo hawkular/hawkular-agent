@@ -22,8 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.inventory.TypeSet.TypeSetBuilder;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.junit.Assert;
@@ -35,12 +35,12 @@ public class ResourceTypeManagerTest {
     public void simpleGraphDMR() {
         DMRResourceType rt1_1 = createResourceTypeDMR("res1.1", "/res1.1");
         DMRResourceType rt1_2 = createResourceTypeDMR("res1.2", "/res1.2");
-        DMRResourceTypeSet set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
+        TypeSet<DMRResourceType> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
-        Map<Name, DMRResourceTypeSet> rTypeSetDmrMap = new HashMap<>();
+        Map<Name, TypeSet<DMRResourceType>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
 
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRResourceType> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
         DirectedGraph<DMRResourceType, DefaultEdge> graph = rtm.getResourceTypesGraph();
 
         Assert.assertNotNull(graph);
@@ -55,17 +55,17 @@ public class ResourceTypeManagerTest {
     public void simpleParentChildGraphDMR() {
         DMRResourceType rt1_1 = createResourceTypeDMR("res1_1", "/res1_1");
         DMRResourceType rt1_2 = createResourceTypeDMR("res1_2", "/res1_2");
-        DMRResourceTypeSet set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
+        TypeSet<DMRResourceType> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
         DMRResourceType rt2_1 = createResourceTypeDMR("res2_1", "/res2_1", rt1_1.getName());
         DMRResourceType rt2_2 = createResourceTypeDMR("res2_2", "/res2_2", rt1_2.getName());
-        DMRResourceTypeSet set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
+        TypeSet<DMRResourceType> set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
 
-        Map<Name, DMRResourceTypeSet> rTypeSetDmrMap = new HashMap<>();
+        Map<Name, TypeSet<DMRResourceType>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
         rTypeSetDmrMap.put(set2.getName(), set2);
 
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRResourceType> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
         DirectedGraph<DMRResourceType, DefaultEdge> graph = rtm.getResourceTypesGraph();
 
         Assert.assertNotNull(graph);
@@ -104,24 +104,24 @@ public class ResourceTypeManagerTest {
     @Test
     public void disabledTypesDMR() {
         DMRResourceType rt1_1 = createResourceTypeDMR("res1_1", "/res1_1");
-        DMRResourceTypeSet set1 = createResourceTypeSetDMR("set1", true, rt1_1);
+        TypeSet<DMRResourceType> set1 = createResourceTypeSetDMR("set1", true, rt1_1);
 
         DMRResourceType rt2_1 = createResourceTypeDMR("res2_1", "/res2_1", rt1_1.getName());
-        DMRResourceTypeSet set2 = createResourceTypeSetDMR("set2", false, rt2_1);
+        TypeSet<DMRResourceType> set2 = createResourceTypeSetDMR("set2", false, rt2_1);
 
         DMRResourceType rt3_1 = createResourceTypeDMR("res3_1", "/res3_1", rt2_1.getName());
-        DMRResourceTypeSet set3 = createResourceTypeSetDMR("set3", true, rt3_1);
+        TypeSet<DMRResourceType> set3 = createResourceTypeSetDMR("set3", true, rt3_1);
 
         DMRResourceType rt4_1 = createResourceTypeDMR("res4_1", "/res4_1", rt3_1.getName());
-        DMRResourceTypeSet set4 = createResourceTypeSetDMR("set4", true, rt4_1);
+        TypeSet<DMRResourceType> set4 = createResourceTypeSetDMR("set4", true, rt4_1);
 
-        Map<Name, DMRResourceTypeSet> rTypeSetDmrMap = new HashMap<>();
+        Map<Name, TypeSet<DMRResourceType>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
         rTypeSetDmrMap.put(set2.getName(), set2);
         rTypeSetDmrMap.put(set3.getName(), set3);
         rTypeSetDmrMap.put(set4.getName(), set4);
 
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRResourceType> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
         DirectedGraph<DMRResourceType, DefaultEdge> graph = rtm.getResourceTypesGraph();
 
         Assert.assertNotNull(graph);
@@ -138,24 +138,24 @@ public class ResourceTypeManagerTest {
     @Test
     public void disabledAllTypesDMR() {
         DMRResourceType rt1_1 = createResourceTypeDMR("res1_1", "/res1_1");
-        DMRResourceTypeSet set1 = createResourceTypeSetDMR("set1", false, rt1_1);
+        TypeSet<DMRResourceType> set1 = createResourceTypeSetDMR("set1", false, rt1_1);
 
         DMRResourceType rt2_1 = createResourceTypeDMR("res2_1", "/res2_1", rt1_1.getName());
-        DMRResourceTypeSet set2 = createResourceTypeSetDMR("set2", false, rt2_1);
+        TypeSet<DMRResourceType> set2 = createResourceTypeSetDMR("set2", false, rt2_1);
 
         DMRResourceType rt3_1 = createResourceTypeDMR("res3_1", "/res3_1", rt2_1.getName());
-        DMRResourceTypeSet set3 = createResourceTypeSetDMR("set3", true, rt3_1);
+        TypeSet<DMRResourceType> set3 = createResourceTypeSetDMR("set3", true, rt3_1);
 
         DMRResourceType rt4_1 = createResourceTypeDMR("res4_1", "/res4_1", rt3_1.getName());
-        DMRResourceTypeSet set4 = createResourceTypeSetDMR("set4", true, rt4_1);
+        TypeSet<DMRResourceType> set4 = createResourceTypeSetDMR("set4", true, rt4_1);
 
-        Map<Name, DMRResourceTypeSet> rTypeSetDmrMap = new HashMap<>();
+        Map<Name, TypeSet<DMRResourceType>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
         rTypeSetDmrMap.put(set2.getName(), set2);
         rTypeSetDmrMap.put(set3.getName(), set3);
         rTypeSetDmrMap.put(set4.getName(), set4);
 
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRResourceType> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
         DirectedGraph<DMRResourceType, DefaultEdge> graph = rtm.getResourceTypesGraph();
 
         Assert.assertNotNull(graph);
@@ -166,22 +166,22 @@ public class ResourceTypeManagerTest {
     public void deepGraphDMR() {
         DMRResourceType rt1_1 = createResourceTypeDMR("res1_1", "/res1_1");
         DMRResourceType rt1_2 = createResourceTypeDMR("res1_2", "/res1_2");
-        DMRResourceTypeSet set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
+        TypeSet<DMRResourceType> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
         DMRResourceType rt2_1 = createResourceTypeDMR("res2_1", "/res2_1", rt1_1.getName());
         DMRResourceType rt2_2 = createResourceTypeDMR("res2_2", "/res2_2", rt1_2.getName());
-        DMRResourceTypeSet set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
+        TypeSet<DMRResourceType> set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
 
         DMRResourceType rt3_1 = createResourceTypeDMR("res3_1", "/res3_1", rt2_1.getName());
         DMRResourceType rt3_2 = createResourceTypeDMR("res3_2", "/res3_2", rt2_2.getName());
-        DMRResourceTypeSet set3 = createResourceTypeSetDMR("set3", true, rt3_1, rt3_2);
+        TypeSet<DMRResourceType> set3 = createResourceTypeSetDMR("set3", true, rt3_1, rt3_2);
 
-        Map<Name, DMRResourceTypeSet> rTypeSetDmrMap = new HashMap<>();
+        Map<Name, TypeSet<DMRResourceType>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
         rTypeSetDmrMap.put(set2.getName(), set2);
         rTypeSetDmrMap.put(set3.getName(), set3);
 
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRResourceType> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
         DirectedGraph<DMRResourceType, DefaultEdge> graph = rtm.getResourceTypesGraph();
 
         Assert.assertNotNull(graph);
@@ -212,17 +212,17 @@ public class ResourceTypeManagerTest {
     public void multiParentGraphDMR() {
         DMRResourceType rt1_1 = createResourceTypeDMR("res1_1", "/res1_1");
         DMRResourceType rt1_2 = createResourceTypeDMR("res1_2", "/res1_2");
-        DMRResourceTypeSet set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
+        TypeSet<DMRResourceType> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
         DMRResourceType rt2_1 = createResourceTypeDMR("res2_1", "/res2_1", rt1_1.getName());
         DMRResourceType rt2_2 = createResourceTypeDMR("res2_2", "/res2_2", rt1_1.getName(), rt1_2.getName());
-        DMRResourceTypeSet set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
+        TypeSet<DMRResourceType> set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
 
-        Map<Name, DMRResourceTypeSet> rTypeSetDmrMap = new HashMap<>();
+        Map<Name, TypeSet<DMRResourceType>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
         rTypeSetDmrMap.put(set2.getName(), set2);
 
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRResourceType> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
         DirectedGraph<DMRResourceType, DefaultEdge> graph = rtm.getResourceTypesGraph();
 
         Assert.assertNotNull(graph);
@@ -251,17 +251,17 @@ public class ResourceTypeManagerTest {
     public void ignoreSetsDMR() {
         DMRResourceType rt1_1 = createResourceTypeDMR("res1.1", "/res1.1");
         DMRResourceType rt1_2 = createResourceTypeDMR("res1.2", "/res1.1");
-        DMRResourceTypeSet set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
+        TypeSet<DMRResourceType> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
         DMRResourceType rt2_1 = createResourceTypeDMR("res2.1", "/res1.1");
         DMRResourceType rt2_2 = createResourceTypeDMR("res2.2", "/res2.2");
-        DMRResourceTypeSet set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
+        TypeSet<DMRResourceType> set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
 
-        Map<Name, DMRResourceTypeSet> rTypeSetDmrMap = new HashMap<>();
+        Map<Name, TypeSet<DMRResourceType>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
         rTypeSetDmrMap.put(set2.getName(), set2);
 
-        ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm = new ResourceTypeManager<>(rTypeSetDmrMap,
+        ResourceTypeManager<DMRResourceType> rtm = new ResourceTypeManager<>(rTypeSetDmrMap,
                 Arrays.asList(set1.getName()));
         DirectedGraph<DMRResourceType, DefaultEdge> graph = rtm.getResourceTypesGraph();
 
@@ -273,17 +273,18 @@ public class ResourceTypeManagerTest {
         Assert.assertEquals("The two types are root resources", 2, roots.size());
     }
 
-    private DMRResourceTypeSet createResourceTypeSetDMR(String name, boolean enabled, DMRResourceType... types) {
-        DMRResourceTypeSet set = new DMRResourceTypeSet(new ID(name), new Name(name));
-        set.setEnabled(enabled);
-        set.setResourceTypeMap(new HashMap<Name, DMRResourceType>());
+    private TypeSet<DMRResourceType> createResourceTypeSetDMR(String name, boolean enabled, DMRResourceType... types) {
+        TypeSetBuilder<DMRResourceType> typeSetBuilder = TypeSet.<DMRResourceType> builder() //
+                .id(new ID(name)) //
+                .name(new Name(name)) //
+                .enabled(enabled);
 
         if (types != null) {
             for (DMRResourceType type : types) {
-                set.getResourceTypeMap().put(type.getName(), type);
+                typeSetBuilder.type(type);
             }
         }
-        return set;
+        return typeSetBuilder.build();
     }
 
     private DMRResourceType createResourceTypeDMR(String name, String path, Name... parents) {

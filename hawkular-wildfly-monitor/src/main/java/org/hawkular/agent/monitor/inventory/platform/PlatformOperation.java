@@ -20,9 +20,9 @@ import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.Operation;
 
-public class PlatformOperation extends Operation<PlatformResourceType> {
+public class PlatformOperation extends Operation {
 
-    public PlatformOperation(ID id, Name name, PlatformResourceType resourceType) {
-        super(id, name, resourceType);
+    public PlatformOperation(ID id, Name name) {
+        super(id, name);
     }
 }

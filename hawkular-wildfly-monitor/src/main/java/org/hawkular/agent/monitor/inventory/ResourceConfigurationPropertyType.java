@@ -16,16 +16,9 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class ResourceConfigurationPropertyType<RT extends ResourceType<?, ?, ?, ?>> extends NamedObject {
+public abstract class ResourceConfigurationPropertyType extends NamedObject {
 
-    private final RT resourceType;
-
-    public ResourceConfigurationPropertyType(ID id, Name name, RT resourceType) {
+    public ResourceConfigurationPropertyType(ID id, Name name) {
         super(id, name);
-        this.resourceType = resourceType;
-    }
-
-    public RT getResourceType() {
-        return resourceType;
     }
 }

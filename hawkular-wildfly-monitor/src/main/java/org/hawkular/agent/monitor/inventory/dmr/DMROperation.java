@@ -20,10 +20,10 @@ import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.Operation;
 
-public class DMROperation extends Operation<DMRResourceType> {
+public class DMROperation extends Operation {
 
-    public DMROperation(ID id, Name name, DMRResourceType resourceType) {
-        super(id, name, resourceType);
+    public DMROperation(ID id, Name name) {
+        super(id, name);
     }
 
     private String path;

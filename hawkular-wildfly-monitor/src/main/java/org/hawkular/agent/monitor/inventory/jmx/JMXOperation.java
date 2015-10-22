@@ -20,10 +20,10 @@ import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.Operation;
 
-public class JMXOperation extends Operation<JMXResourceType> {
+public class JMXOperation extends Operation {
 
-    public JMXOperation(ID id, Name name, JMXResourceType resourceType) {
-        super(id, name, resourceType);
+    public JMXOperation(ID id, Name name) {
+        super(id, name);
     }
 
     private String objectName;

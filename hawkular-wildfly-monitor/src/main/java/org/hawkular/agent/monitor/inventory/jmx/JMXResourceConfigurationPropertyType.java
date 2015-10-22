@@ -20,13 +20,13 @@ import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 
-public class JMXResourceConfigurationPropertyType extends ResourceConfigurationPropertyType<JMXResourceType> {
+public class JMXResourceConfigurationPropertyType extends ResourceConfigurationPropertyType {
 
     private String objectName;
     private String attribute;
 
-    public JMXResourceConfigurationPropertyType(ID id, Name name, JMXResourceType resourceType) {
-        super(id, name, resourceType);
+    public JMXResourceConfigurationPropertyType(ID id, Name name) {
+        super(id, name);
     }
 
     public String getObjectName() {

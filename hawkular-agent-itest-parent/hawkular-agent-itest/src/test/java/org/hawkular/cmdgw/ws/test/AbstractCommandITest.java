@@ -37,6 +37,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -83,6 +84,8 @@ import okio.BufferedSource;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public abstract class AbstractCommandITest {
+    private static final Logger log = Logger.getLogger(AbstractCommandITest.class.getName());
+
     protected static class TestListener implements WebSocketListener {
 
         private final WebSocketListener delegate;
@@ -96,17 +99,26 @@ public abstract class AbstractCommandITest {
         }
 
         protected Buffer copy(BufferedSource payload) throws IOException {
-            Buffer payloadCopy = new Buffer();
-            payload.readAll(payloadCopy);
+            byte[] bytes = payload.readByteArray();
             payload.close();
+            try {
+                String str = new String(bytes, "utf-8");
+                log.fine("Received over WebSocket: " + str);
+            } catch (Exception e) {
+                log.fine("Received over WebSocket, but could not decode: [" + bytes.length + "] bytes");
+            }
+            Buffer payloadCopy = new Buffer();
+            payloadCopy.write(bytes);
             return payloadCopy;
         }
 
         public void onClose(int code, String reason) {
+            log.fine("WebSocket closed");
             delegate.onClose(code, reason);
         }
 
         public void onFailure(IOException e, Response response) {
+            log.log(java.util.logging.Level.FINE, "WebSocket failure", e);
             delegate.onFailure(e, response);
         }
 
@@ -116,6 +128,7 @@ public abstract class AbstractCommandITest {
         }
 
         public void onOpen(WebSocket webSocket, Response response) {
+            log.fine("WebSocket opened");
             delegate.onOpen(webSocket, response);
         }
 
@@ -137,6 +150,7 @@ public abstract class AbstractCommandITest {
                 public void run() {
                     try (Buffer b1 = new Buffer()) {
                         if (text != null) {
+                            log.fine("Sending over WebSocket: " + text);
                             b1.writeUtf8(text);
                         }
                         if (dataUrl != null) {
@@ -245,7 +259,8 @@ public abstract class AbstractCommandITest {
     protected void assertNodeEquals(ModelControllerClient mcc, ModelNode addressActual, Class<?> caller,
             String expectedNodeFileName, boolean saveActual) {
         try {
-            ModelNode actual = OperationBuilder.readResource().address(addressActual).includeRuntime().includeDefaults()
+            ModelNode actual = OperationBuilder.readResource().address(addressActual).includeRuntime()
+                    .includeDefaults()
                     .recursive().execute(mcc).assertSuccess().getResultNode();
             if (saveActual) {
                 writeNode(caller, actual, expectedNodeFileName + ".actual.txt");
@@ -272,7 +287,8 @@ public abstract class AbstractCommandITest {
             AssertJUnit.assertEquals("Number of child nodes of [" + address + "] " + response, expectedCount,
                     nodes.size());
         } else if (expectedCount != 0) {
-            AssertJUnit.fail("Path [" + address + "] has no child nodes, expected " + expectedCount + " : " + response);
+            AssertJUnit
+                    .fail("Path [" + address + "] has no child nodes, expected " + expectedCount + " : " + response);
         }
 
     }

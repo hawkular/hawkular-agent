@@ -21,13 +21,13 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 
 public class PlatformResourceConfigurationPropertyType
-        extends ResourceConfigurationPropertyType<PlatformResourceType> {
+        extends ResourceConfigurationPropertyType {
 
     private String path;
     private String attribute;
 
-    public PlatformResourceConfigurationPropertyType(ID id, Name name, PlatformResourceType resourceType) {
-        super(id, name, resourceType);
+    public PlatformResourceConfigurationPropertyType(ID id, Name name) {
+        super(id, name);
     }
 
     public String getPath() {

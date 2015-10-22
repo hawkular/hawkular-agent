@@ -28,11 +28,8 @@ import org.jgrapht.event.VertexSetListener;
 
 public class DMRInventoryManager extends InventoryManager
         <DMRResourceType,
-        DMRResourceTypeSet,
         DMRMetricType,
-        DMRMetricTypeSet,
         DMRAvailType,
-        DMRAvailTypeSet,
         DMROperation,
         DMRResourceConfigurationPropertyType,
         DMRResource,
@@ -41,8 +38,8 @@ public class DMRInventoryManager extends InventoryManager
     private final ModelControllerClientFactory dmrClientFactory;
 
     public DMRInventoryManager(String feedId,
-            MetadataManager<DMRResourceType, DMRResourceTypeSet, DMRMetricType, DMRMetricTypeSet,
-            DMRAvailType, DMRAvailTypeSet, DMROperation, DMRResourceConfigurationPropertyType> metadataManager,
+            MetadataManager<DMRResourceType, DMRMetricType,
+            DMRAvailType, DMROperation, DMRResourceConfigurationPropertyType> metadataManager,
             ResourceManager<DMRResource> resourceManager,
             ManagedServer managedServer,
             DMREndpoint dmrEndpoint,

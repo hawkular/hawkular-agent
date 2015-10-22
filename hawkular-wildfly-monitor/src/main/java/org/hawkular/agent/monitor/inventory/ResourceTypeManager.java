@@ -32,9 +32,9 @@ import org.jgrapht.graph.ListenableDirectedGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.DepthFirstIterator;
 
-public class ResourceTypeManager<T extends ResourceType<?, ?, ?, ?>, S extends ResourceTypeSet<T>> {
+public class ResourceTypeManager<T extends ResourceType<?, ?, ?, ?>> {
     private static final MsgLogger log = AgentLoggers.getLogger(ResourceTypeManager.class);
-    private final Map<Name, S> resourceTypeSetMap;
+    private final Map<Name, TypeSet<T>> resourceTypeSetMap;
     private final ListenableDirectedGraph<T, DefaultEdge> resourceTypesGraph;
     private final DirectedNeighborIndex<T, DefaultEdge> index;
 
@@ -44,7 +44,7 @@ public class ResourceTypeManager<T extends ResourceType<?, ?, ?, ?>, S extends R
      * @param resourceTypeSetMap a full set of types to use
      * @throws IllegalStateException if types are missing (e.g. a type needs a parent but the parent is missing)
      */
-    public ResourceTypeManager(Map<Name, S> resourceTypeSetMap) throws IllegalStateException {
+    public ResourceTypeManager(Map<Name, TypeSet<T>> resourceTypeSetMap) throws IllegalStateException {
         this(resourceTypeSetMap, null);
     }
 
@@ -56,7 +56,7 @@ public class ResourceTypeManager<T extends ResourceType<?, ?, ?, ?>, S extends R
      *                  If null, then the full set is used (by "full set" it means the resourceTypeSetMap param).
      * @throws IllegalStateException if types are missing (e.g. a type needs a parent but the parent is missing)
      */
-    public ResourceTypeManager(Map<Name, S> resourceTypeSetMap, Collection<Name> setsToUse)
+    public ResourceTypeManager(Map<Name, TypeSet<T>> resourceTypeSetMap, Collection<Name> setsToUse)
             throws IllegalStateException {
         // If setsToUse is null, that means we need to use all the ones in the incoming map.
         // If setsToUse is not null, just use those named sets and ignore the others.
@@ -167,8 +167,8 @@ public class ResourceTypeManager<T extends ResourceType<?, ?, ?, ?>, S extends R
         Map<Name, T> allResourceTypes = new HashMap<>();
 
         // add all resource types as vertices in the graph
-        for (S rTypeSet : resourceTypeSetMap.values()) {
-            for (T rType : rTypeSet.getResourceTypeMap().values()) {
+        for (TypeSet<T> rTypeSet : resourceTypeSetMap.values()) {
+            for (T rType : rTypeSet.getTypeMap().values()) {
                 if (null != allResourceTypes.put(rType.getName(), rType)) {
                     throw new IllegalStateException("Multiple resource types have the same name: " + rType.getName());
                 }
@@ -181,8 +181,8 @@ public class ResourceTypeManager<T extends ResourceType<?, ?, ?, ?>, S extends R
         }
 
         // now add the parent hierarchy to the graph
-        for (S rTypeSet : resourceTypeSetMap.values()) {
-            for (T rType : rTypeSet.getResourceTypeMap().values()) {
+        for (TypeSet<T> rTypeSet : resourceTypeSetMap.values()) {
+            for (T rType : rTypeSet.getTypeMap().values()) {
                 for (Name parent : rType.getParents()) {
                     T parentResourceType = allResourceTypes.get(parent);
                     if (parentResourceType == null) {

@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class ResourceConfigurationPropertyInstance<T extends ResourceConfigurationPropertyType<?>>
+public abstract class ResourceConfigurationPropertyInstance<T extends ResourceConfigurationPropertyType>
         extends NamedObject {
 
     private final T configurationPropertyType;

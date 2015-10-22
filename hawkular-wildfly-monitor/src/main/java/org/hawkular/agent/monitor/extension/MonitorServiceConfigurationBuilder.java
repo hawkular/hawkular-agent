@@ -19,40 +19,44 @@ package org.hawkular.agent.monitor.extension;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Diagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsReportTo;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
+import org.hawkular.agent.monitor.inventory.TypeSet;
+import org.hawkular.agent.monitor.inventory.TypeSet.TypeSetBuilder;
+import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.DMROperation;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.inventory.jmx.JMXAvailType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXAvailTypeSet;
 import org.hawkular.agent.monitor.inventory.jmx.JMXMetricType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.jmx.JMXOperation;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.jmx.JMXResourceType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXResourceTypeSet;
 import org.hawkular.agent.monitor.inventory.jmx.RemoteJMXManagedServer;
 import org.hawkular.agent.monitor.inventory.platform.Constants;
+import org.hawkular.agent.monitor.inventory.platform.PlatformAvailType;
 import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformMetricTypeSet;
 import org.hawkular.agent.monitor.inventory.platform.PlatformResourceType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformResourceTypeSet;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.metrics.client.common.MetricType;
@@ -68,59 +72,76 @@ import org.jboss.dmr.Property;
  */
 public class MonitorServiceConfigurationBuilder {
     private static final MsgLogger log = AgentLoggers.getLogger(MonitorServiceConfigurationBuilder.class);
-    private final MonitorServiceConfiguration theConfig = new MonitorServiceConfiguration();
+
+    private TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> dmrTypeSets;
+    private TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets;
+    private TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets;
+
+    private Diagnostics diagnostics;
+    private StorageAdapter storageAdapter;
+
+    private boolean subsystemEnabled;
+
+    private String apiJndi;
+
+    private int numMetricSchedulerThreads;
+
+    private int numAvailSchedulerThreads;
+
+    private int numDmrSchedulerThreads;
+
+    private int metricDispatcherBufferSize;
+
+    private int metricDispatcherMaxBatchSize;
+
+    private int availDispatcherBufferSize;
+
+    private int availDispatcherMaxBatchSize;
+    private Map<Name, ManagedServer> managedServersMap;
 
     public MonitorServiceConfiguration build() {
-        return theConfig;
+        return new MonitorServiceConfiguration(subsystemEnabled, apiJndi, numMetricSchedulerThreads,
+                numAvailSchedulerThreads, numDmrSchedulerThreads, metricDispatcherBufferSize,
+                metricDispatcherMaxBatchSize, availDispatcherBufferSize, availDispatcherMaxBatchSize,
+                diagnostics, storageAdapter, dmrTypeSets, jmxTypeSets,
+                platformTypeSets, managedServersMap);
     }
 
     public MonitorServiceConfigurationBuilder(ModelNode config, OperationContext context)
             throws OperationFailedException {
         determineGlobalConfig(config, context);
-        determineStorageAdapterConfig(config, context);
-        determineDiagnosticsConfig(config, context);
-        determinePlatformConfig(config, context);
+        this.storageAdapter = determineStorageAdapterConfig(config, context);
 
-        boolean hasEnabledMetricsDmr = determineMetricSetDmr(config, context);
-        boolean hasEnabledAvailsDmr = determineAvailSetDmr(config, context);
+        this.diagnostics = determineDiagnosticsConfig(config, context);
 
-        boolean hasEnabledMetricsJmx = determineMetricSetJmx(config, context);
-        boolean hasEnabledAvailsJmx = determineAvailSetJmx(config, context);
+        this.platformTypeSets = determinePlatformConfig(config, context);
 
-        if (!hasEnabledMetricsDmr) {
-            log.infoNoEnabledMetricsConfigured("DMR");
-        }
-        if (!hasEnabledAvailsDmr) {
-            log.infoNoEnabledAvailsConfigured("DMR");
-        }
-        if (!hasEnabledMetricsJmx) {
-            log.infoNoEnabledMetricsConfigured("JMX");
-        }
-        if (!hasEnabledAvailsJmx) {
-            log.infoNoEnabledAvailsConfigured("JMX");
-        }
+        Map<Name, TypeSet<DMRMetricType>> metricsDmr = determineMetricSetDmr(config, context);
+        Map<Name, TypeSet<DMRAvailType>> availsDmr = determineAvailSetDmr(config, context);
+
+        Map<Name, TypeSet<JMXMetricType>> metricsJmx = determineMetricSetJmx(config, context);
+        Map<Name, TypeSet<JMXAvailType>> availsJmx = determineAvailSetJmx(config, context);
 
         // make sure to call this AFTER the metric sets and avail sets have been determined
-        boolean hasEnabledResourceTypesDmr = determineResourceTypeSetDmr(config, context);
-        boolean hasEnabledResourceTypesJmx = determineResourceTypeSetJmx(config, context);
+        Map<Name, TypeSet<DMRResourceType>> resourceTypesDmr = determineResourceTypeSetDmr(config, context, metricsDmr,
+                availsDmr);
+        Map<Name, TypeSet<JMXResourceType>> resourceTypesJmx = determineResourceTypeSetJmx(config, context, metricsJmx,
+                availsJmx);
 
-        if (!hasEnabledResourceTypesDmr) {
-            log.infoNoEnabledResourceTypesConfigured("DMR");
-        }
-        if (!hasEnabledResourceTypesJmx) {
-            log.infoNoEnabledResourceTypesConfigured("JMX");
-        }
+        this.dmrTypeSets = new TypeSets<>(resourceTypesDmr, metricsDmr, availsDmr, true);
+        this.jmxTypeSets = new TypeSets<>(resourceTypesJmx, metricsJmx, availsJmx, true);
 
         // make sure to call this AFTER the resource type sets have been determined
-        determineManagedServers(config, context);
+        this.managedServersMap = this.determineManagedServers(config, context);
 
         return;
     }
 
-    private boolean determineMetricSetDmr(ModelNode config, OperationContext context)
+    private Map<Name, TypeSet<DMRMetricType>> determineMetricSetDmr(ModelNode config, OperationContext context)
             throws OperationFailedException {
 
-        boolean hasEnabledMetrics = false;
+        boolean enabled = false;
+        Map<Name, TypeSet<DMRMetricType>> result = new HashMap<>();
 
         if (config.hasDefined(DMRMetricSetDefinition.METRIC_SET)) {
             List<Property> metricSetsList = config.get(DMRMetricSetDefinition.METRIC_SET).asPropertyList();
@@ -129,16 +150,18 @@ public class MonitorServiceConfigurationBuilder {
                 if (metricSetName.indexOf(',') > -1) {
                     log.warnCommaInName(metricSetName);
                 }
-                DMRMetricTypeSet metricSet = new DMRMetricTypeSet(ID.NULL_ID, new Name(metricSetName));
-                theConfig.dmrMetricTypeSetMap.put(metricSet.getName(), metricSet);
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
-                metricSet.setEnabled(getBoolean(metricSetValueNode, context, DMRMetricSetAttributes.ENABLED));
+
+                TypeSetBuilder<DMRMetricType> typeSetBuilder = TypeSet.<DMRMetricType> builder() //
+                        .name(new Name(metricSetName)) //
+                        .enabled(getBoolean(metricSetValueNode, context, DMRMetricSetAttributes.ENABLED));
+
                 if (metricSetValueNode.hasDefined(DMRMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(DMRMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
-                        String metricName = metricSet.getName() + "~" + metricProperty.getName();
+                        String metricName = metricSetName + "~" + metricProperty.getName();
                         DMRMetricType metric = new DMRMetricType(ID.NULL_ID, new Name(metricName));
-                        metricSet.getMetricTypeMap().put(metric.getName(), metric);
+                        typeSetBuilder.type(metric);
                         ModelNode metricValueNode = metricProperty.getValue();
                         metric.setPath(getString(metricValueNode, context, DMRMetricAttributes.PATH));
                         metric.setAttribute(getString(metricValueNode, context, DMRMetricAttributes.ATTRIBUTE));
@@ -159,19 +182,24 @@ public class MonitorServiceConfigurationBuilder {
                                 DMRMetricAttributes.TIME_UNITS);
                         metric.setTimeUnits(TimeUnit.valueOf(metricTimeUnitsStr.toUpperCase()));
                     }
-                    if (metricSet.isEnabled() && !metricSet.getMetricTypeMap().isEmpty()) {
-                        hasEnabledMetrics = true;
-                    }
                 }
+                TypeSet<DMRMetricType> typeSet = typeSetBuilder.build();
+                enabled = enabled || !typeSet.isDisabledOrEmpty();
+                result.put(typeSet.getName(), typeSet);
             }
         }
+        if (!enabled) {
+            log.infoNoEnabledMetricsConfigured("DMR");
+        }
 
-        return hasEnabledMetrics;
+        return result;
     }
 
-    private boolean determineAvailSetDmr(ModelNode config, OperationContext context) throws OperationFailedException {
-        boolean hasEnabledAvails = false;
+    private Map<Name, TypeSet<DMRAvailType>> determineAvailSetDmr(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+        boolean enabled = false;
 
+        Map<Name, TypeSet<DMRAvailType>> result = new LinkedHashMap<>();
         if (config.hasDefined(DMRAvailSetDefinition.AVAIL_SET)) {
             List<Property> availSetsList = config.get(DMRAvailSetDefinition.AVAIL_SET).asPropertyList();
             for (Property availSetProperty : availSetsList) {
@@ -179,16 +207,17 @@ public class MonitorServiceConfigurationBuilder {
                 if (availSetName.indexOf(',') > -1) {
                     log.warnCommaInName(availSetName);
                 }
-                DMRAvailTypeSet availSet = new DMRAvailTypeSet(ID.NULL_ID, new Name(availSetName));
-                theConfig.dmrAvailTypeSetMap.put(availSet.getName(), availSet);
                 ModelNode availSetValueNode = availSetProperty.getValue();
-                availSet.setEnabled(getBoolean(availSetValueNode, context, DMRAvailSetAttributes.ENABLED));
+                TypeSetBuilder<DMRAvailType> typeSetBuilder = TypeSet.<DMRAvailType> builder() //
+                        .name(new Name(availSetName)) //
+                        .enabled(getBoolean(availSetValueNode, context, DMRAvailSetAttributes.ENABLED));
+
                 if (availSetValueNode.hasDefined(DMRAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(DMRAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
-                        String availName = availSet.getName() + "~" + availProperty.getName();
+                        String availName = availSetName + "~" + availProperty.getName();
                         DMRAvailType avail = new DMRAvailType(ID.NULL_ID, new Name(availName));
-                        availSet.getAvailTypeMap().put(avail.getName(), avail);
+                        typeSetBuilder.type(avail);
                         ModelNode availValueNode = availProperty.getValue();
                         avail.setPath(getString(availValueNode, context, DMRAvailAttributes.PATH));
                         avail.setAttribute(getString(availValueNode, context, DMRAvailAttributes.ATTRIBUTE));
@@ -197,21 +226,25 @@ public class MonitorServiceConfigurationBuilder {
                         avail.setTimeUnits(TimeUnit.valueOf(availTimeUnitsStr.toUpperCase()));
                         avail.setUpRegex(getString(availValueNode, context, DMRAvailAttributes.UP_REGEX));
                     }
-                    if (availSet.isEnabled() && !availSet.getAvailTypeMap().isEmpty()) {
-                        hasEnabledAvails = true;
-                    }
+                    TypeSet<DMRAvailType> typeSet = typeSetBuilder.build();
+                    enabled = enabled || !typeSet.isDisabledOrEmpty();
+                    result.put(typeSet.getName(), typeSet);
                 }
             }
         }
+        if (!enabled) {
+            log.infoNoEnabledAvailsConfigured("DMR");
+        }
 
-        return hasEnabledAvails;
+        return result;
     }
 
-    private boolean determineMetricSetJmx(ModelNode config, OperationContext context)
+    private Map<Name, TypeSet<JMXMetricType>> determineMetricSetJmx(ModelNode config, OperationContext context)
             throws OperationFailedException {
 
-        boolean hasEnabledMetrics = false;
+        boolean enabled = false;
 
+        Map<Name, TypeSet<JMXMetricType>> result = new LinkedHashMap<>();
         if (config.hasDefined(JMXMetricSetDefinition.METRIC_SET)) {
             List<Property> metricSetsList = config.get(JMXMetricSetDefinition.METRIC_SET).asPropertyList();
             for (Property metricSetProperty : metricSetsList) {
@@ -219,16 +252,16 @@ public class MonitorServiceConfigurationBuilder {
                 if (metricSetName.indexOf(',') > -1) {
                     log.warnCommaInName(metricSetName);
                 }
-                JMXMetricTypeSet metricSet = new JMXMetricTypeSet(ID.NULL_ID, new Name(metricSetName));
-                theConfig.jmxMetricTypeSetMap.put(metricSet.getName(), metricSet);
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
-                metricSet.setEnabled(getBoolean(metricSetValueNode, context, JMXMetricSetAttributes.ENABLED));
+                TypeSetBuilder<JMXMetricType> typeSetBuilder = TypeSet.<JMXMetricType> builder() //
+                        .name(new Name(metricSetName)) //
+                        .enabled(getBoolean(metricSetValueNode, context, JMXMetricSetAttributes.ENABLED));
                 if (metricSetValueNode.hasDefined(JMXMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(JMXMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
-                        String metricName = metricSet.getName() + "~" + metricProperty.getName();
+                        String metricName = metricSetName + "~" + metricProperty.getName();
                         JMXMetricType metric = new JMXMetricType(ID.NULL_ID, new Name(metricName));
-                        metricSet.getMetricTypeMap().put(metric.getName(), metric);
+                        typeSetBuilder.type(metric);
                         ModelNode metricValueNode = metricProperty.getValue();
                         metric.setObjectName(getObjectName(metricValueNode, context, JMXMetricAttributes.OBJECT_NAME));
                         metric.setAttribute(getString(metricValueNode, context, JMXMetricAttributes.ATTRIBUTE));
@@ -249,19 +282,24 @@ public class MonitorServiceConfigurationBuilder {
                                 JMXMetricAttributes.TIME_UNITS);
                         metric.setTimeUnits(TimeUnit.valueOf(metricTimeUnitsStr.toUpperCase()));
                     }
-                    if (metricSet.isEnabled() && !metricSet.getMetricTypeMap().isEmpty()) {
-                        hasEnabledMetrics = true;
-                    }
+                    TypeSet<JMXMetricType> typeSet = typeSetBuilder.build();
+                    enabled = enabled || !typeSet.isDisabledOrEmpty();
+                    result.put(typeSet.getName(), typeSet);
                 }
             }
         }
+        if (!enabled) {
+            log.infoNoEnabledMetricsConfigured("JMX");
+        }
 
-        return hasEnabledMetrics;
+        return result;
     }
 
-    private boolean determineAvailSetJmx(ModelNode config, OperationContext context) throws OperationFailedException {
-        boolean hasEnabledAvails = false;
+    private Map<Name, TypeSet<JMXAvailType>> determineAvailSetJmx(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+        boolean enabled = false;
 
+        Map<Name, TypeSet<JMXAvailType>> result = new LinkedHashMap<>();
         if (config.hasDefined(JMXAvailSetDefinition.AVAIL_SET)) {
             List<Property> availSetsList = config.get(JMXAvailSetDefinition.AVAIL_SET).asPropertyList();
             for (Property availSetProperty : availSetsList) {
@@ -269,16 +307,16 @@ public class MonitorServiceConfigurationBuilder {
                 if (availSetName.indexOf(',') > -1) {
                     log.warnCommaInName(availSetName);
                 }
-                JMXAvailTypeSet availSet = new JMXAvailTypeSet(ID.NULL_ID, new Name(availSetName));
-                theConfig.jmxAvailTypeSetMap.put(availSet.getName(), availSet);
                 ModelNode availSetValueNode = availSetProperty.getValue();
-                availSet.setEnabled(getBoolean(availSetValueNode, context, JMXAvailSetAttributes.ENABLED));
+                TypeSetBuilder<JMXAvailType> typeSetBuilder = TypeSet.<JMXAvailType> builder() //
+                        .name(new Name(availSetName)) //
+                        .enabled(getBoolean(availSetValueNode, context, JMXAvailSetAttributes.ENABLED));
                 if (availSetValueNode.hasDefined(JMXAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(JMXAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
-                        String availName = availSet.getName() + "~" + availProperty.getName();
+                        String availName = availSetName + "~" + availProperty.getName();
                         JMXAvailType avail = new JMXAvailType(ID.NULL_ID, new Name(availName));
-                        availSet.getAvailTypeMap().put(avail.getName(), avail);
+                        typeSetBuilder.type(avail);
                         ModelNode availValueNode = availProperty.getValue();
                         avail.setObjectName(getObjectName(availValueNode, context, JMXAvailAttributes.OBJECT_NAME));
                         avail.setAttribute(getString(availValueNode, context, JMXAvailAttributes.ATTRIBUTE));
@@ -287,56 +325,64 @@ public class MonitorServiceConfigurationBuilder {
                         avail.setTimeUnits(TimeUnit.valueOf(availTimeUnitsStr.toUpperCase()));
                         avail.setUpRegex(getString(availValueNode, context, JMXAvailAttributes.UP_REGEX));
                     }
-                    if (availSet.isEnabled() && !availSet.getAvailTypeMap().isEmpty()) {
-                        hasEnabledAvails = true;
-                    }
+                    TypeSet<JMXAvailType> typeSet = typeSetBuilder.build();
+                    enabled = enabled || !typeSet.isDisabledOrEmpty();
+                    result.put(typeSet.getName(), typeSet);
                 }
             }
         }
 
-        return hasEnabledAvails;
+        if (!enabled) {
+            log.infoNoEnabledAvailsConfigured("JMX");
+        }
+        return result;
     }
 
-    private void determinePlatformConfig(ModelNode config, OperationContext context)
-            throws OperationFailedException {
+    private TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> determinePlatformConfig(
+            ModelNode config, OperationContext context)
+                    throws OperationFailedException {
 
         // assume they are disabled unless configured otherwise
-        theConfig.platform.allEnabled = false;
-        theConfig.platform.resourceTypeSetMap.clear();
-        theConfig.platform.metricTypeSetMap.clear();
+        Map<Name, TypeSet<PlatformResourceType>> resourceTypeSetMap = new HashMap<>();
+        Map<Name, TypeSet<PlatformMetricType>> metricTypeSetMap = new HashMap<>();
+        Map<Name, TypeSet<PlatformAvailType>> availTypeSetMap = new HashMap<>();
 
         if (!config.hasDefined(PlatformDefinition.PLATFORM)) {
             log.infoNoPlatformConfig();
-            return;
+            return TypeSets.empty();
         }
 
         List<Property> asPropertyList = config.get(PlatformDefinition.PLATFORM).asPropertyList();
         if (asPropertyList.size() == 0) {
             log.infoNoPlatformConfig();
-            return;
+            return TypeSets.empty();
         } else if (asPropertyList.size() > 1) {
             throw new IllegalArgumentException("Only one platform config allowed: " + config.toJSONString(true));
         }
 
         ModelNode platformValueNode = asPropertyList.get(0).getValue();
-        theConfig.platform.allEnabled = getBoolean(platformValueNode, context, PlatformAttributes.ENABLED);
-        if (theConfig.platform.allEnabled == false) {
+        boolean typeSetsEnabled = getBoolean(platformValueNode, context, PlatformAttributes.ENABLED);
+        if (typeSetsEnabled == false) {
             log.debugf("Platform monitoring is disabled");
-            return;
+            return TypeSets.empty();
         }
 
         // all the type metadata is dependent upon the capabilities of the oshi SystemInfo API
 
         // since platform monitoring is enabled, we will always have at least the root OS type
 
-        PlatformResourceTypeSet rootTypeSet = new PlatformResourceTypeSet(null,
-                Constants.PlatformResourceType.OPERATING_SYSTEM.getName());
-        rootTypeSet.setEnabled(true);
-        PlatformResourceType rootType = new PlatformResourceType(null,
-                Constants.PlatformResourceType.OPERATING_SYSTEM.getName());
+        final Name osName = Constants.PlatformResourceType.OPERATING_SYSTEM.getName();
+
+        PlatformResourceType rootType = new PlatformResourceType(null, osName);
         rootType.setResourceNameTemplate("%s");
-        rootTypeSet.getResourceTypeMap().put(rootType.getName(), rootType);
-        theConfig.platform.resourceTypeSetMap.put(rootTypeSet.getName(), rootTypeSet);
+
+        TypeSet<PlatformResourceType> rootTypeSet = TypeSet.<PlatformResourceType> builder() //
+                .enabled(true)
+                .name(osName) //
+                .type(rootType)
+                .build();
+
+        resourceTypeSetMap.put(rootTypeSet.getName(), rootTypeSet);
 
         // now add children types if they are enabled
 
@@ -350,35 +396,39 @@ public class MonitorServiceConfigurationBuilder {
                     TimeUnit timeUnit = TimeUnit.valueOf(getString(fileStoresNode, context,
                             FileStoresAttributes.TIME_UNITS).toUpperCase());
 
-                    PlatformMetricTypeSet fileStoreMetrics = new PlatformMetricTypeSet(null,
-                            Constants.PlatformResourceType.FILE_STORE.getName());
-                    theConfig.platform.metricTypeSetMap.put(fileStoreMetrics.getName(), fileStoreMetrics);
-
                     PlatformMetricType usableSpace = new PlatformMetricType(null, Constants.FILE_STORE_USABLE_SPACE);
                     usableSpace.setInterval(interval);
                     usableSpace.setTimeUnits(timeUnit);
                     usableSpace.setMetricUnits(MeasurementUnit.BYTES);
                     usableSpace.setMetricType(MetricType.GAUGE);
-                    fileStoreMetrics.getMetricTypeMap().put(usableSpace.getName(), usableSpace);
 
                     PlatformMetricType totalSpace = new PlatformMetricType(null, Constants.FILE_STORE_TOTAL_SPACE);
                     totalSpace.setInterval(interval);
                     totalSpace.setTimeUnits(timeUnit);
                     totalSpace.setMetricUnits(MeasurementUnit.BYTES);
                     totalSpace.setMetricType(MetricType.GAUGE);
-                    fileStoreMetrics.getMetricTypeMap().put(totalSpace.getName(), totalSpace);
 
-                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                    TypeSet<PlatformMetricType> fileStoreMetrics = TypeSet.<PlatformMetricType> builder() //
+                            .name(Constants.PlatformResourceType.FILE_STORE.getName()) //
+                            .type(usableSpace) //
+                            .type(totalSpace) //
+                            .build();
+
+                    metricTypeSetMap.put(fileStoreMetrics.getName(), fileStoreMetrics);
+
+                    PlatformResourceType fileStore = new PlatformResourceType(null,
                             Constants.PlatformResourceType.FILE_STORE.getName());
-                    typeSet.setEnabled(true);
-                    PlatformResourceType type = new PlatformResourceType(null,
-                            Constants.PlatformResourceType.FILE_STORE.getName());
-                    type.setParents(Collections.singletonList(rootType.getName()));
-                    type.setMetricSets(Collections.singletonList(fileStoreMetrics.getName()));
-                    type.setResourceNameTemplate(
+                    fileStore.setParents(Collections.singletonList(rootType.getName()));
+                    fileStore.setMetricSets(Collections.singletonList(fileStoreMetrics.getName()));
+                    fileStore.setResourceNameTemplate(
                             Constants.PlatformResourceType.FILE_STORE.getName().getNameString() + " [%s]");
-                    typeSet.getResourceTypeMap().put(type.getName(), type);
-                    theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
+
+                    TypeSet<PlatformResourceType> typeSet = TypeSet.<PlatformResourceType> builder() //
+                            .name(Constants.PlatformResourceType.FILE_STORE.getName())
+                            .type(fileStore)
+                            .build();
+
+                    resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
             } else if (asPropertyList.size() > 1) {
                 throw new IllegalArgumentException("Only one platform.file-stores config allowed: "
@@ -396,35 +446,39 @@ public class MonitorServiceConfigurationBuilder {
                     TimeUnit timeUnit = TimeUnit.valueOf(getString(memoryNode, context,
                             MemoryAttributes.TIME_UNITS).toUpperCase());
 
-                    PlatformMetricTypeSet memoryMetrics = new PlatformMetricTypeSet(null,
-                            Constants.PlatformResourceType.MEMORY.getName());
-                    theConfig.platform.metricTypeSetMap.put(memoryMetrics.getName(), memoryMetrics);
-
                     PlatformMetricType available = new PlatformMetricType(null, Constants.MEMORY_AVAILABLE);
                     available.setInterval(interval);
                     available.setTimeUnits(timeUnit);
                     available.setMetricUnits(MeasurementUnit.BYTES);
                     available.setMetricType(MetricType.GAUGE);
-                    memoryMetrics.getMetricTypeMap().put(available.getName(), available);
 
                     PlatformMetricType total = new PlatformMetricType(null, Constants.MEMORY_TOTAL);
                     total.setInterval(interval);
                     total.setTimeUnits(timeUnit);
                     total.setMetricUnits(MeasurementUnit.BYTES);
                     total.setMetricType(MetricType.GAUGE);
-                    memoryMetrics.getMetricTypeMap().put(total.getName(), total);
 
-                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                    TypeSet<PlatformMetricType> memoryMetrics = TypeSet.<PlatformMetricType> builder() //
+                            .name(Constants.PlatformResourceType.MEMORY.getName()) //
+                            .type(available)
+                            .type(total)
+                            .build();
+
+                    metricTypeSetMap.put(memoryMetrics.getName(), memoryMetrics);
+
+                    PlatformResourceType memory = new PlatformResourceType(null,
                             Constants.PlatformResourceType.MEMORY.getName());
-                    typeSet.setEnabled(true);
-                    PlatformResourceType type = new PlatformResourceType(null,
-                            Constants.PlatformResourceType.MEMORY.getName());
-                    type.setParents(Collections.singletonList(rootType.getName()));
-                    type.setMetricSets(Collections.singletonList(memoryMetrics.getName()));
-                    type.setResourceNameTemplate(
+                    memory.setParents(Collections.singletonList(rootType.getName()));
+                    memory.setMetricSets(Collections.singletonList(memoryMetrics.getName()));
+                    memory.setResourceNameTemplate(
                             Constants.PlatformResourceType.MEMORY.getName().getNameString());
-                    typeSet.getResourceTypeMap().put(type.getName(), type);
-                    theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
+
+                    TypeSet<PlatformResourceType> typeSet = TypeSet.<PlatformResourceType> builder() //
+                            .name(Constants.PlatformResourceType.MEMORY.getName()) //
+                            .type(memory) //
+                            .build();
+
+                    resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
             } else if (asPropertyList.size() > 1) {
                 throw new IllegalArgumentException("Only one platform.memory config allowed: "
@@ -442,29 +496,33 @@ public class MonitorServiceConfigurationBuilder {
                     TimeUnit timeUnit = TimeUnit.valueOf(getString(processorsNode, context,
                             ProcessorsAttributes.TIME_UNITS).toUpperCase());
 
-                    PlatformMetricTypeSet processorMetrics = new PlatformMetricTypeSet(null,
-                            Constants.PlatformResourceType.PROCESSOR.getName());
-                    theConfig.platform.metricTypeSetMap.put(processorMetrics.getName(), processorMetrics);
-
                     // this is the Processor.getProcessorCpuLoadBetweenTicks value
                     PlatformMetricType cpuUsage = new PlatformMetricType(null, Constants.PROCESSOR_CPU_USAGE);
                     cpuUsage.setInterval(interval);
                     cpuUsage.setTimeUnits(timeUnit);
                     cpuUsage.setMetricUnits(MeasurementUnit.PERCENTAGE);
                     cpuUsage.setMetricType(MetricType.GAUGE);
-                    processorMetrics.getMetricTypeMap().put(cpuUsage.getName(), cpuUsage);
 
-                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                    TypeSet<PlatformMetricType> processorMetrics = TypeSet.<PlatformMetricType> builder()
+                            .name(Constants.PlatformResourceType.PROCESSOR.getName()) //
+                            .type(cpuUsage)
+                            .build();
+
+                    metricTypeSetMap.put(processorMetrics.getName(), processorMetrics);
+
+                    PlatformResourceType processor = new PlatformResourceType(null,
                             Constants.PlatformResourceType.PROCESSOR.getName());
-                    typeSet.setEnabled(true);
-                    PlatformResourceType type = new PlatformResourceType(null,
-                            Constants.PlatformResourceType.PROCESSOR.getName());
-                    type.setParents(Collections.singletonList(rootType.getName()));
-                    type.setMetricSets(Collections.singletonList(processorMetrics.getName()));
-                    type.setResourceNameTemplate(
+                    processor.setParents(Collections.singletonList(rootType.getName()));
+                    processor.setMetricSets(Collections.singletonList(processorMetrics.getName()));
+                    processor.setResourceNameTemplate(
                             Constants.PlatformResourceType.PROCESSOR.getName().getNameString() + " [%s]");
-                    typeSet.getResourceTypeMap().put(type.getName(), type);
-                    theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
+
+                    TypeSet<PlatformResourceType> typeSet = TypeSet.<PlatformResourceType> builder() //
+                            .name(Constants.PlatformResourceType.PROCESSOR.getName()) //
+                            .type(processor) //
+                            .build();
+
+                    resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
             } else if (asPropertyList.size() > 1) {
                 throw new IllegalArgumentException("Only one platform.processors config allowed: "
@@ -482,17 +540,12 @@ public class MonitorServiceConfigurationBuilder {
                     TimeUnit timeUnit = TimeUnit.valueOf(getString(powerSourcesNode, context,
                             PowerSourcesAttributes.TIME_UNITS).toUpperCase());
 
-                    PlatformMetricTypeSet powerSourceMetrics = new PlatformMetricTypeSet(null,
-                            Constants.PlatformResourceType.POWER_SOURCE.getName());
-                    theConfig.platform.metricTypeSetMap.put(powerSourceMetrics.getName(), powerSourceMetrics);
-
                     PlatformMetricType remainingCap = new PlatformMetricType(null,
                             Constants.POWER_SOURCE_REMAINING_CAPACITY);
                     remainingCap.setInterval(interval);
                     remainingCap.setTimeUnits(timeUnit);
                     remainingCap.setMetricUnits(MeasurementUnit.PERCENTAGE);
                     remainingCap.setMetricType(MetricType.GAUGE);
-                    powerSourceMetrics.getMetricTypeMap().put(remainingCap.getName(), remainingCap);
 
                     PlatformMetricType timeRemaining = new PlatformMetricType(null,
                             Constants.POWER_SOURCE_TIME_REMAINING);
@@ -500,40 +553,55 @@ public class MonitorServiceConfigurationBuilder {
                     timeRemaining.setTimeUnits(timeUnit);
                     timeRemaining.setMetricUnits(MeasurementUnit.SECONDS);
                     timeRemaining.setMetricType(MetricType.GAUGE);
-                    powerSourceMetrics.getMetricTypeMap().put(timeRemaining.getName(), timeRemaining);
 
-                    PlatformResourceTypeSet typeSet = new PlatformResourceTypeSet(null,
+                    TypeSet<PlatformMetricType> powerSourceMetrics = TypeSet.<PlatformMetricType> builder() //
+                            .name(Constants.PlatformResourceType.POWER_SOURCE.getName()) //
+                            .type(remainingCap)
+                            .type(timeRemaining)
+                            .build();
+
+                    metricTypeSetMap.put(powerSourceMetrics.getName(), powerSourceMetrics);
+
+                    PlatformResourceType powerSource = new PlatformResourceType(null,
                             Constants.PlatformResourceType.POWER_SOURCE.getName());
-                    typeSet.setEnabled(true);
-                    PlatformResourceType type = new PlatformResourceType(null,
-                            Constants.PlatformResourceType.POWER_SOURCE.getName());
-                    type.setParents(Collections.singletonList(rootType.getName()));
-                    type.setMetricSets(Collections.singletonList(powerSourceMetrics.getName()));
-                    type.setResourceNameTemplate(
+                    powerSource.setParents(Collections.singletonList(rootType.getName()));
+                    powerSource.setMetricSets(Collections.singletonList(powerSourceMetrics.getName()));
+                    powerSource.setResourceNameTemplate(
                             Constants.PlatformResourceType.POWER_SOURCE.getName().getNameString() + " [%s]");
-                    typeSet.getResourceTypeMap().put(type.getName(), type);
-                    theConfig.platform.resourceTypeSetMap.put(typeSet.getName(), typeSet);
+
+                    TypeSet<PlatformResourceType> typeSet = TypeSet.<PlatformResourceType> builder() //
+                            .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
+                            .type(powerSource)
+                            .build();
+
+                    resourceTypeSetMap.put(typeSet.getName(), typeSet);
                 }
             } else if (asPropertyList.size() > 1) {
                 throw new IllegalArgumentException("Only one platform.power-sources config allowed: "
                         + platformValueNode.toJSONString(true));
             }
         }
+
+        TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> result = new TypeSets<>(
+                Collections.unmodifiableMap(resourceTypeSetMap),
+                Collections.unmodifiableMap(metricTypeSetMap), Collections.unmodifiableMap(availTypeSetMap),
+                typeSetsEnabled);
+
+        return result;
+
     }
 
-    private void determineDiagnosticsConfig(ModelNode config, OperationContext context)
+    private Diagnostics determineDiagnosticsConfig(ModelNode config, OperationContext context)
             throws OperationFailedException {
         if (!config.hasDefined(DiagnosticsDefinition.DIAGNOSTICS)) {
             log.infoNoDiagnosticsConfig();
-            theConfig.diagnostics.enabled = false;
-            return;
+            return Diagnostics.EMPTY;
         }
 
         List<Property> asPropertyList = config.get(DiagnosticsDefinition.DIAGNOSTICS).asPropertyList();
         if (asPropertyList.size() == 0) {
             log.infoNoDiagnosticsConfig();
-            theConfig.diagnostics.enabled = false;
-            return;
+            return Diagnostics.EMPTY;
         } else if (asPropertyList.size() > 1) {
             throw new IllegalArgumentException("Only one diagnostics config allowed: " + config.toJSONString(true));
         }
@@ -541,15 +609,16 @@ public class MonitorServiceConfigurationBuilder {
         ModelNode diagnosticsValueNode = asPropertyList.get(0).getValue();
 
         String reportToStr = getString(diagnosticsValueNode, context, DiagnosticsAttributes.REPORT_TO);
-        theConfig.diagnostics.reportTo = MonitorServiceConfiguration.DiagnosticsReportTo.valueOf(reportToStr
+        DiagnosticsReportTo reportTo = MonitorServiceConfiguration.DiagnosticsReportTo.valueOf(reportToStr
                 .toUpperCase());
-        theConfig.diagnostics.enabled = getBoolean(diagnosticsValueNode, context, DiagnosticsAttributes.ENABLED);
-        theConfig.diagnostics.interval = getInt(diagnosticsValueNode, context, DiagnosticsAttributes.INTERVAL);
+        boolean enabled = getBoolean(diagnosticsValueNode, context, DiagnosticsAttributes.ENABLED);
+        int interval = getInt(diagnosticsValueNode, context, DiagnosticsAttributes.INTERVAL);
         String diagnosticsTimeUnitsStr = getString(diagnosticsValueNode, context, DiagnosticsAttributes.TIME_UNITS);
-        theConfig.diagnostics.timeUnits = TimeUnit.valueOf(diagnosticsTimeUnitsStr.toUpperCase());
+        TimeUnit timeUnits = TimeUnit.valueOf(diagnosticsTimeUnitsStr.toUpperCase());
+        return new Diagnostics(enabled, reportTo, interval, timeUnits);
     }
 
-    private void determineStorageAdapterConfig(ModelNode config, OperationContext context)
+    private StorageAdapter determineStorageAdapterConfig(ModelNode config, OperationContext context)
             throws OperationFailedException {
 
         if (!config.hasDefined(StorageDefinition.STORAGE_ADAPTER)) {
@@ -565,85 +634,92 @@ public class MonitorServiceConfigurationBuilder {
 
         ModelNode storageAdapterConfig = asPropertyList.get(0).getValue();
 
-        theConfig.storageAdapter.url = getString(storageAdapterConfig, context, StorageAttributes.URL);
-        if (theConfig.storageAdapter.url != null) {
-            theConfig.storageAdapter.useSSL = theConfig.storageAdapter.url.startsWith("https");
-            log.infoUsingSSL(theConfig.storageAdapter.url, theConfig.storageAdapter.useSSL);
+        String url = getString(storageAdapterConfig, context, StorageAttributes.URL);
+        boolean useSSL = false;
+        if (url != null) {
+            useSSL = url.startsWith("https");
+            log.infoUsingSSL(url, useSSL);
         } else {
-            theConfig.storageAdapter.useSSL = getBoolean(storageAdapterConfig, context, StorageAttributes.USE_SSL);
+            useSSL = getBoolean(storageAdapterConfig, context, StorageAttributes.USE_SSL);
         }
-        theConfig.storageAdapter.securityRealm = getString(storageAdapterConfig, context,
+        String securityRealm = getString(storageAdapterConfig, context,
                 StorageAttributes.SECURITY_REALM);
-        theConfig.storageAdapter.keystorePath = getString(storageAdapterConfig, context,
+        String keystorePath = getString(storageAdapterConfig, context,
                 StorageAttributes.KEYSTORE_PATH);
-        theConfig.storageAdapter.keystorePassword = getString(storageAdapterConfig, context,
+        String keystorePassword = getString(storageAdapterConfig, context,
                 StorageAttributes.KEYSTORE_PASSWORD);
-        theConfig.storageAdapter.serverOutboundSocketBindingRef = getString(storageAdapterConfig, context,
+        String serverOutboundSocketBindingRef = getString(storageAdapterConfig, context,
                 StorageAttributes.SERVER_OUTBOUND_SOCKET_BINDING_REF);
-        theConfig.storageAdapter.tenantId = getString(storageAdapterConfig, context, StorageAttributes.TENANT_ID);
-        theConfig.storageAdapter.accountsContext = getString(storageAdapterConfig, context,
+        String tenantId = getString(storageAdapterConfig, context, StorageAttributes.TENANT_ID);
+        String accountsContext = getString(storageAdapterConfig, context,
                 StorageAttributes.ACCOUNTS_CONTEXT);
-        theConfig.storageAdapter.inventoryContext = getString(storageAdapterConfig, context,
+        String inventoryContext = getString(storageAdapterConfig, context,
                 StorageAttributes.INVENTORY_CONTEXT);
-        theConfig.storageAdapter.metricsContext = getString(storageAdapterConfig, context,
+        String metricsContext = getString(storageAdapterConfig, context,
                 StorageAttributes.METRICS_CONTEXT);
-        theConfig.storageAdapter.feedcommContext = getString(storageAdapterConfig, context,
+        String feedcommContext = getString(storageAdapterConfig, context,
                 StorageAttributes.FEEDCOMM_CONTEXT);
-        theConfig.storageAdapter.username = getString(storageAdapterConfig, context, StorageAttributes.USERNAME);
-        theConfig.storageAdapter.password = getString(storageAdapterConfig, context, StorageAttributes.PASSWORD);
+        String username = getString(storageAdapterConfig, context, StorageAttributes.USERNAME);
+        String password = getString(storageAdapterConfig, context, StorageAttributes.PASSWORD);
         String typeStr = getString(storageAdapterConfig, context, StorageAttributes.TYPE);
-        theConfig.storageAdapter.type = MonitorServiceConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
+        StorageReportTo type = MonitorServiceConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
 
-        if (theConfig.storageAdapter.useSSL) {
-            if (theConfig.storageAdapter.securityRealm == null) {
-                if (theConfig.storageAdapter.keystorePath == null) {
+        if (useSSL) {
+            if (securityRealm == null) {
+                if (keystorePath == null) {
                     throw new IllegalArgumentException(
                             "In order to use SSL, a securityRealm or keystorePath must be specified");
                 }
-                if (theConfig.storageAdapter.keystorePassword == null) {
+                if (keystorePassword == null) {
                     throw new IllegalArgumentException(
                             "In order to use SSL, a securityRealm or keystorePassword must be specified");
                 }
             }
         }
+        return new StorageAdapter(type, username, password, tenantId, url, useSSL, serverOutboundSocketBindingRef,
+                accountsContext, inventoryContext, metricsContext, feedcommContext, keystorePath, keystorePassword,
+                securityRealm);
     }
 
     private void determineGlobalConfig(ModelNode config, OperationContext context) throws OperationFailedException {
-        theConfig.subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
-        theConfig.apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
-        theConfig.numMetricSchedulerThreads = getInt(config, context,
+        this.subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
+        this.apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
+        this.numMetricSchedulerThreads = getInt(config, context,
                 SubsystemAttributes.NUM_METRIC_SCHEDULER_THREADS);
-        theConfig.numAvailSchedulerThreads = getInt(config, context,
+        this.numAvailSchedulerThreads = getInt(config, context,
                 SubsystemAttributes.NUM_AVAIL_SCHEDULER_THREADS);
-        theConfig.numDmrSchedulerThreads = getInt(config, context,
+        this.numDmrSchedulerThreads = getInt(config, context,
                 SubsystemAttributes.NUM_DMR_SCHEDULER_THREADS);
-        theConfig.metricDispatcherBufferSize = getInt(config, context,
+        this.metricDispatcherBufferSize = getInt(config, context,
                 SubsystemAttributes.METRIC_DISPATCHER_BUFFER_SIZE);
-        theConfig.metricDispatcherMaxBatchSize = getInt(config, context,
+        this.metricDispatcherMaxBatchSize = getInt(config, context,
                 SubsystemAttributes.METRIC_DISPATCHER_MAX_BATCH_SIZE);
-        theConfig.availDispatcherBufferSize = getInt(config, context,
+        this.availDispatcherBufferSize = getInt(config, context,
                 SubsystemAttributes.AVAIL_DISPATCHER_BUFFER_SIZE);
-        theConfig.availDispatcherMaxBatchSize = getInt(config, context,
+        this.availDispatcherMaxBatchSize = getInt(config, context,
                 SubsystemAttributes.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
     }
 
-    private boolean determineResourceTypeSetDmr(ModelNode config, OperationContext context)
-            throws OperationFailedException {
-        boolean hasEnabledResourceTypes = false;
+    private Map<Name, TypeSet<DMRResourceType>> determineResourceTypeSetDmr(ModelNode config, OperationContext context,
+            Map<Name, TypeSet<DMRMetricType>> metrics, Map<Name, TypeSet<DMRAvailType>> avails)
+                    throws OperationFailedException {
+        boolean enabled = false;
 
+        Map<Name, TypeSet<DMRResourceType>> result = new LinkedHashMap<>();
         if (config.hasDefined(DMRResourceTypeSetDefinition.RESOURCE_TYPE_SET)) {
             List<Property> resourceTypeSetsList = config.get(DMRResourceTypeSetDefinition.RESOURCE_TYPE_SET)
                     .asPropertyList();
             for (Property resourceTypeSetProperty : resourceTypeSetsList) {
                 String resourceTypeSetName = resourceTypeSetProperty.getName();
-                DMRResourceTypeSet resourceTypeSet = new DMRResourceTypeSet(ID.NULL_ID, new Name(resourceTypeSetName));
+                ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
+                TypeSetBuilder<DMRResourceType> typeSetBuilder = TypeSet.<DMRResourceType> builder() //
+                        .name(new Name(resourceTypeSetName))
+                        .enabled(getBoolean(resourceTypeSetValueNode, context,
+                                DMRResourceTypeSetAttributes.ENABLED));
                 if (resourceTypeSetName.indexOf(',') > -1) {
                     log.warnCommaInName(resourceTypeSetName);
                 }
-                theConfig.dmrResourceTypeSetMap.put(resourceTypeSet.getName(), resourceTypeSet);
-                ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
-                resourceTypeSet.setEnabled(getBoolean(resourceTypeSetValueNode, context,
-                        DMRResourceTypeSetAttributes.ENABLED));
+
                 if (resourceTypeSetValueNode.hasDefined(DMRResourceTypeDefinition.RESOURCE_TYPE)) {
                     List<Property> resourceTypesList = resourceTypeSetValueNode.get(
                             DMRResourceTypeDefinition.RESOURCE_TYPE).asPropertyList();
@@ -652,7 +728,7 @@ public class MonitorServiceConfigurationBuilder {
 
                         String resourceTypeName = resourceTypeProperty.getName();
                         DMRResourceType resourceType = new DMRResourceType(ID.NULL_ID, new Name(resourceTypeName));
-                        resourceTypeSet.getResourceTypeMap().put(resourceType.getName(), resourceType);
+                        typeSetBuilder.type(resourceType);
                         resourceType.setResourceNameTemplate(getString(resourceTypeValueNode, context,
                                 DMRResourceTypeAttributes.RESOURCE_NAME_TEMPLATE));
                         resourceType.setPath(getString(resourceTypeValueNode, context,
@@ -667,13 +743,13 @@ public class MonitorServiceConfigurationBuilder {
 
                         // verify that the metric sets and avail sets exist
                         for (Name metricSetName : metricSets) {
-                            if (!theConfig.dmrMetricTypeSetMap.containsKey(metricSetName)) {
+                            if (!metrics.containsKey(metricSetName)) {
                                 log.warnMetricSetDoesNotExist(resourceTypeName.toString(),
                                         metricSetName.toString());
                             }
                         }
                         for (Name availSetName : availSets) {
-                            if (!theConfig.dmrAvailTypeSetMap.containsKey(availSetName)) {
+                            if (!avails.containsKey(availSetName)) {
                                 log.warnAvailSetDoesNotExist(resourceTypeName.toString(),
                                         availSetName.toString());
                             }
@@ -689,7 +765,7 @@ public class MonitorServiceConfigurationBuilder {
                             for (Property operationProperty : operationList) {
                                 ModelNode operationValueNode = operationProperty.getValue();
                                 String operationName = operationProperty.getName();
-                                DMROperation op = new DMROperation(ID.NULL_ID, new Name(operationName), resourceType);
+                                DMROperation op = new DMROperation(ID.NULL_ID, new Name(operationName));
                                 op.setPath(getString(operationValueNode, context, DMROperationAttributes.PATH));
                                 op.setOperationName(getString(operationValueNode, context,
                                         DMROperationAttributes.OPERATION_NAME));
@@ -705,9 +781,9 @@ public class MonitorServiceConfigurationBuilder {
                             for (Property configProperty : configList) {
                                 ModelNode configValueNode = configProperty.getValue();
                                 String configName = configProperty.getName();
-                                DMRResourceConfigurationPropertyType configType =
-                                        new DMRResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName),
-                                                resourceType);
+                                DMRResourceConfigurationPropertyType configType = //
+                                new DMRResourceConfigurationPropertyType(
+                                        ID.NULL_ID, new Name(configName));
                                 configType.setPath(getString(configValueNode, context,
                                         DMRResourceConfigAttributes.PATH));
                                 configType.setAttribute(getString(configValueNode, context,
@@ -717,40 +793,52 @@ public class MonitorServiceConfigurationBuilder {
                         }
                     }
                 }
+
+                TypeSet<DMRResourceType> typeSet = typeSetBuilder.build();
+                enabled = enabled || !typeSet.isDisabledOrEmpty();
+                result.put(typeSet.getName(), typeSet);
+
             }
 
             // build a graph of the full type hierarchy just to test to make sure it all is valid
             try {
-                ResourceTypeManager<DMRResourceType, DMRResourceTypeSet> rtm;
-                rtm = new ResourceTypeManager<>(theConfig.dmrResourceTypeSetMap);
+                ResourceTypeManager<DMRResourceType> rtm;
+                rtm = new ResourceTypeManager<>(result);
                 if (!rtm.getAllResourceTypes().isEmpty()) {
-                    hasEnabledResourceTypes = true;
+                    enabled = true;
                 }
             } catch (Exception e) {
                 throw new OperationFailedException(e);
             }
+
         }
 
-        return hasEnabledResourceTypes;
+        if (!enabled) {
+            log.infoNoEnabledResourceTypesConfigured("DMR");
+        }
+
+        return result;
     }
 
-    private boolean determineResourceTypeSetJmx(ModelNode config, OperationContext context)
-            throws OperationFailedException {
-        boolean hasEnabledResourceTypes = false;
+    private Map<Name, TypeSet<JMXResourceType>> determineResourceTypeSetJmx(ModelNode config, OperationContext context,
+            Map<Name, TypeSet<JMXMetricType>> metrics, Map<Name, TypeSet<JMXAvailType>> avails)
+                    throws OperationFailedException {
+        boolean enabled = false;
+        Map<Name, TypeSet<JMXResourceType>> result = new LinkedHashMap<>();
 
         if (config.hasDefined(JMXResourceTypeSetDefinition.RESOURCE_TYPE_SET)) {
             List<Property> resourceTypeSetsList = config.get(JMXResourceTypeSetDefinition.RESOURCE_TYPE_SET)
                     .asPropertyList();
             for (Property resourceTypeSetProperty : resourceTypeSetsList) {
                 String resourceTypeSetName = resourceTypeSetProperty.getName();
-                JMXResourceTypeSet resourceTypeSet = new JMXResourceTypeSet(ID.NULL_ID, new Name(resourceTypeSetName));
+                ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
+                TypeSetBuilder<JMXResourceType> typeSetBuilder = TypeSet.<JMXResourceType> builder() //
+                        .name(new Name(resourceTypeSetName))
+                        .enabled(getBoolean(resourceTypeSetValueNode, context,
+                                JMXResourceTypeSetAttributes.ENABLED));
                 if (resourceTypeSetName.indexOf(',') > -1) {
                     log.warnCommaInName(resourceTypeSetName);
                 }
-                theConfig.jmxResourceTypeSetMap.put(resourceTypeSet.getName(), resourceTypeSet);
-                ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
-                resourceTypeSet.setEnabled(getBoolean(resourceTypeSetValueNode, context,
-                        JMXResourceTypeSetAttributes.ENABLED));
                 if (resourceTypeSetValueNode.hasDefined(JMXResourceTypeDefinition.RESOURCE_TYPE)) {
                     List<Property> resourceTypesList = resourceTypeSetValueNode.get(
                             JMXResourceTypeDefinition.RESOURCE_TYPE).asPropertyList();
@@ -759,7 +847,7 @@ public class MonitorServiceConfigurationBuilder {
 
                         String resourceTypeName = resourceTypeProperty.getName();
                         JMXResourceType resourceType = new JMXResourceType(ID.NULL_ID, new Name(resourceTypeName));
-                        resourceTypeSet.getResourceTypeMap().put(resourceType.getName(), resourceType);
+                        typeSetBuilder.type(resourceType);
                         resourceType.setResourceNameTemplate(getString(resourceTypeValueNode, context,
                                 JMXResourceTypeAttributes.RESOURCE_NAME_TEMPLATE));
                         resourceType.setObjectName(getObjectName(resourceTypeValueNode, context,
@@ -774,13 +862,13 @@ public class MonitorServiceConfigurationBuilder {
 
                         // verify that the metric sets and avail sets exist
                         for (Name metricSetName : metricSets) {
-                            if (!theConfig.jmxMetricTypeSetMap.containsKey(metricSetName)) {
+                            if (!metrics.containsKey(metricSetName)) {
                                 log.warnMetricSetDoesNotExist(resourceTypeName.toString(),
                                         metricSetName.toString());
                             }
                         }
                         for (Name availSetName : availSets) {
-                            if (!theConfig.jmxAvailTypeSetMap.containsKey(availSetName)) {
+                            if (!avails.containsKey(availSetName)) {
                                 log.warnAvailSetDoesNotExist(resourceTypeName.toString(),
                                         availSetName.toString());
                             }
@@ -796,7 +884,7 @@ public class MonitorServiceConfigurationBuilder {
                             for (Property operationProperty : operationList) {
                                 ModelNode operationValueNode = operationProperty.getValue();
                                 String operationName = operationProperty.getName();
-                                JMXOperation op = new JMXOperation(ID.NULL_ID, new Name(operationName), resourceType);
+                                JMXOperation op = new JMXOperation(ID.NULL_ID, new Name(operationName));
                                 op.setObjectName(getObjectName(operationValueNode, context,
                                         JMXOperationAttributes.OBJECT_NAME));
                                 op.setOperationName(getString(operationValueNode, context,
@@ -813,9 +901,9 @@ public class MonitorServiceConfigurationBuilder {
                             for (Property configProperty : configList) {
                                 ModelNode configValueNode = configProperty.getValue();
                                 String configName = configProperty.getName();
-                                JMXResourceConfigurationPropertyType configType =
-                                        new JMXResourceConfigurationPropertyType(ID.NULL_ID, new Name(configName),
-                                                resourceType);
+                                JMXResourceConfigurationPropertyType configType = //
+                                new JMXResourceConfigurationPropertyType(
+                                        ID.NULL_ID, new Name(configName));
                                 configType.setObjectName(getObjectName(configValueNode, context,
                                         JMXResourceConfigAttributes.OBJECT_NAME));
                                 configType.setAttribute(getString(configValueNode, context,
@@ -825,24 +913,33 @@ public class MonitorServiceConfigurationBuilder {
                         }
                     }
                 }
+                TypeSet<JMXResourceType> typeSet = typeSetBuilder.build();
+                enabled = enabled || !typeSet.isDisabledOrEmpty();
+                result.put(typeSet.getName(), typeSet);
             }
 
             // build a graph of the full type hierarchy just to test to make sure it all is valid
             try {
-                ResourceTypeManager<JMXResourceType, JMXResourceTypeSet> rtm;
-                rtm = new ResourceTypeManager<>(theConfig.jmxResourceTypeSetMap);
+                ResourceTypeManager<JMXResourceType> rtm;
+                rtm = new ResourceTypeManager<>(result);
                 if (!rtm.getAllResourceTypes().isEmpty()) {
-                    hasEnabledResourceTypes = true;
+                    enabled = true;
                 }
             } catch (Exception e) {
                 throw new OperationFailedException(e);
             }
         }
 
-        return hasEnabledResourceTypes;
+        if (enabled) {
+            log.infoNoEnabledResourceTypesConfigured("JMX");
+        }
+
+        return result;
     }
 
-    private void determineManagedServers(ModelNode config, OperationContext context) throws OperationFailedException {
+    private Map<Name, ManagedServer> determineManagedServers(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+        Map<Name, ManagedServer> result = new LinkedHashMap<>();
         if (config.hasDefined(ManagedServersDefinition.MANAGED_SERVERS)) {
             List<Property> asPropertyList = config.get(ManagedServersDefinition.MANAGED_SERVERS).asPropertyList();
             if (asPropertyList.size() > 1) {
@@ -872,7 +969,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     // verify that the resource type sets exist
                     for (Name resourceTypeSetName : resourceTypeSets) {
-                        if (!theConfig.dmrResourceTypeSetMap.containsKey(resourceTypeSetName)) {
+                        if (!dmrTypeSets.getResourceTypeSets().containsKey(resourceTypeSetName)) {
                             log.warnResourceTypeSetDoesNotExist(name.toString(),
                                     resourceTypeSetName.toString());
                         }
@@ -891,7 +988,7 @@ public class MonitorServiceConfigurationBuilder {
                     res.setUseSSL(useSsl);
                     res.setSecurityRealm(securityRealm);
                     res.getResourceTypeSets().addAll(resourceTypeSets);
-                    theConfig.managedServersMap.put(res.getName(), res);
+                    result.put(res.getName(), res);
                 }
             }
 
@@ -911,7 +1008,7 @@ public class MonitorServiceConfigurationBuilder {
 
                 // verify that the metric sets and avail sets exist
                 for (Name resourceTypeSetName : resourceTypeSets) {
-                    if (!theConfig.dmrResourceTypeSetMap.containsKey(resourceTypeSetName)) {
+                    if (!dmrTypeSets.getResourceTypeSets().containsKey(resourceTypeSetName)) {
                         log.warnResourceTypeSetDoesNotExist(name.toString(), resourceTypeSetName.toString());
                     }
                 }
@@ -919,7 +1016,7 @@ public class MonitorServiceConfigurationBuilder {
                 LocalDMRManagedServer res = new LocalDMRManagedServer(ID.NULL_ID, new Name(name));
                 res.setEnabled(enabled);
                 res.getResourceTypeSets().addAll(resourceTypeSets);
-                theConfig.managedServersMap.put(res.getName(), res);
+                result.put(res.getName(), res);
             }
 
             // JMX
@@ -940,7 +1037,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     // verify that the resource type sets exist
                     for (Name resourceTypeSetName : resourceTypeSets) {
-                        if (!theConfig.jmxResourceTypeSetMap.containsKey(resourceTypeSetName)) {
+                        if (!jmxTypeSets.getResourceTypeSets().containsKey(resourceTypeSetName)) {
                             log.warnResourceTypeSetDoesNotExist(name.toString(),
                                     resourceTypeSetName.toString());
                         }
@@ -965,11 +1062,12 @@ public class MonitorServiceConfigurationBuilder {
                     res.setPassword(password);
                     res.setSecurityRealm(securityRealm);
                     res.getResourceTypeSets().addAll(resourceTypeSets);
-                    theConfig.managedServersMap.put(res.getName(), res);
+                    result.put(res.getName(), res);
                 }
             }
 
         }
+        return result;
     }
 
     private boolean getBoolean(ModelNode modelNode, OperationContext context, SimpleAttributeDefinition attrib)
@@ -1020,4 +1118,5 @@ public class MonitorServiceConfigurationBuilder {
             return Collections.emptyList();
         }
     }
+
 }

@@ -16,18 +16,12 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class Operation<RT extends ResourceType<?, ?, ?, ?>> extends NamedObject {
+public abstract class Operation extends NamedObject {
 
-    private final RT resourceType;
     private String operationName;
 
-    public Operation(ID id, Name name, RT resourceType) {
+    public Operation(ID id, Name name) {
         super(id, name);
-        this.resourceType = resourceType;
-    }
-
-    public RT getResourceType() {
-        return resourceType;
     }
 
     public String getOperationName() {
