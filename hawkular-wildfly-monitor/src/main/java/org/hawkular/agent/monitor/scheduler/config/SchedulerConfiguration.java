@@ -58,8 +58,8 @@ public class SchedulerConfiguration {
     private final Map<PlatformEndpoint, List<PlatformMetricInstance>> platformMetricsToBeCollected = new HashMap<>();
     private final Map<PlatformEndpoint, List<PlatformAvailInstance>> platformAvailsToBeChecked = new HashMap<>();
 
-    private MonitorServiceConfiguration.StorageAdapter storageAdapterConfig;
-    private MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
+    private MonitorServiceConfiguration.StorageAdapterConfiguration storageAdapterConfig;
+    private MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig;
 
     public Map<DMREndpoint, List<DMRMetricInstance>> getDMRMetricsToBeCollected() {
         return Collections.unmodifiableMap(dmrMetricsToBeCollected);
@@ -193,19 +193,19 @@ public class SchedulerConfiguration {
         this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
     }
 
-    public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfig() {
+    public MonitorServiceConfiguration.StorageAdapterConfiguration getStorageAdapterConfig() {
         return this.storageAdapterConfig;
     }
 
-    public void setStorageAdapterConfig(MonitorServiceConfiguration.StorageAdapter config) {
+    public void setStorageAdapterConfig(MonitorServiceConfiguration.StorageAdapterConfiguration config) {
         this.storageAdapterConfig = config;
     }
 
-    public MonitorServiceConfiguration.Diagnostics getDiagnosticsConfig() {
+    public MonitorServiceConfiguration.DiagnosticsConfiguration getDiagnosticsConfig() {
         return diagnosticsConfig;
     }
 
-    public void setDiagnosticsConfig(MonitorServiceConfiguration.Diagnostics config) {
+    public void setDiagnosticsConfig(MonitorServiceConfiguration.DiagnosticsConfiguration config) {
         this.diagnosticsConfig = config;
     }
 }

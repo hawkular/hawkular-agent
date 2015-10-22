@@ -38,7 +38,7 @@ import com.squareup.okhttp.Response;
 
 public class MetricsOnlyStorageAdapter implements StorageAdapter {
     private static final MsgLogger log = AgentLoggers.getLogger(MetricsOnlyStorageAdapter.class);
-    private MonitorServiceConfiguration.StorageAdapter config;
+    private MonitorServiceConfiguration.StorageAdapterConfiguration config;
     private Diagnostics diagnostics;
     private ServerIdentifiers selfId;
     private HttpClientBuilder httpClientBuilder;
@@ -47,7 +47,8 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void initialize(org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter config,
+    public void initialize(
+            org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration config,
             Diagnostics diag, ServerIdentifiers selfId, HttpClientBuilder httpClientBuilder) {
         this.config = config;
         this.diagnostics = diag;
@@ -56,7 +57,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration() {
+    public MonitorServiceConfiguration.StorageAdapterConfiguration getStorageAdapterConfiguration() {
         return config;
     }
 

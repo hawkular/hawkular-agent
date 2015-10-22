@@ -29,10 +29,10 @@ import java.util.concurrent.TimeUnit;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Diagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsReportTo;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.GlobalConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.ManagedServer;
@@ -78,8 +78,8 @@ public class MonitorServiceConfigurationBuilder {
     private TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets;
     private TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets;
 
-    private Diagnostics diagnostics;
-    private StorageAdapter storageAdapter;
+    private DiagnosticsConfiguration diagnostics;
+    private StorageAdapterConfiguration storageAdapter;
 
     private Map<Name, ManagedServer> managedServersMap;
     private GlobalConfiguration globalConfiguration;
@@ -602,17 +602,17 @@ public class MonitorServiceConfigurationBuilder {
 
     }
 
-    private Diagnostics determineDiagnosticsConfig(ModelNode config, OperationContext context)
+    private DiagnosticsConfiguration determineDiagnosticsConfig(ModelNode config, OperationContext context)
             throws OperationFailedException {
         if (!config.hasDefined(DiagnosticsDefinition.DIAGNOSTICS)) {
             log.infoNoDiagnosticsConfig();
-            return Diagnostics.EMPTY;
+            return DiagnosticsConfiguration.EMPTY;
         }
 
         List<Property> asPropertyList = config.get(DiagnosticsDefinition.DIAGNOSTICS).asPropertyList();
         if (asPropertyList.size() == 0) {
             log.infoNoDiagnosticsConfig();
-            return Diagnostics.EMPTY;
+            return DiagnosticsConfiguration.EMPTY;
         } else if (asPropertyList.size() > 1) {
             throw new IllegalArgumentException("Only one diagnostics config allowed: " + config.toJSONString(true));
         }
@@ -626,10 +626,10 @@ public class MonitorServiceConfigurationBuilder {
         int interval = getInt(diagnosticsValueNode, context, DiagnosticsAttributes.INTERVAL);
         String diagnosticsTimeUnitsStr = getString(diagnosticsValueNode, context, DiagnosticsAttributes.TIME_UNITS);
         TimeUnit timeUnits = TimeUnit.valueOf(diagnosticsTimeUnitsStr.toUpperCase());
-        return new Diagnostics(enabled, reportTo, interval, timeUnits);
+        return new DiagnosticsConfiguration(enabled, reportTo, interval, timeUnits);
     }
 
-    private StorageAdapter determineStorageAdapterConfig(ModelNode config, OperationContext context)
+    private StorageAdapterConfiguration determineStorageAdapterConfig(ModelNode config, OperationContext context)
             throws OperationFailedException {
 
         if (!config.hasDefined(StorageDefinition.STORAGE_ADAPTER)) {
@@ -687,7 +687,7 @@ public class MonitorServiceConfigurationBuilder {
                 }
             }
         }
-        return new StorageAdapter(type, username, password, tenantId, url, useSSL,
+        return new StorageAdapterConfiguration(type, username, password, tenantId, url, useSSL,
                 serverOutboundSocketBindingRef,
                 accountsContext, inventoryContext, metricsContext, feedcommContext, keystorePath, keystorePassword,
                 securityRealm);

@@ -48,7 +48,7 @@ public class MonitorServiceConfiguration {
         STORAGE // stores the diagnostics as metrics to the storage adapter
     }
 
-    public static class StorageAdapter {
+    public static class StorageAdapterConfiguration {
         private final StorageReportTo type;
         private final String username;
         private final String password;
@@ -63,8 +63,9 @@ public class MonitorServiceConfiguration {
         private final String keystorePath;
         private final String keystorePassword;
         private final String securityRealm;
-    
-        public StorageAdapter(StorageReportTo type, String username, String password, String tenantId, String url,
+
+        public StorageAdapterConfiguration(StorageReportTo type, String username, String password, String tenantId,
+                String url,
                 boolean useSSL, String serverOutboundSocketBindingRef, String accountsContext, String inventoryContext,
                 String metricsContext, String feedcommContext, String keystorePath, String keystorePassword,
                 String securityRealm) {
@@ -84,99 +85,100 @@ public class MonitorServiceConfiguration {
             this.keystorePassword = keystorePassword;
             this.securityRealm = securityRealm;
         }
-    
+
         public StorageReportTo getType() {
             return type;
         }
-    
+
         public String getUsername() {
             return username;
         }
-    
+
         public String getPassword() {
             return password;
         }
-    
+
         public String getTenantId() {
             return tenantId;
         }
-    
+
         public String getUrl() {
             return url;
         }
-    
+
         public boolean isUseSSL() {
             return useSSL;
         }
-    
+
         public String getServerOutboundSocketBindingRef() {
             return serverOutboundSocketBindingRef;
         }
-    
+
         public String getAccountsContext() {
             return accountsContext;
         }
-    
+
         public String getInventoryContext() {
             return inventoryContext;
         }
-    
+
         public String getMetricsContext() {
             return metricsContext;
         }
-    
+
         public String getFeedcommContext() {
             return feedcommContext;
         }
-    
+
         public String getKeystorePath() {
             return keystorePath;
         }
-    
+
         public String getKeystorePassword() {
             return keystorePassword;
         }
-    
+
         public String getSecurityRealm() {
             return securityRealm;
         }
-    
+
     }
 
-    public static class Diagnostics {
-        public static final Diagnostics EMPTY = new Diagnostics(false, null, 0, null);
+    public static class DiagnosticsConfiguration {
+        public static final DiagnosticsConfiguration EMPTY = new DiagnosticsConfiguration(false, null, 0, null);
         private final boolean enabled;
         private final DiagnosticsReportTo reportTo;
         private final int interval;
         private final TimeUnit timeUnits;
-    
-        public Diagnostics(boolean enabled, DiagnosticsReportTo reportTo, int interval, TimeUnit timeUnits) {
+
+        public DiagnosticsConfiguration(boolean enabled, DiagnosticsReportTo reportTo, int interval,
+                TimeUnit timeUnits) {
             super();
             this.enabled = enabled;
             this.reportTo = reportTo;
             this.interval = interval;
             this.timeUnits = timeUnits;
         }
-    
+
         public boolean isEnabled() {
             return enabled;
         }
-    
+
         public DiagnosticsReportTo getReportTo() {
             return reportTo;
         }
-    
+
         public int getInterval() {
             return interval;
         }
-    
+
         public TimeUnit getTimeUnits() {
             return timeUnits;
         }
     }
 
     public static class GlobalConfiguration {
-    
+
         private final boolean subsystemEnabled;
         private final String apiJndi;
         private final int numMetricSchedulerThreads;
@@ -186,7 +188,7 @@ public class MonitorServiceConfiguration {
         private final int metricDispatcherMaxBatchSize;
         private final int availDispatcherBufferSize;
         private final int availDispatcherMaxBatchSize;
-    
+
         public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int numMetricSchedulerThreads,
                 int numAvailSchedulerThreads, int numDmrSchedulerThreads, int metricDispatcherBufferSize,
                 int metricDispatcherMaxBatchSize, int availDispatcherBufferSize, int availDispatcherMaxBatchSize) {
@@ -201,20 +203,21 @@ public class MonitorServiceConfiguration {
             this.availDispatcherBufferSize = availDispatcherBufferSize;
             this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
         }
-    
+
     }
 
     private final GlobalConfiguration globalConfiguration;
-    private final StorageAdapter storageAdapter;
-    private final Diagnostics diagnostics;
+    private final StorageAdapterConfiguration storageAdapter;
+    private final DiagnosticsConfiguration diagnostics;
 
     private final TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> dmrTypeSets;
     private final TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets;
     private final TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets;
 
     private final Map<Name, ManagedServer> managedServersMap;
+
     public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration,
-            Diagnostics diagnostics, StorageAdapter storageAdapter,
+            DiagnosticsConfiguration diagnostics, StorageAdapterConfiguration storageAdapter,
             TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> dmrTypeSets,
             TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets,
             TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets,
@@ -249,11 +252,11 @@ public class MonitorServiceConfiguration {
         return globalConfiguration;
     }
 
-    public StorageAdapter getStorageAdapter() {
+    public StorageAdapterConfiguration getStorageAdapter() {
         return storageAdapter;
     }
 
-    public Diagnostics getDiagnostics() {
+    public DiagnosticsConfiguration getDiagnostics() {
         return diagnostics;
     }
 

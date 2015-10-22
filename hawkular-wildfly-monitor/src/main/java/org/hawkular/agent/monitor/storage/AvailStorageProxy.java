@@ -20,7 +20,7 @@ import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.AvailStorage;
 
 /**
- * A proxy that delegates to a {@link StorageAdapter}.
+ * A proxy that delegates to a {@link StorageAdapterConfiguration}.
  */
 public class AvailStorageProxy implements AvailStorage {
 

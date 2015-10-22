@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.inventory.AvailInstance;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
@@ -560,14 +560,15 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return id;
     }
 
-    private final MonitorServiceConfiguration.StorageAdapter config;
+    private final MonitorServiceConfiguration.StorageAdapterConfiguration config;
     private final HttpClientBuilder httpClientBuilder;
     private final ServerIdentifiers selfId;
     private final Diagnostics diagnostics;
     private final ArrayBlockingQueue<Resource<?, ?, ?, ?, ?>> queue;
     private final Worker worker;
 
-    public AsyncInventoryStorage(ServerIdentifiers selfId, StorageAdapter config, HttpClientBuilder httpClientBuilder,
+    public AsyncInventoryStorage(ServerIdentifiers selfId, StorageAdapterConfiguration config,
+            HttpClientBuilder httpClientBuilder,
             Diagnostics diagnostics) {
         super();
         this.selfId = selfId;

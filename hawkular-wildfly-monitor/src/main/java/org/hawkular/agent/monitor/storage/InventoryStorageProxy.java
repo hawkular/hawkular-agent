@@ -20,7 +20,7 @@ import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.inventory.Resource;
 
 /**
- * A proxy that delegates to a {@link StorageAdapter}.
+ * A proxy that delegates to a {@link StorageAdapterConfiguration}.
  */
 public class InventoryStorageProxy implements InventoryStorage {
 

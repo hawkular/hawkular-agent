@@ -26,7 +26,7 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Diagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.extension.SubsystemDefinition;
 import org.hawkular.agent.monitor.scheduler.config.Interval;
 import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
@@ -50,7 +50,7 @@ import com.codahale.metrics.Timer;
 
 public class StorageReporter extends ScheduledReporter {
 
-    private final Diagnostics diagnosticsConfig;
+    private final DiagnosticsConfiguration diagnosticsConfig;
     private final StorageAdapter storageAdapter;
     private final Locale locale;
     private final Clock clock;
@@ -64,7 +64,7 @@ public class StorageReporter extends ScheduledReporter {
             TimeUnit rateUnit,
             TimeUnit durationUnit,
             MetricFilter filter,
-            Diagnostics diagnosticsConfig,
+            DiagnosticsConfiguration diagnosticsConfig,
             StorageAdapter storageAdapter,
             ServerIdentifiers selfId) {
 
@@ -141,14 +141,14 @@ public class StorageReporter extends ScheduledReporter {
     }
 
     public static Builder forRegistry(MetricRegistry registry,
-            MonitorServiceConfiguration.Diagnostics diagnosticsConfig, StorageAdapter storageAdapter,
+            MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig, StorageAdapter storageAdapter,
             ServerIdentifiers selfId) {
         return new Builder(registry, diagnosticsConfig, storageAdapter, selfId);
     }
 
     public static class Builder {
         private final MetricRegistry registry;
-        private final MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
+        private final MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig;
         private final StorageAdapter storageAdapter;
         private final ServerIdentifiers sid;
         private Locale locale;
@@ -158,7 +158,7 @@ public class StorageReporter extends ScheduledReporter {
         private TimeUnit durationUnit;
         private MetricFilter filter;
 
-        private Builder(MetricRegistry registry, MonitorServiceConfiguration.Diagnostics diagnosticsConfig,
+        private Builder(MetricRegistry registry, MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig,
                 StorageAdapter storageAdapter, ServerIdentifiers selfId) {
             this.registry = registry;
             this.diagnosticsConfig = diagnosticsConfig;

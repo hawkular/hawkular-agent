@@ -46,7 +46,7 @@ public class DiagnosticsImpl implements Diagnostics {
         return MetricRegistry.name(selfId + ".diagnostics." + name);
     }
 
-    public DiagnosticsImpl(MonitorServiceConfiguration.Diagnostics config, MetricRegistry registry,
+    public DiagnosticsImpl(MonitorServiceConfiguration.DiagnosticsConfiguration config, MetricRegistry registry,
             ServerIdentifiers selfId) {
         // we don't need config now, but maybe in future - so keep "config" param here for future API consistency
         dmrRequestTimer = registry.timer(name(selfId, "dmr.request-timer"));

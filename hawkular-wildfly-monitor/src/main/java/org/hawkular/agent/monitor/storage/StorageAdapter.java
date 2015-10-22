@@ -35,7 +35,8 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
      * @param selfId helps identify where we are hosted
      * @param httpClientBuilder used to communicate with the storage server
      */
-    void initialize(MonitorServiceConfiguration.StorageAdapter config, Diagnostics diag, ServerIdentifiers selfId,
+    void initialize(MonitorServiceConfiguration.StorageAdapterConfiguration config, Diagnostics diag,
+            ServerIdentifiers selfId,
             HttpClientBuilder httpClientBuilder);
 
     /**
@@ -46,7 +47,7 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
     /**
      * @return the storage adapter's configuration settings
      */
-    MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration();
+    MonitorServiceConfiguration.StorageAdapterConfiguration getStorageAdapterConfiguration();
 
     /**
      * Stores the given collected metric data points.

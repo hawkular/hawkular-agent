@@ -159,7 +159,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue,
             Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues) {
 
-        final MonitorServiceConfiguration.StorageAdapter bootStorageAdapter = bootConfiguration.getStorageAdapter();
+        final MonitorServiceConfiguration.StorageAdapterConfiguration bootStorageAdapter = bootConfiguration
+                .getStorageAdapter();
 
         if (bootStorageAdapter.getTenantId() != null && bootStorageAdapter.getUrl() != null) {
             return bootConfiguration;
@@ -243,8 +244,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                     throw new RuntimeException("Cannot get tenant ID", t);
                 }
             }
-            MonitorServiceConfiguration.StorageAdapter runtimeStorageAdapter = //
-            new MonitorServiceConfiguration.StorageAdapter(
+            MonitorServiceConfiguration.StorageAdapterConfiguration runtimeStorageAdapter = //
+            new MonitorServiceConfiguration.StorageAdapterConfiguration(
                     bootStorageAdapter.getType(), bootStorageAdapter.getUsername(), bootStorageAdapter.getPassword(),
                     useTenantId, useUrl, bootStorageAdapter.isUseSSL(),
                     bootStorageAdapter.getServerOutboundSocketBindingRef(),
