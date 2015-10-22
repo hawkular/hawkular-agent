@@ -17,12 +17,17 @@
 package org.hawkular.agent.monitor.service;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.util.Base64;
@@ -38,6 +43,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Just some basic utilities.
  */
 public class Util {
+    private static final String ENCODING_UTF_8 = "utf-8";
+    private static final int BUFFER_SIZE = 128;
     private static ObjectMapper mapper;
     static {
         try {
@@ -150,7 +157,7 @@ public class Util {
     public static long copyStream(InputStream input, OutputStream output, boolean closeStreams)
             throws RuntimeException {
         long numBytesCopied = 0;
-        int bufferSize = 32768;
+        int bufferSize = BUFFER_SIZE;
         try {
             // make sure we buffer the input
             input = new BufferedInputStream(input, bufferSize);
@@ -184,12 +191,43 @@ public class Util {
      * closed when this method returns. WARNING: do not slurp large streams to avoid out-of-memory errors.
      *
      * @param input the input stream to slup
+     * @param the encoding to use when reading from {@code input}
      * @return the input stream data as a String
+     * @throws IOException in IO problems
      */
-    public static String slurpStream(InputStream input) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        copyStream(input, baos, true);
-        return baos.toString();
+    public static String slurpStream(InputStream input, String encoding) throws IOException {
+        try (Reader r = new InputStreamReader(input, encoding)) {
+            StringBuilder result = new StringBuilder();
+            char[] buffer = new char[BUFFER_SIZE];
+            int len = 0;
+            while ((len = r.read(buffer, 0, BUFFER_SIZE)) >= 0) {
+                result.append(buffer, 0, len);
+            }
+            return result.toString();
+        }
+    }
+
+    /**
+     * Read the content of the given {@code file} using {@link #ENCODING_UTF_8} and return it as a {@link String}.
+     * @param file the {@link File} to read from
+     * @return the content of the given {@code file}
+     * @throws IOException in IO problems
+     */
+    public static String read(File file) throws IOException {
+        return slurpStream(new FileInputStream(file), ENCODING_UTF_8);
+    }
+
+    /**
+     * Stores {@code string} to {@code file} using {@link #ENCODING_UTF_8}.
+     *
+     * @param string the {@link String} to store
+     * @param file the file to store to
+     * @throws IOException on IO errors
+     */
+    public static void write(String string, File file) throws IOException {
+        try (Writer w = new OutputStreamWriter(new FileOutputStream(file), ENCODING_UTF_8)) {
+            w.write(string);
+        }
     }
 
     /**

@@ -20,11 +20,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
@@ -232,7 +229,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                                 + httpResponse.message() + "], url=[" + url + "]");
                     }
 
-                    final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
+                    final String fromServer = httpResponse.body().string();
                     // depending on accounts is probably overkill because of 1 REST call, so let's process the
                     // JSON via regex
                     Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
@@ -556,37 +553,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         File dataDir = new File(this.serverEnvironmentValue.getValue().getServerDataDir(), "hawkular-agent");
         dataDir.mkdirs();
         return dataDir;
-    }
-
-    /**
-     * Reads in a data file into memory and returns its contents. Do NOT call this for very large files.
-     *
-     * @param filename the name of the file to read - its location is assumed to be under
-     *                 the {@link #getDataDirectory() data directory}.
-     * @return the full contents of the file
-     * @throws FileNotFoundException if the file does not exist
-     */
-    private String slurpDataFile(String filename) throws FileNotFoundException {
-        File dataFile = new File(getDataDirectory(), filename);
-        FileInputStream dataFileInputStream = new FileInputStream(dataFile);
-        String fileContents = Util.slurpStream(dataFileInputStream);
-        return fileContents;
-    }
-
-    /**
-     * Writes a data file to the {@link #getDataDirectory() data directory}.
-     *
-     * @param filename the name of the file - this is relative to under the data directory
-     * @param fileContents what the contents of the file should be
-     * @return the file that was written
-     * @throws FileNotFoundException if the file could not be created
-     */
-    private File writeDataFile(String filename, String fileContents) throws FileNotFoundException {
-        File dataFile = new File(getDataDirectory(), filename);
-        FileOutputStream dataFileOutputStream = new FileOutputStream(dataFile);
-        ByteArrayInputStream bais = new ByteArrayInputStream(fileContents.getBytes());
-        Util.copyStream(bais, dataFileOutputStream, true);
-        return dataFile;
     }
 
     /**
@@ -1225,7 +1191,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         try {
             File feedFile = new File(getDataDirectory(), "feedId.txt");
             try {
-                String feedIdFromDataFile = slurpDataFile(feedFile.getName());
+                String feedIdFromDataFile = Util.read(feedFile);
                 feedIdFromDataFile = feedIdFromDataFile.trim();
                 if (!desiredFeedId.equals(feedIdFromDataFile)) {
                     log.warnf("Will use feed ID [%s] found in [%s];"
@@ -1259,7 +1225,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             if (httpResponse.code() == 201) {
 
                 // success - store our feed ID so we remember it the next time
-                final String feedObjectFromServer = Util.slurpStream(httpResponse.body().byteStream());
+                final String feedObjectFromServer = httpResponse.body().string();
                 final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
                 if (desiredFeedId.equals(feed.getId())) {
                     log.infof("Feed ID registered [%s]", feed.getId());
@@ -1279,7 +1245,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
 
             // persist our feed ID so we can remember it the next time we start up
-            writeDataFile(feedFile.getName(), feedId);
+            Util.write(feedId, feedFile);
 
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot create feed [%s]", desiredFeedId), t);
