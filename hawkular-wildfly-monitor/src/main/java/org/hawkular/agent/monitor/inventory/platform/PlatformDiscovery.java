@@ -117,6 +117,8 @@ public class PlatformDiscovery {
                 PlatformResource osResource = new PlatformResource(null, new Name(name), endpoint, type, null);
                 log.debugf("Discovered [%s]", osResource);
 
+                addMetricInstances(osResource);
+
                 // add it to our tree graph
                 resourceManager.addResource(osResource);
 

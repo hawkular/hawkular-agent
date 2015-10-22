@@ -81,21 +81,13 @@ public class MonitorServiceConfigurationBuilder {
     private StorageAdapter storageAdapter;
 
     private boolean subsystemEnabled;
-
     private String apiJndi;
-
     private int numMetricSchedulerThreads;
-
     private int numAvailSchedulerThreads;
-
     private int numDmrSchedulerThreads;
-
     private int metricDispatcherBufferSize;
-
     private int metricDispatcherMaxBatchSize;
-
     private int availDispatcherBufferSize;
-
     private int availDispatcherMaxBatchSize;
     private Map<Name, ManagedServer> managedServersMap;
 
@@ -370,15 +362,18 @@ public class MonitorServiceConfigurationBuilder {
         // all the type metadata is dependent upon the capabilities of the oshi SystemInfo API
 
         // since platform monitoring is enabled, we will always have at least the root OS type
-
         final Name osName = Constants.PlatformResourceType.OPERATING_SYSTEM.getName();
 
         PlatformResourceType rootType = new PlatformResourceType(null, osName);
         rootType.setResourceNameTemplate("%s");
 
-        TypeSet<PlatformResourceType> rootTypeSet = TypeSet.<PlatformResourceType> builder() //
+        // the root metric set will be empty to start - we'll add some below as they are enabled
+        TypeSetBuilder<PlatformMetricType> rootMetricsBuilder = TypeSet.<PlatformMetricType> builder().name(osName);
+        rootType.setMetricSets(Collections.singletonList(osName));
+
+        TypeSet<PlatformResourceType> rootTypeSet = TypeSet.<PlatformResourceType> builder()
                 .enabled(true)
-                .name(osName) //
+                .name(osName)
                 .type(rootType)
                 .build();
 
@@ -523,6 +518,26 @@ public class MonitorServiceConfigurationBuilder {
                             .build();
 
                     resourceTypeSetMap.put(typeSet.getName(), typeSet);
+
+                    // We want to also collect system CPU load and system load average. Because these
+                    // are processor-related metrics, we only want to collect them if "processors" is enabled
+                    // in our configuration; however, because they are aggregates across ALL CPUs (and not
+                    // just individual metrics per CPU) they aren't really metrics associated with any
+                    // one particular CPU. Therefore, we want to attach these metrics to the parent
+                    // "operating system" root resource.
+                    PlatformMetricType cpuLoad = new PlatformMetricType(null, Constants.OPERATING_SYSTEM_SYS_CPU_LOAD);
+                    cpuLoad.setInterval(interval);
+                    cpuLoad.setTimeUnits(timeUnit);
+                    cpuLoad.setMetricUnits(MeasurementUnit.PERCENTAGE);
+                    cpuLoad.setMetricType(MetricType.GAUGE);
+                    rootMetricsBuilder.type(cpuLoad);
+
+                    PlatformMetricType sysLoad = new PlatformMetricType(null, Constants.OPERATING_SYSTEM_SYS_LOAD_AVG);
+                    sysLoad.setInterval(interval);
+                    sysLoad.setTimeUnits(timeUnit);
+                    sysLoad.setMetricUnits(MeasurementUnit.NONE);
+                    sysLoad.setMetricType(MetricType.GAUGE);
+                    rootMetricsBuilder.type(sysLoad);
                 }
             } else if (asPropertyList.size() > 1) {
                 throw new IllegalArgumentException("Only one platform.processors config allowed: "
@@ -582,9 +597,14 @@ public class MonitorServiceConfigurationBuilder {
             }
         }
 
+        // our root metrics should be ready to be built now
+        TypeSet<PlatformMetricType> rootMetrics = rootMetricsBuilder.build();
+        metricTypeSetMap.put(rootMetrics.getName(), rootMetrics);
+
         TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> result = new TypeSets<>(
                 Collections.unmodifiableMap(resourceTypeSetMap),
-                Collections.unmodifiableMap(metricTypeSetMap), Collections.unmodifiableMap(availTypeSetMap),
+                Collections.unmodifiableMap(metricTypeSetMap),
+                Collections.unmodifiableMap(availTypeSetMap),
                 typeSetsEnabled);
 
         return result;

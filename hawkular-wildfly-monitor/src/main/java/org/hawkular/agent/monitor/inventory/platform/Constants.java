@@ -47,6 +47,10 @@ public interface Constants {
     Name PLATFORM = new Name("Platform");
 
     // names of all known metrics of all known platform resource types
+
+    Name OPERATING_SYSTEM_SYS_CPU_LOAD = new Name("System CPU Load");
+    Name OPERATING_SYSTEM_SYS_LOAD_AVG = new Name("System Load Average");
+
     Name FILE_STORE_USABLE_SPACE = new Name("Usable Space");
     Name FILE_STORE_TOTAL_SPACE = new Name("Total Space");
 
