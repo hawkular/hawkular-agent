@@ -48,6 +48,162 @@ public class MonitorServiceConfiguration {
         STORAGE // stores the diagnostics as metrics to the storage adapter
     }
 
+    public static class StorageAdapter {
+        private final StorageReportTo type;
+        private final String username;
+        private final String password;
+        private final String tenantId;
+        private final String url;
+        private final boolean useSSL;
+        private final String serverOutboundSocketBindingRef;
+        private final String accountsContext;
+        private final String inventoryContext;
+        private final String metricsContext;
+        private final String feedcommContext;
+        private final String keystorePath;
+        private final String keystorePassword;
+        private final String securityRealm;
+    
+        public StorageAdapter(StorageReportTo type, String username, String password, String tenantId, String url,
+                boolean useSSL, String serverOutboundSocketBindingRef, String accountsContext, String inventoryContext,
+                String metricsContext, String feedcommContext, String keystorePath, String keystorePassword,
+                String securityRealm) {
+            super();
+            this.type = type;
+            this.username = username;
+            this.password = password;
+            this.tenantId = tenantId;
+            this.url = url;
+            this.useSSL = useSSL;
+            this.serverOutboundSocketBindingRef = serverOutboundSocketBindingRef;
+            this.accountsContext = accountsContext;
+            this.inventoryContext = inventoryContext;
+            this.metricsContext = metricsContext;
+            this.feedcommContext = feedcommContext;
+            this.keystorePath = keystorePath;
+            this.keystorePassword = keystorePassword;
+            this.securityRealm = securityRealm;
+        }
+    
+        public StorageReportTo getType() {
+            return type;
+        }
+    
+        public String getUsername() {
+            return username;
+        }
+    
+        public String getPassword() {
+            return password;
+        }
+    
+        public String getTenantId() {
+            return tenantId;
+        }
+    
+        public String getUrl() {
+            return url;
+        }
+    
+        public boolean isUseSSL() {
+            return useSSL;
+        }
+    
+        public String getServerOutboundSocketBindingRef() {
+            return serverOutboundSocketBindingRef;
+        }
+    
+        public String getAccountsContext() {
+            return accountsContext;
+        }
+    
+        public String getInventoryContext() {
+            return inventoryContext;
+        }
+    
+        public String getMetricsContext() {
+            return metricsContext;
+        }
+    
+        public String getFeedcommContext() {
+            return feedcommContext;
+        }
+    
+        public String getKeystorePath() {
+            return keystorePath;
+        }
+    
+        public String getKeystorePassword() {
+            return keystorePassword;
+        }
+    
+        public String getSecurityRealm() {
+            return securityRealm;
+        }
+    
+    }
+
+    public static class Diagnostics {
+        public static final Diagnostics EMPTY = new Diagnostics(false, null, 0, null);
+        private final boolean enabled;
+        private final DiagnosticsReportTo reportTo;
+        private final int interval;
+        private final TimeUnit timeUnits;
+    
+        public Diagnostics(boolean enabled, DiagnosticsReportTo reportTo, int interval, TimeUnit timeUnits) {
+            super();
+            this.enabled = enabled;
+            this.reportTo = reportTo;
+            this.interval = interval;
+            this.timeUnits = timeUnits;
+        }
+    
+        public boolean isEnabled() {
+            return enabled;
+        }
+    
+        public DiagnosticsReportTo getReportTo() {
+            return reportTo;
+        }
+    
+        public int getInterval() {
+            return interval;
+        }
+    
+        public TimeUnit getTimeUnits() {
+            return timeUnits;
+        }
+    }
+
+    public static class GlobalConfiguration {
+    
+        private final boolean subsystemEnabled;
+        private final String apiJndi;
+        private final int numMetricSchedulerThreads;
+        private final int numAvailSchedulerThreads;
+        private final int numDmrSchedulerThreads;
+        private final int metricDispatcherBufferSize;
+        private final int metricDispatcherMaxBatchSize;
+        private final int availDispatcherBufferSize;
+        private final int availDispatcherMaxBatchSize;
+    
+        public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int numMetricSchedulerThreads,
+                int numAvailSchedulerThreads, int numDmrSchedulerThreads, int metricDispatcherBufferSize,
+                int metricDispatcherMaxBatchSize, int availDispatcherBufferSize, int availDispatcherMaxBatchSize) {
+            super();
+            this.subsystemEnabled = subsystemEnabled;
+            this.apiJndi = apiJndi;
+            this.numMetricSchedulerThreads = numMetricSchedulerThreads;
+            this.numAvailSchedulerThreads = numAvailSchedulerThreads;
+            this.numDmrSchedulerThreads = numDmrSchedulerThreads;
+            this.metricDispatcherBufferSize = metricDispatcherBufferSize;
+            this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
+            this.availDispatcherBufferSize = availDispatcherBufferSize;
+            this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
+        }
+    
+    }
+
     private final GlobalConfiguration globalConfiguration;
     private final StorageAdapter storageAdapter;
     private final Diagnostics diagnostics;
@@ -76,163 +232,6 @@ public class MonitorServiceConfiguration {
 
         this.managedServersMap = managedServersMap;
     }
-
-    public static class StorageAdapter {
-        private final StorageReportTo type;
-        private final String username;
-        private final String password;
-        private final String tenantId;
-        private final String url;
-        private final boolean useSSL;
-        private final String serverOutboundSocketBindingRef;
-        private final String accountsContext;
-        private final String inventoryContext;
-        private final String metricsContext;
-        private final String feedcommContext;
-        private final String keystorePath;
-        private final String keystorePassword;
-        private final String securityRealm;
-
-        public StorageAdapter(StorageReportTo type, String username, String password, String tenantId, String url,
-                boolean useSSL, String serverOutboundSocketBindingRef, String accountsContext, String inventoryContext,
-                String metricsContext, String feedcommContext, String keystorePath, String keystorePassword,
-                String securityRealm) {
-            super();
-            this.type = type;
-            this.username = username;
-            this.password = password;
-            this.tenantId = tenantId;
-            this.url = url;
-            this.useSSL = useSSL;
-            this.serverOutboundSocketBindingRef = serverOutboundSocketBindingRef;
-            this.accountsContext = accountsContext;
-            this.inventoryContext = inventoryContext;
-            this.metricsContext = metricsContext;
-            this.feedcommContext = feedcommContext;
-            this.keystorePath = keystorePath;
-            this.keystorePassword = keystorePassword;
-            this.securityRealm = securityRealm;
-        }
-
-        public StorageReportTo getType() {
-            return type;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public String getTenantId() {
-            return tenantId;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public boolean isUseSSL() {
-            return useSSL;
-        }
-
-        public String getServerOutboundSocketBindingRef() {
-            return serverOutboundSocketBindingRef;
-        }
-
-        public String getAccountsContext() {
-            return accountsContext;
-        }
-
-        public String getInventoryContext() {
-            return inventoryContext;
-        }
-
-        public String getMetricsContext() {
-            return metricsContext;
-        }
-
-        public String getFeedcommContext() {
-            return feedcommContext;
-        }
-
-        public String getKeystorePath() {
-            return keystorePath;
-        }
-
-        public String getKeystorePassword() {
-            return keystorePassword;
-        }
-
-        public String getSecurityRealm() {
-            return securityRealm;
-        }
-
-    }
-
-    public static class Diagnostics {
-        public static final Diagnostics EMPTY = new Diagnostics(false, null, 0, null);
-        private final boolean enabled;
-        private final DiagnosticsReportTo reportTo;
-        private final int interval;
-        private final TimeUnit timeUnits;
-
-        public Diagnostics(boolean enabled, DiagnosticsReportTo reportTo, int interval, TimeUnit timeUnits) {
-            super();
-            this.enabled = enabled;
-            this.reportTo = reportTo;
-            this.interval = interval;
-            this.timeUnits = timeUnits;
-        }
-
-        public boolean isEnabled() {
-            return enabled;
-        }
-
-        public DiagnosticsReportTo getReportTo() {
-            return reportTo;
-        }
-
-        public int getInterval() {
-            return interval;
-        }
-
-        public TimeUnit getTimeUnits() {
-            return timeUnits;
-        }
-    }
-
-    public static class GlobalConfiguration {
-
-        private final boolean subsystemEnabled;
-        private final String apiJndi;
-        private final int numMetricSchedulerThreads;
-        private final int numAvailSchedulerThreads;
-        private final int numDmrSchedulerThreads;
-        private final int metricDispatcherBufferSize;
-        private final int metricDispatcherMaxBatchSize;
-        private final int availDispatcherBufferSize;
-        private final int availDispatcherMaxBatchSize;
-
-        public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int numMetricSchedulerThreads,
-                int numAvailSchedulerThreads, int numDmrSchedulerThreads, int metricDispatcherBufferSize,
-                int metricDispatcherMaxBatchSize, int availDispatcherBufferSize, int availDispatcherMaxBatchSize) {
-            super();
-            this.subsystemEnabled = subsystemEnabled;
-            this.apiJndi = apiJndi;
-            this.numMetricSchedulerThreads = numMetricSchedulerThreads;
-            this.numAvailSchedulerThreads = numAvailSchedulerThreads;
-            this.numDmrSchedulerThreads = numDmrSchedulerThreads;
-            this.metricDispatcherBufferSize = metricDispatcherBufferSize;
-            this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
-            this.availDispatcherBufferSize = availDispatcherBufferSize;
-            this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
-        }
-
-    }
-
 
     public TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> getDmrTypeSets() {
         return dmrTypeSets;
