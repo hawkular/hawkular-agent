@@ -28,7 +28,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.Util;
@@ -72,12 +72,12 @@ public class HttpClientBuilder {
      * @param sslContext if not null, and if the configuration tells use to use SSL, this will
      *                   be the SSL context to use.
      */
-    public HttpClientBuilder(MonitorServiceConfiguration configuration, SSLContext sslContext) {
-        this.username = configuration.storageAdapter.username;
-        this.password = configuration.storageAdapter.password;
-        this.useSSL = configuration.storageAdapter.useSSL;
-        this.keystorePath = configuration.storageAdapter.keystorePath;
-        this.keystorePassword = configuration.storageAdapter.keystorePassword;
+    public HttpClientBuilder(StorageAdapter storageAdapter, SSLContext sslContext) {
+        this.username = storageAdapter.getUsername();
+        this.password = storageAdapter.getPassword();
+        this.useSSL = storageAdapter.isUseSSL();
+        this.keystorePath = storageAdapter.getKeystorePath();
+        this.keystorePassword = storageAdapter.getKeystorePassword();
         if (this.useSSL) {
             this.sslContext = (sslContext == null) ? buildSSLContext() : sslContext;
         } else {

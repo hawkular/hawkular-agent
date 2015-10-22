@@ -48,42 +48,24 @@ public class MonitorServiceConfiguration {
         STORAGE // stores the diagnostics as metrics to the storage adapter
     }
 
-    public final boolean subsystemEnabled;
-    public final String apiJndi;
-    public final int numMetricSchedulerThreads;
-    public final int numAvailSchedulerThreads;
-    public final int numDmrSchedulerThreads;
-    public final int metricDispatcherBufferSize;
-    public final int metricDispatcherMaxBatchSize;
-    public final int availDispatcherBufferSize;
-    public final int availDispatcherMaxBatchSize;
-    public final StorageAdapter storageAdapter;
-    public final Diagnostics diagnostics;
+    private final GlobalConfiguration globalConfiguration;
+    private final StorageAdapter storageAdapter;
+    private final Diagnostics diagnostics;
 
     private final TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> dmrTypeSets;
     private final TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets;
     private final TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets;
 
-    public final Map<Name, ManagedServer> managedServersMap;
-
-    public MonitorServiceConfiguration(boolean subsystemEnabled, String apiJndi, int numMetricSchedulerThreads,
-            int numAvailSchedulerThreads, int numDmrSchedulerThreads, int metricDispatcherBufferSize,
-            int metricDispatcherMaxBatchSize, int availDispatcherBufferSize, int availDispatcherMaxBatchSize,
+    private final Map<Name, ManagedServer> managedServersMap;
+    public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration,
             Diagnostics diagnostics, StorageAdapter storageAdapter,
             TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> dmrTypeSets,
             TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets,
             TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets,
             Map<Name, ManagedServer> managedServersMap) {
         super();
-        this.subsystemEnabled = subsystemEnabled;
-        this.apiJndi = apiJndi;
-        this.numMetricSchedulerThreads = numMetricSchedulerThreads;
-        this.numAvailSchedulerThreads = numAvailSchedulerThreads;
-        this.numDmrSchedulerThreads = numDmrSchedulerThreads;
-        this.metricDispatcherBufferSize = metricDispatcherBufferSize;
-        this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
-        this.availDispatcherBufferSize = availDispatcherBufferSize;
-        this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
+
+        this.globalConfiguration = globalConfiguration;
 
         this.diagnostics = diagnostics;
         this.storageAdapter = storageAdapter;
@@ -96,20 +78,20 @@ public class MonitorServiceConfiguration {
     }
 
     public static class StorageAdapter {
-        public final StorageReportTo type;
-        public final String username;
-        public final String password;
-        public String tenantId;
-        public String url;
-        public final boolean useSSL;
-        public final String serverOutboundSocketBindingRef;
-        public final String accountsContext;
-        public final String inventoryContext;
-        public final String metricsContext;
-        public final String feedcommContext;
-        public final String keystorePath;
-        public final String keystorePassword;
-        public final String securityRealm;
+        private final StorageReportTo type;
+        private final String username;
+        private final String password;
+        private final String tenantId;
+        private final String url;
+        private final boolean useSSL;
+        private final String serverOutboundSocketBindingRef;
+        private final String accountsContext;
+        private final String inventoryContext;
+        private final String metricsContext;
+        private final String feedcommContext;
+        private final String keystorePath;
+        private final String keystorePassword;
+        private final String securityRealm;
 
         public StorageAdapter(StorageReportTo type, String username, String password, String tenantId, String url,
                 boolean useSSL, String serverOutboundSocketBindingRef, String accountsContext, String inventoryContext,
@@ -131,14 +113,71 @@ public class MonitorServiceConfiguration {
             this.keystorePassword = keystorePassword;
             this.securityRealm = securityRealm;
         }
+
+        public StorageReportTo getType() {
+            return type;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public String getTenantId() {
+            return tenantId;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public boolean isUseSSL() {
+            return useSSL;
+        }
+
+        public String getServerOutboundSocketBindingRef() {
+            return serverOutboundSocketBindingRef;
+        }
+
+        public String getAccountsContext() {
+            return accountsContext;
+        }
+
+        public String getInventoryContext() {
+            return inventoryContext;
+        }
+
+        public String getMetricsContext() {
+            return metricsContext;
+        }
+
+        public String getFeedcommContext() {
+            return feedcommContext;
+        }
+
+        public String getKeystorePath() {
+            return keystorePath;
+        }
+
+        public String getKeystorePassword() {
+            return keystorePassword;
+        }
+
+        public String getSecurityRealm() {
+            return securityRealm;
+        }
+
     }
 
     public static class Diagnostics {
         public static final Diagnostics EMPTY = new Diagnostics(false, null, 0, null);
-        public final boolean enabled;
-        public final DiagnosticsReportTo reportTo;
-        public final int interval;
-        public final TimeUnit timeUnits;
+        private final boolean enabled;
+        private final DiagnosticsReportTo reportTo;
+        private final int interval;
+        private final TimeUnit timeUnits;
 
         public Diagnostics(boolean enabled, DiagnosticsReportTo reportTo, int interval, TimeUnit timeUnits) {
             super();
@@ -147,7 +186,53 @@ public class MonitorServiceConfiguration {
             this.interval = interval;
             this.timeUnits = timeUnits;
         }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public DiagnosticsReportTo getReportTo() {
+            return reportTo;
+        }
+
+        public int getInterval() {
+            return interval;
+        }
+
+        public TimeUnit getTimeUnits() {
+            return timeUnits;
+        }
     }
+
+    public static class GlobalConfiguration {
+
+        private final boolean subsystemEnabled;
+        private final String apiJndi;
+        private final int numMetricSchedulerThreads;
+        private final int numAvailSchedulerThreads;
+        private final int numDmrSchedulerThreads;
+        private final int metricDispatcherBufferSize;
+        private final int metricDispatcherMaxBatchSize;
+        private final int availDispatcherBufferSize;
+        private final int availDispatcherMaxBatchSize;
+
+        public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int numMetricSchedulerThreads,
+                int numAvailSchedulerThreads, int numDmrSchedulerThreads, int metricDispatcherBufferSize,
+                int metricDispatcherMaxBatchSize, int availDispatcherBufferSize, int availDispatcherMaxBatchSize) {
+            super();
+            this.subsystemEnabled = subsystemEnabled;
+            this.apiJndi = apiJndi;
+            this.numMetricSchedulerThreads = numMetricSchedulerThreads;
+            this.numAvailSchedulerThreads = numAvailSchedulerThreads;
+            this.numDmrSchedulerThreads = numDmrSchedulerThreads;
+            this.metricDispatcherBufferSize = metricDispatcherBufferSize;
+            this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
+            this.availDispatcherBufferSize = availDispatcherBufferSize;
+            this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
+        }
+
+    }
+
 
     public TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> getDmrTypeSets() {
         return dmrTypeSets;
@@ -159,6 +244,58 @@ public class MonitorServiceConfiguration {
 
     public TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> getPlatformTypeSets() {
         return platformTypeSets;
+    }
+
+    public GlobalConfiguration getGlobalConfiguration() {
+        return globalConfiguration;
+    }
+
+    public StorageAdapter getStorageAdapter() {
+        return storageAdapter;
+    }
+
+    public Diagnostics getDiagnostics() {
+        return diagnostics;
+    }
+
+    public Map<Name, ManagedServer> getManagedServersMap() {
+        return managedServersMap;
+    }
+
+    public boolean isSubsystemEnabled() {
+        return globalConfiguration.subsystemEnabled;
+    }
+
+    public String getApiJndi() {
+        return globalConfiguration.apiJndi;
+    }
+
+    public int getNumMetricSchedulerThreads() {
+        return globalConfiguration.numMetricSchedulerThreads;
+    }
+
+    public int getNumAvailSchedulerThreads() {
+        return globalConfiguration.numAvailSchedulerThreads;
+    }
+
+    public int getNumDmrSchedulerThreads() {
+        return globalConfiguration.numDmrSchedulerThreads;
+    }
+
+    public int getMetricDispatcherBufferSize() {
+        return globalConfiguration.metricDispatcherBufferSize;
+    }
+
+    public int getMetricDispatcherMaxBatchSize() {
+        return globalConfiguration.metricDispatcherMaxBatchSize;
+    }
+
+    public int getAvailDispatcherBufferSize() {
+        return globalConfiguration.availDispatcherBufferSize;
+    }
+
+    public int getAvailDispatcherMaxBatchSize() {
+        return globalConfiguration.availDispatcherMaxBatchSize;
     }
 
 }

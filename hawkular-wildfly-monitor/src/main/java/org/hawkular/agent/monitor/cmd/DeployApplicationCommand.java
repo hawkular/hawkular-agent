@@ -60,7 +60,7 @@ public class DeployApplicationCommand implements Command<DeployApplicationReques
         CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
         String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
         ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
-        ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.getManagedServerName()));
+        ManagedServer managedServer = config.getManagedServersMap().get(new Name(idParts.getManagedServerName()));
         if (managedServer == null) {
             throw new IllegalArgumentException(String.format("Cannot deploy application: unknown managed server [%s]",
                     idParts.getManagedServerName()));

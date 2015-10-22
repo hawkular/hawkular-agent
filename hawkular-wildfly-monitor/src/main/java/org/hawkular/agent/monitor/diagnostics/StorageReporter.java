@@ -86,7 +86,7 @@ public class StorageReporter extends ScheduledReporter {
             SortedMap<String, Meter> meters,
             SortedMap<String, Timer> timers) {
 
-        Interval interval = new Interval(diagnosticsConfig.interval, diagnosticsConfig.timeUnits);
+        Interval interval = new Interval(diagnosticsConfig.getInterval(), diagnosticsConfig.getTimeUnits());
         String pathStr = PathAddress.pathAddress(SubsystemDefinition.INSTANCE.getPathElement()).toCLIStyleString();
         Address ourAddr = Address.parse(pathStr);
         LocalDMREndpoint localDmrEndpoint = new LocalDMREndpoint("_self", this.selfId);

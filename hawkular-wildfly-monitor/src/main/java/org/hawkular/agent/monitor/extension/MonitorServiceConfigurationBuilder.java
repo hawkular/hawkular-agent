@@ -31,6 +31,7 @@ import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsReportTo;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.GlobalConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.ID;
@@ -80,28 +81,12 @@ public class MonitorServiceConfigurationBuilder {
     private Diagnostics diagnostics;
     private StorageAdapter storageAdapter;
 
-    private boolean subsystemEnabled;
-    private String apiJndi;
-    private int numMetricSchedulerThreads;
-    private int numAvailSchedulerThreads;
-    private int numDmrSchedulerThreads;
-    private int metricDispatcherBufferSize;
-    private int metricDispatcherMaxBatchSize;
-    private int availDispatcherBufferSize;
-    private int availDispatcherMaxBatchSize;
     private Map<Name, ManagedServer> managedServersMap;
-
-    public MonitorServiceConfiguration build() {
-        return new MonitorServiceConfiguration(subsystemEnabled, apiJndi, numMetricSchedulerThreads,
-                numAvailSchedulerThreads, numDmrSchedulerThreads, metricDispatcherBufferSize,
-                metricDispatcherMaxBatchSize, availDispatcherBufferSize, availDispatcherMaxBatchSize,
-                diagnostics, storageAdapter, dmrTypeSets, jmxTypeSets,
-                platformTypeSets, managedServersMap);
-    }
+    private GlobalConfiguration globalConfiguration;
 
     public MonitorServiceConfigurationBuilder(ModelNode config, OperationContext context)
             throws OperationFailedException {
-        determineGlobalConfig(config, context);
+        this.globalConfiguration = determineGlobalConfig(config, context);
         this.storageAdapter = determineStorageAdapterConfig(config, context);
 
         this.diagnostics = determineDiagnosticsConfig(config, context);
@@ -126,7 +111,13 @@ public class MonitorServiceConfigurationBuilder {
         // make sure to call this AFTER the resource type sets have been determined
         this.managedServersMap = this.determineManagedServers(config, context);
 
-        return;
+    }
+
+    public MonitorServiceConfiguration build() {
+
+        return new MonitorServiceConfiguration(globalConfiguration,
+                diagnostics, storageAdapter, dmrTypeSets, jmxTypeSets,
+                platformTypeSets, managedServersMap);
     }
 
     private Map<Name, TypeSet<DMRMetricType>> determineMetricSetDmr(ModelNode config, OperationContext context)
@@ -696,28 +687,34 @@ public class MonitorServiceConfigurationBuilder {
                 }
             }
         }
-        return new StorageAdapter(type, username, password, tenantId, url, useSSL, serverOutboundSocketBindingRef,
+        return new StorageAdapter(type, username, password, tenantId, url, useSSL,
+                serverOutboundSocketBindingRef,
                 accountsContext, inventoryContext, metricsContext, feedcommContext, keystorePath, keystorePassword,
                 securityRealm);
     }
 
-    private void determineGlobalConfig(ModelNode config, OperationContext context) throws OperationFailedException {
-        this.subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
-        this.apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
-        this.numMetricSchedulerThreads = getInt(config, context,
+    private GlobalConfiguration determineGlobalConfig(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+        boolean subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
+        String apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
+        int numMetricSchedulerThreads = getInt(config, context,
                 SubsystemAttributes.NUM_METRIC_SCHEDULER_THREADS);
-        this.numAvailSchedulerThreads = getInt(config, context,
+        int numAvailSchedulerThreads = getInt(config, context,
                 SubsystemAttributes.NUM_AVAIL_SCHEDULER_THREADS);
-        this.numDmrSchedulerThreads = getInt(config, context,
+        int numDmrSchedulerThreads = getInt(config, context,
                 SubsystemAttributes.NUM_DMR_SCHEDULER_THREADS);
-        this.metricDispatcherBufferSize = getInt(config, context,
+        int metricDispatcherBufferSize = getInt(config, context,
                 SubsystemAttributes.METRIC_DISPATCHER_BUFFER_SIZE);
-        this.metricDispatcherMaxBatchSize = getInt(config, context,
+        int metricDispatcherMaxBatchSize = getInt(config, context,
                 SubsystemAttributes.METRIC_DISPATCHER_MAX_BATCH_SIZE);
-        this.availDispatcherBufferSize = getInt(config, context,
+        int availDispatcherBufferSize = getInt(config, context,
                 SubsystemAttributes.AVAIL_DISPATCHER_BUFFER_SIZE);
-        this.availDispatcherMaxBatchSize = getInt(config, context,
+        int availDispatcherMaxBatchSize = getInt(config, context,
                 SubsystemAttributes.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
+
+        return new GlobalConfiguration(subsystemEnabled, apiJndi, numMetricSchedulerThreads, numAvailSchedulerThreads,
+                numDmrSchedulerThreads, metricDispatcherBufferSize, metricDispatcherMaxBatchSize,
+                availDispatcherBufferSize, availDispatcherMaxBatchSize);
     }
 
     private Map<Name, TypeSet<DMRResourceType>> determineResourceTypeSetDmr(ModelNode config, OperationContext context,

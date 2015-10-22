@@ -138,6 +138,140 @@ import com.squareup.okhttp.Response;
 
 public class MonitorService implements Service<MonitorService>, DiscoveryService {
     private static final MsgLogger log = AgentLoggers.getLogger(MonitorService.class);
+
+    /**
+     * Builds the runtime configuration, typically out of the boot configuration. It is static so that always stays
+     * clear what data it relies on.
+     *
+     * On cetrain circumstances, this method may return the {@code bootConfiguration} instance without any modification.
+     *
+     * @param bootConfiguration the boot configuration
+     * @param httpSocketBindingValue the httpSocketBindingValue
+     * @param httpsSocketBindingValue the httpsSocketBindingValue
+     * @param serverOutboundSocketBindingValue the serverOutboundSocketBindingValue
+     * @param trustOnlySSLContextValues the serverOutboundSocketBindingValue
+     * @return the runtime configuration
+     */
+    private static MonitorServiceConfiguration buildRuntimeConfiguration(
+            MonitorServiceConfiguration bootConfiguration,
+            InjectedValue<SocketBinding> httpSocketBindingValue,
+            InjectedValue<SocketBinding> httpsSocketBindingValue,
+            InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue,
+            Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues) {
+
+        final MonitorServiceConfiguration.StorageAdapter bootStorageAdapter = bootConfiguration.getStorageAdapter();
+
+        if (bootStorageAdapter.getTenantId() != null && bootStorageAdapter.getUrl() != null) {
+            return bootConfiguration;
+        } else {
+
+            // determine where our Hawkular server is
+            // If the user gave us a URL explicitly, that overrides everything and we use it.
+            // If no URL is configured, but we are given a server outbound socket binding name,
+            // we use that to determine the remote Hawkular URL.
+            // If neither URL nor output socket binding name is provided, we assume we are running
+            // co-located with the Hawkular server and we use local bindings.
+            String useUrl = bootStorageAdapter.getUrl();
+            try {
+                String address;
+                int port;
+
+                if (bootStorageAdapter.getServerOutboundSocketBindingRef() == null) {
+                    // no URL or output socket binding - assume we are running co-located with server
+                    SocketBinding socketBinding;
+                    if (bootStorageAdapter.isUseSSL()) {
+                        socketBinding = httpsSocketBindingValue.getValue();
+                    } else {
+                        socketBinding = httpSocketBindingValue.getValue();
+                    }
+                    address = socketBinding.getAddress().getHostAddress();
+                    if (address.equals("0.0.0.0") || address.equals("::/128")) {
+                        address = InetAddress.getLocalHost().getCanonicalHostName();
+                    }
+                    port = socketBinding.getAbsolutePort();
+                } else {
+                    OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue
+                            .getValue();
+                    address = serverBinding.getResolvedDestinationAddress().getHostAddress();
+                    port = serverBinding.getDestinationPort();
+                }
+                String protocol = (bootStorageAdapter.isUseSSL()) ? "https" : "http";
+                useUrl = String.format("%s://%s:%d", protocol, address, port);
+            } catch (UnknownHostException uhe) {
+                throw new IllegalArgumentException("Cannot determine Hawkular server host", uhe);
+            }
+
+            String useTenantId = bootStorageAdapter.getTenantId();
+
+            if (bootStorageAdapter.getType() == StorageReportTo.HAWKULAR) {
+                try {
+                    StringBuilder url = Util.getContextUrlString(useUrl,
+                            bootStorageAdapter.getAccountsContext());
+                    url.append("personas/current");
+
+                    SSLContext sslContext = getSslContext(bootConfiguration, trustOnlySSLContextValues);
+
+                    HttpClientBuilder httpClientBuilder = new HttpClientBuilder(bootConfiguration.getStorageAdapter(),
+                            sslContext);
+
+                    OkHttpClient httpclient = httpClientBuilder.getHttpClient();
+
+                    // TODO: next three lines are only temporary and should be deleted when inventory no longer needs
+                    // this. make the call to the inventory to pre-create the test environment and other assumed
+                    // entities
+                    String tenantUrl = Util.getContextUrlString(useUrl,
+                            bootStorageAdapter.getInventoryContext()).append("tenant").toString();
+                    httpclient.newCall(httpClientBuilder.buildJsonGetRequest(tenantUrl, null)).execute();
+
+                    Request request = httpClientBuilder.buildJsonGetRequest(url.toString(), null);
+                    Response httpResponse = httpclient.newCall(request).execute();
+
+                    if (!httpResponse.isSuccessful()) {
+                        throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
+                                + httpResponse.message() + "], url=[" + url + "]");
+                    }
+
+                    final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
+                    // depending on accounts is probably overkill because of 1 REST call, so let's process the
+                    // JSON via regex
+                    Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
+                    if (matcher.find()) {
+                        useTenantId = matcher.group(1);
+                    }
+                    log.debugf("Tenant ID [%s]", useTenantId == null ? "unknown" : useTenantId);
+                } catch (Throwable t) {
+                    throw new RuntimeException("Cannot get tenant ID", t);
+                }
+            }
+            MonitorServiceConfiguration.StorageAdapter runtimeStorageAdapter = //
+            new MonitorServiceConfiguration.StorageAdapter(
+                    bootStorageAdapter.getType(), bootStorageAdapter.getUsername(), bootStorageAdapter.getPassword(),
+                    useTenantId, useUrl, bootStorageAdapter.isUseSSL(),
+                    bootStorageAdapter.getServerOutboundSocketBindingRef(),
+                    bootStorageAdapter.getAccountsContext(), bootStorageAdapter.getInventoryContext(),
+                    bootStorageAdapter.getMetricsContext(), bootStorageAdapter.getFeedcommContext(),
+                    bootStorageAdapter.getKeystorePath(), bootStorageAdapter.getKeystorePassword(),
+                    bootStorageAdapter.getSecurityRealm());
+
+            return new MonitorServiceConfiguration(bootConfiguration.getGlobalConfiguration(),
+                    bootConfiguration.getDiagnostics(), runtimeStorageAdapter, bootConfiguration.getDmrTypeSets(),
+                    bootConfiguration.getJmxTypeSets(), bootConfiguration.getPlatformTypeSets(),
+                    bootConfiguration.getManagedServersMap());
+        }
+
+    }
+
+    private static SSLContext getSslContext(MonitorServiceConfiguration configuration,
+            Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues) {
+        SSLContext result = null;
+        String bootSecurityRealm = configuration.getStorageAdapter().getSecurityRealm();
+        if (bootSecurityRealm != null) {
+            result = trustOnlySSLContextValues.get(bootSecurityRealm)
+                    .getOptionalValue();
+        }
+        return result;
+    }
+
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
     private final InjectedValue<ControlledProcessStateService> processStateValue = new InjectedValue<>();
@@ -152,7 +286,12 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     private PropertyChangeListener serverStateListener;
     private ExecutorService managementClientExecutor;
 
-    // the full configuration as declared in standalone.xml
+    /** The configuration as declared in standalone.xml. This one should be used only to build the runtime configuration
+     * strored in {@link #configuration}. */
+    private final MonitorServiceConfiguration bootConfiguration;
+
+    /** A version of {@link #bootConfiguration} with defaults properly set. @{link #configuration} is build in
+     * {@link #startMonitorService()} */
     private MonitorServiceConfiguration configuration;
 
     // this is used to identify us to the Hawkular environment as a particular feed
@@ -185,6 +324,11 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     // inventory manager for the platform resources
     private final AtomicReference<PlatformInventoryManager> platformInventory = new AtomicReference<>();
 
+    public MonitorService(MonitorServiceConfiguration bootConfiguration) {
+        super();
+        this.bootConfiguration = bootConfiguration;
+    }
+
     @Override
     public MonitorService getValue() {
         return this;
@@ -195,20 +339,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
      */
     public HawkularMonitorContext getHawkularMonitorContext() {
         return new HawkularMonitorContextImpl(metricStorageProxy, availStorageProxy, inventoryStorageProxy);
-    }
-
-    /**
-     * Configures this service and its internals.
-     *
-     * @param config the configuration with all settings needed to start monitoring metrics
-     */
-    public void configure(MonitorServiceConfiguration config) {
-        if (isMonitorServiceStarted()) {
-            throw new IllegalStateException(
-                    "Service is already started and cannot be reconfigured. Shut it down first.");
-        }
-
-        this.configuration = config;
     }
 
     /**
@@ -226,28 +356,29 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 httpSocketBindingValue);
         bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("https"), SocketBinding.class,
                 httpsSocketBindingValue);
-        if (this.configuration.storageAdapter.serverOutboundSocketBindingRef != null) {
+        if (this.bootConfiguration.getStorageAdapter().getServerOutboundSocketBindingRef() != null) {
             bldr.addDependency(OutboundSocketBinding.OUTBOUND_SOCKET_BINDING_BASE_SERVICE_NAME
-                    .append(this.configuration.storageAdapter.serverOutboundSocketBindingRef),
+                    .append(this.bootConfiguration.getStorageAdapter().getServerOutboundSocketBindingRef()),
                     OutboundSocketBinding.class, serverOutboundSocketBindingValue);
         }
 
         // get the security realm ssl context for the storage adapter
-        if (this.configuration.storageAdapter.securityRealm != null) {
+        if (this.bootConfiguration.getStorageAdapter().getSecurityRealm() != null) {
             InjectedValue<SSLContext> iv = new InjectedValue<>();
-            this.trustOnlySSLContextValues.put(this.configuration.storageAdapter.securityRealm, iv);
+            this.trustOnlySSLContextValues.put(this.bootConfiguration.getStorageAdapter().getSecurityRealm(), iv);
 
             // if we ever need our own private key, we can add another dependency with trustStoreOnly=false
             boolean trustStoreOnly = true;
             SSLContextService.ServiceUtil.addDependency(
                     bldr,
                     iv,
-                    SecurityRealm.ServiceUtil.createServiceName(this.configuration.storageAdapter.securityRealm),
+                    SecurityRealm.ServiceUtil
+                            .createServiceName(this.bootConfiguration.getStorageAdapter().getSecurityRealm()),
                     trustStoreOnly);
         }
 
         // get the security realms for any configured remote DMR and JMX servers that require ssl
-        for (Map.Entry<Name, ManagedServer> entry : this.configuration.managedServersMap.entrySet()) {
+        for (Map.Entry<Name, ManagedServer> entry : this.bootConfiguration.getManagedServersMap().entrySet()) {
             String securityRealm = null;
 
             ManagedServer managedServer = entry.getValue();
@@ -314,13 +445,14 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         log.infoStarting();
 
+        this.configuration = buildRuntimeConfiguration(this.bootConfiguration,
+                this.httpSocketBindingValue, this.httpsSocketBindingValue, this.serverOutboundSocketBindingValue,
+                this.trustOnlySSLContextValues);
+        log.infoUsingServerSideUrl(this.configuration.getStorageAdapter().getUrl());
+
         // prepare the builder that will create our HTTP/REST clients to the hawkular server infrastructure
-        SSLContext ssl = null;
-        if (this.configuration.storageAdapter.securityRealm != null) {
-            ssl = this.trustOnlySSLContextValues.get(this.configuration.storageAdapter.securityRealm)
-                    .getOptionalValue();
-        }
-        this.httpClientBuilder = new HttpClientBuilder(this.configuration, ssl);
+        SSLContext ssl = getSslContext(this.configuration, this.trustOnlySSLContextValues);
+        this.httpClientBuilder = new HttpClientBuilder(this.configuration.getStorageAdapter(), ssl);
 
         // get our self identifiers
         ModelControllerClientFactory mccFactory = createLocalClientFactory();
@@ -329,54 +461,15 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         // build the diagnostics object that will be used to track our own performance
         final MetricRegistry metricRegistry = new MetricRegistry();
-        this.diagnostics = new DiagnosticsImpl(configuration.diagnostics, metricRegistry, selfId);
-
-        // determine where our Hawkular server is
-        // If the user gave us a URL explicitly, that overrides everything and we use it.
-        // If no URL is configured, but we are given a server outbound socket binding name,
-        // we use that to determine the remote Hawkular URL.
-        // If neither URL nor output socket binding name is provided, we assume we are running
-        // co-located with the Hawkular server and we use local bindings.
-        if (this.configuration.storageAdapter.url == null) {
-            try {
-                String address;
-                int port;
-
-                if (this.configuration.storageAdapter.serverOutboundSocketBindingRef == null) {
-                    // no URL or output socket binding - assume we are running co-located with server
-                    SocketBinding socketBinding;
-                    if (this.configuration.storageAdapter.useSSL) {
-                        socketBinding = this.httpsSocketBindingValue.getValue();
-                    } else {
-                        socketBinding = this.httpSocketBindingValue.getValue();
-                    }
-                    address = socketBinding.getAddress().getHostAddress();
-                    if (address.equals("0.0.0.0") || address.equals("::/128")) {
-                        address = InetAddress.getLocalHost().getCanonicalHostName();
-                    }
-                    port = socketBinding.getAbsolutePort();
-                } else {
-                    OutboundSocketBinding serverBinding = this.serverOutboundSocketBindingValue.getValue();
-                    address = serverBinding.getResolvedDestinationAddress().getHostAddress();
-                    port = serverBinding.getDestinationPort();
-                }
-                String protocol = (this.configuration.storageAdapter.useSSL) ? "https" : "http";
-                this.configuration.storageAdapter.url = String.format("%s://%s:%d", protocol, address, port);
-            } catch (UnknownHostException uhe) {
-                throw new IllegalArgumentException("Cannot determine Hawkular server host", uhe);
-            }
-        }
-
-        log.infoUsingServerSideUrl(this.configuration.storageAdapter.url);
+        this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, selfId);
 
         // if we are participating in a full Hawkular environment, we need to do some additional things:
         // 1. determine our tenant ID dynamically
         // 2. register our feed ID
         // 3. connect to the server's feed comm channel
         // 4. prepare the thread pool that will store discovered resources into inventory
-        if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+        if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
             try {
-                determineTenantId();
                 registerFeed();
             } catch (Exception e) {
                 log.errorCannotDoAnythingWithoutFeed(e);
@@ -391,7 +484,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
 
         } else {
-            if (this.configuration.storageAdapter.tenantId == null) {
+            if (this.configuration.getStorageAdapter().getTenantId() == null) {
                 log.errorMustHaveTenantIdConfigured();
                 return;
             }
@@ -438,7 +531,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         // stop diagnostic reporting and spit out a final diagnostics report
         if (diagnosticsReporter != null) {
             diagnosticsReporter.stop();
-            if (configuration.diagnostics.enabled) {
+            if (configuration.getDiagnostics().isEnabled()) {
                 diagnosticsReporter.report();
             }
         }
@@ -531,7 +624,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
      */
     private ExecutorService getManagementClientExecutor() {
         if (managementClientExecutor == null) {
-            final int numThreadsInPool = this.configuration.numDmrSchedulerThreads;
+            final int numThreadsInPool = this.configuration.getNumDmrSchedulerThreads();
             final ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
                     "Hawkular-Monitor-MgmtClient");
             managementClientExecutor = Executors.newFixedThreadPool(numThreadsInPool, threadFactory);
@@ -547,7 +640,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
      */
     private void startStorageAdapter() throws Exception {
         // determine what our backend storage should be and create its associated adapter
-        switch (configuration.storageAdapter.type) {
+        switch (configuration.getStorageAdapter().getType()) {
             case HAWKULAR: {
                 this.storageAdapter = new HawkularStorageAdapter();
                 break;
@@ -558,11 +651,11 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
             default: {
                 throw new IllegalArgumentException("Invalid storage adapter: "
-                        + configuration.storageAdapter);
+                        + configuration.getStorageAdapter());
             }
         }
 
-        this.storageAdapter.initialize(configuration.storageAdapter, diagnostics, selfId, httpClientBuilder);
+        this.storageAdapter.initialize(configuration.getStorageAdapter(), diagnostics, selfId, httpClientBuilder);
 
         // provide our storage adapter to the proxies - allows external apps to use them to store its own data
         metricStorageProxy.setStorageAdapter(storageAdapter);
@@ -570,7 +663,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         inventoryStorageProxy.setStorageAdapter(storageAdapter);
 
         // determine where we are to store our own diagnostic reports
-        switch (configuration.diagnostics.reportTo) {
+        switch (configuration.getDiagnostics().getReportTo()) {
             case LOG: {
                 this.diagnosticsReporter = JBossLoggingReporter.forRegistry(this.diagnostics.getMetricRegistry())
                         .convertRatesTo(TimeUnit.SECONDS)
@@ -582,7 +675,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
             case STORAGE: {
                 this.diagnosticsReporter = StorageReporter
-                        .forRegistry(this.diagnostics.getMetricRegistry(), configuration.diagnostics, storageAdapter,
+                        .forRegistry(this.diagnostics.getMetricRegistry(), configuration.getDiagnostics(),
+                                storageAdapter,
                                 selfId)
                         .convertRatesTo(TimeUnit.SECONDS)
                         .convertDurationsTo(MILLISECONDS)
@@ -590,13 +684,13 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 break;
             }
             default: {
-                throw new Exception("Invalid diagnostics type: " + configuration.diagnostics.reportTo);
+                throw new Exception("Invalid diagnostics type: " + configuration.getDiagnostics().getReportTo());
             }
         }
 
-        if (this.configuration.diagnostics.enabled) {
-            diagnosticsReporter.start(this.configuration.diagnostics.interval,
-                    this.configuration.diagnostics.timeUnits);
+        if (this.configuration.getDiagnostics().isEnabled()) {
+            diagnosticsReporter.start(this.configuration.getDiagnostics().getInterval(),
+                    this.configuration.getDiagnostics().getTimeUnits());
         }
     }
 
@@ -622,14 +716,14 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         }
 
         SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
-        schedulerConfig.setDiagnosticsConfig(this.configuration.diagnostics);
-        schedulerConfig.setStorageAdapterConfig(this.configuration.storageAdapter);
-        schedulerConfig.setMetricSchedulerThreads(this.configuration.numMetricSchedulerThreads);
-        schedulerConfig.setAvailSchedulerThreads(this.configuration.numAvailSchedulerThreads);
-        schedulerConfig.setMetricDispatcherBufferSize(this.configuration.metricDispatcherBufferSize);
-        schedulerConfig.setMetricDispatcherMaxBatchSize(this.configuration.metricDispatcherMaxBatchSize);
-        schedulerConfig.setAvailDispatcherBufferSize(this.configuration.availDispatcherBufferSize);
-        schedulerConfig.setAvailDispatcherMaxBatchSize(this.configuration.availDispatcherMaxBatchSize);
+        schedulerConfig.setDiagnosticsConfig(this.configuration.getDiagnostics());
+        schedulerConfig.setStorageAdapterConfig(this.configuration.getStorageAdapter());
+        schedulerConfig.setMetricSchedulerThreads(this.configuration.getNumMetricSchedulerThreads());
+        schedulerConfig.setAvailSchedulerThreads(this.configuration.getNumAvailSchedulerThreads());
+        schedulerConfig.setMetricDispatcherBufferSize(this.configuration.getMetricDispatcherBufferSize());
+        schedulerConfig.setMetricDispatcherMaxBatchSize(this.configuration.getMetricDispatcherMaxBatchSize());
+        schedulerConfig.setAvailDispatcherBufferSize(this.configuration.getAvailDispatcherBufferSize());
+        schedulerConfig.setAvailDispatcherMaxBatchSize(this.configuration.getAvailDispatcherMaxBatchSize());
 
         // for all the resources we have in inventory, schedule their metric and avail collections
         for (DMRInventoryManager im : this.dmrServerInventories.values()) {
@@ -795,11 +889,11 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         discoverPlatformData();
 
         // there may be some old managed servers that we don't manage anymore - remove them now
-        this.dmrServerInventories.keySet().retainAll(this.configuration.managedServersMap.values());
-        this.jmxServerInventories.keySet().retainAll(this.configuration.managedServersMap.values());
+        this.dmrServerInventories.keySet().retainAll(this.configuration.getManagedServersMap().values());
+        this.jmxServerInventories.keySet().retainAll(this.configuration.getManagedServersMap().values());
 
         // go through each configured managed server and discovery all resources in them
-        for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
+        for (ManagedServer managedServer : this.configuration.getManagedServersMap().values()) {
             if (!managedServer.isEnabled()) {
                 log.infoManagedServerDisabled(managedServer.getName().toString());
             } else {
@@ -867,7 +961,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         // if we are participating in a full hawkular environment,
         // new resources and their metadata will be added to inventory
-        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+        if (MonitorService.this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
             platformListener = new VertexSetListener<PlatformResource>() {
                 @Override
                 public void vertexRemoved(GraphVertexChangeEvent<PlatformResource> e) {
@@ -906,7 +1000,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         // if we are participating in a full hawkular environment,
         // new resources and their metadata will be added to inventory
-        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+        if (MonitorService.this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
             dmrListener = new VertexSetListener<DMRResource>() {
                 @Override
                 public void vertexRemoved(GraphVertexChangeEvent<DMRResource> e) {
@@ -945,7 +1039,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         // if we are participating in a full hawkular environment,
         // new resources and their metadata will be added to inventory
-        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+        if (MonitorService.this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
             jmxListener = new VertexSetListener<JMXResource>() {
                 @Override
                 public void vertexRemoved(GraphVertexChangeEvent<JMXResource> e) {
@@ -1119,49 +1213,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     }
 
     /**
-     * @return Determines what Hawkular tenant ID should be used and returns it.
-     */
-    private String determineTenantId() {
-        if (configuration.storageAdapter.tenantId != null) {
-            return configuration.storageAdapter.tenantId;
-        }
-
-        try {
-            StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.accountsContext);
-            url.append("personas/current");
-
-            OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-
-            // TODO: next three lines are only temporary and should be deleted when inventory no longer needs this.
-            // make the call to the inventory to pre-create the test environment and other assumed entities
-            String tenantUrl = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.inventoryContext).append("tenant").toString();
-            httpclient.newCall(this.httpClientBuilder.buildJsonGetRequest(tenantUrl, null)).execute();
-
-            Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), null);
-            Response httpResponse = httpclient.newCall(request).execute();
-
-            if (!httpResponse.isSuccessful()) {
-                throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
-                        + httpResponse.message() + "], url=[" + url + "]");
-            }
-
-            final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
-            // depending on accounts is probably overkill because of 1 REST call, so let's process the JSON via regex
-            Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
-            if (matcher.find()) {
-                configuration.storageAdapter.tenantId = matcher.group(1);
-            }
-            log.debugf("Tenant ID [%s]",
-                    configuration.storageAdapter.tenantId == null ? "unknown" : configuration.storageAdapter.tenantId);
-            return configuration.storageAdapter.tenantId;
-        } catch (Throwable t) {
-            throw new RuntimeException("Cannot get tenant ID", t);
-        }
-    }
-
-    /**
      * Registers our feed with the Hawkular system.
      *
      * @throws Exception if failed to register feed
@@ -1192,8 +1243,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
             // build the REST URL...
             // start with the protocol, host, and port, plus context
-            StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.inventoryContext);
+            StringBuilder url = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
+                    configuration.getStorageAdapter().getInventoryContext());
 
             // rest of the URL says we want the feeds API
             url.append("feeds");

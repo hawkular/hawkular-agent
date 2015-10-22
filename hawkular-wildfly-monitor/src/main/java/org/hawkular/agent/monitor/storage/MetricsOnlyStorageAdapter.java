@@ -99,12 +99,12 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             jsonPayload = payloadBuilder.toPayload().toString();
 
             // build the REST URL...
-            StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
+            StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext());
             url.append("metrics/data");
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(),
-                    Collections.singletonMap("Hawkular-Tenant", config.tenantId), jsonPayload);
+                    Collections.singletonMap("Hawkular-Tenant", config.getTenantId()), jsonPayload);
 
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
@@ -166,12 +166,12 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             jsonPayload = payloadBuilder.toPayload().toString();
 
             // build the REST URL...
-            StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
+            StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext());
             url.append("availability/data");
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(),
-                    Collections.singletonMap("Hawkular-Tenant", config.tenantId), jsonPayload);
+                    Collections.singletonMap("Hawkular-Tenant", config.getTenantId()), jsonPayload);
 
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {

@@ -57,7 +57,7 @@ public class SubsystemAdd extends AbstractAddStepHandler {
         MonitorServiceConfiguration configuration = new MonitorServiceConfigurationBuilder(subsystemConfig, context)
                 .build();
 
-        if (!configuration.subsystemEnabled) {
+        if (!configuration.isSubsystemEnabled()) {
             log.infoSubsystemDisabled();
             return;
         }
@@ -69,8 +69,7 @@ public class SubsystemAdd extends AbstractAddStepHandler {
             final ServiceVerificationHandler verificationHandler, final MonitorServiceConfiguration configuration) {
 
         // create and configure the service itself
-        MonitorService service = new MonitorService();
-        service.configure(configuration);
+        MonitorService service = new MonitorService(configuration);
 
         // create the builder that will be responsible for preparing the service deployment
         ServiceBuilder<MonitorService> svcBuilder;
@@ -80,7 +79,7 @@ public class SubsystemAdd extends AbstractAddStepHandler {
         service.addDependencies(svcBuilder);
 
         // bind the API to JNDI so other apps can use it, and prepare to build the binder service
-        String jndiName = configuration.apiJndi;
+        String jndiName = configuration.getApiJndi();
         boolean bindJndi = (jndiName == null || jndiName.isEmpty()) ? false : true;
         if (bindJndi) {
             Object jndiObject = service.getHawkularMonitorContext();

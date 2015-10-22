@@ -99,7 +99,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
 
             String managedServerName = idParts.getManagedServerName();
-            ManagedServer managedServer = config.managedServersMap.get(new Name(managedServerName));
+            ManagedServer managedServer = config.getManagedServersMap().get(new Name(managedServerName));
             validate(envelope, managedServerName, managedServer);
 
             controllerClient = createControllerClient(managedServer, context);

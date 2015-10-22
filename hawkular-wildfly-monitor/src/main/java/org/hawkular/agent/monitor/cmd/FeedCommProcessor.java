@@ -93,9 +93,11 @@ public class FeedCommProcessor implements WebSocketListener {
 
         try {
             StringBuilder url;
-            url = Util.getContextUrlString(config.storageAdapter.url, config.storageAdapter.feedcommContext);
+            url = Util.getContextUrlString(config.getStorageAdapter().getUrl(),
+                    config.getStorageAdapter().getFeedcommContext());
             url.append("feed/").append(feedId);
-            this.feedcommUrl = url.toString().replaceFirst("https?:", (config.storageAdapter.useSSL) ? "wss:" : "ws:");
+            this.feedcommUrl = url.toString().replaceFirst("https?:",
+                    (config.getStorageAdapter().isUseSSL()) ? "wss:" : "ws:");
             log.infoFeedCommUrl(this.feedcommUrl);
         } catch (Exception e) {
             throw new IllegalArgumentException("Cannot build URL to the server command-gateway endpoint", e);
@@ -354,8 +356,8 @@ public class FeedCommProcessor implements WebSocketListener {
         }
 
         auth = new Authentication();
-        auth.setUsername(this.config.storageAdapter.username);
-        auth.setPassword(this.config.storageAdapter.password);
+        auth.setUsername(this.config.getStorageAdapter().getUsername());
+        auth.setPassword(this.config.getStorageAdapter().getPassword());
         authMessage.setAuthentication(auth);
     }
 

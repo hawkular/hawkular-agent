@@ -71,7 +71,7 @@ public class ExportJdrCommand implements Command<ExportJdrRequest, ExportJdrResp
         CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
         String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
         InventoryIdUtil.ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
-        ManagedServer managedServer = config.managedServersMap.get(new Name(idParts.getManagedServerName()));
+        ManagedServer managedServer = config.getManagedServersMap().get(new Name(idParts.getManagedServerName()));
         if (managedServer == null) {
             throw new IllegalArgumentException(String.format("Cannot execute operation: unknown managed server [%s]",
                     idParts.getManagedServerName()));

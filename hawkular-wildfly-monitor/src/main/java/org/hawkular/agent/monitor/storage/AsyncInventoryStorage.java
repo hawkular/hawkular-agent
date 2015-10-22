@@ -451,7 +451,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         private void storeAllResources(List<Resource<?, ?, ?, ?, ?>> resources) throws Exception {
             if (resources != null && !resources.isEmpty()) {
                 for (Resource<?, ?, ?, ?, ?> resource : resources) {
-                    BulkPayloadBuilder builder = new BulkPayloadBuilder(config.tenantId,
+                    BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(),
                             AsyncInventoryStorage.this.selfId.getFullIdentifier());
 
                     ResourceType<?, ?, ?, ?> resourceType = resource.getResourceType();
@@ -470,8 +470,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     Map<String, Map<String, List<AbstractElement.Blueprint>>> payload = builder.build();
                     if (!payload.isEmpty()) {
                         try {
-                            StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.url,
-                                    AsyncInventoryStorage.this.config.inventoryContext);
+                            StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
+                                    AsyncInventoryStorage.this.config.getInventoryContext());
                             url.append("bulk");
                             String jsonPayload = Util.toJson(payload);
 
