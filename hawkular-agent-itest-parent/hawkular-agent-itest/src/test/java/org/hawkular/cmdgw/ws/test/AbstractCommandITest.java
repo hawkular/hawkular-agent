@@ -38,6 +38,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -103,6 +105,7 @@ public abstract class AbstractCommandITest {
             payload.close();
             try {
                 String str = new String(bytes, "utf-8");
+                str = stripBinary(str);
                 log.fine("Received over WebSocket: " + str);
             } catch (Exception e) {
                 log.fine("Received over WebSocket, but could not decode: [" + bytes.length + "] bytes");
@@ -150,7 +153,7 @@ public abstract class AbstractCommandITest {
                 public void run() {
                     try (Buffer b1 = new Buffer()) {
                         if (text != null) {
-                            log.fine("Sending over WebSocket: " + text);
+                            log.fine("Sending over WebSocket: " + stripBinary(text));
                             b1.writeUtf8(text);
                         }
                         if (dataUrl != null) {
@@ -168,6 +171,16 @@ public abstract class AbstractCommandITest {
                     }
                 }
             });
+        }
+
+        private String stripBinary(final String text) {
+            Matcher matcher = Pattern.compile("([\\p{Print}\\p{Blank}]*)").matcher(text);
+            if (matcher.find()) {
+                return matcher.group(1);
+            } else {
+                log.warning("The test text doesn't seem to have ascii characters at the beginning?");
+                return text;
+            }
         }
     }
 
