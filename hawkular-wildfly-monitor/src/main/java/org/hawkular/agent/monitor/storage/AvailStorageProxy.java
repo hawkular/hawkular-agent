@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.storage;
 
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.AvailStorage;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 
 /**
  * A proxy that delegates to a {@link StorageAdapterConfiguration}.

@@ -18,19 +18,19 @@ package org.hawkular.agent.monitor.storage;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
+import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.polling.Task;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
-import org.hawkular.agent.monitor.service.Util;
+import org.hawkular.agent.monitor.util.Util;
 
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Request;
@@ -40,7 +40,6 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     private static final MsgLogger log = AgentLoggers.getLogger(MetricsOnlyStorageAdapter.class);
     private MonitorServiceConfiguration.StorageAdapterConfiguration config;
     private Diagnostics diagnostics;
-    private ServerIdentifiers selfId;
     private HttpClientBuilder httpClientBuilder;
 
     public MetricsOnlyStorageAdapter() {
@@ -49,10 +48,9 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     @Override
     public void initialize(
             org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration config,
-            Diagnostics diag, ServerIdentifiers selfId, HttpClientBuilder httpClientBuilder) {
+            Diagnostics diag, HttpClientBuilder httpClientBuilder) {
         this.config = config;
         this.diagnostics = diag;
-        this.selfId = selfId;
         this.httpClientBuilder = httpClientBuilder;
     }
 
@@ -79,11 +77,9 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
         MetricDataPayloadBuilder payloadBuilder = createMetricDataPayloadBuilder();
         for (MetricDataPoint datapoint : datapoints) {
-            Task task = datapoint.getTask();
-            String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
             double value = datapoint.getValue();
-            payloadBuilder.addDataPoint(key, timestamp, value, datapoint.getMetricType());
+            payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value, datapoint.getMetricType());
         }
 
         store(payloadBuilder);
@@ -146,11 +142,9 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
         AvailDataPayloadBuilder payloadBuilder = createAvailDataPayloadBuilder();
         for (AvailDataPoint datapoint : datapoints) {
-            Task task = datapoint.getTask();
-            String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
             Avail value = datapoint.getValue();
-            payloadBuilder.addDataPoint(key, timestamp, value);
+            payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value);
         }
 
         store(payloadBuilder);
@@ -206,12 +200,22 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeResource(Resource<?, ?, ?, ?, ?> resourceType) {
+    public void shutdown() {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 
     @Override
-    public void shutdown() {
+    public void discoverAllFinished(InventoryEvent<List<Resource<?>>> event) {
+        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
+    }
+
+    @Override
+    public void resourcesAdded(InventoryEvent<List<Resource<?>>> event) {
+        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
+    }
+
+    @Override
+    public void resourceRemoved(InventoryEvent<List<Resource<?>>> event) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 

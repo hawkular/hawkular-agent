@@ -17,32 +17,93 @@
 package org.hawkular.agent.monitor.inventory;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class TypeSets< //
-RT extends ResourceType<MT, AT, ? extends Operation, ? extends ResourceConfigurationPropertyType>, //
-MT extends MetricType, //
-AT extends AvailType> {
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
 
-    private static final TypeSets<ResourceType<MetricType, AvailType, Operation, ResourceConfigurationPropertyType>, //
-    MetricType, AvailType> EMPTY = new TypeSets<>(
+/**
+ * A bundle of various {@link TypeSet}s.
+ *
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ *
+ * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
+ */
+public class TypeSets<L> {
+    private static final MsgLogger log = AgentLoggers.getLogger(TypeSets.class);
+
+    public static <L> Builder<L> builder() {
+        return new Builder<L>();
+    }
+
+    public static class Builder<L> {
+        private Map<Name, TypeSet<AvailType<L>>> availTypeSets = new LinkedHashMap<>();
+        private boolean enabled = true;
+        private Map<Name, TypeSet<MetricType<L>>> metricTypeSets = new LinkedHashMap<>();
+        private Map<Name, TypeSet<ResourceType<L>>> resourceTypeSets = new LinkedHashMap<>();
+
+        public TypeSets<L> build() {
+
+            /* warn if there is something suspicious */
+            for (TypeSet<ResourceType<L>> resourceTypeSet : resourceTypeSets.values()) {
+                for (ResourceType<L> type : resourceTypeSet.getTypeMap().values()) {
+                    for (Name metricSetName : type.getMetricSets()) {
+                        if (!metricTypeSets.containsKey(metricSetName)) {
+                            log.warnMetricSetDoesNotExist(type.getName().toString(), metricSetName.toString());
+                        }
+                    }
+                    for (Name availSetName : type.getAvailSets()) {
+                        if (!availTypeSets.containsKey(availSetName)) {
+                            log.warnAvailSetDoesNotExist(type.getName().toString(),
+                                    availSetName.toString());
+                        }
+                    }
+                }
+            }
+
+            return new TypeSets<>(Collections.unmodifiableMap(resourceTypeSets),
+                    Collections.unmodifiableMap(metricTypeSets), Collections.unmodifiableMap(availTypeSets),
+                    enabled);
+        }
+
+        public Builder<L> enabled(boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public Builder<L> availTypeSet(TypeSet<AvailType<L>> typeSet) {
+            availTypeSets.put(typeSet.getName(), typeSet);
+            return this;
+        }
+
+        public Builder<L> metricTypeSet(TypeSet<MetricType<L>> typeSet) {
+            metricTypeSets.put(typeSet.getName(), typeSet);
+            return this;
+        }
+
+        public Builder<L> resourceTypeSet(TypeSet<ResourceType<L>> typeSet) {
+            resourceTypeSets.put(typeSet.getName(), typeSet);
+            return this;
+        }
+    }
+
+    private static final TypeSets<?> EMPTY = new TypeSets<>(
             Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), false);
 
     @SuppressWarnings("unchecked")
-    public static < //
-    RT extends ResourceType<MT, AT, ? extends Operation, ? extends ResourceConfigurationPropertyType>, //
-    MT extends MetricType, //
-    AT extends AvailType> TypeSets<RT, MT, AT> empty() {
-        return (TypeSets<RT, MT, AT>) EMPTY;
+    public static <L> TypeSets<L> empty() {
+        return (TypeSets<L>) EMPTY;
     }
 
-    private final Map<Name, TypeSet<AT>> availTypeSets;
+    private final Map<Name, TypeSet<AvailType<L>>> availTypeSets;
     private final boolean enabled;
-    private final Map<Name, TypeSet<MT>> metricTypeSets;
-    private final Map<Name, TypeSet<RT>> resourceTypeSets;
+    private final Map<Name, TypeSet<MetricType<L>>> metricTypeSets;
+    private final Map<Name, TypeSet<ResourceType<L>>> resourceTypeSets;
 
-    public TypeSets(Map<Name, TypeSet<RT>> resourceTypeSets, Map<Name, TypeSet<MT>> metricTypeSets,
-            Map<Name, TypeSet<AT>> availTypeSets, boolean enabled) {
+    private TypeSets(Map<Name, TypeSet<ResourceType<L>>> resourceTypeSets,
+            Map<Name, TypeSet<MetricType<L>>> metricTypeSets,
+            Map<Name, TypeSet<AvailType<L>>> availTypeSets, boolean enabled) {
         super();
         this.resourceTypeSets = resourceTypeSets;
         this.metricTypeSets = metricTypeSets;
@@ -50,19 +111,19 @@ AT extends AvailType> {
         this.enabled = enabled;
     }
 
-    public Map<Name, TypeSet<AT>> getAvailTypeSets() {
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public Map<Name, TypeSet<AvailType<L>>> getAvailTypeSets() {
         return availTypeSets;
     }
 
-    public Map<Name, TypeSet<MT>> getMetricTypeSets() {
+    public Map<Name, TypeSet<MetricType<L>>> getMetricTypeSets() {
         return metricTypeSets;
     }
 
-    public Map<Name, TypeSet<RT>> getResourceTypeSets() {
+    public Map<Name, TypeSet<ResourceType<L>>> getResourceTypeSets() {
         return resourceTypeSets;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
     }
 }

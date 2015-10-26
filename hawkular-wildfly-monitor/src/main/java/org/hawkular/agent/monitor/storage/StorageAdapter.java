@@ -23,7 +23,6 @@ import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 public interface StorageAdapter extends MetricStorage, AvailStorage, InventoryStorage {
 
@@ -36,7 +35,6 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
      * @param httpClientBuilder used to communicate with the storage server
      */
     void initialize(MonitorServiceConfiguration.StorageAdapterConfiguration config, Diagnostics diag,
-            ServerIdentifiers selfId,
             HttpClientBuilder httpClientBuilder);
 
     /**

@@ -18,6 +18,8 @@ package org.hawkular.agent.monitor.inventory;
 
 /**
  * An object that has an associated name as well as an ID.
+ *
+ * @author John Mazzitelli
  */
 public abstract class NamedObject extends IDObject {
     private final Name name;

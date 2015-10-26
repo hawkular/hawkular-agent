@@ -24,17 +24,16 @@ import java.util.concurrent.BlockingQueue;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.polling.AvailCompletionHandler;
+import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
+import org.hawkular.agent.monitor.util.Consumer;
 
 /**
  * Buffers availability check data and eventually stores them in a storage adapter.
  */
-public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
+public class AvailBufferedStorageDispatcher implements Consumer<AvailDataPoint> {
     private static final MsgLogger log = AgentLoggers.getLogger(AvailBufferedStorageDispatcher.class);
     private final int maxBatchSize;
     private final int bufferSize;
-    private final SchedulerConfiguration config;
     private final StorageAdapter storageAdapter;
     private final Diagnostics diagnostics;
     private final BlockingQueue<AvailDataPoint> queue;
@@ -42,7 +41,6 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
 
     public AvailBufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
             Diagnostics diagnostics) {
-        this.config = config;
         this.maxBatchSize = config.getAvailDispatcherMaxBatchSize();
         this.bufferSize = config.getAvailDispatcherBufferSize();
         this.storageAdapter = storageAdapter;
@@ -60,9 +58,9 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
     }
 
     @Override
-    public void onCompleted(AvailDataPoint sample) {
+    public void accept(AvailDataPoint sample) {
         if (queue.remainingCapacity() > 0) {
-            log.debugf("Availability checked: [%s]->[%s]", sample.getTask(), sample.getValue());
+            log.debugf("Availability checked: [%s]->[%s]", sample.getKey(), sample.getValue());
             diagnostics.getAvailStorageBufferSize().inc();
             queue.add(sample);
         }
@@ -72,7 +70,7 @@ public class AvailBufferedStorageDispatcher implements AvailCompletionHandler {
     }
 
     @Override
-    public void onFailed(Throwable e) {
+    public void report(Throwable e) {
         log.errorAvailCheckFailed(e);
     }
 

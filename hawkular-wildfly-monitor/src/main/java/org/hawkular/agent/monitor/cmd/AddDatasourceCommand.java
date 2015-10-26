@@ -19,8 +19,12 @@ package org.hawkular.agent.monitor.cmd;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
+import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
+import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
+import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddDatasourceRequest;
 import org.hawkular.cmdgw.api.AddDatasourceResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
@@ -45,22 +49,18 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
         super("Add", "Datasource");
     }
 
-    /** @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#createResponse() */
     @Override
     protected AddDatasourceResponse createResponse() {
         return new AddDatasourceResponse();
     }
 
-    /**
-     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#execute(org.hawkular.dmrclient.JBossASClient,
-     *      org.hawkular.agent.monitor.inventory.ManagedServer, java.lang.String,
-     *      org.hawkular.cmdgw.api.ResourcePathRequest, org.hawkular.cmdgw.api.ResourcePathResponse,
-     *      org.hawkular.agent.monitor.cmd.CommandContext)
-     */
     @Override
-    protected void execute(ModelControllerClient controllerClient, ManagedServer managedServer, String modelNodePath,
+    protected BinaryData execute(ModelControllerClient controllerClient,
+            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            endpointService,
+            String modelNodePath,
             BasicMessageWithExtraData<AddDatasourceRequest> envelope, AddDatasourceResponse response,
-            CommandContext context) throws Exception {
+            CommandContext context, DMRSession dmrContext) throws Exception {
         AddDatasourceRequest request = envelope.getBasicMessage();
         response.setDatasourceName(request.getDatasourceName());
         response.setXaDatasource(request.isXaDatasource());
@@ -112,8 +112,11 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
         }
 
         batch.execute(controllerClient).assertSuccess();
-        context.getDiscoveryService().discoverAllResourcesForAllManagedServers();
 
+        // TODO replace with endpointService.discoverChildren(parentLocation, childType)
+        endpointService.discoverAll();
+
+        return null;
     }
 
     @Override
@@ -123,16 +126,9 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<AddDatasourceRequest> envelope, String managedServerName,
-            ManagedServer managedServer) {
-        super.validate(envelope, managedServerName, managedServer);
-        assertLocalOrRemoteServer(managedServer);
+    protected void validate(BasicMessageWithExtraData<AddDatasourceRequest> envelope, DMREndpoint dmrEndpoint) {
     }
 
-    /**
-     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#validate(java.lang.String,
-     *      org.hawkular.cmdgw.api.ResourcePathRequest)
-     */
     @Override
     protected void validate(String modelNodePath, BasicMessageWithExtraData<AddDatasourceRequest> envelope) {
     }

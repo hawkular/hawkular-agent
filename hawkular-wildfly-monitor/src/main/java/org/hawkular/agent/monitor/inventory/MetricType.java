@@ -18,27 +18,30 @@ package org.hawkular.agent.monitor.inventory;
 
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
-public abstract class MetricType extends MeasurementType {
-    public MetricType(ID id, Name name) {
-        super(id, name);
-    }
+/**
+ * @author John Mazzitelli
+ *
+ * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}
+ */
+public final class MetricType<L> extends MeasurementType<L> {
 
-    private MeasurementUnit metricUnits;
-    private org.hawkular.metrics.client.common.MetricType metricType;
+    private final MeasurementUnit metricUnits;
 
-    public MeasurementUnit getMetricUnits() {
-        return metricUnits;
-    }
+    private final org.hawkular.metrics.client.common.MetricType metricType;
 
-    public void setMetricUnits(MeasurementUnit metricUnits) {
+    public MetricType(ID id, Name name, AttributeLocation<L> location, Interval interval, MeasurementUnit metricUnits,
+            org.hawkular.metrics.client.common.MetricType metricType) {
+        super(id, name, location, interval);
         this.metricUnits = metricUnits;
+        this.metricType = metricType;
     }
 
     public org.hawkular.metrics.client.common.MetricType getMetricType() {
         return metricType;
     }
 
-    public void setMetricType(org.hawkular.metrics.client.common.MetricType metricType) {
-        this.metricType = metricType;
+    public MeasurementUnit getMetricUnits() {
+        return metricUnits;
     }
+
 }

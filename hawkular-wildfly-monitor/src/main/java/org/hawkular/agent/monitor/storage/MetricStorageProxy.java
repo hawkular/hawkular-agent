@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.storage;
 
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricStorage;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 
 /**
  * A proxy that delegates to a {@link StorageAdapterConfiguration}.

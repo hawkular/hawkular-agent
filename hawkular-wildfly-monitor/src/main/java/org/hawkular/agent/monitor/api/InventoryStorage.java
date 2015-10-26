@@ -16,13 +16,5 @@
  */
 package org.hawkular.agent.monitor.api;
 
-import org.hawkular.agent.monitor.inventory.Resource;
-
-public interface InventoryStorage {
-
-    /**
-     * Stores the given resource and its resourceType is necessary.
-     * @param resource to be stored
-     */
-    void storeResource(Resource<?, ?, ?, ?, ?> resource);
+public interface InventoryStorage extends InventoryListener {
 }

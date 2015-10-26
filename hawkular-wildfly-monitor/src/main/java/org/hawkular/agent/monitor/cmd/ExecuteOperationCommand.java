@@ -20,18 +20,20 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.inventory.Operation;
+import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
-import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
-import org.hawkular.agent.monitor.inventory.dmr.DMROperation;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
+import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
+import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
+import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.ExecuteOperationRequest;
 import org.hawkular.cmdgw.api.ExecuteOperationResponse;
 import org.hawkular.dmr.api.OperationBuilder;
-import org.hawkular.dmrclient.Address;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
@@ -58,59 +60,45 @@ public class ExecuteOperationCommand extends
         return envelope.getBasicMessage().getOperationName();
     }
 
-    /**
-     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#validate(java.lang.String,
-     *      org.hawkular.cmdgw.api.ResourcePathRequest)
-     */
     @Override
     protected void validate(String modelNodePath, BasicMessageWithExtraData<ExecuteOperationRequest> envelope) {
     }
 
-    /**
-     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#execute(org.hawkular.dmrclient.JBossASClient,
-     *      org.hawkular.agent.monitor.inventory.ManagedServer, java.lang.String,
-     *      org.hawkular.cmdgw.api.ResourcePathRequest, org.hawkular.cmdgw.api.ResourcePathResponse,
-     *      org.hawkular.agent.monitor.cmd.CommandContext)
-     */
     @Override
-    protected void execute(ModelControllerClient controllerClient, ManagedServer managedServer, String modelNodePath,
+    protected BinaryData execute(ModelControllerClient controllerClient,
+            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            endpointService,
+            String modelNodePath,
             BasicMessageWithExtraData<ExecuteOperationRequest> envelope, ExecuteOperationResponse response,
-            CommandContext context) throws Exception {
+            CommandContext context, DMRSession dmrContext) throws Exception {
         ExecuteOperationRequest request = envelope.getBasicMessage();
         CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
         String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
 
-        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
-                .get(managedServer);
-        if (inventoryManager == null) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot execute operation: missing inventory manager [%s]", managedServer));
-        }
-
-        ResourceManager<DMRResource> resourceManager = inventoryManager.getResourceManager();
-        DMRResource resource = resourceManager.getResource(new ID(resourceId));
+        ResourceManager<DMRNodeLocation> resourceManager = endpointService.getResourceManager();
+        Resource<DMRNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
                     String.format("Cannot execute operation: unknown resource [%s]", request.getResourcePath()));
         }
 
         // find the operation we need to execute - make sure it exists and get the address for the resource to invoke
-        Address opAddress = null;
+        DMRNodeLocation opLocation = null;
         String actualOperationName = null;
 
         String requestedOpName = request.getOperationName();
-        Collection<DMROperation> ops = resource.getResourceType().getOperations();
+        Collection<Operation<DMRNodeLocation>> ops = resource.getResourceType().getOperations();
         log.tracef("Searching for operation [%s] among operations [%s] for resource [%s].", requestedOpName, ops,
                 resource.getID());
-        for (DMROperation op : ops) {
+        for (Operation<DMRNodeLocation> op : ops) {
             if (requestedOpName.equals(op.getID().getIDString())) {
-                opAddress = resource.getAddress().clone().add(Address.parse(op.getPath()));
+                opLocation = dmrContext.getLocationResolver().absolutize(resource.getLocation(), op.getLocation());
                 actualOperationName = op.getOperationName();
                 break;
             }
         }
 
-        if (opAddress == null) {
+        if (opLocation == null) {
             throw new IllegalArgumentException(
                     String.format("Cannot execute operation: unknown operation [%s] for resource [%s]",
                             request.getOperationName(), resource));
@@ -120,7 +108,7 @@ public class ExecuteOperationCommand extends
 
         final OperationBuilder.ByNameOperationBuilder<?> operation;
         operation = OperationBuilder.byName(actualOperationName) //
-                .address(opAddress.getAddressNode());
+                .address(opLocation.getPathAddress());
 
         Map<String, String> params = request.getParameters();
         if (params != null) {
@@ -130,6 +118,11 @@ public class ExecuteOperationCommand extends
         }
 
         operation.execute(controllerClient).assertSuccess();
+        return null;
+    }
+
+    @Override
+    protected void validate(BasicMessageWithExtraData<ExecuteOperationRequest> envelope, DMREndpoint dmrEndpoint) {
     }
 
 }

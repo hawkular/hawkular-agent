@@ -21,8 +21,12 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
+import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
+import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
+import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
 import org.hawkular.cmdgw.api.AddJdbcDriverResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
@@ -56,14 +60,17 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
 
     /**
      * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#execute(org.hawkular.dmrclient.JBossASClient,
-     *      org.hawkular.agent.monitor.inventory.ManagedServer, java.lang.String,
+     *      EndpointService, java.lang.String,
      *      org.hawkular.cmdgw.api.ResourcePathRequest, org.hawkular.cmdgw.api.ResourcePathResponse,
-     *      org.hawkular.agent.monitor.cmd.CommandContext)
+     *      org.hawkular.agent.monitor.cmd.CommandContext, DMRSession)
      */
     @Override
-    protected void execute(ModelControllerClient controllerClient, ManagedServer managedServer, String modelNodePath,
+    protected BinaryData execute(ModelControllerClient controllerClient,
+            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            endpointService,
+            String modelNodePath,
             BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, AddJdbcDriverResponse response,
-            CommandContext context) throws Exception {
+            CommandContext context, DMRSession dmrContext) throws Exception {
         AddJdbcDriverRequest request = envelope.getBasicMessage();
         response.setDriverName(request.getDriverName());
 
@@ -83,6 +90,8 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
                 .attribute(JdbcDriverNodeConstants.DRIVER_MINOR_VERSION, request.getDriverMinorVersion())
                 .execute(controllerClient) //
                 .assertSuccess();
+
+        return null;
     }
 
     @Override
@@ -91,12 +100,13 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
         response.setMessage(String.format("Added JDBC Driver: %s", envelope.getBasicMessage().getDriverName()));
     }
 
-    /**
-     * @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#validate(java.lang.String,
-     *      org.hawkular.cmdgw.api.ResourcePathRequest)
-     */
     @Override
     protected void validate(String modelNodePath, BasicMessageWithExtraData<AddJdbcDriverRequest> envelope) {
+    }
+
+    @Override
+    protected void validate(BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, DMREndpoint dmrEndpoint) {
+        assertLocalServer(dmrEndpoint);
     }
 
 }

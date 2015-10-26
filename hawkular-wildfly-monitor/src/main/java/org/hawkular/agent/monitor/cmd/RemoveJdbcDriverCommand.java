@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
-import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.RemoveJdbcDriverRequest;
 import org.hawkular.cmdgw.api.RemoveJdbcDriverResponse;
@@ -35,7 +35,6 @@ public class RemoveJdbcDriverCommand
         super(JDBC_DRIVER_ENTITY_TYPE);
     }
 
-    /** @see org.hawkular.agent.monitor.cmd.AbstractRemoveModelNodeCommand#createResponse() */
     @Override
     protected RemoveJdbcDriverResponse createResponse() {
         return new RemoveJdbcDriverResponse();
@@ -47,10 +46,7 @@ public class RemoveJdbcDriverCommand
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<RemoveJdbcDriverRequest> envelope, String managedServerName,
-            ManagedServer managedServer) {
-        super.validate(envelope, managedServerName, managedServer);
-        assertLocalServer(managedServer);
+    protected void validate(BasicMessageWithExtraData<RemoveJdbcDriverRequest> envelope, DMREndpoint dmrEndpoint) {
+        assertLocalServer(dmrEndpoint);
     }
-
 }

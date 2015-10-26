@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.service.DiscoveryService;
-import org.hawkular.agent.monitor.service.Util;
+import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
+import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
@@ -72,7 +72,7 @@ public class FeedCommProcessor implements WebSocketListener {
 
     private final HttpClientBuilder httpClientBuilder;
     private final MonitorServiceConfiguration config;
-    private final DiscoveryService discoveryService;
+    private final MonitorService discoveryService;
     private final String feedcommUrl;
     private final ExecutorService sendExecutor = Executors.newSingleThreadExecutor();
     private final AtomicReference<ReconnectJobThread> reconnectJobThread = new AtomicReference<>();
@@ -81,7 +81,7 @@ public class FeedCommProcessor implements WebSocketListener {
     private WebSocket webSocket;
 
     public FeedCommProcessor(HttpClientBuilder httpClientBuilder, MonitorServiceConfiguration config, String feedId,
-            DiscoveryService discoveryService) {
+            MonitorService discoveryService) {
 
         if (feedId == null || feedId.isEmpty()) {
             throw new IllegalArgumentException("Must have a valid feed ID to communicate with the server");

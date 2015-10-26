@@ -17,7 +17,7 @@
 package org.hawkular.agent.monitor.inventory;
 
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
-import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
+import org.hawkular.agent.monitor.protocol.dmr.RemoteDMRManagedServer;
 import org.junit.Assert;
 import org.junit.Test;
 

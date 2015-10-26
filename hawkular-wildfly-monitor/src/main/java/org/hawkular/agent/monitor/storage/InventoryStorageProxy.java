@@ -16,7 +16,11 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.util.List;
+
+import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryStorage;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.inventory.Resource;
 
 /**
@@ -33,11 +37,25 @@ public class InventoryStorageProxy implements InventoryStorage {
         this.storageAdapter = storageAdapter;
     }
 
-    @Override
-    public void storeResource(Resource<?, ?, ?, ?, ?> resource) {
+    public void discoverAllFinished(InventoryEvent<List<Resource<?>>> event) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
-        storageAdapter.storeResource(resource);
+        storageAdapter.discoverAllFinished(event);
     }
+
+    public void resourcesAdded(InventoryEvent<List<Resource<?>>> event) {
+        if (storageAdapter == null) {
+            throw new IllegalStateException("Storage infrastructure is not ready yet");
+        }
+        storageAdapter.resourcesAdded(event);
+    }
+
+    public void resourceRemoved(InventoryEvent<List<Resource<?>>> event) {
+        if (storageAdapter == null) {
+            throw new IllegalStateException("Storage infrastructure is not ready yet");
+        }
+        storageAdapter.resourceRemoved(event);
+    }
+
 }

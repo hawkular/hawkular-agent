@@ -32,16 +32,16 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
-import org.hawkular.agent.monitor.inventory.AvailInstance;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.Instance;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
-import org.hawkular.agent.monitor.inventory.MetricInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.NamedObject;
 import org.hawkular.agent.monitor.inventory.Operation;
@@ -51,8 +51,7 @@ import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
-import org.hawkular.agent.monitor.service.Util;
+import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.Relationships.Direction;
 import org.hawkular.inventory.api.ResourceTypes;
 import org.hawkular.inventory.api.Resources;
@@ -74,12 +73,31 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 /**
- * An {@link InventoryStorage} that sends the resources submitted via {@link #storeResource(Resource)} asynchronously
- * to inventory.
+ * An {@link InventoryStorage} that sends the resources submitted via {@link #storeResources(String, List)}
+ * asynchronously to inventory.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class AsyncInventoryStorage implements InventoryStorage {
+
+    private static class QueueElement {
+        private final String feedId;
+        private final Resource<?> resource;
+
+        public QueueElement(String feedId, Resource<?> resource) {
+            super();
+            this.feedId = feedId;
+            this.resource = resource;
+        }
+
+        public String getFeedId() {
+            return feedId;
+        }
+
+        public Resource<?> getResource() {
+            return resource;
+        }
+    }
 
     /**
      * A builder of a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory. See the docs
@@ -150,10 +168,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
          *
          * @param metric the {@link MeasurementInstance} to add
          */
-        private void metric(MeasurementInstance<?, ?, ?> metric) {
+        private void metric(Instance<?, ?> metric) {
 
             String metricId = getInventoryId(metric);
-            String metricTypeId = getInventoryId(metric.getMeasurementType());
+            String metricTypeId = getInventoryId(metric.getType());
             String metricTypePath = newPathPrefix().metricType(metricTypeId).get().toString();
 
             Metric.Blueprint blueprint = new Metric.Blueprint(metricTypePath, metricId,
@@ -189,8 +207,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
 
             org.hawkular.inventory.api.model.MetricType.Blueprint blueprint = //
-            new org.hawkular.inventory.api.model.MetricType.Blueprint(getInventoryId(metricType),
-                    metricType.getName().getNameString(), mu, metricDataType, metricType.getProperties(), null, null);
+                    new org.hawkular.inventory.api.model.MetricType.Blueprint(getInventoryId(metricType),
+                            metricType.getName().getNameString(), mu, metricDataType, metricType.getProperties(), null,
+                            null);
 
             entity(blueprint, org.hawkular.inventory.api.model.MetricType.class);
 
@@ -258,7 +277,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
          * @param resource the {@link Resource} to add
          * @return this builder
          */
-        public BulkPayloadBuilder resource(Resource<?, ?, ?, ?, ?> resource) {
+        public <L> BulkPayloadBuilder
+                resource(Resource<L> resource) {
 
             // resource
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
@@ -273,7 +293,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     null);
 
             StringBuilder parentPath = new StringBuilder();
-            Resource<?, ?, ?, ?, ?> parent = resource.getParent();
+            Resource<?> parent = resource.getParent();
             while (parent != null) {
                 String resourceIdPath = "/" + Util.urlEncode(parent.getID().getIDString());
                 parentPath.insert(0, resourceIdPath);
@@ -292,7 +312,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     newPathPrefix().get(), org.hawkular.inventory.api.model.Resource.class);
 
             // resource configuration
-            Collection<? extends ResourceConfigurationPropertyInstance<?>> resConfigInstances = resource
+            Collection<ResourceConfigurationPropertyInstance<L>> resConfigInstances = resource
                     .getResourceConfigurationProperties();
             if (resConfigInstances != null && !resConfigInstances.isEmpty()) {
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
@@ -307,16 +327,16 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
 
             // metrics and avails (which are just metrics, too)
-            Collection<? extends MetricInstance<?, ?, ?>> metricInstances = resource.getMetrics();
-            for (MetricInstance<?, ?, ?> metric : metricInstances) {
+            Collection<? extends Instance<?, ?>> metricInstances = resource.getMetrics();
+            for (Instance<?, ?> metric : metricInstances) {
                 metric(metric);
                 CanonicalPath metricPath = newPathPrefix().metric(getInventoryId(metric)).get();
                 Relationship.Blueprint bp = new Relationship.Blueprint(Direction.outgoing, incorporates.toString(),
                         metricPath, Collections.emptyMap());
                 relationship(resourceCanonicalPath, bp);
             }
-            Collection<? extends AvailInstance<?, ?, ?>> availInstances = resource.getAvails();
-            for (AvailInstance<?, ?, ?> metric : availInstances) {
+            Collection<? extends Instance<?, ?>> availInstances = resource.getAvails();
+            for (Instance<?, ?> metric : availInstances) {
                 metric(metric);
                 CanonicalPath metricPath = newPathPrefix().metric(getInventoryId(metric)).get();
                 Relationship.Blueprint bp = new Relationship.Blueprint(Direction.outgoing, incorporates.toString(),
@@ -334,13 +354,13 @@ public class AsyncInventoryStorage implements InventoryStorage {
          * @param resourceType the {@link ResourceType} to add
          * @return this builder
          */
-        public BulkPayloadBuilder resourceType(ResourceType<?, ?, ?, ?> resourceType) {
+        public BulkPayloadBuilder resourceType(ResourceType<?> resourceType) {
 
             // resource type
             String resourceTypeId = getInventoryId(resourceType);
             org.hawkular.inventory.api.model.ResourceType.Blueprint blueprint = //
-            new org.hawkular.inventory.api.model.ResourceType.Blueprint(resourceTypeId,
-                    resourceType.getName().getNameString(), resourceType.getProperties(), null, null);
+                    new org.hawkular.inventory.api.model.ResourceType.Blueprint(resourceTypeId,
+                            resourceType.getName().getNameString(), resourceType.getProperties(), null, null);
             entity(blueprint, org.hawkular.inventory.api.model.ResourceType.class);
 
             CanonicalPath parentPath = newPathPrefix().resourceType(getInventoryId(resourceType)).get();
@@ -379,7 +399,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             // resource configuration
             Collection<? extends ResourceConfigurationPropertyType> rcpts = //
-            resourceType.getResourceConfigurationPropertyTypes();
+                    resourceType.getResourceConfigurationPropertyTypes();
 
             if (rcpts != null && !rcpts.isEmpty()) {
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
@@ -412,10 +432,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     private class Worker extends Thread {
-        private final ArrayBlockingQueue<Resource<?, ?, ?, ?, ?>> queue;
+        private final ArrayBlockingQueue<QueueElement> queue;
         private boolean keepRunning = true;
 
-        public Worker(ArrayBlockingQueue<Resource<?, ?, ?, ?, ?>> queue) {
+        public Worker(ArrayBlockingQueue<QueueElement> queue) {
             super("Hawkular-Monitor-Inventory-Storage");
             this.queue = queue;
         }
@@ -424,8 +444,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
             try {
                 while (keepRunning) {
                     // batch processing
-                    Resource<?, ?, ?, ?, ?> sample = queue.take();
-                    List<Resource<?, ?, ?, ?, ?>> resources = new ArrayList<>();
+                    QueueElement sample = queue.take();
+                    List<QueueElement> resources = new ArrayList<>();
                     resources.add(sample);
                     queue.drainTo(resources);
 
@@ -448,13 +468,15 @@ public class AsyncInventoryStorage implements InventoryStorage {
             this.keepRunning = false;
         }
 
-        private void storeAllResources(List<Resource<?, ?, ?, ?, ?>> resources) throws Exception {
+        private void storeAllResources(List<QueueElement> resources) throws Exception {
             if (resources != null && !resources.isEmpty()) {
-                for (Resource<?, ?, ?, ?, ?> resource : resources) {
+                for (QueueElement elem : resources) {
+                    Resource<?> resource = elem.getResource();
+                    // FIXME environmentId should be configurable
                     BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(),
-                            AsyncInventoryStorage.this.selfId.getFullIdentifier());
+                            elem.getFeedId());
 
-                    ResourceType<?, ?, ?, ?> resourceType = resource.getResourceType();
+                    ResourceType<?> resourceType = resource.getResourceType();
 
                     builder.resourceType(resourceType);
 
@@ -507,8 +529,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                             }
 
                             TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>> typeRef = //
-                            new TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>>() {
-                            };
+                                    new TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>>() {
+                                    };
                             LinkedHashMap<String, LinkedHashMap<String, Object>> responses = Util
                                     .fromJson(responseBodyReader, typeRef);
                             for (Entry<String, LinkedHashMap<String, Object>> typeEntry : responses.entrySet()) {
@@ -562,16 +584,14 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
     private final MonitorServiceConfiguration.StorageAdapterConfiguration config;
     private final HttpClientBuilder httpClientBuilder;
-    private final ServerIdentifiers selfId;
     private final Diagnostics diagnostics;
-    private final ArrayBlockingQueue<Resource<?, ?, ?, ?, ?>> queue;
+    private final ArrayBlockingQueue<QueueElement> queue;
     private final Worker worker;
 
-    public AsyncInventoryStorage(ServerIdentifiers selfId, StorageAdapterConfiguration config,
+    public AsyncInventoryStorage(StorageAdapterConfiguration config,
             HttpClientBuilder httpClientBuilder,
             Diagnostics diagnostics) {
         super();
-        this.selfId = selfId;
         this.config = config;
         this.httpClientBuilder = httpClientBuilder;
         this.diagnostics = diagnostics;
@@ -580,15 +600,33 @@ public class AsyncInventoryStorage implements InventoryStorage {
         this.worker.start();
     }
 
-    @Override
-    public void storeResource(Resource<?, ?, ?, ?, ?> resource) {
-        diagnostics.getInventoryStorageBufferSize().inc();
-        queue.add(resource);
-    }
-
     public void shutdown() {
         log.debugf("Shutting down async inventory storage");
         worker.stopRunning();
+    }
+
+    @Override
+    public void discoverAllFinished(InventoryEvent<List<Resource<?>>> event) {
+        String feedId = event.getFeedId();
+        for (Resource<?> resource : event.getPayload()) {
+            diagnostics.getInventoryStorageBufferSize().inc();
+            queue.add(new QueueElement(feedId, resource));
+        }
+    }
+
+    @Override
+    public void resourcesAdded(InventoryEvent<List<Resource<?>>> event) {
+        String feedId = event.getFeedId();
+        for (Resource<?> resource : event.getPayload()) {
+            diagnostics.getInventoryStorageBufferSize().inc();
+            queue.add(new QueueElement(feedId, resource));
+        }
+    }
+
+    @Override
+    public void resourceRemoved(InventoryEvent<List<Resource<?>>> event) {
+        // TODO implement removal in the remote inventory
+        log.warnf("[%s].removeResource() needs to be implemented", getClass().getName());
     }
 
 }

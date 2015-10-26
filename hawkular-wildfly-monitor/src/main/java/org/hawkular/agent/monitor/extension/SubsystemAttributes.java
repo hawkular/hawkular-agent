@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
+import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;

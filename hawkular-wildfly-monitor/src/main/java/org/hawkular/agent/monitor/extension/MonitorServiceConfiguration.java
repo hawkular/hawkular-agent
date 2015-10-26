@@ -16,27 +16,28 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.TypeSets;
-import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXAvailType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXMetricType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXResourceType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformAvailType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformResourceType;
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.dmr.DMRManagedServer;
+import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
+import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
+import org.hawkular.agent.monitor.protocol.jmx.RemoteJMXManagedServer;
+import org.hawkular.agent.monitor.protocol.platform.PlatformManagedServer;
+import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 
 /**
  * This represents the monitor service extension's XML configuration in a more consumable form.
  * To build this from the actual service model, see {@link MonitorServiceConfigurationBuilder}.
  */
 public class MonitorServiceConfiguration {
+    private static final MsgLogger log = AgentLoggers.getLogger(MonitorServiceConfiguration.class);
 
     public enum StorageReportTo {
         HAWKULAR, // stores metrics to a Hawkular system
@@ -206,47 +207,86 @@ public class MonitorServiceConfiguration {
 
     }
 
+    public static class ProtocolConfiguration<L, //
+    S extends ManagedServer> {
+
+        public static <L, S extends ManagedServer> Builder<L, S>
+                builder() {
+            return new Builder<L, S>();
+        }
+
+        public static class Builder<L, S extends ManagedServer> {
+            private TypeSets<L> typeSets;
+            private Map<Name, S> managedServers = new LinkedHashMap<>();
+
+            public Builder<L, S> managedServer(S server) {
+                managedServers.put(server.getName(), server);
+                return this;
+            }
+
+            public Builder<L, S> typeSets(TypeSets<L> typeSets) {
+                this.typeSets = typeSets;
+                return this;
+            }
+
+            public ProtocolConfiguration<L, S> build() {
+                for (S server : managedServers.values()) {
+                    for (Name resourceTypeSetName : server.getResourceTypeSets()) {
+                        if (!typeSets.getResourceTypeSets().containsKey(resourceTypeSetName)) {
+                            log.warnResourceTypeSetDoesNotExist(server.getName().toString(),
+                                    resourceTypeSetName.toString());
+                        }
+                    }
+                }
+
+                return new ProtocolConfiguration<>(typeSets, managedServers);
+            }
+        }
+
+        private final TypeSets<L> typeSets;
+        private final Map<Name, S> managedServers;
+
+        public ProtocolConfiguration(TypeSets<L> typeSets,
+                Map<Name, S> managedServers) {
+            super();
+            this.typeSets = typeSets;
+            this.managedServers = managedServers;
+        }
+
+        public TypeSets<L> getTypeSets() {
+            return typeSets;
+        }
+
+        public Map<Name, S> getManagedServers() {
+            return managedServers;
+        }
+    }
+
     private final GlobalConfiguration globalConfiguration;
-    private final StorageAdapterConfiguration storageAdapter;
     private final DiagnosticsConfiguration diagnostics;
+    private final StorageAdapterConfiguration storageAdapter;
+    private final ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> dmrConfiguration;
+    private final ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> //
+    jmxConfiguration;
+    private final ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> //
+    platformConfiguration;
 
-    private final TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> dmrTypeSets;
-    private final TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets;
-    private final TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets;
-
-    private final Map<Name, ManagedServer> managedServersMap;
-
-    public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration,
-            DiagnosticsConfiguration diagnostics, StorageAdapterConfiguration storageAdapter,
-            TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> dmrTypeSets,
-            TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> jmxTypeSets,
-            TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> platformTypeSets,
-            Map<Name, ManagedServer> managedServersMap) {
+    public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration, DiagnosticsConfiguration diagnostics,
+            StorageAdapterConfiguration storageAdapter,
+            ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> dmrConfiguration,
+            ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> jmxConfiguration,
+            ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> //
+            platformConfiguration) {
         super();
-
         this.globalConfiguration = globalConfiguration;
-
         this.diagnostics = diagnostics;
         this.storageAdapter = storageAdapter;
-
-        this.dmrTypeSets = dmrTypeSets;
-        this.jmxTypeSets = jmxTypeSets;
-        this.platformTypeSets = platformTypeSets;
-
-        this.managedServersMap = managedServersMap;
+        this.dmrConfiguration = dmrConfiguration;
+        this.jmxConfiguration = jmxConfiguration;
+        this.platformConfiguration = platformConfiguration;
     }
 
-    public TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> getDmrTypeSets() {
-        return dmrTypeSets;
-    }
-
-    public TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> getJmxTypeSets() {
-        return jmxTypeSets;
-    }
-
-    public TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> getPlatformTypeSets() {
-        return platformTypeSets;
-    }
+    //private final Map<Name, ManagedServer> managedServersMap;
 
     public GlobalConfiguration getGlobalConfiguration() {
         return globalConfiguration;
@@ -258,10 +298,6 @@ public class MonitorServiceConfiguration {
 
     public DiagnosticsConfiguration getDiagnostics() {
         return diagnostics;
-    }
-
-    public Map<Name, ManagedServer> getManagedServersMap() {
-        return managedServersMap;
     }
 
     public boolean isSubsystemEnabled() {
@@ -298,6 +334,26 @@ public class MonitorServiceConfiguration {
 
     public int getAvailDispatcherMaxBatchSize() {
         return globalConfiguration.availDispatcherMaxBatchSize;
+    }
+
+    public MonitorServiceConfiguration cloneWith(StorageAdapterConfiguration newStorageAdapter) {
+        return new MonitorServiceConfiguration(globalConfiguration,
+                diagnostics, newStorageAdapter, dmrConfiguration,
+                jmxConfiguration, platformConfiguration);
+    }
+
+    public ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> getDmrConfiguration() {
+        return dmrConfiguration;
+    }
+
+    public ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer>
+            getJmxConfiguration() {
+        return jmxConfiguration;
+    }
+
+    public ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer>
+            getPlatformConfiguration() {
+        return platformConfiguration;
     }
 
 }

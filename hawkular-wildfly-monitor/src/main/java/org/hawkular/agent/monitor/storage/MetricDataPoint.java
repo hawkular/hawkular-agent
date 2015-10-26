@@ -16,39 +16,20 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.util.Date;
-
-import org.hawkular.agent.monitor.scheduler.polling.Task;
 import org.hawkular.metrics.client.common.MetricType;
 
 /**
  * Metric data that was collected.
  */
-public class MetricDataPoint {
-    private final Task task;
-    private final long timestamp;
+public class MetricDataPoint extends DataPoint {
+
     private final double value;
     private final MetricType metricType;
 
-    public MetricDataPoint(Task task, double value, MetricType metricType) {
-        this.task = task;
-        this.timestamp = System.currentTimeMillis();
+    public MetricDataPoint(String key, long timestamp, double value, MetricType metricType) {
+        super(key, timestamp);
         this.value = value;
         this.metricType = metricType;
-    }
-
-    /**
-     * @return object that identifies the metric that was collected.
-     */
-    public Task getTask() {
-        return task;
-    }
-
-    /**
-     * @return when the metric was collected
-     */
-    public long getTimestamp() {
-        return timestamp;
     }
 
     /**
@@ -67,11 +48,8 @@ public class MetricDataPoint {
 
     @Override
     public String toString() {
-        StringBuilder str = new StringBuilder("MetricDataPoint: ");
-        str.append("task=[").append(task).append("]");
-        str.append(", timestamp=[").append(new Date(timestamp)).append("]");
-        str.append(", value=[").append(value).append("]");
-        str.append(", metricType=[").append(metricType).append("]");
-        return str.toString();
+        return "MetricDataPoint [value=" + value + ", metricType=" + metricType + ", key=" + key + ", timestamp="
+                + timestamp + "]";
     }
+
 }

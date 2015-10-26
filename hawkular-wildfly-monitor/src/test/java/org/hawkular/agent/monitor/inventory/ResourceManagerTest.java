@@ -16,75 +16,79 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
-import org.hawkular.dmrclient.Address;
-import org.jboss.dmr.ModelNode;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.traverse.BreadthFirstIterator;
-import org.jgrapht.traverse.DepthFirstIterator;
+import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class ResourceManagerTest {
     @Test
     public void testEmptyResourceManager() {
-        ResourceManager<DMRResource> rm = new ResourceManager<>();
+        ResourceManager<DMRNodeLocation> rm = //
+        new ResourceManager<DMRNodeLocation>();
         Assert.assertNull(rm.getResource(new ID("foo")));
-        Assert.assertTrue(rm.getAllResources().isEmpty());
+        Assert.assertTrue(rm.getResourcesBreadthFirst().isEmpty());
         Assert.assertTrue(rm.getRootResources().isEmpty());
-        Assert.assertFalse(rm.getBreadthFirstIterator().hasNext());
-        Assert.assertFalse(rm.getDepthFirstIterator().hasNext());
+
     }
 
     @Test
     public void testResourceManager() {
-        DMRResourceType type = new DMRResourceType(new ID("resType"), new Name("resTypeName"));
-        ResourceManager<DMRResource> rm = new ResourceManager<>();
-        DMRResource root1 = new DMRResource(new ID("root1"), new Name("root1Name"), null, type, null, new Address(),
-                new ModelNode());
-        DMRResource root2 = new DMRResource(new ID("root2"), new Name("root2Name"), null, type, null, new Address(),
-                new ModelNode());
-        DMRResource child1 = new DMRResource(new ID("child1"), new Name("child1Name"), null, type, root1,
-                new Address(), new ModelNode());
-        DMRResource child2 = new DMRResource(new ID("child2"), new Name("child2Name"), null, type, root1,
-                new Address(), new ModelNode());
-        DMRResource grandChild1 = new DMRResource(new ID("grand1"), new Name("grand1Name"), null, type, child1,
-                new Address(), new ModelNode());
+        ResourceType<DMRNodeLocation> type = ResourceType
+                .<DMRNodeLocation> builder().id(new ID("resType")).name(new Name("resTypeName"))
+                .location(DMRNodeLocation.empty())
+                .build();
+        ResourceManager<DMRNodeLocation> rm = //
+        new ResourceManager<DMRNodeLocation>();
+        Resource<DMRNodeLocation> root1 = Resource
+                .<DMRNodeLocation> builder() //
+                .id(new ID("root1")) //
+                .name(new Name("root1Name")) //
+                .location(DMRNodeLocation.empty())
+                .type(type) //
+                .build();
+        Resource<DMRNodeLocation> root2 = Resource
+                .<DMRNodeLocation> builder() //
+                .id(new ID("root2")).name(new Name("root2Name")).type(type)
+                .location(DMRNodeLocation.empty())
+                .build();
+        Resource<DMRNodeLocation> child1 = Resource
+                .<DMRNodeLocation> builder() //
+                .id(new ID("child1")).name(new Name("child1Name")).type(type).parent(root1)
+                .location(DMRNodeLocation.empty()).build();
+        Resource<DMRNodeLocation> child2 = Resource
+                .<DMRNodeLocation> builder() //
+                .id(new ID("child2")).name(new Name("child2Name")).type(type).parent(root1)
+                .location(DMRNodeLocation.empty()).build();
+        Resource<DMRNodeLocation> grandChild1 = Resource
+                .<DMRNodeLocation> builder() //
+                .id(new ID("grand1")).name(new Name("grand1Name")).type(type).parent(child1)
+                .location(DMRNodeLocation.empty()).build();
 
         // add root1
         rm.addResource(root1);
-        Assert.assertEquals(1, rm.getAllResources().size());
-        Assert.assertTrue(rm.getAllResources().contains(root1));
+        Assert.assertEquals(1, rm.getResourcesBreadthFirst().size());
+        Assert.assertTrue(rm.getResourcesBreadthFirst().contains(root1));
         Assert.assertEquals(root1, rm.getResource(root1.getID()));
-
-        DepthFirstIterator<DMRResource, DefaultEdge> dIter = rm.getDepthFirstIterator();
-        Assert.assertEquals(root1, dIter.next());
-        Assert.assertFalse(dIter.hasNext());
-
-        BreadthFirstIterator<DMRResource, DefaultEdge> bIter = rm.getBreadthFirstIterator();
-        Assert.assertEquals(root1, bIter.next());
-        Assert.assertFalse(bIter.hasNext());
 
         Assert.assertEquals(1, rm.getRootResources().size());
         Assert.assertTrue(rm.getRootResources().contains(root1));
 
         // add child1
         rm.addResource(child1);
-        Assert.assertEquals(2, rm.getAllResources().size());
-        Assert.assertTrue(rm.getAllResources().contains(child1));
+        Assert.assertEquals(2, rm.getResourcesBreadthFirst().size());
+        Assert.assertTrue(rm.getResourcesBreadthFirst().contains(child1));
         Assert.assertEquals(child1, rm.getResource(child1.getID()));
 
         // add grandChild1
         rm.addResource(grandChild1);
-        Assert.assertEquals(3, rm.getAllResources().size());
-        Assert.assertTrue(rm.getAllResources().contains(grandChild1));
+        Assert.assertEquals(3, rm.getResourcesBreadthFirst().size());
+        Assert.assertTrue(rm.getResourcesBreadthFirst().contains(grandChild1));
         Assert.assertEquals(grandChild1, rm.getResource(grandChild1.getID()));
 
         // add root2
         rm.addResource(root2);
-        Assert.assertEquals(4, rm.getAllResources().size());
-        Assert.assertTrue(rm.getAllResources().contains(root2));
+        Assert.assertEquals(4, rm.getResourcesBreadthFirst().size());
+        Assert.assertTrue(rm.getResourcesBreadthFirst().contains(root2));
         Assert.assertEquals(root2, rm.getResource(root2.getID()));
 
         Assert.assertEquals(2, rm.getRootResources().size());
@@ -92,8 +96,8 @@ public class ResourceManagerTest {
 
         // add child2
         rm.addResource(child2);
-        Assert.assertEquals(5, rm.getAllResources().size());
-        Assert.assertTrue(rm.getAllResources().contains(child2));
+        Assert.assertEquals(5, rm.getResourcesBreadthFirst().size());
+        Assert.assertTrue(rm.getResourcesBreadthFirst().contains(child2));
         Assert.assertEquals(child2, rm.getResource(child2.getID()));
 
         //

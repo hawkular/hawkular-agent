@@ -16,6 +16,9 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+/**
+ * @author John Mazzitelli
+ */
 public class Name {
     private final String name;
 

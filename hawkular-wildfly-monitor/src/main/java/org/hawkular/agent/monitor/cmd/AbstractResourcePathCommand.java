@@ -16,24 +16,26 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
-import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
-import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
+import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
+import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
+import org.hawkular.agent.monitor.protocol.dmr.LocalDMREndpoint;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
+import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.cmdgw.api.ResourcePathRequest;
 import org.hawkular.cmdgw.api.ResourcePathResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
-import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
@@ -82,8 +84,9 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
 
         RESP response = createResponse();
         MessageUtils.prepareResourcePathResponse(request, response);
-
+        BinaryData binaryData = null;
         ModelControllerClient controllerClient = null;
+        long timestampBeforeExecution = System.currentTimeMillis();
         try {
             validate(envelope);
 
@@ -96,21 +99,35 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             String modelNodePath = idParts.getIdPart();
             validate(modelNodePath, envelope);
 
-            MonitorServiceConfiguration config = context.getMonitorServiceConfiguration();
-
             String managedServerName = idParts.getManagedServerName();
-            ManagedServer managedServer = config.getManagedServersMap().get(new Name(managedServerName));
-            validate(envelope, managedServerName, managedServer);
+            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            endpointService =
+                    context.getDiscoveryService().getProtocolServices().getDmrProtocolService().getEndpointServices()
+                            .get(managedServerName);
+            if (endpointService == null) {
+                throw new IllegalArgumentException(String.format(
+                        "Cannot perform [%s] on a [%s] given by inventory path [%s]: unknown managed server [%s]",
+                        this.getOperationName(envelope), entityType, managedServerName));
+            }
 
-            controllerClient = createControllerClient(managedServer, context);
+            validate(envelope, endpointService.getEndpoint());
 
-            execute(controllerClient, managedServer, modelNodePath, envelope, response, context);
+            DMRSession dmrContext = endpointService.openSession();
+
+            controllerClient = dmrContext.getClient();
+
+            binaryData =
+                    execute(controllerClient, endpointService, modelNodePath, envelope, response, context, dmrContext);
             success(envelope, response);
 
         } catch (Exception e) {
             response.setStatus(ResponseStatus.ERROR);
-            String msg = String.format("Could not perform [%s] on a [%s] given by inventory path [%s]: %s",
-                    this.getOperationName(envelope), entityType, rawResourcePath, e.getMessage());
+            String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX").withZone(ZoneOffset.UTC)
+                    .format(Instant.ofEpochMilli(timestampBeforeExecution));
+
+            String msg = String.format(
+                    "Could not perform [%s] on a [%s] given by inventory path [%s] requested on [%s]: %s",
+                    this.getOperationName(envelope), entityType, rawResourcePath, formattedTimestamp, e.getMessage());
             response.setMessage(msg);
             log.debug(msg, e);
         } finally {
@@ -123,38 +140,29 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             }
         }
 
-        return new BasicMessageWithExtraData<>(response, null);
+        return new BasicMessageWithExtraData<>(response, binaryData);
 
     }
 
     /**
      * Do whatever with the already validated parameters.
      *
-     * @param controllerClient a subclass of {@link JBossASClient} returned by
-     *        {@link #createControllerClient(ManagedServer, CommandContext)}
-     * @param managedServer a {@link ManagedServer} instance acquired from {@link ResourcePathRequest#getResourcePath()}
+     * @param controllerClient a plain {@link ModelControllerClient}
+     * @param endpointService an {@link EndpointService} belonging to the resource
      * @param modelNodePath a DMR path acquired from {@link ResourcePathRequest#getResourcePath()}
      * @param envelope the request
      * @param response the response
      * @param context the {@link CommandContext}
+     * @param dmrContext a {@link DMRSession}
+     * @return a {@link BinaryData} with binary content if this command returns any
      * @throws Exception if anything goes wrong
      */
-    protected abstract void execute(ModelControllerClient controllerClient, ManagedServer managedServer,
-            String modelNodePath, BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context)
+    protected abstract BinaryData execute(ModelControllerClient controllerClient,
+            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession>//
+            endpointService,
+            String modelNodePath, BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context,
+            DMRSession dmrContext)
                     throws Exception;
-
-    /**
-     * Returns a freshly opened {@link ModelControllerClient}.
-     *
-     * @param context the {@link CommandContext}
-     * @param managedServer a {@link ManagedServer} instance acquired from {@link ResourcePathRequest#getResourcePath()}
-     * @return a freshly opened {@link ModelControllerClient}
-     */
-    protected ModelControllerClient createControllerClient(ManagedServer managedServer, CommandContext context) {
-        DMRInventoryManager inventoryManager = context.getDiscoveryService().getDmrServerInventories()
-                .get(managedServer);
-        return inventoryManager.getModelControllerClientFactory().createClient();
-    }
 
     /**
      * {@code modelNodePath} validation for subclasses.
@@ -178,20 +186,12 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
     }
 
     /**
-     * Throws an {@link IllegalArgumentException} if {@code managedServer} is {@code null}. Subclasses can add more
-     * checks.
+     * Validation for subclasses.
      *
-     * @param managedServerName the name of the {@code managedServer}
-     * @param managedServer the managed server to validate
+     * @param envelope a DMR path to check
+     * @param dmrEndpoint the request the {@code modelNodePath} comes from
      */
-    protected void validate(BasicMessageWithExtraData<REQ> envelope, String managedServerName,
-            ManagedServer managedServer) {
-        if (managedServer == null) {
-            throw new IllegalArgumentException(String.format(
-                    "Cannot perform [%s] on a [%s] given by inventory path [%s]: unknown managed server [%s]",
-                    this.getOperationName(envelope), entityType, managedServerName));
-        }
-    }
+    protected abstract void validate(BasicMessageWithExtraData<REQ> envelope, DMREndpoint dmrEndpoint);
 
     /**
      * @return a new instance of the appropriate {@link ResourcePathResponse} subclass
@@ -206,20 +206,11 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
 
     }
 
-    protected void assertLocalOrRemoteServer(ManagedServer managedServer) {
-        if (!(managedServer instanceof LocalDMRManagedServer) && !(managedServer instanceof RemoteDMRManagedServer)) {
-            throw new IllegalStateException(String.format(
-                    "Cannot perform [%s] on a [%s] on a instance of [%s]. Only [%s] and [%s] is supported",
-                    operationName, entityType, managedServer.getClass().getName(),
-                    LocalDMRManagedServer.class.getName(), RemoteDMRManagedServer.class.getName()));
-        }
-    }
-
-    protected void assertLocalServer(ManagedServer managedServer) {
-        if (!(managedServer instanceof LocalDMRManagedServer)) {
+    protected void assertLocalServer(DMREndpoint endpoint) {
+        if (!(endpoint instanceof LocalDMREndpoint)) {
             throw new IllegalStateException(String.format(
                     "Cannot perform [%s] on a [%s] on a instance of [%s]. Only [%s] is supported", operationName,
-                    entityType, managedServer.getClass().getName(), LocalDMRManagedServer.class.getName()));
+                    entityType, endpoint.getClass().getName(), LocalDMREndpoint.class.getName()));
         }
     }
 

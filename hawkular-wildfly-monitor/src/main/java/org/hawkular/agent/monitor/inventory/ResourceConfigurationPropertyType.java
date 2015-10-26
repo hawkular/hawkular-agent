@@ -16,9 +16,15 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class ResourceConfigurationPropertyType extends NamedObject {
+/**
+ * @author John Mazzitelli
+ *
+ * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
+ */
+public final class ResourceConfigurationPropertyType<L> extends AttributeLocationProvider<L> {
 
-    public ResourceConfigurationPropertyType(ID id, Name name) {
-        super(id, name);
+    public ResourceConfigurationPropertyType(ID id, Name name, AttributeLocation<L> attributeLocation) {
+        super(id, name, attributeLocation);
     }
+
 }

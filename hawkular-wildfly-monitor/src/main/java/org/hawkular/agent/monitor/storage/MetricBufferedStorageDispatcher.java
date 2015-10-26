@@ -24,17 +24,16 @@ import java.util.concurrent.BlockingQueue;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.polling.MetricCompletionHandler;
+import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
+import org.hawkular.agent.monitor.util.Consumer;
 
 /**
  * Buffers collected metric data and eventually stores them in a storage adapter.
  */
-public class MetricBufferedStorageDispatcher implements MetricCompletionHandler {
+public class MetricBufferedStorageDispatcher implements Consumer<MetricDataPoint> {
     private static final MsgLogger log = AgentLoggers.getLogger(MetricBufferedStorageDispatcher.class);
     private final int maxBatchSize;
     private final int bufferSize;
-    private final SchedulerConfiguration config;
     private final StorageAdapter storageAdapter;
     private final Diagnostics diagnostics;
     private final BlockingQueue<MetricDataPoint> queue;
@@ -42,7 +41,6 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
 
     public MetricBufferedStorageDispatcher(SchedulerConfiguration config, StorageAdapter storageAdapter,
             Diagnostics diagnostics) {
-        this.config = config;
         this.maxBatchSize = config.getMetricDispatcherMaxBatchSize();
         this.bufferSize = config.getMetricDispatcherBufferSize();
         this.storageAdapter = storageAdapter;
@@ -60,9 +58,9 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
     }
 
     @Override
-    public void onCompleted(MetricDataPoint sample) {
+    public void accept(MetricDataPoint sample) {
         if (queue.remainingCapacity() > 0) {
-            log.debugf("Metric collected: [%s]->[%f]", sample.getTask(), sample.getValue());
+            log.debugf("Metric collected: [%s]->[%f]", sample.getKey(), sample.getValue());
             diagnostics.getMetricsStorageBufferSize().inc();
             queue.add(sample);
         }
@@ -72,7 +70,7 @@ public class MetricBufferedStorageDispatcher implements MetricCompletionHandler 
     }
 
     @Override
-    public void onFailed(Throwable e) {
+    public void report(Throwable e) {
         log.errorMetricCollectionFailed(e);
     }
 
