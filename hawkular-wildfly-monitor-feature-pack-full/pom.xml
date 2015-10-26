@@ -96,7 +96,6 @@
             <phase>compile</phase>
             <configuration>
               <config-file>server-provisioning.xml</config-file>
-              <excluded-dependencies>true</excluded-dependencies>
             </configuration>
           </execution>
         </executions>
