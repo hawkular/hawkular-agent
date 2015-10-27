@@ -26,11 +26,11 @@
     <version>0.12.0.Final-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-monitor-feature-pack-full</artifactId>
+  <artifactId>hawkular-monitor-module-distro</artifactId>
   <packaging>pom</packaging>
 
-  <name>aaa</name>
-  <description>aaa</description>
+  <name>Hawkular WildFly Monitor Module Distribution</name>
+  <description>The distribution containing the module extension for the Hawkular WildFly Monitor agent</description>
 
   <properties>
     <version.org.wildfly.build>1.1.0.CR3-SNAPSHOT</version.org.wildfly.build>

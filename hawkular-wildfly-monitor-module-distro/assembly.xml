@@ -29,7 +29,7 @@
   <includeBaseDirectory>false</includeBaseDirectory>
   <fileSets>
     <fileSet>
-      <directory>target/hawkular-monitor-feature-pack-full-${project.version}/modules</directory>
+      <directory>target/hawkular-monitor-module-distro-${project.version}/modules</directory>
       <outputDirectory/>
       <includes>
         <include>**</include>
