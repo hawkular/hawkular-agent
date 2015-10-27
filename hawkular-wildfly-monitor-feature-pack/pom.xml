@@ -34,10 +34,6 @@
 
   <properties>
     <version.org.wildfly.build>1.1.0.CR1</version.org.wildfly.build>
-
-    <!-- used to replace the variables in module.xml -->
-    <moduleName>org.hawkular.agent.monitor</moduleName>
-    <moduleDir>org/hawkular/agent/monitor</moduleDir>
   </properties>
 
   <dependencies>
@@ -48,32 +44,6 @@
     </dependency>
 
     <!-- feature pack dependencies -->
-
-    <dependency>
-      <groupId>org.wildfly.core</groupId>
-      <artifactId>wildfly-core-feature-pack</artifactId>
-      <version>${version.org.wildfly.core}</version>
-      <type>zip</type>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.wildfly</groupId>
-      <artifactId>wildfly-servlet-feature-pack</artifactId>
-      <version>${version.org.wildfly}</version>
-      <type>zip</type>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
 
     <dependency>
       <groupId>org.wildfly</groupId>
@@ -87,7 +57,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
   </dependencies>
 
   <build>

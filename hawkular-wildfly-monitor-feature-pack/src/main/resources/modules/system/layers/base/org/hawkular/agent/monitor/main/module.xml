@@ -30,11 +30,33 @@
     <artifact name="${com.squareup.okhttp:okhttp}"/>
     <artifact name="${com.squareup.okhttp:okhttp-ws}"/>
     <artifact name="${com.squareup.okio:okio}"/>
+
+    <!-- These are pulled in due to hawkular-inventory-json-helper.jar. -->
+    <!--
+    <resource-root path="activation.jar"/>
+    <resource-root path="btf.jar"/>
+    <resource-root path="jackson-coreutils.jar"/>
+    <resource-root path="joda-time.jar"/>
+    <resource-root path="jopt-simple.jar"/>
+    <resource-root path="json-schema-core.jar"/>
+    <resource-root path="json-schema-validator.jar"/>
+    <resource-root path="jsr305.jar"/>
+    <resource-root path="libphonenumber.jar"/>
+    <resource-root path="mailapi.jar"/>
+    <resource-root path="msg-simple.jar"/>
+    <resource-root path="rhino.jar"/>
+    <resource-root path="rxjava.jar"/>
+    <resource-root path="uri-template.jar"/>
+    -->
+
     <artifact name="${io.reactivex:rxjava}"/>
+
+    <!-- OSHI deps -->
     <artifact name="${com.github.dblock:oshi-core}"/>
     <artifact name="${net.java.dev.jna:jna-platform}"/>
     <artifact name="${net.java.dev.jna:jna}"/>
 
+    <!-- Jolokia deps -->
     <artifact name="${commons-codec:commons-codec}" />
     <artifact name="${org.apache.httpcomponents:httpclient-osgi}" />
     <artifact name="${org.jolokia:jolokia-client-java}" />
@@ -70,7 +92,6 @@
     <module name="org.slf4j"/>
     <module name="org.wildfly.security.manager"/>
     <module name="sun.jdk"/> <!-- codahale needs sun.misc.Unsafe -->
-
     <module name="com.fasterxml.jackson.core.jackson-core"/>
     <module name="com.fasterxml.jackson.core.jackson-databind"/>
     <module name="com.fasterxml.jackson.core.jackson-annotations"/>

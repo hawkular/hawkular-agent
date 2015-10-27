@@ -42,9 +42,8 @@
   <dependencies>
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-monitor</artifactId>
+      <artifactId>hawkular-monitor-module-dist</artifactId>
       <version>0.12.0.Final-SNAPSHOT</version>
-      <classifier>module</classifier>
       <type>zip</type>
     </dependency>
     <dependency>
