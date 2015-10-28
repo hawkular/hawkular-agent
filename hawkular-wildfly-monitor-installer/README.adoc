@@ -7,9 +7,9 @@ Hawkular Wildfly Monitor Installer is a standalone java application to install H
 
 == Running using Maven
 
-Installer is configured via maven exec plugin so it installs Hawkular Agent from this repository into local Wildfly located in `${wildfly.home}`
+Installer is configured via maven exec plugin so it installs Hawkular Agent from this repository into local Wildfly located in `${org.hawkular.wildfly.home}`
 
-    mvn exec:java -Dwildfly.home=/opt/wildfly-9.0.0.Final
+    mvn exec:java -Dorg.hawkular.wildfly.home=/opt/wildfly-9.0.0.Final
 
 == Running as standalone java application
 
