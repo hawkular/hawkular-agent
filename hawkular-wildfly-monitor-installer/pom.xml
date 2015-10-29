@@ -62,7 +62,7 @@
           <mainClass>org.hawkular.wildfly.monitor.installer.AgentInstaller</mainClass>
           <arguments>
             <argument>--wildfly-home=${org.hawkular.wildfly.home}</argument>
-            <argument>--module=${project.basedir}/../hawkular-wildfly-monitor-module-dist/target/hawkular-monitor-module-dist-${project.version}.zip</argument>
+            <argument>--module=${project.basedir}/../hawkular-wildfly-monitor-wf-extension/target/hawkular-monitor-wf-extension-${project.version}.zip</argument>
             <argument>--hawkular-server-url=http://127.0.0.1:8080</argument>
           </arguments>
         </configuration>

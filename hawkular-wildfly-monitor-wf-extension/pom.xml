@@ -26,7 +26,7 @@
     <version>0.12.0.Final-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-monitor-module-dist</artifactId>
+  <artifactId>hawkular-monitor-wf-extension</artifactId>
   <packaging>pom</packaging>
 
   <name>Hawkular Monitor WildFly Module Distribution</name>

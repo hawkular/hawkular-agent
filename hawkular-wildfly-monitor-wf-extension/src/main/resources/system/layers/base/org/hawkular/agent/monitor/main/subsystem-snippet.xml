@@ -29,8 +29,7 @@
 
   <storage-adapter type="HAWKULAR"
                    username="jdoe"
-                   password="password"
-                   url="http://${jboss.bind.address:127.0.0.1}:${jboss.http.port:8080}" />
+                   password="password" />
 
   <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
     <metric-dmr name="Heap Used"
@@ -500,7 +499,7 @@
 
   <resource-type-set-dmr name="Main" enabled="true">
     <resource-type-dmr name="WildFly Server"
-                       resourceNameTemplate="WildFly Server [%ManagedServerName] [${jboss.node.name:localhost}]"
+                       resourceNameTemplate="WildFly Server [${jboss.node.name:localhost}]"
                        path="/"
                        metricSets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
                        availSets="Server Availability">
@@ -508,8 +507,10 @@
                            path="/core-service=server-environment"
                            attribute="qualified-host-name" />
       <resource-config-dmr name="Version"
-                           attribute="release-version" />
-      <operation-dmr name="Reload Server" operationName="reload" path="/" />
+                           attribute="product-version" />
+      <resource-config-dmr name="Bound Address"
+                           path="/socket-binding-group=standard-sockets/socket-binding=http"
+                           attribute="bound-address" />
       <operation-dmr name="JDR" operationName="generate-jdr-report" path="/subsystem=jdr" />
     </resource-type-dmr>
   </resource-type-set-dmr>
@@ -534,6 +535,7 @@
                        parents="WildFly Server"
                        metricSets="Undertow Metrics"
                        availSets="Deployment Status">
+      <operation-dmr name="Deploy" operationName="deploy" path="/" />
       <operation-dmr name="Redeploy" operationName="redeploy" path="/" />
       <operation-dmr name="Remove" operationName="remove" path="/" />
       <operation-dmr name="Undeploy" operationName="undeploy" path="/" />
@@ -584,6 +586,21 @@
                        metricSets="Datasource Pool Metrics,Datasource JDBC Metrics" />
   </resource-type-set-dmr>
 
+  <resource-type-set-dmr name="XA Datasource" enabled="true">
+    <resource-type-dmr name="XA Datasource"
+                       resourceNameTemplate="XA Datasource [%-]"
+                       path="/subsystem=datasources/xa-data-source=*"
+                       parents="WildFly Server"
+                       metricSets="Datasource Pool Metrics,Datasource JDBC Metrics" />
+  </resource-type-set-dmr>
+
+  <resource-type-set-dmr name="JDBC Driver" enabled="true">
+    <resource-type-dmr name="JDBC Driver"
+                       resourceNameTemplate="JDBC Driver [%-]"
+                       path="/subsystem=datasources/jdbc-driver=*"
+                       parents="WildFly Server" />
+  </resource-type-set-dmr>
+
   <resource-type-set-dmr name="Transaction Manager" enabled="true">
     <resource-type-dmr name="Transaction Manager"
                        resourceNameTemplate="Transaction Manager"
@@ -593,31 +610,25 @@
   </resource-type-set-dmr>
 
   <managed-servers>
-    <remote-dmr name="Local Host"
-                enabled="true"
-                host="localhost"
-                port="9990"
-                resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,Transaction Manager" />
-
-    <remote-dmr name="Another Remote"
+    <remote-dmr name="Another Remote Server"
                 enabled="false"
-                host="somehost"
+                host="localhost"
                 port="9990"
                 username="adminUser"
                 password="adminPass"
-                resourceTypeSets="Main,Deployment,Web Component,EJB" />
+                resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager" />
 
     <local-dmr name="Local"
                enabled="true"
-               resourceTypeSets="Hawkular,Main,Deployment,Web Component,EJB,Datasource,Transaction Manager" />
+               resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Hawkular" />
 
   </managed-servers>
 
   <platform enabled="true">
-    <file-stores   enabled="true"  interval="10" timeUnits="minutes" />
-    <memory        enabled="true"  interval="1"  timeUnits="minutes" />
-    <processors    enabled="true"  interval="1"  timeUnits="minutes" />
-    <power-sources enabled="false" interval="10" timeUnits="minutes" />
+    <file-stores   enabled="true"  interval="5" timeUnits="minutes" />
+    <memory        enabled="true"  interval="1" timeUnits="minutes" />
+    <processors    enabled="true"  interval="1" timeUnits="minutes" />
+    <power-sources enabled="false" interval="5" timeUnits="minutes" />
   </platform>
 
 </subsystem>
