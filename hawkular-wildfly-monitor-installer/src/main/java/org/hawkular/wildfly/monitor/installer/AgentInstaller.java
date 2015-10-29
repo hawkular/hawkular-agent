@@ -71,9 +71,9 @@ public class AgentInstaller {
                 // --module is not supplied so try to download agent module from server
                 File moduleTempFile = downloadModuleZip(getHawkularServerAgentDownloadUrl(installerConfig));
                 if (moduleTempFile == null) {
-                    throw new IOException("Failed to retrieve agent module from server, option ["
+                    throw new IOException("Failed to retrieve module dist from server, You can use option ["
                             + InstallerConfiguration.OPTION_MODULE_DISTRIBUTION
-                            + "] is now required but it was not supplied");
+                            + "] to supply your own");
                 }
                 filesToDelete.add(moduleTempFile);
                 moduleZipUrl = moduleTempFile.toURI().toURL();
