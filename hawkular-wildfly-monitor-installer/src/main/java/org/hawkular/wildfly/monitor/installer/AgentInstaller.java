@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
+import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.IOUtils;
@@ -53,13 +53,17 @@ public class AgentInstaller {
         ArrayList<File> filesToDelete = new ArrayList<>();
 
         try {
-            options = buildCommandLineOptions();
+            options = InstallerConfiguration.buildCommandLineOptions();
             CommandLine commandLine = new DefaultParser().parse(options, args);
             InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
 
-            URL hawkularServerUrl = new URL(installerConfig.getHawkularServerUrl());
             String jbossHome = installerConfig.getWildFlyHome();
-            String moduleZip = installerConfig.getModule();
+            if (jbossHome == null) {
+                throw new MissingOptionException(InstallerConfiguration.OPTION_WILDFLY_HOME + " must be specified");
+            }
+
+            URL hawkularServerUrl = new URL(installerConfig.getHawkularServerUrl());
+            String moduleZip = installerConfig.getModuleDistribution();
 
             URL moduleZipUrl;
 
@@ -68,7 +72,7 @@ public class AgentInstaller {
                 File moduleTempFile = downloadModuleZip(getHawkularServerAgentDownloadUrl(installerConfig));
                 if (moduleTempFile == null) {
                     throw new IOException("Failed to retrieve agent module from server, option ["
-                            + InstallerConfiguration.OPTION_MODULE
+                            + InstallerConfiguration.OPTION_MODULE_DISTRIBUTION
                             + "] is now required but it was not supplied");
                 }
                 filesToDelete.add(moduleTempFile);
@@ -89,7 +93,7 @@ public class AgentInstaller {
                 File moduleTempFile = downloadModuleZip(new URL(moduleZip));
                 if (moduleTempFile == null) {
                     throw new IOException("Failed to retrieve agent module from server, option ["
-                            + InstallerConfiguration.OPTION_MODULE
+                            + InstallerConfiguration.OPTION_MODULE_DISTRIBUTION
                             + "] is now required but it was not supplied");
                 }
                 filesToDelete.add(moduleTempFile);
@@ -332,78 +336,4 @@ public class AgentInstaller {
         formatter.setOptionComparator(null);
         formatter.printHelp("hawkular-wildfly-monitor-installer", options);
     }
-
-    private static Options buildCommandLineOptions() {
-        Options options = new Options();
-
-        options.addOption(Option.builder("D")
-                .hasArgs()
-                .valueSeparator('=')
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_INSTALLER_CONFIG)
-                .longOpt(InstallerConfiguration.OPTION_INSTALLER_CONFIG)
-                .desc("Installer .properties configuration file")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .required()
-                .argName(InstallerConfiguration.OPTION_WILDFLY_HOME)
-                .longOpt(InstallerConfiguration.OPTION_WILDFLY_HOME)
-                .desc("Target WildFly home directory")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_MODULE)
-                .longOpt(InstallerConfiguration.OPTION_MODULE)
-                .desc("Extension Module zip file")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL)
-                .longOpt(InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL)
-                .desc("Hawkular Server URL")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_SERVER_CONFIG)
-                .longOpt(InstallerConfiguration.OPTION_SERVER_CONFIG)
-                .desc("Server config to write to. Can be either absolute path or relative to "
-                        + InstallerConfiguration.OPTION_WILDFLY_HOME)
-                .numberOfArgs(1)
-                .build());
-
-        // SSL related config options
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_KEYSTORE_PATH)
-                .longOpt(InstallerConfiguration.OPTION_KEYSTORE_PATH)
-                .desc("Keystore file. Required when " + InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL
-                        + " protocol is https")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_KEYSTORE_PASSWORD)
-                .longOpt(InstallerConfiguration.OPTION_KEYSTORE_PASSWORD)
-                .desc("Keystore password. When " + InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL
-                        + " protocol is https and this option is not passed, installer will ask for password")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_KEY_PASSWORD)
-                .longOpt(InstallerConfiguration.OPTION_KEY_PASSWORD)
-                .desc("Key password. When " + InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL
-                        + " protocol is https and this option is not passed, installer will ask for password")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_KEY_ALIAS)
-                .longOpt(InstallerConfiguration.OPTION_KEY_ALIAS)
-                .desc("Key alias. Required when " + InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL
-                        + " protocol is https")
-                .numberOfArgs(1)
-                .build());
-
-        return options;
-    }
-
 }
