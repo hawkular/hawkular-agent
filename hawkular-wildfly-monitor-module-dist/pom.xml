@@ -33,7 +33,7 @@
   <description>The distribution containing the module extension for the Hawkular WildFly Monitor agent</description>
 
   <properties>
-    <version.org.wildfly.build>1.1.0.CR3-SNAPSHOT</version.org.wildfly.build>
+    <version.org.wildfly.build>1.1.0.Final</version.org.wildfly.build>
   </properties>
 
   <dependencies>
