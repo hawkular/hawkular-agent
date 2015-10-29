@@ -21,15 +21,18 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
+import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.IOUtils;
@@ -43,59 +46,74 @@ public class AgentInstaller {
 
     private static final Logger log = Logger.getLogger(AgentInstaller.class);
     private static final String SECURITY_REALM_NAME = "HawkularRealm";
-    private static final String OPTION_WILDFLY_HOME="wildfly-home";
-    private static final String OPTION_MODULE = "module";
-    private static final String OPTION_SERVER_CONFIG = "server-config";
-    private static final String OPTION_HAWKULAR_SERVER_URL = "hawkular-server-url";
-    private static final String OPTION_KEYSTORE_PATH = "keystore-path";
-    private static final String OPTION_KEYSTORE_PASSWORD="keystore-password";
-    private static final String OPTION_KEY_ALIAS="key-alias";
-    private static final String OPTION_KEY_PASSWORD="key-password";
-
-    private static Options OPTIONS;
-    private static InstallerDefaults defaults;
 
     public static void main(String[] args) throws Exception {
+        Options options = null;
+
+        ArrayList<File> filesToDelete = new ArrayList<>();
+
         try {
-            defaults = new InstallerDefaults();
-            OPTIONS = commandLineOptions(defaults);
-            CommandLine commandLine = new DefaultParser().parse(OPTIONS, args);
+            options = InstallerConfiguration.buildCommandLineOptions();
+            CommandLine commandLine = new DefaultParser().parse(options, args);
+            InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
 
-            String jbossHome = commandLine.getOptionValue(OPTION_WILDFLY_HOME);
-            String moduleZip = commandLine.getOptionValue(OPTION_MODULE, defaults.getModule());
-            String hawkularServerUrl = commandLine.getOptionValue(OPTION_HAWKULAR_SERVER_URL,
-                    defaults.getHawkularServerUrl());
+            String jbossHome = installerConfig.getWildFlyHome();
+            if (jbossHome == null) {
+                throw new MissingOptionException(InstallerConfiguration.OPTION_WILDFLY_HOME + " must be specified");
+            }
 
-            URL moduleUrl = null;
-            // if --module is not supplied try to download agent module from server
+            URL hawkularServerUrl = new URL(installerConfig.getHawkularServerUrl());
+            String moduleZip = installerConfig.getModuleDistribution();
+
+            URL moduleZipUrl;
+
             if (moduleZip == null) {
-                moduleUrl = downloadModule(hawkularServerUrl);
-                if (moduleUrl == null) {
-                    throw new IOException("Failed to retrieve agent module from server, option [module]"
-                            + " is now required but it was not supplied");
+                // --module is not supplied so try to download agent module from server
+                File moduleTempFile = downloadModuleZip(getHawkularServerAgentDownloadUrl(installerConfig));
+                if (moduleTempFile == null) {
+                    throw new IOException("Failed to retrieve module dist from server, You can use option ["
+                            + InstallerConfiguration.OPTION_MODULE_DISTRIBUTION
+                            + "] to supply your own");
                 }
-            } else if (moduleZip.startsWith("classpath:/")) {
-                // this special protocol tells us to read module as resource from classpath
+                filesToDelete.add(moduleTempFile);
+                moduleZipUrl = moduleTempFile.toURI().toURL();
+            } else if (moduleZip.startsWith("classpath:")) {
+                // This special protocol tells us to read module zip as resource from classpath.
+                // This is in case the module zip is bundled directly in the installer.
                 String resourceUrl = moduleZip.substring(10);
-                moduleUrl = AgentInstaller.class.getResource(resourceUrl);
-                if (moduleUrl == null) {
-                    throw new IOException("Unable to load module.zip from classpath as resource "+resourceUrl);
+                if (!resourceUrl.startsWith("/")) {
+                    resourceUrl = "/" + resourceUrl;
                 }
+                moduleZipUrl = AgentInstaller.class.getResource(resourceUrl);
+                if (moduleZipUrl == null) {
+                    throw new IOException("Unable to load module.zip from classpath [" + resourceUrl + "]");
+                }
+            } else if (moduleZip.matches("(http|https|file):.*")){
+                // the module is specified as a URL - we'll download it
+                File moduleTempFile = downloadModuleZip(new URL(moduleZip));
+                if (moduleTempFile == null) {
+                    throw new IOException("Failed to retrieve agent module from server, option ["
+                            + InstallerConfiguration.OPTION_MODULE_DISTRIBUTION
+                            + "] is now required but it was not supplied");
+                }
+                filesToDelete.add(moduleTempFile);
+                moduleZipUrl = moduleTempFile.toURI().toURL();
+            } else {
+                // the module is specified as a file path
+                moduleZipUrl = new File(moduleZip).toURI().toURL();
             }
-            else {
-                moduleUrl = new File(moduleZip).toURI().toURL();
-            }
-            URL serverUrl = new URL(hawkularServerUrl);
-            URL socketBinding = createSocketBindingSnippet(serverUrl);
-            // deploy given module into given wfHome and
+
+            // deploy given module into given app server home directory and
             // set it up the way it talks to hawkular server on hawkularServerUrl
             // TODO support domain mode
+            File socketBindingSnippetFile = createSocketBindingSnippet(hawkularServerUrl);
+            filesToDelete.add(socketBindingSnippetFile);
             Builder configuration = DeploymentConfiguration.builder()
                     .jbossHome(new File(jbossHome))
-                    .module(moduleUrl)
-                    .socketBinding(socketBinding);
+                    .module(moduleZipUrl)
+                    .socketBinding(socketBindingSnippetFile.toURI().toURL());
 
-            String serverConfig = commandLine.getOptionValue(OPTION_SERVER_CONFIG);
+            String serverConfig = installerConfig.getServerConfig();
             if (serverConfig != null) {
                 configuration.serverConfig(serverConfig);
             } else {
@@ -103,42 +121,40 @@ public class AgentInstaller {
                 // we'll use this in case of https to resolve server configuration directory
             }
 
-            if (serverUrl.getProtocol().equals("https")) {
-                String keystorePath = commandLine.getOptionValue(OPTION_KEYSTORE_PATH);
-                String keystorePass = commandLine.getOptionValue(OPTION_KEYSTORE_PASSWORD);
-                String keyPass = commandLine.getOptionValue(OPTION_KEY_PASSWORD);
-                String keyAlias = commandLine.getOptionValue(OPTION_KEY_ALIAS);
+            // If we are to talk to the Hawkular Server over HTTPS, we need to set up some additional things
+            if (hawkularServerUrl.getProtocol().equals("https")) {
+                String keystorePath = installerConfig.getKeystorePath();
+                String keystorePass = installerConfig.getKeystorePassword();
+                String keyPass = installerConfig.getKeyPassword();
+                String keyAlias = installerConfig.getKeyAlias();
                 if (keystorePath == null || keyAlias == null) {
-                    StringBuilder sbOptions = new StringBuilder(OPTION_KEYSTORE_PATH)
-                        .append(","+OPTION_KEY_ALIAS);
-
-                    throw new ParseException("When using https protocol, following keystore"
-                            + " command-line options are required: "+sbOptions.toString());
+                    throw new ParseException(String.format("When using https protocol, the following keystore "
+                            + "command-line options are required: %s, %s",
+                            InstallerConfiguration.OPTION_KEYSTORE_PATH, InstallerConfiguration.OPTION_KEY_ALIAS));
                 }
 
                 // password fields are not required, but if not supplied we'll ask user
                 if (keystorePass == null) {
-                    // try to read it from STDIN
-                    keystorePass = readPaswordFromStdin("Keystore password:");
+                    keystorePass = readPasswordFromStdin("Keystore password:");
                     if (keystorePass == null || keystorePass.isEmpty()) {
-                        keystorePass = ""; // set to empty string
-                        log.warn("Option --"+OPTION_KEYSTORE_PASSWORD + " was not passed using empty password");
+                        keystorePass = "";
+                        log.warn(InstallerConfiguration.OPTION_KEYSTORE_PASSWORD
+                                + " was not provided; using empty password");
                     }
                 }
                 if (keyPass == null) {
-                    // try to read it from STDIN
-                    keyPass = readPaswordFromStdin("Key password:");
+                    keyPass = readPasswordFromStdin("Key password:");
                     if (keyPass == null || keyPass.isEmpty()) {
-                        keyPass = ""; // set to empty string
-                        log.warn("Option --"+OPTION_KEY_PASSWORD + " was not passed using empty password");
+                        keyPass = "";
+                        log.warn(InstallerConfiguration.OPTION_KEY_PASSWORD
+                                + " was not provided; using empty password");
                     }
                 }
 
-                // in case given keystore path is not already present within server-config
-                // directory, copy it
+                // if given keystore path is not already present within server-config directory, copy it
                 File keystoreSrcFile = new File(keystorePath);
                 if (!(keystoreSrcFile.isFile() && keystoreSrcFile.canRead())) {
-                    throw new FileNotFoundException("Cannot read "+keystoreSrcFile.getAbsolutePath());
+                    throw new FileNotFoundException("Cannot read " + keystoreSrcFile.getAbsolutePath());
                 }
                 File serverConfigDir;
                 if (new File(serverConfig).isAbsolute()) {
@@ -149,33 +165,45 @@ public class AgentInstaller {
                 Path keystoreDst = Paths.get(serverConfigDir.getAbsolutePath()).resolve(keystoreSrcFile.getName());
                 // never overwrite target keystore
                 if (!keystoreDst.toFile().exists()) {
-                    log.info("Copy ["+keystoreSrcFile.getAbsolutePath()+"] to ["+keystoreDst.toString()+"]");
+                    log.info("Copy [" + keystoreSrcFile.getAbsolutePath() + "] to [" + keystoreDst.toString() + "]");
                     Files.copy(Paths.get(keystoreSrcFile.getAbsolutePath()), keystoreDst);
                 }
+
                 // setup security-realm and storage-adapter (within hawkular-wildfly-monitor subsystem)
                 String securityRealm = createSecurityRealm(keystoreSrcFile.getName(), keystorePass, keyPass, keyAlias);
                 configuration.addXmlEdit(new XmlEdit("/server/management/security-realms", securityRealm));
-                configuration.addXmlEdit(createStorageAdapter(true));
+                configuration.addXmlEdit(createStorageAdapter(true, installerConfig));
             }
             else {
-                configuration.addXmlEdit(createStorageAdapter(false));
+                // just going over non-secure HTTP
+                configuration.addXmlEdit(createStorageAdapter(false, installerConfig));
             }
+
             configuration.addXmlEdit(createManagedServers());
+
             new ExtensionDeployer().install(configuration.build());
+
         } catch (ParseException pe) {
             log.warn(pe);
-            help();
+            printHelp(options);
         } catch (Exception ex) {
             log.warn(ex);
+        } finally {
+            for (File fileToDelete : filesToDelete) {
+                if (!fileToDelete.delete()) {
+                    log.warn("Failed to delete temporary file: " + fileToDelete);
+                }
+            }
         }
     }
 
     /**
-     * reads password from user
+     * Reads password from the console (stdin).
+     *
      * @param message to present before reading
      * @return password or null if console is not available
      */
-    private static String readPaswordFromStdin(String message) {
+    private static String readPasswordFromStdin(String message) {
         Console console = System.console();
         if (console == null) {
             return null;
@@ -186,66 +214,69 @@ public class AgentInstaller {
     }
 
     /**
-     * creates xml snippet which sets up security-realm
-     * @param keystoreFile
-     * @param keystorePass
-     * @param keyPass
-     * @param keyAlias
-     * @return xml snippet
+     * Creates xml snippet which sets up security-realm.
+     *
+     * @param keystoreFile location of the keystore file
+     * @param keystorePass the password to access the keystore file
+     * @param keyPass the password to access the data for the given alias
+     * @param keyAlias the alias specifying the identifying security information
+     * @return XML snippet
      */
     private static String createSecurityRealm(String keystoreFile, String keystorePass,
             String keyPass, String keyAlias) {
-        return new StringBuilder("<security-realm name=\""+SECURITY_REALM_NAME+"\">")
-            .append("<server-identities><ssl>")
-            .append("<keystore path=\""+keystoreFile+"\"")
-            .append(" relative-to=\"jboss.server.config.dir\"")
-            .append(" keystore-password=\""+keystorePass+"\"")
-            .append(" key-password=\""+keyPass+"\"")
-            .append(" alias=\""+keyAlias+"\"")
-            .append(" /></ssl></server-identities></security-realm>").toString();
+        return new StringBuilder("<security-realm name=\"" + SECURITY_REALM_NAME + "\">")
+                .append("<server-identities><ssl>")
+                .append("<keystore path=\"" + keystoreFile + "\"")
+                .append(" relative-to=\"jboss.server.config.dir\"")
+                .append(" keystore-password=\"" + keystorePass + "\"")
+                .append(" key-password=\"" + keyPass + "\"")
+                .append(" alias=\"" + keyAlias + "\"")
+                .append(" /></ssl></server-identities></security-realm>").toString();
     }
 
     /**
-     * creates XML edit which sets up hawkular.agent.monitor storage-adapter, creates reference
-     * to security-realm and enables SSL.
-     * @return
-     * @param withHttps
+     * Creates XML edit which sets up storage-adapter configuration, creates a reference
+     * to the security-realm and enables SSL, if appropriate.
+     *
+     * @param withHttps if the storage adapter will be accessed via HTTPS
+     * @return object that can be used to edit some xml content
      */
-    private static XmlEdit createStorageAdapter(boolean withHttps) {
-        String select = "/server/profile/"
-                + "*[namespace-uri()='urn:org.hawkular.agent.monitor:monitor:1.0']/";
+    private static XmlEdit createStorageAdapter(boolean withHttps, InstallerConfiguration installerConfig) {
+        String select = "/server/profile/*[namespace-uri()='urn:org.hawkular.agent.monitor:monitor:1.0']/";
         StringBuilder xml = new StringBuilder("<storage-adapter")
                 .append(" type=\"HAWKULAR\"");
+
         if (withHttps) {
             xml.append(" securityRealm=\"" + SECURITY_REALM_NAME + "\"")
                     .append(" useSSL=\"true\"");
         }
-        xml
-            .append(" username=\"" + defaults.getHawkularUsername() + "\"")
-            .append(" password=\"" + defaults.getHawkularPassword() + "\"")
-            .append(" serverOutboundSocketBindingRef=\"hawkular\"")
-            .append("/>");
-        // this will replace <storage-adapter type="HAWKULAR" under urn:org.hawkular.agent.monitor:monitor:1.0 subsystem
-        // with above content
+
+        xml.append(" username=\"" + installerConfig.getHawkularUsername() + "\"")
+                .append(" password=\"" + installerConfig.getHawkularPassword() + "\"")
+                .append(" serverOutboundSocketBindingRef=\"hawkular\"")
+                .append("/>");
+
+        // replaces <storage-adapter> under urn:org.hawkular.agent.monitor:monitor:1.0 subsystem with above content
+        // but only if it has type="HAWKULAR"
         return new XmlEdit(select, xml.toString()).withAttribute("type");
     }
 
     /**
-     * creates a (outbound) socket-binding snippet XML file
-     * @param serverUrl
-     * @return URL (path) to socket binding snippet file
-     * @throws IOException
+     * Creates a (outbound) socket-binding snippet XML file
+     *
+     * @param serverUrl the hawkular server URL
+     * @return file to the temporary socket binding snippet file (this should be cleaned up by the caller)
+     * @throws IOException on error
      */
-    private static URL createSocketBindingSnippet(URL serverUrl) throws IOException {
+    private static File createSocketBindingSnippet(URL serverUrl) throws IOException {
         String host = serverUrl.getHost();
         String port = String.valueOf(serverUrl.getPort());
         StringBuilder xml = new StringBuilder("<outbound-socket-binding name=\"hawkular\">\n")
             .append("  <remote-destination host=\""+host+"\" port=\""+port+"\" />\n")
             .append("</outbound-socket-binding>");
-        Path tempFile = Files.createTempFile("hk-wf-module-installer", ".xml");
-        // TODO cleanup temp file
+        Path tempFile = Files.createTempFile("hawkular-wildfly-module-installer-outbound-socket-binding", ".xml");
         Files.write(tempFile, xml.toString().getBytes());
-        return tempFile.toUri().toURL();
+        return tempFile.toFile();
     }
 
 
@@ -257,117 +288,52 @@ public class AgentInstaller {
                         + "resourceTypeSets=\"Main,Deployment,Web Component,EJB,Datasource,"
                         + "XA Datasource,JDBC Driver,Transaction Manager,Hawkular\" />")
                 .append("</managed-servers>");
-        // this will replace <managed-servers> under urn:org.hawkular.agent.monitor:monitor:1.0 subsystem
-        // with above content
+
+        // replaces <managed-servers> under urn:org.hawkular.agent.monitor:monitor:1.0 subsystem with above content
         return new XmlEdit(select, xml.toString());
     }
 
+    private static URL getHawkularServerAgentDownloadUrl(InstallerConfiguration config) throws MalformedURLException {
+        // TODO fix agent module location
+        String serverUrl = String.format("%s/hawkular-wildfly-monitor/module.zip", config.getHawkularServerUrl());
+        return new URL(serverUrl);
+    }
+
     /**
-     * downloads hawkular agent module ZIP from hawkular-server
-     * @param hawkularServerUrl
-     * @return absolute path to module downloaded locally or null if it could not be retrieved
+     * Downloads the Hawkular WildFly Monitor agent module ZIP file from a URL
+     *
+     * @param url where the agent module zip is
+     * @return absolute path to module downloaded locally or null if it could not be retrieved;
+     *         this is a temporary file that should be cleaned once it is used
      */
-    private static URL downloadModule(String hawkularServerUrl) {
-        FileOutputStream fos = null;
+    private static File downloadModuleZip(URL url) {
+        File tempFile;
+
         try {
-            // TODO fix agent module location
-            // TODO do we need to authorize to get module.zip?
-            URL fileUrl = new URL(hawkularServerUrl+"/hawkular/hawkular-agent-module.zip");
-            File tempFile = File.createTempFile("agent-installer", ".zip");
-            fos = new FileOutputStream(tempFile);
-            IOUtils.copyLarge(fileUrl.openStream(), fos);
-            return tempFile.toURI().toURL();
+            tempFile = File.createTempFile("hawkular-wildfly-monitor-module", ".zip");
         } catch (Exception e) {
-            log.warn("Unable to download hawkular-agent module ZIP from "+hawkularServerUrl);
-        }finally {
-            if (fos != null) {
-                try {
-                    fos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            throw new RuntimeException("Cannot create temp file to hold module zip", e);
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(tempFile);
+                InputStream ios = url.openStream()) {
+            IOUtils.copyLarge(ios, fos);
+            return tempFile;
+        } catch (Exception e) {
+            log.warn("Unable to download hawkular wildfly monitor module ZIP: " + url, e);
+            tempFile.delete();
         }
         return null;
     }
 
-    /**
-     * print command-line help
-     */
-    private static void help() {
+    private static void printHelp(Options options) {
+        if (options == null) {
+            throw new RuntimeException("Cannot print help - options is null");
+        }
+
         HelpFormatter formatter = new HelpFormatter();
         formatter.setWidth(120);
         formatter.setOptionComparator(null);
-        formatter.printHelp("hawkular-wildfly-monitor-installer", OPTIONS);
+        formatter.printHelp("hawkular-wildfly-monitor-installer", options);
     }
-
-    /**
-     * build options we understand from command-line
-     * @param defaults default values from bundled property file. Based on them, several command-line options
-     * might no longer be required
-     * @return
-     */
-    private static Options commandLineOptions(InstallerDefaults defaults) {
-        Options options = new Options();
-        options.addOption(Option.builder()
-                .required()
-                .argName("wildflyHome")
-                .desc("Target wildfly home")
-                .hasArg()
-                .numberOfArgs(1)
-                .longOpt(OPTION_WILDFLY_HOME)
-                .build()
-                );
-        options.addOption(Option.builder()
-                .argName("moduleZip")
-                .longOpt(OPTION_MODULE)
-                .desc("Extension Module")
-                .numberOfArgs(1)
-                .build()
-                );
-        Option serverUrl = Option.builder()
-                .argName("serverUrl")
-                .desc("Hawkular Server URL")
-                .numberOfArgs(1)
-                .longOpt(OPTION_HAWKULAR_SERVER_URL)
-                .build();
-        serverUrl.setRequired(defaults.getHawkularServerUrl() == null);
-        options.addOption(serverUrl);
-
-        options.addOption(Option.builder()
-                .argName("serverConfig")
-                .desc("Server config to write to. Can be either absolute path or relative to <wildflyHome>")
-                .numberOfArgs(1)
-                .longOpt(OPTION_SERVER_CONFIG)
-                .build());
-        // SSL related config options
-        options.addOption(Option.builder()
-                .argName("keyStore")
-                .desc("Keystore file. Required when <serverUrl> protocol is https")
-                .numberOfArgs(1)
-                .longOpt(OPTION_KEYSTORE_PATH)
-                .build());
-        options.addOption(Option.builder()
-                .argName("keystorePassword")
-                .desc("Keystore password. When <serverUrl> protocol is https and this option is not passed,"
-                        + " installer will ask for password")
-                .numberOfArgs(1)
-                .longOpt(OPTION_KEYSTORE_PASSWORD)
-                .build());
-        options.addOption(Option.builder()
-                .argName("keyPassword")
-                .desc("Key password. When <serverUrl> protocol is https and this option is not passed,"
-                        + " installer will ask for password")
-                .numberOfArgs(1)
-                .longOpt(OPTION_KEY_PASSWORD)
-                .build());
-        options.addOption(Option.builder()
-                .argName("alias")
-                .desc("Key alias. Required when <serverUrl> protocol is https")
-                .numberOfArgs(1)
-                .longOpt(OPTION_KEY_ALIAS)
-                .build());
-        return options;
-    }
-
 }

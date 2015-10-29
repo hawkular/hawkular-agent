@@ -26,29 +26,22 @@
     <version>0.12.0.Final-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-monitor-feature-pack</artifactId>
+  <artifactId>hawkular-monitor-module-dist</artifactId>
   <packaging>pom</packaging>
 
-  <name>Hawkular Monitor WildFly Subsystem Feature Pack</name>
-  <description>A feature pack to be able to deploy a Hawkular WildFly Monitor Agent in a WildFly server.</description>
+  <name>Hawkular Monitor WildFly Module Distribution</name>
+  <description>The distribution containing the module extension for the Hawkular WildFly Monitor agent</description>
 
   <properties>
-    <version.org.wildfly.build>1.1.0.CR1</version.org.wildfly.build>
+    <version.org.wildfly.build>1.1.0.Final</version.org.wildfly.build>
   </properties>
 
   <dependencies>
+    <!-- feature pack dependencies -->
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-monitor</artifactId>
+      <artifactId>hawkular-monitor-feature-pack</artifactId>
       <version>${project.version}</version>
-    </dependency>
-
-    <!-- feature pack dependencies -->
-
-    <dependency>
-      <groupId>org.wildfly</groupId>
-      <artifactId>wildfly-feature-pack</artifactId>
-      <version>${version.org.wildfly}</version>
       <type>zip</type>
       <exclusions>
         <exclusion>
@@ -63,17 +56,17 @@
     <plugins>
       <plugin>
         <groupId>org.wildfly.build</groupId>
-        <artifactId>wildfly-feature-pack-build-maven-plugin</artifactId>
+        <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
         <version>${version.org.wildfly.build}</version>
         <executions>
           <execution>
-            <id>feature-pack-build</id>
-            <phase>compile</phase>
+            <id>server-provisioning</id>
             <goals>
               <goal>build</goal>
             </goals>
+            <phase>compile</phase>
             <configuration>
-              <config-file>feature-pack-build.xml</config-file>
+              <config-file>server-provisioning.xml</config-file>
             </configuration>
           </execution>
         </executions>
@@ -102,6 +95,23 @@
           </execution>
         </executions>
       </plugin>
+
+      <!-- USAGE: mvn -Dorg.hawkular.wildfly.home=/opt/wildfly8 wildfly-extension:deploy -->
+      <plugin>
+        <groupId>org.wildfly.plugins</groupId>
+        <artifactId>wildfly-extension-maven-plugin</artifactId>
+        <configuration>
+          <moduleZip>${project.build.directory}/${project.build.finalName}.zip</moduleZip>
+          <jbossHome>${org.hawkular.wildfly.home}</jbossHome>
+          <modulesHome>modules</modulesHome>
+          <serverConfig>standalone/configuration/standalone.xml</serverConfig>
+          <subsystem>${project.basedir}/src/main/resources/system/layers/base/org/hawkular/agent/monitor/main/subsystem-snippet.xml</subsystem>
+          <profiles>
+            <profile>default</profile>
+          </profiles>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 

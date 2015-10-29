@@ -31,12 +31,6 @@
   <name>Hawkular Monitor WildFly Subsystem</name>
   <description>A WildFly subsystem that is able to collect metrics and send them to Hawkular.</description>
 
-  <properties>
-    <!-- used to replace the variables in module.xml -->
-    <moduleName>org.hawkular.agent.monitor</moduleName>
-    <moduleDir>org/hawkular/agent/monitor</moduleDir>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -173,50 +167,8 @@
       <resource>
         <directory>src/main/resources</directory>
         <filtering>true</filtering>
-        <excludes>
-          <!-- these don't need to be in the jar, just in our module .zip -->
-          <exclude>module/**</exclude>
-        </excludes>
       </resource>
     </resources>
-
-    <plugins>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <descriptors>
-            <descriptor>src/main/assembly/module-assembly.xml</descriptor>
-          </descriptors>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-module</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!-- USAGE: mvn -Dorg.hawkular.wildfly.home=/opt/wildfly8 wildfly-extension:deploy -->
-      <plugin>
-        <groupId>org.wildfly.plugins</groupId>
-        <artifactId>wildfly-extension-maven-plugin</artifactId>
-        <configuration>
-          <moduleZip>${project.build.directory}/${project.build.finalName}-module.zip</moduleZip>
-          <jbossHome>${org.hawkular.wildfly.home}</jbossHome>
-          <modulesHome>modules</modulesHome>
-          <serverConfig>standalone/configuration/standalone.xml</serverConfig>
-          <subsystem>${project.basedir}/src/main/assembly/subsystem.xml</subsystem>
-          <profiles>
-            <profile>default</profile>
-          </profiles>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 
 </project>
