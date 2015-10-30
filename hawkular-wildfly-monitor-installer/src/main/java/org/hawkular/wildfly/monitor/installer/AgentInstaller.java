@@ -186,8 +186,14 @@ public class AgentInstaller {
         } catch (ParseException pe) {
             log.warn(pe);
             printHelp(options);
+            if (Boolean.getBoolean("org.hawkular.wildfly.monitor.installer.throw-exception-on-error")) {
+                throw pe;
+            }
         } catch (Exception ex) {
             log.warn(ex);
+            if (Boolean.getBoolean("org.hawkular.wildfly.monitor.installer.throw-exception-on-error")) {
+                throw ex;
+            }
         } finally {
             for (File fileToDelete : filesToDelete) {
                 if (!fileToDelete.delete()) {
