@@ -29,7 +29,7 @@
   <artifactId>hawkular-agent-itest-dist</artifactId>
   <packaging>pom</packaging>
 
-  <name>Hawkular Agent Distribution for Integration Tests</name>
+  <name>Hawkular Agent: Distribution for Integration Tests</name>
   <description>An Agent installed on a stripped-down Hawkular for testing of Agent and Command Gateway</description>
 
   <properties>
@@ -42,7 +42,7 @@
   <dependencies>
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-monitor-wf-extension</artifactId>
+      <artifactId>hawkular-wildfly-agent-wf-extension</artifactId>
       <version>0.12.0.Final-SNAPSHOT</version>
       <type>zip</type>
     </dependency>

@@ -16,9 +16,9 @@
     limitations under the License.
 
 -->
-<subsystem xmlns="urn:org.hawkular.agent.monitor:monitor:1.0"
+<subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
            enabled="false"
-           apiJndiName="java:global/hawkular/agent/monitor/api"
+           apiJndiName="java:global/hawkular/agent/api"
            numMetricSchedulerThreads="3"
            numAvailSchedulerThreads="3"
            metricDispatcherBufferSize="201"

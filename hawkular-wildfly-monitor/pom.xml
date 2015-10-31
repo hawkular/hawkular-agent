@@ -26,9 +26,9 @@
     <version>0.12.0.Final-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-monitor</artifactId>
+  <artifactId>hawkular-wildfly-agent</artifactId>
 
-  <name>Hawkular Monitor WildFly Subsystem</name>
+  <name>Hawkular Agent: WildFly Agent Subsystem</name>
   <description>A WildFly subsystem that is able to collect metrics and send them to Hawkular.</description>
 
   <dependencies>

@@ -337,7 +337,7 @@
       <xsl:apply-templates select="node()|@*"/>
       <extension module="org.keycloak.keycloak-adapter-subsystem"/>
       <extension module="org.keycloak.keycloak-server-subsystem"/>
-      <extension module="org.hawkular.agent.monitor"/>
+      <extension module="org.hawkular.agent"/>
     </xsl:copy>
     <xsl:call-template name="system-properties"/>
   </xsl:template>
@@ -347,9 +347,9 @@
     <xsl:copy>
       <xsl:apply-templates select="node()|@*"/>
 
-      <!-- Hawkular Monitor agent subsystem -->
-      <subsystem xmlns="urn:org.hawkular.agent.monitor:monitor:1.0"
-                 apiJndiName="java:global/hawkular/agent/monitor/api"
+      <!-- Hawkular WildFly Agent subsystem -->
+      <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
+                 apiJndiName="java:global/hawkular/agent/api"
                  numMetricSchedulerThreads="3"
                  numAvailSchedulerThreads="3">
         <xsl:attribute name="enabled">

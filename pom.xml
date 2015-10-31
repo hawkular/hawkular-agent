@@ -31,17 +31,17 @@
   <version>0.12.0.Final-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>Hawkular Agent Parent</name>
+  <name>Hawkular Agent: Parent</name>
   <inceptionYear>2015</inceptionYear>
 
   <modules>
     <module>hawkular-dmr-client</module>
     <module>hawkular-wildfly-monitor</module>
-    <module>hawkular-wildfly-monitor-feature-pack</module>
-    <module>hawkular-wildfly-monitor-wf-extension</module>
+    <module>hawkular-wildfly-agent-feature-pack</module>
+    <module>hawkular-wildfly-agent-wf-extension</module>
     <module>hawkular-agent-itest-parent</module>
     <module>wildfly-module-installer</module>
-    <module>hawkular-wildfly-monitor-installer</module>
+    <module>hawkular-wildfly-agent-installer</module>
   </modules>
 
   <scm>

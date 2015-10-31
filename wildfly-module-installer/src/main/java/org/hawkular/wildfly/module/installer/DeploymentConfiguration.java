@@ -233,6 +233,11 @@ public class DeploymentConfiguration {
             return this;
         }
 
+        public Builder modulesHome(String modulesHome) {
+            configuration.setModulesHome(modulesHome);
+            return this;
+        }
+
         public Builder addXmlEdit(XmlEdit edit) {
             configuration.getEdit().add(edit);
             return this;

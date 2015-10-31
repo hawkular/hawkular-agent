@@ -27,8 +27,8 @@ import org.jboss.msc.service.ServiceName;
 
 public class SubsystemExtension implements Extension {
 
-    static final String SUBSYSTEM_NAME = "hawkular-monitor";
-    static final String NAMESPACE = "urn:org.hawkular.agent.monitor:monitor:1.0";
+    static final String SUBSYSTEM_NAME = "hawkular-wildfly-agent";
+    static final String NAMESPACE = "urn:org.hawkular.agent:agent:1.0";
     static final int MAJOR_VERSION = 1;
     static final int MINOR_VERSION = 0;
     static final int MICRO_VERSION = 0;

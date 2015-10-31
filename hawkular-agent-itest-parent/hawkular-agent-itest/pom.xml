@@ -28,7 +28,7 @@
 
   <artifactId>hawkular-agent-itest</artifactId>
 
-  <name>Hawkular Agent Integration Tests</name>
+  <name>Hawkular Agent: Integration Tests</name>
   <description>A module containing integration tests of Command Gateway and Agent</description>
 
   <properties>

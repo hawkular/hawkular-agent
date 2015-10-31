@@ -1,2 +1,2 @@
 # hawkular-agent
-Hawkular Agents that can be used to monitor managed products
+Hawkular WildFly Agent that can be used to monitor WildFly and related projects.
