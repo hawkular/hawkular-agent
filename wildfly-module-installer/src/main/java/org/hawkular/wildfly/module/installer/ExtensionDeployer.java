@@ -149,13 +149,20 @@ public class ExtensionDeployer {
         }
         String modulesHome = configuration.getModulesHome();
 
-        if (configuration.getModulesHome() == null) {
+        if (modulesHome == null) {
             // auto-detect modulesHome
             File wfHome = Paths.get(jbossHome.getAbsolutePath(), "modules", "system", "layers", "base").toFile();
             if (!wfHome.exists()) {
                 wfHome = Paths.get(jbossHome.getAbsolutePath(),"modules").toFile();
             }
             modulesHomeAbsolute = wfHome;
+        } else {
+            File modulesHomeFile = Paths.get(modulesHome).toFile();
+            if (modulesHomeFile.isAbsolute()) {
+                modulesHomeAbsolute = modulesHomeFile;
+            } else {
+                modulesHomeAbsolute = Paths.get(jbossHome.getAbsolutePath(), modulesHome).toFile();
+            }
         }
 
         if (!(modulesHomeAbsolute.exists() && modulesHomeAbsolute.isDirectory() && modulesHomeAbsolute.canWrite())) {

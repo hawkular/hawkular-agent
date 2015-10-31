@@ -29,7 +29,7 @@
   <artifactId>hawkular-dmr-client</artifactId>
   <packaging>jar</packaging>
 
-  <name>Hawkular Wildfly DMR Client</name>
+  <name>Hawkular Agent: WildFly DMR Client</name>
   <description>A library for working as a management client to a Wildfly container</description>
 
   <dependencies>

@@ -29,7 +29,7 @@
   <artifactId>hawkular-agent-itest-parent</artifactId>
   <packaging>pom</packaging>
 
-  <name>Hawkular Agent Integration Tests</name>
+  <name>Hawkular Agent: Integration Tests Parent</name>
 
   <modules>
     <module>hawkular-helloworld-war</module>

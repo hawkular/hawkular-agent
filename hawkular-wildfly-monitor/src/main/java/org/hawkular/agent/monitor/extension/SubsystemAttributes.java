@@ -37,7 +37,7 @@ public interface SubsystemAttributes {
     SimpleAttributeDefinition API_JNDI = new SimpleAttributeDefinitionBuilder("apiJndiName",
             ModelType.STRING)
             .setAllowNull(true)
-            .setDefaultValue(new ModelNode("java:global/hawkular/agent/monitor/api"))
+            .setDefaultValue(new ModelNode("java:global/hawkular/agent/api"))
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();

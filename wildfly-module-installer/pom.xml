@@ -29,7 +29,7 @@
   <artifactId>wildfly-module-installer</artifactId>
   <packaging>jar</packaging>
 
-  <name>Wildfly Extension Installer</name>
+  <name>Hawkular Agent: WildFly Extension Installer</name>
   <description>A library for installing and configuring Wifldfly Module as an extension</description>
 
   <dependencies>
