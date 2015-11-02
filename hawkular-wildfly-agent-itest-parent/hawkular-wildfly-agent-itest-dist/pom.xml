@@ -22,11 +22,11 @@
 
   <parent>
     <groupId>org.hawkular.agent</groupId>
-    <artifactId>hawkular-agent-itest-parent</artifactId>
+    <artifactId>hawkular-wildfly-agent-itest-parent</artifactId>
     <version>0.12.0.Final-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-agent-itest-dist</artifactId>
+  <artifactId>hawkular-wildfly-agent-itest-dist</artifactId>
   <packaging>pom</packaging>
 
   <name>Hawkular Agent: Distribution for Integration Tests</name>

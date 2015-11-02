@@ -27,7 +27,7 @@
   </parent>
 
   <groupId>org.hawkular.agent</groupId>
-  <artifactId>hawkular-agent-parent</artifactId>
+  <artifactId>hawkular-wildfly-agent-parent</artifactId>
   <version>0.12.0.Final-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -36,10 +36,10 @@
 
   <modules>
     <module>hawkular-dmr-client</module>
-    <module>hawkular-wildfly-monitor</module>
+    <module>hawkular-wildfly-agent</module>
     <module>hawkular-wildfly-agent-feature-pack</module>
     <module>hawkular-wildfly-agent-wf-extension</module>
-    <module>hawkular-agent-itest-parent</module>
+    <module>hawkular-wildfly-agent-itest-parent</module>
     <module>wildfly-module-installer</module>
     <module>hawkular-wildfly-agent-installer</module>
   </modules>
