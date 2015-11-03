@@ -62,12 +62,6 @@ public class AgentInstaller {
                 throw new MissingOptionException(InstallerConfiguration.OPTION_WILDFLY_HOME + " must be specified");
             }
 
-            if ((installerConfig.getHawkularUsername() == null || installerConfig.getHawkularPassword() == null)
-                    && (installerConfig.getHawkularToken() == null)) {
-                throw new MissingOptionException(
-                        "You must provide Hawkular credentials in the installer configuration");
-            }
-
             URL hawkularServerUrl = new URL(installerConfig.getHawkularServerUrl());
             String moduleZip = installerConfig.getModuleDistribution();
 
@@ -118,22 +112,6 @@ public class AgentInstaller {
                     .jbossHome(new File(jbossHome))
                     .module(moduleZipUrl)
                     .socketBinding(socketBindingSnippetFile.toURI().toURL());
-
-            // let the user override the default subsystem snippet that is found in the module zip
-            // can be specified as a URL or a file path
-            if (installerConfig.getSubsystemSnippet() != null) {
-                try {
-                    configurationBldr.subsystem(new URL(installerConfig.getSubsystemSnippet()));
-                } catch (MalformedURLException mue) {
-                    File file = new File(installerConfig.getSubsystemSnippet());
-                    if (file.exists()) {
-                        configurationBldr.subsystem(file.getAbsoluteFile().toURI().toURL());
-                    } else {
-                        throw new FileNotFoundException("Subsystem snippet not found at ["
-                                + installerConfig.getSubsystemSnippet() + "]");
-                    }
-                }
-            }
 
             String serverConfig = installerConfig.getServerConfig();
             if (serverConfig != null) {
@@ -207,13 +185,13 @@ public class AgentInstaller {
             new ExtensionDeployer().install(configurationBldr.build());
 
         } catch (ParseException pe) {
-            log.error(pe);
+            log.warn(pe);
             printHelp(options);
             if (Boolean.getBoolean("org.hawkular.wildfly.agent.installer.throw-exception-on-error")) {
                 throw pe;
             }
         } catch (Exception ex) {
-            log.error(ex);
+            log.warn(ex);
             if (Boolean.getBoolean("org.hawkular.wildfly.agent.installer.throw-exception-on-error")) {
                 throw ex;
             }
@@ -280,20 +258,10 @@ public class AgentInstaller {
                     .append(" useSSL=\"true\"");
         }
 
-        if (installerConfig.getHawkularUsername() != null && !installerConfig.getHawkularUsername().isEmpty()) {
-            xml.append(" username=\"" + installerConfig.getHawkularUsername() + "\"");
-        }
-        if (installerConfig.getHawkularPassword() != null && !installerConfig.getHawkularPassword().isEmpty()) {
-            xml.append(" password=\"" + installerConfig.getHawkularPassword() + "\"");
-        }
-
-        // TODO: agent doesn't support token yet, uncomment this when it does
-        //if (installerConfig.getHawkularToken() != null && !installerConfig.getHawkularToken().isEmpty()) {
-        //    xml.append(" token=\"" + installerConfig.getHawkularToken() + "\"");
-        //}
-
-        xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");
-        xml.append("/>");
+        xml.append(" username=\"" + installerConfig.getHawkularUsername() + "\"")
+                .append(" password=\"" + installerConfig.getHawkularPassword() + "\"")
+                .append(" serverOutboundSocketBindingRef=\"hawkular\"")
+                .append("/>");
 
         // replaces <storage-adapter> under urn:org.hawkular.agent:agent:1.0 subsystem with above content
         // but only if it has type="HAWKULAR"

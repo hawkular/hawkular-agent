@@ -228,11 +228,6 @@ public class DeploymentConfiguration {
             return this;
         }
 
-        public Builder subsystem(URL subsystemSnippet) {
-            configuration.setSubsystem(subsystemSnippet);
-            return this;
-        }
-
         public Builder jbossHome(File jbossHome) {
             configuration.setJbossHome(jbossHome);
             return this;
