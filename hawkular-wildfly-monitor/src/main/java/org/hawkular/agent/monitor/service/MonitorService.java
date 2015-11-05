@@ -130,33 +130,35 @@ public class MonitorService implements Service<MonitorService> {
             // If neither URL nor output socket binding name is provided, we assume we are running
             // co-located with the Hawkular server and we use local bindings.
             String useUrl = bootStorageAdapter.getUrl();
-            try {
-                String address;
-                int port;
+            if (useUrl == null) {
+                try {
+                    String address;
+                    int port;
 
-                if (bootStorageAdapter.getServerOutboundSocketBindingRef() == null) {
-                    // no URL or output socket binding - assume we are running co-located with server
-                    SocketBinding socketBinding;
-                    if (bootStorageAdapter.isUseSSL()) {
-                        socketBinding = httpsSocketBindingValue.getValue();
+                    if (bootStorageAdapter.getServerOutboundSocketBindingRef() == null) {
+                        // no URL or output socket binding - assume we are running co-located with server
+                        SocketBinding socketBinding;
+                        if (bootStorageAdapter.isUseSSL()) {
+                            socketBinding = httpsSocketBindingValue.getValue();
+                        } else {
+                            socketBinding = httpSocketBindingValue.getValue();
+                        }
+                        address = socketBinding.getAddress().getHostAddress();
+                        if (address.equals("0.0.0.0") || address.equals("::/128")) {
+                            address = InetAddress.getLocalHost().getCanonicalHostName();
+                        }
+                        port = socketBinding.getAbsolutePort();
                     } else {
-                        socketBinding = httpSocketBindingValue.getValue();
+                        OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue
+                                .getValue();
+                        address = serverBinding.getResolvedDestinationAddress().getHostAddress();
+                        port = serverBinding.getDestinationPort();
                     }
-                    address = socketBinding.getAddress().getHostAddress();
-                    if (address.equals("0.0.0.0") || address.equals("::/128")) {
-                        address = InetAddress.getLocalHost().getCanonicalHostName();
-                    }
-                    port = socketBinding.getAbsolutePort();
-                } else {
-                    OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue
-                            .getValue();
-                    address = serverBinding.getResolvedDestinationAddress().getHostAddress();
-                    port = serverBinding.getDestinationPort();
+                    String protocol = (bootStorageAdapter.isUseSSL()) ? "https" : "http";
+                    useUrl = String.format("%s://%s:%d", protocol, address, port);
+                } catch (UnknownHostException uhe) {
+                    throw new IllegalArgumentException("Cannot determine Hawkular server host", uhe);
                 }
-                String protocol = (bootStorageAdapter.isUseSSL()) ? "https" : "http";
-                useUrl = String.format("%s://%s:%d", protocol, address, port);
-            } catch (UnknownHostException uhe) {
-                throw new IllegalArgumentException("Cannot determine Hawkular server host", uhe);
             }
 
             String useTenantId = bootStorageAdapter.getTenantId();
@@ -194,7 +196,11 @@ public class MonitorService implements Service<MonitorService> {
                     // JSON via regex
                     Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
                     if (matcher.find()) {
-                        useTenantId = matcher.group(1);
+                        String tenantIdFromAccounts = matcher.group(1);
+                        if (!tenantIdFromAccounts.equals(useTenantId)) {
+                            log.warnIgnoringTenantIdFromXml(useTenantId, tenantIdFromAccounts);
+                        }
+                        useTenantId = tenantIdFromAccounts;
                     }
                     log.debugf("Tenant ID [%s]", useTenantId == null ? "unknown" : useTenantId);
                 } catch (Throwable t) {
@@ -425,6 +431,10 @@ public class MonitorService implements Service<MonitorService> {
         // 3. connect to the server's feed comm channel
         // 4. prepare the thread pool that will store discovered resources into inventory
         if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
+            if (this.configuration.getStorageAdapter().getTenantId() == null) {
+                log.errNoTenantIdFromAccounts();
+                return;
+            }
             try {
                 registerFeed();
             } catch (Exception e) {

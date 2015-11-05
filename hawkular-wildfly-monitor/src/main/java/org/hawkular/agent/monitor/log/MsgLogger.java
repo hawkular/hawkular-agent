@@ -221,13 +221,13 @@ public interface MsgLogger extends BasicLogger {
     void infoNoPlatformConfig();
 
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10046, value = "Got response code [%d] when storing entity of type [%s] under path [%s] to inventory")
+    @Message(id = 10046,
+            value = "Got response code [%d] when storing entity of type [%s] under path [%s] to inventory")
     void errorFailedToStorePathToInventory(int code, String entityType, String path);
 
     @LogMessage(level = Level.WARN)
     @Message(id = 10047, value = "Failed to locate [%s] at location [%s] relative to [%s]")
-    void warnFailedToLocate(@Cause ProtocolException e, String typeName, String location,
-            String parentLocation);
+    void warnFailedToLocate(@Cause ProtocolException e, String typeName, String location, String parentLocation);
 
     @LogMessage(level = Level.WARN)
     @Message(id = 10048, value = "Malformed JMX object name: [%s]")
@@ -236,5 +236,14 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.ERROR)
     @Message(id = 10049, value = "Could not access resources of endpoint [%s]")
     void errorCouldNotAccess(MonitoredEndpoint endpoint, @Cause Throwable e);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10050, value = "The tenant ID [%s] set in standalone.xml or domain.xml or similar xml file will be"
+            + " ignored in favor of tenant ID [%s] retrieved from Hawkular Accounts")
+    void warnIgnoringTenantIdFromXml(String tenantIdXml, String tenantIdAccounts);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10051, value = "The tenant ID could not be retrieved from Hawkular Accounts")
+    void errNoTenantIdFromAccounts();
 
 }
