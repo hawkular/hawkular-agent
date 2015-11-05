@@ -74,6 +74,13 @@
       <type>zip</type>
     </dependency>
     <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>cassandra-driver-wf-module</artifactId>
+      <version>${version.org.hawkular.commons}</version>
+      <classifier>module</classifier>
+      <type>zip</type>
+    </dependency>
+    <dependency>
       <groupId>org.hawkular.inventory</groupId>
       <artifactId>hawkular-inventory-dist</artifactId>
       <version>${version.org.hawkular.inventory}</version>
