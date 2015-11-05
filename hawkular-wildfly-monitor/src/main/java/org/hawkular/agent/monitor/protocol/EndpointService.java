@@ -197,8 +197,8 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
         Discovery<L> discovery = new Discovery<>();
 
         final ArrayList<Resource<L>> resources = new ArrayList<>();
-        try (S context = openSession()) {
-            discovery.discoverAllResources(context, new Consumer<Resource<L>>() {
+        try (S session = openSession()) {
+            discovery.discoverAllResources(session, new Consumer<Resource<L>>() {
                 public void accept(Resource<L> resource) {
                     resources.add(resource);
                 }
@@ -215,7 +215,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
 
         /* there should be a listener for syncing with the remote inventory and also one to start the collection
          * of metrics */
-        inventoryListenerSupport.fireDiscoverAllFinished(resourceManager.getResourcesBreadthFirst());
+        inventoryListenerSupport.fireDiscoverAllFinished(resources);
     }
 
     private String generateMeasurementKey(AttributeLocation<L> location) {

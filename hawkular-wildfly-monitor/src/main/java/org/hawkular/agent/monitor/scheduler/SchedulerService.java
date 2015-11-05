@@ -112,6 +112,7 @@ public class SchedulerService implements InventoryListener {
         List<Resource<Object>> resources = (List<Resource<Object>>) (List<?>) event.getPayload();
         EndpointService<Object, ?, ?> service = (EndpointService<Object, ?, ?>) event.getSamplingService();
         metricScheduler.rescheduleAll(service, resources);
+        availScheduler.rescheduleAll(service, resources);
     }
 
     @SuppressWarnings("unchecked")
@@ -120,6 +121,7 @@ public class SchedulerService implements InventoryListener {
         List<Resource<Object>> resources = (List<Resource<Object>>) (List<?>) event.getPayload();
         EndpointService<Object, ?, ?> service = (EndpointService<Object, ?, ?>) event.getSamplingService();
         metricScheduler.schedule(service, resources);
+        availScheduler.schedule(service, resources);
     }
 
     @SuppressWarnings("unchecked")
@@ -128,6 +130,7 @@ public class SchedulerService implements InventoryListener {
         List<Resource<Object>> resources = (List<Resource<Object>>) (List<?>) event.getPayload();
         EndpointService<Object, ?, ?> service = (EndpointService<Object, ?, ?>) event.getSamplingService();
         metricScheduler.unschedule(service, resources);
+        availScheduler.unschedule(service, resources);
     }
 
 }

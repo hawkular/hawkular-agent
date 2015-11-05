@@ -67,6 +67,8 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
                 return value.asString();
             case UNDEFINED:
                 return null;
+            case LIST:
+                return null;
             default:
                 throw new ProtocolException("cannot handle an attribute of type [" + value.getType() + "]");
         }
