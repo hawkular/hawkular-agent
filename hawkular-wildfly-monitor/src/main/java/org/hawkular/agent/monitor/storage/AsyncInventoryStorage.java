@@ -93,14 +93,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
         /** A set of entity IDs already added to the currently built request */
         private Set<String> addedIds = new HashSet<>();
 
-        private final String environmentId;
         private final String feedId;
         private final String tenantId;
 
-        public BulkPayloadBuilder(String tenantId, String environmentId, String feedId) {
+        public BulkPayloadBuilder(String tenantId, String feedId) {
             super();
             this.tenantId = tenantId;
-            this.environmentId = environmentId;
             this.feedId = feedId;
         }
 
@@ -212,7 +210,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         /**
-         * @return a new {@link CanonicalPath} made of {@link #tenantId}, {@link #environmentId} and {@link #feedId}
+         * @return a new {@link CanonicalPath} made of {@link #tenantId} and {@link #feedId}
          */
         private CanonicalPath.FeedBuilder newPathPrefix() {
             return CanonicalPath.of().tenant(tenantId).feed(feedId);
@@ -453,8 +451,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         private void storeAllResources(List<Resource<?, ?, ?, ?, ?>> resources) throws Exception {
             if (resources != null && !resources.isEmpty()) {
                 for (Resource<?, ?, ?, ?, ?> resource : resources) {
-                    // FIXME environmentId should be configurable
-                    BulkPayloadBuilder builder = new BulkPayloadBuilder(config.tenantId, "test",
+                    BulkPayloadBuilder builder = new BulkPayloadBuilder(config.tenantId,
                             AsyncInventoryStorage.this.selfId.getFullIdentifier());
 
                     ResourceType<?, ?, ?, ?> resourceType = resource.getResourceType();

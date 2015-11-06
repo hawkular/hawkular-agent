@@ -50,7 +50,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         CanonicalPath wfPath = wfs.get(0).getPath();
         String feedId = wfPath.ids().getFeedId();
         final String deploymentName = "hawkular-helloworld-war.war";
-        Resource deployment = getResource("/test/" + feedId + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/feeds/" + feedId + "/resourceTypes/Deployment/resources",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
