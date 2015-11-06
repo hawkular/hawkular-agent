@@ -38,8 +38,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -89,30 +87,58 @@ public abstract class AbstractCommandITest {
     private static final Logger log = Logger.getLogger(AbstractCommandITest.class.getName());
 
     protected static class TestListener implements WebSocketListener {
+        private static class ReusableBuffer {
+            private final byte[] bytes;
+            public ReusableBuffer(BufferedSource payload) throws IOException {
+                this.bytes = payload.readByteArray();
+                payload.close();
+            }
+
+            public String asString() {
+                StringBuilder result = new StringBuilder();
+                final int max = 1024;
+                for (int i = 0; i < bytes.length && i < max; i++) {
+                    byte b = bytes[i];
+                    if (b >= 32 && b < 127) {
+                        result.append((char) b);
+                    } else {
+                        return result.toString();
+                    }
+                }
+                return result.toString();
+            }
+
+            public Buffer copy() {
+                Buffer payloadCopy = new Buffer();
+                payloadCopy.write(bytes);
+                return payloadCopy;
+            }
+        }
+
 
         private final WebSocketListener delegate;
 
         protected final Executor writeExecutor;
 
-        public TestListener(WebSocketListener delegate, Executor writeExecutor) {
+        private String sessionId;
+
+        private final String requestToSend;
+        private final URL attachment;
+
+        private final List<ReusableBuffer> responses = new ArrayList<>();
+
+        private WebSocket webSocket;
+
+        public TestListener(WebSocketListener delegate, Executor writeExecutor, String requestToSend) {
+            this(delegate, writeExecutor, requestToSend, null);
+        }
+
+        public TestListener(WebSocketListener delegate, Executor writeExecutor, String requestToSend, URL attachment) {
             super();
             this.delegate = delegate;
             this.writeExecutor = writeExecutor;
-        }
-
-        protected Buffer copy(BufferedSource payload) throws IOException {
-            byte[] bytes = payload.readByteArray();
-            payload.close();
-            try {
-                String str = new String(bytes, "utf-8");
-                str = stripBinary(str);
-                log.fine("Received over WebSocket: " + str);
-            } catch (Exception e) {
-                log.fine("Received over WebSocket, but could not decode: [" + bytes.length + "] bytes");
-            }
-            Buffer payloadCopy = new Buffer();
-            payloadCopy.write(bytes);
-            return payloadCopy;
+            this.requestToSend = requestToSend;
+            this.attachment = attachment;
         }
 
         public void onClose(int code, String reason) {
@@ -127,17 +153,28 @@ public abstract class AbstractCommandITest {
 
         public void onMessage(BufferedSource payload, PayloadType type) throws IOException {
             // System.out.println("onMessage");
-            delegate.onMessage(copy(payload), type);
+            ReusableBuffer reusableBuffer = new ReusableBuffer(payload);
+            log.fine("Received ["+ type +"] from WebSocket: " + reusableBuffer.asString());
+            delegate.onMessage(reusableBuffer.copy(), type);
+            if (responses.isEmpty()) {
+                /* the first message must be the welcome message */
+                this.sessionId = assertWelcomeResponse(reusableBuffer.asString());
+
+                /* send the first request after the welcome message */
+                send(this.webSocket, requestToSend, attachment);
+            }
+            responses.add(reusableBuffer);
         }
 
         public void onOpen(WebSocket webSocket, Response response) {
             log.fine("WebSocket opened");
+            this.webSocket = webSocket;
             delegate.onOpen(webSocket, response);
         }
 
         public void onPong(Buffer payload) {
             try {
-                delegate.onPong(copy(payload));
+                delegate.onPong(new ReusableBuffer(payload).copy());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -153,7 +190,7 @@ public abstract class AbstractCommandITest {
                 public void run() {
                     try (Buffer b1 = new Buffer()) {
                         if (text != null) {
-                            log.fine("Sending over WebSocket: " + stripBinary(text));
+                            log.fine("Sending over WebSocket: " + text);
                             b1.writeUtf8(text);
                         }
                         if (dataUrl != null) {
@@ -173,15 +210,10 @@ public abstract class AbstractCommandITest {
             });
         }
 
-        private String stripBinary(final String text) {
-            Matcher matcher = Pattern.compile("([\\p{Print}\\p{Blank}]*)").matcher(text);
-            if (matcher.find()) {
-                return matcher.group(1);
-            } else {
-                log.warning("The test text doesn't seem to have ascii characters at the beginning?");
-                return text;
-            }
+        public String getSessionId() {
+            return sessionId;
         }
+
     }
 
     private static volatile boolean accountsAndInventoryReady = false;
@@ -329,7 +361,7 @@ public abstract class AbstractCommandITest {
      * @param msg
      * @return
      */
-    protected String assertWelcomeResponse(String msg) {
+    protected static String assertWelcomeResponse(String msg) {
         String welcomeRe = "\\QWelcomeResponse={\"sessionId\":\"\\E.*";
         AssertJUnit.assertTrue("[" + msg + "] does not match [" + welcomeRe + "]", msg.matches(welcomeRe));
         BasicMessageWithExtraData<WelcomeResponse> bigMessage = new ApiDeserializer().deserialize(msg);

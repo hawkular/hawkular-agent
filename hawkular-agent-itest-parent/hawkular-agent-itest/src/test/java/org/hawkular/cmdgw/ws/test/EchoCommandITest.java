@@ -27,8 +27,6 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocket.PayloadType;
 import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
@@ -45,14 +43,9 @@ public class EchoCommandITest extends AbstractCommandITest {
         Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
         WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
 
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                send(webSocket, "EchoRequest={\"authentication\": " + authentication
+        WebSocketListener openingListener =
+                new TestListener(mockListener, writeExecutor, "EchoRequest={\"authentication\": " + authentication
                         + ", \"echoMessage\": \"Yodel Ay EEE Oooo\"}");
-                super.onOpen(webSocket, response);
-            }
-        };
 
         WebSocketCall.create(client, request).enqueue(openingListener);
 
@@ -75,13 +68,7 @@ public class EchoCommandITest extends AbstractCommandITest {
         Request request = new Request.Builder().url("ws://echo.websocket.org").build();
         WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
 
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                send(webSocket, "whatever");
-                super.onOpen(webSocket, response);
-            }
-        };
+        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, "whatever");
 
         WebSocketCall.create(client, request).enqueue(openingListener);
 
