@@ -215,7 +215,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
          * @return a new {@link CanonicalPath} made of {@link #tenantId}, {@link #environmentId} and {@link #feedId}
          */
         private CanonicalPath.FeedBuilder newPathPrefix() {
-            return CanonicalPath.of().tenant(tenantId).environment(environmentId).feed(feedId);
+            return CanonicalPath.of().tenant(tenantId).feed(feedId);
         }
 
         /**

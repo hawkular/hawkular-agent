@@ -69,7 +69,7 @@
     <dependency>
       <groupId>org.hawkular.nest</groupId>
       <artifactId>hawkular-nest-wf-extension</artifactId>
-      <version>${version.org.hawkular.bus}</version>
+      <version>${version.org.hawkular.nest}</version>
       <classifier>module</classifier>
       <type>zip</type>
     </dependency>

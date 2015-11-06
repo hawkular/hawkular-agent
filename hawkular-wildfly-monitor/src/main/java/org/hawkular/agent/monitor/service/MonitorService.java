@@ -1196,9 +1196,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
                     configuration.storageAdapter.inventoryContext);
 
-            // the REST URL requires environment ID next in the path
-            url.append(environmentId);
-
             // rest of the URL says we want the feeds API
             url.append("/feeds");
 
