@@ -1187,7 +1187,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
 
             // get the payload in JSON format
-            String environmentId = "test";
             Feed.Blueprint feedPojo = new Feed.Blueprint(desiredFeedId, null);
             String jsonPayload = Util.toJson(feedPojo);
 
@@ -1197,7 +1196,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                     configuration.storageAdapter.inventoryContext);
 
             // rest of the URL says we want the feeds API
-            url.append("/feeds");
+            url.append("feeds");
 
             // now send the REST request
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();

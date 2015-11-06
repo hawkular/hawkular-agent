@@ -583,11 +583,10 @@ public abstract class AbstractCommandITest {
                 getWithRetries(baseAccountsUri + "/personas/current");
 
                 /*
-                 * Ensure the "test" env was autocreated. We will do several attempts because race conditions may happen
-                 * between this script and WildFly Agent who may have triggered the same initial tasks in Inventory. A
-                 * successfull GET to /hawkular/inventory/environments/test should mean that all initial tasks are over
+                 * Ensure inventory is running by trying to read our tenant - this is what we authenticate with against
+                 * inventory.
                  */
-                getWithRetries(baseInvUri + "/environments/test");
+                getWithRetries(baseInvUri + "/tenant");
                 accountsAndInventoryReady = true;
             }
         }
