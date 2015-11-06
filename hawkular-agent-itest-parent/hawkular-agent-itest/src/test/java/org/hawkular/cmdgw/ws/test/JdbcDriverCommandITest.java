@@ -33,8 +33,6 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocket.PayloadType;
 import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
@@ -70,23 +68,17 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-                @Override
-                public void onOpen(WebSocket webSocket, Response response) {
-                    send(webSocket,
-                            "AddJdbcDriverRequest={\"authentication\":" + authentication + "," //
-                                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                                    + "\"driverName\":\"" + driverName + "\"," //
-                                    + "\"driverClass\":\"com.mysql.jdbc.Driver\"," //
-                                    + "\"driverMajorVersion\":\"5\"," //
-                                    + "\"driverMinorVersion\":\"1\"," //
-                                    + "\"moduleName\":\"com.mysql\"," //
-                                    + "\"driverJarName\":\"" + driverJarName + "\"" //
-                                    + "}",
-                            driverJarUrl);
-                    super.onOpen(webSocket, response);
-                }
-            };
+
+            String req = "AddJdbcDriverRequest={\"authentication\":" + authentication + "," //
+                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
+                    + "\"driverName\":\"" + driverName + "\"," //
+                    + "\"driverClass\":\"com.mysql.jdbc.Driver\"," //
+                    + "\"driverMajorVersion\":\"5\"," //
+                    + "\"driverMinorVersion\":\"1\"," //
+                    + "\"moduleName\":\"com.mysql\"," //
+                    + "\"driverJarName\":\"" + driverJarName + "\"" //
+                    + "}";
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req, driverJarUrl);
 
             WebSocketCall.create(client, request).enqueue(openingListener);
 
@@ -99,8 +91,9 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             int i = 0;
             String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
 
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                    + wfPath.ids().getFeedId() + "] (\\E.*";
+            String expectedRe =
+                    "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                            + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
             AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
@@ -134,17 +127,10 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-
-                @Override
-                public void onOpen(WebSocket webSocket, Response response) {
-                    send(webSocket,
-                            "RemoveJdbcDriverRequest={\"authentication\":" + authentication + ", " //
-                                    + "\"resourcePath\":\"" + removePath + "\"" //
-                                    + "}");
-                    super.onOpen(webSocket, response);
-                }
-            };
+            String req = "RemoveJdbcDriverRequest={\"authentication\":" + authentication + ", " //
+                    + "\"resourcePath\":\"" + removePath + "\"" //
+                    + "}";
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
 
             WebSocketCall.create(client, request).enqueue(openingListener);
 
@@ -158,8 +144,9 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
 
             String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
 
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                    + wfPath.ids().getFeedId() + "] (\\E.*";
+            String expectedRe =
+                    "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
+                            + wfPath.ids().getFeedId() + "] (\\E.*";
 
             String msg = receivedMessages.get(i++).readUtf8();
             AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));

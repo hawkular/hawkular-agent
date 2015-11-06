@@ -1,0 +1,127 @@
+/*
+ * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * and other contributors as indicated by the @author tags.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.hawkular.agent.monitor.protocol.dmr;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hawkular.agent.monitor.protocol.LocationResolver;
+import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.PathElement;
+import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.Property;
+
+/**
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ * @see LocationResolver
+ */
+public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
+    private static boolean matches(int length, PathAddress pattern, PathAddress address) {
+        for (int i = 0; i < length; i++) {
+            PathElement otherElem = address.getElement(i);
+            Property prop = new Property(otherElem.getKey(), new ModelNode(otherElem.getValue()));
+            if (!pattern.getElement(i).matches(prop)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public DMRNodeLocation absolutize(DMRNodeLocation base, DMRNodeLocation location) {
+        if (base == null || base.getPathAddress().equals(PathAddress.EMPTY_ADDRESS)) {
+            return location;
+        } else {
+            PathAddress basePath = base.getPathAddress();
+            PathAddress path = ((DMRNodeLocation) location).getPathAddress();
+            if (path.equals(PathAddress.EMPTY_ADDRESS)) {
+                /* use base path */
+                return base;
+            } else {
+                /* combine the two */
+                List<PathElement> segments = new ArrayList<>(basePath.size() + path.size());
+                for (PathElement segment : basePath) {
+                    segments.add(segment);
+                }
+                for (PathElement segment : path) {
+                    segments.add(segment);
+                }
+                PathAddress absPath = PathAddress.pathAddress(segments);
+                return new DMRNodeLocation(absPath);
+            }
+        }
+    }
+
+    @Override
+    public boolean isParent(DMRNodeLocation parent, DMRNodeLocation child) {
+        if (child == null) {
+            throw new IllegalArgumentException(
+                    "Cannot compute [" + getClass().getName() + "].isParent() with a null child argument");
+        }
+
+        PathAddress parentPath = parent.getPathAddress();
+        PathAddress childPath = child.getPathAddress();
+        int parentLength = parentPath.size();
+        if (parentLength <= childPath.size()) {
+            return matches(parentLength, parentPath, childPath);
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean matches(DMRNodeLocation query, DMRNodeLocation location) {
+        if (query == null) {
+            throw new IllegalArgumentException(
+                    "Cannot compute [" + getClass().getName() + "].matches() with a null query argument");
+        }
+        PathAddress queryPath = query.getPathAddress();
+        PathAddress path = location.getPathAddress();
+
+        int queryLength = queryPath.size();
+        if (queryLength == path.size()) {
+            return matches(queryLength, queryPath, path);
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public String applyTemplate(String nameTemplate, DMRNodeLocation location, String endpointName) {
+
+        ArrayList<String> args = new ArrayList<>();
+        for (PathElement segment : location.getPathAddress()) {
+            args.add(segment.getKey());
+            args.add(segment.getValue());
+        }
+
+        // The name template can have %# where # is the index number of the address part that should be substituted.
+        // For example, suppose a resource has an address of "/hello=world/foo=bar" and the template is "Name [%2]".
+        // The %2 will get substituted with the second address part (which is "world" - indices start at 1).
+        // String.format() requires "$s" after the "%#" to denote the type of value is a string (all our address
+        // parts are strings, so we know "$s" is what we want).
+        // This replaceAll just replaces all occurrances of "%#" with "%#$s" so String.format will work.
+        // We also allow for the special %- notation to mean "the last address part" since that's usually the one we
+        // want and sometimes you can't know its positional value.
+        // We also support %ManagedServerName which can help distinguish similar resources running in different servers.
+        nameTemplate = nameTemplate.replaceAll("%(\\d+)", "%$1\\$s");
+        nameTemplate = nameTemplate.replaceAll("%(-)", "%" + args.size() + "\\$s");
+        nameTemplate = nameTemplate.replaceAll("%ManagedServerName", endpointName);
+        String nameStr = String.format(nameTemplate, args.toArray());
+        return nameStr;
+    }
+}

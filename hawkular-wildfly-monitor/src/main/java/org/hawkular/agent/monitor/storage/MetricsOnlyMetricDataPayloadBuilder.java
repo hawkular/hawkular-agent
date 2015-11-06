@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
-import org.hawkular.agent.monitor.service.Util;
+import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.metrics.client.common.MetricType;
 
 /**

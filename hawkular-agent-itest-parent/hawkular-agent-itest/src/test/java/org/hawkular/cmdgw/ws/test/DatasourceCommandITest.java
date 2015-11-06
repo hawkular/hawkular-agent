@@ -31,8 +31,6 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocket.PayloadType;
 import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
@@ -84,26 +82,21 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
 
-                @Override
-                public void onOpen(WebSocket webSocket, Response response) {
-                    send(webSocket,
-                            "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
-                                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                                    + "\"xaDatasource\":\"false\"," //
-                                    + "\"datasourceName\":\"" + datasourceName + "\"," //
-                                    + "\"jndiName\":\"" + datasourceJndiName + "\"," //
-                                    + "\"datasourceProperties\":{\"prop1\":\"val1\",\"prop2\":\"val2\"}," //
-                                    + "\"driverName\":\"" + driverName + "\"," //
-                                    + "\"driverClass\":\"" + driverClass + "\"," //
-                                    + "\"connectionUrl\":\"" + datasourceConnectionUrl + "\"," //
-                                    + "\"userName\":\"" + userName + "\"," //
-                                    + "\"password\":\"" + password + "\"" //
-                                    + "}");
-                    super.onOpen(webSocket, response);
-                }
-            };
+            String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
+                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
+                    + "\"xaDatasource\":\"false\"," //
+                    + "\"datasourceName\":\"" + datasourceName + "\"," //
+                    + "\"jndiName\":\"" + datasourceJndiName + "\"," //
+                    + "\"datasourceProperties\":{\"prop1\":\"val1\",\"prop2\":\"val2\"}," //
+                    + "\"driverName\":\"" + driverName + "\"," //
+                    + "\"driverClass\":\"" + driverClass + "\"," //
+                    + "\"connectionUrl\":\"" + datasourceConnectionUrl + "\"," //
+                    + "\"userName\":\"" + userName + "\"," //
+                    + "\"password\":\"" + password + "\"" //
+                    + "}";
+
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
 
             WebSocketCall.create(client, request).enqueue(openingListener);
 
@@ -148,25 +141,18 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-
-                @Override
-                public void onOpen(WebSocket webSocket, Response response) {
-                    send(webSocket,
-                            "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
-                                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                                    + "\"xaDatasource\":\"true\"," //
-                                    + "\"datasourceName\":\"" + xaDatasourceName + "\"," //
-                                    + "\"jndiName\":\"" + xaDatasourceJndiName + "\"," //
-                                    + "\"driverName\":\"" + driverName + "\"," //
-                                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
-                                    + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl
-                                    + "\",\"xaProp2\":\"xaVal2\"}," + "\"userName\":\"" + userName + "\"," //
-                                    + "\"password\":\"" + password + "\"" //
-                                    + "}");
-                    super.onOpen(webSocket, response);
-                }
-            };
+            String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
+                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
+                    + "\"xaDatasource\":\"true\"," //
+                    + "\"datasourceName\":\"" + xaDatasourceName + "\"," //
+                    + "\"jndiName\":\"" + xaDatasourceJndiName + "\"," //
+                    + "\"driverName\":\"" + driverName + "\"," //
+                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
+                    + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl
+                    + "\",\"xaProp2\":\"xaVal2\"}," + "\"userName\":\"" + userName + "\"," //
+                    + "\"password\":\"" + password + "\"" //
+                    + "}";
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
 
             WebSocketCall.create(client, request).enqueue(openingListener);
 
@@ -216,17 +202,10 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-
-                @Override
-                public void onOpen(WebSocket webSocket, Response response) {
-                    send(webSocket,
-                            "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
-                                    + "\"resourcePath\":\"" + removePath + "\"" //
-                                    + "}");
-                    super.onOpen(webSocket, response);
-                }
-            };
+            String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
+                    + "\"resourcePath\":\"" + removePath + "\"" //
+                    + "}";
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req );
 
             WebSocketCall.create(client, request).enqueue(openingListener);
 
@@ -274,17 +253,10 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-
-                @Override
-                public void onOpen(WebSocket webSocket, Response response) {
-                    send(webSocket,
-                            "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
-                                    + "\"resourcePath\":\"" + removePath + "\"" //
-                                    + "}");
-                    super.onOpen(webSocket, response);
-                }
-            };
+            String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
+                    + "\"resourcePath\":\"" + removePath + "\"" //
+                    + "}";
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
 
             WebSocketCall.create(client, request).enqueue(openingListener);
 
@@ -335,25 +307,18 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             final String changedConnectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
 
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-
-                @Override
-                public void onOpen(WebSocket webSocket, Response response) {
-                    send(webSocket,
-                            "UpdateDatasourceRequest={\"authentication\":" + authentication + ", " //
-                                    + "\"resourcePath\":\"" + dsPath + "\"," //
-                                    + "\"datasourceName\":\"" + datasourceName + "\"," //
-                                    + "\"jndiName\":\"" + datasourceJndiName + "\"," //
-                                    + "\"datasourceProperties\":{\"prop1\":\"val1.1\",\"prop3\":\"val3\"}," //
-                                    + "\"driverName\":\"" + driverName + "\"," //
-                                    + "\"driverClass\":\"" + driverClass + "\"," //
-                                    + "\"connectionUrl\":\"" + changedConnectionUrl + "\"," //
-                                    + "\"userName\":\"" + userName + "\"," //
-                                    + "\"password\":\"" + password + "\"" //
-                                    + "}");
-                    super.onOpen(webSocket, response);
-                }
-            };
+            String req = "UpdateDatasourceRequest={\"authentication\":" + authentication + ", " //
+                    + "\"resourcePath\":\"" + dsPath + "\"," //
+                    + "\"datasourceName\":\"" + datasourceName + "\"," //
+                    + "\"jndiName\":\"" + datasourceJndiName + "\"," //
+                    + "\"datasourceProperties\":{\"prop1\":\"val1.1\",\"prop3\":\"val3\"}," //
+                    + "\"driverName\":\"" + driverName + "\"," //
+                    + "\"driverClass\":\"" + driverClass + "\"," //
+                    + "\"connectionUrl\":\"" + changedConnectionUrl + "\"," //
+                    + "\"userName\":\"" + userName + "\"," //
+                    + "\"password\":\"" + password + "\"" //
+                    + "}";
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
 
             WebSocketCall.create(client, request).enqueue(openingListener);
 
@@ -407,25 +372,19 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             final String changedXaDatasourceJndiName = xaDatasourceJndiName + "_changed";
             final String changedXaDsUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
 
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-                @Override
-                public void onOpen(WebSocket webSocket, Response response) {
-                    send(webSocket,
-                            "UpdateDatasourceRequest={\"authentication\":" + authentication + ", " //
-                                    + "\"resourcePath\":\"" + dsPath + "\"," //
-                                    + "\"datasourceName\":\"" + xaDatasourceName + "\"," //
-                                    + "\"jndiName\":\"" + changedXaDatasourceJndiName + "\"," //
-                    // changing or removing of props seems to be broken
-                                    + "\"datasourceProperties\":{\"URL\":\"" + changedXaDsUrl
-                                    + "\",\"xaProp3\":\"xaVal3\"}," //
-                                    + "\"driverName\":\"" + driverName + "\"," //
-                                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
-                                    + "\"userName\":\"" + userName + "\"," //
-                                    + "\"password\":\"" + password + "\"" //
-                                    + "}");
-                    super.onOpen(webSocket, response);
-                }
-            };
+            String req = "UpdateDatasourceRequest={\"authentication\":" + authentication + ", " //
+                    + "\"resourcePath\":\"" + dsPath + "\"," //
+                    + "\"datasourceName\":\"" + xaDatasourceName + "\"," //
+                    + "\"jndiName\":\"" + changedXaDatasourceJndiName + "\"," //
+    // changing or removing of props seems to be broken
+                    + "\"datasourceProperties\":{\"URL\":\"" + changedXaDsUrl
+                    + "\",\"xaProp3\":\"xaVal3\"}," //
+                    + "\"driverName\":\"" + driverName + "\"," //
+                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
+                    + "\"userName\":\"" + userName + "\"," //
+                    + "\"password\":\"" + password + "\"" //
+                    + "}";
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
 
             WebSocketCall.create(client, request).enqueue(openingListener);
 

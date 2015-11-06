@@ -16,84 +16,156 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 
-public abstract class ResourceType< //
-MT extends MetricType, //
-AT extends AvailType, //
-O extends Operation, //
-RCPT extends ResourceConfigurationPropertyType>
-        extends NamedObject {
+/**
+ * @author John Mazzitelli
+ *
+ * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
+ */
+public final class ResourceType<L>
+        extends NodeLocationProvider<L> {
 
-    public ResourceType(ID id, Name name) {
-        super(id, name);
+    public static <L> Builder<Builder<?, L>, L> builder() {
+        return new Builder<Builder<?, L>, L>();
     }
 
-    private String resourceNameTemplate;
-    private Collection<Name> parents = new HashSet<>();
-    private Collection<Name> metricSetNames = new HashSet<>();
-    private Collection<Name> availSetNames = new HashSet<>();
-    private Collection<MT> metricTypes = new HashSet<>();
-    private Collection<AT> availTypes = new HashSet<>();
-    private Collection<O> operations = new HashSet<>();
-    private Collection<RCPT> resourceConfigurationPropertyTypes = new HashSet<>();
+    public static class Builder<This extends Builder<?, L>, L>
+            extends NodeLocationProvider.Builder<This, L> {
+
+        private String resourceNameTemplate;
+        private List<Name> parents = new ArrayList<>();
+        private List<Name> metricSetNames = new ArrayList<>();
+        private List<Name> availSetNames = new ArrayList<>();
+        private List<MetricType<L>> metricTypes = new ArrayList<>();
+        private List<AvailType<L>> availTypes = new ArrayList<>();
+        private List<Operation<L>> operations = new ArrayList<>();
+        private List<ResourceConfigurationPropertyType<L>> resourceConfigurationPropertyTypes = new ArrayList<>();
+
+        private Builder() {
+            super();
+        }
+
+        public ResourceType<L> build() {
+            return new ResourceType<L>(id, name, location, resourceNameTemplate,
+                    Collections.unmodifiableList(parents), Collections.unmodifiableList(metricSetNames),
+                    Collections.unmodifiableList(availSetNames), Collections.unmodifiableList(metricTypes),
+                    Collections.unmodifiableList(availTypes), Collections.unmodifiableList(operations),
+                    Collections.unmodifiableList(resourceConfigurationPropertyTypes));
+        }
+
+        /**
+         * @return
+         */
+        @SuppressWarnings("unchecked")
+        private This getThis() {
+            return (This) this;
+        }
+
+        public This availSetName(Name name) {
+            this.availSetNames.add(name);
+            return getThis();
+        }
+
+        public This availSetNames(Collection<Name> names) {
+            this.availSetNames.addAll(names);
+            return getThis();
+        }
+
+        public This metricSetName(Name name) {
+            this.metricSetNames.add(name);
+            return getThis();
+        }
+
+        public This metricSetNames(Collection<Name> names) {
+            this.metricSetNames.addAll(names);
+            return getThis();
+        }
+
+        public This operation(Operation<L> operation) {
+            this.operations.add(operation);
+            return getThis();
+        }
+
+        public This parent(Name name) {
+            this.parents.add(name);
+            return getThis();
+        }
+
+        public This parents(Collection<Name> names) {
+            this.parents.addAll(names);
+            return getThis();
+        }
+
+        public This resourceNameTemplate(String resourceNameTemplate) {
+            this.resourceNameTemplate = resourceNameTemplate;
+            return getThis();
+        }
+
+        public This resourceConfigurationPropertyType(
+                ResourceConfigurationPropertyType<L> resourceConfigurationPropertyType) {
+            this.resourceConfigurationPropertyTypes.add(resourceConfigurationPropertyType);
+            return getThis();
+        }
+    }
+
+    private final String resourceNameTemplate;
+    private final Collection<Name> parents;
+    private final Collection<Name> metricSetNames;
+    private final Collection<Name> availSetNames;
+    private final Collection<MetricType<L>> metricTypes;
+    private final Collection<AvailType<L>> availTypes;
+    private final Collection<Operation<L>> operations;
+    private final Collection<ResourceConfigurationPropertyType<L>> resourceConfigurationPropertyTypes;
+
+    private ResourceType(ID id, Name name, L location, String resourceNameTemplate, Collection<Name> parents,
+            Collection<Name> metricSetNames, Collection<Name> availSetNames, Collection<MetricType<L>> metricTypes,
+            Collection<AvailType<L>> availTypes, Collection<Operation<L>> operations,
+            Collection<ResourceConfigurationPropertyType<L>> resourceConfigurationPropertyTypes) {
+        super(id, name, location);
+        this.resourceNameTemplate = resourceNameTemplate;
+        this.parents = parents;
+        this.metricSetNames = metricSetNames;
+        this.availSetNames = availSetNames;
+        this.metricTypes = metricTypes;
+        this.availTypes = availTypes;
+        this.operations = operations;
+        this.resourceConfigurationPropertyTypes = resourceConfigurationPropertyTypes;
+    }
 
     public String getResourceNameTemplate() {
         return resourceNameTemplate;
-    }
-
-    public void setResourceNameTemplate(String resourceNameTemplate) {
-        this.resourceNameTemplate = resourceNameTemplate;
     }
 
     public Collection<Name> getParents() {
         return parents;
     }
 
-    public void setParents(Collection<Name> parents) {
-        this.parents = parents;
-    }
-
     public Collection<Name> getMetricSets() {
         return metricSetNames;
-    }
-
-    public void setMetricSets(Collection<Name> metricSets) {
-        this.metricSetNames = metricSets;
     }
 
     public Collection<Name> getAvailSets() {
         return availSetNames;
     }
 
-    public void setAvailSets(Collection<Name> availSets) {
-        this.availSetNames = availSets;
-    }
-
-    public Collection<MT> getMetricTypes() {
+    public Collection<MetricType<L>> getMetricTypes() {
         return metricTypes;
     }
 
-    public Collection<AT> getAvailTypes() {
+    public Collection<AvailType<L>> getAvailTypes() {
         return availTypes;
     }
 
-    public Collection<RCPT> getResourceConfigurationPropertyTypes() {
+    public Collection<ResourceConfigurationPropertyType<L>> getResourceConfigurationPropertyTypes() {
         return Collections.unmodifiableCollection(resourceConfigurationPropertyTypes);
     }
 
-    public void addResourceConfigurationPropertyType(RCPT resConfigPropertyType) {
-        resourceConfigurationPropertyTypes.add(resConfigPropertyType);
-    }
-
-    public Collection<O> getOperations() {
+    public Collection<Operation<L>> getOperations() {
         return Collections.unmodifiableCollection(operations);
-    }
-
-    public void addOperation(O operation) {
-        operations.add(operation);
     }
 
 }

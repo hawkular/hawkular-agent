@@ -35,7 +35,7 @@ public class OperationFullDiscoveryScan implements OperationStepHandler {
             MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
             if (service.isMonitorServiceStarted()) {
                 long start = System.currentTimeMillis();
-                service.discoverAllResourcesForAllManagedServers();
+                service.getProtocolServices().discoverAll();
                 long duration = System.currentTimeMillis() - start;
                 opContext.getResult().set(String.format("Full discovery completed in [%d] millseconds", duration));
             } else {

@@ -16,27 +16,24 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class ResourceConfigurationPropertyInstance<T extends ResourceConfigurationPropertyType>
-        extends NamedObject {
+/**
+ * @author John Mazzitelli
+ *
+ * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
+ */
+public final class ResourceConfigurationPropertyInstance<L>
+        extends Instance<L, ResourceConfigurationPropertyType<L>> {
 
-    private final T configurationPropertyType;
-    private String value;
+    private final String value;
 
-    public ResourceConfigurationPropertyInstance(ID id, Name name, T configurationPropertyType) {
-        super(id, name);
-        this.configurationPropertyType = configurationPropertyType;
-    }
-
-    public T getResourceConfigurationPropertyType() {
-        return configurationPropertyType;
+    public ResourceConfigurationPropertyInstance(ID id, Name name, AttributeLocation<L> attributeLocation,
+            ResourceConfigurationPropertyType<L> type, String value) {
+        super(id, name, attributeLocation, type);
+        this.value = value;
     }
 
     public String getValue() {
         return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
     }
 
     @Override

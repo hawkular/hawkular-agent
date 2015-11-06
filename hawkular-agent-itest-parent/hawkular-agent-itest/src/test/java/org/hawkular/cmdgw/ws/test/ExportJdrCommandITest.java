@@ -36,8 +36,6 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocket.PayloadType;
 import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
@@ -58,17 +56,10 @@ public class ExportJdrCommandITest extends AbstractCommandITest {
         try (ModelControllerClient ignored = newModelControllerClient()) {
             Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
             WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-
-                @Override
-                public void onOpen(WebSocket webSocket, Response response) {
-                    send(webSocket,
-                            "ExportJdrRequest={\"authentication\":" + authentication + ", " //
-                                    + "\"resourcePath\":\"" + wfPath.toString() + "\"" //
-                                    + "}");
-                    super.onOpen(webSocket, response);
-                }
-            };
+            String req = "ExportJdrRequest={\"authentication\":" + authentication + ", " //
+                    + "\"resourcePath\":\"" + wfPath.toString() + "\"" //
+                    + "}";
+            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
 
             WebSocketCall.create(client, request).enqueue(openingListener);
 

@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.service.DiscoveryService;
-import org.hawkular.agent.monitor.service.Util;
+import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
+import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
@@ -72,7 +72,7 @@ public class FeedCommProcessor implements WebSocketListener {
 
     private final HttpClientBuilder httpClientBuilder;
     private final MonitorServiceConfiguration config;
-    private final DiscoveryService discoveryService;
+    private final MonitorService discoveryService;
     private final String feedcommUrl;
     private final ExecutorService sendExecutor = Executors.newSingleThreadExecutor();
     private final AtomicReference<ReconnectJobThread> reconnectJobThread = new AtomicReference<>();
@@ -81,7 +81,7 @@ public class FeedCommProcessor implements WebSocketListener {
     private WebSocket webSocket;
 
     public FeedCommProcessor(HttpClientBuilder httpClientBuilder, MonitorServiceConfiguration config, String feedId,
-            DiscoveryService discoveryService) {
+            MonitorService discoveryService) {
 
         if (feedId == null || feedId.isEmpty()) {
             throw new IllegalArgumentException("Must have a valid feed ID to communicate with the server");
@@ -93,9 +93,11 @@ public class FeedCommProcessor implements WebSocketListener {
 
         try {
             StringBuilder url;
-            url = Util.getContextUrlString(config.storageAdapter.url, config.storageAdapter.feedcommContext);
+            url = Util.getContextUrlString(config.getStorageAdapter().getUrl(),
+                    config.getStorageAdapter().getFeedcommContext());
             url.append("feed/").append(feedId);
-            this.feedcommUrl = url.toString().replaceFirst("https?:", (config.storageAdapter.useSSL) ? "wss:" : "ws:");
+            this.feedcommUrl = url.toString().replaceFirst("https?:",
+                    (config.getStorageAdapter().isUseSSL()) ? "wss:" : "ws:");
             log.infoFeedCommUrl(this.feedcommUrl);
         } catch (Exception e) {
             throw new IllegalArgumentException("Cannot build URL to the server command-gateway endpoint", e);
@@ -354,8 +356,8 @@ public class FeedCommProcessor implements WebSocketListener {
         }
 
         auth = new Authentication();
-        auth.setUsername(this.config.storageAdapter.username);
-        auth.setPassword(this.config.storageAdapter.password);
+        auth.setUsername(this.config.getStorageAdapter().getUsername());
+        auth.setPassword(this.config.getStorageAdapter().getPassword());
         authMessage.setAuthentication(auth);
     }
 

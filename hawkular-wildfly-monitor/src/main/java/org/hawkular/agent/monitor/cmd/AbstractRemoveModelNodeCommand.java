@@ -16,10 +16,14 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
-import org.hawkular.agent.monitor.inventory.ManagedServer;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
+import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
+import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
+import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.ResourcePathRequest;
 import org.hawkular.cmdgw.api.ResourcePathResponse;
 import org.hawkular.dmr.api.DmrApiException;
@@ -40,8 +44,12 @@ public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathReq
     }
 
     @Override
-    protected void execute(ModelControllerClient controllerClient, ManagedServer managedServer, String modelNodePath,
-            BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context) throws Exception {
+    protected BinaryData execute(ModelControllerClient controllerClient,
+            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            endpointService,
+            String modelNodePath,
+            BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context,
+            DMRSession dmrContext) throws Exception {
         try {
             OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
                     .assertSuccess();
@@ -52,6 +60,7 @@ public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathReq
             OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
                     .assertSuccess();
         }
+        return null;
     }
 
 }

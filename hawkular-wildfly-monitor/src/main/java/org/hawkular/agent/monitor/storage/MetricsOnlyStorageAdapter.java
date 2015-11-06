@@ -22,15 +22,14 @@ import java.util.Set;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
+import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.polling.Task;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
-import org.hawkular.agent.monitor.service.Util;
+import org.hawkular.agent.monitor.util.Util;
 
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Request;
@@ -38,25 +37,24 @@ import com.squareup.okhttp.Response;
 
 public class MetricsOnlyStorageAdapter implements StorageAdapter {
     private static final MsgLogger log = AgentLoggers.getLogger(MetricsOnlyStorageAdapter.class);
-    private MonitorServiceConfiguration.StorageAdapter config;
+    private MonitorServiceConfiguration.StorageAdapterConfiguration config;
     private Diagnostics diagnostics;
-    private ServerIdentifiers selfId;
     private HttpClientBuilder httpClientBuilder;
 
     public MetricsOnlyStorageAdapter() {
     }
 
     @Override
-    public void initialize(org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter config,
-            Diagnostics diag, ServerIdentifiers selfId, HttpClientBuilder httpClientBuilder) {
+    public void initialize(
+            org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration config,
+            Diagnostics diag, HttpClientBuilder httpClientBuilder) {
         this.config = config;
         this.diagnostics = diag;
-        this.selfId = selfId;
         this.httpClientBuilder = httpClientBuilder;
     }
 
     @Override
-    public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration() {
+    public MonitorServiceConfiguration.StorageAdapterConfiguration getStorageAdapterConfiguration() {
         return config;
     }
 
@@ -78,11 +76,9 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
         MetricDataPayloadBuilder payloadBuilder = createMetricDataPayloadBuilder();
         for (MetricDataPoint datapoint : datapoints) {
-            Task task = datapoint.getTask();
-            String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
             double value = datapoint.getValue();
-            payloadBuilder.addDataPoint(key, timestamp, value, datapoint.getMetricType());
+            payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value, datapoint.getMetricType());
         }
 
         store(payloadBuilder);
@@ -99,12 +95,12 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             jsonPayload = payloadBuilder.toPayload().toString();
 
             // build the REST URL...
-            StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
+            StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext());
             url.append("metrics/data");
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(),
-                    Collections.singletonMap("Hawkular-Tenant", config.tenantId), jsonPayload);
+                    Collections.singletonMap("Hawkular-Tenant", config.getTenantId()), jsonPayload);
 
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
@@ -145,11 +141,9 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
         AvailDataPayloadBuilder payloadBuilder = createAvailDataPayloadBuilder();
         for (AvailDataPoint datapoint : datapoints) {
-            Task task = datapoint.getTask();
-            String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
             Avail value = datapoint.getValue();
-            payloadBuilder.addDataPoint(key, timestamp, value);
+            payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value);
         }
 
         store(payloadBuilder);
@@ -166,12 +160,12 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
             jsonPayload = payloadBuilder.toPayload().toString();
 
             // build the REST URL...
-            StringBuilder url = Util.getContextUrlString(config.url, config.metricsContext);
+            StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext());
             url.append("availability/data");
 
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(),
-                    Collections.singletonMap("Hawkular-Tenant", config.tenantId), jsonPayload);
+                    Collections.singletonMap("Hawkular-Tenant", config.getTenantId()), jsonPayload);
 
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
@@ -205,12 +199,22 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeResource(Resource<?, ?, ?, ?, ?> resourceType) {
+    public void shutdown() {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 
     @Override
-    public void shutdown() {
+    public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
+        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
+    }
+
+    @Override
+    public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
+        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
+    }
+
+    @Override
+    public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 

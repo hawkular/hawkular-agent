@@ -16,37 +16,19 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import org.hawkular.agent.monitor.scheduler.config.MonitoredPropertyReference;
+/**
+ * A measurement instance.
+ *
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ *
+ * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}
+ * @param <T> the measurement type
+ */
+public final class MeasurementInstance<L, T extends MeasurementType<L>> //
+        extends Instance<L, T> {
 
-public abstract class MeasurementInstance< //
-R extends Resource<?, ?, ?, ?, ?>, //
-M extends MeasurementType, //
-P extends MonitoredPropertyReference> //
-        extends NamedObject {
-
-    private final R resource;
-    private final M measurementType;
-    private final P property;
-
-    public MeasurementInstance(ID id, Name name, R resource, M measurementType, P property) {
-        super(id, name);
-        this.resource = resource;
-        this.measurementType = measurementType;
-        this.property = property;
+    public MeasurementInstance(ID id, Name name, AttributeLocation<L> attributeLocation, T type) {
+        super(id, name, attributeLocation, type);
     }
 
-    /**
-     * @return the resource that this measurement instance belongs to
-     */
-    public R getResource() {
-        return resource;
-    }
-
-    public M getMeasurementType() {
-        return measurementType;
-    }
-
-    public P getProperty() {
-        return property;
-    }
 }

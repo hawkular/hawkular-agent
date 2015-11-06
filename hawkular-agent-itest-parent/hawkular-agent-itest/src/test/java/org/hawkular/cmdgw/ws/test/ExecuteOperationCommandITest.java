@@ -28,8 +28,6 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocket.PayloadType;
 import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
@@ -55,17 +53,11 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
 
         Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
         WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor) {
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                send(webSocket,
-                        "ExecuteOperationRequest={\"authentication\":" + authentication + ", " //
-                                + "\"resourcePath\":\"" + deployment.getPath().toString() + "\"," //
-                                + "\"operationName\":\"Redeploy\"" //
-                                + "}");
-                super.onOpen(webSocket, response);
-            }
-        };
+        String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", " //
+                + "\"resourcePath\":\"" + deployment.getPath().toString() + "\"," //
+                + "\"operationName\":\"Redeploy\"" //
+                + "}";
+        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
 
         WebSocketCall.create(client, request).enqueue(openingListener);
 

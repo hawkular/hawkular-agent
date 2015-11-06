@@ -26,17 +26,11 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Diagnostics;
-import org.hawkular.agent.monitor.extension.SubsystemDefinition;
-import org.hawkular.agent.monitor.scheduler.config.Interval;
-import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
-import org.hawkular.agent.monitor.scheduler.polling.dmr.MetricDMRTask;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
+import org.hawkular.agent.monitor.protocol.dmr.LocalDMREndpoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
-import org.hawkular.dmrclient.Address;
 import org.hawkular.metrics.client.common.MetricType;
-import org.jboss.as.controller.PathAddress;
 
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Counter;
@@ -50,30 +44,30 @@ import com.codahale.metrics.Timer;
 
 public class StorageReporter extends ScheduledReporter {
 
-    private final Diagnostics diagnosticsConfig;
+    private final DiagnosticsConfiguration diagnosticsConfig;
     private final StorageAdapter storageAdapter;
     private final Locale locale;
     private final Clock clock;
     private final DateFormat dateFormat;
-    private final ServerIdentifiers selfId;
+    private final String feedId;
 
-    private StorageReporter(MetricRegistry registry,
+    private StorageReporter(String feedId,
+            MetricRegistry registry,
             Locale locale,
             Clock clock,
             TimeZone timeZone,
             TimeUnit rateUnit,
             TimeUnit durationUnit,
             MetricFilter filter,
-            Diagnostics diagnosticsConfig,
-            StorageAdapter storageAdapter,
-            ServerIdentifiers selfId) {
+            DiagnosticsConfiguration diagnosticsConfig,
+            StorageAdapter storageAdapter) {
 
         super(registry, "storage-reporter", filter, rateUnit, durationUnit);
+        this.feedId = feedId;
         this.locale = locale;
         this.clock = clock;
         this.diagnosticsConfig = diagnosticsConfig;
         this.storageAdapter = storageAdapter;
-        this.selfId = selfId;
         this.dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM, locale);
         this.dateFormat.setTimeZone(timeZone);
     }
@@ -86,17 +80,16 @@ public class StorageReporter extends ScheduledReporter {
             SortedMap<String, Meter> meters,
             SortedMap<String, Timer> timers) {
 
-        Interval interval = new Interval(diagnosticsConfig.interval, diagnosticsConfig.timeUnits);
-        String pathStr = PathAddress.pathAddress(SubsystemDefinition.INSTANCE.getPathElement()).toCLIStyleString();
-        Address ourAddr = Address.parse(pathStr);
-        LocalDMREndpoint localDmrEndpoint = new LocalDMREndpoint("_self", this.selfId);
+        LocalDMREndpoint localDmrEndpoint = LocalDMREndpoint.getDefault();
 
         if (!gauges.isEmpty()) {
             Set<MetricDataPoint> samples = new HashSet<>(gauges.size());
             for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
                 Gauge<Integer> gauge = entry.getValue();
+                String key = feedId + "."+ localDmrEndpoint.getName() +"."+ entry.getKey();
                 samples.add(new MetricDataPoint(
-                        new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(), null, null),
+                        key,
+                        System.currentTimeMillis(),
                         gauge.getValue(),
                         MetricType.GAUGE));
             }
@@ -106,8 +99,10 @@ public class StorageReporter extends ScheduledReporter {
         if (!counters.isEmpty()) {
             Set<MetricDataPoint> samples = new HashSet<>(counters.size());
             for (Map.Entry<String, Counter> entry : counters.entrySet()) {
+                String key = feedId + "."+ localDmrEndpoint.getName() +"."+ entry.getKey();
                 samples.add(new MetricDataPoint(
-                        new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(), null, null),
+                        key,
+                        System.currentTimeMillis(),
                         entry.getValue().getCount(),
                         MetricType.COUNTER));
             }
@@ -119,8 +114,10 @@ public class StorageReporter extends ScheduledReporter {
             Set<MetricDataPoint> samples = new HashSet<>(meters.size());
             for (Map.Entry<String, Meter> entry : meters.entrySet()) {
                 Meter meter = entry.getValue();
+                String key = feedId + "."+ localDmrEndpoint.getName() +"."+ entry.getKey();
                 samples.add(new MetricDataPoint(
-                        new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(), null, null),
+                        key,
+                        System.currentTimeMillis(),
                         meter.getOneMinuteRate(),
                         MetricType.GAUGE));
             }
@@ -131,8 +128,10 @@ public class StorageReporter extends ScheduledReporter {
             Set<MetricDataPoint> samples = new HashSet<>(timers.size());
             for (Map.Entry<String, Timer> entry : timers.entrySet()) {
                 Timer timer = entry.getValue();
+                String key = feedId + "."+ localDmrEndpoint.getName() +"."+ entry.getKey();
                 samples.add(new MetricDataPoint(
-                        new MetricDMRTask(interval, localDmrEndpoint, ourAddr, entry.getKey(), null, null),
+                        key,
+                        System.currentTimeMillis(),
                         timer.getSnapshot().get75thPercentile(),
                         MetricType.GAUGE));
             }
@@ -141,29 +140,27 @@ public class StorageReporter extends ScheduledReporter {
     }
 
     public static Builder forRegistry(MetricRegistry registry,
-            MonitorServiceConfiguration.Diagnostics diagnosticsConfig, StorageAdapter storageAdapter,
-            ServerIdentifiers selfId) {
-        return new Builder(registry, diagnosticsConfig, storageAdapter, selfId);
+            MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig, StorageAdapter storageAdapter) {
+        return new Builder(registry, diagnosticsConfig, storageAdapter);
     }
 
     public static class Builder {
         private final MetricRegistry registry;
-        private final MonitorServiceConfiguration.Diagnostics diagnosticsConfig;
+        private final MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig;
         private final StorageAdapter storageAdapter;
-        private final ServerIdentifiers sid;
         private Locale locale;
         private Clock clock;
         private TimeZone timeZone;
         private TimeUnit rateUnit;
         private TimeUnit durationUnit;
         private MetricFilter filter;
+        private String feedId;
 
-        private Builder(MetricRegistry registry, MonitorServiceConfiguration.Diagnostics diagnosticsConfig,
-                StorageAdapter storageAdapter, ServerIdentifiers selfId) {
+        private Builder(MetricRegistry registry, MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig,
+                StorageAdapter storageAdapter) {
             this.registry = registry;
             this.diagnosticsConfig = diagnosticsConfig;
             this.storageAdapter = storageAdapter;
-            this.sid = selfId;
             this.locale = Locale.getDefault();
             this.clock = Clock.defaultClock();
             this.timeZone = TimeZone.getDefault();
@@ -197,13 +194,19 @@ public class StorageReporter extends ScheduledReporter {
             return this;
         }
 
+        public Builder feedId(String feedId) {
+            this.feedId = feedId;
+            return this;
+        }
+
         public Builder filter(MetricFilter filter) {
             this.filter = filter;
             return this;
         }
 
         public StorageReporter build() {
-            return new StorageReporter(registry,
+            return new StorageReporter(feedId,
+                    registry,
                     locale,
                     clock,
                     timeZone,
@@ -211,8 +214,7 @@ public class StorageReporter extends ScheduledReporter {
                     durationUnit,
                     filter,
                     diagnosticsConfig,
-                    storageAdapter,
-                    sid);
+                    storageAdapter);
         }
     }
 }

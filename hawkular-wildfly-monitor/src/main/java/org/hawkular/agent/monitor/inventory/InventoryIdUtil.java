@@ -16,9 +16,10 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-
 /**
  * Basic functions used to generate and work with IDs for entities in inventory.
+ *
+ * @author John Mazzitelli
  */
 public class InventoryIdUtil {
     public static class ResourceIdParts {
@@ -80,6 +81,11 @@ public class InventoryIdUtil {
         return id;
     }
 
+    public static ID generateResourceId(String feedId, MonitoredEndpoint endpoint, String idPart) {
+        ID id = new ID(String.format("%s~%s~%s", feedId, endpoint.getName(), idPart));
+        return id;
+    }
+
     /**
      * Generates an ID for an {@link MetricInstance}.
      *
@@ -88,8 +94,8 @@ public class InventoryIdUtil {
      *
      * @return the ID
      */
-    public static ID generateMetricInstanceId(Resource<?, ?, ?, ?, ?> resource, MetricType metricType) {
-        ID id = new ID(String.format("MI~R~[%s]~MT~%s", resource.getID(), metricType.getName()));
+    public static ID generateMetricInstanceId(ID resourceId, MetricType<?> metricType) {
+        ID id = new ID(String.format("MI~R~[%s]~MT~%s", resourceId, metricType.getName()));
         return id;
     }
 
@@ -101,8 +107,8 @@ public class InventoryIdUtil {
      *
      * @return the ID
      */
-    public static ID generateAvailInstanceId(Resource<?, ?, ?, ?, ?> resource, AvailType availType) {
-        ID id = new ID(String.format("AI~R~[%s]~AT~%s", resource.getID(), availType.getName()));
+    public static ID generateAvailInstanceId(ID resourceId, AvailType<?> availType) {
+        ID id = new ID(String.format("AI~R~[%s]~AT~%s", resourceId, availType.getName()));
         return id;
     }
 }

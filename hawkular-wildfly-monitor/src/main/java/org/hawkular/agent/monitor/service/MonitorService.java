@@ -20,22 +20,14 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,54 +43,16 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
-import org.hawkular.agent.monitor.inventory.AvailTypeManager;
-import org.hawkular.agent.monitor.inventory.ManagedServer;
-import org.hawkular.agent.monitor.inventory.MetricTypeManager;
-import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.ResourceManager;
-import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
-import org.hawkular.agent.monitor.inventory.TypeSets;
-import org.hawkular.agent.monitor.inventory.dmr.DMRAvailInstance;
-import org.hawkular.agent.monitor.inventory.dmr.DMRAvailType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRInventoryManager;
-import org.hawkular.agent.monitor.inventory.dmr.DMRMetadataManager;
-import org.hawkular.agent.monitor.inventory.dmr.DMRMetricInstance;
-import org.hawkular.agent.monitor.inventory.dmr.DMRMetricType;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResource;
-import org.hawkular.agent.monitor.inventory.dmr.DMRResourceType;
-import org.hawkular.agent.monitor.inventory.dmr.LocalDMRManagedServer;
-import org.hawkular.agent.monitor.inventory.dmr.RemoteDMRManagedServer;
-import org.hawkular.agent.monitor.inventory.jmx.JMXAvailInstance;
-import org.hawkular.agent.monitor.inventory.jmx.JMXAvailType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXInventoryManager;
-import org.hawkular.agent.monitor.inventory.jmx.JMXMetadataManager;
-import org.hawkular.agent.monitor.inventory.jmx.JMXMetricInstance;
-import org.hawkular.agent.monitor.inventory.jmx.JMXMetricType;
-import org.hawkular.agent.monitor.inventory.jmx.JMXResource;
-import org.hawkular.agent.monitor.inventory.jmx.JMXResourceType;
-import org.hawkular.agent.monitor.inventory.jmx.RemoteJMXManagedServer;
-import org.hawkular.agent.monitor.inventory.platform.Constants;
-import org.hawkular.agent.monitor.inventory.platform.PlatformAvailInstance;
-import org.hawkular.agent.monitor.inventory.platform.PlatformAvailType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformInventoryManager;
-import org.hawkular.agent.monitor.inventory.platform.PlatformManagedServer;
-import org.hawkular.agent.monitor.inventory.platform.PlatformMetadataManager;
-import org.hawkular.agent.monitor.inventory.platform.PlatformMetricInstance;
-import org.hawkular.agent.monitor.inventory.platform.PlatformMetricType;
-import org.hawkular.agent.monitor.inventory.platform.PlatformResource;
-import org.hawkular.agent.monitor.inventory.platform.PlatformResourceType;
+import org.hawkular.agent.monitor.inventory.ManagedServer.SecurityRealmProvider;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.JmxClientFactory;
-import org.hawkular.agent.monitor.scheduler.JmxClientFactoryImpl;
-import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.scheduler.ModelControllerClientFactoryImpl;
+import org.hawkular.agent.monitor.protocol.ProtocolServices;
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
+import org.hawkular.agent.monitor.protocol.dmr.DMRManagedServer;
+import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.protocol.jmx.RemoteJMXManagedServer;
+import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
-import org.hawkular.agent.monitor.scheduler.config.DMREndpoint;
-import org.hawkular.agent.monitor.scheduler.config.JMXEndpoint;
-import org.hawkular.agent.monitor.scheduler.config.LocalDMREndpoint;
-import org.hawkular.agent.monitor.scheduler.config.PlatformEndpoint;
-import org.hawkular.agent.monitor.scheduler.config.SchedulerConfiguration;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
@@ -106,6 +60,7 @@ import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
+import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.Feed;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
@@ -125,10 +80,6 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jgrapht.event.GraphVertexChangeEvent;
-import org.jgrapht.event.VertexSetListener;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.traverse.BreadthFirstIterator;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
@@ -136,8 +87,153 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
-public class MonitorService implements Service<MonitorService>, DiscoveryService {
+/**
+ * The main Agent service.
+ *
+ * @author John Mazzitelli
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ */
+public class MonitorService implements Service<MonitorService> {
     private static final MsgLogger log = AgentLoggers.getLogger(MonitorService.class);
+
+    /**
+     * Builds the runtime configuration, typically out of the boot configuration. It is static so that always stays
+     * clear what data it relies on.
+     *
+     * On cetrain circumstances, this method may return the {@code bootConfiguration} instance without any modification.
+     *
+     * @param bootConfiguration the boot configuration
+     * @param httpSocketBindingValue the httpSocketBindingValue
+     * @param httpsSocketBindingValue the httpsSocketBindingValue
+     * @param serverOutboundSocketBindingValue the serverOutboundSocketBindingValue
+     * @param trustOnlySSLContextValues the serverOutboundSocketBindingValue
+     * @return the runtime configuration
+     */
+    private static MonitorServiceConfiguration buildRuntimeConfiguration(
+            MonitorServiceConfiguration bootConfiguration,
+            InjectedValue<SocketBinding> httpSocketBindingValue,
+            InjectedValue<SocketBinding> httpsSocketBindingValue,
+            InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue,
+            Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues) {
+
+        final MonitorServiceConfiguration.StorageAdapterConfiguration bootStorageAdapter = bootConfiguration
+                .getStorageAdapter();
+
+        if (bootStorageAdapter.getTenantId() != null && bootStorageAdapter.getUrl() != null) {
+            return bootConfiguration;
+        } else {
+
+            // determine where our Hawkular server is
+            // If the user gave us a URL explicitly, that overrides everything and we use it.
+            // If no URL is configured, but we are given a server outbound socket binding name,
+            // we use that to determine the remote Hawkular URL.
+            // If neither URL nor output socket binding name is provided, we assume we are running
+            // co-located with the Hawkular server and we use local bindings.
+            String useUrl = bootStorageAdapter.getUrl();
+            if (useUrl == null) {
+                try {
+                    String address;
+                    int port;
+
+                    if (bootStorageAdapter.getServerOutboundSocketBindingRef() == null) {
+                        // no URL or output socket binding - assume we are running co-located with server
+                        SocketBinding socketBinding;
+                        if (bootStorageAdapter.isUseSSL()) {
+                            socketBinding = httpsSocketBindingValue.getValue();
+                        } else {
+                            socketBinding = httpSocketBindingValue.getValue();
+                        }
+                        address = socketBinding.getAddress().getHostAddress();
+                        if (address.equals("0.0.0.0") || address.equals("::/128")) {
+                            address = InetAddress.getLocalHost().getCanonicalHostName();
+                        }
+                        port = socketBinding.getAbsolutePort();
+                    } else {
+                        OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue
+                                .getValue();
+                        address = serverBinding.getResolvedDestinationAddress().getHostAddress();
+                        port = serverBinding.getDestinationPort();
+                    }
+                    String protocol = (bootStorageAdapter.isUseSSL()) ? "https" : "http";
+                    useUrl = String.format("%s://%s:%d", protocol, address, port);
+                } catch (UnknownHostException uhe) {
+                    throw new IllegalArgumentException("Cannot determine Hawkular server host", uhe);
+                }
+            }
+
+            String useTenantId = bootStorageAdapter.getTenantId();
+
+            if (bootStorageAdapter.getType() == StorageReportTo.HAWKULAR) {
+                try {
+                    StringBuilder url = Util.getContextUrlString(useUrl,
+                            bootStorageAdapter.getAccountsContext());
+                    url.append("personas/current");
+
+                    SSLContext sslContext = getSslContext(bootConfiguration, trustOnlySSLContextValues);
+
+                    HttpClientBuilder httpClientBuilder = new HttpClientBuilder(bootConfiguration.getStorageAdapter(),
+                            sslContext);
+
+                    OkHttpClient httpclient = httpClientBuilder.getHttpClient();
+
+                    // TODO: next three lines are only temporary and should be deleted when inventory no longer needs
+                    // this. make the call to the inventory to pre-create the test environment and other assumed
+                    // entities
+                    String tenantUrl = Util.getContextUrlString(useUrl,
+                            bootStorageAdapter.getInventoryContext()).append("tenant").toString();
+                    httpclient.newCall(httpClientBuilder.buildJsonGetRequest(tenantUrl, null)).execute();
+
+                    Request request = httpClientBuilder.buildJsonGetRequest(url.toString(), null);
+                    Response httpResponse = httpclient.newCall(request).execute();
+
+                    if (!httpResponse.isSuccessful()) {
+                        throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
+                                + httpResponse.message() + "], url=[" + url + "]");
+                    }
+
+                    final String fromServer = httpResponse.body().string();
+                    // depending on accounts is probably overkill because of 1 REST call, so let's process the
+                    // JSON via regex
+                    Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
+                    if (matcher.find()) {
+                        String tenantIdFromAccounts = matcher.group(1);
+                        if (!tenantIdFromAccounts.equals(useTenantId)) {
+                            log.warnIgnoringTenantIdFromXml(useTenantId, tenantIdFromAccounts);
+                        }
+                        useTenantId = tenantIdFromAccounts;
+                    }
+                    log.debugf("Tenant ID [%s]", useTenantId == null ? "unknown" : useTenantId);
+                } catch (Throwable t) {
+                    throw new RuntimeException("Cannot get tenant ID", t);
+                }
+            }
+            MonitorServiceConfiguration.StorageAdapterConfiguration runtimeStorageAdapter = //
+                    new MonitorServiceConfiguration.StorageAdapterConfiguration(
+                            bootStorageAdapter.getType(), bootStorageAdapter.getUsername(),
+                            bootStorageAdapter.getPassword(),
+                            useTenantId, useUrl, bootStorageAdapter.isUseSSL(),
+                            bootStorageAdapter.getServerOutboundSocketBindingRef(),
+                            bootStorageAdapter.getAccountsContext(), bootStorageAdapter.getInventoryContext(),
+                            bootStorageAdapter.getMetricsContext(), bootStorageAdapter.getFeedcommContext(),
+                            bootStorageAdapter.getKeystorePath(), bootStorageAdapter.getKeystorePassword(),
+                            bootStorageAdapter.getSecurityRealm());
+
+            return bootConfiguration.cloneWith(runtimeStorageAdapter);
+        }
+
+    }
+
+    private static SSLContext getSslContext(MonitorServiceConfiguration configuration,
+            Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues) {
+        SSLContext result = null;
+        String bootSecurityRealm = configuration.getStorageAdapter().getSecurityRealm();
+        if (bootSecurityRealm != null) {
+            result = trustOnlySSLContextValues.get(bootSecurityRealm)
+                    .getOptionalValue();
+        }
+        return result;
+    }
+
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
     private final InjectedValue<ControlledProcessStateService> processStateValue = new InjectedValue<>();
@@ -150,13 +246,16 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     private boolean started = false;
 
     private PropertyChangeListener serverStateListener;
-    private ExecutorService managementClientExecutor;
 
-    // the full configuration as declared in standalone.xml
+    /** The configuration as declared in standalone.xml. This one should be used only to build the runtime configuration
+     * strored in {@link #configuration}. */
+    private final MonitorServiceConfiguration bootConfiguration;
+
+    /** A version of {@link #bootConfiguration} with defaults properly set. @{link #configuration} is build in
+     * {@link #startMonitorService()} */
     private MonitorServiceConfiguration configuration;
 
     // this is used to identify us to the Hawkular environment as a particular feed
-    private ServerIdentifiers selfId;
     private String feedId;
 
     // used to report our own internal metrics
@@ -178,12 +277,14 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     private final AvailStorageProxy availStorageProxy = new AvailStorageProxy();
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
 
-    // our internal inventories for each monitored server
-    private final Map<ManagedServer, DMRInventoryManager> dmrServerInventories = new HashMap<>();
-    private final Map<ManagedServer, JMXInventoryManager> jmxServerInventories = new HashMap<>();
+    private ProtocolServices protocolServices;
 
-    // inventory manager for the platform resources
-    private final AtomicReference<PlatformInventoryManager> platformInventory = new AtomicReference<>();
+    private ModelControllerClientFactory localModelControllerClientFactory;
+
+    public MonitorService(MonitorServiceConfiguration bootConfiguration) {
+        super();
+        this.bootConfiguration = bootConfiguration;
+    }
 
     @Override
     public MonitorService getValue() {
@@ -195,20 +296,6 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
      */
     public HawkularMonitorContext getHawkularMonitorContext() {
         return new HawkularMonitorContextImpl(metricStorageProxy, availStorageProxy, inventoryStorageProxy);
-    }
-
-    /**
-     * Configures this service and its internals.
-     *
-     * @param config the configuration with all settings needed to start monitoring metrics
-     */
-    public void configure(MonitorServiceConfiguration config) {
-        if (isMonitorServiceStarted()) {
-            throw new IllegalStateException(
-                    "Service is already started and cannot be reconfigured. Shut it down first.");
-        }
-
-        this.configuration = config;
     }
 
     /**
@@ -226,53 +313,55 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
                 httpSocketBindingValue);
         bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("https"), SocketBinding.class,
                 httpsSocketBindingValue);
-        if (this.configuration.storageAdapter.serverOutboundSocketBindingRef != null) {
+        if (this.bootConfiguration.getStorageAdapter().getServerOutboundSocketBindingRef() != null) {
             bldr.addDependency(OutboundSocketBinding.OUTBOUND_SOCKET_BINDING_BASE_SERVICE_NAME
-                    .append(this.configuration.storageAdapter.serverOutboundSocketBindingRef),
+                    .append(this.bootConfiguration.getStorageAdapter().getServerOutboundSocketBindingRef()),
                     OutboundSocketBinding.class, serverOutboundSocketBindingValue);
         }
 
         // get the security realm ssl context for the storage adapter
-        if (this.configuration.storageAdapter.securityRealm != null) {
+        if (this.bootConfiguration.getStorageAdapter().getSecurityRealm() != null) {
             InjectedValue<SSLContext> iv = new InjectedValue<>();
-            this.trustOnlySSLContextValues.put(this.configuration.storageAdapter.securityRealm, iv);
+            this.trustOnlySSLContextValues.put(this.bootConfiguration.getStorageAdapter().getSecurityRealm(), iv);
 
             // if we ever need our own private key, we can add another dependency with trustStoreOnly=false
             boolean trustStoreOnly = true;
             SSLContextService.ServiceUtil.addDependency(
                     bldr,
                     iv,
-                    SecurityRealm.ServiceUtil.createServiceName(this.configuration.storageAdapter.securityRealm),
+                    SecurityRealm.ServiceUtil
+                            .createServiceName(this.bootConfiguration.getStorageAdapter().getSecurityRealm()),
                     trustStoreOnly);
         }
 
         // get the security realms for any configured remote DMR and JMX servers that require ssl
-        for (Map.Entry<Name, ManagedServer> entry : this.configuration.managedServersMap.entrySet()) {
-            String securityRealm = null;
-
-            ManagedServer managedServer = entry.getValue();
-            if (managedServer instanceof RemoteDMRManagedServer) {
-                RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
-                securityRealm = dmrServer.getSecurityRealm();
-            } else if (managedServer instanceof RemoteJMXManagedServer) {
-                RemoteJMXManagedServer jmxServer = (RemoteJMXManagedServer) managedServer;
-                securityRealm = jmxServer.getSecurityRealm();
+        for (DMRManagedServer managedServer : this.bootConfiguration.getDmrConfiguration().getManagedServers()
+                .values()) {
+            if (managedServer instanceof SecurityRealmProvider) {
+                addSslContext((SecurityRealmProvider) managedServer, bldr);
             }
 
-            if (securityRealm != null) {
-                if (!this.trustOnlySSLContextValues.containsKey(securityRealm)) {
-                    // if we haven't added a dependency on the security realm yet, add it now
-                    InjectedValue<SSLContext> iv = new InjectedValue<>();
-                    this.trustOnlySSLContextValues.put(securityRealm, iv);
+        }
+        for (RemoteJMXManagedServer managedServer : this.bootConfiguration.getJmxConfiguration().getManagedServers()
+                .values()) {
+            addSslContext((SecurityRealmProvider) managedServer, bldr);
+        }
 
-                    boolean trustStoreOnly = true;
-                    SSLContextService.ServiceUtil.addDependency(
-                            bldr,
-                            iv,
-                            SecurityRealm.ServiceUtil.createServiceName(securityRealm),
-                            trustStoreOnly);
-                }
-            }
+    }
+
+    private void addSslContext(SecurityRealmProvider managedServer, ServiceBuilder<MonitorService> bldr) {
+        String securityRealm = managedServer.getSecurityRealm();
+        if (securityRealm != null && !this.trustOnlySSLContextValues.containsKey(securityRealm)) {
+            // if we haven't added a dependency on the security realm yet, add it now
+            InjectedValue<SSLContext> iv = new InjectedValue<>();
+            this.trustOnlySSLContextValues.put(securityRealm, iv);
+
+            boolean trustStoreOnly = true;
+            SSLContextService.ServiceUtil.addDependency(
+                    bldr,
+                    iv,
+                    SecurityRealm.ServiceUtil.createServiceName(securityRealm),
+                    trustStoreOnly);
         }
     }
 
@@ -314,69 +403,39 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
         log.infoStarting();
 
+        this.configuration = buildRuntimeConfiguration(this.bootConfiguration,
+                this.httpSocketBindingValue, this.httpsSocketBindingValue, this.serverOutboundSocketBindingValue,
+                this.trustOnlySSLContextValues);
+        log.infoUsingServerSideUrl(this.configuration.getStorageAdapter().getUrl());
+
         // prepare the builder that will create our HTTP/REST clients to the hawkular server infrastructure
-        SSLContext ssl = null;
-        if (this.configuration.storageAdapter.securityRealm != null) {
-            ssl = this.trustOnlySSLContextValues.get(this.configuration.storageAdapter.securityRealm)
-                    .getOptionalValue();
-        }
-        this.httpClientBuilder = new HttpClientBuilder(this.configuration, ssl);
+        SSLContext ssl = getSslContext(this.configuration, this.trustOnlySSLContextValues);
+        this.httpClientBuilder = new HttpClientBuilder(this.configuration.getStorageAdapter(), ssl);
 
         // get our self identifiers
-        ModelControllerClientFactory mccFactory = createLocalClientFactory();
-        LocalDMREndpoint localDMREndpoint = new LocalDMREndpoint("_self", mccFactory);
-        this.selfId = localDMREndpoint.getServerIdentifiers();
+        this.localModelControllerClientFactory =
+                ModelControllerClientFactory.createLocal(modelControllerValue.getValue());
+        try (ModelControllerClient c = localModelControllerClientFactory.createClient()) {
+            this.feedId = DMREndpointService.lookupServerIdentifier(c);
+        } catch (IOException e1) {
+            log.errorf(e1, "Could not load feedId over local ModelControllerClient connection");
+        }
 
         // build the diagnostics object that will be used to track our own performance
         final MetricRegistry metricRegistry = new MetricRegistry();
-        this.diagnostics = new DiagnosticsImpl(configuration.diagnostics, metricRegistry, selfId);
-
-        // determine where our Hawkular server is
-        // If the user gave us a URL explicitly, that overrides everything and we use it.
-        // If no URL is configured, but we are given a server outbound socket binding name,
-        // we use that to determine the remote Hawkular URL.
-        // If neither URL nor output socket binding name is provided, we assume we are running
-        // co-located with the Hawkular server and we use local bindings.
-        if (this.configuration.storageAdapter.url == null) {
-            try {
-                String address;
-                int port;
-
-                if (this.configuration.storageAdapter.serverOutboundSocketBindingRef == null) {
-                    // no URL or output socket binding - assume we are running co-located with server
-                    SocketBinding socketBinding;
-                    if (this.configuration.storageAdapter.useSSL) {
-                        socketBinding = this.httpsSocketBindingValue.getValue();
-                    } else {
-                        socketBinding = this.httpSocketBindingValue.getValue();
-                    }
-                    address = socketBinding.getAddress().getHostAddress();
-                    if (address.equals("0.0.0.0") || address.equals("::/128")) {
-                        address = InetAddress.getLocalHost().getCanonicalHostName();
-                    }
-                    port = socketBinding.getAbsolutePort();
-                } else {
-                    OutboundSocketBinding serverBinding = this.serverOutboundSocketBindingValue.getValue();
-                    address = serverBinding.getResolvedDestinationAddress().getHostAddress();
-                    port = serverBinding.getDestinationPort();
-                }
-                String protocol = (this.configuration.storageAdapter.useSSL) ? "https" : "http";
-                this.configuration.storageAdapter.url = String.format("%s://%s:%d", protocol, address, port);
-            } catch (UnknownHostException uhe) {
-                throw new IllegalArgumentException("Cannot determine Hawkular server host", uhe);
-            }
-        }
-
-        log.infoUsingServerSideUrl(this.configuration.storageAdapter.url);
+        this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
 
         // if we are participating in a full Hawkular environment, we need to do some additional things:
         // 1. determine our tenant ID dynamically
         // 2. register our feed ID
         // 3. connect to the server's feed comm channel
         // 4. prepare the thread pool that will store discovered resources into inventory
-        if (this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
+        if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
+            if (this.configuration.getStorageAdapter().getTenantId() == null) {
+                log.errNoTenantIdFromAccounts();
+                return;
+            }
             try {
-                determineTenantId();
                 registerFeed();
             } catch (Exception e) {
                 log.errorCannotDoAnythingWithoutFeed(e);
@@ -391,7 +450,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
 
         } else {
-            if (this.configuration.storageAdapter.tenantId == null) {
+            if (this.configuration.getStorageAdapter().getTenantId() == null) {
                 log.errorMustHaveTenantIdConfigured();
                 return;
             }
@@ -405,8 +464,23 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             return;
         }
 
-        // build our inventory managers and find all the resources we need to monitor
-        discoverAllResourcesForAllManagedServers();
+        try {
+            startScheduler();
+        } catch (Exception e) {
+            log.errorCannotInitializeScheduler(e);
+        }
+
+        ProtocolServices ps = ProtocolServices.builder(feedId, trustOnlySSLContextValues) //
+                .dmrProtocolService(localModelControllerClientFactory, configuration.getDmrConfiguration())
+                .jmxProtocolService(configuration.getJmxConfiguration())
+                .platformProtocolService(configuration.getPlatformConfiguration())
+                .build();
+        ps.addInventoryListener(inventoryStorageProxy);
+        ps.addInventoryListener(schedulerService);
+        this.protocolServices = ps;
+        this.protocolServices.start();
+
+        // restart the scheduler - this will begin metric collections for our new inventory
 
         started = true;
     }
@@ -418,11 +492,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         if (!isMonitorServiceStarted()) {
             return; // we are already stopped
         }
-
         log.infoStopping();
-
-        // shutdown scheduler
-        stopScheduler();
 
         // disconnect from the feed comm channel
         if (feedComm != null) {
@@ -430,15 +500,17 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             feedComm = null;
         }
 
-        // remove our inventories
-        dmrServerInventories.clear();
-        jmxServerInventories.clear();
-        platformInventory.set(null);
+        this.protocolServices.removeInventoryListener(inventoryStorageProxy);
+        this.protocolServices.removeInventoryListener(schedulerService);
+        this.protocolServices.stop();
+
+        // shutdown scheduler
+        stopScheduler();
 
         // stop diagnostic reporting and spit out a final diagnostics report
         if (diagnosticsReporter != null) {
             diagnosticsReporter.stop();
-            if (configuration.diagnostics.enabled) {
+            if (configuration.getDiagnostics().isEnabled()) {
                 diagnosticsReporter.report();
             }
         }
@@ -465,89 +537,13 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     }
 
     /**
-     * Reads in a data file into memory and returns its contents. Do NOT call this for very large files.
-     *
-     * @param filename the name of the file to read - its location is assumed to be under
-     *                 the {@link #getDataDirectory() data directory}.
-     * @return the full contents of the file
-     * @throws FileNotFoundException if the file does not exist
-     */
-    private String slurpDataFile(String filename) throws FileNotFoundException {
-        File dataFile = new File(getDataDirectory(), filename);
-        FileInputStream dataFileInputStream = new FileInputStream(dataFile);
-        String fileContents = Util.slurpStream(dataFileInputStream);
-        return fileContents;
-    }
-
-    /**
-     * Writes a data file to the {@link #getDataDirectory() data directory}.
-     *
-     * @param filename the name of the file - this is relative to under the data directory
-     * @param fileContents what the contents of the file should be
-     * @return the file that was written
-     * @throws FileNotFoundException if the file could not be created
-     */
-    private File writeDataFile(String filename, String fileContents) throws FileNotFoundException {
-        File dataFile = new File(getDataDirectory(), filename);
-        FileOutputStream dataFileOutputStream = new FileOutputStream(dataFile);
-        ByteArrayInputStream bais = new ByteArrayInputStream(fileContents.getBytes());
-        Util.copyStream(bais, dataFileOutputStream, true);
-        return dataFile;
-    }
-
-    /**
-     * Create a factory that will create ModelControllerClient objects that talk
-     * to the WildFly server we are running in.
-     *
-     * @return factory to create intra-VM clients
-     */
-    private ModelControllerClientFactory createLocalClientFactory() {
-        ModelControllerClientFactory mccFactory = new ModelControllerClientFactory() {
-            @Override
-            public ModelControllerClient createClient() {
-                return getManagementControllerClient();
-            }
-        };
-        return mccFactory;
-    }
-
-    /**
-     * Returns a client that can be used to talk to the management interface of the app server this
-     * service is running in.
-     *
-     * Make sure you close this when you are done with it.
-     *
-     * @return client
-     */
-    private ModelControllerClient getManagementControllerClient() {
-        ExecutorService executor = getManagementClientExecutor();
-        return this.modelControllerValue.getValue().createClient(executor);
-    }
-
-    /**
-     * Returns the thread pool to be used by the management clients (see {@link #getManagementControllerClient()}).
-     *
-     * @return thread pool
-     */
-    private ExecutorService getManagementClientExecutor() {
-        if (managementClientExecutor == null) {
-            final int numThreadsInPool = this.configuration.numDmrSchedulerThreads;
-            final ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
-                    "Hawkular-Monitor-MgmtClient");
-            managementClientExecutor = Executors.newFixedThreadPool(numThreadsInPool, threadFactory);
-        }
-
-        return managementClientExecutor;
-    }
-
-    /**
      * Creates and starts the storage adapter that will be used to store our inventory data and monitoring data.
      *
      * @throws Exception if failed to start the storage adapter
      */
     private void startStorageAdapter() throws Exception {
         // determine what our backend storage should be and create its associated adapter
-        switch (configuration.storageAdapter.type) {
+        switch (configuration.getStorageAdapter().getType()) {
             case HAWKULAR: {
                 this.storageAdapter = new HawkularStorageAdapter();
                 break;
@@ -558,11 +554,11 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
             default: {
                 throw new IllegalArgumentException("Invalid storage adapter: "
-                        + configuration.storageAdapter);
+                        + configuration.getStorageAdapter());
             }
         }
 
-        this.storageAdapter.initialize(configuration.storageAdapter, diagnostics, selfId, httpClientBuilder);
+        this.storageAdapter.initialize(configuration.getStorageAdapter(), diagnostics, httpClientBuilder);
 
         // provide our storage adapter to the proxies - allows external apps to use them to store its own data
         metricStorageProxy.setStorageAdapter(storageAdapter);
@@ -570,7 +566,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
         inventoryStorageProxy.setStorageAdapter(storageAdapter);
 
         // determine where we are to store our own diagnostic reports
-        switch (configuration.diagnostics.reportTo) {
+        switch (configuration.getDiagnostics().getReportTo()) {
             case LOG: {
                 this.diagnosticsReporter = JBossLoggingReporter.forRegistry(this.diagnostics.getMetricRegistry())
                         .convertRatesTo(TimeUnit.SECONDS)
@@ -582,21 +578,22 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
             case STORAGE: {
                 this.diagnosticsReporter = StorageReporter
-                        .forRegistry(this.diagnostics.getMetricRegistry(), configuration.diagnostics, storageAdapter,
-                                selfId)
+                        .forRegistry(this.diagnostics.getMetricRegistry(), configuration.getDiagnostics(),
+                                storageAdapter)
+                        .feedId(feedId)
                         .convertRatesTo(TimeUnit.SECONDS)
                         .convertDurationsTo(MILLISECONDS)
                         .build();
                 break;
             }
             default: {
-                throw new Exception("Invalid diagnostics type: " + configuration.diagnostics.reportTo);
+                throw new Exception("Invalid diagnostics type: " + configuration.getDiagnostics().getReportTo());
             }
         }
 
-        if (this.configuration.diagnostics.enabled) {
-            diagnosticsReporter.start(this.configuration.diagnostics.interval,
-                    this.configuration.diagnostics.timeUnits);
+        if (this.configuration.getDiagnostics().isEnabled()) {
+            diagnosticsReporter.start(this.configuration.getDiagnostics().getInterval(),
+                    this.configuration.getDiagnostics().getTimeUnits());
         }
     }
 
@@ -617,36 +614,23 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
      * @throws Exception
      */
     private void startScheduler() throws Exception {
-        if (this.schedulerService != null) {
-            return; // it has already been started
+        if (this.schedulerService == null) {
+            SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
+            schedulerConfig.setDiagnosticsConfig(this.configuration.getDiagnostics());
+            schedulerConfig.setStorageAdapterConfig(this.configuration.getStorageAdapter());
+            schedulerConfig.setMetricSchedulerThreads(this.configuration.getNumMetricSchedulerThreads());
+            schedulerConfig.setAvailSchedulerThreads(this.configuration.getNumAvailSchedulerThreads());
+            schedulerConfig.setMetricDispatcherBufferSize(this.configuration.getMetricDispatcherBufferSize());
+            schedulerConfig.setMetricDispatcherMaxBatchSize(this.configuration.getMetricDispatcherMaxBatchSize());
+            schedulerConfig.setAvailDispatcherBufferSize(this.configuration.getAvailDispatcherBufferSize());
+            schedulerConfig.setAvailDispatcherMaxBatchSize(this.configuration.getAvailDispatcherMaxBatchSize());
+
+            this.schedulerService = new SchedulerService(
+                    schedulerConfig,
+                    this.diagnostics,
+                    this.storageAdapter);
         }
 
-        SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
-        schedulerConfig.setDiagnosticsConfig(this.configuration.diagnostics);
-        schedulerConfig.setStorageAdapterConfig(this.configuration.storageAdapter);
-        schedulerConfig.setMetricSchedulerThreads(this.configuration.numMetricSchedulerThreads);
-        schedulerConfig.setAvailSchedulerThreads(this.configuration.numAvailSchedulerThreads);
-        schedulerConfig.setMetricDispatcherBufferSize(this.configuration.metricDispatcherBufferSize);
-        schedulerConfig.setMetricDispatcherMaxBatchSize(this.configuration.metricDispatcherMaxBatchSize);
-        schedulerConfig.setAvailDispatcherBufferSize(this.configuration.availDispatcherBufferSize);
-        schedulerConfig.setAvailDispatcherMaxBatchSize(this.configuration.availDispatcherMaxBatchSize);
-
-        // for all the resources we have in inventory, schedule their metric and avail collections
-        for (DMRInventoryManager im : this.dmrServerInventories.values()) {
-            scheduleDMRMetricAvailCollections(schedulerConfig, im);
-        }
-        for (JMXInventoryManager im : this.jmxServerInventories.values()) {
-            scheduleJMXMetricAvailCollections(schedulerConfig, im);
-        }
-
-        schedulePlatformMetricAvailCollections(schedulerConfig, this.platformInventory.get());
-
-        this.schedulerService = new SchedulerService(
-                schedulerConfig,
-                this.selfId,
-                this.diagnostics,
-                this.storageAdapter,
-                createLocalClientFactory());
         this.schedulerService.start();
     }
 
@@ -661,519 +645,18 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     }
 
     /**
-     * Convienence method that stops the scheduler if its already running, and then starts it up.
-     * @throws Exception if cannot start the scheduler
-     */
-    private void restartScheduler() throws Exception {
-        stopScheduler();
-        startScheduler();
-    }
-
-    /**
-     * This prepares the given scheduler config with all the schedules needed to monitor all the resources
-     * in the given inventory manager.
-     * @param schedulerConfig scheduler configuration
-     * @param im inventory manager
-     */
-    private void scheduleDMRMetricAvailCollections(SchedulerConfiguration schedulerConfig, DMRInventoryManager im) {
-        BreadthFirstIterator<DMRResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
-        while (bIter.hasNext()) {
-            DMRResource resource = bIter.next();
-
-            // schedule collections
-            Collection<DMRMetricInstance> metricsToBeCollected = resource.getMetrics();
-            for (DMRMetricInstance metricToBeCollected : metricsToBeCollected) {
-                schedulerConfig.addMetricToBeCollected(resource.getEndpoint(), metricToBeCollected);
-            }
-
-            Collection<DMRAvailInstance> availsToBeCollected = resource.getAvails();
-            for (DMRAvailInstance availToBeCollected : availsToBeCollected) {
-                schedulerConfig.addAvailToBeChecked(resource.getEndpoint(), availToBeCollected);
-            }
-        }
-    }
-
-    /**
-     * This prepares the given scheduler config with all the schedules needed to monitor all the resources
-     * in the given inventory manager.
-     * @param schedulerConfig scheduler configuration
-     * @param im inventory manager
-     */
-    private void scheduleJMXMetricAvailCollections(SchedulerConfiguration schedulerConfig, JMXInventoryManager im) {
-        BreadthFirstIterator<JMXResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
-        while (bIter.hasNext()) {
-            JMXResource resource = bIter.next();
-
-            // schedule collections
-            Collection<JMXMetricInstance> metricsToBeCollected = resource.getMetrics();
-            for (JMXMetricInstance metricToBeCollected : metricsToBeCollected) {
-                schedulerConfig.addMetricToBeCollected(resource.getEndpoint(), metricToBeCollected);
-            }
-
-            Collection<JMXAvailInstance> availsToBeCollected = resource.getAvails();
-            for (JMXAvailInstance availToBeCollected : availsToBeCollected) {
-                schedulerConfig.addAvailToBeChecked(resource.getEndpoint(), availToBeCollected);
-            }
-        }
-    }
-
-    private void schedulePlatformMetricAvailCollections(SchedulerConfiguration schedulerConfig,
-            PlatformInventoryManager im) {
-        if (im == null) {
-            return; // platform resources are not to be monitored, do nothing and return
-        }
-
-        BreadthFirstIterator<PlatformResource, DefaultEdge> bIter = im.getResourceManager().getBreadthFirstIterator();
-        while (bIter.hasNext()) {
-            PlatformResource resource = bIter.next();
-
-            // schedule collections
-            Collection<PlatformMetricInstance> metricsToBeCollected = resource.getMetrics();
-            for (PlatformMetricInstance metricToBeCollected : metricsToBeCollected) {
-                schedulerConfig.addMetricToBeCollected(resource.getEndpoint(), metricToBeCollected);
-            }
-
-            Collection<PlatformAvailInstance> availsToBeCollected = resource.getAvails();
-            for (PlatformAvailInstance availToBeCollected : availsToBeCollected) {
-                schedulerConfig.addAvailToBeChecked(resource.getEndpoint(), availToBeCollected);
-            }
-        }
-    }
-
-    @Override
-    public Map<ManagedServer, DMRInventoryManager> getDmrServerInventories() {
-        return Collections.unmodifiableMap(this.dmrServerInventories);
-    }
-
-    @Override
-    public Map<ManagedServer, JMXInventoryManager> getJmxServerInventories() {
-        return Collections.unmodifiableMap(this.jmxServerInventories);
-    }
-
-    private void discoverPlatformData() {
-        TypeSets<PlatformResourceType, PlatformMetricType, PlatformAvailType> config = this.configuration
-                .getPlatformTypeSets();
-
-        if (!config.isEnabled()) {
-            return;
-        }
-
-        // build the metadata manager
-        ResourceTypeManager<PlatformResourceType> rtm;
-        rtm = new ResourceTypeManager<>(config.getResourceTypeSets());
-
-        // tell metric/avail managers what metric and avail types we need to use for the resource types
-        MetricTypeManager<PlatformMetricType> mtm = new MetricTypeManager<>();
-        AvailTypeManager<PlatformAvailType> atm = new AvailTypeManager<>();
-
-        mtm.addMetricTypes(config.getMetricTypeSets(), null);
-        atm.addAvailTypes(config.getAvailTypeSets(), null);
-
-        PlatformMetadataManager mm = new PlatformMetadataManager(rtm, mtm, atm);
-        mm.populateMetricAndAvailTypesForAllResourceTypes();
-
-        // Create our empty resource manager - this will be filled in during discovery with our resources
-        ResourceManager<PlatformResource> rm = new ResourceManager<>();
-
-        // build the inventory manager
-        PlatformInventoryManager im = new PlatformInventoryManager(feedId, mm, rm, new PlatformManagedServer(
-                null, Constants.PLATFORM), new PlatformEndpoint(this.feedId));
-        PlatformInventoryManager imOriginal = this.platformInventory.getAndSet(im);
-
-        // discover our platform resources now
-        im.discoverResources(getPlatformListenerForChangedInventory(imOriginal));
-
-        log.debugf("Full discovery scan of platform found [%d] resources",
-                im.getResourceManager().getAllResources().size());
-    }
-
-    @Override
-    public void discoverAllResourcesForAllManagedServers() {
-        int resourcesDiscovered = 0;
-
-        // first discover platform data if we are configured to do so
-        discoverPlatformData();
-
-        // there may be some old managed servers that we don't manage anymore - remove them now
-        this.dmrServerInventories.keySet().retainAll(this.configuration.managedServersMap.values());
-        this.jmxServerInventories.keySet().retainAll(this.configuration.managedServersMap.values());
-
-        // go through each configured managed server and discovery all resources in them
-        for (ManagedServer managedServer : this.configuration.managedServersMap.values()) {
-            if (!managedServer.isEnabled()) {
-                log.infoManagedServerDisabled(managedServer.getName().toString());
-            } else {
-                if (managedServer instanceof RemoteDMRManagedServer) {
-                    RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) managedServer;
-                    SSLContext sslContext = null;
-                    if (dmrServer.getUseSSL()) {
-                        sslContext = this.trustOnlySSLContextValues.get(dmrServer.getSecurityRealm())
-                                .getOptionalValue();
-                    }
-                    DMREndpoint dmrEndpoint = new DMREndpoint(dmrServer.getName().toString(),
-                            dmrServer.getHost(),
-                            dmrServer.getPort(),
-                            dmrServer.getUsername(),
-                            dmrServer.getPassword(),
-                            dmrServer.getUseSSL(),
-                            sslContext);
-                    discoverResourcesForDMRManagedServer(managedServer, dmrEndpoint);
-                    resourcesDiscovered += this.dmrServerInventories.get(managedServer).getResourceManager()
-                            .getAllResources().size();
-                } else if (managedServer instanceof LocalDMRManagedServer) {
-                    DMREndpoint dmrEndpoint = new LocalDMREndpoint(managedServer.getName().toString(),
-                            createLocalClientFactory());
-                    discoverResourcesForDMRManagedServer(managedServer, dmrEndpoint);
-                    resourcesDiscovered += this.dmrServerInventories.get(managedServer).getResourceManager()
-                            .getAllResources().size();
-                } else if (managedServer instanceof RemoteJMXManagedServer) {
-                    RemoteJMXManagedServer jmxServer = (RemoteJMXManagedServer) managedServer;
-                    SSLContext sslContext = null;
-                    if (jmxServer.getUrl().getProtocol().equalsIgnoreCase("https")) {
-                        sslContext = this.trustOnlySSLContextValues.get(jmxServer.getSecurityRealm())
-                                .getOptionalValue();
-                    }
-                    JMXEndpoint jmxEndpoint = new JMXEndpoint(jmxServer.getName().toString(),
-                            jmxServer.getUrl(),
-                            jmxServer.getUsername(),
-                            jmxServer.getPassword(),
-                            sslContext);
-                    discoverResourcesForJMXManagedServer(managedServer, jmxEndpoint);
-                    resourcesDiscovered += this.jmxServerInventories.get(managedServer).getResourceManager()
-                            .getAllResources().size();
-                } else {
-                    throw new IllegalArgumentException("An invalid managed server type was found. ["
-                            + managedServer + "] Please report this bug.");
-                }
-            }
-        }
-
-        log.debugf("Full discovery scan of managed servers found [%d] resources", resourcesDiscovered);
-
-        // restart the scheduler - this will begin metric collections for our new inventory
-        try {
-            restartScheduler();
-        } catch (Exception e) {
-            log.errorCannotInitializeScheduler(e);
-        }
-
-        return;
-    }
-
-    private VertexSetListener<PlatformResource> getPlatformListenerForChangedInventory(
-            final PlatformInventoryManager imOriginal) {
-
-        VertexSetListener<PlatformResource> platformListener = null;
-
-        // if we are participating in a full hawkular environment,
-        // new resources and their metadata will be added to inventory
-        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
-            platformListener = new VertexSetListener<PlatformResource>() {
-                @Override
-                public void vertexRemoved(GraphVertexChangeEvent<PlatformResource> e) {
-                }
-
-                @Override
-                public void vertexAdded(GraphVertexChangeEvent<PlatformResource> e) {
-                    final PlatformResource resource = e.getVertex();
-                    final PlatformResourceType resourceType = resource.getResourceType();
-
-                    if (imOriginal != null) {
-                        PlatformResource oldResource = imOriginal.getResourceManager().getResource(resource.getID());
-                        if (oldResource != null) {
-                            // we discovered a resource we had before. For now do nothing other than
-                            // set its persisted flag since we assume it has already been or will be persisted
-                            resource.setPersisted(true);
-                            resourceType.setPersisted(true);
-                            return;
-                        }
-                    }
-
-                    try {
-                        MonitorService.this.inventoryStorageProxy.storeResource(resource);
-                    } catch (Throwable t) {
-                        log.errorf(t, "Failed to store platform resource [%s]", resource);
-                    }
-                }
-            };
-        }
-
-        return platformListener;
-    }
-
-    private VertexSetListener<DMRResource> getDMRListenerForChangedInventory(final DMRInventoryManager imOriginal) {
-        VertexSetListener<DMRResource> dmrListener = null;
-
-        // if we are participating in a full hawkular environment,
-        // new resources and their metadata will be added to inventory
-        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
-            dmrListener = new VertexSetListener<DMRResource>() {
-                @Override
-                public void vertexRemoved(GraphVertexChangeEvent<DMRResource> e) {
-                }
-
-                @Override
-                public void vertexAdded(GraphVertexChangeEvent<DMRResource> e) {
-                    final DMRResource resource = e.getVertex();
-                    final DMRResourceType resourceType = resource.getResourceType();
-
-                    if (imOriginal != null) {
-                        DMRResource oldResource = imOriginal.getResourceManager().getResource(resource.getID());
-                        if (oldResource != null) {
-                            // we discovered a resource we had before. For now do nothing other than
-                            // set its persisted flag since we assume it has already been or will be persisted
-                            resource.setPersisted(true);
-                            resourceType.setPersisted(true);
-                            return;
-                        }
-                    }
-
-                    try {
-                        MonitorService.this.inventoryStorageProxy.storeResource(resource);
-                    } catch (Throwable t) {
-                        log.errorf(t, "Failed to store DMR resource [%s]", resource);
-                    }
-                }
-            };
-        }
-
-        return dmrListener;
-    }
-
-    private VertexSetListener<JMXResource> getJMXListenerForChangedInventory(final JMXInventoryManager imOriginal) {
-        VertexSetListener<JMXResource> jmxListener = null;
-
-        // if we are participating in a full hawkular environment,
-        // new resources and their metadata will be added to inventory
-        if (MonitorService.this.configuration.storageAdapter.type == StorageReportTo.HAWKULAR) {
-            jmxListener = new VertexSetListener<JMXResource>() {
-                @Override
-                public void vertexRemoved(GraphVertexChangeEvent<JMXResource> e) {
-                }
-
-                @Override
-                public void vertexAdded(GraphVertexChangeEvent<JMXResource> e) {
-                    final JMXResource resource = e.getVertex();
-                    final JMXResourceType resourceType = resource.getResourceType();
-
-                    if (imOriginal != null) {
-                        JMXResource oldResource = imOriginal.getResourceManager().getResource(resource.getID());
-                        if (oldResource != null) {
-                            // we discovered a resource we had before. For now do nothing other than
-                            // set its persisted flag since we assume it has already been or will be persisted
-                            resource.setPersisted(true);
-                            resourceType.setPersisted(true);
-                            return;
-                        }
-                    }
-
-                    try {
-                        MonitorService.this.inventoryStorageProxy.storeResource(resource);
-                    } catch (Throwable t) {
-                        log.errorf(t, "Failed to store JMX resource [%s]", resource);
-                    }
-                }
-            };
-        }
-
-        return jmxListener;
-    }
-
-    private void discoverResourcesForDMRManagedServer(ManagedServer managedServer, DMREndpoint dmrEndpoint) {
-        Collection<Name> resourceTypeSets = managedServer.getResourceTypeSets();
-        DMRInventoryManager im = buildDMRInventoryManager(managedServer, dmrEndpoint, resourceTypeSets, this.feedId,
-                this.configuration);
-        DMRInventoryManager imOriginal = this.dmrServerInventories.put(managedServer, im);
-        im.discoverResources(getDMRListenerForChangedInventory(imOriginal));
-    }
-
-    private void discoverResourcesForJMXManagedServer(ManagedServer managedServer, JMXEndpoint jmxEndpoint) {
-        Collection<Name> resourceTypeSets = managedServer.getResourceTypeSets();
-        JMXInventoryManager im = buildJMXInventoryManager(managedServer, jmxEndpoint, resourceTypeSets, this.feedId,
-                this.configuration);
-        JMXInventoryManager imOriginal = this.jmxServerInventories.put(managedServer, im);
-        im.discoverResources(getJMXListenerForChangedInventory(imOriginal));
-    }
-
-    /**
-     * Builds an DMR inventory manager with all metadata but with an empty set of resources.
-     *
-     * @param managedServer the managed server whose inventory will be stored in the returned manager
-     * @param dmrEndpoint the endpoint used to connect to the managed server
-     * @param dmrResourceTypeSets only resources of these types will be managed by the inventory manager
-     * @param feedId our feed ID
-     * @param monitorServiceConfig our full configuration
-     *
-     * @return the DMR inventory manager that was created
-     */
-    private DMRInventoryManager buildDMRInventoryManager(ManagedServer managedServer, DMREndpoint dmrEndpoint,
-            Collection<Name> dmrResourceTypeSets, String feedId, MonitorServiceConfiguration monitorServiceConfig) {
-
-        DMRMetadataManager metadataMgr = buildDMRMetadataManager(dmrResourceTypeSets, monitorServiceConfig);
-
-        // Create our empty resource manager - this will be filled in during discovery with our resources
-        ResourceManager<DMRResource> resourceManager = new ResourceManager<>();
-
-        // determine the client to use to connect to the managed server
-        ModelControllerClientFactory factory;
-        if (dmrEndpoint instanceof LocalDMREndpoint) {
-            factory = createLocalClientFactory();
-        } else {
-            factory = new ModelControllerClientFactoryImpl(dmrEndpoint);
-        }
-
-        DMRInventoryManager im;
-        im = new DMRInventoryManager(feedId, metadataMgr, resourceManager, managedServer, dmrEndpoint, factory);
-        return im;
-    }
-
-    /**
-     * Builds an JMX inventory manager with all metadata but with an empty set of resources.
-     *
-     * @param managedServer the managed server whose inventory will be stored in the returned manager
-     * @param jmxEndpoint the endpoint used to connect to the managed server
-     * @param jmxResourceTypeSets only resources of these types will be managed by the inventory manager
-     * @param feedId our feed ID
-     * @param monitorServiceConfig our full configuration
-     *
-     * @return the JMX inventory manager that was created
-     */
-    private JMXInventoryManager buildJMXInventoryManager(ManagedServer managedServer, JMXEndpoint jmxEndpoint,
-            Collection<Name> jmxResourceTypeSets, String feedId, MonitorServiceConfiguration monitorServiceConfig) {
-
-        JMXMetadataManager metadataMgr = buildJMXMetadataManager(jmxResourceTypeSets, monitorServiceConfig);
-
-        // Create our empty resource manager - this will be filled in during discovery with our resources
-        ResourceManager<JMXResource> resourceManager = new ResourceManager<>();
-
-        // determine the client to use to connect to the managed server
-        JmxClientFactory factory = new JmxClientFactoryImpl(jmxEndpoint);
-
-        JMXInventoryManager im;
-        im = new JMXInventoryManager(feedId, metadataMgr, resourceManager, managedServer, jmxEndpoint, factory);
-        return im;
-    }
-
-    /**
-     * Given a collection of resource type set names for DMR resources, this will build a metadata manager
-     * for all things (resource types, metric types, avail types) associated with those named type sets.
-     *
-     * @param dmrResourceTypeSets names of resource types to be used
-     * @param monitorServiceConfig configuration that contains all types known to our subsystem service
-     * @return metadata manager containing all metadata for the types in the named sets
-     */
-    private DMRMetadataManager buildDMRMetadataManager(Collection<Name> dmrResourceTypeSets,
-            MonitorServiceConfiguration monitorServiceConfig) {
-
-        // First build our metadata manager and its resource type manager, metric type manager, and avail type manager
-        ResourceTypeManager<DMRResourceType> rtm;
-        TypeSets<DMRResourceType, DMRMetricType, DMRAvailType> typeSets = monitorServiceConfig.getDmrTypeSets();
-        rtm = new ResourceTypeManager<>(typeSets.getResourceTypeSets(), dmrResourceTypeSets);
-
-        // tell metric/avail managers what metric and avail types we need to use for the resource types
-        MetricTypeManager<DMRMetricType> mtm = new MetricTypeManager<>();
-        AvailTypeManager<DMRAvailType> atm = new AvailTypeManager<>();
-        BreadthFirstIterator<DMRResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
-        while (resourceTypeIter.hasNext()) {
-            DMRResourceType type = resourceTypeIter.next();
-            Collection<Name> metricSetsToUse = type.getMetricSets();
-            Collection<Name> availSetsToUse = type.getAvailSets();
-            mtm.addMetricTypes(typeSets.getMetricTypeSets(), metricSetsToUse);
-            atm.addAvailTypes(typeSets.getAvailTypeSets(), availSetsToUse);
-        }
-        DMRMetadataManager mm = new DMRMetadataManager(rtm, mtm, atm);
-        mm.populateMetricAndAvailTypesForAllResourceTypes();
-        return mm;
-    }
-
-    /**
-     * Given a collection of resource type set names for JMX resources, this will build a metadata manager
-     * for all things (resource types, metric types, avail types) associated with those named type sets.
-     *
-     * @param jmxResourceTypeSets names of resource types to be used
-     * @param monitorServiceConfig configuration that contains all types known to our subsystem service
-     * @return metadata manager containing all metadata for the types in the named sets
-     */
-    private JMXMetadataManager buildJMXMetadataManager(Collection<Name> jmxResourceTypeSets,
-            MonitorServiceConfiguration monitorServiceConfig) {
-
-        // First build our metadata manager and its resource type manager, metric type manager, and avail type manager
-        TypeSets<JMXResourceType, JMXMetricType, JMXAvailType> typeSets = monitorServiceConfig.getJmxTypeSets();
-        ResourceTypeManager<JMXResourceType> rtm;
-        rtm = new ResourceTypeManager<>(typeSets.getResourceTypeSets(), jmxResourceTypeSets);
-
-        // tell metric/avail managers what metric and avail types we need to use for the resource types
-        MetricTypeManager<JMXMetricType> mtm = new MetricTypeManager<>();
-        AvailTypeManager<JMXAvailType> atm = new AvailTypeManager<>();
-        BreadthFirstIterator<JMXResourceType, DefaultEdge> resourceTypeIter = rtm.getBreadthFirstIterator();
-        while (resourceTypeIter.hasNext()) {
-            JMXResourceType type = resourceTypeIter.next();
-            Collection<Name> metricSetsToUse = type.getMetricSets();
-            Collection<Name> availSetsToUse = type.getAvailSets();
-            mtm.addMetricTypes(typeSets.getMetricTypeSets(), metricSetsToUse);
-            atm.addAvailTypes(typeSets.getAvailTypeSets(), availSetsToUse);
-        }
-        JMXMetadataManager mm = new JMXMetadataManager(rtm, mtm, atm);
-        mm.populateMetricAndAvailTypesForAllResourceTypes();
-        return mm;
-    }
-
-    /**
-     * @return Determines what Hawkular tenant ID should be used and returns it.
-     */
-    private String determineTenantId() {
-        if (configuration.storageAdapter.tenantId != null) {
-            return configuration.storageAdapter.tenantId;
-        }
-
-        try {
-            StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.accountsContext);
-            url.append("personas/current");
-
-            OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-
-            // TODO: next three lines are only temporary and should be deleted when inventory no longer needs this.
-            // make the call to the inventory to pre-create the test environment and other assumed entities
-            String tenantUrl = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.inventoryContext).append("tenant").toString();
-            httpclient.newCall(this.httpClientBuilder.buildJsonGetRequest(tenantUrl, null)).execute();
-
-            Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), null);
-            Response httpResponse = httpclient.newCall(request).execute();
-
-            if (!httpResponse.isSuccessful()) {
-                throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
-                        + httpResponse.message() + "], url=[" + url + "]");
-            }
-
-            final String fromServer = Util.slurpStream(httpResponse.body().byteStream());
-            // depending on accounts is probably overkill because of 1 REST call, so let's process the JSON via regex
-            Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
-            if (matcher.find()) {
-                configuration.storageAdapter.tenantId = matcher.group(1);
-            }
-            log.debugf("Tenant ID [%s]",
-                    configuration.storageAdapter.tenantId == null ? "unknown" : configuration.storageAdapter.tenantId);
-            return configuration.storageAdapter.tenantId;
-        } catch (Throwable t) {
-            throw new RuntimeException("Cannot get tenant ID", t);
-        }
-    }
-
-    /**
      * Registers our feed with the Hawkular system.
      *
      * @throws Exception if failed to register feed
      */
     private void registerFeed() throws Exception {
-        String desiredFeedId = this.selfId.getFullIdentifier();
-        this.feedId = desiredFeedId; // assume we will get what we want
+        String desiredFeedId = this.feedId;
+        // this.feedId = desiredFeedId; // assume we will get what we want
 
         try {
             File feedFile = new File(getDataDirectory(), "feedId.txt");
             try {
-                String feedIdFromDataFile = slurpDataFile(feedFile.getName());
+                String feedIdFromDataFile = Util.read(feedFile);
                 feedIdFromDataFile = feedIdFromDataFile.trim();
                 if (!desiredFeedId.equals(feedIdFromDataFile)) {
                     log.warnf("Will use feed ID [%s] found in [%s];"
@@ -1192,8 +675,8 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
 
             // build the REST URL...
             // start with the protocol, host, and port, plus context
-            StringBuilder url = Util.getContextUrlString(configuration.storageAdapter.url,
-                    configuration.storageAdapter.inventoryContext);
+            StringBuilder url = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
+                    configuration.getStorageAdapter().getInventoryContext());
 
             // rest of the URL says we want the feeds API
             url.append("feeds");
@@ -1207,7 +690,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             if (httpResponse.code() == 201) {
 
                 // success - store our feed ID so we remember it the next time
-                final String feedObjectFromServer = Util.slurpStream(httpResponse.body().byteStream());
+                final String feedObjectFromServer = httpResponse.body().string();
                 final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
                 if (desiredFeedId.equals(feed.getId())) {
                     log.infof("Feed ID registered [%s]", feed.getId());
@@ -1227,7 +710,7 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
             }
 
             // persist our feed ID so we can remember it the next time we start up
-            writeDataFile(feedFile.getName(), feedId);
+            Util.write(feedId, feedFile);
 
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot create feed [%s]", desiredFeedId), t);
@@ -1242,5 +725,9 @@ public class MonitorService implements Service<MonitorService>, DiscoveryService
     private void connectToCommandGatewayCommChannel() throws Exception {
         feedComm = new FeedCommProcessor(this.httpClientBuilder, this.configuration, this.feedId, this);
         feedComm.connect();
+    }
+
+    public ProtocolServices getProtocolServices() {
+        return protocolServices;
     }
 }

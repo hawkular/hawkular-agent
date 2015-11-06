@@ -16,9 +16,25 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class AvailType extends MeasurementType {
+import java.util.regex.Pattern;
 
-    public AvailType(ID id, Name name) {
-        super(id, name);
+public final class AvailType<L> extends MeasurementType<L> {
+
+    private static final Pattern DEFAULT_UP_PATTERN = Pattern.compile("(?i)(UP|OK)");
+
+    public static Pattern getDefaultUpPattern() {
+        return DEFAULT_UP_PATTERN;
     }
+
+    private final Pattern upPattern;
+
+    public AvailType(ID id, Name name, AttributeLocation<L> location, Interval interval, Pattern upPattern) {
+        super(id, name, location, interval);
+        this.upPattern = upPattern;
+    }
+
+    public Pattern getUpPattern() {
+        return upPattern;
+    }
+
 }

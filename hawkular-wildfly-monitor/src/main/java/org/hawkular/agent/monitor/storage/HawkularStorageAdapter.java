@@ -20,20 +20,19 @@ import java.util.Set;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
+import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.polling.Task;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 public class HawkularStorageAdapter implements StorageAdapter {
+    @SuppressWarnings("unused")
     private static final MsgLogger log = AgentLoggers.getLogger(HawkularStorageAdapter.class);
-    private MonitorServiceConfiguration.StorageAdapter config;
+    private MonitorServiceConfiguration.StorageAdapterConfiguration config;
     private Diagnostics diagnostics;
-    private ServerIdentifiers selfId;
     private HttpClientBuilder httpClientBuilder;
     private AsyncInventoryStorage inventoryStorage;
 
@@ -41,17 +40,17 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void initialize(org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapter config,
-            Diagnostics diag, ServerIdentifiers selfId, HttpClientBuilder httpClientBuilder) {
+    public void initialize(
+            org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration config,
+            Diagnostics diag, HttpClientBuilder httpClientBuilder) {
         this.config = config;
         this.diagnostics = diag;
-        this.selfId = selfId;
         this.httpClientBuilder = httpClientBuilder;
-        this.inventoryStorage = new AsyncInventoryStorage(selfId, config, httpClientBuilder, diagnostics);
+        this.inventoryStorage = new AsyncInventoryStorage(config, httpClientBuilder, diagnostics);
     }
 
     @Override
-    public MonitorServiceConfiguration.StorageAdapter getStorageAdapterConfiguration() {
+    public MonitorServiceConfiguration.StorageAdapterConfiguration getStorageAdapterConfiguration() {
         return config;
     }
 
@@ -73,11 +72,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         MetricDataPayloadBuilder payloadBuilder = createMetricDataPayloadBuilder();
         for (MetricDataPoint datapoint : datapoints) {
-            Task task = datapoint.getTask();
-            String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
             double value = datapoint.getValue();
-            payloadBuilder.addDataPoint(key, timestamp, value, datapoint.getMetricType());
+            payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value, datapoint.getMetricType());
         }
 
         store(payloadBuilder);
@@ -90,7 +87,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         // send to metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
-        metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, selfId, httpClientBuilder);
+        metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, httpClientBuilder);
         metricsAdapter.store(payloadBuilder);
 
         // looks like everything stored successfully
@@ -106,11 +103,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         AvailDataPayloadBuilder payloadBuilder = createAvailDataPayloadBuilder();
         for (AvailDataPoint datapoint : datapoints) {
-            Task task = datapoint.getTask();
-            String key = task.getKeyGenerator().generateKey(task);
             long timestamp = datapoint.getTimestamp();
             Avail value = datapoint.getValue();
-            payloadBuilder.addDataPoint(key, timestamp, value);
+            payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value);
         }
 
         store(payloadBuilder);
@@ -123,7 +118,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         // send to metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
-        metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, selfId, httpClientBuilder);
+        metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, httpClientBuilder);
         metricsAdapter.store(payloadBuilder);
 
         // looks like everything stored successfully
@@ -132,8 +127,18 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeResource(Resource<?, ?, ?, ?, ?> resource) {
-        inventoryStorage.storeResource(resource);
+    public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
+        inventoryStorage.discoverAllFinished(event);
+    }
+
+    @Override
+    public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
+        inventoryStorage.resourcesAdded(event);
+    }
+
+    @Override
+    public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
+        inventoryStorage.resourceRemoved(event);
     }
 
     @Override

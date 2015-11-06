@@ -16,30 +16,17 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.util.Date;
-
 import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.scheduler.polling.Task;
 
 /**
  * Availability check data that was collected.
  */
-public class AvailDataPoint {
-    private Task task;
-    private long timestamp;
+public class AvailDataPoint extends DataPoint {
     private Avail value;
 
-    public AvailDataPoint(Task task, Avail value) {
-        this.task = task;
-        this.timestamp = System.currentTimeMillis();
+    public AvailDataPoint(String key, long timestamp, Avail value) {
+        super(key, timestamp);
         this.value = value;
-    }
-
-    /**
-     * @return object that identifies the property that was used to check availability
-     */
-    public Task getTask() {
-        return task;
     }
 
     /**
@@ -58,6 +45,7 @@ public class AvailDataPoint {
 
     @Override
     public String toString() {
-        return "AvailDataPoint: task=[" + task + "], timestamp=[" + new Date(timestamp) + "], value=[" + value + "]";
+        return "AvailDataPoint [value=" + value + ", key=" + key + ", timestamp=" + timestamp + "]";
     }
+
 }

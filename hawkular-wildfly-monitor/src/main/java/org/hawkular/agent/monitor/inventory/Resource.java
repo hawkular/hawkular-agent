@@ -19,62 +19,105 @@ package org.hawkular.agent.monitor.inventory;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 
-import org.hawkular.agent.monitor.scheduler.config.MonitoredEndpoint;
+/**
+ * @author John Mazzitelli
+ *
+ * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
+ */
+public final class Resource<L> extends NodeLocationProvider<L> {
+    public static class Builder<L>
+            extends NodeLocationProvider.Builder<Builder<L>, L> {
+        private ResourceType<L> resourceType;
+        private Resource<L> parent;
+        private Set<MeasurementInstance<L, MetricType<L>>> metrics = new HashSet<>();
+        private Set<MeasurementInstance<L, AvailType<L>>> avails = new HashSet<>();
+        private Set<ResourceConfigurationPropertyInstance<L>> //
+        resourceConfigurationProperties = new HashSet<>();
 
-public abstract class Resource< //
-T extends ResourceType<?, ?, ?, ?>, //
-E extends MonitoredEndpoint, //
-M extends MetricInstance<?, ?, ?>, //
-A extends AvailInstance<?, ?, ?>, //
-C extends ResourceConfigurationPropertyInstance<?>> //
-        extends NamedObject {
+        private Builder() {
+            super();
+        }
 
-    private final T resourceType;
-    private final Resource<?, ?, ?, ?, ?> parent;
-    private final E endpoint;
-    private final Collection<M> metrics = new HashSet<>();
-    private final Collection<A> avails = new HashSet<>();
-    private final Collection<C> resourceConfigurationProperties = new HashSet<>();
+        public Builder<L> parent(Resource<L> parent) {
+            this.parent = parent;
+            return this;
+        }
 
-    public <P extends Resource<?, ?, ?, ?, ?>> Resource(ID id, Name name, E endpoint, T resourceType, P parent) {
-        super(id, name);
-        this.endpoint = endpoint;
+        public Builder<L> type(ResourceType<L> type) {
+            this.resourceType = type;
+            return this;
+        }
+
+        public Builder<L> metric(MeasurementInstance<L, MetricType<L>> metric) {
+            metrics.add(metric);
+            return this;
+        }
+
+        public Builder<L> avail(MeasurementInstance<L, AvailType<L>> avail) {
+            avails.add(avail);
+            return this;
+        }
+
+        public Builder<L> resourceConfigurationProperty(
+                ResourceConfigurationPropertyInstance<L> //
+                resourceConfigurationProperty) {
+            resourceConfigurationProperties.add(resourceConfigurationProperty);
+            return this;
+        }
+
+        public Resource<L> build() {
+            return new Resource<L>(id, name, location, resourceType, parent, Collections.unmodifiableSet(metrics),
+                    Collections.unmodifiableSet(avails), Collections.unmodifiableSet(resourceConfigurationProperties));
+        }
+    }
+
+    public static <L> Builder<L> builder() {
+        return new Builder<L>();
+    }
+
+    private final ResourceType<L> resourceType;
+    private final Resource<L> parent;
+    private final Set<MeasurementInstance<L, MetricType<L>>> metrics;
+    private final Set<MeasurementInstance<L, AvailType<L>>> avails;
+    private final Set<ResourceConfigurationPropertyInstance<L>> //
+    resourceConfigurationProperties;
+
+    private Resource(ID id, Name name, L location, ResourceType<L> resourceType, Resource<L> parent,
+            Set<MeasurementInstance<L, MetricType<L>>> metrics, Set<MeasurementInstance<L, AvailType<L>>> avails,
+            Set<ResourceConfigurationPropertyInstance<L>> //
+            resourceConfigurationProperties) {
+        super(id, name, location);
         this.resourceType = resourceType;
         this.parent = parent;
+        this.metrics = metrics;
+        this.avails = avails;
+        this.resourceConfigurationProperties = resourceConfigurationProperties;
     }
 
-    public E getEndpoint() {
-        return endpoint;
-    }
-
-    public T getResourceType() {
+    public ResourceType<L> getResourceType() {
         return resourceType;
     }
 
-    public <P extends Resource<?, ?, ?, ?, ?>> P getParent() {
-        return (P) parent;
+    public Resource<L> getParent() {
+        return parent;
     }
 
-    public Collection<M> getMetrics() {
+    public Collection<MeasurementInstance<L, MetricType<L>>> getMetrics() {
         return metrics;
     }
 
-    public Collection<A> getAvails() {
+    public Collection<MeasurementInstance<L, AvailType<L>>> getAvails() {
         return avails;
     }
 
-    public Collection<C> getResourceConfigurationProperties() {
-        return Collections.unmodifiableCollection(resourceConfigurationProperties);
-    }
-
-    public void addResourceConfigurationProperty(C configProperty) {
-        resourceConfigurationProperties.add(configProperty);
+    public Collection<ResourceConfigurationPropertyInstance<L>> getResourceConfigurationProperties() {
+        return resourceConfigurationProperties;
     }
 
     @Override
     public String toString() {
-        return String.format("%s=[type=%s][endpoint=%s]",
-                super.toString(), this.resourceType, (this.endpoint != null) ? this.endpoint.getName() : "null");
+        return String.format("%s=[type=%s]", super.toString(), this.resourceType);
     }
 }

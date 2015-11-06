@@ -20,14 +20,14 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 
+import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.Property;
 
 /**
  * A set of type safe builders for building and executing DMR operations.
@@ -121,6 +121,12 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
             return (T) this;
         }
 
+        @SuppressWarnings("unchecked")
+        public T address(PathAddress path) {
+            baseNode.get(ModelDescriptionConstants.ADDRESS).set(path.toModelNode());
+            return (T) this;
+        }
+
         public CompositeOperationBuilder<?> parentBuilder() {
             return batch.operation(build());
         }
@@ -177,7 +183,7 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
     }
 
     public static class AddressBuilder<T extends AddressBuilder<?, P>, P extends AbstractSingleOperationBuilder<?, ?>> {
-        private final ModelNode baseNode = new ModelNode();
+        private final DmrNodePath.Builder pathBuilder = DmrNodePath.builder();
         private final P parentBuilder;
 
         private AddressBuilder(P parentBuilder) {
@@ -186,49 +192,55 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         }
 
         public ModelNode build() {
-            return baseNode;
+            return pathBuilder.build().asModelNode();
         }
 
         @SuppressWarnings("unchecked")
         public T datasource(String datasourceName) {
-            baseNode.add(DATASOURCE, datasourceName);
+            segment(DATASOURCE, datasourceName);
             return (T) this;
         }
 
         public P parentBuilder() {
-            parentBuilder.address(baseNode);
+            parentBuilder.address(build());
             return parentBuilder;
         }
 
         @SuppressWarnings("unchecked")
         public T segment(String key, String value) {
-            baseNode.add(key, value);
+            pathBuilder.segment(key, value);
             return (T) this;
         }
 
         @SuppressWarnings("unchecked")
-        public T segments(ModelNode adr) {
-            for (Property prop : adr.asPropertyList()) {
-                segment(prop.getName(), prop.getValue().asString());
-            }
+        public T segments(ModelNode address) {
+            pathBuilder.segments(address);
             return (T) this;
         }
 
         @SuppressWarnings("unchecked")
         public T segments(String path) {
-            StringTokenizer st = new StringTokenizer(path, "/");
-            while (st.hasMoreTokens()) {
-                String token = st.nextToken();
-                int eqPos = token.indexOf('=');
-                if (eqPos >= 0) {
-                    String key = token.substring(0, eqPos);
-                    String value = token.substring(eqPos + 1);
-                    segment(key, value);
-                } else {
-                    /* ignore */
-                }
-            }
+            pathBuilder.segments(path);
             return (T) this;
+        }
+
+        /**
+         * If {@code path} is absolute (i.e. starts with {@code '/'}) then {@code parent} is ignored. Otherwise
+         * {@code parent} is prepended to {@code path}.
+         *
+         * @param parent
+         * @param path
+         * @return
+         */
+        public T segments(String parent, String path) {
+            if (path.startsWith("/") && path.length() > 1) {
+                return segments(path);
+            } else {
+                if (parent != null) {
+                    segments(parent);
+                }
+                return segments(path);
+            }
         }
 
         public T subsystem(String subsystem) {
@@ -245,6 +257,10 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
 
         public T xaDatasource(String xaDatasourceName) {
             return segment(DATASOURCE, xaDatasourceName);
+        }
+
+        public String toAddressString() {
+            return pathBuilder.build().toString();
         }
 
     }
@@ -429,6 +445,19 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
          */
         public ModelNode getResultNode() {
             return responseNode.get(ModelDescriptionConstants.RESULT);
+        }
+
+        /**
+         * Should be called after {@link #assertSuccess()}.
+         *
+         * @return an equivalent of {@code responseNode.get(RESULT)}
+         */
+        public Optional<ModelNode> getOptionalResultNode() {
+            if (responseNode.hasDefined(ModelDescriptionConstants.RESULT)) {
+                return Optional.of(responseNode.get(ModelDescriptionConstants.RESULT));
+            } else {
+                return Optional.empty();
+            }
         }
 
     }
@@ -715,7 +744,7 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
 
     }
 
-    public static class ByNameOperationBuilder <T extends ByNameOperationBuilder<?>>
+    public static class ByNameOperationBuilder<T extends ByNameOperationBuilder<?>>
             extends AbstractSingleOperationBuilder<T, OperationResult<?>> {
 
         public ByNameOperationBuilder(CompositeOperationBuilder<CompositeOperationBuilder<?>> bb,
@@ -790,7 +819,6 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         return new WriteAttributeOperationBuilder<>(null);
     }
 
-    @SuppressWarnings("unchecked")
     public static ByNameOperationBuilder<ByNameOperationBuilder<?>> byName(String operationName) {
         return new ByNameOperationBuilder<>(null, operationName);
     }

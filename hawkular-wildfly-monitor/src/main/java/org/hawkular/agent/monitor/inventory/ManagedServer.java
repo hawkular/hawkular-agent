@@ -19,7 +19,14 @@ package org.hawkular.agent.monitor.inventory;
 import java.util.Collection;
 import java.util.HashSet;
 
+/**
+ * @author John Mazzitelli
+ */
 public abstract class ManagedServer extends NamedObject {
+
+    public interface SecurityRealmProvider {
+        String getSecurityRealm();
+    }
 
     public ManagedServer(ID id, Name name) {
         super(id, name);

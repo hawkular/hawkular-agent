@@ -17,17 +17,17 @@
 package org.hawkular.agent.monitor.cmd;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.service.DiscoveryService;
+import org.hawkular.agent.monitor.service.MonitorService;
 
 public class CommandContext {
     private final FeedCommProcessor feedComm;
     private final MonitorServiceConfiguration config;
-    private final DiscoveryService discoveryService;
+    private final MonitorService discoveryService;
 
     public CommandContext(
             FeedCommProcessor feedCommProcessor,
             MonitorServiceConfiguration config,
-            DiscoveryService discoveryService) {
+            MonitorService discoveryService) {
         this.feedComm = feedCommProcessor;
         this.config = config;
         this.discoveryService = discoveryService;
@@ -44,7 +44,7 @@ public class CommandContext {
         return config;
     }
 
-    public DiscoveryService getDiscoveryService() {
+    public MonitorService getDiscoveryService() {
         return discoveryService;
     }
 }

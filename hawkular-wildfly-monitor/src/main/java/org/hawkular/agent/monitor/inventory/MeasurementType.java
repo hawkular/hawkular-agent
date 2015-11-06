@@ -16,30 +16,26 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-import java.util.concurrent.TimeUnit;
+/**
+ * A common superclass for {@link AvailType} and {@link MetricType}.
+ *
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}
+ */
+public class MeasurementType<L> extends AttributeLocationProvider<L> {
 
-public abstract class MeasurementType extends NamedObject {
+    private final Interval interval;
 
-    public MeasurementType(ID id, Name name) {
-        super(id, name);
-    }
-
-    private int interval;
-    private TimeUnit timeUnits;
-
-    public int getInterval() {
-        return interval;
-    }
-
-    public void setInterval(int interval) {
+    public MeasurementType(ID id, Name name, AttributeLocation<L> location, Interval interval) {
+        super(id, name, location);
         this.interval = interval;
     }
 
-    public TimeUnit getTimeUnits() {
-        return timeUnits;
+    /**
+     * @return how often should instances of this type be measured
+     */
+    public Interval getInterval() {
+        return interval;
     }
 
-    public void setTimeUnits(TimeUnit timeUnits) {
-        this.timeUnits = timeUnits;
-    }
 }

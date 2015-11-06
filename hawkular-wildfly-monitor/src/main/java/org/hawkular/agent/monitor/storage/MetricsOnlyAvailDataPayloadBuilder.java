@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
-import org.hawkular.agent.monitor.service.Util;
+import org.hawkular.agent.monitor.util.Util;
 
 /**
  * Allows one to build up a payload request to send to availability storage by adding

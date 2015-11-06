@@ -16,19 +16,22 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
-public abstract class Operation extends NamedObject {
+/**
+ * @author John Mazzitelli
+ *
+ * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
+ */
+public final class Operation<L> extends NodeLocationProvider<L> {
 
-    private String operationName;
+    private final String operationName;
 
-    public Operation(ID id, Name name) {
-        super(id, name);
+    public Operation(ID id, Name name, L location, String operationName) {
+        super(id, name, location);
+        this.operationName = operationName;
     }
 
     public String getOperationName() {
         return operationName;
     }
 
-    public void setOperationName(String operationName) {
-        this.operationName = operationName;
-    }
 }

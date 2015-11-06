@@ -17,7 +17,6 @@
 package org.hawkular.agent.monitor.diagnostics;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.service.ServerIdentifiers;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -42,27 +41,27 @@ public class DiagnosticsImpl implements Diagnostics {
     private final Meter inventoryRate;
     private final Timer inventoryStorageRequestTimer;
 
-    public static String name(ServerIdentifiers selfId, String name) {
-        return MetricRegistry.name(selfId + ".diagnostics." + name);
+    public static String name(String feedId, String name) {
+        return MetricRegistry.name(feedId + ".diagnostics." + name);
     }
 
-    public DiagnosticsImpl(MonitorServiceConfiguration.Diagnostics config, MetricRegistry registry,
-            ServerIdentifiers selfId) {
+    public DiagnosticsImpl(MonitorServiceConfiguration.DiagnosticsConfiguration config, MetricRegistry registry,
+            String feedId) {
         // we don't need config now, but maybe in future - so keep "config" param here for future API consistency
-        dmrRequestTimer = registry.timer(name(selfId, "dmr.request-timer"));
-        dmrDelayCounter = registry.meter(name(selfId, "dmr.delay-rate"));
-        dmrErrorCounter = registry.meter(name(selfId, "dmr.error-rate"));
-        jmxRequestTimer = registry.timer(name(selfId, "jmx.request-timer"));
-        jmxDelayCounter = registry.meter(name(selfId, "jmx.delay-rate"));
-        jmxErrorCounter = registry.meter(name(selfId, "jmx.error-rate"));
-        storageError = registry.meter(name(selfId, "storage.error-rate"));
-        metricsStorageBuffer = registry.counter(name(selfId, "metrics.storage-buffer-size"));
-        metricRate = registry.meter(name(selfId, "metric.rate"));
-        availStorageBuffer = registry.counter(name(selfId, "avail.storage-buffer-size"));
-        availRate = registry.meter(name(selfId, "avail.rate"));
-        inventoryStorageBuffer = registry.counter(name(selfId, "inventory.storage-buffer-size"));
-        inventoryRate = registry.meter(name(selfId, "inventory.rate"));
-        inventoryStorageRequestTimer = registry.timer(name(selfId, "inventory.storage-request-timer"));
+        dmrRequestTimer = registry.timer(name(feedId, "dmr.request-timer"));
+        dmrDelayCounter = registry.meter(name(feedId, "dmr.delay-rate"));
+        dmrErrorCounter = registry.meter(name(feedId, "dmr.error-rate"));
+        jmxRequestTimer = registry.timer(name(feedId, "jmx.request-timer"));
+        jmxDelayCounter = registry.meter(name(feedId, "jmx.delay-rate"));
+        jmxErrorCounter = registry.meter(name(feedId, "jmx.error-rate"));
+        storageError = registry.meter(name(feedId, "storage.error-rate"));
+        metricsStorageBuffer = registry.counter(name(feedId, "metrics.storage-buffer-size"));
+        metricRate = registry.meter(name(feedId, "metric.rate"));
+        availStorageBuffer = registry.counter(name(feedId, "avail.storage-buffer-size"));
+        availRate = registry.meter(name(feedId, "avail.rate"));
+        inventoryStorageBuffer = registry.counter(name(feedId, "inventory.storage-buffer-size"));
+        inventoryRate = registry.meter(name(feedId, "inventory.rate"));
+        inventoryStorageRequestTimer = registry.timer(name(feedId, "inventory.storage-request-timer"));
 
         this.metricsRegistry = registry;
     }
