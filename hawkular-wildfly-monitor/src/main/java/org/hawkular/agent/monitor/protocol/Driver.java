@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.protocol;
 
+import java.util.List;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
@@ -44,7 +45,8 @@ public interface Driver<L> {
 
     /**
      * Fetches the attribute value specified by the given {@code attributeLocation} from a {@link MonitoredEndpoint} and
-     * returns it.
+     * returns it. If {@link AttributeLocation#getLocation()} is a path pattern containing wildcards, then this method
+     * MAY return a {@link List} of objects that contains the attribute values of matching attributes.
      *
      * @param attributeLocation the attribute to retrieve
      * @return the attribute value or null if there is no such attribute or if the attribute is unset.

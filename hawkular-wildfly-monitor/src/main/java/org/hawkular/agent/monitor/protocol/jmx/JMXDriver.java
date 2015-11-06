@@ -16,8 +16,11 @@
  */
 package org.hawkular.agent.monitor.protocol.jmx;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.management.MalformedObjectNameException;
@@ -83,8 +86,20 @@ public class JMXDriver implements Driver<JMXNodeLocation> {
                 request.setPath(attribute[1]); // this is the sub-reference
             }
             J4pReadResponse response = client.execute(request);
-            Object value = response.getValue();
-            return value;
+            Collection<ObjectName> responseObjectNames = response.getObjectNames();
+            switch (responseObjectNames.size()) {
+                case 0:
+                    return null;
+                case 1:
+                    return response.getValue();
+                default:
+                    List<Object> results = new ArrayList<>(responseObjectNames.size());
+                    for (ObjectName responseObjectName : responseObjectNames) {
+                        Object value = response.getValue(responseObjectName, location.getAttribute());
+                        results.add(value);
+                    }
+                    return Collections.unmodifiableList(results);
+            }
         } catch (Exception e) {
             throw new ProtocolException(e);
         }

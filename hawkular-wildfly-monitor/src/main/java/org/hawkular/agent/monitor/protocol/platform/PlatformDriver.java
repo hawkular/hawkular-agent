@@ -16,8 +16,10 @@
  */
 package org.hawkular.agent.monitor.protocol.platform;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -76,12 +78,16 @@ public class PlatformDriver
     public Object fetchAttribute(AttributeLocation<PlatformNodeLocation> location) throws ProtocolException {
         Map<PlatformPath, PlatformResourceNode> nodes = platform.getChildren(location.getLocation().getPlatformPath());
         switch (nodes.size()) {
+            case 0:
+                return null;
             case 1:
                 return nodes.values().iterator().next().getAttribute(location.getAttribute());
             default:
-                throw new ProtocolException(
-                        "Platform Path [" + location.getLocation().getPlatformPath()
-                                + "] does not exist or is no-unique");
+                List<Object> results = new ArrayList<>(nodes.size());
+                for (PlatformResourceNode node : nodes.values()) {
+                    results.add(node.getAttribute(location.getAttribute()));
+                }
+                return Collections.unmodifiableList(results);
         }
     }
 

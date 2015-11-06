@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.protocol.dmr;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -68,9 +69,32 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
             case UNDEFINED:
                 return null;
             case LIST:
-                return null;
+                return toObjectList(value.asList());
             default:
                 throw new ProtocolException("cannot handle an attribute of type [" + value.getType() + "]");
+        }
+    }
+
+    /**
+     * Returns a {@link List} of objects extracted from the given {@code nodeList}
+     *
+     * @param nodeList the source list to extract the result values from
+     * @return a {@link List} of objects extracted from the given {@code nodeList}
+     * @throws ProtocolException
+     */
+    private static List<Object> toObjectList(List<ModelNode> nodeList) throws ProtocolException {
+        if (nodeList.isEmpty()) {
+            return Collections.emptyList();
+        } else {
+            ArrayList<Object> result = new ArrayList<>(nodeList.size());
+            for (ModelNode node : nodeList) {
+                if (node.hasDefined("result")) {
+                    result.add(toObject(node.get("result")));
+                } else {
+                    throw new IllegalStateException("No 'result' in a nodeList item ["+ node +"]");
+                }
+            }
+            return Collections.unmodifiableList(result);
         }
     }
 

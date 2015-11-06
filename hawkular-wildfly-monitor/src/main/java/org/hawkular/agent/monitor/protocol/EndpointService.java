@@ -245,11 +245,27 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
             Driver<L> driver = session.getDriver();
             for (MeasurementInstance<L, AvailType<L>> instance : instances) {
                 AttributeLocation<L> location = instance.getAttributeLocation();
-                Object value = driver.fetchAttribute(location);
+                Object o = driver.fetchAttribute(location);
+                final Pattern pattern = instance.getType().getUpPattern();
+                Avail avail = null;
+                if (o instanceof List<?>) {
+                    /* aggregate */
+                    List<?> list = (List<?>) o;
+                    for (Object item : list) {
+                        Avail a = toAvail(pattern, item);
+                        if (avail == null) {
+                            avail = a;
+                        } else {
+                            avail = (a == Avail.DOWN) ? Avail.DOWN : avail;
+                        }
+                    }
+                } else {
+                    avail = toAvail(instance.getType().getUpPattern(), o);
+                }
                 long ts = System.currentTimeMillis();
                 String key = generateMeasurementKey(location);
                 AvailDataPoint dataPoint = new AvailDataPoint(key, ts,
-                        toAvail(instance.getType().getUpPattern(), value));
+                        toAvail(pattern, avail));
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
@@ -266,7 +282,18 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
             Driver<L> driver = session.getDriver();
             for (MeasurementInstance<L, MetricType<L>> instance : instances) {
                 AttributeLocation<L> location = instance.getAttributeLocation();
-                double value = toDouble(driver.fetchAttribute(location));
+                Object o = driver.fetchAttribute(location);
+                double value = 0;
+                if (o instanceof List<?>) {
+                    /* aggregate */
+                    List<?> list = (List<?>) o;
+                    for (Object item : list) {
+                        double num = toDouble(item);
+                        value += num;
+                    }
+                } else {
+                    value = toDouble(o);
+                }
                 long ts = System.currentTimeMillis();
                 String key = generateMeasurementKey(location);
                 MetricDataPoint dataPoint = new MetricDataPoint(key, ts, value, instance.getType().getMetricType());
