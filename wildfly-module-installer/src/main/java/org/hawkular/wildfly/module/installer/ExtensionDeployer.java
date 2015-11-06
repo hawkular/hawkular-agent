@@ -33,14 +33,14 @@ public class ExtensionDeployer {
     private File modulesHomeAbsolute;
 
     public void install(DeploymentConfiguration configuration) throws ExtensionDeploymentException {
-        debug("Validating configuration");
+        log.debug("Validating configuration");
         validConfiguration(configuration);
 
         JBossModule module = null;
         RegisterModuleConfiguration resolvedOptions = new RegisterModuleConfiguration();
         if (configuration.getModule() != null) {
             try {
-                debug("Reading module from "+configuration.getModule());
+                log.debugf("Reading module from [%s]", configuration.getModule());
                 module = JBossModule.readFromURL(configuration.getModule());
             } catch (Exception e) {
                 throw new ExtensionDeploymentException("Failed to read module", e);
@@ -48,7 +48,7 @@ public class ExtensionDeployer {
 
             try {
                 List<File> installedFiles = module.installTo(modulesHomeAbsolute);
-                resolvedOptions = resolveBundledXmlSnippets(installedFiles);
+                resolvedOptions = resolveBundledXmlSnippets(installedFiles, configuration);
 
             } catch (Exception e) {
                 throw new ExtensionDeploymentException("Failed to install module", e);
@@ -73,7 +73,7 @@ public class ExtensionDeployer {
                 .failNoMatch(configuration.isFailNoMatch());
 
             resolvedOptions.extend(options);
-            debug("Proceeding with \n" + resolvedOptions);
+            log.debugf("Proceeding with \n%s", resolvedOptions);
             register(resolvedOptions);
 
         } catch (Exception e) {
@@ -82,29 +82,52 @@ public class ExtensionDeployer {
         }
     }
 
-    private RegisterModuleConfiguration resolveBundledXmlSnippets(List<File> installedFiles) throws Exception {
+    private RegisterModuleConfiguration resolveBundledXmlSnippets(List<File> installedFiles,
+            DeploymentConfiguration configuration) throws Exception {
+
         RegisterModuleConfiguration options = new RegisterModuleConfiguration();
-        for (File file : installedFiles) {
-            if ("subsystem-snippet.xml".equals(file.getName())) {
-                log.debug("Found packaged subsystem snippet " + file.getAbsolutePath());
-                options.subsystem(file.toURI().toURL());
-            }
-            if ("socket-binding-snippet.xml".equals(file.getName())) {
-                log.debug("Found packaged socket-binding snippet " + file.getAbsolutePath());
-                options.socketBinding(file.toURI().toURL());
+
+        // if the user provided a subsystem and socketBinding snippet XML, use that
+        // rather than what's bundled with the module. This let's the user override
+        // his own configuration with that of the default config that comes with the
+        // module itself.
+
+        boolean overrideSubsystem = false;
+        boolean overrideSocketBinding = false;
+
+        if (configuration.getSubsystem() != null) {
+            options.subsystem(configuration.getSubsystem());
+            overrideSubsystem = true;
+            log.debugf("Using user-provided subsystem snippet: [%s]", options.getSubsystem());
+        }
+        if (configuration.getSocketBinding() != null) {
+            options.socketBinding(configuration.getSocketBinding());
+            overrideSocketBinding = true;
+            log.debugf("Using user-provided socketBinding snippet: [%s]", options.getSocketBinding());
+        }
+
+        if (!overrideSubsystem || !overrideSocketBinding) {
+            for (File file : installedFiles) {
+                if (!overrideSubsystem) {
+                    if ("subsystem-snippet.xml".equals(file.getName())) {
+                        log.debugf("Found packaged subsystem snippet: [%s]", file.getAbsolutePath());
+                        options.subsystem(file.toURI().toURL());
+                    }
+                }
+                if (!overrideSocketBinding) {
+                    if ("socket-binding-snippet.xml".equals(file.getName())) {
+                        log.debugf("Found packaged socket-binding snippet: [%s]", file.getAbsolutePath());
+                        options.socketBinding(file.toURI().toURL());
+                    }
+                }
             }
         }
+
         return options;
     }
 
     public void register(RegisterModuleConfiguration options) throws Exception {
         new RegisterExtension().register(options);
-    }
-
-    private void debug(String message) {
-        if (log.isDebugEnabled()) {
-            log.debug(message);
-        }
     }
 
     private void validConfiguration(DeploymentConfiguration configuration) throws ExtensionDeploymentException {

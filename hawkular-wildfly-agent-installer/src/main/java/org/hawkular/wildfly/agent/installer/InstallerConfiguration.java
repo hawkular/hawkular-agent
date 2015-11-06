@@ -31,8 +31,6 @@ import org.jboss.logging.Logger;
 
 /**
  * Installer values to be used for installation.
- *
- * @author lzoubek@redhat.com
  */
 public class InstallerConfiguration {
     private static final Logger log = Logger.getLogger(AgentInstaller.class);
@@ -41,6 +39,7 @@ public class InstallerConfiguration {
     static final String OPTION_WILDFLY_HOME = "wildfly-home";
     static final String OPTION_MODULE_DISTRIBUTION = "module-dist";
     static final String OPTION_SERVER_CONFIG = "server-config";
+    static final String OPTION_SUBSYSTEM_SNIPPET = "subsystem-snippet";
     static final String OPTION_HAWKULAR_SERVER_URL = "hawkular-server-url";
     static final String OPTION_KEYSTORE_PATH = "keystore-path";
     static final String OPTION_KEYSTORE_PASSWORD = "keystore-password";
@@ -86,6 +85,12 @@ public class InstallerConfiguration {
                 .longOpt(InstallerConfiguration.OPTION_SERVER_CONFIG)
                 .desc("Server config to write to. Can be either absolute path or relative to "
                         + InstallerConfiguration.OPTION_WILDFLY_HOME)
+                .numberOfArgs(1)
+                .build());
+        options.addOption(Option.builder()
+                .argName(InstallerConfiguration.OPTION_SUBSYSTEM_SNIPPET)
+                .longOpt(InstallerConfiguration.OPTION_SUBSYSTEM_SNIPPET)
+                .desc("Customized subsystem XML content that overrides the default subsystem configuration")
                 .numberOfArgs(1)
                 .build());
 
@@ -180,6 +185,7 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_WILDFLY_HOME);
         setProperty(properties, commandLine, OPTION_MODULE_DISTRIBUTION);
         setProperty(properties, commandLine, OPTION_SERVER_CONFIG);
+        setProperty(properties, commandLine, OPTION_SUBSYSTEM_SNIPPET);
         setProperty(properties, commandLine, OPTION_HAWKULAR_SERVER_URL);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PATH);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PASSWORD);
@@ -211,6 +217,10 @@ public class InstallerConfiguration {
 
     public String getServerConfig() {
         return properties.getProperty(OPTION_SERVER_CONFIG);
+    }
+
+    public String getSubsystemSnippet() {
+        return properties.getProperty(OPTION_SUBSYSTEM_SNIPPET);
     }
 
     public String getHawkularServerUrl() {

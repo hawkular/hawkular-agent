@@ -76,6 +76,7 @@ public class InstallerConfigurationTest {
                 args("--installer-config", "classpath:test-installer.properties",
                         "--wildfly-home", "/opt/wildfly/OVERRIDE",
                         "--server-config", "standalone/configuration/OVERRIDE.xml",
+                        "--subsystem-snippet", "subdir/subsystem-snippetOVERRIDE.xml",
                         "--hawkular-server-url", "http://OVERRIDE:8080",
                         "--keystore-path", "/tmp/OVERRIDE/path",
                         "--keystore-password", "OVERRIDE-keystore-password",
@@ -89,6 +90,7 @@ public class InstallerConfigurationTest {
         InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
         Assert.assertEquals("/opt/wildfly/OVERRIDE", installerConfig.getWildFlyHome());
         Assert.assertEquals("standalone/configuration/OVERRIDE.xml", installerConfig.getServerConfig());
+        Assert.assertEquals("subdir/subsystem-snippetOVERRIDE.xml", installerConfig.getSubsystemSnippet());
         Assert.assertEquals("http://OVERRIDE:8080", installerConfig.getHawkularServerUrl());
         Assert.assertEquals("/tmp/OVERRIDE/path", installerConfig.getKeystorePath());
         Assert.assertEquals("OVERRIDE-keystore-password", installerConfig.getKeystorePassword());
@@ -107,6 +109,7 @@ public class InstallerConfigurationTest {
     private void assertTestProperties(InstallerConfiguration installerConfig) {
         Assert.assertEquals("/opt/wildfly/test", installerConfig.getWildFlyHome());
         Assert.assertEquals("standalone/configuration/test.xml", installerConfig.getServerConfig());
+        Assert.assertEquals("subdir/subsystem-snippet.xml", installerConfig.getSubsystemSnippet());
         Assert.assertEquals("http://test:8080", installerConfig.getHawkularServerUrl());
         Assert.assertEquals("/tmp/test/path", installerConfig.getKeystorePath());
         Assert.assertEquals("test-keystore-password", installerConfig.getKeystorePassword());
