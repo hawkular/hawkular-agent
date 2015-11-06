@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.inventory.NodeLocation;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 
 /**

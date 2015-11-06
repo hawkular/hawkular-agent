@@ -112,12 +112,12 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
 
             validate(envelope, endpointService.getEndpoint());
 
-            DMRSession dmrContext = endpointService.openSession();
+            DMRSession session = endpointService.openSession();
 
-            controllerClient = dmrContext.getClient();
+            controllerClient = session.getClient();
 
             binaryData =
-                    execute(controllerClient, endpointService, modelNodePath, envelope, response, context, dmrContext);
+                    execute(controllerClient, endpointService, modelNodePath, envelope, response, context, session);
             success(envelope, response);
 
         } catch (Exception e) {

@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.protocol;
 import java.io.Closeable;
 
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.inventory.NodeLocation;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 
 /**

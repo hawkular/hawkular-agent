@@ -20,13 +20,14 @@ import java.util.List;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
+import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MetricType;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.agent.monitor.storage.AvailBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
@@ -42,8 +43,8 @@ import org.hawkular.agent.monitor.storage.StorageAdapter;
 public class SchedulerService implements InventoryListener {
     private static final MsgLogger log = AgentLoggers.getLogger(SchedulerService.class);
     private final Diagnostics diagnostics;
-    private final IntervalBasedScheduler<Object, MetricType<Object>, MetricDataPoint> metricScheduler;
-    private final IntervalBasedScheduler<Object, AvailType<Object>, AvailDataPoint> availScheduler;
+    private final IntervalBasedScheduler<MetricType<Object>, MetricDataPoint> metricScheduler;
+    private final IntervalBasedScheduler<AvailType<Object>, AvailDataPoint> availScheduler;
     private final MetricBufferedStorageDispatcher metricCompletionHandler;
     private final AvailBufferedStorageDispatcher availCompletionHandler;
 
@@ -53,9 +54,6 @@ public class SchedulerService implements InventoryListener {
             SchedulerConfiguration configuration,
             Diagnostics diagnostics,
             StorageAdapter storageAdapter) {
-
-        // this helps identify where we are running
-        //this.selfId = selfId;
 
         // metrics for our own internals
         this.diagnostics = diagnostics;
@@ -106,29 +104,26 @@ public class SchedulerService implements InventoryListener {
         status = ServiceStatus.STOPPED;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void discoverAllFinished(InventoryEvent<List<Resource<?>>> event) {
-        List<Resource<Object>> resources = (List<Resource<Object>>) (List<?>) event.getPayload();
-        EndpointService<Object, ?, ?> service = (EndpointService<Object, ?, ?>) event.getSamplingService();
+    public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
+        List<Resource<L>> resources = event.getPayload();
+        SamplingService<L, E> service = event.getSamplingService();
         metricScheduler.rescheduleAll(service, resources);
         availScheduler.rescheduleAll(service, resources);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void resourcesAdded(InventoryEvent<List<Resource<?>>> event) {
-        List<Resource<Object>> resources = (List<Resource<Object>>) (List<?>) event.getPayload();
-        EndpointService<Object, ?, ?> service = (EndpointService<Object, ?, ?>) event.getSamplingService();
+    public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
+        List<Resource<L>> resources = event.getPayload();
+        SamplingService<L, E> service = event.getSamplingService();
         metricScheduler.schedule(service, resources);
         availScheduler.schedule(service, resources);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void resourceRemoved(InventoryEvent<List<Resource<?>>> event) {
-        List<Resource<Object>> resources = (List<Resource<Object>>) (List<?>) event.getPayload();
-        EndpointService<Object, ?, ?> service = (EndpointService<Object, ?, ?>) event.getSamplingService();
+    public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
+        List<Resource<L>> resources = event.getPayload();
+        SamplingService<L, E> service = event.getSamplingService();
         metricScheduler.unschedule(service, resources);
         availScheduler.unschedule(service, resources);
     }

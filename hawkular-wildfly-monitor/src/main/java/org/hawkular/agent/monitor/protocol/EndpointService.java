@@ -63,31 +63,21 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
         }
 
         public void fireDiscoverAllFinished(List<Resource<L>> resources) {
-            // an ugly double cast
-            @SuppressWarnings("unchecked")
-            List<Resource<?>> rs = (List<Resource<?>>) (List<?>) resources;
-            InventoryEvent<List<Resource<?>>> event = new InventoryEvent<List<Resource<?>>>(feedId, endpoint,
-                    EndpointService.this, rs);
+            InventoryEvent<L, E> event = new InventoryEvent<L, E>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.discoverAllFinished(event);
             }
         }
 
         public void fireResourcesAdded(List<Resource<L>> resources) {
-            @SuppressWarnings("unchecked")
-            List<Resource<?>> rs = (List<Resource<?>>) (List<?>) resources;
-            InventoryEvent<List<Resource<?>>> event = new InventoryEvent<List<Resource<?>>>(feedId, endpoint,
-                    EndpointService.this, rs);
+            InventoryEvent<L, E> event = new InventoryEvent<L, E>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.resourcesAdded(event);
             }
         }
 
         public void fireResourcesRemoved(List<Resource<L>> resources) {
-            @SuppressWarnings("unchecked")
-            List<Resource<?>> rs = (List<Resource<?>>) (List<?>) resources;
-            InventoryEvent<List<Resource<?>>> event = new InventoryEvent<List<Resource<?>>>(feedId, endpoint,
-                    EndpointService.this, rs);
+            InventoryEvent<L, E> event = new InventoryEvent<L, E>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.resourceRemoved(event);
             }
@@ -164,13 +154,13 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     public void discoverChildren(L parentLocation, ResourceType<L> childType) {
         status.assertRunning(getClass(), "discoverChildren()");
         Discovery<L> discovery = new Discovery<>();
-        try (S context = openSession()) {
+        try (S session = openSession()) {
             /* FIXME: resourceManager should be write-locked here over find and add */
             List<Resource<L>> parents =
-                    resourceManager.findResources(parentLocation, context.getLocationResolver());
+                    resourceManager.findResources(parentLocation, session.getLocationResolver());
             List<Resource<L>> added = new ArrayList<>();
             for (Resource<L> parent : parents) {
-                discovery.discoverChildren(parent, childType, context, new Consumer<Resource<L>>() {
+                discovery.discoverChildren(parent, childType, session, new Consumer<Resource<L>>() {
                     public void accept(Resource<L> resource) {
                         resourceManager.addResource(resource);
                         added.add(resource);
@@ -251,8 +241,8 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
 
         status.assertRunning(getClass(), "measureAvails()");
 
-        try (S context = openSession()) {
-            Driver<L> driver = context.getDriver();
+        try (S session = openSession()) {
+            Driver<L> driver = session.getDriver();
             for (MeasurementInstance<L, AvailType<L>> instance : instances) {
                 AttributeLocation<L> location = instance.getAttributeLocation();
                 Object value = driver.fetchAttribute(location);
@@ -272,8 +262,8 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
             Consumer<MetricDataPoint> consumer) {
         status.assertRunning(getClass(), "measureMetrics()");
 
-        try (S context = openSession()) {
-            Driver<L> driver = context.getDriver();
+        try (S session = openSession()) {
+            Driver<L> driver = session.getDriver();
             for (MeasurementInstance<L, MetricType<L>> instance : instances) {
                 AttributeLocation<L> location = instance.getAttributeLocation();
                 double value = toDouble(driver.fetchAttribute(location));
@@ -305,8 +295,8 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
      */
     public void removeResources(L location) {
         status.assertRunning(getClass(), "removeResources()");
-        try (S context = openSession()) {
-            List<Resource<L>> removed = resourceManager.removeResources(location, context.getLocationResolver());
+        try (S session = openSession()) {
+            List<Resource<L>> removed = resourceManager.removeResources(location, session.getLocationResolver());
             inventoryListenerSupport.fireResourcesRemoved(removed);
         } catch (Exception e) {
             log.errorCouldNotAccess(endpoint, e);

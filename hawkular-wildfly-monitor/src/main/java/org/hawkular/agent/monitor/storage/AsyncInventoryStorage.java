@@ -43,6 +43,7 @@ import org.hawkular.agent.monitor.inventory.Instance;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricType;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NamedObject;
 import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.Resource;
@@ -100,8 +101,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     /**
-     * A builder of a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory. See the docs
-     * inside {@code org.hawkular.inventory.rest.RestBulk} in Inventory source tree.
+     * A builder of a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory. See the docs inside
+     * {@code org.hawkular.inventory.rest.RestBulk} in Inventory source tree.
      */
     private static class BulkPayloadBuilder {
 
@@ -186,13 +187,13 @@ public class AsyncInventoryStorage implements InventoryStorage {
          *
          * @param metricType the {@link MeasurementType} to add
          */
-        private void metricType(MeasurementType metricType) {
+        private void metricType(MeasurementType<?> metricType) {
             MetricUnit mu = MetricUnit.NONE;
             MetricDataType metricDataType = MetricDataType.GAUGE;
             if (metricType instanceof MetricType) {
-                mu = MetricUnit.valueOf(((MetricType) metricType).getMetricUnits().name());
+                mu = MetricUnit.valueOf(((MetricType<?>) metricType).getMetricUnits().name());
                 // we need to translate from metric API type to inventory API type
-                switch (((MetricType) metricType).getMetricType()) {
+                switch (((MetricType<?>) metricType).getMetricType()) {
                     case GAUGE:
                         metricDataType = MetricDataType.GAUGE;
                         break;
@@ -221,7 +222,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
          * @param operation the {@link Operation} to add
          * @param resourceTypePath the inventory path of the resourceType to add the given {@code operation} under
          */
-        private void operation(Operation operation, String resourceTypePath) {
+        private void operation(Operation<?> operation, String resourceTypePath) {
             OperationType.Blueprint blueprint = new OperationType.Blueprint(getInventoryId(operation),
                     operation.getName().getNameString(), operation.getProperties(), null, null);
 
@@ -348,8 +349,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         /**
-         * Adds the given {@code resourceType}, its metric types (including availability) and operations
-         * to {@link #result} linking them properly together.
+         * Adds the given {@code resourceType}, its metric types (including availability) and operations to
+         * {@link #result} linking them properly together.
          *
          * @param resourceType the {@link ResourceType} to add
          * @return this builder
@@ -366,8 +367,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
             CanonicalPath parentPath = newPathPrefix().resourceType(getInventoryId(resourceType)).get();
 
             // metrics
-            Collection<? extends MetricType> metricTypes = resourceType.getMetricTypes();
-            for (MetricType metricType : metricTypes) {
+            Collection<? extends MetricType<?>> metricTypes = resourceType.getMetricTypes();
+            for (MetricType<?> metricType : metricTypes) {
                 metricType(metricType);
 
                 String metricTypeId = getInventoryId(metricType);
@@ -379,8 +380,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
 
             // avails (which are just metrics, too)
-            Collection<? extends AvailType> availTypes = resourceType.getAvailTypes();
-            for (AvailType availType : availTypes) {
+            Collection<? extends AvailType<?>> availTypes = resourceType.getAvailTypes();
+            for (AvailType<?> availType : availTypes) {
                 metricType(availType);
 
                 String metricTypeId = getInventoryId(availType);
@@ -392,18 +393,18 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             // operations
             String resourceTypePath = newPathPrefix().resourceType(resourceTypeId).get().toString();
-            Collection<? extends Operation> ops = resourceType.getOperations();
-            for (Operation op : ops) {
+            Collection<? extends Operation<?>> ops = resourceType.getOperations();
+            for (Operation<?> op : ops) {
                 operation(op, resourceTypePath);
             }
 
             // resource configuration
-            Collection<? extends ResourceConfigurationPropertyType> rcpts = //
+            Collection<? extends ResourceConfigurationPropertyType<?>> rcpts = //
                     resourceType.getResourceConfigurationPropertyTypes();
 
             if (rcpts != null && !rcpts.isEmpty()) {
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
-                for (ResourceConfigurationPropertyType rcpt : rcpts) {
+                for (ResourceConfigurationPropertyType<?> rcpt : rcpts) {
                     structDataBuilder.putString(rcpt.getID().getIDString(), rcpt.getName().getNameString());
                 }
 
@@ -606,7 +607,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public void discoverAllFinished(InventoryEvent<List<Resource<?>>> event) {
+    public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
         String feedId = event.getFeedId();
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
@@ -615,7 +616,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public void resourcesAdded(InventoryEvent<List<Resource<?>>> event) {
+    public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
         String feedId = event.getFeedId();
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
@@ -624,8 +625,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public void resourceRemoved(InventoryEvent<List<Resource<?>>> event) {
-        // TODO implement removal in the remote inventory
+    public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
         log.warnf("[%s].removeResource() needs to be implemented", getClass().getName());
     }
 

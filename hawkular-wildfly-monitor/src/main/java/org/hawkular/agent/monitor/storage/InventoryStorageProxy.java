@@ -16,12 +16,10 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.util.List;
-
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
-import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 
 /**
  * A proxy that delegates to a {@link StorageAdapterConfiguration}.
@@ -37,21 +35,24 @@ public class InventoryStorageProxy implements InventoryStorage {
         this.storageAdapter = storageAdapter;
     }
 
-    public void discoverAllFinished(InventoryEvent<List<Resource<?>>> event) {
+    @Override
+    public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
         storageAdapter.discoverAllFinished(event);
     }
 
-    public void resourcesAdded(InventoryEvent<List<Resource<?>>> event) {
+    @Override
+    public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
         storageAdapter.resourcesAdded(event);
     }
 
-    public void resourceRemoved(InventoryEvent<List<Resource<?>>> event) {
+    @Override
+    public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }

@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.protocol.platform.api;
 
+import static org.hawkular.agent.monitor.protocol.platform.api.PlatformResourceAttributeName.toEnumMap;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
