@@ -47,7 +47,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
         String feedId = wfPath.ids().getFeedId();
-        final String deploymentName = "hawkular-helloworld-war.war";
+        final String deploymentName = "hawkular-wildfly-agent-helloworld-war.war";
         Resource deployment = getResource("/feeds/" + feedId + "/resourceTypes/Deployment/resources",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 

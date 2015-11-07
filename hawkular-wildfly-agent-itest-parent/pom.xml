@@ -22,31 +22,18 @@
 
   <parent>
     <groupId>org.hawkular.agent</groupId>
-    <artifactId>hawkular-agent-itest-parent</artifactId>
+    <artifactId>hawkular-wildfly-agent-parent</artifactId>
     <version>0.13.0.Final-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-helloworld-war</artifactId>
-  <packaging>war</packaging>
+  <artifactId>hawkular-wildfly-agent-itest-parent</artifactId>
+  <packaging>pom</packaging>
 
-  <name>Hawkular Agent: Hello World WAR</name>
-  <description>A simple web application for testing purposes</description>
+  <name>Hawkular Agent: Integration Tests Parent</name>
 
-  <dependencies>
-
-    <!-- Import the CDI API, we use provided scope as the API is included in JBoss EAP 6 -->
-    <dependency>
-      <groupId>javax.enterprise</groupId>
-      <artifactId>cdi-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>javax</groupId>
-      <artifactId>javaee-api</artifactId>
-      <scope>provided</scope>
-      <version>7.0</version>
-    </dependency>
-
-  </dependencies>
+  <modules>
+    <module>hawkular-wildfly-agent-helloworld-war</module>
+    <module>hawkular-wildfly-agent-itest-dist</module>
+    <module>hawkular-wildfly-agent-itest</module>
+  </modules>
 </project>
