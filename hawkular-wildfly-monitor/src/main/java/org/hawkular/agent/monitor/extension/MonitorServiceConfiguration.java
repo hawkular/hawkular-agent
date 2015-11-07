@@ -53,6 +53,8 @@ public class MonitorServiceConfiguration {
         private final StorageReportTo type;
         private final String username;
         private final String password;
+        private final String securityKey; // if !null, use key/secret rather than username/password to authenticate
+        private final String securitySecret;
         private final String tenantId;
         private final String url;
         private final boolean useSSL;
@@ -65,15 +67,29 @@ public class MonitorServiceConfiguration {
         private final String keystorePassword;
         private final String securityRealm;
 
-        public StorageAdapterConfiguration(StorageReportTo type, String username, String password, String tenantId,
+        public StorageAdapterConfiguration(
+                StorageReportTo type,
+                String username,
+                String password,
+                String securityKey,
+                String securitySecret,
+                String tenantId,
                 String url,
-                boolean useSSL, String serverOutboundSocketBindingRef, String accountsContext, String inventoryContext,
-                String metricsContext, String feedcommContext, String keystorePath, String keystorePassword,
+                boolean useSSL,
+                String serverOutboundSocketBindingRef,
+                String accountsContext,
+                String inventoryContext,
+                String metricsContext,
+                String feedcommContext,
+                String keystorePath,
+                String keystorePassword,
                 String securityRealm) {
             super();
             this.type = type;
             this.username = username;
             this.password = password;
+            this.securityKey = securityKey;
+            this.securitySecret = securitySecret;
             this.tenantId = tenantId;
             this.url = url;
             this.useSSL = useSSL;
@@ -97,6 +113,14 @@ public class MonitorServiceConfiguration {
 
         public String getPassword() {
             return password;
+        }
+
+        public String getSecurityKey() {
+            return securityKey;
+        }
+
+        public String getSecuritySecret() {
+            return securitySecret;
         }
 
         public String getTenantId() {
@@ -207,11 +231,9 @@ public class MonitorServiceConfiguration {
 
     }
 
-    public static class ProtocolConfiguration<L, //
-    S extends ManagedServer> {
+    public static class ProtocolConfiguration<L, S extends ManagedServer> {
 
-        public static <L, S extends ManagedServer> Builder<L, S>
-                builder() {
+        public static <L, S extends ManagedServer> Builder<L, S> builder() {
             return new Builder<L, S>();
         }
 
@@ -266,17 +288,15 @@ public class MonitorServiceConfiguration {
     private final DiagnosticsConfiguration diagnostics;
     private final StorageAdapterConfiguration storageAdapter;
     private final ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> dmrConfiguration;
-    private final ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> //
-    jmxConfiguration;
-    private final ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> //
-    platformConfiguration;
+    private final ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> jmxConfiguration;
+    private final ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> platformConfiguration;
 
-    public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration, DiagnosticsConfiguration diagnostics,
+    public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration,
+            DiagnosticsConfiguration diagnostics,
             StorageAdapterConfiguration storageAdapter,
             ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> dmrConfiguration,
             ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> jmxConfiguration,
-            ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> //
-            platformConfiguration) {
+            ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> platformConfiguration) {
         super();
         this.globalConfiguration = globalConfiguration;
         this.diagnostics = diagnostics;
@@ -285,8 +305,6 @@ public class MonitorServiceConfiguration {
         this.jmxConfiguration = jmxConfiguration;
         this.platformConfiguration = platformConfiguration;
     }
-
-    //private final Map<Name, ManagedServer> managedServersMap;
 
     public GlobalConfiguration getGlobalConfiguration() {
         return globalConfiguration;
@@ -346,13 +364,11 @@ public class MonitorServiceConfiguration {
         return dmrConfiguration;
     }
 
-    public ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer>
-            getJmxConfiguration() {
+    public ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> getJmxConfiguration() {
         return jmxConfiguration;
     }
 
-    public ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer>
-            getPlatformConfiguration() {
+    public ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> getPlatformConfiguration() {
         return platformConfiguration;
     }
 

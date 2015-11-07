@@ -73,8 +73,14 @@ public class HttpClientBuilder {
      *                   be the SSL context to use.
      */
     public HttpClientBuilder(StorageAdapterConfiguration storageAdapter, SSLContext sslContext) {
-        this.username = storageAdapter.getUsername();
-        this.password = storageAdapter.getPassword();
+        if (storageAdapter.getSecurityKey() != null) {
+            // rather than use an actual username and password, we will use the offline token identified by key/secret
+            this.username = storageAdapter.getSecurityKey();
+            this.password = storageAdapter.getSecuritySecret();
+        } else {
+            this.username = storageAdapter.getUsername();
+            this.password = storageAdapter.getPassword();
+        }
         this.useSSL = storageAdapter.isUseSSL();
         this.keystorePath = storageAdapter.getKeystorePath();
         this.keystorePassword = storageAdapter.getKeystorePassword();

@@ -37,14 +37,28 @@ public interface StorageAttributes {
 
     SimpleAttributeDefinition USERNAME = new SimpleAttributeDefinitionBuilder("username",
             ModelType.STRING)
-            .setAllowNull(false)
+            .setAllowNull(true)
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
     SimpleAttributeDefinition PASSWORD = new SimpleAttributeDefinitionBuilder("password",
             ModelType.STRING)
-            .setAllowNull(false)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    SimpleAttributeDefinition SECURITY_KEY = new SimpleAttributeDefinitionBuilder("securityKey",
+            ModelType.STRING)
+            .setAllowNull(true)
+            .setAllowExpression(true)
+            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .build();
+
+    SimpleAttributeDefinition SECURITY_SECRET = new SimpleAttributeDefinitionBuilder("securitySecret",
+            ModelType.STRING)
+            .setAllowNull(true)
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
@@ -137,6 +151,8 @@ public interface StorageAttributes {
             TYPE,
             USERNAME,
             PASSWORD,
+            SECURITY_KEY,
+            SECURITY_SECRET,
             TENANT_ID,
             URL,
             USE_SSL,

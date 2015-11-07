@@ -209,13 +209,21 @@ public class MonitorService implements Service<MonitorService> {
             }
             MonitorServiceConfiguration.StorageAdapterConfiguration runtimeStorageAdapter = //
                     new MonitorServiceConfiguration.StorageAdapterConfiguration(
-                            bootStorageAdapter.getType(), bootStorageAdapter.getUsername(),
+                            bootStorageAdapter.getType(),
+                            bootStorageAdapter.getUsername(),
                             bootStorageAdapter.getPassword(),
-                            useTenantId, useUrl, bootStorageAdapter.isUseSSL(),
+                            bootStorageAdapter.getSecurityKey(),
+                            bootStorageAdapter.getSecuritySecret(),
+                            useTenantId,
+                            useUrl,
+                            bootStorageAdapter.isUseSSL(),
                             bootStorageAdapter.getServerOutboundSocketBindingRef(),
-                            bootStorageAdapter.getAccountsContext(), bootStorageAdapter.getInventoryContext(),
-                            bootStorageAdapter.getMetricsContext(), bootStorageAdapter.getFeedcommContext(),
-                            bootStorageAdapter.getKeystorePath(), bootStorageAdapter.getKeystorePassword(),
+                            bootStorageAdapter.getAccountsContext(),
+                            bootStorageAdapter.getInventoryContext(),
+                            bootStorageAdapter.getMetricsContext(),
+                            bootStorageAdapter.getFeedcommContext(),
+                            bootStorageAdapter.getKeystorePath(),
+                            bootStorageAdapter.getKeystorePassword(),
                             bootStorageAdapter.getSecurityRealm());
 
             return bootConfiguration.cloneWith(runtimeStorageAdapter);

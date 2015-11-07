@@ -356,8 +356,14 @@ public class FeedCommProcessor implements WebSocketListener {
         }
 
         auth = new Authentication();
-        auth.setUsername(this.config.getStorageAdapter().getUsername());
-        auth.setPassword(this.config.getStorageAdapter().getPassword());
+        if (this.config.getStorageAdapter().getSecurityKey() != null) {
+            // rather than use an actual username and password, we will use the offline token identified by key/secret
+            auth.setUsername(this.config.getStorageAdapter().getSecurityKey());
+            auth.setPassword(this.config.getStorageAdapter().getSecuritySecret());
+        } else {
+            auth.setUsername(this.config.getStorageAdapter().getUsername());
+            auth.setPassword(this.config.getStorageAdapter().getPassword());
+        }
         authMessage.setAuthentication(auth);
     }
 

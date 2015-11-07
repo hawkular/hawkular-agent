@@ -47,7 +47,8 @@ public class InstallerConfiguration {
     static final String OPTION_KEY_ALIAS = "key-alias";
     static final String OPTION_HAWKULAR_USERNAME = "hawkular-username";
     static final String OPTION_HAWKULAR_PASSWORD = "hawkular-password";
-    static final String OPTION_HAWKULAR_TOKEN = "hawkular-token";
+    static final String OPTION_HAWKULAR_SECURITY_KEY = "hawkular-security-key";
+    static final String OPTION_HAWKULAR_SECURITY_SECRET = "hawkular-security-secret";
 
     static Options buildCommandLineOptions() {
         Options options = new Options();
@@ -126,20 +127,26 @@ public class InstallerConfiguration {
         options.addOption(Option.builder()
                 .argName(InstallerConfiguration.OPTION_HAWKULAR_USERNAME)
                 .longOpt(InstallerConfiguration.OPTION_HAWKULAR_USERNAME)
-                .desc("User the agent will use when connecting to Hawkular Server. Ignored if a token is provided.")
+                .desc("User the agent will use when connecting to Hawkular Server. Ignored if a key is provided.")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option
                 .builder()
                 .argName(InstallerConfiguration.OPTION_HAWKULAR_PASSWORD)
                 .longOpt(InstallerConfiguration.OPTION_HAWKULAR_PASSWORD)
-                .desc("Credentials agent will use when connecting to Hawkular Server. Ignored if a token is provided.")
+                .desc("Credentials agent will use when connecting to Hawkular Server. Ignored if a key is provided.")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_HAWKULAR_TOKEN)
-                .longOpt(InstallerConfiguration.OPTION_HAWKULAR_TOKEN)
-                .desc("Security token agent will use when connecting to Hawkular Server.")
+                .argName(InstallerConfiguration.OPTION_HAWKULAR_SECURITY_KEY)
+                .longOpt(InstallerConfiguration.OPTION_HAWKULAR_SECURITY_KEY)
+                .desc("Security key agent will use when authenticating with Hawkular Server.")
+                .numberOfArgs(1)
+                .build());
+        options.addOption(Option.builder()
+                .argName(InstallerConfiguration.OPTION_HAWKULAR_SECURITY_SECRET)
+                .longOpt(InstallerConfiguration.OPTION_HAWKULAR_SECURITY_SECRET)
+                .desc("Security secret agent will use when authenticating with Hawkular Server.")
                 .numberOfArgs(1)
                 .build());
 
@@ -193,7 +200,8 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_KEY_ALIAS);
         setProperty(properties, commandLine, OPTION_HAWKULAR_USERNAME);
         setProperty(properties, commandLine, OPTION_HAWKULAR_PASSWORD);
-        setProperty(properties, commandLine, OPTION_HAWKULAR_TOKEN);
+        setProperty(properties, commandLine, OPTION_HAWKULAR_SECURITY_KEY);
+        setProperty(properties, commandLine, OPTION_HAWKULAR_SECURITY_SECRET);
     }
 
     private void setProperty(Properties props, CommandLine commandLine, String option) {
@@ -251,7 +259,11 @@ public class InstallerConfiguration {
         return properties.getProperty(OPTION_HAWKULAR_PASSWORD);
     }
 
-    public String getHawkularToken() {
-        return properties.getProperty(OPTION_HAWKULAR_TOKEN);
+    public String getHawkularSecurityKey() {
+        return properties.getProperty(OPTION_HAWKULAR_SECURITY_KEY);
+    }
+
+    public String getHawkularSecuritySecret() {
+        return properties.getProperty(OPTION_HAWKULAR_SECURITY_SECRET);
     }
 }

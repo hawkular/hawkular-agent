@@ -84,7 +84,8 @@ public class InstallerConfigurationTest {
                         "--key-alias", "OVERRIDE-alias",
                         "--hawkular-username", "OVERRIDE-username",
                         "--hawkular-password", "OVERRIDE-password",
-                        "--hawkular-token", "OVERRIDE-token",
+                        "--hawkular-security-key", "OVERRIDE-key",
+                        "--hawkular-security-secret", "OVERRIDE-secret",
                         "--module-dist", "/OVERRIDE/dist.zip"
                 ));
         InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
@@ -98,7 +99,8 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("OVERRIDE-alias", installerConfig.getKeyAlias());
         Assert.assertEquals("OVERRIDE-username", installerConfig.getHawkularUsername());
         Assert.assertEquals("OVERRIDE-password", installerConfig.getHawkularPassword());
-        Assert.assertEquals("OVERRIDE-token", installerConfig.getHawkularToken());
+        Assert.assertEquals("OVERRIDE-key", installerConfig.getHawkularSecurityKey());
+        Assert.assertEquals("OVERRIDE-secret", installerConfig.getHawkularSecuritySecret());
         Assert.assertEquals("/OVERRIDE/dist.zip", installerConfig.getModuleDistribution());
     }
 
@@ -117,7 +119,8 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("test-alias", installerConfig.getKeyAlias());
         Assert.assertEquals("test-username", installerConfig.getHawkularUsername());
         Assert.assertEquals("test-password", installerConfig.getHawkularPassword());
-        Assert.assertEquals("test-token", installerConfig.getHawkularToken());
+        Assert.assertEquals("test-key", installerConfig.getHawkularSecurityKey());
+        Assert.assertEquals("test-secret", installerConfig.getHawkularSecuritySecret());
         Assert.assertEquals("/test/dist.zip", installerConfig.getModuleDistribution());
     }
 }

@@ -63,7 +63,8 @@ public class AgentInstaller {
             }
 
             if ((installerConfig.getHawkularUsername() == null || installerConfig.getHawkularPassword() == null)
-                    && (installerConfig.getHawkularToken() == null)) {
+                    && (installerConfig.getHawkularSecurityKey() == null
+                            || installerConfig.getHawkularSecuritySecret() == null)) {
                 throw new MissingOptionException(
                         "You must provide Hawkular credentials in the installer configuration");
             }
@@ -287,10 +288,13 @@ public class AgentInstaller {
             xml.append(" password=\"" + installerConfig.getHawkularPassword() + "\"");
         }
 
-        // TODO: agent doesn't support token yet, uncomment this when it does
-        //if (installerConfig.getHawkularToken() != null && !installerConfig.getHawkularToken().isEmpty()) {
-        //    xml.append(" token=\"" + installerConfig.getHawkularToken() + "\"");
-        //}
+        if (installerConfig.getHawkularSecurityKey() != null && !installerConfig.getHawkularSecurityKey().isEmpty()) {
+            xml.append(" securityKey=\"" + installerConfig.getHawkularSecurityKey() + "\"");
+        }
+        if (installerConfig.getHawkularSecuritySecret() != null
+                && !installerConfig.getHawkularSecuritySecret().isEmpty()) {
+            xml.append(" securitySecret=\"" + installerConfig.getHawkularSecuritySecret() + "\"");
+        }
 
         xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");
         xml.append("/>");
