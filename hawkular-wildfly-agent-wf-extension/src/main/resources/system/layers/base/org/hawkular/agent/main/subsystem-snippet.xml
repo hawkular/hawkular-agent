@@ -508,6 +508,8 @@
                            attribute="qualified-host-name" />
       <resource-config-dmr name="Version"
                            attribute="product-version" />
+      <resource-config-dmr name="Product Name"
+                           attribute="product-name" />
       <resource-config-dmr name="Bound Address"
                            path="/socket-binding-group=standard-sockets/socket-binding=http"
                            attribute="bound-address" />
