@@ -26,6 +26,7 @@ import java.util.Map;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.ProtocolException;
@@ -36,6 +37,8 @@ import org.jolokia.client.request.J4pReadResponse;
 import org.jolokia.client.request.J4pSearchRequest;
 import org.jolokia.client.request.J4pSearchResponse;
 
+import com.codahale.metrics.Timer.Context;
+
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @see Driver
@@ -43,10 +46,18 @@ import org.jolokia.client.request.J4pSearchResponse;
 public class JMXDriver implements Driver<JMXNodeLocation> {
 
     private final J4pClient client;
+    private final Diagnostics diagnostics;
 
-    public JMXDriver(J4pClient client) {
+    /**
+     * Creates the JMX driver.
+     *
+     * @param client the client used to connect to the JMX MBeanServer
+     * @param diagnostics object used to track performance of the underlying JMX system
+     */
+    public JMXDriver(J4pClient client, Diagnostics diagnostics) {
         super();
         this.client = client;
+        this.diagnostics = diagnostics;
     }
 
     @SuppressWarnings("unchecked")
@@ -85,7 +96,14 @@ public class JMXDriver implements Driver<JMXNodeLocation> {
             if (attribute.length > 1) {
                 request.setPath(attribute[1]); // this is the sub-reference
             }
-            J4pReadResponse response = client.execute(request);
+
+            J4pReadResponse response;
+            try (Context timerContext = diagnostics.getJMXRequestTimer().time()) {
+                response = client.execute(request);
+            } catch (Exception e) {
+                diagnostics.getJMXErrorRate().mark(1);
+                throw e;
+            }
             Collection<ObjectName> responseObjectNames = response.getObjectNames();
             switch (responseObjectNames.size()) {
                 case 0:

@@ -27,10 +27,8 @@ public class DiagnosticsImpl implements Diagnostics {
     private final MetricRegistry metricsRegistry;
 
     private final Timer dmrRequestTimer;
-    private final Meter dmrDelayCounter;
     private final Meter dmrErrorCounter;
     private final Timer jmxRequestTimer;
-    private final Meter jmxDelayCounter;
     private final Meter jmxErrorCounter;
     private final Meter storageError;
     private final Counter metricsStorageBuffer;
@@ -49,10 +47,8 @@ public class DiagnosticsImpl implements Diagnostics {
             String feedId) {
         // we don't need config now, but maybe in future - so keep "config" param here for future API consistency
         dmrRequestTimer = registry.timer(name(feedId, "dmr.request-timer"));
-        dmrDelayCounter = registry.meter(name(feedId, "dmr.delay-rate"));
         dmrErrorCounter = registry.meter(name(feedId, "dmr.error-rate"));
         jmxRequestTimer = registry.timer(name(feedId, "jmx.request-timer"));
-        jmxDelayCounter = registry.meter(name(feedId, "jmx.delay-rate"));
         jmxErrorCounter = registry.meter(name(feedId, "jmx.error-rate"));
         storageError = registry.meter(name(feedId, "storage.error-rate"));
         metricsStorageBuffer = registry.counter(name(feedId, "metrics.storage-buffer-size"));
@@ -77,11 +73,6 @@ public class DiagnosticsImpl implements Diagnostics {
     }
 
     @Override
-    public Meter getDMRDelayedRate() {
-        return dmrDelayCounter;
-    }
-
-    @Override
     public Meter getDMRErrorRate() {
         return dmrErrorCounter;
     }
@@ -89,11 +80,6 @@ public class DiagnosticsImpl implements Diagnostics {
     @Override
     public Timer getJMXRequestTimer() {
         return jmxRequestTimer;
-    }
-
-    @Override
-    public Meter getJMXDelayedRate() {
-        return jmxDelayCounter;
     }
 
     @Override

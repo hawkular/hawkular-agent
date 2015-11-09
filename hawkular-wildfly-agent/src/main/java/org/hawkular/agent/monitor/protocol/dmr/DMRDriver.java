@@ -27,15 +27,20 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.ProtocolException;
 import org.hawkular.dmr.api.OperationBuilder;
+import org.hawkular.dmr.api.OperationBuilder.OperationResult;
+import org.hawkular.dmr.api.OperationBuilder.ReadAttributeOperationBuilder;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+
+import com.codahale.metrics.Timer.Context;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
@@ -99,13 +104,14 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
     }
 
     private final ModelControllerClient client;
-
     private final DMREndpoint endpoint;
+    private final Diagnostics diagnostics;
 
-    public DMRDriver(ModelControllerClient client, DMREndpoint endpoint) {
+    public DMRDriver(ModelControllerClient client, DMREndpoint endpoint, Diagnostics diagnostics) {
         super();
         this.client = client;
         this.endpoint = endpoint;
+        this.diagnostics = diagnostics;
     }
 
     @Override
@@ -120,12 +126,25 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
     public Object fetchAttribute(AttributeLocation<DMRNodeLocation> location)
             throws ProtocolException {
         String[] attribute = location.getAttribute().split("#");
-        ModelNode value;
         String useAttribute = attribute[0];
-        value = OperationBuilder.readAttribute().address(location.getLocation().getPathAddress()) //
+        ReadAttributeOperationBuilder<?> opBuilder = OperationBuilder
+                .readAttribute()
+                .address(location.getLocation().getPathAddress())
                 .resolveExpressions()
-                .name(useAttribute)
-                .execute(client).assertSuccess().getResultNode();
+                .name(useAttribute);
+
+        OperationResult<?> opResult;
+        try (Context timerContext = diagnostics.getDMRRequestTimer().time()) {
+            opResult = opBuilder.execute(client);
+        }
+
+        ModelNode value;
+        try {
+            value = opResult.assertSuccess().getResultNode();
+        } catch (RuntimeException re) {
+            diagnostics.getDMRErrorRate().mark(1);
+            throw re;
+        }
 
         if (attribute.length > 1 && value != null && value.isDefined()) {
             useAttribute = attribute[1];

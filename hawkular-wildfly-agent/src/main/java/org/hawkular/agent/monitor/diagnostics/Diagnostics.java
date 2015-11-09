@@ -31,37 +31,27 @@ public interface Diagnostics {
     MetricRegistry getMetricRegistry();
 
     /**
-     * @return time it takes to execute DMR requests
+     * @return time it takes to execute DMR metric collection requests
      */
     Timer getDMRRequestTimer();
 
     /**
-     * @return tracks the number of DMR failures
+     * @return tracks the number of DMR failures while collecting metrics
      */
     Meter getDMRErrorRate();
 
     /**
-     * @return tracks how many DMR requests missed their intervals
-     */
-    Meter getDMRDelayedRate();
-
-    /**
-     * @return time it takes to execute JMX requests
+     * @return time it takes to execute JMX metric collection requests
      */
     Timer getJMXRequestTimer();
 
     /**
-     * @return tracks the number of JMX failures
+     * @return tracks the number of JMX failures while collecting metrics
      */
     Meter getJMXErrorRate();
 
     /**
-     * @return tracks how many JMX requests missed their intervals
-     */
-    Meter getJMXDelayedRate();
-
-    /**
-     * @return tracks how many errors occurred while trying to store data
+     * @return tracks how many errors occurred while trying to store data to Hawkular storage
      */
     Meter getStorageErrorRate();
 
