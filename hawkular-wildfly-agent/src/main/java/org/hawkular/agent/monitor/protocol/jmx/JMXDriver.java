@@ -100,9 +100,6 @@ public class JMXDriver implements Driver<JMXNodeLocation> {
             J4pReadResponse response;
             try (Context timerContext = diagnostics.getJMXRequestTimer().time()) {
                 response = client.execute(request);
-            } catch (Exception e) {
-                diagnostics.getJMXErrorRate().mark(1);
-                throw e;
             }
             Collection<ObjectName> responseObjectNames = response.getObjectNames();
             switch (responseObjectNames.size()) {
@@ -119,6 +116,7 @@ public class JMXDriver implements Driver<JMXNodeLocation> {
                     return Collections.unmodifiableList(results);
             }
         } catch (Exception e) {
+            diagnostics.getJMXErrorRate().mark(1);
             throw new ProtocolException(e);
         }
     }

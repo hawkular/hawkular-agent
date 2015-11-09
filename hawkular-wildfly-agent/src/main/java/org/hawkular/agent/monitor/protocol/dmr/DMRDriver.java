@@ -123,8 +123,7 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
     }
 
     @Override
-    public Object fetchAttribute(AttributeLocation<DMRNodeLocation> location)
-            throws ProtocolException {
+    public Object fetchAttribute(AttributeLocation<DMRNodeLocation> location) throws ProtocolException {
         String[] attribute = location.getAttribute().split("#");
         String useAttribute = attribute[0];
         ReadAttributeOperationBuilder<?> opBuilder = OperationBuilder
@@ -133,17 +132,22 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
                 .resolveExpressions()
                 .name(useAttribute);
 
+        // time the execute separately - we want to time ONLY the execute call
         OperationResult<?> opResult;
         try (Context timerContext = diagnostics.getDMRRequestTimer().time()) {
             opResult = opBuilder.execute(client);
+        } catch (RuntimeException re) {
+            diagnostics.getDMRErrorRate().mark(1);
+            throw new ProtocolException("Error fetching DMR attribute [" + useAttribute + "]", re);
         }
 
+        // we got a response - so the underlying comm execution worked; see if we got a valid attribute value
         ModelNode value;
         try {
             value = opResult.assertSuccess().getResultNode();
         } catch (RuntimeException re) {
             diagnostics.getDMRErrorRate().mark(1);
-            throw re;
+            throw new ProtocolException("Unsuccessful fetching DMR attribute [" + useAttribute + "]", re);
         }
 
         if (attribute.length > 1 && value != null && value.isDefined()) {
