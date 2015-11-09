@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.net.ssl.SSLContext;
 
 import org.hawkular.agent.monitor.api.InventoryListener;
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ProtocolConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
@@ -57,20 +58,16 @@ import org.jboss.msc.value.InjectedValue;
 public class ProtocolServices {
     public static class Builder {
         private final String feedId;
-        private ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> //
-        dmrProtocolService;
-        private ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> //
-        jmxProtocolService;
-        private ProtocolService<PlatformNodeLocation, PlatformEndpoint, //
-        PlatformSession> platformProtocolService;
+        private ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> dmrProtocolService;
+        private ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> jmxProtocolService;
+        private ProtocolService<PlatformNodeLocation, PlatformEndpoint, PlatformSession> platformProtocolService;
         private final Map<String, InjectedValue<SSLContext>> sslContexts;
+        private final Diagnostics diagnostics;
 
-        /**
-         * @param sslContexts
-         */
-        public Builder(String feedId, Map<String, InjectedValue<SSLContext>> sslContexts) {
+        public Builder(String feedId, Map<String, InjectedValue<SSLContext>> sslContexts, Diagnostics diagnostics) {
             this.feedId = feedId;
             this.sslContexts = sslContexts;
+            this.diagnostics = diagnostics;
         }
 
         public ProtocolServices build() {
@@ -81,8 +78,7 @@ public class ProtocolServices {
                 ModelControllerClientFactory localModelControllerClientFactory,
                 ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> dmrConfiguration) {
 
-            org.hawkular.agent.monitor.protocol.ProtocolService.Builder<DMRNodeLocation, //
-            DMREndpoint, DMRSession> builder = ProtocolService.builder();
+            ProtocolService.Builder<DMRNodeLocation, DMREndpoint, DMRSession> builder = ProtocolService.builder();
 
             ResourceTypeManager<DMRNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
                     dmrConfiguration.getTypeSets().getResourceTypeSets());
@@ -111,7 +107,7 @@ public class ProtocolServices {
                                 + "]. Please report this bug.");
                     }
                     DMREndpointService endpointService = new DMREndpointService(feedId, endpoint, resourceTypeManager,
-                            clientFactory);
+                            clientFactory, diagnostics);
                     builder.endpointService(endpointService);
                 }
             }
@@ -121,14 +117,12 @@ public class ProtocolServices {
         }
 
         public Builder jmxProtocolService(
-                ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> //
-                jmxConfiguration) {
+                ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> jmxConfiguration) {
 
-            org.hawkular.agent.monitor.protocol.ProtocolService.Builder<JMXNodeLocation, //
-            JMXEndpoint, JMXSession> builder = ProtocolService.builder();
+            ProtocolService.Builder<JMXNodeLocation, JMXEndpoint, JMXSession> builder = ProtocolService.builder();
 
-            ResourceTypeManager<JMXNodeLocation> resourceTypeManager = //
-                    new ResourceTypeManager<>(jmxConfiguration.getTypeSets().getResourceTypeSets());
+            ResourceTypeManager<JMXNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
+                    jmxConfiguration.getTypeSets().getResourceTypeSets());
 
             builder.resourceTypeManager(resourceTypeManager);
 
@@ -137,7 +131,8 @@ public class ProtocolServices {
                     SSLContext sslContext = server.getUrl().getProtocol().equalsIgnoreCase("https")
                             ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
                     final JMXEndpoint endpoint = JMXEndpoint.of(server, sslContext);
-                    JMXEndpointService endpointService = new JMXEndpointService(feedId, endpoint, resourceTypeManager);
+                    JMXEndpointService endpointService = new JMXEndpointService(feedId, endpoint, resourceTypeManager,
+                            diagnostics);
                     builder.endpointService(endpointService);
                 }
             }
@@ -147,14 +142,13 @@ public class ProtocolServices {
         }
 
         public Builder platformProtocolService(
-                ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> //
-                jmxConfiguration) {
-            org.hawkular.agent.monitor.protocol.ProtocolService.Builder<PlatformNodeLocation, //
-            PlatformEndpoint, PlatformSession> builder =
-                    ProtocolService.builder();
+                ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> jmxConfiguration) {
 
-            ResourceTypeManager<PlatformNodeLocation> resourceTypeManager = //
-                    new ResourceTypeManager<>(jmxConfiguration.getTypeSets().getResourceTypeSets());
+            ProtocolService.Builder<PlatformNodeLocation, PlatformEndpoint, PlatformSession> builder = ProtocolService
+                    .builder();
+
+            ResourceTypeManager<PlatformNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
+                    jmxConfiguration.getTypeSets().getResourceTypeSets());
 
             builder.resourceTypeManager(resourceTypeManager);
 
@@ -174,26 +168,20 @@ public class ProtocolServices {
 
     private static final MsgLogger log = AgentLoggers.getLogger(ProtocolServices.class);
 
-    public static Builder builder(String feedId, Map<String, InjectedValue<SSLContext>> sslContexts) {
-        return new Builder(feedId, sslContexts);
+    public static Builder builder(String feedId, Diagnostics diagnostics,
+            Map<String, InjectedValue<SSLContext>> sslContexts) {
+        return new Builder(feedId, sslContexts, diagnostics);
     }
 
-    private final ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> //
-    dmrProtocolService;
-    private final ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession>//
-    jmxProtocolService;
-    private final ProtocolService<PlatformNodeLocation, PlatformEndpoint, //
-    PlatformSession> platformProtocolService;
+    private final ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> dmrProtocolService;
+    private final ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> jmxProtocolService;
+    private final ProtocolService<PlatformNodeLocation, PlatformEndpoint, PlatformSession> platformProtocolService;
     private final List<ProtocolService<?, ?, ?>> services;
 
     public ProtocolServices(
-            ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> //
-            dmrProtocolService,
-            ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> //
-            jmxProtocolService,
-            ProtocolService<PlatformNodeLocation, PlatformEndpoint, //
-            PlatformSession> platformProtocolService) {
-        super();
+            ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> dmrProtocolService,
+            ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> jmxProtocolService,
+            ProtocolService<PlatformNodeLocation, PlatformEndpoint, PlatformSession> platformProtocolService) {
         this.dmrProtocolService = dmrProtocolService;
         this.jmxProtocolService = jmxProtocolService;
         this.platformProtocolService = platformProtocolService;
@@ -243,23 +231,19 @@ public class ProtocolServices {
         }
     }
 
-    public ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> //
-            getDmrProtocolService() {
+    public ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> getDmrProtocolService() {
         return dmrProtocolService;
     }
 
-    public ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> //
-            getJmxProtocolService() {
+    public ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> getJmxProtocolService() {
         return jmxProtocolService;
     }
 
-    public ProtocolService<PlatformNodeLocation, PlatformEndpoint, //
-    PlatformSession> getPlatformProtocolService() {
+    public ProtocolService<PlatformNodeLocation, PlatformEndpoint, PlatformSession> getPlatformProtocolService() {
         return platformProtocolService;
     }
 
     public List<ProtocolService<?, ?, ?>> getServices() {
         return services;
     }
-
 }

@@ -41,8 +41,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public void initialize(
-            org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration config,
-            Diagnostics diag, HttpClientBuilder httpClientBuilder) {
+            MonitorServiceConfiguration.StorageAdapterConfiguration config,
+            Diagnostics diag,
+            HttpClientBuilder httpClientBuilder) {
         this.config = config;
         this.diagnostics = diag;
         this.httpClientBuilder = httpClientBuilder;

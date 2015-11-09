@@ -236,8 +236,7 @@ public class MonitorService implements Service<MonitorService> {
         SSLContext result = null;
         String bootSecurityRealm = configuration.getStorageAdapter().getSecurityRealm();
         if (bootSecurityRealm != null) {
-            result = trustOnlySSLContextValues.get(bootSecurityRealm)
-                    .getOptionalValue();
+            result = trustOnlySSLContextValues.get(bootSecurityRealm).getOptionalValue();
         }
         return result;
     }
@@ -478,7 +477,7 @@ public class MonitorService implements Service<MonitorService> {
             log.errorCannotInitializeScheduler(e);
         }
 
-        ProtocolServices ps = ProtocolServices.builder(feedId, trustOnlySSLContextValues) //
+        ProtocolServices ps = ProtocolServices.builder(feedId, diagnostics, trustOnlySSLContextValues) //
                 .dmrProtocolService(localModelControllerClientFactory, configuration.getDmrConfiguration())
                 .jmxProtocolService(configuration.getJmxConfiguration())
                 .platformProtocolService(configuration.getPlatformConfiguration())

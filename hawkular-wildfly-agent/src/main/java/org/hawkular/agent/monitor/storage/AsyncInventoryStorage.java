@@ -278,8 +278,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
          * @param resource the {@link Resource} to add
          * @return this builder
          */
-        public <L> BulkPayloadBuilder
-                resource(Resource<L> resource) {
+        public <L> BulkPayloadBuilder resource(Resource<L> resource) {
 
             // resource
             org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
@@ -473,10 +472,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             if (resources != null && !resources.isEmpty()) {
                 for (QueueElement elem : resources) {
                     Resource<?> resource = elem.getResource();
-                    // FIXME environmentId should be configurable
-                    BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(),
-                            elem.getFeedId());
-
+                    BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(), elem.getFeedId());
                     ResourceType<?> resourceType = resource.getResourceType();
 
                     builder.resourceType(resourceType);
@@ -505,17 +501,17 @@ public class AsyncInventoryStorage implements InventoryStorage {
                                     .buildJsonPostRequest(url.toString(), null, jsonPayload);
 
                             final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
-                            Response response = AsyncInventoryStorage.this.httpClientBuilder.getHttpClient()
-                                    .newCall(request).execute();
+                            Response response = AsyncInventoryStorage.this.httpClientBuilder
+                                    .getHttpClient()
+                                    .newCall(request)
+                                    .execute();
                             final long durationNanos = timer.stop();
 
                             final Reader responseBodyReader;
 
                             if (log.isDebugEnabled()) {
-                                final long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos,
-                                        TimeUnit.NANOSECONDS);
+                                long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
                                 log.debugf("Took [%d]ms to store resource [%s]", durationMs, resource.getName());
-
                                 String body = response.body().string();
                                 responseBodyReader = new StringReader(body);
                                 log.tracef("Body of bulk insert request response: %s", body);

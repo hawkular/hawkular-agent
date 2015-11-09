@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.protocol.jmx;
 
+import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.EndpointService;
@@ -29,10 +30,12 @@ public class JMXEndpointService
         extends EndpointService<JMXNodeLocation, JMXEndpoint, JMXSession> {
 
     private final JmxClientFactory clientFactory;
+    private final Diagnostics diagnostics;
 
     public JMXEndpointService(String feedId, JMXEndpoint endpoint,
-            ResourceTypeManager<JMXNodeLocation> resourceTypeManager) {
+            ResourceTypeManager<JMXNodeLocation> resourceTypeManager, Diagnostics diagnostics) {
         super(feedId, endpoint, resourceTypeManager, new JMXLocationResolver());
+        this.diagnostics = diagnostics;
         this.clientFactory = new JmxClientFactory(endpoint);
     }
 
@@ -40,7 +43,7 @@ public class JMXEndpointService
     @Override
     public JMXSession openSession() {
         J4pClient client = clientFactory.createClient();
-        Driver<JMXNodeLocation> driver = new JMXDriver(client);
+        Driver<JMXNodeLocation> driver = new JMXDriver(client, diagnostics);
         return new JMXSession(feedId, endpoint, resourceTypeManager, driver, locationResolver, client);
     }
 
