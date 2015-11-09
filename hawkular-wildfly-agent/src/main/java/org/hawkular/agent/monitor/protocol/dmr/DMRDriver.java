@@ -131,11 +131,12 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
             useAttribute = attribute[1];
             value = value.get(useAttribute);
         }
+
         if (value == null || !value.isDefined()) {
-            return postProcessAttribute(useAttribute, toObject(value));
-        } else {
-            throw new ProtocolException("Could not fetch attribute [" + location + "]");
+            return null;
         }
+
+        return postProcessAttribute(useAttribute, toObject(value));
     }
 
     @SuppressWarnings("unchecked")
