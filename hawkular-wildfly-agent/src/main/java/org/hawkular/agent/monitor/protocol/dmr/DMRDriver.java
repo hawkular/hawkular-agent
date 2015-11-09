@@ -136,18 +136,18 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
         OperationResult<?> opResult;
         try (Context timerContext = diagnostics.getDMRRequestTimer().time()) {
             opResult = opBuilder.execute(client);
-        } catch (RuntimeException re) {
+        } catch (Exception e) {
             diagnostics.getDMRErrorRate().mark(1);
-            throw new ProtocolException("Error fetching DMR attribute [" + useAttribute + "]", re);
+            throw new ProtocolException("Error fetching DMR attribute [" + useAttribute + "]", e);
         }
 
         // we got a response - so the underlying comm execution worked; see if we got a valid attribute value
         ModelNode value;
         try {
             value = opResult.assertSuccess().getResultNode();
-        } catch (RuntimeException re) {
+        } catch (Exception e) {
             diagnostics.getDMRErrorRate().mark(1);
-            throw new ProtocolException("Unsuccessful fetching DMR attribute [" + useAttribute + "]", re);
+            throw new ProtocolException("Unsuccessful fetching DMR attribute [" + useAttribute + "]", e);
         }
 
         if (attribute.length > 1 && value != null && value.isDefined()) {
