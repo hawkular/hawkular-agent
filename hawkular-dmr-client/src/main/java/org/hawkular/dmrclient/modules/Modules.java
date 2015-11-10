@@ -32,7 +32,6 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
-import org.apache.commons.io.FileUtils;
 import org.hawkular.dmrclient.modules.AddModuleRequest.ModuleResource;
 
 /**
@@ -307,7 +306,23 @@ public class Modules {
 
     public void remove(String moduleName, String slot) throws Exception {
         File modulePath = getModulePath(moduleName, slot);
-        FileUtils.deleteDirectory(modulePath);
+        deleteDirectory(modulePath);
+    }
+
+    private void deleteDirectory(File dir) throws IOException {
+        if (dir != null && dir.exists()) {
+            if (dir.isDirectory()) {
+                File[] doomedFiles = dir.listFiles();
+                if (doomedFiles != null) {
+                    for (File doomedFile : doomedFiles) {
+                        deleteDirectory(doomedFile); // call this method recursively
+                    }
+                }
+            }
+            if (!dir.delete()) {
+                throw new IOException("Cannot delete: " + dir);
+            }
+        }
     }
 
     void validate(AddModuleRequest addModuleRequest) throws IllegalArgumentException {
