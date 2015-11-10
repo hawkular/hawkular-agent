@@ -16,28 +16,15 @@
  */
 package org.hawkular.cmdgw.ws.test;
 
-import static org.mockito.Mockito.verify;
-
 import java.io.File;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
-
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.ws.WebSocket.PayloadType;
-import com.squareup.okhttp.ws.WebSocketCall;
-import com.squareup.okhttp.ws.WebSocketListener;
-
-import okio.BufferedSource;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
@@ -66,9 +53,6 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             URL driverJarUrl = new URL(driverJarRawUrl);
             final String driverJarName = new File(driverJarUrl.getPath()).getName();
 
-            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-
             String req = "AddJdbcDriverRequest={\"authentication\":" + authentication + "," //
                     + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
                     + "\"driverName\":\"" + driverName + "\"," //
@@ -78,33 +62,22 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     + "\"moduleName\":\"com.mysql\"," //
                     + "\"driverJarName\":\"" + driverJarName + "\"" //
                     + "}";
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req, driverJarUrl);
-
-            WebSocketCall.create(client, request).enqueue(openingListener);
-
-            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
-                    Mockito.same(PayloadType.TEXT));
-
-            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-            int i = 0;
-            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-
-            String expectedRe =
-                    "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                            + wfPath.ids().getFeedId() + "] (\\E.*";
-
-            String msg = receivedMessages.get(i++).readUtf8();
-            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
-
-            AssertJUnit.assertEquals("AddJdbcDriverResponse={" //
+            String response = "AddJdbcDriverResponse={" //
                     + "\"driverName\":\"" + driverName + "\"," //
                     + "\"resourcePath\":\"" + wfPath + "\"," //
-                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\"," //
                     + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
-                    + "}", receivedMessages.get(i++).readUtf8());
+                    + "}";
+            try (TestWebSocketClient testClient =
+                    TestWebSocketClient.builder() //
+                            .url(baseGwUri + "/ui/ws") //
+                            .expectWelcome(req, driverJarUrl) //
+                            .expectGenericSuccess(wfPath.ids().getFeedId()) //
+                            .expectText(response) //
+                            .build()) {
+                testClient.validate(10000);
+            }
 
             assertNodeEquals(mcc, driverAddress, getClass(), driverFileNameAfterAdd, false);
         }
@@ -125,39 +98,25 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 2);
             assertResourceExists(mcc, driverAddress, true);
 
-            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
             String req = "RemoveJdbcDriverRequest={\"authentication\":" + authentication + ", " //
                     + "\"resourcePath\":\"" + removePath + "\"" //
                     + "}";
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
-
-            WebSocketCall.create(client, request).enqueue(openingListener);
-
-            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
-                    Mockito.same(PayloadType.TEXT));
-
-            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-            int i = 0;
-
-            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-
-            String expectedRe =
-                    "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                            + wfPath.ids().getFeedId() + "] (\\E.*";
-
-            String msg = receivedMessages.get(i++).readUtf8();
-            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
-
-            AssertJUnit.assertEquals("RemoveJdbcDriverResponse={"//
+            String response = "RemoveJdbcDriverResponse={"//
                     + "\"resourcePath\":\"" + removePath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Performed [Remove] on a [JDBC Driver] given by Inventory path [" + removePath
                     + "]\""//
-                    + "}", receivedMessages.get(i++).readUtf8());
+                    + "}";
+            try (TestWebSocketClient testClient =
+                    TestWebSocketClient.builder() //
+                            .url(baseGwUri + "/ui/ws") //
+                            .expectWelcome(req) //
+                            .expectGenericSuccess(wfPath.ids().getFeedId()) //
+                            .expectText(response) //
+                            .build()) {
+                testClient.validate(10000);
+            }
 
             assertResourceExists(mcc, driverAddress, false);
 

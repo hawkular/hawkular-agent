@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -33,9 +32,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
@@ -73,163 +69,29 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
-import com.squareup.okhttp.ws.WebSocket;
-import com.squareup.okhttp.ws.WebSocket.PayloadType;
-import com.squareup.okhttp.ws.WebSocketListener;
-
-import okio.Buffer;
-import okio.BufferedSource;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public abstract class AbstractCommandITest {
-    private static final Logger log = Logger.getLogger(AbstractCommandITest.class.getName());
-
-    protected static class TestListener implements WebSocketListener {
-        private static class ReusableBuffer {
-            private final byte[] bytes;
-            public ReusableBuffer(BufferedSource payload) throws IOException {
-                this.bytes = payload.readByteArray();
-                payload.close();
-            }
-
-            public String asString() {
-                StringBuilder result = new StringBuilder();
-                final int max = 1024;
-                for (int i = 0; i < bytes.length && i < max; i++) {
-                    byte b = bytes[i];
-                    if (b >= 32 && b < 127) {
-                        result.append((char) b);
-                    } else {
-                        return result.toString();
-                    }
-                }
-                return result.toString();
-            }
-
-            public Buffer copy() {
-                Buffer payloadCopy = new Buffer();
-                payloadCopy.write(bytes);
-                return payloadCopy;
-            }
-        }
-
-
-        private final WebSocketListener delegate;
-
-        protected final Executor writeExecutor;
-
-        private String sessionId;
-
-        private final String requestToSend;
-        private final URL attachment;
-
-        private final List<ReusableBuffer> responses = new ArrayList<>();
-
-        private WebSocket webSocket;
-
-        public TestListener(WebSocketListener delegate, Executor writeExecutor, String requestToSend) {
-            this(delegate, writeExecutor, requestToSend, null);
-        }
-
-        public TestListener(WebSocketListener delegate, Executor writeExecutor, String requestToSend, URL attachment) {
-            super();
-            this.delegate = delegate;
-            this.writeExecutor = writeExecutor;
-            this.requestToSend = requestToSend;
-            this.attachment = attachment;
-        }
-
-        public void onClose(int code, String reason) {
-            log.fine("WebSocket closed");
-            delegate.onClose(code, reason);
-        }
-
-        public void onFailure(IOException e, Response response) {
-            log.log(java.util.logging.Level.FINE, "WebSocket failure", e);
-            delegate.onFailure(e, response);
-        }
-
-        public void onMessage(BufferedSource payload, PayloadType type) throws IOException {
-            // System.out.println("onMessage");
-            ReusableBuffer reusableBuffer = new ReusableBuffer(payload);
-            log.fine("Received ["+ type +"] from WebSocket: " + reusableBuffer.asString());
-            delegate.onMessage(reusableBuffer.copy(), type);
-            if (responses.isEmpty()) {
-                /* the first message must be the welcome message */
-                this.sessionId = assertWelcomeResponse(reusableBuffer.asString());
-
-                /* send the first request after the welcome message */
-                send(this.webSocket, requestToSend, attachment);
-            }
-            responses.add(reusableBuffer);
-        }
-
-        public void onOpen(WebSocket webSocket, Response response) {
-            log.fine("WebSocket opened");
-            this.webSocket = webSocket;
-            delegate.onOpen(webSocket, response);
-        }
-
-        public void onPong(Buffer payload) {
-            try {
-                delegate.onPong(new ReusableBuffer(payload).copy());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        public void send(final WebSocket webSocket, final String text) {
-            send(webSocket, text, null);
-        }
-
-        public void send(final WebSocket webSocket, final String text, final URL dataUrl) {
-            writeExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try (Buffer b1 = new Buffer()) {
-                        if (text != null) {
-                            log.fine("Sending over WebSocket: " + text);
-                            b1.writeUtf8(text);
-                        }
-                        if (dataUrl != null) {
-                            try (InputStream in = dataUrl.openStream()) {
-                                int b;
-                                while ((b = in.read()) != -1) {
-                                    b1.writeByte(b);
-                                    // System.out.println("Writing binary data");
-                                }
-                            }
-                        }
-                        webSocket.sendMessage(dataUrl == null ? PayloadType.TEXT : PayloadType.BINARY, b1);
-                    } catch (IOException e) {
-                        throw new RuntimeException("Unable to send message", e);
-                    }
-                }
-            });
-        }
-
-        public String getSessionId() {
-            return sessionId;
-        }
-
-    }
 
     private static volatile boolean accountsAndInventoryReady = false;
-    protected static final int ATTEMPT_COUNT = 50;
-    protected static final long ATTEMPT_DELAY = 5000;
-    protected static final String authentication;
 
+    protected static final int ATTEMPT_COUNT = 50;
+
+    protected static final long ATTEMPT_DELAY = 5000;
+
+    protected static final String authentication;
     protected static final String baseAccountsUri;
     protected static final String baseGwUri;
     protected static final String baseInvUri;
+
     protected static final String host;
+    private static final Logger log = Logger.getLogger(AbstractCommandITest.class.getName());
     protected static final String managementPasword = System.getProperty("hawkular.agent.itest.mgmt.password");
     protected static final int managementPort;
     protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
     protected static final String testPasword = "password";
-
     protected static final String testUser = "jdoe";
 
     private static final Object waitForAccountsLock = new Object();
@@ -247,6 +109,17 @@ public abstract class AbstractCommandITest {
         baseInvUri = "http://" + host + ":" + httpPort + "/hawkular/inventory";
         baseGwUri = "ws://" + host + ":" + httpPort + "/hawkular/command-gateway";
         authentication = "{\"username\":\"" + testUser + "\",\"password\":\"" + testPasword + "\"}";
+    }
+
+    /**
+     * @param msg
+     * @return
+     */
+    protected static String assertWelcomeResponse(String msg) {
+        String welcomeRe = "\\QWelcomeResponse={\"sessionId\":\"\\E.*";
+        AssertJUnit.assertTrue("[" + msg + "] does not match [" + welcomeRe + "]", msg.matches(welcomeRe));
+        BasicMessageWithExtraData<WelcomeResponse> bigMessage = new ApiDeserializer().deserialize(msg);
+        return bigMessage.getBasicMessage().getSessionId();
     }
 
     public static String readNode(Class<?> caller, String nodeFileName) throws IOException {
@@ -281,14 +154,14 @@ public abstract class AbstractCommandITest {
             outputFile.getParentFile().mkdirs();
         }
 
-        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "utf-8"))) {
+        try (PrintWriter out =
+                new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "utf-8"))) {
             node.writeString(out, false);
         }
     }
 
     protected OkHttpClient client;
     protected ObjectMapper mapper;
-    protected ExecutorService writeExecutor;
 
     @AfterMethod
     public void after() {
@@ -325,15 +198,17 @@ public abstract class AbstractCommandITest {
         request.get(ModelDescriptionConstants.CHILD_TYPE).set(childType);
         request.get(ModelDescriptionConstants.INCLUDE_RUNTIME).set(true);
         ModelNode response = mcc.execute(request);
-        if (response.hasDefined(ModelDescriptionConstants.OUTCOME) && response.get(ModelDescriptionConstants.OUTCOME)
-                .asString().equals(ModelDescriptionConstants.SUCCESS)) {
+        if (response.hasDefined(ModelDescriptionConstants.OUTCOME)
+                && response.get(ModelDescriptionConstants.OUTCOME)
+                        .asString().equals(ModelDescriptionConstants.SUCCESS)) {
             ModelNode result = response.get(ModelDescriptionConstants.RESULT);
             List<Property> nodes = result.asPropertyList();
             AssertJUnit.assertEquals("Number of child nodes of [" + address + "] " + response, expectedCount,
                     nodes.size());
         } else if (expectedCount != 0) {
             AssertJUnit
-                    .fail("Path [" + address + "] has no child nodes, expected " + expectedCount + " : " + response);
+                    .fail("Path [" + address + "] has no child nodes, expected " + expectedCount + " : "
+                            + response);
         }
 
     }
@@ -357,23 +232,11 @@ public abstract class AbstractCommandITest {
 
     }
 
-    /**
-     * @param msg
-     * @return
-     */
-    protected static String assertWelcomeResponse(String msg) {
-        String welcomeRe = "\\QWelcomeResponse={\"sessionId\":\"\\E.*";
-        AssertJUnit.assertTrue("[" + msg + "] does not match [" + welcomeRe + "]", msg.matches(welcomeRe));
-        BasicMessageWithExtraData<WelcomeResponse> bigMessage = new ApiDeserializer().deserialize(msg);
-        return bigMessage.getBasicMessage().getSessionId();
-    }
-
     @BeforeMethod
     public void before() {
         JsonFactory f = new JsonFactory();
         mapper = new ObjectMapper(f);
         InventoryJacksonConfig.configure(mapper);
-        this.writeExecutor = Executors.newSingleThreadExecutor();
         this.client = new OkHttpClient();
 
         trace(OperationBuilder.class);
@@ -387,7 +250,7 @@ public abstract class AbstractCommandITest {
      */
     protected CanonicalPath getCurrentASPath() throws Throwable {
         List<Resource> wfs = getResources("/test/resources", 1);
-        log.fine("Resources under ["+ "/test/resources" +"] = ["+ wfs +"]");
+        log.fine("Resources under [" + "/test/resources" + "] = [" + wfs + "]");
         AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
         return wfPath;
@@ -507,15 +370,15 @@ public abstract class AbstractCommandITest {
                 for (Callback current : callbacks) {
                     if (current instanceof NameCallback) {
                         NameCallback ncb = (NameCallback) current;
-                        log.fine("ModelControllerClient is sending a username ["+ managementUser +"]");
+                        log.fine("ModelControllerClient is sending a username [" + managementUser + "]");
                         ncb.setName(managementUser);
                     } else if (current instanceof PasswordCallback) {
                         PasswordCallback pcb = (PasswordCallback) current;
-                        log.fine("ModelControllerClient is sending a password ["+ managementPasword +"]");
+                        log.fine("ModelControllerClient is sending a password [" + managementPasword + "]");
                         pcb.setPassword(managementPasword.toCharArray());
                     } else if (current instanceof RealmCallback) {
                         RealmCallback rcb = (RealmCallback) current;
-                        log.fine("ModelControllerClient is sending a realm ["+ rcb.getDefaultText() +"]");
+                        log.fine("ModelControllerClient is sending a realm [" + rcb.getDefaultText() + "]");
                         rcb.setText(rcb.getDefaultText());
                     } else {
                         throw new UnsupportedCallbackException(current);
@@ -526,7 +389,7 @@ public abstract class AbstractCommandITest {
 
         try {
             InetAddress inetAddr = InetAddress.getByName(host);
-            log.fine("Connecting a ModelControllerClient to ["+ host + ":" + managementPort +"]");
+            log.fine("Connecting a ModelControllerClient to [" + host + ":" + managementPort + "]");
             return ModelControllerClient.Factory.create(inetAddr, managementPort, callbackHandler);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create management client", e);
