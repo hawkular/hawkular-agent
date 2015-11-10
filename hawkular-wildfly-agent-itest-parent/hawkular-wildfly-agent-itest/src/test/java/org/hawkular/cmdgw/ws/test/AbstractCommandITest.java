@@ -239,7 +239,7 @@ public abstract class AbstractCommandITest {
         InventoryJacksonConfig.configure(mapper);
         this.client = new OkHttpClient();
 
-        trace(OperationBuilder.class);
+        // trace(OperationBuilder.class);
         setLogger("org.hawkular.agent.monitor.cmd", Level.TRACE);
 
     }
