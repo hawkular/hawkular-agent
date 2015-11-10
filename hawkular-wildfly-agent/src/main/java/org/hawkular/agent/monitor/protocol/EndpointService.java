@@ -186,8 +186,11 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     private void doDiscoverAll() {
         Discovery<L> discovery = new Discovery<>();
 
+        long duration = 0L;
         final ArrayList<Resource<L>> resources = new ArrayList<>();
         try (S session = openSession()) {
+            long start = System.currentTimeMillis();
+
             discovery.discoverAllResources(session, new Consumer<Resource<L>>() {
                 public void accept(Resource<L> resource) {
                     resources.add(resource);
@@ -198,10 +201,15 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
                     log.errorCouldNotAccess(endpoint, e);
                 }
             });
+
+            duration = System.currentTimeMillis() - start;
+
         } catch (Exception e) {
             log.errorCouldNotAccess(endpoint, e);
         }
+
         resourceManager.replaceResources(resources);
+        resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
 
         /* there should be a listener for syncing with the remote inventory and also one to start the collection
          * of metrics */
@@ -264,8 +272,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
                 }
                 long ts = System.currentTimeMillis();
                 String key = generateMeasurementKey(location);
-                AvailDataPoint dataPoint = new AvailDataPoint(key, ts,
-                        toAvail(pattern, avail));
+                AvailDataPoint dataPoint = new AvailDataPoint(key, ts, avail);
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {

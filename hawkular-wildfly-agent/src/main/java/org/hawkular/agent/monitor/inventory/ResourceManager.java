@@ -230,7 +230,7 @@ public final class ResourceManager<L> {
         }
     }
 
-    void logTreeGraph(String logMsg, long duration) {
+    public void logTreeGraph(String logMsg, long duration) {
         if (!log.isDebugEnabled()) {
             return;
         }
