@@ -105,6 +105,10 @@ public class SchedulerService implements InventoryListener {
     public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
         List<Resource<L>> resources = event.getPayload();
         SamplingService<L, E> service = event.getSamplingService();
+
+        log.debugf("Rescheduling jobs for all [%d] resources for endpoint [%s]",
+                resources.size(), service.getEndpoint());
+
         metricScheduler.rescheduleAll(service, resources);
         availScheduler.rescheduleAll(service, resources);
     }
@@ -113,6 +117,10 @@ public class SchedulerService implements InventoryListener {
     public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
         List<Resource<L>> resources = event.getPayload();
         SamplingService<L, E> service = event.getSamplingService();
+
+        log.debugf("Scheduling jobs for [%d] new resources for endpoint [%s]",
+                resources.size(), service.getEndpoint());
+
         metricScheduler.schedule(service, resources);
         availScheduler.schedule(service, resources);
     }
@@ -121,6 +129,10 @@ public class SchedulerService implements InventoryListener {
     public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
         List<Resource<L>> resources = event.getPayload();
         SamplingService<L, E> service = event.getSamplingService();
+
+        log.debugf("Unscheduling jobs for [%d] obsolete resources for endpoint [%s]",
+                resources.size(), service.getEndpoint());
+
         metricScheduler.unschedule(service, resources);
         availScheduler.unschedule(service, resources);
     }

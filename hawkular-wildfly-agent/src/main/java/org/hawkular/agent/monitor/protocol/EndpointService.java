@@ -130,6 +130,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     public void addInventoryListener(InventoryListener listener) {
         status.assertInitialOrStopped(getClass(), "addInventoryListener()");
         this.inventoryListenerSupport.inventoryListeners.add(listener);
+        log.debugf("Added inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
     }
 
     /**
@@ -160,8 +161,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
         Discovery<L> discovery = new Discovery<>();
         try (S session = openSession()) {
             /* FIXME: resourceManager should be write-locked here over find and add */
-            List<Resource<L>> parents =
-                    resourceManager.findResources(parentLocation, session.getLocationResolver());
+            List<Resource<L>> parents = resourceManager.findResources(parentLocation, session.getLocationResolver());
             List<Resource<L>> added = new ArrayList<>();
             for (Resource<L> parent : parents) {
                 discovery.discoverChildren(parent, childType, session, new Consumer<Resource<L>>() {
@@ -188,6 +188,8 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
      * {@link ResourceManager#replaceResources(List)}.
      */
     private void doDiscoverAll() {
+        log.debugf("Being asked to discover all resources for endpoint [%s]", getEndpoint());
+
         Discovery<L> discovery = new Discovery<>();
 
         long duration = 0L;
@@ -222,8 +224,12 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
 
     private String generateMeasurementKey(AttributeLocation<L> location) {
         String loc = location.toString();
-        return new StringBuilder(feedId.length() + 1 + loc.length()).append(feedId).append('.')
-                .append(loc).toString();
+        StringBuilder stringBuilder = new StringBuilder(feedId.length() + 1 + loc.length());
+        return stringBuilder
+                .append(feedId)
+                .append('.')
+                .append(loc)
+                .toString();
     }
 
     @Override
@@ -252,6 +258,8 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
             Consumer<AvailDataPoint> consumer) {
 
         status.assertRunning(getClass(), "measureAvails()");
+
+        log.debugf("Checking [%d] avails for endpoint [%s]", instances.size(), getEndpoint());
 
         try (S session = openSession()) {
             Driver<L> driver = session.getDriver();
@@ -287,7 +295,10 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     @Override
     public void measureMetrics(Collection<MeasurementInstance<L, MetricType<L>>> instances,
             Consumer<MetricDataPoint> consumer) {
+
         status.assertRunning(getClass(), "measureMetrics()");
+
+        log.debugf("Collecting [%d] metrics for endpoint [%s]", instances.size(), getEndpoint());
 
         try (S session = openSession()) {
             Driver<L> driver = session.getDriver();
@@ -324,6 +335,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     public void removeInventoryListener(InventoryListener listener) {
         status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
         this.inventoryListenerSupport.inventoryListeners.remove(listener);
+        log.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
     }
 
     /**
@@ -350,6 +362,8 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
 
         // keep polling/listening for changes
         status = ServiceStatus.RUNNING;
+
+        log.debugf("Started endpoint service for [%s]", getEndpoint());
     }
 
     public void stop() {
@@ -359,6 +373,8 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
         // stop polling/listening for changes
 
         status = ServiceStatus.STOPPED;
+
+        log.debugf("Stopped endpoint service for [%s]", getEndpoint());
     }
 
     private Avail toAvail(Pattern pattern, Object value) {

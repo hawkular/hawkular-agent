@@ -249,6 +249,9 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
         };
     }
 
+    /** the name of the scheduler */
+    private final String name;
+
     /** thread pool used by the scheduler to execute the difference metrics/avails jobs. */
     private final ScheduledExecutorService executorService;
 
@@ -270,6 +273,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
      * @param completionHandler object notified when a job is done and its data needs to be stored
      */
     private IntervalBasedScheduler(String name, int schedulerThreads, Consumer<D> completionHandler) {
+        this.name = name;
         this.completionHandler = completionHandler;
         ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true, name);
         this.executorService = Executors.newScheduledThreadPool(schedulerThreads, threadFactory);
@@ -296,6 +300,9 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
         // if there are any jobs currently running for the given endpoint, cancel them now
         List<ScheduledFuture<?>> oldJobs = jobs.get(endpoint);
         if (oldJobs != null) {
+            log.debugf("Scheduler [%s]: canceling [%d] jobs for endpoint [%s]",
+                    this.name, oldJobs.size(), endpointService.getEndpoint());
+
             for (ScheduledFuture<?> oldJob : oldJobs) {
                 oldJob.cancel(false);
             }
@@ -316,6 +323,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
             }
         }
 
+        int measurementInstances = 0;
         for (Entry<Interval, Collection<MeasurementInstance<L, TT>>> en : instancesByInterval.entrySet()) {
             Interval interval = en.getKey();
             Collection<MeasurementInstance<L, TT>> instances = en.getValue();
@@ -325,10 +333,12 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
                     interval.millis(),
                     java.util.concurrent.TimeUnit.MILLISECONDS);
             endpointJobs.add(future);
-
+            measurementInstances += instances.size();
         }
 
         jobs.put(endpointService.getEndpoint(), endpointJobs);
+        log.debugf("Scheduler [%s]: [%d] jobs ([%d] measurements) have been submitted for endpoint [%s]",
+                this.name, endpointJobs.size(), measurementInstances, endpointService.getEndpoint());
     }
 
     /**
