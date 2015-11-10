@@ -52,31 +52,24 @@ public final class ResourceTypeManager<L> {
     /**
      * Adds the given types to the manager, building a graph to represent the type hierarchy.
      *
-     * @param resourceTypeSetMap a full set of types to use, must be immutable
+     * @param typeSets a full set of types to use (resource types, metric types, avail types), must be immutable
+     * @param resourceTypeSetsToUse optional set of resource type names that the manager cares about -
+     *            it will ignore others it finds. If null, then the full set is used (by "full set" it means the
+     *            resourceTypeSetMap found in the <code>typeSets</code>).
      * @throws IllegalStateException if types are missing (e.g. a type needs a parent but the parent is missing)
      */
-    public ResourceTypeManager(Map<Name, TypeSet<ResourceType<L>>> resourceTypeSetMap)
+    public ResourceTypeManager(TypeSets<L> typeSets, Collection<Name> resourceTypeSetsToUse)
             throws IllegalStateException {
-        this(resourceTypeSetMap, null);
-    }
 
-    /**
-     * Adds the given types to the manager, building a graph to represent the type hierarchy.
-     *
-     * @param resourceTypeSetMap a full set of types, must be immutable
-     * @param setsToUse optional set of type names that the manager to care about - it will ignore others it finds. If
-     *            null, then the full set is used (by "full set" it means the resourceTypeSetMap param).
-     * @throws IllegalStateException if types are missing (e.g. a type needs a parent but the parent is missing)
-     */
-    public ResourceTypeManager(Map<Name, TypeSet<ResourceType<L>>> resourceTypeSetMap, Collection<Name> setsToUse)
-            throws IllegalStateException {
+        Map<Name, TypeSet<ResourceType<L>>> resourceTypeSetMap = typeSets.getResourceTypeSets();
+
         // If setsToUse is null, that means we need to use all the ones in the incoming map.
         // If setsToUse is not null, just use those named sets and ignore the others.
-        if (setsToUse == null) {
+        if (resourceTypeSetsToUse == null) {
             this.typeSetMap = resourceTypeSetMap;
         } else {
             Map<Name, TypeSet<ResourceType<L>>> m = new HashMap<>();
-            for (Name setToUse : setsToUse) {
+            for (Name setToUse : resourceTypeSetsToUse) {
                 if (resourceTypeSetMap.containsKey(setToUse)) {
                     m.put(setToUse, resourceTypeSetMap.get(setToUse));
                 }

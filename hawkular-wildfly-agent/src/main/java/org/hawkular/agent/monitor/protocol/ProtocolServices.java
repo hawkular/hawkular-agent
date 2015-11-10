@@ -28,6 +28,7 @@ import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ProtocolConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
+import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
@@ -80,8 +81,10 @@ public class ProtocolServices {
 
             ProtocolService.Builder<DMRNodeLocation, DMREndpoint, DMRSession> builder = ProtocolService.builder();
 
-            ResourceTypeManager<DMRNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
-                    dmrConfiguration.getTypeSets().getResourceTypeSets());
+            TypeSets<DMRNodeLocation> typeSets = dmrConfiguration.getTypeSets();
+            // TODO: we need to provide the set of types to use and pass as second parameter
+            ResourceTypeManager<DMRNodeLocation> resourceTypeManager = new ResourceTypeManager<>(typeSets, null);
+
             builder.resourceTypeManager(resourceTypeManager);
 
             for (DMRManagedServer server : dmrConfiguration.getManagedServers().values()) {
@@ -121,8 +124,9 @@ public class ProtocolServices {
 
             ProtocolService.Builder<JMXNodeLocation, JMXEndpoint, JMXSession> builder = ProtocolService.builder();
 
-            ResourceTypeManager<JMXNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
-                    jmxConfiguration.getTypeSets().getResourceTypeSets());
+            TypeSets<JMXNodeLocation> typeSets = jmxConfiguration.getTypeSets();
+            // TODO: we need to provide the set of types to use and pass as second parameter
+            ResourceTypeManager<JMXNodeLocation> resourceTypeManager = new ResourceTypeManager<>(typeSets, null);
 
             builder.resourceTypeManager(resourceTypeManager);
 
@@ -142,17 +146,18 @@ public class ProtocolServices {
         }
 
         public Builder platformProtocolService(
-                ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> jmxConfiguration) {
+                ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> platformConfiguration) {
 
             ProtocolService.Builder<PlatformNodeLocation, PlatformEndpoint, PlatformSession> builder = ProtocolService
                     .builder();
 
-            ResourceTypeManager<PlatformNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
-                    jmxConfiguration.getTypeSets().getResourceTypeSets());
+            TypeSets<PlatformNodeLocation> typeSets = platformConfiguration.getTypeSets();
+            // TODO: we need to provide the set of types to use and pass as second parameter
+            ResourceTypeManager<PlatformNodeLocation> resourceTypeManager = new ResourceTypeManager<>(typeSets, null);
 
             builder.resourceTypeManager(resourceTypeManager);
 
-            for (PlatformManagedServer server : jmxConfiguration.getManagedServers().values()) {
+            for (PlatformManagedServer server : platformConfiguration.getManagedServers().values()) {
                 if (server.isEnabled()) {
                     final PlatformEndpoint endpoint = new PlatformEndpoint(feedId);
                     PlatformEndpointService endpointService = new PlatformEndpointService(feedId, endpoint,
