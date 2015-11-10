@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.api.InventoryListener;
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NodeLocation;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 
@@ -38,19 +37,13 @@ public class ProtocolService<L, S extends Session<L>> {
 
     public static class Builder<L, S extends Session<L>> {
         private Map<String, EndpointService<L, S>> endpointServices = new HashMap<>();
-        private ResourceTypeManager<L> resourceTypeManager;
 
         public ProtocolService<L, S> build() {
-            return new ProtocolService<L, S>(Collections.unmodifiableMap(endpointServices), resourceTypeManager);
+            return new ProtocolService<L, S>(Collections.unmodifiableMap(endpointServices));
         }
 
         public Builder<L, S> endpointService(EndpointService<L, S> endpointService) {
             endpointServices.put(endpointService.getEndpoint().getName(), endpointService);
-            return this;
-        }
-
-        public Builder<L, S> resourceTypeManager(ResourceTypeManager<L> resourceTypeManager) {
-            this.resourceTypeManager = resourceTypeManager;
             return this;
         }
     }
@@ -60,24 +53,13 @@ public class ProtocolService<L, S extends Session<L>> {
     }
 
     private final Map<String, EndpointService<L, S>> endpointServices;
-    private final ResourceTypeManager<L> resourceTypeManager;
-
-    public ProtocolService(Map<String, EndpointService<L, S>> endpointServices,
-            ResourceTypeManager<L> resourceTypeManager) {
+    public ProtocolService(Map<String, EndpointService<L, S>> endpointServices) {
         super();
         this.endpointServices = endpointServices;
-        this.resourceTypeManager = resourceTypeManager;
     }
 
     public Map<String, EndpointService<L, S>> getEndpointServices() {
         return endpointServices;
-    }
-
-    /**
-     * @return a {@link ResourceTypeManager} shared over all {@link MonitoredEndpoint}s of the given protocol.
-     */
-    public ResourceTypeManager<L> getResourceTypeManager() {
-        return resourceTypeManager;
     }
 
     public void discoverAll() {

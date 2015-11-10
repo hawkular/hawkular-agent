@@ -69,15 +69,11 @@ public class ProtocolServices {
 
         public Builder dmrProtocolService(
                 ModelControllerClientFactory localModelControllerClientFactory,
-                ProtocolConfiguration<DMRNodeLocation> dmrConfiguration) {
+                ProtocolConfiguration<DMRNodeLocation> protocolConfig) {
 
             ProtocolService.Builder<DMRNodeLocation, DMRSession> builder = ProtocolService.builder();
 
-            ResourceTypeManager<DMRNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
-                    dmrConfiguration.getTypeSets().getResourceTypeSets(), null);
-            builder.resourceTypeManager(resourceTypeManager);
-
-            for (EndpointConfiguration server : dmrConfiguration.getEndpoints().values()) {
+            for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (!server.isEnabled()) {
                     log.infoManagedServerDisabled(server.getName().toString());
                 } else {
@@ -93,6 +89,8 @@ public class ProtocolServices {
                         /* remote */
                         clientFactory = ModelControllerClientFactory.createRemote(endpoint);
                     }
+                    ResourceTypeManager<DMRNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
+                            protocolConfig.getTypeSets().getResourceTypeSets(), server.getResourceTypeSets());
                     DMREndpointService endpointService = new DMREndpointService(feedId, endpoint, resourceTypeManager,
                             clientFactory, diagnostics.getDMRDiagnostics());
                     builder.endpointService(endpointService);
@@ -103,21 +101,18 @@ public class ProtocolServices {
             return this;
         }
 
-        public Builder jmxProtocolService(ProtocolConfiguration<JMXNodeLocation> jmxConfiguration) {
+        public Builder jmxProtocolService(ProtocolConfiguration<JMXNodeLocation> protocolConfig) {
 
             ProtocolService.Builder<JMXNodeLocation, JMXSession> builder = ProtocolService.builder();
 
-            ResourceTypeManager<JMXNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
-                    jmxConfiguration.getTypeSets().getResourceTypeSets(), null);
-
-            builder.resourceTypeManager(resourceTypeManager);
-
-            for (EndpointConfiguration server : jmxConfiguration.getEndpoints().values()) {
+            for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (server.isEnabled()) {
                     final String securityRealm = server.getSecurityRealm();
                     final SSLContext sslContext = securityRealm != null
                             ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
                     final MonitoredEndpoint endpoint = MonitoredEndpoint.of(server, sslContext);
+                    ResourceTypeManager<JMXNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
+                            protocolConfig.getTypeSets().getResourceTypeSets(), server.getResourceTypeSets());
                     JMXEndpointService endpointService = new JMXEndpointService(feedId, endpoint, resourceTypeManager,
                             diagnostics.getJMXDiagnostics());
                     builder.endpointService(endpointService);
@@ -129,22 +124,19 @@ public class ProtocolServices {
         }
 
         public Builder platformProtocolService(
-                ProtocolConfiguration<PlatformNodeLocation> platformConfiguration) {
+                ProtocolConfiguration<PlatformNodeLocation> protocolConfig) {
 
             ProtocolService.Builder<PlatformNodeLocation, PlatformSession> builder = ProtocolService
                     .builder();
 
-            ResourceTypeManager<PlatformNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
-                    platformConfiguration.getTypeSets().getResourceTypeSets(), null);
-
-            builder.resourceTypeManager(resourceTypeManager);
-
-            for (EndpointConfiguration server : platformConfiguration.getEndpoints().values()) {
+            for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (server.isEnabled()) {
                     final String securityRealm = server.getSecurityRealm();
                     final SSLContext sslContext = securityRealm != null
                             ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
                     final MonitoredEndpoint endpoint = MonitoredEndpoint.of(server, sslContext);
+                    ResourceTypeManager<PlatformNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
+                            protocolConfig.getTypeSets().getResourceTypeSets(), server.getResourceTypeSets());
                     PlatformEndpointService endpointService = new PlatformEndpointService(feedId, endpoint,
                             resourceTypeManager, diagnostics.getPlatformDiagnostics());
                     builder.endpointService(endpointService);
