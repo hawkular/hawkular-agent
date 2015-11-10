@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.protocol.platform;
 
+import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.platform.api.Platform;
@@ -32,15 +33,15 @@ public class PlatformEndpointService extends
         PlatformSession> {
 
     public PlatformEndpointService(String feedId, PlatformEndpoint endpoint,
-            ResourceTypeManager<PlatformNodeLocation> resourceTypeManager) {
-        super(feedId, endpoint, resourceTypeManager, new PlatformLocationResolver());
+            ResourceTypeManager<PlatformNodeLocation> resourceTypeManager, ProtocolDiagnostics diagnostics) {
+        super(feedId, endpoint, resourceTypeManager, new PlatformLocationResolver(), diagnostics);
     }
 
     /** @see org.hawkular.agent.monitor.protocol.EndpointService#openSession() */
     @Override
     public PlatformSession openSession() {
         Platform platform = new OshiPlatform(new SystemInfo());
-        PlatformDriver driver = new PlatformDriver(platform);
+        PlatformDriver driver = new PlatformDriver(platform, diagnostics);
         return new PlatformSession(feedId, endpoint, resourceTypeManager, driver, locationResolver);
     }
 

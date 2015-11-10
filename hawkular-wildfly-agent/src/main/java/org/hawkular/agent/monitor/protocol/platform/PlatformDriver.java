@@ -23,12 +23,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.ProtocolException;
 import org.hawkular.agent.monitor.protocol.platform.api.Platform;
 import org.hawkular.agent.monitor.protocol.platform.api.PlatformPath;
 import org.hawkular.agent.monitor.protocol.platform.api.PlatformResourceNode;
+
+import com.codahale.metrics.Timer.Context;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
@@ -38,10 +41,12 @@ public class PlatformDriver
         implements Driver<PlatformNodeLocation> {
 
     private final Platform platform;
+    private final ProtocolDiagnostics diagnostics;
 
-    public PlatformDriver(Platform platform) {
+    public PlatformDriver(Platform platform, ProtocolDiagnostics diagnostics) {
         super();
         this.platform = platform;
+        this.diagnostics = diagnostics;
     }
 
     @SuppressWarnings("unchecked")
@@ -76,18 +81,26 @@ public class PlatformDriver
 
     @Override
     public Object fetchAttribute(AttributeLocation<PlatformNodeLocation> location) throws ProtocolException {
-        Map<PlatformPath, PlatformResourceNode> nodes = platform.getChildren(location.getLocation().getPlatformPath());
-        switch (nodes.size()) {
-            case 0:
-                return null;
-            case 1:
-                return nodes.values().iterator().next().getAttribute(location.getAttribute());
-            default:
-                List<Object> results = new ArrayList<>(nodes.size());
-                for (PlatformResourceNode node : nodes.values()) {
-                    results.add(node.getAttribute(location.getAttribute()));
-                }
-                return Collections.unmodifiableList(results);
+        try {
+            Map<PlatformPath, PlatformResourceNode> nodes = null;
+            try (Context timerContext = diagnostics.getRequestTimer().time()) {
+                nodes = platform.getChildren(location.getLocation().getPlatformPath());
+            }
+            switch (nodes.size()) {
+                case 0:
+                    return null;
+                case 1:
+                    return nodes.values().iterator().next().getAttribute(location.getAttribute());
+                default:
+                    List<Object> results = new ArrayList<>(nodes.size());
+                    for (PlatformResourceNode node : nodes.values()) {
+                        results.add(node.getAttribute(location.getAttribute()));
+                    }
+                    return Collections.unmodifiableList(results);
+            }
+        } catch (Exception e) {
+            diagnostics.getErrorRate().mark(1);
+            throw new ProtocolException(e);
         }
     }
 

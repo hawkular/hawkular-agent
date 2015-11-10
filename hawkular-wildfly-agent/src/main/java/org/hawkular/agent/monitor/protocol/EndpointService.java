@@ -26,6 +26,7 @@ import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
+import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
@@ -42,6 +43,8 @@ import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.util.Consumer;
+
+import com.codahale.metrics.Timer.Context;
 
 /**
  * A service to discover and sample resources from a single {@link MonitoredEndpoint}. This service also owns the single
@@ -107,15 +110,17 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     protected final LocationResolver<L> locationResolver;
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
+    protected final ProtocolDiagnostics diagnostics;
 
     public EndpointService(String feedId, E endpoint, ResourceTypeManager<L> resourceTypeManager,
-            LocationResolver<L> locationResolver) {
+            LocationResolver<L> locationResolver, ProtocolDiagnostics diagnostics) {
         super();
         this.feedId = feedId;
         this.endpoint = endpoint;
         this.resourceManager = new ResourceManager<>();
         this.resourceTypeManager = resourceTypeManager;
         this.locationResolver = locationResolver;
+        this.diagnostics = diagnostics;
     }
 
     /**
@@ -253,7 +258,13 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
             Driver<L> driver = session.getDriver();
             for (MeasurementInstance<L, AvailType<L>> instance : instances) {
                 AttributeLocation<L> location = instance.getAttributeLocation();
-                Object o = driver.fetchAttribute(location);
+                Object o = null;
+                try (Context timerContext = diagnostics.getRequestTimer().time()) {
+                    o = driver.fetchAttribute(location);
+                } catch (Exception e) {
+                    diagnostics.getErrorRate().mark(1);
+                    throw e;
+                }
                 final Pattern pattern = instance.getType().getUpPattern();
                 Avail avail = null;
                 if (o instanceof List<?>) {
@@ -289,7 +300,13 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
             Driver<L> driver = session.getDriver();
             for (MeasurementInstance<L, MetricType<L>> instance : instances) {
                 AttributeLocation<L> location = instance.getAttributeLocation();
-                Object o = driver.fetchAttribute(location);
+                Object o = null;
+                try (Context timerContext = diagnostics.getRequestTimer().time()) {
+                    o = driver.fetchAttribute(location);
+                } catch (Exception e) {
+                    diagnostics.getErrorRate().mark(1);
+                    throw e;
+                }
                 double value = 0;
                 if (o instanceof List<?>) {
                     /* aggregate */

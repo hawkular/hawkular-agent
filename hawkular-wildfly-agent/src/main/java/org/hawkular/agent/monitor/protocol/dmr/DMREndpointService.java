@@ -19,7 +19,7 @@ package org.hawkular.agent.monitor.protocol.dmr;
 import java.io.IOException;
 import java.util.List;
 
-import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.EndpointService;
@@ -88,14 +88,11 @@ public class DMREndpointService
         }
     }
     private final ModelControllerClientFactory modelControllerClientFactory;
-    private final Diagnostics diagnostics;
-
     public DMREndpointService(String feedId, DMREndpoint endpoint,
             ResourceTypeManager<DMRNodeLocation> resourceTypeManager,
-            ModelControllerClientFactory modelControllerClientFactory, Diagnostics diagnostics) {
-        super(feedId, endpoint, resourceTypeManager, new DMRLocationResolver());
+            ModelControllerClientFactory modelControllerClientFactory, ProtocolDiagnostics diagnostics) {
+        super(feedId, endpoint, resourceTypeManager, new DMRLocationResolver(), diagnostics);
         this.modelControllerClientFactory = modelControllerClientFactory;
-        this.diagnostics = diagnostics;
     }
 
     @Override

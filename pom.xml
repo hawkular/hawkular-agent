@@ -53,8 +53,10 @@
 
   <properties>
     <version.com.github.dblock>1.5</version.com.github.dblock>
+    <version.com.samskivert.jmustache>1.11</version.com.samskivert.jmustache>
     <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
+    <version.org.hamcrest>1.3</version.org.hamcrest>
     <version.org.hawkular.accounts>1.1.0.Final</version.org.hawkular.accounts>
     <version.org.hawkular.bus>0.7.2.Final</version.org.hawkular.bus>
     <version.org.hawkular.cmdgw>0.10.3.Final</version.org.hawkular.cmdgw>
@@ -94,6 +96,13 @@
       </dependency>
 
       <dependency>
+        <groupId>com.samskivert</groupId>
+        <artifactId>jmustache</artifactId>
+        <version>${version.com.samskivert.jmustache}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
         <groupId>com.squareup.okhttp</groupId>
         <artifactId>okhttp</artifactId>
         <version>${version.com.squareup.okhttp}</version>
@@ -103,6 +112,12 @@
         <groupId>com.squareup.okhttp</groupId>
         <artifactId>okhttp-ws</artifactId>
         <version>${version.com.squareup.okhttp}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-core</artifactId>
+        <version>${version.org.hamcrest}</version>
       </dependency>
 
       <dependency>
