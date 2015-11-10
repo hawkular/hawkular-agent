@@ -107,7 +107,7 @@ public class ProtocolServices {
                                 + "]. Please report this bug.");
                     }
                     DMREndpointService endpointService = new DMREndpointService(feedId, endpoint, resourceTypeManager,
-                            clientFactory, diagnostics);
+                            clientFactory, diagnostics.getDMRDiagnostics());
                     builder.endpointService(endpointService);
                 }
             }
@@ -132,7 +132,7 @@ public class ProtocolServices {
                             ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
                     final JMXEndpoint endpoint = JMXEndpoint.of(server, sslContext);
                     JMXEndpointService endpointService = new JMXEndpointService(feedId, endpoint, resourceTypeManager,
-                            diagnostics);
+                            diagnostics.getJMXDiagnostics());
                     builder.endpointService(endpointService);
                 }
             }
@@ -156,7 +156,7 @@ public class ProtocolServices {
                 if (server.isEnabled()) {
                     final PlatformEndpoint endpoint = new PlatformEndpoint(feedId);
                     PlatformEndpointService endpointService = new PlatformEndpointService(feedId, endpoint,
-                            resourceTypeManager);
+                            resourceTypeManager, diagnostics.getPlatformDiagnostics());
                     builder.endpointService(endpointService);
                 }
             }

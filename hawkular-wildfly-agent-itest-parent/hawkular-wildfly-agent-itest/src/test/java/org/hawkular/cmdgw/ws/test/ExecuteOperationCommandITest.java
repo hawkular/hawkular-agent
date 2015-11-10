@@ -16,23 +16,12 @@
  */
 package org.hawkular.cmdgw.ws.test;
 
-import static org.mockito.Mockito.verify;
-
 import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
-
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.ws.WebSocket.PayloadType;
-import com.squareup.okhttp.ws.WebSocketCall;
-import com.squareup.okhttp.ws.WebSocketListener;
-
-import okio.BufferedSource;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
@@ -51,40 +40,27 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         Resource deployment = getResource("/feeds/" + feedId + "/resourceTypes/Deployment/resources",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
-        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", " //
                 + "\"resourcePath\":\"" + deployment.getPath().toString() + "\"," //
                 + "\"operationName\":\"Redeploy\"" //
                 + "}";
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
-
-        WebSocketCall.create(client, request).enqueue(openingListener);
-
-        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
-
-        List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-        int i = 0;
-
-        String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-
-        String successRe = "\\QGenericSuccessResponse={\"message\":"
-                + "\"The request has been forwarded to feed [" + wfPath.ids().getFeedId() + "] (\\E.*";
-
-        String msg = receivedMessages.get(i++).readUtf8();
-        AssertJUnit.assertTrue("[" + msg + "] does not match [" + successRe + "]", msg.matches(successRe));
-
-        AssertJUnit.assertEquals("ExecuteOperationResponse={" //
+        String response = "ExecuteOperationResponse={" //
                 + "\"operationName\":\"Redeploy\"," //
                 + "\"resourcePath\":\"" + deployment.getPath() + "\"," //
-                + "\"destinationSessionId\":\""+ sessionId +"\"," //
+                + "\"destinationSessionId\":\"{{sessionId}}\"," //
                 + "\"status\":\"OK\"," //
                 + "\"message\":\"Performed [Redeploy] on a [DMR Node] given by Inventory path [" //
                 + deployment.getPath() + "]\"" //
-                + "}", receivedMessages.get(i++).readUtf8());
+                + "}";
+        try (TestWebSocketClient testClient =
+                TestWebSocketClient.builder() //
+                        .url(baseGwUri + "/ui/ws") //
+                        .expectWelcome(req) //
+                        .expectGenericSuccess(wfPath.ids().getFeedId()) //
+                        .expectText(response) //
+                        .build()) {
+            testClient.validate(10000);
+        }
 
     }
 

@@ -26,6 +26,7 @@ import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
+import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
@@ -55,6 +56,7 @@ import org.hawkular.agent.monitor.util.Consumer;
  */
 public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends Session<L, E>>
         implements SamplingService<L, E> {
+
     private class InventoryListenerSupport {
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
 
@@ -107,15 +109,17 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     protected final LocationResolver<L> locationResolver;
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
+    protected final ProtocolDiagnostics diagnostics;
 
     public EndpointService(String feedId, E endpoint, ResourceTypeManager<L> resourceTypeManager,
-            LocationResolver<L> locationResolver) {
+            LocationResolver<L> locationResolver, ProtocolDiagnostics diagnostics) {
         super();
         this.feedId = feedId;
         this.endpoint = endpoint;
         this.resourceManager = new ResourceManager<>();
         this.resourceTypeManager = resourceTypeManager;
         this.locationResolver = locationResolver;
+        this.diagnostics = diagnostics;
     }
 
     /**

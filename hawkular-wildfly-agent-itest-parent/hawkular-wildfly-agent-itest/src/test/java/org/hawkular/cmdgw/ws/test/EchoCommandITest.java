@@ -16,67 +16,27 @@
  */
 package org.hawkular.cmdgw.ws.test;
 
-import static org.mockito.Mockito.verify;
-
-import java.io.IOException;
-import java.util.List;
-
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
-
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.ws.WebSocket.PayloadType;
-import com.squareup.okhttp.ws.WebSocketCall;
-import com.squareup.okhttp.ws.WebSocketListener;
-
-import okio.BufferedSource;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class EchoCommandITest extends AbstractCommandITest {
     @Test(groups = { "no-dependencies" })
-    public void testEcho() throws InterruptedException, IOException {
+    public void testEcho() throws Throwable {
 
-        Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-
-        WebSocketListener openingListener =
-                new TestListener(mockListener, writeExecutor, "EchoRequest={\"authentication\": " + authentication
-                        + ", \"echoMessage\": \"Yodel Ay EEE Oooo\"}");
-
-        WebSocketCall.create(client, request).enqueue(openingListener);
-
-        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(2)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
-
-        List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-        int i = 0;
-        assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-        AssertJUnit.assertEquals("EchoResponse={\"reply\":\"ECHO [Yodel Ay EEE Oooo]\"}",
-                receivedMessages.get(i++).readUtf8());
+        String req = "EchoRequest={\"authentication\": " + authentication
+                + ", \"echoMessage\": \"Yodel Ay EEE Oooo\"}";
+        String response = "EchoResponse={\"reply\":\"ECHO [Yodel Ay EEE Oooo]\"}";
+        try (TestWebSocketClient testClient =
+                TestWebSocketClient.builder() //
+                        .url(baseGwUri + "/ui/ws") //
+                        .expectWelcome(req) //
+                        .expectText(response)
+                        .build()) {
+            testClient.validate(10000);
+        }
 
     }
 
-    @Test(enabled = false, groups = { "no-dependencies" })
-    public void testWsOrg() throws InterruptedException, IOException {
-
-        Request request = new Request.Builder().url("ws://echo.websocket.org").build();
-        WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-
-        WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, "whatever");
-
-        WebSocketCall.create(client, request).enqueue(openingListener);
-
-        verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-        ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-        verify(mockListener, Mockito.timeout(10000).times(1)).onMessage(bufferedSourceCaptor.capture(),
-                Mockito.same(PayloadType.TEXT));
-        AssertJUnit.assertEquals("whatever", bufferedSourceCaptor.getValue().readUtf8());
-
-    }
 }

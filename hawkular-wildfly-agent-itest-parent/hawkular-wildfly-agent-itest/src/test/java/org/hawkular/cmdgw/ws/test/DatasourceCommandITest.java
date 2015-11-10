@@ -16,26 +16,13 @@
  */
 package org.hawkular.cmdgw.ws.test;
 
-import static org.mockito.Mockito.verify;
-
 import java.net.URLEncoder;
-import java.util.List;
 
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
-
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.ws.WebSocket.PayloadType;
-import com.squareup.okhttp.ws.WebSocketCall;
-import com.squareup.okhttp.ws.WebSocketListener;
-
-import okio.BufferedSource;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
@@ -80,9 +67,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, false);
 
-            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-
+            /* define the mock and its behavior */
             String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
                     + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
                     + "\"xaDatasource\":\"false\"," //
@@ -96,34 +81,24 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"password\":\"" + password + "\"" //
                     + "}";
 
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
-
-            WebSocketCall.create(client, request).enqueue(openingListener);
-
-            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
-                    Mockito.same(PayloadType.TEXT));
-
-            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-            int i = 0;
-
-            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                    + wfPath.ids().getFeedId() + "] (\\E.*";
-
-            String msg = receivedMessages.get(i++).readUtf8();
-            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
-
-            AssertJUnit.assertEquals("AddDatasourceResponse={"//
+            String response = "AddDatasourceResponse={"//
                     + "\"xaDatasource\":false,"//
                     + "\"datasourceName\":\"" + datasourceName + "\","//
                     + "\"resourcePath\":\"" + wfPath + "\","//
-                    + "\"destinationSessionId\":\"" + sessionId + "\","//
+                    + "\"destinationSessionId\":\"{{sessionId}}\","//
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Added Datasource: " + datasourceName + "\""//
-                    + "}", receivedMessages.get(i++).readUtf8());
+                    + "}";
+
+            try (TestWebSocketClient testClient =
+                    TestWebSocketClient.builder() //
+                            .url(baseGwUri + "/ui/ws") //
+                            .expectWelcome(req) //
+                            .expectGenericSuccess(wfPath.ids().getFeedId())//
+                            .expectText(response)
+                            .build()) {
+                testClient.validate(10000);
+            }
 
             assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
 
@@ -139,8 +114,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, false);
 
-            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
             String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
                     + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
                     + "\"xaDatasource\":\"true\"," //
@@ -152,34 +125,23 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\",\"xaProp2\":\"xaVal2\"}," + "\"userName\":\"" + userName + "\"," //
                     + "\"password\":\"" + password + "\"" //
                     + "}";
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
-
-            WebSocketCall.create(client, request).enqueue(openingListener);
-
-            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
-                    Mockito.same(PayloadType.TEXT));
-
-            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-            int i = 0;
-
-            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                    + wfPath.ids().getFeedId() + "] (\\E.*";
-
-            String msg = receivedMessages.get(i++).readUtf8();
-            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
-
-            AssertJUnit.assertEquals("AddDatasourceResponse={"//
+            String response = "AddDatasourceResponse={"//
                     + "\"xaDatasource\":true,"//
                     + "\"datasourceName\":\"" + xaDatasourceName + "\","//
                     + "\"resourcePath\":\"" + wfPath + "\","//
-                    + "\"destinationSessionId\":\"" + sessionId + "\","//
+                    + "\"destinationSessionId\":\"{{sessionId}}\","//
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Added Datasource: " + xaDatasourceName + "\""//
-                    + "}", receivedMessages.get(i++).readUtf8());
+                    + "}";
+            try (TestWebSocketClient testClient =
+                    TestWebSocketClient.builder() //
+                            .url(baseGwUri + "/ui/ws") //
+                            .expectWelcome(req) //
+                            .expectGenericSuccess(wfPath.ids().getFeedId())//
+                            .expectText(response)
+                            .build()) {
+                testClient.validate(10000);
+            }
 
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
 
@@ -200,38 +162,25 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
 
-            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
                     + "\"resourcePath\":\"" + removePath + "\"" //
                     + "}";
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req );
-
-            WebSocketCall.create(client, request).enqueue(openingListener);
-
-            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
-                    Mockito.same(PayloadType.TEXT));
-
-            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-            int i = 0;
-
-            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                    + wfPath.ids().getFeedId() + "] (\\E.*";
-
-            String msg = receivedMessages.get(i++).readUtf8();
-            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
-
-            AssertJUnit.assertEquals("RemoveDatasourceResponse={"//
+            String response = "RemoveDatasourceResponse={"//
                     + "\"resourcePath\":\"" + removePath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
                     + "]\""//
-                    + "}", receivedMessages.get(i++).readUtf8());
+                    + "}";
+            try (TestWebSocketClient testClient =
+                    TestWebSocketClient.builder() //
+                            .url(baseGwUri + "/ui/ws") //
+                            .expectWelcome(req) //
+                            .expectGenericSuccess(wfPath.ids().getFeedId())//
+                            .expectText(response)
+                            .build()) {
+                testClient.validate(10000);
+            }
 
             assertResourceExists(mcc, dsAddress, false);
 
@@ -251,38 +200,25 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
 
-            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
                     + "\"resourcePath\":\"" + removePath + "\"" //
                     + "}";
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
-
-            WebSocketCall.create(client, request).enqueue(openingListener);
-
-            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
-                    Mockito.same(PayloadType.TEXT));
-
-            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-            int i = 0;
-
-            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                    + wfPath.ids().getFeedId() + "] (\\E.*";
-
-            String msg = receivedMessages.get(i++).readUtf8();
-            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
-
-            AssertJUnit.assertEquals("RemoveDatasourceResponse={"//
+            String response = "RemoveDatasourceResponse={"//
                     + "\"resourcePath\":\"" + removePath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
                     + "]\""//
-                    + "}", receivedMessages.get(i++).readUtf8());
+                    + "}";
+            try (TestWebSocketClient testClient =
+                    TestWebSocketClient.builder() //
+                            .url(baseGwUri + "/ui/ws") //
+                            .expectWelcome(req) //
+                            .expectGenericSuccess(wfPath.ids().getFeedId())//
+                            .expectText(response)
+                            .build()) {
+                testClient.validate(10000);
+            }
 
             assertResourceExists(mcc, dsAddress, false);
 
@@ -302,9 +238,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
 
-            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-
             final String changedConnectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
 
             String req = "UpdateDatasourceRequest={\"authentication\":" + authentication + ", " //
@@ -318,32 +251,23 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"userName\":\"" + userName + "\"," //
                     + "\"password\":\"" + password + "\"" //
                     + "}";
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
 
-            WebSocketCall.create(client, request).enqueue(openingListener);
-
-            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
-                    Mockito.same(PayloadType.TEXT));
-
-            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-            int i = 0;
-
-            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                    + wfPath.ids().getFeedId() + "] (\\E.*";
-
-            String msg = receivedMessages.get(i++).readUtf8();
-            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
-
-            AssertJUnit.assertEquals("UpdateDatasourceResponse={"//
+            String response = "UpdateDatasourceResponse={"//
                     + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""//
-                    + "}", receivedMessages.get(i++).readUtf8());
+                    + "}";
+
+            try (TestWebSocketClient testClient =
+                    TestWebSocketClient.builder() //
+                            .url(baseGwUri + "/ui/ws") //
+                            .expectWelcome(req) //
+                            .expectGenericSuccess(wfPath.ids().getFeedId())//
+                            .expectText(response)
+                            .build()) {
+                testClient.validate(10000);
+            }
 
             assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterUpdate);
 
@@ -366,9 +290,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
 
-            Request request = new Request.Builder().url(baseGwUri + "/ui/ws").build();
-            WebSocketListener mockListener = Mockito.mock(WebSocketListener.class);
-
             final String changedXaDatasourceJndiName = xaDatasourceJndiName + "_changed";
             final String changedXaDsUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
 
@@ -376,7 +297,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourcePath\":\"" + dsPath + "\"," //
                     + "\"datasourceName\":\"" + xaDatasourceName + "\"," //
                     + "\"jndiName\":\"" + changedXaDatasourceJndiName + "\"," //
-    // changing or removing of props seems to be broken
+            // changing or removing of props seems to be broken
                     + "\"datasourceProperties\":{\"URL\":\"" + changedXaDsUrl
                     + "\",\"xaProp3\":\"xaVal3\"}," //
                     + "\"driverName\":\"" + driverName + "\"," //
@@ -384,32 +305,22 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"userName\":\"" + userName + "\"," //
                     + "\"password\":\"" + password + "\"" //
                     + "}";
-            WebSocketListener openingListener = new TestListener(mockListener, writeExecutor, req);
-
-            WebSocketCall.create(client, request).enqueue(openingListener);
-
-            verify(mockListener, Mockito.timeout(10000).times(1)).onOpen(Mockito.any(), Mockito.any());
-            ArgumentCaptor<BufferedSource> bufferedSourceCaptor = ArgumentCaptor.forClass(BufferedSource.class);
-            verify(mockListener, Mockito.timeout(10000).times(3)).onMessage(bufferedSourceCaptor.capture(),
-                    Mockito.same(PayloadType.TEXT));
-
-            List<BufferedSource> receivedMessages = bufferedSourceCaptor.getAllValues();
-            int i = 0;
-
-            String sessionId = assertWelcomeResponse(receivedMessages.get(i++).readUtf8());
-
-            String expectedRe = "\\QGenericSuccessResponse={\"message\":" + "\"The request has been forwarded to feed ["
-                    + wfPath.ids().getFeedId() + "] (\\E.*";
-
-            String msg = receivedMessages.get(i++).readUtf8();
-            AssertJUnit.assertTrue("[" + msg + "] does not match [" + expectedRe + "]", msg.matches(expectedRe));
-
-            AssertJUnit.assertEquals("UpdateDatasourceResponse={"//
+            String response = "UpdateDatasourceResponse={"//
                     + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"" + sessionId + "\"," //
+                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""//
-                    + "}", receivedMessages.get(i++).readUtf8());
+                    + "}";
+
+            try (TestWebSocketClient testClient =
+                    TestWebSocketClient.builder() //
+                            .url(baseGwUri + "/ui/ws") //
+                            .expectWelcome(req) //
+                            .expectGenericSuccess(wfPath.ids().getFeedId()) //
+                            .expectText(response) //
+                            .build()) {
+                testClient.validate(10000);
+            }
 
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterUpdate, false);
 

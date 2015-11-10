@@ -39,19 +39,26 @@
   <dependencies>
 
     <dependency>
-      <groupId>com.squareup.okhttp</groupId>
-      <artifactId>okhttp-ws</artifactId>
+      <groupId>com.samskivert</groupId>
+      <artifactId>jmustache</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <groupId>com.squareup.okhttp</groupId>
+      <artifactId>okhttp-ws</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -72,8 +79,8 @@
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-dmr-client</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
-
 
     <dependency>
       <groupId>org.hawkular.inventory</groupId>
