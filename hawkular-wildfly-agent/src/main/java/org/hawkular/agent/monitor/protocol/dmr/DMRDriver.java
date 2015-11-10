@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -96,7 +96,7 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
                 if (node.hasDefined("result")) {
                     result.add(toObject(node.get("result")));
                 } else {
-                    throw new IllegalStateException("No 'result' in a nodeList item ["+ node +"]");
+                    throw new IllegalStateException("No 'result' in a nodeList item [" + node + "]");
                 }
             }
             return Collections.unmodifiableList(result);
@@ -105,9 +105,9 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
 
     private final ModelControllerClient client;
     private final DMREndpoint endpoint;
-    private final Diagnostics diagnostics;
+    private final ProtocolDiagnostics diagnostics;
 
-    public DMRDriver(ModelControllerClient client, DMREndpoint endpoint, Diagnostics diagnostics) {
+    public DMRDriver(ModelControllerClient client, DMREndpoint endpoint, ProtocolDiagnostics diagnostics) {
         super();
         this.client = client;
         this.endpoint = endpoint;
@@ -134,10 +134,10 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
 
         // time the execute separately - we want to time ONLY the execute call
         OperationResult<?> opResult;
-        try (Context timerContext = diagnostics.getDMRRequestTimer().time()) {
+        try (Context timerContext = diagnostics.getRequestTimer().time()) {
             opResult = opBuilder.execute(client);
         } catch (Exception e) {
-            diagnostics.getDMRErrorRate().mark(1);
+            diagnostics.getErrorRate().mark(1);
             throw new ProtocolException("Error fetching DMR attribute [" + useAttribute + "]", e);
         }
 
@@ -146,7 +146,7 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
         try {
             value = opResult.assertSuccess().getResultNode();
         } catch (Exception e) {
-            diagnostics.getDMRErrorRate().mark(1);
+            diagnostics.getErrorRate().mark(1);
             throw new ProtocolException("Unsuccessful fetching DMR attribute [" + useAttribute + "]", e);
         }
 

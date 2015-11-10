@@ -26,10 +26,9 @@ import com.codahale.metrics.Timer;
 public class DiagnosticsImpl implements Diagnostics {
     private final MetricRegistry metricsRegistry;
 
-    private final Timer dmrRequestTimer;
-    private final Meter dmrErrorCounter;
-    private final Timer jmxRequestTimer;
-    private final Meter jmxErrorCounter;
+    private final ProtocolDiagnostics dmrDiagnostics;
+    private final ProtocolDiagnostics jmxDiagnostics;
+    private final ProtocolDiagnostics platformDiagnostics;
     private final Meter storageError;
     private final Counter metricsStorageBuffer;
     private final Meter metricRate;
@@ -46,10 +45,10 @@ public class DiagnosticsImpl implements Diagnostics {
     public DiagnosticsImpl(MonitorServiceConfiguration.DiagnosticsConfiguration config, MetricRegistry registry,
             String feedId) {
         // we don't need config now, but maybe in future - so keep "config" param here for future API consistency
-        dmrRequestTimer = registry.timer(name(feedId, "dmr.request-timer"));
-        dmrErrorCounter = registry.meter(name(feedId, "dmr.error-rate"));
-        jmxRequestTimer = registry.timer(name(feedId, "jmx.request-timer"));
-        jmxErrorCounter = registry.meter(name(feedId, "jmx.error-rate"));
+        this.dmrDiagnostics = newDiagnostics("dmr", feedId, registry);
+        this.jmxDiagnostics = newDiagnostics("jmx", feedId, registry);
+        this.platformDiagnostics = newDiagnostics("platform", feedId, registry);
+
         storageError = registry.meter(name(feedId, "storage.error-rate"));
         metricsStorageBuffer = registry.counter(name(feedId, "metrics.storage-buffer-size"));
         metricRate = registry.meter(name(feedId, "metric.rate"));
@@ -62,29 +61,29 @@ public class DiagnosticsImpl implements Diagnostics {
         this.metricsRegistry = registry;
     }
 
+    private static ProtocolDiagnostics newDiagnostics(String prefix, String feedId, MetricRegistry registry) {
+        return new ProtocolDiagnostics(registry.timer(name(feedId, prefix + ".request-timer")),
+                registry.meter(name(feedId, prefix + ".error-rate")));
+    }
+
     @Override
     public MetricRegistry getMetricRegistry() {
         return metricsRegistry;
     }
 
     @Override
-    public Timer getDMRRequestTimer() {
-        return dmrRequestTimer;
+    public ProtocolDiagnostics getDMRDiagnostics() {
+        return dmrDiagnostics;
     }
 
     @Override
-    public Meter getDMRErrorRate() {
-        return dmrErrorCounter;
+    public ProtocolDiagnostics getJMXDiagnostics() {
+        return jmxDiagnostics;
     }
 
     @Override
-    public Timer getJMXRequestTimer() {
-        return jmxRequestTimer;
-    }
-
-    @Override
-    public Meter getJMXErrorRate() {
-        return jmxErrorCounter;
+    public ProtocolDiagnostics getPlatformDiagnostics() {
+        return platformDiagnostics;
     }
 
     @Override

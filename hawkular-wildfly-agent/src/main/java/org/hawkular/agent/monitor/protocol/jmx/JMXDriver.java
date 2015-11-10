@@ -26,7 +26,7 @@ import java.util.Map;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
-import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.ProtocolException;
@@ -46,15 +46,14 @@ import com.codahale.metrics.Timer.Context;
 public class JMXDriver implements Driver<JMXNodeLocation> {
 
     private final J4pClient client;
-    private final Diagnostics diagnostics;
-
+    private final ProtocolDiagnostics diagnostics;
     /**
      * Creates the JMX driver.
      *
      * @param client the client used to connect to the JMX MBeanServer
-     * @param diagnostics object used to track performance of the underlying JMX system
+     * @param diagnostics
      */
-    public JMXDriver(J4pClient client, Diagnostics diagnostics) {
+    public JMXDriver(J4pClient client, ProtocolDiagnostics diagnostics) {
         super();
         this.client = client;
         this.diagnostics = diagnostics;
@@ -98,7 +97,7 @@ public class JMXDriver implements Driver<JMXNodeLocation> {
             }
 
             J4pReadResponse response;
-            try (Context timerContext = diagnostics.getJMXRequestTimer().time()) {
+            try (Context timerContext = diagnostics.getRequestTimer().time()) {
                 response = client.execute(request);
             }
             Collection<ObjectName> responseObjectNames = response.getObjectNames();
@@ -116,7 +115,7 @@ public class JMXDriver implements Driver<JMXNodeLocation> {
                     return Collections.unmodifiableList(results);
             }
         } catch (Exception e) {
-            diagnostics.getJMXErrorRate().mark(1);
+            diagnostics.getErrorRate().mark(1);
             throw new ProtocolException(e);
         }
     }
