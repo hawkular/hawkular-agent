@@ -52,17 +52,6 @@ public final class ResourceTypeManager<L> {
     /**
      * Adds the given types to the manager, building a graph to represent the type hierarchy.
      *
-     * @param resourceTypeSetMap a full set of types to use, must be immutable
-     * @throws IllegalStateException if types are missing (e.g. a type needs a parent but the parent is missing)
-     */
-    public ResourceTypeManager(Map<Name, TypeSet<ResourceType<L>>> resourceTypeSetMap)
-            throws IllegalStateException {
-        this(resourceTypeSetMap, null);
-    }
-
-    /**
-     * Adds the given types to the manager, building a graph to represent the type hierarchy.
-     *
      * @param resourceTypeSetMap a full set of types, must be immutable
      * @param setsToUse optional set of type names that the manager to care about - it will ignore others it finds. If
      *            null, then the full set is used (by "full set" it means the resourceTypeSetMap param).

@@ -63,7 +63,8 @@ public class TypeSets<L> {
             }
 
             return new TypeSets<>(Collections.unmodifiableMap(resourceTypeSets),
-                    Collections.unmodifiableMap(metricTypeSets), Collections.unmodifiableMap(availTypeSets),
+                    Collections.unmodifiableMap(metricTypeSets),
+                    Collections.unmodifiableMap(availTypeSets),
                     enabled);
         }
 
@@ -86,6 +87,16 @@ public class TypeSets<L> {
             resourceTypeSets.put(typeSet.getName(), typeSet);
             return this;
         }
+
+        // immutable getters in case you need these while building a resource type
+
+        public Map<Name, TypeSet<AvailType<L>>> getAvailTypeSets() {
+            return Collections.unmodifiableMap(availTypeSets);
+        }
+
+        public Map<Name, TypeSet<MetricType<L>>> getMetricTypeSets() {
+            return Collections.unmodifiableMap(metricTypeSets);
+        }
     }
 
     private static final TypeSets<?> EMPTY = new TypeSets<>(
@@ -103,7 +114,8 @@ public class TypeSets<L> {
 
     private TypeSets(Map<Name, TypeSet<ResourceType<L>>> resourceTypeSets,
             Map<Name, TypeSet<MetricType<L>>> metricTypeSets,
-            Map<Name, TypeSet<AvailType<L>>> availTypeSets, boolean enabled) {
+            Map<Name, TypeSet<AvailType<L>>> availTypeSets,
+            boolean enabled) {
         super();
         this.resourceTypeSets = resourceTypeSets;
         this.metricTypeSets = metricTypeSets;

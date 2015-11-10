@@ -45,8 +45,8 @@ public class SchedulerService implements InventoryListener {
     private final Diagnostics diagnostics;
     private final IntervalBasedScheduler<MetricType<Object>, MetricDataPoint> metricScheduler;
     private final IntervalBasedScheduler<AvailType<Object>, AvailDataPoint> availScheduler;
-    private final MetricBufferedStorageDispatcher metricCompletionHandler;
-    private final AvailBufferedStorageDispatcher availCompletionHandler;
+    private final MetricBufferedStorageDispatcher metricStorage;
+    private final AvailBufferedStorageDispatcher availStorage;
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
@@ -59,16 +59,13 @@ public class SchedulerService implements InventoryListener {
         this.diagnostics = diagnostics;
 
         // create the schedulers - we use two: one for metric collections and one for avail checks
-        this.metricCompletionHandler = new MetricBufferedStorageDispatcher(configuration, storageAdapter,
-                diagnostics);
-        this.metricScheduler = IntervalBasedScheduler
-                .forMetrics("Hawkular-Monitor-Scheduler-Metrics",
-                        configuration.getMetricSchedulerThreads(), metricCompletionHandler);
+        this.metricStorage = new MetricBufferedStorageDispatcher(configuration, storageAdapter, diagnostics);
+        this.metricScheduler = IntervalBasedScheduler.forMetrics("Hawkular-Monitor-Scheduler-Metrics",
+                configuration.getMetricSchedulerThreads(), metricStorage);
 
-        this.availCompletionHandler = new AvailBufferedStorageDispatcher(configuration, storageAdapter,
-                diagnostics);
+        this.availStorage = new AvailBufferedStorageDispatcher(configuration, storageAdapter, diagnostics);
         this.availScheduler = IntervalBasedScheduler.forAvails("Hawkular-Monitor-Scheduler-Avail",
-                configuration.getAvailSchedulerThreads(), availCompletionHandler);
+                configuration.getAvailSchedulerThreads(), availStorage);
     }
 
     public void start() {
@@ -78,10 +75,10 @@ public class SchedulerService implements InventoryListener {
         log.infoStartingScheduler();
 
         // start the collections
-        this.metricCompletionHandler.start();
+        this.metricStorage.start();
         this.metricScheduler.start();
 
-        this.availCompletionHandler.start();
+        this.availStorage.start();
         this.availScheduler.start();
 
         status = ServiceStatus.RUNNING;
@@ -94,8 +91,8 @@ public class SchedulerService implements InventoryListener {
         log.infoStoppingScheduler();
 
         // stop completion handlers
-        this.metricCompletionHandler.shutdown();
-        this.availCompletionHandler.shutdown();
+        this.metricStorage.shutdown();
+        this.availStorage.shutdown();
 
         // stop the schedulers
         this.metricScheduler.stop();

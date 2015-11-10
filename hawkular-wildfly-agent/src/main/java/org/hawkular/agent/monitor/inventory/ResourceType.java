@@ -50,16 +50,19 @@ public final class ResourceType<L>
         }
 
         public ResourceType<L> build() {
-            return new ResourceType<L>(id, name, location, resourceNameTemplate,
-                    Collections.unmodifiableList(parents), Collections.unmodifiableList(metricSetNames),
-                    Collections.unmodifiableList(availSetNames), Collections.unmodifiableList(metricTypes),
-                    Collections.unmodifiableList(availTypes), Collections.unmodifiableList(operations),
+            return new ResourceType<L>(id,
+                    name,
+                    location,
+                    resourceNameTemplate,
+                    Collections.unmodifiableList(parents),
+                    Collections.unmodifiableList(metricSetNames),
+                    Collections.unmodifiableList(availSetNames),
+                    Collections.unmodifiableList(metricTypes),
+                    Collections.unmodifiableList(availTypes),
+                    Collections.unmodifiableList(operations),
                     Collections.unmodifiableList(resourceConfigurationPropertyTypes));
         }
 
-        /**
-         * @return
-         */
         @SuppressWarnings("unchecked")
         private This getThis() {
             return (This) this;
@@ -82,6 +85,16 @@ public final class ResourceType<L>
 
         public This metricSetNames(Collection<Name> names) {
             this.metricSetNames.addAll(names);
+            return getThis();
+        }
+
+        public This availTypes(Collection<AvailType<L>> types) {
+            this.availTypes.addAll(types);
+            return getThis();
+        }
+
+        public This metricTypes(Collection<MetricType<L>> types) {
+            this.metricTypes.addAll(types);
             return getThis();
         }
 
@@ -109,6 +122,16 @@ public final class ResourceType<L>
                 ResourceConfigurationPropertyType<L> resourceConfigurationPropertyType) {
             this.resourceConfigurationPropertyTypes.add(resourceConfigurationPropertyType);
             return getThis();
+        }
+
+        // immutable getters - these are needed when building up the resource type
+
+        public List<Name> getAvailSetNames() {
+            return Collections.unmodifiableList(availSetNames);
+        }
+
+        public List<Name> getMetricSetNames() {
+            return Collections.unmodifiableList(metricSetNames);
         }
     }
 
@@ -161,11 +184,11 @@ public final class ResourceType<L>
     }
 
     public Collection<ResourceConfigurationPropertyType<L>> getResourceConfigurationPropertyTypes() {
-        return Collections.unmodifiableCollection(resourceConfigurationPropertyTypes);
+        return resourceConfigurationPropertyTypes;
     }
 
     public Collection<Operation<L>> getOperations() {
-        return Collections.unmodifiableCollection(operations);
+        return operations;
     }
 
 }

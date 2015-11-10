@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -843,6 +844,8 @@ public class MonitorServiceConfigurationBuilder {
                             }
                         }
 
+                        populateMetricAndAvailTypesForResourceType(resourceTypeBuilder, typeSetsBuilder);
+
                         ResourceType<DMRNodeLocation> resourceType = resourceTypeBuilder.build();
                         typeSetBuilder.type(resourceType);
 
@@ -1142,4 +1145,32 @@ public class MonitorServiceConfigurationBuilder {
         }
     }
 
+    /**
+     * Given a resource type builder, this will fill in its metric types and avail types.
+     *
+     * @param resourceTypeBuilder the type being built whose metric and avail types are to be filled in
+     * @param typeSetsBuilder all type metadata - this is where our metrics and avails are
+     */
+    private static <L> void populateMetricAndAvailTypesForResourceType(
+            ResourceType.Builder<?, L> resourceTypeBuilder,
+            TypeSets.Builder<L> typeSetsBuilder) {
+
+        Map<Name, TypeSet<MetricType<L>>> metricTypeSets = typeSetsBuilder.getMetricTypeSets();
+        List<Name> metricSetNames = resourceTypeBuilder.getMetricSetNames();
+        for (Name metricSetName : metricSetNames) {
+            TypeSet<MetricType<L>> metricSet = metricTypeSets.get(metricSetName);
+            if (metricSet != null && metricSet.isEnabled()) {
+                resourceTypeBuilder.metricTypes(metricSet.getTypeMap().values());
+            }
+        }
+
+        Map<Name, TypeSet<AvailType<L>>> availTypeSets = typeSetsBuilder.getAvailTypeSets();
+        List<Name> availSetNames = resourceTypeBuilder.getAvailSetNames();
+        for (Name availSetName : availSetNames) {
+            TypeSet<AvailType<L>> availSet = availTypeSets.get(availSetName);
+            if (availSet != null && availSet.isEnabled()) {
+                resourceTypeBuilder.availTypes(availSet.getTypeMap().values());
+            }
+        }
+    }
 }

@@ -40,7 +40,7 @@ public class ResourceTypeManagerTest {
         Map<Name, TypeSet<ResourceType<DMRNodeLocation>>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
 
-        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap, null);
 
         Assert.assertEquals("There should be two types", 2, rtm.getResourceTypesBreadthFirst().size());
 
@@ -66,7 +66,7 @@ public class ResourceTypeManagerTest {
         rTypeSetDmrMap.put(set1.getName(), set1);
         rTypeSetDmrMap.put(set2.getName(), set2);
 
-        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap, null);
 
         Assert.assertEquals("There should be 4 types", 4, rtm.getResourceTypesBreadthFirst().size());
 
@@ -126,7 +126,7 @@ public class ResourceTypeManagerTest {
         rTypeSetDmrMap.put(set3.getName(), set3);
         rTypeSetDmrMap.put(set4.getName(), set4);
 
-        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap, null);
         Assert.assertEquals("There should be only 1 non-disabled type", 1, rtm.getResourceTypesBreadthFirst().size());
 
         Set<ResourceType<DMRNodeLocation>> roots = rtm.getRootResourceTypes();
@@ -164,7 +164,7 @@ public class ResourceTypeManagerTest {
         rTypeSetDmrMap.put(set3.getName(), set3);
         rTypeSetDmrMap.put(set4.getName(), set4);
 
-        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap, null);
 
         Assert.assertTrue("There should be no enabled types", rtm.getResourceTypesBreadthFirst().isEmpty());
     }
@@ -195,7 +195,7 @@ public class ResourceTypeManagerTest {
         rTypeSetDmrMap.put(set2.getName(), set2);
         rTypeSetDmrMap.put(set3.getName(), set3);
 
-        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap, null);
         List<ResourceType<DMRNodeLocation>> resourceTypes = rtm.getResourceTypesBreadthFirst();
         Assert.assertEquals("There should be 6 types", 6, resourceTypes.size());
 
@@ -237,7 +237,7 @@ public class ResourceTypeManagerTest {
         rTypeSetDmrMap.put(set1.getName(), set1);
         rTypeSetDmrMap.put(set2.getName(), set2);
 
-        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap);
+        ResourceTypeManager<DMRNodeLocation> rtm = new ResourceTypeManager<>(rTypeSetDmrMap, null);
 
         Assert.assertEquals("There should be 4 types", 4, rtm.getResourceTypesBreadthFirst().size());
 
