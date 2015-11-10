@@ -91,21 +91,22 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
          */
         @Override
         public void run() {
+            try {
+                endpointService.measureMetrics(instances, new Consumer<MetricDataPoint>() {
+                    @Override
+                    public void accept(MetricDataPoint dataPoint) {
+                        completionHandler.accept(dataPoint);
+                    }
 
-            endpointService.measureMetrics(instances, new Consumer<MetricDataPoint>() {
-                @Override
-                public void accept(MetricDataPoint dataPoint) {
-                    completionHandler.accept(dataPoint);
-                }
-
-                @Override
-                public void report(Throwable e) {
-                    log.errorCouldNotAccess(endpointService.getEndpoint(), e);
-                }
-            });
-
+                    @Override
+                    public void report(Throwable e) {
+                        log.errorCouldNotAccess(endpointService.getEndpoint(), e);
+                    }
+                });
+            } catch (Throwable t) {
+                log.warnf(t, "Unexpected error caught in MetricsJob for endpoint [" + this.endpointService + "]");
+            }
         }
-
     }
 
     /**
@@ -143,20 +144,22 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
          */
         @Override
         public void run() {
-            endpointService.measureAvails(instances, new Consumer<AvailDataPoint>() {
-                @Override
-                public void accept(AvailDataPoint dataPoint) {
-                    completionHandler.accept(dataPoint);
-                }
+            try {
+                endpointService.measureAvails(instances, new Consumer<AvailDataPoint>() {
+                    @Override
+                    public void accept(AvailDataPoint dataPoint) {
+                        completionHandler.accept(dataPoint);
+                    }
 
-                @Override
-                public void report(Throwable e) {
-                    log.errorCouldNotAccess(endpointService.getEndpoint(), e);
-                }
-            });
-
+                    @Override
+                    public void report(Throwable e) {
+                        log.errorCouldNotAccess(endpointService.getEndpoint(), e);
+                    }
+                });
+            } catch (Throwable t) {
+                log.warnf(t, "Unexpected error caught in AvailsJob for endpoint [" + this.endpointService + "]");
+            }
         }
-
     }
 
     private static final MsgLogger log = AgentLoggers.getLogger(IntervalBasedScheduler.class);
