@@ -19,8 +19,8 @@ package org.hawkular.agent.monitor.cmd;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.protocol.EndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
@@ -56,7 +56,7 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            EndpointService<DMRNodeLocation, DMRSession> //
             endpointService,
             String modelNodePath,
             BasicMessageWithExtraData<AddDatasourceRequest> envelope, AddDatasourceResponse response,
@@ -126,7 +126,7 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<AddDatasourceRequest> envelope, DMREndpoint dmrEndpoint) {
+    protected void validate(BasicMessageWithExtraData<AddDatasourceRequest> envelope, MonitoredEndpoint endpoint) {
     }
 
     @Override

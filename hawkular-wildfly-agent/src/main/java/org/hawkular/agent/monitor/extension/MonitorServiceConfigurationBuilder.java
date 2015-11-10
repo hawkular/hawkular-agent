@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,12 +30,14 @@ import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsReportTo;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.GlobalConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ProtocolConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.AvailType;
+import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Interval;
 import org.hawkular.agent.monitor.inventory.MetricType;
@@ -49,14 +51,9 @@ import org.hawkular.agent.monitor.inventory.TypeSet.TypeSetBuilder;
 import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.protocol.dmr.DMRManagedServer;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
-import org.hawkular.agent.monitor.protocol.dmr.LocalDMRManagedServer;
-import org.hawkular.agent.monitor.protocol.dmr.RemoteDMRManagedServer;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
-import org.hawkular.agent.monitor.protocol.jmx.RemoteJMXManagedServer;
 import org.hawkular.agent.monitor.protocol.platform.Constants;
-import org.hawkular.agent.monitor.protocol.platform.PlatformManagedServer;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.api.PlatformPath;
 import org.hawkular.agent.monitor.protocol.platform.api.PlatformResourceAttributeName;
@@ -75,9 +72,9 @@ import org.jboss.dmr.Property;
 public class MonitorServiceConfigurationBuilder {
     private static final MsgLogger log = AgentLoggers.getLogger(MonitorServiceConfigurationBuilder.class);
 
-    private ProtocolConfiguration.Builder<DMRNodeLocation, DMRManagedServer> dmrConfigBuilder;
-    private ProtocolConfiguration.Builder<JMXNodeLocation, RemoteJMXManagedServer> jmxConfigBuilder;
-    private ProtocolConfiguration.Builder<PlatformNodeLocation, PlatformManagedServer> platformConfigBuilder;
+    private ProtocolConfiguration.Builder<DMRNodeLocation> dmrConfigBuilder;
+    private ProtocolConfiguration.Builder<JMXNodeLocation> jmxConfigBuilder;
+    private ProtocolConfiguration.Builder<PlatformNodeLocation> platformConfigBuilder;
 
     private DiagnosticsConfiguration diagnostics;
     private StorageAdapterConfiguration storageAdapter;
@@ -97,9 +94,6 @@ public class MonitorServiceConfigurationBuilder {
 
         TypeSets.Builder<DMRNodeLocation> dmrTypeSetsBuilder = TypeSets.builder();
         TypeSets.Builder<JMXNodeLocation> jmxTypeSetsBuilder = TypeSets.builder();
-        TypeSets.Builder<PlatformNodeLocation> platformTypeSetsBuilder = TypeSets.builder();
-
-        determinePlatformConfig(config, context, platformTypeSetsBuilder);
 
         determineMetricSetDmr(config, context, dmrTypeSetsBuilder);
         determineAvailSetDmr(config, context, dmrTypeSetsBuilder);
@@ -114,7 +108,14 @@ public class MonitorServiceConfigurationBuilder {
 
         dmrConfigBuilder.typeSets(dmrTypeSetsBuilder.build());
         jmxConfigBuilder.typeSets(jmxTypeSetsBuilder.build());
-        platformConfigBuilder.typeSets(platformTypeSetsBuilder.build());
+
+        TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context);
+        platformConfigBuilder.typeSets(platformTypeSets);
+        if (!platformTypeSets.isDisabledOrEmpty()) {
+            EndpointConfiguration endpoint =
+                    new EndpointConfiguration("platform", true, null, null, null);
+            platformConfigBuilder.endpoint(endpoint);
+        }
 
         // make sure to call this AFTER the resource type sets have been determined
         this.determineManagedServers(config, context);
@@ -147,8 +148,8 @@ public class MonitorServiceConfigurationBuilder {
 
                 TypeSetBuilder<MetricType<DMRNodeLocation>> typeSetBuilder =
                         TypeSet.<MetricType<DMRNodeLocation>> builder()
-                        .name(new Name(metricSetName))
-                        .enabled(getBoolean(metricSetValueNode, context, DMRMetricSetAttributes.ENABLED));
+                                .name(new Name(metricSetName))
+                                .enabled(getBoolean(metricSetValueNode, context, DMRMetricSetAttributes.ENABLED));
 
                 if (metricSetValueNode.hasDefined(DMRMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(DMRMetricDefinition.METRIC).asPropertyList();
@@ -224,8 +225,8 @@ public class MonitorServiceConfigurationBuilder {
                 ModelNode availSetValueNode = availSetProperty.getValue();
                 TypeSetBuilder<AvailType<DMRNodeLocation>> typeSetBuilder =
                         TypeSet.<AvailType<DMRNodeLocation>> builder()
-                        .name(new Name(availSetName))
-                        .enabled(getBoolean(availSetValueNode, context, DMRAvailSetAttributes.ENABLED));
+                                .name(new Name(availSetName))
+                                .enabled(getBoolean(availSetValueNode, context, DMRAvailSetAttributes.ENABLED));
 
                 if (availSetValueNode.hasDefined(DMRAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(DMRAvailDefinition.AVAIL).asPropertyList();
@@ -273,8 +274,8 @@ public class MonitorServiceConfigurationBuilder {
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
                 TypeSetBuilder<MetricType<JMXNodeLocation>> typeSetBuilder =
                         TypeSet.<MetricType<JMXNodeLocation>> builder()
-                        .name(new Name(metricSetName))
-                        .enabled(getBoolean(metricSetValueNode, context, JMXMetricSetAttributes.ENABLED));
+                                .name(new Name(metricSetName))
+                                .enabled(getBoolean(metricSetValueNode, context, JMXMetricSetAttributes.ENABLED));
                 if (metricSetValueNode.hasDefined(JMXMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(JMXMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
@@ -328,8 +329,8 @@ public class MonitorServiceConfigurationBuilder {
                 ModelNode availSetValueNode = availSetProperty.getValue();
                 TypeSetBuilder<AvailType<JMXNodeLocation>> typeSetBuilder =
                         TypeSet.<AvailType<JMXNodeLocation>> builder() //
-                        .name(new Name(availSetName)) //
-                        .enabled(getBoolean(availSetValueNode, context, JMXAvailSetAttributes.ENABLED));
+                                .name(new Name(availSetName)) //
+                                .enabled(getBoolean(availSetValueNode, context, JMXAvailSetAttributes.ENABLED));
                 if (availSetValueNode.hasDefined(JMXAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(JMXAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
@@ -364,23 +365,21 @@ public class MonitorServiceConfigurationBuilder {
         }
     }
 
-    private static void determinePlatformConfig(
-            ModelNode config, OperationContext context,
-            org.hawkular.agent.monitor.inventory.TypeSets.Builder<PlatformNodeLocation> //
-            typeSetsBuilder)
+    private static TypeSets<PlatformNodeLocation> buildPlatformTypeSets(
+            ModelNode config, OperationContext context)
                     throws OperationFailedException {
 
         // assume they are disabled unless configured otherwise
 
         if (!config.hasDefined(PlatformDefinition.PLATFORM)) {
             log.infoNoPlatformConfig();
-            return;
+            return TypeSets.empty();
         }
 
         List<Property> asPropertyList = config.get(PlatformDefinition.PLATFORM).asPropertyList();
         if (asPropertyList.size() == 0) {
             log.infoNoPlatformConfig();
-            return;
+            return TypeSets.empty();
         } else if (asPropertyList.size() > 1) {
             throw new IllegalArgumentException("Only one platform config allowed: " + config.toJSONString(true));
         }
@@ -389,9 +388,10 @@ public class MonitorServiceConfigurationBuilder {
         boolean typeSetsEnabled = getBoolean(platformValueNode, context, PlatformAttributes.ENABLED);
         if (typeSetsEnabled == false) {
             log.debugf("Platform monitoring is disabled");
-            return;
+            return TypeSets.empty();
         }
 
+        TypeSets.Builder<PlatformNodeLocation> typeSetsBuilder = TypeSets.builder();
         // all the type metadata is dependent upon the capabilities of the oshi SystemInfo API
 
         // since platform monitoring is enabled, we will always have at least the root OS type
@@ -405,10 +405,10 @@ public class MonitorServiceConfigurationBuilder {
 
         TypeSet<ResourceType<PlatformNodeLocation>> rootTypeSet =
                 TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                .enabled(true)
-                .name(osName)
-                .type(rootType)
-                .build();
+                        .enabled(true)
+                        .name(osName)
+                        .type(rootType)
+                        .build();
         typeSetsBuilder.resourceTypeSet(rootTypeSet);
 
         // now add children types if they are enabled
@@ -443,10 +443,10 @@ public class MonitorServiceConfigurationBuilder {
 
                     TypeSet<MetricType<PlatformNodeLocation>> fileStoreMetrics =
                             TypeSet.<MetricType<PlatformNodeLocation>> builder()
-                            .name(Constants.PlatformResourceType.FILE_STORE.getName())
-                            .type(usableSpace)
-                            .type(totalSpace)
-                            .build();
+                                    .name(Constants.PlatformResourceType.FILE_STORE.getName())
+                                    .type(usableSpace)
+                                    .type(totalSpace)
+                                    .build();
 
                     typeSetsBuilder.metricTypeSet(fileStoreMetrics);
 
@@ -461,9 +461,9 @@ public class MonitorServiceConfigurationBuilder {
 
                     TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
                             TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                            .name(Constants.PlatformResourceType.FILE_STORE.getName())
-                            .type(fileStore)
-                            .build();
+                                    .name(Constants.PlatformResourceType.FILE_STORE.getName())
+                                    .type(fileStore)
+                                    .build();
 
                     typeSetsBuilder.resourceTypeSet(typeSet);
                 }
@@ -503,10 +503,10 @@ public class MonitorServiceConfigurationBuilder {
 
                     TypeSet<MetricType<PlatformNodeLocation>> memoryMetrics =
                             TypeSet.<MetricType<PlatformNodeLocation>> builder()
-                            .name(Constants.PlatformResourceType.MEMORY.getName())
-                            .type(available)
-                            .type(total)
-                            .build();
+                                    .name(Constants.PlatformResourceType.MEMORY.getName())
+                                    .type(available)
+                                    .type(total)
+                                    .build();
 
                     typeSetsBuilder.metricTypeSet(memoryMetrics);
 
@@ -520,9 +520,9 @@ public class MonitorServiceConfigurationBuilder {
 
                     TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
                             TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                            .name(Constants.PlatformResourceType.MEMORY.getName())
-                            .type(memory)
-                            .build();
+                                    .name(Constants.PlatformResourceType.MEMORY.getName())
+                                    .type(memory)
+                                    .build();
 
                     typeSetsBuilder.resourceTypeSet(typeSet);
                 }
@@ -555,9 +555,9 @@ public class MonitorServiceConfigurationBuilder {
 
                     TypeSet<MetricType<PlatformNodeLocation>> processorMetrics =
                             TypeSet.<MetricType<PlatformNodeLocation>> builder()
-                            .name(Constants.PlatformResourceType.PROCESSOR.getName())
-                            .type(cpuUsage)
-                            .build();
+                                    .name(Constants.PlatformResourceType.PROCESSOR.getName())
+                                    .type(cpuUsage)
+                                    .build();
 
                     typeSetsBuilder.metricTypeSet(processorMetrics);
 
@@ -572,9 +572,9 @@ public class MonitorServiceConfigurationBuilder {
 
                     TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
                             TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                            .name(Constants.PlatformResourceType.PROCESSOR.getName())
-                            .type(processor)
-                            .build();
+                                    .name(Constants.PlatformResourceType.PROCESSOR.getName())
+                                    .type(processor)
+                                    .build();
 
                     typeSetsBuilder.resourceTypeSet(typeSet);
                 }
@@ -618,28 +618,29 @@ public class MonitorServiceConfigurationBuilder {
 
                     TypeSet<MetricType<PlatformNodeLocation>> powerSourceMetrics =
                             TypeSet.<MetricType<PlatformNodeLocation>> builder()
-                            .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
-                            .type(remainingCap)
-                            .type(timeRemaining)
-                            .build();
+                                    .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
+                                    .type(remainingCap)
+                                    .type(timeRemaining)
+                                    .build();
 
                     typeSetsBuilder.metricTypeSet(powerSourceMetrics);
 
                     ResourceType<PlatformNodeLocation> powerSource =
                             ResourceType.<PlatformNodeLocation> builder()
-                            .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
-                            .parent(rootType.getName())
-                            .location(powerSourcesLocation)
-                            .metricSetName(powerSourceMetrics.getName())
-                            .resourceNameTemplate(
-                                    Constants.PlatformResourceType.POWER_SOURCE.getName().getNameString() + " [%s]")
-                            .build();
+                                    .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
+                                    .parent(rootType.getName())
+                                    .location(powerSourcesLocation)
+                                    .metricSetName(powerSourceMetrics.getName())
+                                    .resourceNameTemplate(
+                                            Constants.PlatformResourceType.POWER_SOURCE.getName().getNameString()
+                                                    + " [%s]")
+                                    .build();
 
                     TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
                             TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                            .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
-                            .type(powerSource)
-                            .build();
+                                    .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
+                                    .type(powerSource)
+                                    .build();
 
                     typeSetsBuilder.resourceTypeSet(typeSet);
                 }
@@ -648,7 +649,7 @@ public class MonitorServiceConfigurationBuilder {
                         + platformValueNode.toJSONString(true));
             }
         }
-
+        return typeSetsBuilder.build();
     }
 
     private static DiagnosticsConfiguration determineDiagnosticsConfig(ModelNode config, OperationContext context)
@@ -774,8 +775,9 @@ public class MonitorServiceConfigurationBuilder {
                 ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
                 TypeSetBuilder<ResourceType<DMRNodeLocation>> typeSetBuilder =
                         TypeSet.<ResourceType<DMRNodeLocation>> builder()
-                        .name(new Name(resourceTypeSetName))
-                        .enabled(getBoolean(resourceTypeSetValueNode, context, DMRResourceTypeSetAttributes.ENABLED));
+                                .name(new Name(resourceTypeSetName))
+                                .enabled(getBoolean(resourceTypeSetValueNode, context,
+                                        DMRResourceTypeSetAttributes.ENABLED));
                 if (resourceTypeSetName.indexOf(',') > -1) {
                     log.warnCommaInName(resourceTypeSetName);
                 }
@@ -790,14 +792,14 @@ public class MonitorServiceConfigurationBuilder {
 
                         Builder<?, DMRNodeLocation> resourceTypeBuilder =
                                 ResourceType.<DMRNodeLocation> builder()
-                                .id(ID.NULL_ID)
-                                .name(new Name(resourceTypeName))
-                                .location(new DMRNodeLocation(getPath(resourceTypeValueNode, context,
-                                        DMRResourceTypeAttributes.PATH)))
-                                .resourceNameTemplate(getString(resourceTypeValueNode, context,
-                                        DMRResourceTypeAttributes.RESOURCE_NAME_TEMPLATE))
-                                .parents(getNameListFromString(resourceTypeValueNode, context,
-                                        DMRResourceTypeAttributes.PARENTS));
+                                        .id(ID.NULL_ID)
+                                        .name(new Name(resourceTypeName))
+                                        .location(new DMRNodeLocation(getPath(resourceTypeValueNode, context,
+                                                DMRResourceTypeAttributes.PATH)))
+                                        .resourceNameTemplate(getString(resourceTypeValueNode, context,
+                                                DMRResourceTypeAttributes.RESOURCE_NAME_TEMPLATE))
+                                        .parents(getNameListFromString(resourceTypeValueNode, context,
+                                                DMRResourceTypeAttributes.PARENTS));
 
                         List<Name> metricSets = getNameListFromString(resourceTypeValueNode, context,
                                 DMRResourceTypeAttributes.METRIC_SETS);
@@ -833,13 +835,13 @@ public class MonitorServiceConfigurationBuilder {
                                 ModelNode configValueNode = configProperty.getValue();
                                 String configName = configProperty.getName();
                                 ResourceConfigurationPropertyType<DMRNodeLocation> configType = //
-                                new ResourceConfigurationPropertyType<>(
-                                        ID.NULL_ID, new Name(configName),
-                                        new AttributeLocation<DMRNodeLocation>(
-                                                new DMRNodeLocation(getPath(configValueNode, context,
-                                                        DMRResourceConfigAttributes.PATH)),
-                                                getString(configValueNode, context,
-                                                        DMRResourceConfigAttributes.ATTRIBUTE)));
+                                        new ResourceConfigurationPropertyType<>(
+                                                ID.NULL_ID, new Name(configName),
+                                                new AttributeLocation<DMRNodeLocation>(
+                                                        new DMRNodeLocation(getPath(configValueNode, context,
+                                                                DMRResourceConfigAttributes.PATH)),
+                                                        getString(configValueNode, context,
+                                                                DMRResourceConfigAttributes.ATTRIBUTE)));
                                 resourceTypeBuilder.resourceConfigurationPropertyType(configType);
                             }
                         }
@@ -879,8 +881,9 @@ public class MonitorServiceConfigurationBuilder {
                 ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
                 TypeSetBuilder<ResourceType<JMXNodeLocation>> typeSetBuilder =
                         TypeSet.<ResourceType<JMXNodeLocation>> builder()
-                        .name(new Name(resourceTypeSetName))
-                        .enabled(getBoolean(resourceTypeSetValueNode, context, JMXResourceTypeSetAttributes.ENABLED));
+                                .name(new Name(resourceTypeSetName))
+                                .enabled(getBoolean(resourceTypeSetValueNode, context,
+                                        JMXResourceTypeSetAttributes.ENABLED));
                 if (resourceTypeSetName.indexOf(',') > -1) {
                     log.warnCommaInName(resourceTypeSetName);
                 }
@@ -897,13 +900,13 @@ public class MonitorServiceConfigurationBuilder {
                         try {
                             Builder<?, JMXNodeLocation> resourceTypeBuilder =
                                     ResourceType.<JMXNodeLocation> builder()
-                                    .id(ID.NULL_ID)
-                                    .name(new Name(resourceTypeName))
-                                    .location(new JMXNodeLocation(objectName))
-                                    .resourceNameTemplate(getString(resourceTypeValueNode, context,
-                                            JMXResourceTypeAttributes.RESOURCE_NAME_TEMPLATE))
-                                    .parents(getNameListFromString(resourceTypeValueNode, context,
-                                            JMXResourceTypeAttributes.PARENTS));
+                                            .id(ID.NULL_ID)
+                                            .name(new Name(resourceTypeName))
+                                            .location(new JMXNodeLocation(objectName))
+                                            .resourceNameTemplate(getString(resourceTypeValueNode, context,
+                                                    JMXResourceTypeAttributes.RESOURCE_NAME_TEMPLATE))
+                                            .parents(getNameListFromString(resourceTypeValueNode, context,
+                                                    JMXResourceTypeAttributes.PARENTS));
 
                             List<Name> metricSets = getNameListFromString(resourceTypeValueNode, context,
                                     JMXResourceTypeAttributes.METRIC_SETS);
@@ -947,8 +950,8 @@ public class MonitorServiceConfigurationBuilder {
                                     AttributeLocation<JMXNodeLocation> attribLoc =
                                             new AttributeLocation<JMXNodeLocation>(new JMXNodeLocation(on), attr);
                                     ResourceConfigurationPropertyType<JMXNodeLocation> configType =
-                                          new ResourceConfigurationPropertyType<>(
-                                                  ID.NULL_ID, new Name(configName), attribLoc);
+                                            new ResourceConfigurationPropertyType<>(
+                                                    ID.NULL_ID, new Name(configName), attribLoc);
                                     resourceTypeBuilder.resourceConfigurationPropertyType(configType);
 
                                 }
@@ -1008,16 +1011,12 @@ public class MonitorServiceConfigurationBuilder {
                         throw new OperationFailedException("If using SSL, you must define a security realm: " + name);
                     }
 
-                    RemoteDMRManagedServer res = new RemoteDMRManagedServer(ID.NULL_ID, new Name(name));
-                    res.setEnabled(enabled);
-                    res.setHost(host);
-                    res.setPort(port);
-                    res.setUsername(username);
-                    res.setPassword(password);
-                    res.setUseSSL(useSsl);
-                    res.setSecurityRealm(securityRealm);
-                    res.getResourceTypeSets().addAll(resourceTypeSets);
-                    dmrConfigBuilder.managedServer(res);
+                    String protocol = useSsl ? "https-remoting" : "http-remoting";
+                    ConnectionData connectionData = new ConnectionData(protocol, host, port, username, password);
+                    EndpointConfiguration endpoint = new EndpointConfiguration(
+                            name, enabled, resourceTypeSets, connectionData, securityRealm);
+
+                    dmrConfigBuilder.endpoint(endpoint);
                 }
             }
 
@@ -1035,10 +1034,9 @@ public class MonitorServiceConfigurationBuilder {
                 List<Name> resourceTypeSets = getNameListFromString(localDMRValueNode, context,
                         LocalDMRAttributes.RESOURCE_TYPE_SETS);
 
-                LocalDMRManagedServer res = new LocalDMRManagedServer(ID.NULL_ID, new Name(name));
-                res.setEnabled(enabled);
-                res.getResourceTypeSets().addAll(resourceTypeSets);
-                dmrConfigBuilder.managedServer(res);
+                EndpointConfiguration endpoint = new EndpointConfiguration(
+                        name, enabled, resourceTypeSets, null, null);
+                dmrConfigBuilder.endpoint(endpoint);
             }
 
             // JMX
@@ -1058,25 +1056,22 @@ public class MonitorServiceConfigurationBuilder {
                             RemoteJMXAttributes.RESOURCE_TYPE_SETS);
 
                     // make sure the URL is at least syntactically valid
-                    URL url;
+                    URI url;
                     try {
-                        url = new URL(urlStr);
+                        url = new URI(urlStr);
                     } catch (Exception e) {
                         throw new OperationFailedException("Invalid remote JMX URL: " + urlStr, e);
                     }
 
-                    if (url.getProtocol().equalsIgnoreCase("https") && securityRealm == null) {
+                    if (url.getScheme().equalsIgnoreCase("https") && securityRealm == null) {
                         throw new OperationFailedException("If using SSL, you must define a security realm: " + name);
                     }
 
-                    RemoteJMXManagedServer res = new RemoteJMXManagedServer(ID.NULL_ID, new Name(name));
-                    res.setEnabled(enabled);
-                    res.setURL(url);
-                    res.setUsername(username);
-                    res.setPassword(password);
-                    res.setSecurityRealm(securityRealm);
-                    res.getResourceTypeSets().addAll(resourceTypeSets);
-                    jmxConfigBuilder.managedServer(res);
+                    ConnectionData connectionData = new ConnectionData(url, username, password);
+                    EndpointConfiguration endpoint = new EndpointConfiguration(
+                            name, enabled, resourceTypeSets, connectionData, securityRealm);
+
+                    jmxConfigBuilder.endpoint(endpoint);
                 }
             }
 

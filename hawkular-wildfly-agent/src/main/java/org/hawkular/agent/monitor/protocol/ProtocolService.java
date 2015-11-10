@@ -32,46 +32,44 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
- * @param <E> the protocol specific {@link MonitoredEndpoint}
  * @param <S> the protocol specific {@link Session}
  */
-public class ProtocolService<L, E extends MonitoredEndpoint, S extends Session<L, E>> {
-    public static class Builder<L, E extends MonitoredEndpoint, //
-    C extends Session<L, E>> {
-        private Map<String, EndpointService<L, E, C>> endpointServices = new HashMap<>();
+public class ProtocolService<L, S extends Session<L>> {
+
+    public static class Builder<L, S extends Session<L>> {
+        private Map<String, EndpointService<L, S>> endpointServices = new HashMap<>();
         private ResourceTypeManager<L> resourceTypeManager;
 
-        public ProtocolService<L, E, C> build() {
-            return new ProtocolService<>(Collections.unmodifiableMap(endpointServices), resourceTypeManager);
+        public ProtocolService<L, S> build() {
+            return new ProtocolService<L, S>(Collections.unmodifiableMap(endpointServices), resourceTypeManager);
         }
 
-        public Builder<L, E, C> endpointService(EndpointService<L, E, C> endpointService) {
+        public Builder<L, S> endpointService(EndpointService<L, S> endpointService) {
             endpointServices.put(endpointService.getEndpoint().getName(), endpointService);
             return this;
         }
 
-        public Builder<L, E, C> resourceTypeManager(ResourceTypeManager<L> resourceTypeManager) {
+        public Builder<L, S> resourceTypeManager(ResourceTypeManager<L> resourceTypeManager) {
             this.resourceTypeManager = resourceTypeManager;
             return this;
         }
     }
 
-    public static <L, E extends MonitoredEndpoint, //
-    C extends Session<L, E>> Builder<L, E, C> builder() {
-        return new Builder<L, E, C>();
+    public static <L, S extends Session<L>> Builder<L, S> builder() {
+        return new Builder<L, S>();
     }
 
-    private final Map<String, EndpointService<L, E, S>> endpointServices;
+    private final Map<String, EndpointService<L, S>> endpointServices;
     private final ResourceTypeManager<L> resourceTypeManager;
 
-    public ProtocolService(Map<String, EndpointService<L, E, S>> endpointServices,
+    public ProtocolService(Map<String, EndpointService<L, S>> endpointServices,
             ResourceTypeManager<L> resourceTypeManager) {
         super();
         this.endpointServices = endpointServices;
         this.resourceTypeManager = resourceTypeManager;
     }
 
-    public Map<String, EndpointService<L, E, S>> getEndpointServices() {
+    public Map<String, EndpointService<L, S>> getEndpointServices() {
         return endpointServices;
     }
 
@@ -83,31 +81,31 @@ public class ProtocolService<L, E extends MonitoredEndpoint, S extends Session<L
     }
 
     public void discoverAll() {
-        for (EndpointService<L, E, S> service : endpointServices.values()) {
+        for (EndpointService<L, S> service : endpointServices.values()) {
             service.discoverAll();
         }
     }
 
     public void start() {
-        for (EndpointService<L, E, S> service : endpointServices.values()) {
+        for (EndpointService<L, S> service : endpointServices.values()) {
             service.start();
         }
     }
 
     public void stop() {
-        for (EndpointService<L, E, S> service : endpointServices.values()) {
+        for (EndpointService<L, S> service : endpointServices.values()) {
             service.stop();
         }
     }
 
     public void addInventoryListener(InventoryListener listener) {
-        for (EndpointService<L, E, S> service : endpointServices.values()) {
+        for (EndpointService<L, S> service : endpointServices.values()) {
             service.addInventoryListener(listener);
         }
     }
 
     public void removeInventoryListener(InventoryListener listener) {
-        for (EndpointService<L, E, S> service : endpointServices.values()) {
+        for (EndpointService<L, S> service : endpointServices.values()) {
             service.removeInventoryListener(listener);
         }
     }

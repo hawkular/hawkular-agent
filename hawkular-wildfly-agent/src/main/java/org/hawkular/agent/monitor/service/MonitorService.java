@@ -42,15 +42,13 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
-import org.hawkular.agent.monitor.inventory.ManagedServer.SecurityRealmProvider;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMRManagedServer;
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.protocol.jmx.RemoteJMXManagedServer;
 import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
@@ -342,22 +340,24 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         // get the security realms for any configured remote DMR and JMX servers that require ssl
-        for (DMRManagedServer managedServer : this.bootConfiguration.getDmrConfiguration().getManagedServers()
+        for (EndpointConfiguration endpoint : this.bootConfiguration.getDmrConfiguration().getEndpoints()
                 .values()) {
-            if (managedServer instanceof SecurityRealmProvider) {
-                addSslContext((SecurityRealmProvider) managedServer, bldr);
+            String securityRealm = endpoint.getSecurityRealm();
+            if (securityRealm != null) {
+                addSslContext(securityRealm, bldr);
             }
-
         }
-        for (RemoteJMXManagedServer managedServer : this.bootConfiguration.getJmxConfiguration().getManagedServers()
+        for (EndpointConfiguration endpoint : this.bootConfiguration.getJmxConfiguration().getEndpoints()
                 .values()) {
-            addSslContext((SecurityRealmProvider) managedServer, bldr);
+            String securityRealm = endpoint.getSecurityRealm();
+            if (securityRealm != null) {
+                addSslContext(securityRealm, bldr);
+            }
         }
 
     }
 
-    private void addSslContext(SecurityRealmProvider managedServer, ServiceBuilder<MonitorService> bldr) {
-        String securityRealm = managedServer.getSecurityRealm();
+    private void addSslContext(String securityRealm, ServiceBuilder<MonitorService> bldr) {
         if (securityRealm != null && !this.trustOnlySSLContextValues.containsKey(securityRealm)) {
             // if we haven't added a dependency on the security realm yet, add it now
             InjectedValue<SSLContext> iv = new InjectedValue<>();

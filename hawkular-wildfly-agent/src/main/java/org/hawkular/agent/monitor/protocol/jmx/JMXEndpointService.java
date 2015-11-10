@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.protocol.jmx;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.EndpointService;
@@ -27,10 +28,10 @@ import org.jolokia.client.J4pClient;
  * @see EndpointService
  */
 public class JMXEndpointService
-        extends EndpointService<JMXNodeLocation, JMXEndpoint, JMXSession> {
+        extends EndpointService<JMXNodeLocation, JMXSession> {
 
     private final JmxClientFactory clientFactory;
-    public JMXEndpointService(String feedId, JMXEndpoint endpoint,
+    public JMXEndpointService(String feedId, MonitoredEndpoint endpoint,
             ResourceTypeManager<JMXNodeLocation> resourceTypeManager, ProtocolDiagnostics diagnostics) {
         super(feedId, endpoint, resourceTypeManager, new JMXLocationResolver(), diagnostics);
         this.clientFactory = new JmxClientFactory(endpoint);

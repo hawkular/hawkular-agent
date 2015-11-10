@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.RemoveJdbcDriverRequest;
 import org.hawkular.cmdgw.api.RemoveJdbcDriverResponse;
@@ -46,7 +46,7 @@ public class RemoveJdbcDriverCommand
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<RemoveJdbcDriverRequest> envelope, DMREndpoint dmrEndpoint) {
-        assertLocalServer(dmrEndpoint);
+    protected void validate(BasicMessageWithExtraData<RemoveJdbcDriverRequest> envelope, MonitoredEndpoint endpoint) {
+        assertLocalServer(endpoint);
     }
 }

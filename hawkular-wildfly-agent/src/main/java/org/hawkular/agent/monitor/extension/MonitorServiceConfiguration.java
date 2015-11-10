@@ -16,20 +16,18 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.hawkular.agent.monitor.inventory.ManagedServer;
+import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.protocol.dmr.DMRManagedServer;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
-import org.hawkular.agent.monitor.protocol.jmx.RemoteJMXManagedServer;
-import org.hawkular.agent.monitor.protocol.platform.PlatformManagedServer;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 
 /**
@@ -231,28 +229,28 @@ public class MonitorServiceConfiguration {
 
     }
 
-    public static class ProtocolConfiguration<L, S extends ManagedServer> {
+    public static class ProtocolConfiguration<L> {
 
-        public static <L, S extends ManagedServer> Builder<L, S> builder() {
-            return new Builder<L, S>();
+        public static <L> Builder<L> builder() {
+            return new Builder<L>();
         }
 
-        public static class Builder<L, S extends ManagedServer> {
+        public static class Builder<L> {
             private TypeSets<L> typeSets;
-            private Map<Name, S> managedServers = new LinkedHashMap<>();
+            private Map<String, EndpointConfiguration> endpoints = new LinkedHashMap<>();
 
-            public Builder<L, S> managedServer(S server) {
-                managedServers.put(server.getName(), server);
+            public Builder<L> endpoint(EndpointConfiguration endpoint) {
+                endpoints.put(endpoint.getName(), endpoint);
                 return this;
             }
 
-            public Builder<L, S> typeSets(TypeSets<L> typeSets) {
+            public Builder<L> typeSets(TypeSets<L> typeSets) {
                 this.typeSets = typeSets;
                 return this;
             }
 
-            public ProtocolConfiguration<L, S> build() {
-                for (S server : managedServers.values()) {
+            public ProtocolConfiguration<L> build() {
+                for (EndpointConfiguration server : endpoints.values()) {
                     for (Name resourceTypeSetName : server.getResourceTypeSets()) {
                         if (!typeSets.getResourceTypeSets().containsKey(resourceTypeSetName)) {
                             log.warnResourceTypeSetDoesNotExist(server.getName().toString(),
@@ -261,42 +259,85 @@ public class MonitorServiceConfiguration {
                     }
                 }
 
-                return new ProtocolConfiguration<>(typeSets, managedServers);
+                return new ProtocolConfiguration<>(typeSets, endpoints);
             }
         }
 
         private final TypeSets<L> typeSets;
-        private final Map<Name, S> managedServers;
+        private final Map<String, EndpointConfiguration> endpoints;
 
         public ProtocolConfiguration(TypeSets<L> typeSets,
-                Map<Name, S> managedServers) {
+                Map<String, EndpointConfiguration> managedServers) {
             super();
             this.typeSets = typeSets;
-            this.managedServers = managedServers;
+            this.endpoints = managedServers;
         }
 
         public TypeSets<L> getTypeSets() {
             return typeSets;
         }
 
-        public Map<Name, S> getManagedServers() {
-            return managedServers;
+        public Map<String, EndpointConfiguration> getEndpoints() {
+            return endpoints;
         }
+    }
+
+    public static class EndpointConfiguration {
+        private final String name;
+        private final boolean enabled;
+        private final Collection<Name> resourceTypeSets;
+        private final ConnectionData connectionData;
+        private final String securityRealm;
+
+        public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
+                ConnectionData connectionData, String securityRealm) {
+            super();
+            this.name = name;
+            this.enabled = enabled;
+            this.resourceTypeSets = resourceTypeSets;
+            this.connectionData = connectionData;
+            this.securityRealm = securityRealm;
+        }
+
+        public Collection<Name> getResourceTypeSets() {
+            return resourceTypeSets;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public ConnectionData getConnectionData() {
+            return connectionData;
+        }
+
+        public String getSecurityRealm() {
+            return securityRealm;
+        }
+
+        public boolean isLocal() {
+            return connectionData == null;
+        }
+
     }
 
     private final GlobalConfiguration globalConfiguration;
     private final DiagnosticsConfiguration diagnostics;
     private final StorageAdapterConfiguration storageAdapter;
-    private final ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> dmrConfiguration;
-    private final ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> jmxConfiguration;
-    private final ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> platformConfiguration;
+    private final ProtocolConfiguration<DMRNodeLocation> dmrConfiguration;
+    private final ProtocolConfiguration<JMXNodeLocation> jmxConfiguration;
+    private final ProtocolConfiguration<PlatformNodeLocation> platformConfiguration;
 
     public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration,
             DiagnosticsConfiguration diagnostics,
             StorageAdapterConfiguration storageAdapter,
-            ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> dmrConfiguration,
-            ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> jmxConfiguration,
-            ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> platformConfiguration) {
+            ProtocolConfiguration<DMRNodeLocation> dmrConfiguration,
+            ProtocolConfiguration<JMXNodeLocation> jmxConfiguration,
+            ProtocolConfiguration<PlatformNodeLocation> platformConfiguration) {
         super();
         this.globalConfiguration = globalConfiguration;
         this.diagnostics = diagnostics;
@@ -360,15 +401,15 @@ public class MonitorServiceConfiguration {
                 jmxConfiguration, platformConfiguration);
     }
 
-    public ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> getDmrConfiguration() {
+    public ProtocolConfiguration<DMRNodeLocation> getDmrConfiguration() {
         return dmrConfiguration;
     }
 
-    public ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> getJmxConfiguration() {
+    public ProtocolConfiguration<JMXNodeLocation> getJmxConfiguration() {
         return jmxConfiguration;
     }
 
-    public ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> getPlatformConfiguration() {
+    public ProtocolConfiguration<PlatformNodeLocation> getPlatformConfiguration() {
         return platformConfiguration;
     }
 

@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.Driver;
@@ -104,10 +105,10 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
     }
 
     private final ModelControllerClient client;
-    private final DMREndpoint endpoint;
+    private final MonitoredEndpoint endpoint;
     private final ProtocolDiagnostics diagnostics;
 
-    public DMRDriver(ModelControllerClient client, DMREndpoint endpoint, ProtocolDiagnostics diagnostics) {
+    public DMRDriver(ModelControllerClient client, MonitoredEndpoint endpoint, ProtocolDiagnostics diagnostics) {
         super();
         this.client = client;
         this.endpoint = endpoint;
@@ -207,8 +208,9 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
                     // InetAddress.getByName(String) where the argument of getByName(String) is the host the agent
                     // uses to query the AS'es DMR.
                     InetAddress dmrAddr = InetAddress.getByName((String) oldValue);
-                    if (dmrAddr.isAnyLocalAddress()) {
-                        String host = endpoint.getHost();
+                    if (dmrAddr.isAnyLocalAddress() && endpoint.getConnectionData() != null
+                            && endpoint.getConnectionData().getUri() != null) {
+                        String host = endpoint.getConnectionData().getUri().getHost();
                         InetAddress[] resolvedAddresses = InetAddress.getAllByName(host);
                         String newValue = Stream.of(resolvedAddresses).map(a -> a.getHostAddress())
                                 .collect(Collectors.joining(", "));

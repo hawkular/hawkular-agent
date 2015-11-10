@@ -33,14 +33,13 @@ import org.hawkular.agent.monitor.util.Consumer;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
- * @param <E> the protocol specific {@link MonitoredEndpoint}
  */
-public interface SamplingService<L, E> {
+public interface SamplingService<L> {
 
     /**
      * @return the endpoint this service is able to sample
      */
-    E getEndpoint();
+    MonitoredEndpoint getEndpoint();
 
     /**
      * @return the {@code feedId} associated with the present endpoint

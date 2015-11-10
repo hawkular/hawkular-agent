@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.protocol.platform;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.platform.api.Platform;
@@ -28,11 +29,9 @@ import oshi.SystemInfo;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @see EndpointService
  */
-public class PlatformEndpointService extends
-        EndpointService<PlatformNodeLocation, PlatformEndpoint, //
-        PlatformSession> {
+public class PlatformEndpointService extends EndpointService<PlatformNodeLocation, PlatformSession> {
 
-    public PlatformEndpointService(String feedId, PlatformEndpoint endpoint,
+    public PlatformEndpointService(String feedId, MonitoredEndpoint endpoint,
             ResourceTypeManager<PlatformNodeLocation> resourceTypeManager, ProtocolDiagnostics diagnostics) {
         super(feedId, endpoint, resourceTypeManager, new PlatformLocationResolver(), diagnostics);
     }

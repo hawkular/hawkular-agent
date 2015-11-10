@@ -17,12 +17,12 @@
 package org.hawkular.agent.monitor.cmd;
 
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.EndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
@@ -49,7 +49,7 @@ public class DeployApplicationCommand
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            EndpointService<DMRNodeLocation, DMRSession> //
             endpointService,
             String modelNodePath, BasicMessageWithExtraData<DeployApplicationRequest> envelope,
             DeployApplicationResponse response, CommandContext context, DMRSession dmrContext)
@@ -84,7 +84,7 @@ public class DeployApplicationCommand
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<DeployApplicationRequest> envelope, DMREndpoint dmrEndpoint) {
+    protected void validate(BasicMessageWithExtraData<DeployApplicationRequest> envelope, MonitoredEndpoint endpoint) {
     }
 
     @Override

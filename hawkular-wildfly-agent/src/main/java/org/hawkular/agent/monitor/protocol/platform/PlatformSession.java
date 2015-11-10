@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.protocol.platform;
 
 import java.io.IOException;
 
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.LocationResolver;
@@ -28,9 +29,9 @@ import org.hawkular.agent.monitor.protocol.Session;
  * @see Session
  */
 public class PlatformSession
-        extends Session<PlatformNodeLocation, PlatformEndpoint> {
+        extends Session<PlatformNodeLocation> {
 
-    public PlatformSession(String feedId, PlatformEndpoint endpoint,
+    public PlatformSession(String feedId, MonitoredEndpoint endpoint,
             ResourceTypeManager<PlatformNodeLocation> resourceTypeManager,
             Driver<PlatformNodeLocation> driver,
             LocationResolver<PlatformNodeLocation> locationResolver) {

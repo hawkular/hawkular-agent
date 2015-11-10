@@ -138,4 +138,8 @@ public class TypeSets<L> {
     public Map<Name, TypeSet<ResourceType<L>>> getResourceTypeSets() {
         return resourceTypeSets;
     }
+
+    public boolean isDisabledOrEmpty() {
+        return !enabled || (resourceTypeSets.isEmpty() && metricTypeSets.isEmpty() && availTypeSets.isEmpty());
+    }
 }

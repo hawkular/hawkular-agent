@@ -71,16 +71,11 @@ public class InventoryIdUtil {
      * Generates an ID for a resource.
      *
      * @param feedId the ID of the feed that owns the resource whose ID is to be generated
-     * @param managedServer the managed server where the resource is found
+     * @param endpoint the endpoint where the resource is found
      * @param idPart a unique string that identifies the resource within the managed server
      *
      * @return the resource ID
      */
-    public static ID generateResourceId(String feedId, ManagedServer managedServer, String idPart) {
-        ID id = new ID(String.format("%s~%s~%s", feedId, managedServer.getName(), idPart));
-        return id;
-    }
-
     public static ID generateResourceId(String feedId, MonitoredEndpoint endpoint, String idPart) {
         ID id = new ID(String.format("%s~%s~%s", feedId, endpoint.getName(), idPart));
         return id;

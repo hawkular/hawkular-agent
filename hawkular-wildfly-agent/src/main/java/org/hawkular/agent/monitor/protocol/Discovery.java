@@ -50,7 +50,7 @@ public final class Discovery<L> {
 
     private <N> void addMetricAndAvailInstances(ID resourceId, ResourceType<L> type,
             L parentLocation, N baseNode,
-            Resource.Builder<L> builder, Session<L, ?> session) {
+            Resource.Builder<L> builder, Session<L> session) {
 
         for (MetricType<L> metricType : type.getMetricTypes()) {
             AttributeLocation<L> location = metricType.getAttributeLocation();
@@ -100,7 +100,7 @@ public final class Discovery<L> {
      *
      * @throws Exception if discovery failed
      */
-    public void discoverAllResources(Session<L, ?> session, Consumer<Resource<L>> resourceConsumer) {
+    public void discoverAllResources(Session<L> session, Consumer<Resource<L>> resourceConsumer) {
 
         Set<ResourceType<L>> rootTypes = session.getResourceTypeManager().getRootResourceTypes();
 
@@ -110,7 +110,7 @@ public final class Discovery<L> {
 
     }
 
-    public <N> void discoverChildren(Resource<L> parent, ResourceType<L> childType, Session<L, ?> session,
+    public <N> void discoverChildren(Resource<L> parent, ResourceType<L> childType, Session<L> session,
             Consumer<Resource<L>> resourceConsumer) {
 
         try {
@@ -163,7 +163,7 @@ public final class Discovery<L> {
 
     private <N> void discoverResourceConfiguration(ID resourceId, ResourceType<L> type,
             L parentAddress, N baseNode,
-            Resource.Builder<L> builder, Session<L, ?> session) {
+            Resource.Builder<L> builder, Session<L> session) {
         Collection<ResourceConfigurationPropertyType<L>> configPropTypes = type
                 .getResourceConfigurationPropertyTypes();
         for (ResourceConfigurationPropertyType<L> configPropType : configPropTypes) {

@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
-import org.hawkular.agent.monitor.protocol.dmr.LocalDMREndpoint;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.metrics.client.common.MetricType;
@@ -80,7 +80,7 @@ public class StorageReporter extends ScheduledReporter {
             SortedMap<String, Meter> meters,
             SortedMap<String, Timer> timers) {
 
-        LocalDMREndpoint localDmrEndpoint = LocalDMREndpoint.getDefault();
+        MonitoredEndpoint localDmrEndpoint = MonitoredEndpoint.getDefaultLocalDmrEndpoint();
 
         if (!gauges.isEmpty()) {
             Set<MetricDataPoint> samples = new HashSet<>(gauges.size());

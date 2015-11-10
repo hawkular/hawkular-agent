@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.protocol.jmx;
 
 import java.io.IOException;
 
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.LocationResolver;
@@ -29,10 +30,10 @@ import org.jolokia.client.J4pClient;
  * @see Session
  */
 public class JMXSession
-        extends Session<JMXNodeLocation, JMXEndpoint> {
+        extends Session<JMXNodeLocation> {
     private final J4pClient client;
 
-    public JMXSession(String feedId, JMXEndpoint endpoint,
+    public JMXSession(String feedId, MonitoredEndpoint endpoint,
             ResourceTypeManager<JMXNodeLocation> resourceTypeManager,
             Driver<JMXNodeLocation> driver,
             LocationResolver<JMXNodeLocation> locationResolver, J4pClient client) {

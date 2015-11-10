@@ -24,7 +24,6 @@ import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 
@@ -128,17 +127,17 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
+    public <L> void discoverAllFinished(InventoryEvent<L> event) {
         inventoryStorage.discoverAllFinished(event);
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
+    public <L> void resourcesAdded(InventoryEvent<L> event) {
         inventoryStorage.resourcesAdded(event);
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
+    public <L> void resourceRemoved(InventoryEvent<L> event) {
         inventoryStorage.resourceRemoved(event);
     }
 

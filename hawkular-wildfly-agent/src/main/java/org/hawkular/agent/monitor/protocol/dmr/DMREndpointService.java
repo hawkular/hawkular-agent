@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.EndpointService;
@@ -33,7 +34,7 @@ import org.jboss.dmr.Property;
  * @see EndpointService
  */
 public class DMREndpointService
-        extends EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> {
+        extends EndpointService<DMRNodeLocation, DMRSession> {
 
     public static String lookupServerIdentifier(ModelControllerClient client) throws IOException {
         ModelNode rootNode = OperationBuilder.readResource().includeRuntime().execute(client).assertSuccess()
@@ -88,7 +89,7 @@ public class DMREndpointService
         }
     }
     private final ModelControllerClientFactory modelControllerClientFactory;
-    public DMREndpointService(String feedId, DMREndpoint endpoint,
+    public DMREndpointService(String feedId, MonitoredEndpoint endpoint,
             ResourceTypeManager<DMRNodeLocation> resourceTypeManager,
             ModelControllerClientFactory modelControllerClientFactory, ProtocolDiagnostics diagnostics) {
         super(feedId, endpoint, resourceTypeManager, new DMRLocationResolver(), diagnostics);

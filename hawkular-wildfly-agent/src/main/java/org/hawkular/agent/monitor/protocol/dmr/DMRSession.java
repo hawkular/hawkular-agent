@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.protocol.dmr;
 
 import java.io.IOException;
 
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.LocationResolver;
@@ -28,11 +29,11 @@ import org.jboss.as.controller.client.ModelControllerClient;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @see Session
  */
-public class DMRSession extends Session<DMRNodeLocation, DMREndpoint> {
+public class DMRSession extends Session<DMRNodeLocation> {
 
     private final ModelControllerClient client;
 
-    public DMRSession(String feedId, DMREndpoint endpoint,
+    public DMRSession(String feedId, MonitoredEndpoint endpoint,
             ResourceTypeManager<DMRNodeLocation> resourceTypeManager,
             Driver<DMRNodeLocation> driver,
             LocationResolver<DMRNodeLocation> locationResolver, ModelControllerClient client) {
