@@ -46,20 +46,37 @@ import org.hawkular.agent.monitor.util.Consumer;
 import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 
 /**
+ * Schedules metric collections and avail checks and will invoke completion handlers to store that data.
+ *
  * @author John Mazzitelli
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
- * @param <T> the sublclass of {@link MeasurementType} to handle
- * @param <D> the {@link DataPoint} type
+ * @param <T> the sublclass of {@link MeasurementType} to handle (such as metric types or avail types)
+ * @param <D> the {@link DataPoint} type (such as metric data or avail data)
  */
-public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, //
-D extends DataPoint> {
+public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, D extends DataPoint> {
 
+    /**
+     * Defines a job that collects metric data from a particular monitored endpoint.
+     *
+     * @param <L> defines the class that the endpoint needs to locate the metric attributes
+     * @param <E> defines the kind of endpoint that is being monitored
+     */
     private static class MetricsJob<L, E extends MonitoredEndpoint> implements Runnable {
         private final SamplingService<L, E> endpointService;
         private final Collection<MeasurementInstance<L, MetricType<L>>> instances;
         private final Consumer<MetricDataPoint> completionHandler;
 
+        /**
+         * Creates a job that is used to collect metrics (as defined by the given measurement instances)
+         * from the given monitored endpoint. When a metric is collected (or if the metric collection failed
+         * for some reason) the given <code>completionHandler</code> will be notified. The completion
+         * handler should store the metric data appropriately.
+         *
+         * @param endpointService where the resource is whose metrics are being collected
+         * @param instances the metrics that are to be collected
+         * @param completionHandler when the metric values are found (or if an error occurs) this object is notified
+         */
         public MetricsJob(SamplingService<L, E> endpointService,
                 Collection<MeasurementInstance<L, MetricType<L>>> instances,
                 Consumer<MetricDataPoint> completionHandler) {
@@ -69,7 +86,9 @@ D extends DataPoint> {
             this.completionHandler = completionHandler;
         }
 
-        /** @see java.lang.Runnable#run() */
+        /**
+         * This actually collects the metrics and notifies the handler when complete.
+         */
         @Override
         public void run() {
 
@@ -89,11 +108,27 @@ D extends DataPoint> {
 
     }
 
+    /**
+     * Defines a job that performs availability checks for resources at a particular monitored endpoint.
+     *
+     * @param <L> defines the class that the endpoint needs to locate the avail attributes
+     * @param <E> defines the kind of endpoint that is being monitored
+     */
     private static class AvailsJob<L, E extends MonitoredEndpoint> implements Runnable {
         private final SamplingService<L, E> endpointService;
         private final Collection<MeasurementInstance<L, AvailType<L>>> instances;
         private final Consumer<AvailDataPoint> completionHandler;
 
+        /**
+         * Creates a job that is used to perform avail checks (as defined by the given measurement instances)
+         * from the given monitored endpoint. When an avail check is performed (or if it failed
+         * for some reason) the given <code>completionHandler</code> will be notified. The completion
+         * handler should store the results of the availability check appropriately.
+         *
+         * @param endpointService where the resource is whose avail checks are being performed
+         * @param instances the availability checks that are to be performed
+         * @param completionHandler when the avail check results are in (or if an error occurs) this object is notified
+         */
         public AvailsJob(SamplingService<L, E> endpointService,
                 Collection<MeasurementInstance<L, AvailType<L>>> instances,
                 Consumer<AvailDataPoint> completionHandler) {
@@ -103,7 +138,9 @@ D extends DataPoint> {
             this.completionHandler = completionHandler;
         }
 
-        /** @see java.lang.Runnable#run() */
+        /**
+         * This actually performs the availability checks and notifies the handler when complete.
+         */
         @Override
         public void run() {
             endpointService.measureAvails(instances, new Consumer<AvailDataPoint>() {
@@ -124,75 +161,139 @@ D extends DataPoint> {
 
     private static final MsgLogger log = AgentLoggers.getLogger(IntervalBasedScheduler.class);
 
+    /**
+     * Static method that builds a scheduler (along with its thread pool) for metric collection.
+     *
+     * @param name the name of the scheduler (used for things like naming the threads)
+     * @param schedulerThreads number of core threads in the thread pool
+     * @param completionHandler object that is notified of metric values when they are collected
+     *
+     * @return the new metric collection scheduler
+     */
     public static IntervalBasedScheduler<MetricType<Object>, MetricDataPoint> forMetrics(
-            String name, int schedulerThreads, Consumer<MetricDataPoint> completionHandler) {
+            String name,
+            int schedulerThreads,
+            Consumer<MetricDataPoint> completionHandler) {
+
         return new IntervalBasedScheduler<MetricType<Object>, MetricDataPoint>(name, schedulerThreads,
                 completionHandler) {
+
+            /**
+             * @return a MetricsJob that can be scheduled which will collect the metrics defined by the parameters.
+             */
             @Override
-            protected <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> Runnable createJob(
-                    SamplingService<L, E> endpointService, Collection<MeasurementInstance<L, TT>> instances,
+            protected <L, E extends MonitoredEndpoint, MT extends MeasurementType<L>> Runnable createJob(
+                    SamplingService<L, E> endpointService,
+                    Collection<MeasurementInstance<L, MT>> instances,
                     Consumer<MetricDataPoint> completionHandler) {
                 @SuppressWarnings("unchecked")
-                Collection<MeasurementInstance<L, MetricType<L>>> insts =
-                        (Collection<MeasurementInstance<L, MetricType<L>>>) (Collection<?>) instances;
+                Collection<MeasurementInstance<L, MetricType<L>>> insts = //
+                (Collection<MeasurementInstance<L, MetricType<L>>>) (Collection<?>) instances;
                 return new MetricsJob<L, E>(endpointService, insts, completionHandler);
             }
 
+            /**
+             * @return all the defined metric instances for the given resource.
+             */
             @SuppressWarnings("unchecked")
             @Override
-            protected <L, TT extends MeasurementType<L>> Collection<MeasurementInstance<L, TT>>
-                    getMeasurementInstances(Resource<L> resource) {
-                return (Collection<MeasurementInstance<L, TT>>) (Collection<?>) resource.getMetrics();
+            protected <L, MT extends MeasurementType<L>> Collection<MeasurementInstance<L, MT>> //
+            getMeasurementInstances(Resource<L> resource) {
+                return (Collection<MeasurementInstance<L, MT>>) (Collection<?>) resource.getMetrics();
             }
         };
     }
 
-    public static IntervalBasedScheduler<AvailType<Object>, AvailDataPoint>
-            forAvails(
-                    String name, int schedulerThreads, Consumer<AvailDataPoint> completionHandler) {
+    /**
+     * Static method that builds a scheduler (along with its thread pool) for availability checking.
+     *
+     * @param name the name of the scheduler (used for things like naming the threads)
+     * @param schedulerThreads number of core threads in the thread pool
+     * @param completionHandler object that is notified of availability results when they are checked
+     *
+     * @return the new availability checking scheduler
+     */
+    public static IntervalBasedScheduler<AvailType<Object>, AvailDataPoint> forAvails(
+            String name,
+            int schedulerThreads,
+            Consumer<AvailDataPoint> completionHandler) {
+
         return new IntervalBasedScheduler<AvailType<Object>, AvailDataPoint>(name, schedulerThreads,
                 completionHandler) {
+
+            /**
+             * @return a AvailsJob that can be scheduled which will peform the necessary availability checks
+             * defined by the parameters.
+             */
             @Override
-            protected <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> Runnable createJob(
-                    SamplingService<L, E> endpointService, Collection<MeasurementInstance<L, TT>> instances,
+            protected <L, E extends MonitoredEndpoint, MT extends MeasurementType<L>> Runnable createJob(
+                    SamplingService<L, E> endpointService,
+                    Collection<MeasurementInstance<L, MT>> instances,
                     Consumer<AvailDataPoint> completionHandler) {
                 @SuppressWarnings("unchecked")
-                Collection<MeasurementInstance<L, AvailType<L>>> insts =
-                        (Collection<MeasurementInstance<L, AvailType<L>>>) (Collection<?>) instances;
+                Collection<MeasurementInstance<L, AvailType<L>>> insts = //
+                (Collection<MeasurementInstance<L, AvailType<L>>>) (Collection<?>) instances;
                 return new AvailsJob<L, E>(endpointService, insts, completionHandler);
             }
 
+            /**
+             * @return all the defined avail instances for the given resource.
+             */
             @SuppressWarnings("unchecked")
             @Override
-            protected <L, TT extends MeasurementType<L>> Collection<MeasurementInstance<L, TT>>
-                    getMeasurementInstances(Resource<L> resource) {
-                return (Collection<MeasurementInstance<L, TT>>) (Collection<?>) resource.getAvails();
+            protected <L, MT extends MeasurementType<L>> Collection<MeasurementInstance<L, MT>> //
+            getMeasurementInstances(Resource<L> resource) {
+                return (Collection<MeasurementInstance<L, MT>>) (Collection<?>) resource.getAvails();
             }
 
         };
     }
 
+    /** thread pool used by the scheduler to execute the difference metrics/avails jobs. */
     private final ScheduledExecutorService executorService;
+
+    /** jobs that are to be executed - note the jobs are grouped by monitored endpoint. */
     private final Map<MonitoredEndpoint, List<ScheduledFuture<?>>> jobs = new HashMap<>();
+
+    /** object that will be notified when metric data or avail results have been collected and ready to be stored */
     private final Consumer<D> completionHandler;
 
+    /** lifecycle status of the scheduler itself */
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
+    /**
+     * The actual scheduler constructor. To build schedulers, call {@link #forMetrics(String, int, Consumer)}
+     * or {@link #forAvails(String, int, Consumer)}.
+     *
+     * @param name name of scheduler
+     * @param schedulerThreads number of threads in thread pool
+     * @param completionHandler object notified when a job is done and its data needs to be stored
+     */
     private IntervalBasedScheduler(String name, int schedulerThreads, Consumer<D> completionHandler) {
         this.completionHandler = completionHandler;
         ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true, name);
         this.executorService = Executors.newScheduledThreadPool(schedulerThreads, threadFactory);
     }
 
-    public <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> void
-            rescheduleAll(SamplingService<L, E> endpointService, List<Resource<L>> resources) {
+    /**
+     * This will reschedule all metric collection and avail checking jobs for the given endpoint.
+     * Any jobs running currently for that endpoint will be canceled, and the given resources will
+     * have their metric/avail jobs recreated and rescheduled.
+     *
+     * @param endpointService defines where the resources are
+     * @param resources the resources whose metric collections/avail checks are to be rescheduled
+     */
+    public <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> void rescheduleAll(
+            SamplingService<L, E> endpointService,
+            List<Resource<L>> resources) {
+
         status.assertRunning(getClass(), "rescheduleAll()");
 
         // FIXME: consider if we need to lock the jobs here and elsewhere
 
         E endpoint = endpointService.getEndpoint();
 
-        /* kill the old jobs first */
+        // if there are any jobs currently running for the given endpoint, cancel them now
         List<ScheduledFuture<?>> oldJobs = jobs.get(endpoint);
         if (oldJobs != null) {
             for (ScheduledFuture<?> oldJob : oldJobs) {
@@ -213,7 +314,6 @@ D extends DataPoint> {
                 }
                 instances.add(instance);
             }
-
         }
 
         for (Entry<Interval, Collection<MeasurementInstance<L, TT>>> en : instancesByInterval.entrySet()) {
@@ -231,24 +331,47 @@ D extends DataPoint> {
         jobs.put(endpointService.getEndpoint(), endpointJobs);
     }
 
-    public <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> void
-            schedule(SamplingService<L, E> endpointService, List<Resource<L>> resources) {
+    /**
+     * Schedules metric collections and avail checks for the given resources.
+     *
+     * Unliked {@link #rescheduleAll(SamplingService, List)}, this method keeps currently scheduled jobs
+     * in place.
+     *
+     * @param endpointService defines where the resources are
+     * @param resources the resources whose metric collections/avail checks are to be added to the scheduler
+     */
+    public <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> void schedule(
+            SamplingService<L, E> endpointService,
+            List<Resource<L>> resources) {
         status.assertRunning(getClass(), "schedule()");
         // TODO add resources to scheduled ones
+        log.warn("TODO: SCHEDULE() IS NOT IMPLEMENTED");
     }
 
-    public <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> void
-            unschedule(SamplingService<L, E> endpointService, List<Resource<L>> resources) {
+    /**
+     * Removes any existing metric collections and avail checks that are scheduled for the given resources.
+     *
+     * Unliked {@link #rescheduleAll(SamplingService, List)}, this method keeps other currently scheduled jobs
+     * in place.
+     *
+     * @param endpointService defines where the resources are
+     * @param resources the resources whose metric collections/avail checks are to be removed from the scheduler
+     */
+    public <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> void unschedule(
+            SamplingService<L, E> endpointService,
+            List<Resource<L>> resources) {
         status.assertRunning(getClass(), "unschedule()");
         // TODO remove resources from scheduled ones
+        log.warn("TODO: UNSCHEDULE() IS NOT IMPLEMENTED");
     }
 
-    protected abstract <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> Runnable createJob(
+    protected abstract <L, E extends MonitoredEndpoint, MT extends MeasurementType<L>> Runnable createJob(
             SamplingService<L, E> endpointService,
-            Collection<MeasurementInstance<L, TT>> instances, Consumer<D> completionHandler);
+            Collection<MeasurementInstance<L, MT>> instances,
+            Consumer<D> completionHandler);
 
-    protected abstract <L, TT extends MeasurementType<L>> Collection<MeasurementInstance<L, TT>>
-            getMeasurementInstances(Resource<L> resource);
+    protected abstract <L, MT extends MeasurementType<L>> Collection<MeasurementInstance<L, MT>> //
+    getMeasurementInstances(Resource<L> resource);
 
     public void start() {
         status.assertInitialOrStopped(getClass(), "start()");
