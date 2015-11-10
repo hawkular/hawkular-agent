@@ -44,8 +44,6 @@ import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.util.Consumer;
 
-import com.codahale.metrics.Timer.Context;
-
 /**
  * A service to discover and sample resources from a single {@link MonitoredEndpoint}. This service also owns the single
  * {@link ResourceManager} associated with the given {@link MonitoredEndpoint}.
@@ -58,6 +56,7 @@ import com.codahale.metrics.Timer.Context;
  */
 public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends Session<L, E>>
         implements SamplingService<L, E> {
+
     private class InventoryListenerSupport {
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
 
@@ -258,13 +257,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
             Driver<L> driver = session.getDriver();
             for (MeasurementInstance<L, AvailType<L>> instance : instances) {
                 AttributeLocation<L> location = instance.getAttributeLocation();
-                Object o = null;
-                try (Context timerContext = diagnostics.getRequestTimer().time()) {
-                    o = driver.fetchAttribute(location);
-                } catch (Exception e) {
-                    diagnostics.getErrorRate().mark(1);
-                    throw e;
-                }
+                Object o = driver.fetchAttribute(location);
                 final Pattern pattern = instance.getType().getUpPattern();
                 Avail avail = null;
                 if (o instanceof List<?>) {
@@ -300,13 +293,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
             Driver<L> driver = session.getDriver();
             for (MeasurementInstance<L, MetricType<L>> instance : instances) {
                 AttributeLocation<L> location = instance.getAttributeLocation();
-                Object o = null;
-                try (Context timerContext = diagnostics.getRequestTimer().time()) {
-                    o = driver.fetchAttribute(location);
-                } catch (Exception e) {
-                    diagnostics.getErrorRate().mark(1);
-                    throw e;
-                }
+                Object o = driver.fetchAttribute(location);
                 double value = 0;
                 if (o instanceof List<?>) {
                     /* aggregate */

@@ -20,7 +20,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 
 /**
- * Diagnostic metrics for the collection of metrics and avails.
+ * Diagnostic metrics for tracking request times and request error rates.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
@@ -33,15 +33,16 @@ public final class ProtocolDiagnostics {
         this.requestTimer = requestTimer;
         this.errorRate = errorRate;
     }
+
     /**
-     * @return tracks the number of DMR while collecting metrics and avails
+     * @return tracks the failure rate when performing protocol requests (such as fetching DMR attributes).
      */
     public Meter getErrorRate() {
         return errorRate;
     }
 
     /**
-     * @return time it takes to execute the metric and avail collection requests
+     * @return tracks the time protocol requests take
      */
     public Timer getRequestTimer() {
         return requestTimer;
