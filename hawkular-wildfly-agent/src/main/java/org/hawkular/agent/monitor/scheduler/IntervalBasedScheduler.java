@@ -60,10 +60,9 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
      * Defines a job that collects metric data from a particular monitored endpoint.
      *
      * @param <L> defines the class that the endpoint needs to locate the metric attributes
-     * @param <E> defines the kind of endpoint that is being monitored
      */
-    private static class MetricsJob<L, E extends MonitoredEndpoint> implements Runnable {
-        private final SamplingService<L, E> endpointService;
+    private static class MetricsJob<L> implements Runnable {
+        private final SamplingService<L> endpointService;
         private final Collection<MeasurementInstance<L, MetricType<L>>> instances;
         private final Consumer<MetricDataPoint> completionHandler;
 
@@ -77,7 +76,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
          * @param instances the metrics that are to be collected
          * @param completionHandler when the metric values are found (or if an error occurs) this object is notified
          */
-        public MetricsJob(SamplingService<L, E> endpointService,
+        public MetricsJob(SamplingService<L> endpointService,
                 Collection<MeasurementInstance<L, MetricType<L>>> instances,
                 Consumer<MetricDataPoint> completionHandler) {
             super();
@@ -100,11 +99,13 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
 
                     @Override
                     public void report(Throwable e) {
-                        log.errorCouldNotAccess(endpointService.getEndpoint(), e);
+                        log.errorFailedToStoreMetrics(endpointService.toString(), e);
                     }
                 });
+            } catch (IllegalStateException ise) {
+                log.debugf("Cannot collect metrics for endpoint [%s] - not ready yet: %s", this.endpointService, ise);
             } catch (Throwable t) {
-                log.warnf(t, "Unexpected error caught in MetricsJob for endpoint [" + this.endpointService + "]");
+                log.warnf(t, "Unexpected error caught in MetricsJob for endpoint [%s]", this.endpointService);
             }
         }
     }
@@ -113,10 +114,9 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
      * Defines a job that performs availability checks for resources at a particular monitored endpoint.
      *
      * @param <L> defines the class that the endpoint needs to locate the avail attributes
-     * @param <E> defines the kind of endpoint that is being monitored
      */
-    private static class AvailsJob<L, E extends MonitoredEndpoint> implements Runnable {
-        private final SamplingService<L, E> endpointService;
+    private static class AvailsJob<L> implements Runnable {
+        private final SamplingService<L> endpointService;
         private final Collection<MeasurementInstance<L, AvailType<L>>> instances;
         private final Consumer<AvailDataPoint> completionHandler;
 
@@ -130,7 +130,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
          * @param instances the availability checks that are to be performed
          * @param completionHandler when the avail check results are in (or if an error occurs) this object is notified
          */
-        public AvailsJob(SamplingService<L, E> endpointService,
+        public AvailsJob(SamplingService<L> endpointService,
                 Collection<MeasurementInstance<L, AvailType<L>>> instances,
                 Consumer<AvailDataPoint> completionHandler) {
             super();
@@ -153,11 +153,13 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
 
                     @Override
                     public void report(Throwable e) {
-                        log.errorCouldNotAccess(endpointService.getEndpoint(), e);
+                        log.errorFailedToStoreAvails(endpointService.toString(), e);
                     }
                 });
+            } catch (IllegalStateException ise) {
+                log.debugf("Cannot check avails for endpoint [%s] - not ready yet: %s", this.endpointService, ise);
             } catch (Throwable t) {
-                log.warnf(t, "Unexpected error caught in AvailsJob for endpoint [" + this.endpointService + "]");
+                log.warnf(t, "Unexpected error caught in AvailsJob for endpoint [%s]", this.endpointService);
             }
         }
     }
@@ -185,14 +187,14 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
              * @return a MetricsJob that can be scheduled which will collect the metrics defined by the parameters.
              */
             @Override
-            protected <L, E extends MonitoredEndpoint, MT extends MeasurementType<L>> Runnable createJob(
-                    SamplingService<L, E> endpointService,
+            protected <L, MT extends MeasurementType<L>> Runnable createJob(
+                    SamplingService<L> endpointService,
                     Collection<MeasurementInstance<L, MT>> instances,
                     Consumer<MetricDataPoint> completionHandler) {
                 @SuppressWarnings("unchecked")
                 Collection<MeasurementInstance<L, MetricType<L>>> insts = //
                 (Collection<MeasurementInstance<L, MetricType<L>>>) (Collection<?>) instances;
-                return new MetricsJob<L, E>(endpointService, insts, completionHandler);
+                return new MetricsJob<L>(endpointService, insts, completionHandler);
             }
 
             /**
@@ -229,14 +231,14 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
              * defined by the parameters.
              */
             @Override
-            protected <L, E extends MonitoredEndpoint, MT extends MeasurementType<L>> Runnable createJob(
-                    SamplingService<L, E> endpointService,
+            protected <L, MT extends MeasurementType<L>> Runnable createJob(
+                    SamplingService<L> endpointService,
                     Collection<MeasurementInstance<L, MT>> instances,
                     Consumer<AvailDataPoint> completionHandler) {
                 @SuppressWarnings("unchecked")
                 Collection<MeasurementInstance<L, AvailType<L>>> insts = //
                 (Collection<MeasurementInstance<L, AvailType<L>>>) (Collection<?>) instances;
-                return new AvailsJob<L, E>(endpointService, insts, completionHandler);
+                return new AvailsJob<L>(endpointService, insts, completionHandler);
             }
 
             /**
@@ -290,21 +292,21 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
      * @param endpointService defines where the resources are
      * @param resources the resources whose metric collections/avail checks are to be rescheduled
      */
-    public <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> void rescheduleAll(
-            SamplingService<L, E> endpointService,
+    public <L, TT extends MeasurementType<L>> void rescheduleAll(
+            SamplingService<L> endpointService,
             List<Resource<L>> resources) {
 
         status.assertRunning(getClass(), "rescheduleAll()");
 
         // FIXME: consider if we need to lock the jobs here and elsewhere
 
-        E endpoint = endpointService.getEndpoint();
+        MonitoredEndpoint endpoint = endpointService.getEndpoint();
 
         // if there are any jobs currently running for the given endpoint, cancel them now
         List<ScheduledFuture<?>> oldJobs = jobs.get(endpoint);
         if (oldJobs != null) {
             log.debugf("Scheduler [%s]: canceling [%d] jobs for endpoint [%s]",
-                    this.name, oldJobs.size(), endpointService.getEndpoint());
+                    this.name, oldJobs.size(), endpointService);
 
             for (ScheduledFuture<?> oldJob : oldJobs) {
                 oldJob.cancel(false);
@@ -341,7 +343,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
 
         jobs.put(endpointService.getEndpoint(), endpointJobs);
         log.debugf("Scheduler [%s]: [%d] jobs ([%d] measurements) have been submitted for endpoint [%s]",
-                this.name, endpointJobs.size(), measurementInstances, endpointService.getEndpoint());
+                this.name, endpointJobs.size(), measurementInstances, endpointService);
     }
 
     /**
@@ -353,8 +355,8 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
      * @param endpointService defines where the resources are
      * @param resources the resources whose metric collections/avail checks are to be added to the scheduler
      */
-    public <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> void schedule(
-            SamplingService<L, E> endpointService,
+    public <L, TT extends MeasurementType<L>> void schedule(
+            SamplingService<L> endpointService,
             List<Resource<L>> resources) {
         status.assertRunning(getClass(), "schedule()");
         // TODO add resources to scheduled ones
@@ -370,16 +372,16 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
      * @param endpointService defines where the resources are
      * @param resources the resources whose metric collections/avail checks are to be removed from the scheduler
      */
-    public <L, E extends MonitoredEndpoint, TT extends MeasurementType<L>> void unschedule(
-            SamplingService<L, E> endpointService,
+    public <L, TT extends MeasurementType<L>> void unschedule(
+            SamplingService<L> endpointService,
             List<Resource<L>> resources) {
         status.assertRunning(getClass(), "unschedule()");
         // TODO remove resources from scheduled ones
         log.warn("TODO: UNSCHEDULE() IS NOT IMPLEMENTED");
     }
 
-    protected abstract <L, E extends MonitoredEndpoint, MT extends MeasurementType<L>> Runnable createJob(
-            SamplingService<L, E> endpointService,
+    protected abstract <L, MT extends MeasurementType<L>> Runnable createJob(
+            SamplingService<L> endpointService,
             Collection<MeasurementInstance<L, MT>> instances,
             Consumer<D> completionHandler);
 

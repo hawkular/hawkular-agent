@@ -51,12 +51,9 @@ import org.hawkular.agent.monitor.util.Consumer;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
- * @param <E> the protocol specific {@link MonitoredEndpoint}
  * @param <S> the protocol specific {@link Session}
  */
-public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends Session<L, E>>
-        implements SamplingService<L, E> {
-
+public abstract class EndpointService<L, S extends Session<L>> implements SamplingService<L> {
     private class InventoryListenerSupport {
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
 
@@ -65,21 +62,21 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
         }
 
         public void fireDiscoverAllFinished(List<Resource<L>> resources) {
-            InventoryEvent<L, E> event = new InventoryEvent<L, E>(feedId, endpoint, EndpointService.this, resources);
+            InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.discoverAllFinished(event);
             }
         }
 
         public void fireResourcesAdded(List<Resource<L>> resources) {
-            InventoryEvent<L, E> event = new InventoryEvent<L, E>(feedId, endpoint, EndpointService.this, resources);
+            InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.resourcesAdded(event);
             }
         }
 
         public void fireResourcesRemoved(List<Resource<L>> resources) {
-            InventoryEvent<L, E> event = new InventoryEvent<L, E>(feedId, endpoint, EndpointService.this, resources);
+            InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.resourceRemoved(event);
             }
@@ -101,7 +98,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
         return value;
     }
 
-    protected final E endpoint;
+    protected final MonitoredEndpoint endpoint;
     protected final String feedId;
     protected final InventoryListenerSupport inventoryListenerSupport = new InventoryListenerSupport();
     protected final ResourceManager<L> resourceManager;
@@ -111,7 +108,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
     protected final ProtocolDiagnostics diagnostics;
 
-    public EndpointService(String feedId, E endpoint, ResourceTypeManager<L> resourceTypeManager,
+    public EndpointService(String feedId, MonitoredEndpoint endpoint, ResourceTypeManager<L> resourceTypeManager,
             LocationResolver<L> locationResolver, ProtocolDiagnostics diagnostics) {
         super();
         this.feedId = feedId;
@@ -172,13 +169,13 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
 
                     @Override
                     public void report(Throwable e) {
-                        log.errorCouldNotAccess(endpoint, e);
+                        log.errorCouldNotAccess(EndpointService.this, e);
                     }
                 });
             }
             inventoryListenerSupport.fireResourcesAdded(Collections.unmodifiableList(added));
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
     }
 
@@ -204,14 +201,14 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
 
                 @Override
                 public void report(Throwable e) {
-                    log.errorCouldNotAccess(endpoint, e);
+                    log.errorCouldNotAccess(EndpointService.this, e);
                 }
             });
 
             duration = System.currentTimeMillis() - start;
 
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
 
         resourceManager.replaceResources(resources);
@@ -233,7 +230,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     }
 
     @Override
-    public E getEndpoint() {
+    public MonitoredEndpoint getEndpoint() {
         return endpoint;
     }
 
@@ -247,7 +244,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
     }
 
     /**
-     * @return a {@link ResourceTypeManager} shared over all {@link MonitoredEndpoint}s of the given protocol.
+     * @return the {@link ResourceTypeManager} used by this endpoint
      */
     public ResourceTypeManager<L> getResourceTypeManager() {
         return resourceTypeManager;
@@ -288,7 +285,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
     }
 
@@ -322,7 +319,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
 
     }
@@ -349,7 +346,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
             List<Resource<L>> removed = resourceManager.removeResources(location, session.getLocationResolver());
             inventoryListenerSupport.fireResourcesRemoved(removed);
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
 
     }
@@ -363,7 +360,7 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
         // keep polling/listening for changes
         status = ServiceStatus.RUNNING;
 
-        log.debugf("Started endpoint service for [%s]", getEndpoint());
+        log.debugf("Started [%s]", toString());
     }
 
     public void stop() {
@@ -374,7 +371,12 @@ public abstract class EndpointService<L, E extends MonitoredEndpoint, S extends 
 
         status = ServiceStatus.STOPPED;
 
-        log.debugf("Stopped endpoint service for [%s]", getEndpoint());
+        log.debugf("Stopped [%s]", toString());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s[%s]", getClass().getSimpleName(), getEndpoint());
     }
 
     private Avail toAvail(Pattern pattern, Object value) {

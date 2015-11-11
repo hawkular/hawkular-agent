@@ -21,6 +21,7 @@ import java.util.List;
 import javax.management.MalformedObjectNameException;
 
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolException;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
@@ -235,7 +236,7 @@ public interface MsgLogger extends BasicLogger {
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10049, value = "Could not access resources of endpoint [%s]")
-    void errorCouldNotAccess(MonitoredEndpoint endpoint, @Cause Throwable e);
+    void errorCouldNotAccess(EndpointService<?, ?> endpoint, @Cause Throwable e);
 
     @LogMessage(level = Level.WARN)
     @Message(id = 10050, value = "The tenant ID [%s] set in standalone.xml or domain.xml or similar xml file will be"
@@ -244,6 +245,14 @@ public interface MsgLogger extends BasicLogger {
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10051, value = "The tenant ID could not be retrieved from Hawkular Accounts")
-    void errNoTenantIdFromAccounts();
+    void errorNoTenantIdFromAccounts();
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10052, value = "Could not store metrics for monitored endpoint [%s]")
+    void errorFailedToStoreMetrics(String endpoint, @Cause Throwable t);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10053, value = "Could not store availability data for monitored endpoint [%s]")
+    void errorFailedToStoreAvails(String endpoint, @Cause Throwable t);
 
 }

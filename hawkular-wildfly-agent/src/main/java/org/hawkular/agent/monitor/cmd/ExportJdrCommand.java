@@ -22,13 +22,13 @@ import java.io.InputStream;
 import java.util.Collection;
 
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.EndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
@@ -55,7 +55,7 @@ public class ExportJdrCommand extends AbstractResourcePathCommand<ExportJdrReque
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            EndpointService<DMRNodeLocation, DMRSession> //
             endpointService,
             String modelNodePath, BasicMessageWithExtraData<ExportJdrRequest> envelope, ExportJdrResponse response,
             CommandContext context, DMRSession dmrContext) throws Exception {
@@ -119,7 +119,7 @@ public class ExportJdrCommand extends AbstractResourcePathCommand<ExportJdrReque
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<ExportJdrRequest> envelope, DMREndpoint dmrEndpoint) {
+    protected void validate(BasicMessageWithExtraData<ExportJdrRequest> envelope, MonitoredEndpoint endpoint) {
     }
 
     @Override

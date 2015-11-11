@@ -21,8 +21,8 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.protocol.EndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
@@ -66,7 +66,7 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
      */
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            EndpointService<DMRNodeLocation, DMRSession> //
             endpointService,
             String modelNodePath,
             BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, AddJdbcDriverResponse response,
@@ -105,8 +105,8 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, DMREndpoint dmrEndpoint) {
-        assertLocalServer(dmrEndpoint);
+    protected void validate(BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, MonitoredEndpoint endpoint) {
+        assertLocalServer(endpoint);
     }
 
 }

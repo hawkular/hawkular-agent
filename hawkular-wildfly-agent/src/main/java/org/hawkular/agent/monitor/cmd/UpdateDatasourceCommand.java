@@ -23,10 +23,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.EndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
@@ -64,7 +64,7 @@ public class UpdateDatasourceCommand
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            EndpointService<DMRNodeLocation, DMRSession> //
             endpointService,
             String modelNodePath,
             BasicMessageWithExtraData<UpdateDatasourceRequest> envelope, UpdateDatasourceResponse response,
@@ -210,7 +210,7 @@ public class UpdateDatasourceCommand
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<UpdateDatasourceRequest> envelope, DMREndpoint dmrEndpoint) {
+    protected void validate(BasicMessageWithExtraData<UpdateDatasourceRequest> envelope, MonitoredEndpoint endpoint) {
     }
 
 }

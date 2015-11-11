@@ -25,27 +25,20 @@ import javax.net.ssl.SSLContext;
 
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ProtocolConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
 import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMRManagedServer;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
-import org.hawkular.agent.monitor.protocol.dmr.LocalDMRManagedServer;
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.protocol.dmr.RemoteDMRManagedServer;
-import org.hawkular.agent.monitor.protocol.jmx.JMXEndpoint;
 import org.hawkular.agent.monitor.protocol.jmx.JMXEndpointService;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
-import org.hawkular.agent.monitor.protocol.jmx.RemoteJMXManagedServer;
-import org.hawkular.agent.monitor.protocol.platform.PlatformEndpoint;
 import org.hawkular.agent.monitor.protocol.platform.PlatformEndpointService;
-import org.hawkular.agent.monitor.protocol.platform.PlatformManagedServer;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformSession;
 import org.jboss.msc.value.InjectedValue;
@@ -58,9 +51,9 @@ import org.jboss.msc.value.InjectedValue;
 public class ProtocolServices {
     public static class Builder {
         private final String feedId;
-        private ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> dmrProtocolService;
-        private ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> jmxProtocolService;
-        private ProtocolService<PlatformNodeLocation, PlatformEndpoint, PlatformSession> platformProtocolService;
+        private ProtocolService<DMRNodeLocation, DMRSession> dmrProtocolService;
+        private ProtocolService<JMXNodeLocation, JMXSession> jmxProtocolService;
+        private ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService;
         private final Map<String, InjectedValue<SSLContext>> sslContexts;
         private final Diagnostics diagnostics;
 
@@ -76,39 +69,34 @@ public class ProtocolServices {
 
         public Builder dmrProtocolService(
                 ModelControllerClientFactory localModelControllerClientFactory,
-                ProtocolConfiguration<DMRNodeLocation, DMRManagedServer> dmrConfiguration) {
+                ProtocolConfiguration<DMRNodeLocation> protocolConfig) {
 
-            ProtocolService.Builder<DMRNodeLocation, DMREndpoint, DMRSession> builder = ProtocolService.builder();
+            ProtocolService.Builder<DMRNodeLocation, DMRSession> builder = ProtocolService.builder();
 
-            ResourceTypeManager<DMRNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
-                    dmrConfiguration.getTypeSets().getResourceTypeSets(), null);
-            builder.resourceTypeManager(resourceTypeManager);
-
-            for (DMRManagedServer server : dmrConfiguration.getManagedServers().values()) {
+            for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (!server.isEnabled()) {
                     log.infoManagedServerDisabled(server.getName().toString());
                 } else {
-                    final DMREndpoint endpoint;
                     final ModelControllerClientFactory clientFactory;
-                    if (server instanceof RemoteDMRManagedServer) {
-                        RemoteDMRManagedServer dmrServer = (RemoteDMRManagedServer) server;
-                        SSLContext sslContext = dmrServer.getUseSSL()
-                                ? sslContexts.get(dmrServer.getSecurityRealm()).getOptionalValue() : null;
-                        endpoint = DMREndpoint.of(dmrServer, sslContext);
-                        clientFactory = ModelControllerClientFactory.createRemote(endpoint);
-                    } else if (server instanceof LocalDMRManagedServer) {
-                        endpoint = DMREndpoint.of((LocalDMRManagedServer) server);
+                    final String securityRealm = server.getSecurityRealm();
+                    final SSLContext sslContext = securityRealm != null
+                            ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
+                    final MonitoredEndpoint endpoint = MonitoredEndpoint.of(server, sslContext);
+                    if (server.isLocal()) {
+                        /* local */
                         clientFactory = localModelControllerClientFactory;
                     } else {
-                        throw new IllegalStateException("Unexpected subclass of [" + DMRManagedServer.class.getName()
-                                + "] : [" + server.getClass().getName() + "]. Expected ["
-                                + RemoteDMRManagedServer.class.getName() + "] or ["
-                                + LocalDMRManagedServer.class.getName()
-                                + "]. Please report this bug.");
+                        /* remote */
+                        clientFactory = ModelControllerClientFactory.createRemote(endpoint);
                     }
+                    ResourceTypeManager<DMRNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
+                            protocolConfig.getTypeSets().getResourceTypeSets(), server.getResourceTypeSets());
                     DMREndpointService endpointService = new DMREndpointService(feedId, endpoint, resourceTypeManager,
                             clientFactory, diagnostics.getDMRDiagnostics());
                     builder.endpointService(endpointService);
+
+                    log.debugf("[%s] created with resource type sets [%s]", endpointService,
+                            server.getResourceTypeSets());
                 }
             }
 
@@ -116,24 +104,24 @@ public class ProtocolServices {
             return this;
         }
 
-        public Builder jmxProtocolService(
-                ProtocolConfiguration<JMXNodeLocation, RemoteJMXManagedServer> jmxConfiguration) {
+        public Builder jmxProtocolService(ProtocolConfiguration<JMXNodeLocation> protocolConfig) {
 
-            ProtocolService.Builder<JMXNodeLocation, JMXEndpoint, JMXSession> builder = ProtocolService.builder();
+            ProtocolService.Builder<JMXNodeLocation, JMXSession> builder = ProtocolService.builder();
 
-            ResourceTypeManager<JMXNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
-                    jmxConfiguration.getTypeSets().getResourceTypeSets(), null);
-
-            builder.resourceTypeManager(resourceTypeManager);
-
-            for (RemoteJMXManagedServer server : jmxConfiguration.getManagedServers().values()) {
+            for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (server.isEnabled()) {
-                    SSLContext sslContext = server.getUrl().getProtocol().equalsIgnoreCase("https")
+                    final String securityRealm = server.getSecurityRealm();
+                    final SSLContext sslContext = securityRealm != null
                             ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
-                    final JMXEndpoint endpoint = JMXEndpoint.of(server, sslContext);
+                    final MonitoredEndpoint endpoint = MonitoredEndpoint.of(server, sslContext);
+                    ResourceTypeManager<JMXNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
+                            protocolConfig.getTypeSets().getResourceTypeSets(), server.getResourceTypeSets());
                     JMXEndpointService endpointService = new JMXEndpointService(feedId, endpoint, resourceTypeManager,
                             diagnostics.getJMXDiagnostics());
                     builder.endpointService(endpointService);
+
+                    log.debugf("[%s] created with resource type sets [%s]", endpointService,
+                            server.getResourceTypeSets());
                 }
             }
 
@@ -142,22 +130,25 @@ public class ProtocolServices {
         }
 
         public Builder platformProtocolService(
-                ProtocolConfiguration<PlatformNodeLocation, PlatformManagedServer> platformConfiguration) {
+                ProtocolConfiguration<PlatformNodeLocation> protocolConfig) {
 
-            ProtocolService.Builder<PlatformNodeLocation, PlatformEndpoint, PlatformSession> builder = ProtocolService
+            ProtocolService.Builder<PlatformNodeLocation, PlatformSession> builder = ProtocolService
                     .builder();
 
-            ResourceTypeManager<PlatformNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
-                    platformConfiguration.getTypeSets().getResourceTypeSets(), null);
-
-            builder.resourceTypeManager(resourceTypeManager);
-
-            for (PlatformManagedServer server : platformConfiguration.getManagedServers().values()) {
+            for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (server.isEnabled()) {
-                    final PlatformEndpoint endpoint = new PlatformEndpoint(feedId);
+                    final String securityRealm = server.getSecurityRealm();
+                    final SSLContext sslContext = securityRealm != null
+                            ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
+                    final MonitoredEndpoint endpoint = MonitoredEndpoint.of(server, sslContext);
+                    ResourceTypeManager<PlatformNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
+                            protocolConfig.getTypeSets().getResourceTypeSets(), server.getResourceTypeSets());
                     PlatformEndpointService endpointService = new PlatformEndpointService(feedId, endpoint,
                             resourceTypeManager, diagnostics.getPlatformDiagnostics());
                     builder.endpointService(endpointService);
+
+                    log.debugf("[%s] created with resource type sets [%s]", endpointService,
+                            server.getResourceTypeSets());
                 }
             }
 
@@ -173,15 +164,15 @@ public class ProtocolServices {
         return new Builder(feedId, sslContexts, diagnostics);
     }
 
-    private final ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> dmrProtocolService;
-    private final ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> jmxProtocolService;
-    private final ProtocolService<PlatformNodeLocation, PlatformEndpoint, PlatformSession> platformProtocolService;
-    private final List<ProtocolService<?, ?, ?>> services;
+    private final ProtocolService<DMRNodeLocation, DMRSession> dmrProtocolService;
+    private final ProtocolService<JMXNodeLocation, JMXSession> jmxProtocolService;
+    private final ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService;
+    private final List<ProtocolService<?, ?>> services;
 
     public ProtocolServices(
-            ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> dmrProtocolService,
-            ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> jmxProtocolService,
-            ProtocolService<PlatformNodeLocation, PlatformEndpoint, PlatformSession> platformProtocolService) {
+            ProtocolService<DMRNodeLocation, DMRSession> dmrProtocolService,
+            ProtocolService<JMXNodeLocation, JMXSession> jmxProtocolService,
+            ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService) {
         this.dmrProtocolService = dmrProtocolService;
         this.jmxProtocolService = jmxProtocolService;
         this.platformProtocolService = platformProtocolService;
@@ -190,60 +181,60 @@ public class ProtocolServices {
     }
 
     @SuppressWarnings("unchecked")
-    public <L, E extends MonitoredEndpoint, S extends Session<L, E>> EndpointService<L, E, S> getEndpointService(
+    public <L, S extends Session<L>> EndpointService<L, S> getEndpointService(
             String endpointName) {
-        for (ProtocolService<?, ?, ?> service : services) {
-            EndpointService<?, ?, ?> result = service.getEndpointServices().get(endpointName);
+        for (ProtocolService<?, ?> service : services) {
+            EndpointService<?, ?> result = service.getEndpointServices().get(endpointName);
             if (result != null) {
-                return (EndpointService<L, E, S>) result;
+                return (EndpointService<L, S>) result;
             }
         }
         return null;
     }
 
     public void start() {
-        for (ProtocolService<?, ?, ?> service : services) {
+        for (ProtocolService<?, ?> service : services) {
             service.start();
         }
     }
 
     public void discoverAll() {
-        for (ProtocolService<?, ?, ?> service : services) {
+        for (ProtocolService<?, ?> service : services) {
             service.discoverAll();
         }
     }
 
     public void stop() {
-        for (ProtocolService<?, ?, ?> service : services) {
+        for (ProtocolService<?, ?> service : services) {
             service.stop();
         }
     }
 
     public void addInventoryListener(InventoryListener listener) {
-        for (ProtocolService<?, ?, ?> service : services) {
+        for (ProtocolService<?, ?> service : services) {
             service.addInventoryListener(listener);
         }
     }
 
     public void removeInventoryListener(InventoryListener listener) {
-        for (ProtocolService<?, ?, ?> service : services) {
+        for (ProtocolService<?, ?> service : services) {
             service.removeInventoryListener(listener);
         }
     }
 
-    public ProtocolService<DMRNodeLocation, DMREndpoint, DMRSession> getDmrProtocolService() {
+    public ProtocolService<DMRNodeLocation, DMRSession> getDmrProtocolService() {
         return dmrProtocolService;
     }
 
-    public ProtocolService<JMXNodeLocation, JMXEndpoint, JMXSession> getJmxProtocolService() {
+    public ProtocolService<JMXNodeLocation, JMXSession> getJmxProtocolService() {
         return jmxProtocolService;
     }
 
-    public ProtocolService<PlatformNodeLocation, PlatformEndpoint, PlatformSession> getPlatformProtocolService() {
+    public ProtocolService<PlatformNodeLocation, PlatformSession> getPlatformProtocolService() {
         return platformProtocolService;
     }
 
-    public List<ProtocolService<?, ?, ?>> getServices() {
+    public List<ProtocolService<?, ?>> getServices() {
         return services;
     }
 }

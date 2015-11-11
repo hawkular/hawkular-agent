@@ -26,7 +26,6 @@ import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
@@ -205,17 +204,17 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
+    public <L> void discoverAllFinished(InventoryEvent<L> event) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
+    public <L> void resourcesAdded(InventoryEvent<L> event) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
+    public <L> void resourceRemoved(InventoryEvent<L> event) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 

@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.protocol.dmr;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -28,6 +29,8 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.RealmCallback;
 
+import org.hawkular.agent.monitor.inventory.ConnectionData;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -60,9 +63,9 @@ public abstract class ModelControllerClientFactory {
 
     private static class RemoteModelControllerClientFactory extends ModelControllerClientFactory  {
 
-        private final DMREndpoint defaultEndpoint;
+        private final MonitoredEndpoint defaultEndpoint;
 
-        public RemoteModelControllerClientFactory(DMREndpoint endpoint) {
+        public RemoteModelControllerClientFactory(MonitoredEndpoint endpoint) {
             this.defaultEndpoint = endpoint;
         }
 
@@ -71,17 +74,17 @@ public abstract class ModelControllerClientFactory {
             return createClient(defaultEndpoint);
         }
 
-        protected ModelControllerClient createClient(final DMREndpoint endpoint) {
-
+        protected ModelControllerClient createClient(final MonitoredEndpoint endpoint) {
+            final ConnectionData cnData = endpoint.getConnectionData();
             final CallbackHandler callbackHandler = new CallbackHandler() {
                 public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
                     for (Callback current : callbacks) {
                         if (current instanceof NameCallback) {
                             NameCallback ncb = (NameCallback) current;
-                            ncb.setName(endpoint.getUsername());
+                            ncb.setName(cnData.getUsername());
                         } else if (current instanceof PasswordCallback) {
                             PasswordCallback pcb = (PasswordCallback) current;
-                            pcb.setPassword(endpoint.getPassword().toCharArray());
+                            pcb.setPassword(cnData.getPassword().toCharArray());
                         } else if (current instanceof RealmCallback) {
                             RealmCallback rcb = (RealmCallback) current;
                             rcb.setText(rcb.getDefaultText());
@@ -91,12 +94,12 @@ public abstract class ModelControllerClientFactory {
                     }
                 }
             };
-
+            final URI uri = cnData.getUri();
             try {
                 ModelControllerClientConfiguration config = new ModelControllerClientConfiguration.Builder()
-                        .setProtocol(endpoint.getUseSSL() ? "https-remoting" : "http-remoting")
-                        .setHostName(endpoint.getHost())
-                        .setPort(endpoint.getPort())
+                        .setProtocol(uri.getScheme())
+                        .setHostName(uri.getHost())
+                        .setPort(uri.getPort())
                         .setSslContext(endpoint.getSSLContext())
                         .setHandler(callbackHandler)
                         .build();
@@ -113,7 +116,7 @@ public abstract class ModelControllerClientFactory {
         return new LocalModelControllerClientFactory(modelController);
     }
 
-    public static ModelControllerClientFactory createRemote(DMREndpoint endpoint) {
+    public static ModelControllerClientFactory createRemote(MonitoredEndpoint endpoint) {
         return new RemoteModelControllerClientFactory(endpoint);
     }
 

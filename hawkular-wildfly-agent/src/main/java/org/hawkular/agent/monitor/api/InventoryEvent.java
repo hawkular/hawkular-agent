@@ -30,15 +30,15 @@ import org.hawkular.agent.monitor.inventory.Resource;
  *
  * @see InventoryListener
  */
-public class InventoryEvent<L, E extends MonitoredEndpoint> {
+public class InventoryEvent<L> {
 
     private final String feedId;
-    private final E endpoint;
-    private final SamplingService<L, E> samplingService;
+    private final MonitoredEndpoint endpoint;
+    private final SamplingService<L> samplingService;
     private final List<Resource<L>> payload;
 
 
-    public InventoryEvent(String feedId, E endpoint, SamplingService<L, E> samplingService,
+    public InventoryEvent(String feedId, MonitoredEndpoint endpoint, SamplingService<L> samplingService,
             List<Resource<L>> payload) {
         super();
         this.feedId = feedId;
@@ -50,7 +50,7 @@ public class InventoryEvent<L, E extends MonitoredEndpoint> {
     /**
      * @return the {@link MonitoredEndpoint} resources in payload come from
      */
-    public E getEndpoint() {
+    public MonitoredEndpoint getEndpoint() {
         return endpoint;
     }
 
@@ -71,7 +71,7 @@ public class InventoryEvent<L, E extends MonitoredEndpoint> {
     /**
      * @return the sampling service able to handle the resources in payload
      */
-    public SamplingService<L, E> getSamplingService() {
+    public SamplingService<L> getSamplingService() {
         return samplingService;
     }
 

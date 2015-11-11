@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.RemoveDatasourceRequest;
 import org.hawkular.cmdgw.api.RemoveDatasourceResponse;
@@ -46,7 +46,7 @@ public class RemoveDatasourceCommand
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<RemoveDatasourceRequest> envelope, DMREndpoint dmrEndpoint) {
+    protected void validate(BasicMessageWithExtraData<RemoveDatasourceRequest> envelope, MonitoredEndpoint endpoint) {
     }
 
 

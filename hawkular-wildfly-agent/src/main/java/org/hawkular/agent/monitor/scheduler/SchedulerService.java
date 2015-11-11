@@ -24,7 +24,6 @@ import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MetricType;
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -102,9 +101,9 @@ public class SchedulerService implements InventoryListener {
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
+    public <L> void discoverAllFinished(InventoryEvent<L> event) {
         List<Resource<L>> resources = event.getPayload();
-        SamplingService<L, E> service = event.getSamplingService();
+        SamplingService<L> service = event.getSamplingService();
 
         log.debugf("Rescheduling jobs for all [%d] resources for endpoint [%s]",
                 resources.size(), service.getEndpoint());
@@ -114,9 +113,9 @@ public class SchedulerService implements InventoryListener {
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
+    public <L> void resourcesAdded(InventoryEvent<L> event) {
         List<Resource<L>> resources = event.getPayload();
-        SamplingService<L, E> service = event.getSamplingService();
+        SamplingService<L> service = event.getSamplingService();
 
         log.debugf("Scheduling jobs for [%d] new resources for endpoint [%s]",
                 resources.size(), service.getEndpoint());
@@ -126,9 +125,9 @@ public class SchedulerService implements InventoryListener {
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
+    public <L> void resourceRemoved(InventoryEvent<L> event) {
         List<Resource<L>> resources = event.getPayload();
-        SamplingService<L, E> service = event.getSamplingService();
+        SamplingService<L> service = event.getSamplingService();
 
         log.debugf("Unscheduling jobs for [%d] obsolete resources for endpoint [%s]",
                 resources.size(), service.getEndpoint());

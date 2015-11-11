@@ -16,8 +16,6 @@
  */
 package org.hawkular.agent.monitor.api;
 
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
-
 /**
  * A listener for changes in the inventory of resources maintained by the present agent.
  *
@@ -37,7 +35,7 @@ public interface InventoryListener {
      *
      * @param event the {@link InventoryEvent}
      */
-    <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event);
+    <L> void discoverAllFinished(InventoryEvent<L> event);
 
     /**
      * Notifies this listener that the resource in {@link InventoryEvent#getPayload()} was added to the monitored
@@ -46,7 +44,7 @@ public interface InventoryListener {
      *
      * @param event the {@link InventoryEvent}
      */
-    <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event);
+    <L> void resourcesAdded(InventoryEvent<L> event);
 
     /**
      * Notifies this listener that the resource in {@link InventoryEvent#getPayload()} was removed from the monitored
@@ -55,5 +53,5 @@ public interface InventoryListener {
      *
      * @param event the {@link InventoryEvent}
      */
-    <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event);
+    <L> void resourceRemoved(InventoryEvent<L> event);
 }

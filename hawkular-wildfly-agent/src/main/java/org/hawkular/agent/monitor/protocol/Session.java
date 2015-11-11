@@ -29,18 +29,17 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
- * @param <E> the protocol specific {@link MonitoredEndpoint}
  */
-public abstract class Session<L, E extends MonitoredEndpoint> implements Closeable {
+public abstract class Session<L> implements Closeable {
 
-    private final E endpoint;
+    private final MonitoredEndpoint endpoint;
     private final String feedId;
     private final Driver<L> driver;
     private final LocationResolver<L> locationResolver;
 
     private final ResourceTypeManager<L> resourceTypeManager;
 
-    public Session(String feedId, E endpoint, ResourceTypeManager<L> resourceTypeManager,
+    public Session(String feedId, MonitoredEndpoint endpoint, ResourceTypeManager<L> resourceTypeManager,
             Driver<L> driver, LocationResolver<L> locationResolver) {
         super();
         this.feedId = feedId;
@@ -50,7 +49,7 @@ public abstract class Session<L, E extends MonitoredEndpoint> implements Closeab
         this.locationResolver = locationResolver;
     }
 
-    public E getEndpoint() {
+    public MonitoredEndpoint getEndpoint() {
         return endpoint;
     }
 

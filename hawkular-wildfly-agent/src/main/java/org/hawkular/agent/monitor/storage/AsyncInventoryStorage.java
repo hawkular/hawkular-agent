@@ -43,7 +43,6 @@ import org.hawkular.agent.monitor.inventory.Instance;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricType;
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NamedObject;
 import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.Resource;
@@ -603,7 +602,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void discoverAllFinished(InventoryEvent<L, E> event) {
+    public <L> void discoverAllFinished(InventoryEvent<L> event) {
         String feedId = event.getFeedId();
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
@@ -612,7 +611,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void resourcesAdded(InventoryEvent<L, E> event) {
+    public <L> void resourcesAdded(InventoryEvent<L> event) {
         String feedId = event.getFeedId();
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
@@ -621,7 +620,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public <L, E extends MonitoredEndpoint> void resourceRemoved(InventoryEvent<L, E> event) {
+    public <L> void resourceRemoved(InventoryEvent<L> event) {
         log.warnf("[%s].removeResource() needs to be implemented", getClass().getName());
     }
 

@@ -23,13 +23,12 @@ import java.util.List;
 
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.EndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
-import org.hawkular.agent.monitor.protocol.dmr.LocalDMREndpoint;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.MessageUtils;
@@ -100,7 +99,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             validate(modelNodePath, envelope);
 
             String managedServerName = idParts.getManagedServerName();
-            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            EndpointService<DMRNodeLocation, DMRSession> //
             endpointService =
                     context.getDiscoveryService().getProtocolServices().getDmrProtocolService().getEndpointServices()
                             .get(managedServerName);
@@ -158,7 +157,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
      * @throws Exception if anything goes wrong
      */
     protected abstract BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession>//
+            EndpointService<DMRNodeLocation, DMRSession>//
             endpointService,
             String modelNodePath, BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context,
             DMRSession dmrContext)
@@ -191,7 +190,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
      * @param envelope a DMR path to check
      * @param dmrEndpoint the request the {@code modelNodePath} comes from
      */
-    protected abstract void validate(BasicMessageWithExtraData<REQ> envelope, DMREndpoint dmrEndpoint);
+    protected abstract void validate(BasicMessageWithExtraData<REQ> envelope, MonitoredEndpoint endpoint);
 
     /**
      * @return a new instance of the appropriate {@link ResourcePathResponse} subclass
@@ -206,11 +205,11 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
 
     }
 
-    protected void assertLocalServer(DMREndpoint endpoint) {
-        if (!(endpoint instanceof LocalDMREndpoint)) {
+    protected void assertLocalServer(MonitoredEndpoint endpoint) {
+        if (!endpoint.isLocal()) {
             throw new IllegalStateException(String.format(
-                    "Cannot perform [%s] on a [%s] on a instance of [%s]. Only [%s] is supported", operationName,
-                    entityType, endpoint.getClass().getName(), LocalDMREndpoint.class.getName()));
+                    "Cannot perform [%s] on a [%s] on a non local instance of [%s].", operationName,
+                    entityType, endpoint.getClass().getName()));
         }
     }
 

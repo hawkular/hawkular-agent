@@ -17,7 +17,6 @@
 package org.hawkular.agent.monitor.inventory;
 
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
-import org.hawkular.agent.monitor.protocol.dmr.RemoteDMRManagedServer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,7 +29,7 @@ public class InventoryIdUtilTest {
 
         id = InventoryIdUtil.generateResourceId(
                 "testfeedid",
-                new RemoteDMRManagedServer(null, new Name("testmanagedserver")), "/test/id/path");
+                new MonitoredEndpoint("testmanagedserver", null, null), "/test/id/path");
 
         Assert.assertEquals("testfeedid~testmanagedserver~/test/id/path", id.toString());
         parts = InventoryIdUtil.parseResourceId(id.getIDString());
@@ -41,7 +40,7 @@ public class InventoryIdUtilTest {
         // test that you can have ~ in the last part of the ID
         id = InventoryIdUtil.generateResourceId(
                 "testfeedid",
-                new RemoteDMRManagedServer(null, new Name("testmanagedserver")), "~/~test/~id/~path");
+                new MonitoredEndpoint("testmanagedserver", null, null), "~/~test/~id/~path");
 
         Assert.assertEquals("testfeedid~testmanagedserver~~/~test/~id/~path", id.toString());
         parts = InventoryIdUtil.parseResourceId(id.getIDString());

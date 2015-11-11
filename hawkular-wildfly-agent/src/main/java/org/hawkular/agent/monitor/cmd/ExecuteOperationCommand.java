@@ -20,13 +20,13 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.EndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpoint;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
@@ -66,7 +66,7 @@ public class ExecuteOperationCommand extends
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMREndpoint, DMRSession> //
+            EndpointService<DMRNodeLocation, DMRSession> //
             endpointService,
             String modelNodePath,
             BasicMessageWithExtraData<ExecuteOperationRequest> envelope, ExecuteOperationResponse response,
@@ -122,7 +122,7 @@ public class ExecuteOperationCommand extends
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<ExecuteOperationRequest> envelope, DMREndpoint dmrEndpoint) {
+    protected void validate(BasicMessageWithExtraData<ExecuteOperationRequest> envelope, MonitoredEndpoint endpoint) {
     }
 
 }
