@@ -25,11 +25,9 @@ import java.util.Map.Entry;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.ProtocolException;
-import org.hawkular.agent.monitor.protocol.platform.api.Platform;
-import org.hawkular.agent.monitor.protocol.platform.api.PlatformPath;
-import org.hawkular.agent.monitor.protocol.platform.api.PlatformResourceNode;
 
 import com.codahale.metrics.Timer.Context;
 
@@ -37,14 +35,12 @@ import com.codahale.metrics.Timer.Context;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @see Driver
  */
-public class PlatformDriver
-        implements Driver<PlatformNodeLocation> {
+public class PlatformDriver implements Driver<PlatformNodeLocation> {
 
-    private final Platform platform;
+    private final OshiPlatformCache platform;
     private final ProtocolDiagnostics diagnostics;
 
-    public PlatformDriver(Platform platform, ProtocolDiagnostics diagnostics) {
-        super();
+    public PlatformDriver(OshiPlatformCache platform, ProtocolDiagnostics diagnostics) {
         this.platform = platform;
         this.diagnostics = diagnostics;
     }
@@ -54,7 +50,7 @@ public class PlatformDriver
     public Map<PlatformNodeLocation, PlatformResourceNode> fetchNodes(PlatformNodeLocation location)
             throws ProtocolException {
         try {
-            Map<PlatformPath, PlatformResourceNode> children = platform.getChildren(location.getPlatformPath());
+            Map<PlatformPath, PlatformResourceNode> children = platform.discoverResources(location.getPlatformPath());
             Map<PlatformNodeLocation, PlatformResourceNode> result = new HashMap<>();
             for (Entry<PlatformPath, PlatformResourceNode> en : children.entrySet()) {
                 result.put(new PlatformNodeLocation(en.getKey()), en.getValue());
@@ -67,12 +63,14 @@ public class PlatformDriver
 
     @Override
     public boolean attributeExists(AttributeLocation<PlatformNodeLocation> location) throws ProtocolException {
-        Map<PlatformPath, PlatformResourceNode> nodes = platform.getChildren(location.getLocation().getPlatformPath());
+        Map<PlatformPath, PlatformResourceNode> nodes = platform
+                .discoverResources(location.getLocation().getPlatformPath());
         switch (nodes.size()) {
             case 0:
                 return false;
             case 1:
-                return nodes.values().iterator().next().getAttributeNames().contains(location.getAttribute());
+                return nodes.values().iterator().next().getType().getMetricNames()
+                        .contains(new Name(location.getAttribute()));
             default:
                 throw new ProtocolException(
                         "Platform Path [" + location.getLocation().getPlatformPath() + "] is not unique");
@@ -83,20 +81,21 @@ public class PlatformDriver
     public Object fetchAttribute(AttributeLocation<PlatformNodeLocation> location) throws ProtocolException {
         try {
             Map<PlatformPath, PlatformResourceNode> nodes = null;
+            Name metricToCollect = new Name(location.getAttribute()); // we know these are all metrics (no avails)
             try (Context timerContext = diagnostics.getRequestTimer().time()) {
-                nodes = platform.getChildren(location.getLocation().getPlatformPath());
-            }
-            switch (nodes.size()) {
-                case 0:
-                    return null;
-                case 1:
-                    return nodes.values().iterator().next().getAttribute(location.getAttribute());
-                default:
-                    List<Object> results = new ArrayList<>(nodes.size());
-                    for (PlatformResourceNode node : nodes.values()) {
-                        results.add(node.getAttribute(location.getAttribute()));
-                    }
-                    return Collections.unmodifiableList(results);
+                nodes = platform.discoverResources(location.getLocation().getPlatformPath());
+                switch (nodes.size()) {
+                    case 0:
+                        return null;
+                    case 1:
+                        return platform.getMetric(nodes.values().iterator().next(), metricToCollect);
+                    default:
+                        List<Object> results = new ArrayList<>(nodes.size());
+                        for (PlatformResourceNode node : nodes.values()) {
+                            results.add(platform.getMetric(node, metricToCollect));
+                        }
+                        return Collections.unmodifiableList(results);
+                }
             }
         } catch (Exception e) {
             diagnostics.getErrorRate().mark(1);

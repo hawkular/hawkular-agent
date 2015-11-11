@@ -17,7 +17,6 @@
 package org.hawkular.agent.monitor.protocol.platform;
 
 import org.hawkular.agent.monitor.protocol.LocationResolver;
-import org.hawkular.agent.monitor.protocol.platform.api.PlatformPath;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
@@ -57,5 +56,4 @@ public class PlatformLocationResolver implements LocationResolver<PlatformNodeLo
         String name = location.getPlatformPath().getLastSegment().getName();
         return String.format(nameTemplate, name);
     }
-
 }

@@ -14,25 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.protocol.platform.api;
+package org.hawkular.agent.monitor.protocol.platform;
 
-import java.util.Map;
-import java.util.Set;
+import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
 
 /**
- * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ * A very simple node implementation that provides a platform resource type name.
  */
-public interface Platform extends PlatformResourceNode {
+public class PlatformResourceNode {
+    private final PlatformResourceType type;
+    private final String id;
 
-    @Override
-    default Set<String> getAttributeNames() {
-        return PlatformResourceAttributeName.PlatformAttribute.stringSet();
+    public PlatformResourceNode(Constants.PlatformResourceType type, String id) {
+        this.type = type;
+        this.id = id;
+    }
+
+    public PlatformResourceType getType() {
+        return type;
+    }
+
+    public String getId() {
+        return id;
     }
 
     @Override
-    default Set<PlatformResourceTypeName> getChildTypeNames() {
-        return PlatformResourceTypeName.PlatformChildType.valueSet();
+    public String toString() {
+        return String.format("PlatformResourceNode[%s:%s]", type, id);
     }
-
-    Map<PlatformPath, PlatformResourceNode> getChildren(PlatformPath path);
 }

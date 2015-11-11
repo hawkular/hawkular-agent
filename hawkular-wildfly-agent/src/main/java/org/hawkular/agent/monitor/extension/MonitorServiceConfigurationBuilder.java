@@ -54,10 +54,9 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.Constants;
+import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
-import org.hawkular.agent.monitor.protocol.platform.api.PlatformPath;
-import org.hawkular.agent.monitor.protocol.platform.api.PlatformResourceAttributeName;
-import org.hawkular.agent.monitor.protocol.platform.api.PlatformResourceTypeName;
+import org.hawkular.agent.monitor.protocol.platform.PlatformPath;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
@@ -209,8 +208,7 @@ public class MonitorServiceConfigurationBuilder {
 
     private static void determineAvailSetDmr(ModelNode config,
             OperationContext context,
-            org.hawkular.agent.monitor.inventory.TypeSets.Builder<DMRNodeLocation> //
-            typeSetsBuilder)
+            TypeSets.Builder<DMRNodeLocation> typeSetsBuilder)
                     throws OperationFailedException {
         boolean enabled = false;
 
@@ -257,8 +255,7 @@ public class MonitorServiceConfigurationBuilder {
 
     private static void determineMetricSetJmx(ModelNode config,
             OperationContext context,
-            org.hawkular.agent.monitor.inventory.TypeSets.Builder<JMXNodeLocation> //
-            typeSetsBuilder)
+            TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
                     throws OperationFailedException {
 
         boolean enabled = false;
@@ -313,7 +310,7 @@ public class MonitorServiceConfigurationBuilder {
 
     private static void determineAvailSetJmx(ModelNode config,
             OperationContext context,
-            org.hawkular.agent.monitor.inventory.TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
+            TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
                     throws OperationFailedException {
 
         boolean enabled = false;
@@ -364,8 +361,7 @@ public class MonitorServiceConfigurationBuilder {
         }
     }
 
-    private static TypeSets<PlatformNodeLocation> buildPlatformTypeSets(
-            ModelNode config, OperationContext context)
+    private static TypeSets<PlatformNodeLocation> buildPlatformTypeSets(ModelNode config, OperationContext context)
                     throws OperationFailedException {
 
         // assume they are disabled unless configured otherwise
@@ -394,13 +390,15 @@ public class MonitorServiceConfigurationBuilder {
         // all the type metadata is dependent upon the capabilities of the oshi SystemInfo API
 
         // since platform monitoring is enabled, we will always have at least the root OS type
-        final Name osName = Constants.PlatformResourceType.OPERATING_SYSTEM.getName();
+        final Name osName = PlatformResourceType.OPERATING_SYSTEM.getName();
 
-        ResourceType<PlatformNodeLocation> rootType = ResourceType.<PlatformNodeLocation> builder()
+        Builder<?, PlatformNodeLocation> rootTypeBldr = ResourceType.<PlatformNodeLocation> builder()
                 .name(osName)
-                .location(new PlatformNodeLocation(PlatformPath.empty()))
-                .resourceNameTemplate("%s")
-                .build();
+                .location(new PlatformNodeLocation(
+                        PlatformPath.builder().any(PlatformResourceType.OPERATING_SYSTEM).build()))
+                .resourceNameTemplate("%s");
+        populateMetricAndAvailTypesForResourceType(rootTypeBldr, typeSetsBuilder);
+        ResourceType<PlatformNodeLocation> rootType = rootTypeBldr.build();
 
         TypeSet<ResourceType<PlatformNodeLocation>> rootTypeSet =
                 TypeSet.<ResourceType<PlatformNodeLocation>> builder()
@@ -422,45 +420,49 @@ public class MonitorServiceConfigurationBuilder {
                             TimeUnit.valueOf(getString(fileStoresNode, context,
                                     FileStoresAttributes.TIME_UNITS).toUpperCase()));
 
-                    PlatformNodeLocation fileStoreLocation = new PlatformNodeLocation(
-                            PlatformPath.builder().any(PlatformResourceTypeName.PlatformChildType.fileStore).build());
                     MetricType<PlatformNodeLocation> usableSpace = new MetricType<PlatformNodeLocation>(null,
                             Constants.FILE_STORE_USABLE_SPACE,
-                            new AttributeLocation<PlatformNodeLocation>(fileStoreLocation,
-                                    PlatformResourceAttributeName.FileStoreAttribute.usableSpace.toString()),
+                            new AttributeLocation<PlatformNodeLocation>(
+                                    new PlatformNodeLocation(PlatformPath.empty()),
+                                    Constants.FILE_STORE_USABLE_SPACE.getNameString()),
                             interval,
                             MeasurementUnit.BYTES,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
                     MetricType<PlatformNodeLocation> totalSpace = new MetricType<PlatformNodeLocation>(null,
                             Constants.FILE_STORE_TOTAL_SPACE,
-                            new AttributeLocation<PlatformNodeLocation>(fileStoreLocation,
-                                    PlatformResourceAttributeName.FileStoreAttribute.totalSpace.toString()),
+                            new AttributeLocation<PlatformNodeLocation>(
+                                    new PlatformNodeLocation(PlatformPath.empty()),
+                                    Constants.FILE_STORE_TOTAL_SPACE.getNameString()),
                             interval,
                             MeasurementUnit.BYTES,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
                     TypeSet<MetricType<PlatformNodeLocation>> fileStoreMetrics =
                             TypeSet.<MetricType<PlatformNodeLocation>> builder()
-                                    .name(Constants.PlatformResourceType.FILE_STORE.getName())
+                            .name(PlatformResourceType.FILE_STORE.getName())
                                     .type(usableSpace)
                                     .type(totalSpace)
                                     .build();
 
                     typeSetsBuilder.metricTypeSet(fileStoreMetrics);
 
-                    ResourceType<PlatformNodeLocation> fileStore = ResourceType.<PlatformNodeLocation> builder()
-                            .name(Constants.PlatformResourceType.FILE_STORE.getName())
+                    PlatformNodeLocation fileStoreLocation = new PlatformNodeLocation(
+                            PlatformPath.builder().any(PlatformResourceType.FILE_STORE).build());
+                    Builder<?, PlatformNodeLocation> fileStoreBldr = ResourceType.<PlatformNodeLocation> builder()
+                            .name(PlatformResourceType.FILE_STORE.getName())
                             .location(fileStoreLocation)
                             .resourceNameTemplate(
-                                    Constants.PlatformResourceType.FILE_STORE.getName().getNameString() + " [%s]")
+                                    PlatformResourceType.FILE_STORE.getName().getNameString() + " [%s]")
                             .parent(rootType.getName())
-                            .metricSetName(fileStoreMetrics.getName())
-                            .build();
+                            .metricSetName(fileStoreMetrics.getName());
 
+                    populateMetricAndAvailTypesForResourceType(fileStoreBldr, typeSetsBuilder);
+
+                    ResourceType<PlatformNodeLocation> fileStore = fileStoreBldr.build();
                     TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
                             TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                                    .name(Constants.PlatformResourceType.FILE_STORE.getName())
+                            .name(PlatformResourceType.FILE_STORE.getName())
                                     .type(fileStore)
                                     .build();
 
@@ -482,44 +484,48 @@ public class MonitorServiceConfigurationBuilder {
                             TimeUnit.valueOf(getString(memoryNode, context,
                                     MemoryAttributes.TIME_UNITS).toUpperCase()));
 
-                    PlatformNodeLocation memoryLocation = new PlatformNodeLocation(
-                            PlatformPath.builder().any(PlatformResourceTypeName.PlatformChildType.memory).build());
                     MetricType<PlatformNodeLocation> available = new MetricType<PlatformNodeLocation>(null,
                             Constants.MEMORY_AVAILABLE,
-                            new AttributeLocation<PlatformNodeLocation>(memoryLocation,
-                                    PlatformResourceAttributeName.MemoryAttribute.available.toString()),
+                            new AttributeLocation<PlatformNodeLocation>(
+                                    new PlatformNodeLocation(PlatformPath.empty()),
+                                    Constants.MEMORY_AVAILABLE.getNameString()),
                             interval,
                             MeasurementUnit.BYTES,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
                     MetricType<PlatformNodeLocation> total = new MetricType<PlatformNodeLocation>(null,
                             Constants.MEMORY_TOTAL,
-                            new AttributeLocation<PlatformNodeLocation>(memoryLocation,
-                                    PlatformResourceAttributeName.MemoryAttribute.total.toString()),
+                            new AttributeLocation<PlatformNodeLocation>(
+                                    new PlatformNodeLocation(PlatformPath.empty()),
+                                    Constants.MEMORY_TOTAL.getNameString()),
                             interval,
                             MeasurementUnit.BYTES,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
                     TypeSet<MetricType<PlatformNodeLocation>> memoryMetrics =
                             TypeSet.<MetricType<PlatformNodeLocation>> builder()
-                                    .name(Constants.PlatformResourceType.MEMORY.getName())
+                            .name(PlatformResourceType.MEMORY.getName())
                                     .type(available)
                                     .type(total)
                                     .build();
 
                     typeSetsBuilder.metricTypeSet(memoryMetrics);
 
-                    ResourceType<PlatformNodeLocation> memory = ResourceType.<PlatformNodeLocation> builder()
-                            .name(Constants.PlatformResourceType.MEMORY.getName())
+                    PlatformNodeLocation memoryLocation = new PlatformNodeLocation(
+                            PlatformPath.builder().any(PlatformResourceType.MEMORY).build());
+                    Builder<?, PlatformNodeLocation> memoryBldr = ResourceType.<PlatformNodeLocation> builder()
+                            .name(PlatformResourceType.MEMORY.getName())
                             .parent(rootType.getName())
                             .location(memoryLocation)
                             .metricSetName(memoryMetrics.getName())
-                            .resourceNameTemplate(Constants.PlatformResourceType.MEMORY.getName().getNameString())
-                            .build();
+                            .resourceNameTemplate(PlatformResourceType.MEMORY.getName().getNameString());
 
+                    populateMetricAndAvailTypesForResourceType(memoryBldr, typeSetsBuilder);
+
+                    ResourceType<PlatformNodeLocation> memory = memoryBldr.build();
                     TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
                             TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                                    .name(Constants.PlatformResourceType.MEMORY.getName())
+                            .name(PlatformResourceType.MEMORY.getName())
                                     .type(memory)
                                     .build();
 
@@ -541,37 +547,39 @@ public class MonitorServiceConfigurationBuilder {
                             TimeUnit.valueOf(getString(processorsNode, context,
                                     ProcessorsAttributes.TIME_UNITS).toUpperCase()));
 
-                    PlatformNodeLocation processorsLocaton = new PlatformNodeLocation(
-                            PlatformPath.builder().any(PlatformResourceTypeName.PlatformChildType.processor).build());
                     // this is the Processor.getProcessorCpuLoadBetweenTicks value
                     MetricType<PlatformNodeLocation> cpuUsage = new MetricType<PlatformNodeLocation>(null,
                             Constants.PROCESSOR_CPU_USAGE,
-                            new AttributeLocation<PlatformNodeLocation>(processorsLocaton,
-                                    PlatformResourceAttributeName.ProcessorAttribute.load.toString()),
+                            new AttributeLocation<PlatformNodeLocation>(
+                                    new PlatformNodeLocation(PlatformPath.empty()),
+                                    Constants.PROCESSOR_CPU_USAGE.getNameString()),
                             interval,
                             MeasurementUnit.PERCENTAGE,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
                     TypeSet<MetricType<PlatformNodeLocation>> processorMetrics =
                             TypeSet.<MetricType<PlatformNodeLocation>> builder()
-                                    .name(Constants.PlatformResourceType.PROCESSOR.getName())
+                            .name(PlatformResourceType.PROCESSOR.getName())
                                     .type(cpuUsage)
                                     .build();
 
                     typeSetsBuilder.metricTypeSet(processorMetrics);
 
-                    ResourceType<PlatformNodeLocation> processor = ResourceType.<PlatformNodeLocation> builder()
-                            .name(Constants.PlatformResourceType.PROCESSOR.getName())
+                    PlatformNodeLocation processorsLocation = new PlatformNodeLocation(
+                            PlatformPath.builder().any(PlatformResourceType.PROCESSOR).build());
+                    Builder<?, PlatformNodeLocation> processorBldr = ResourceType.<PlatformNodeLocation> builder()
+                            .name(PlatformResourceType.PROCESSOR.getName())
                             .parent(rootType.getName())
-                            .location(processorsLocaton)
+                            .location(processorsLocation)
                             .metricSetName(processorMetrics.getName())
-                            .resourceNameTemplate(
-                                    Constants.PlatformResourceType.PROCESSOR.getName().getNameString() + " [%s]")
-                            .build();
+                            .resourceNameTemplate(PlatformResourceType.PROCESSOR.getName().getNameString() + " [%s]");
 
+                    populateMetricAndAvailTypesForResourceType(processorBldr, typeSetsBuilder);
+
+                    ResourceType<PlatformNodeLocation> processor = processorBldr.build();
                     TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
                             TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                                    .name(Constants.PlatformResourceType.PROCESSOR.getName())
+                            .name(PlatformResourceType.PROCESSOR.getName())
                                     .type(processor)
                                     .build();
 
@@ -594,50 +602,49 @@ public class MonitorServiceConfigurationBuilder {
                             TimeUnit.valueOf(getString(powerSourcesNode, context,
                                     PowerSourcesAttributes.TIME_UNITS).toUpperCase()));
 
-                    PlatformNodeLocation powerSourcesLocation = new PlatformNodeLocation(
-                            PlatformPath.builder().any(PlatformResourceTypeName.PlatformChildType.powerSource)
-                                    .build());
                     MetricType<PlatformNodeLocation> remainingCap = new MetricType<PlatformNodeLocation>(null,
                             Constants.POWER_SOURCE_REMAINING_CAPACITY,
-                            new AttributeLocation<PlatformNodeLocation>(powerSourcesLocation,
-                                    PlatformResourceAttributeName.PowerSourceAttribute.remainingCapacity
-                                            .toString()),
+                            new AttributeLocation<PlatformNodeLocation>(
+                                    new PlatformNodeLocation(PlatformPath.empty()),
+                                    Constants.POWER_SOURCE_REMAINING_CAPACITY.getNameString()),
                             interval,
                             MeasurementUnit.PERCENTAGE,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
                     MetricType<PlatformNodeLocation> timeRemaining = new MetricType<PlatformNodeLocation>(null,
                             Constants.POWER_SOURCE_TIME_REMAINING,
-                            new AttributeLocation<PlatformNodeLocation>(powerSourcesLocation,
-                                    PlatformResourceAttributeName.PowerSourceAttribute.timeRemaining
-                                            .toString()),
+                            new AttributeLocation<PlatformNodeLocation>(
+                                    new PlatformNodeLocation(PlatformPath.empty()),
+                                    Constants.POWER_SOURCE_TIME_REMAINING.getNameString()),
                             interval,
                             MeasurementUnit.SECONDS,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
                     TypeSet<MetricType<PlatformNodeLocation>> powerSourceMetrics =
                             TypeSet.<MetricType<PlatformNodeLocation>> builder()
-                                    .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
+                            .name(PlatformResourceType.POWER_SOURCE.getName())
                                     .type(remainingCap)
                                     .type(timeRemaining)
                                     .build();
 
                     typeSetsBuilder.metricTypeSet(powerSourceMetrics);
 
-                    ResourceType<PlatformNodeLocation> powerSource =
-                            ResourceType.<PlatformNodeLocation> builder()
-                                    .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
-                                    .parent(rootType.getName())
-                                    .location(powerSourcesLocation)
-                                    .metricSetName(powerSourceMetrics.getName())
-                                    .resourceNameTemplate(
-                                            Constants.PlatformResourceType.POWER_SOURCE.getName().getNameString()
-                                                    + " [%s]")
-                                    .build();
+                    PlatformNodeLocation powerSourcesLocation = new PlatformNodeLocation(
+                            PlatformPath.builder().any(PlatformResourceType.POWER_SOURCE).build());
+                    Builder<?, PlatformNodeLocation> powerSourceBldr = ResourceType.<PlatformNodeLocation> builder()
+                            .name(PlatformResourceType.POWER_SOURCE.getName())
+                            .parent(rootType.getName())
+                            .location(powerSourcesLocation)
+                            .metricSetName(powerSourceMetrics.getName())
+                            .resourceNameTemplate(
+                                    PlatformResourceType.POWER_SOURCE.getName().getNameString() + " [%s]");
 
+                    populateMetricAndAvailTypesForResourceType(powerSourceBldr, typeSetsBuilder);
+
+                    ResourceType<PlatformNodeLocation> powerSource = powerSourceBldr.build();
                     TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
                             TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                                    .name(Constants.PlatformResourceType.POWER_SOURCE.getName())
+                            .name(PlatformResourceType.POWER_SOURCE.getName())
                                     .type(powerSource)
                                     .build();
 
@@ -648,6 +655,7 @@ public class MonitorServiceConfigurationBuilder {
                         + platformValueNode.toJSONString(true));
             }
         }
+
         return typeSetsBuilder.build();
     }
 
@@ -955,6 +963,8 @@ public class MonitorServiceConfigurationBuilder {
 
                                 }
                             }
+
+                            populateMetricAndAvailTypesForResourceType(resourceTypeBuilder, typeSetsBuilder);
 
                             ResourceType<JMXNodeLocation> resourceType = resourceTypeBuilder.build();
                             typeSetBuilder.type(resourceType);

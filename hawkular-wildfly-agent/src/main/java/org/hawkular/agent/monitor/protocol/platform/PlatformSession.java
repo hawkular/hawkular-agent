@@ -31,14 +31,14 @@ import org.hawkular.agent.monitor.protocol.Session;
 public class PlatformSession
         extends Session<PlatformNodeLocation> {
 
-    public PlatformSession(String feedId, MonitoredEndpoint endpoint,
+    public PlatformSession(String feedId,
+            MonitoredEndpoint endpoint,
             ResourceTypeManager<PlatformNodeLocation> resourceTypeManager,
             Driver<PlatformNodeLocation> driver,
             LocationResolver<PlatformNodeLocation> locationResolver) {
         super(feedId, endpoint, resourceTypeManager, driver, locationResolver);
     }
 
-    /** @see java.io.Closeable#close() */
     @Override
     public void close() throws IOException {
     }

@@ -17,7 +17,6 @@
 package org.hawkular.agent.monitor.protocol.platform;
 
 import org.hawkular.agent.monitor.inventory.NodeLocation;
-import org.hawkular.agent.monitor.protocol.platform.api.PlatformPath;
 
 /**
  * A {@link NodeLocation} based on {@link PlatformPath}.
@@ -29,7 +28,6 @@ public class PlatformNodeLocation implements NodeLocation {
     private final PlatformPath platformPath;
 
     public PlatformNodeLocation(PlatformPath platformPath) {
-        super();
         if (platformPath == null) {
             throw new IllegalArgumentException(
                     "Cannot create a new [" + getClass().getName() + "] with a null platformPath");
@@ -39,18 +37,23 @@ public class PlatformNodeLocation implements NodeLocation {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         PlatformNodeLocation other = (PlatformNodeLocation) obj;
         if (platformPath == null) {
-            if (other.platformPath != null)
+            if (other.platformPath != null) {
                 return false;
-        } else if (!platformPath.equals(other.platformPath))
+            }
+        } else if (!platformPath.equals(other.platformPath)) {
             return false;
+        }
         return true;
     }
 

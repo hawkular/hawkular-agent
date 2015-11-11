@@ -16,6 +16,10 @@
  */
 package org.hawkular.agent.monitor.protocol.platform;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.hawkular.agent.monitor.inventory.Name;
 
 /**
@@ -26,23 +30,40 @@ import org.hawkular.agent.monitor.inventory.Name;
 public interface Constants {
 
     // these list the names of all the known resource types for platform resources
+    // since OSHI only supports a fixed set of resources/metrics, we just hardwire them here
     enum PlatformResourceType {
-        OPERATING_SYSTEM("Operating System"),
-        FILE_STORE("File Store"),
-        MEMORY("Memory"),
-        PROCESSOR("Processor"),
-        POWER_SOURCE("Power Source");
+        OPERATING_SYSTEM("Operating System",
+                Arrays.asList(OPERATING_SYSTEM_SYS_CPU_LOAD, OPERATING_SYSTEM_SYS_LOAD_AVG)),
+
+        FILE_STORE("File Store",
+                Arrays.asList(FILE_STORE_USABLE_SPACE, FILE_STORE_TOTAL_SPACE)),
+
+        MEMORY("Memory",
+                Arrays.asList(MEMORY_AVAILABLE, MEMORY_TOTAL)),
+
+        PROCESSOR("Processor",
+                Arrays.asList(PROCESSOR_CPU_USAGE)),
+
+        POWER_SOURCE("Power Source",
+                Arrays.asList(POWER_SOURCE_REMAINING_CAPACITY, POWER_SOURCE_TIME_REMAINING))
+
+        ;
 
         private final Name name;
+        private final List<Name> metricNames;
 
-        PlatformResourceType(String label) {
+        PlatformResourceType(String label, List<Name> metricNames) {
             this.name = new Name(label);
+            this.metricNames = Collections.unmodifiableList(metricNames);
         }
 
         public Name getName() {
             return name;
         }
 
+        public List<Name> getMetricNames() {
+            return metricNames;
+        }
     }
 
     Name PLATFORM = new Name("Platform");

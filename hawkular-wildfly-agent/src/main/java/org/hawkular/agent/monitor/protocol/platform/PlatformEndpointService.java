@@ -20,10 +20,6 @@ import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.EndpointService;
-import org.hawkular.agent.monitor.protocol.platform.api.Platform;
-import org.hawkular.agent.monitor.protocol.platform.oshi.OshiPlatform;
-
-import oshi.SystemInfo;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
@@ -39,8 +35,8 @@ public class PlatformEndpointService extends EndpointService<PlatformNodeLocatio
     /** @see org.hawkular.agent.monitor.protocol.EndpointService#openSession() */
     @Override
     public PlatformSession openSession() {
-        Platform platform = new OshiPlatform(new SystemInfo());
-        PlatformDriver driver = new PlatformDriver(platform, diagnostics);
+        OshiPlatformCache oshi = new OshiPlatformCache();
+        PlatformDriver driver = new PlatformDriver(oshi, diagnostics);
         return new PlatformSession(feedId, endpoint, resourceTypeManager, driver, locationResolver);
     }
 

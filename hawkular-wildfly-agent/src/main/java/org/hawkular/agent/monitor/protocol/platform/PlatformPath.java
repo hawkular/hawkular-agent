@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.protocol.platform.api;
+package org.hawkular.agent.monitor.protocol.platform;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +28,7 @@ public class PlatformPath {
 
         private List<PathSegment> segments = new ArrayList<>();
 
-        public Builder any(PlatformResourceTypeName type) {
+        public Builder any(Constants.PlatformResourceType type) {
             segments.add(new PathSegment(type, ANY_NAME));
             return this;
         }
@@ -37,7 +37,7 @@ public class PlatformPath {
             return new PlatformPath(Collections.unmodifiableList(segments));
         }
 
-        public Builder segment(PlatformResourceTypeName type, String name) {
+        public Builder segment(Constants.PlatformResourceType type, String name) {
             segments.add(new PathSegment(type, name));
             return this;
         }
@@ -54,19 +54,17 @@ public class PlatformPath {
             return this;
         }
     }
+
     public static class PathSegment {
-
         private final String name;
+        private final Constants.PlatformResourceType type;
 
-        private final PlatformResourceTypeName type;
-
-        private PathSegment(PlatformResourceTypeName type, String name) {
-            super();
+        private PathSegment(Constants.PlatformResourceType type, String name) {
             if (type == null) {
-                throw new IllegalArgumentException("Cannot create a "+ getClass().getName() +" with a null type.");
+                throw new IllegalArgumentException("Cannot create a [" + getClass().getName() + "] with a null type.");
             }
             if (name == null) {
-                throw new IllegalArgumentException("Cannot create a "+ getClass().getName() +" with a null type.");
+                throw new IllegalArgumentException("Cannot create a [" + getClass().getName() + "] with a null type.");
             }
             this.type = type;
             this.name = name;
@@ -76,7 +74,7 @@ public class PlatformPath {
             return name;
         }
 
-        public PlatformResourceTypeName getType() {
+        public Constants.PlatformResourceType getType() {
             return type;
         }
 
@@ -86,7 +84,6 @@ public class PlatformPath {
     }
 
     public static final String ANY_NAME = "*";
-
     private static final PlatformPath EMPTY = new PlatformPath(Collections.emptyList());
 
     public static Builder builder() {
@@ -100,12 +97,12 @@ public class PlatformPath {
     private final List<PathSegment> segments;
 
     private PlatformPath(List<PathSegment> segments) {
-        super();
         this.segments = segments;
     }
+
     public PathSegment getLastSegment() {
         if (segments.isEmpty()) {
-            throw new IndexOutOfBoundsException("There is no last segment in an empty ["+ getClass().getName() +"]");
+            throw new IndexOutOfBoundsException("No last segment in empty [" + getClass().getName() + "]");
         }
         return segments.get(segments.size() - 1);
     }
@@ -148,6 +145,4 @@ public class PlatformPath {
             return false;
         }
     }
-
-
 }
