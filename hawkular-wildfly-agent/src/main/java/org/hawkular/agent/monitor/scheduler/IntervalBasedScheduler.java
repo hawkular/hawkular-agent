@@ -99,11 +99,13 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
 
                     @Override
                     public void report(Throwable e) {
-                        log.errorCouldNotAccess(endpointService.getEndpoint(), e);
+                        log.errorFailedToStoreMetrics(endpointService.toString(), e);
                     }
                 });
+            } catch (IllegalStateException ise) {
+                log.debugf("Cannot collect metrics for endpoint [%s] - not ready yet: %s", this.endpointService, ise);
             } catch (Throwable t) {
-                log.warnf(t, "Unexpected error caught in MetricsJob for endpoint [" + this.endpointService + "]");
+                log.warnf(t, "Unexpected error caught in MetricsJob for endpoint [%s]", this.endpointService);
             }
         }
     }
@@ -151,11 +153,13 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
 
                     @Override
                     public void report(Throwable e) {
-                        log.errorCouldNotAccess(endpointService.getEndpoint(), e);
+                        log.errorFailedToStoreAvails(endpointService.toString(), e);
                     }
                 });
+            } catch (IllegalStateException ise) {
+                log.debugf("Cannot check avails for endpoint [%s] - not ready yet: %s", this.endpointService, ise);
             } catch (Throwable t) {
-                log.warnf(t, "Unexpected error caught in AvailsJob for endpoint [" + this.endpointService + "]");
+                log.warnf(t, "Unexpected error caught in AvailsJob for endpoint [%s]", this.endpointService);
             }
         }
     }
@@ -302,7 +306,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
         List<ScheduledFuture<?>> oldJobs = jobs.get(endpoint);
         if (oldJobs != null) {
             log.debugf("Scheduler [%s]: canceling [%d] jobs for endpoint [%s]",
-                    this.name, oldJobs.size(), endpointService.getEndpoint());
+                    this.name, oldJobs.size(), endpointService);
 
             for (ScheduledFuture<?> oldJob : oldJobs) {
                 oldJob.cancel(false);
@@ -339,7 +343,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
 
         jobs.put(endpointService.getEndpoint(), endpointJobs);
         log.debugf("Scheduler [%s]: [%d] jobs ([%d] measurements) have been submitted for endpoint [%s]",
-                this.name, endpointJobs.size(), measurementInstances, endpointService.getEndpoint());
+                this.name, endpointJobs.size(), measurementInstances, endpointService);
     }
 
     /**

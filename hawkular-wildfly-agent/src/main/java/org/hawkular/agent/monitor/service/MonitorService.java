@@ -439,7 +439,7 @@ public class MonitorService implements Service<MonitorService> {
         // 4. prepare the thread pool that will store discovered resources into inventory
         if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
             if (this.configuration.getStorageAdapter().getTenantId() == null) {
-                log.errNoTenantIdFromAccounts();
+                log.errorNoTenantIdFromAccounts();
                 return;
             }
             try {

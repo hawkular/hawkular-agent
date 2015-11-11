@@ -37,13 +37,13 @@ public enum ServiceStatus {
         public void assertInitialOrStopped(Class<?> cl, String action) {
         }
     };
-    public void assertInitialOrStopped(Class<?> cl, String action) {
+    public void assertInitialOrStopped(Class<?> cl, String action) throws IllegalStateException {
         throw new IllegalStateException(
                 "[" + cl.getName() + "] must be in state [" + RUNNING + "] rather than [" + this + "] to perfrom ["
                         + action + "]");
     }
 
-    public void assertRunning(Class<?> cl, String action) {
+    public void assertRunning(Class<?> cl, String action) throws IllegalStateException {
         throw new IllegalStateException(
                 "[" + cl.getName() + "] must be in state [" + RUNNING + "] rather than [" + this + "] to perfrom ["
                         + action + "]");

@@ -169,13 +169,13 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
                     @Override
                     public void report(Throwable e) {
-                        log.errorCouldNotAccess(endpoint, e);
+                        log.errorCouldNotAccess(EndpointService.this, e);
                     }
                 });
             }
             inventoryListenerSupport.fireResourcesAdded(Collections.unmodifiableList(added));
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
     }
 
@@ -201,14 +201,14 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
                 @Override
                 public void report(Throwable e) {
-                    log.errorCouldNotAccess(endpoint, e);
+                    log.errorCouldNotAccess(EndpointService.this, e);
                 }
             });
 
             duration = System.currentTimeMillis() - start;
 
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
 
         resourceManager.replaceResources(resources);
@@ -285,7 +285,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
     }
 
@@ -319,7 +319,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
 
     }
@@ -346,7 +346,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             List<Resource<L>> removed = resourceManager.removeResources(location, session.getLocationResolver());
             inventoryListenerSupport.fireResourcesRemoved(removed);
         } catch (Exception e) {
-            log.errorCouldNotAccess(endpoint, e);
+            log.errorCouldNotAccess(this, e);
         }
 
     }
