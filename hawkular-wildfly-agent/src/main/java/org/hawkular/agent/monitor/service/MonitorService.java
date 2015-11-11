@@ -195,7 +195,7 @@ public class MonitorService implements Service<MonitorService> {
                     Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
                     if (matcher.find()) {
                         String tenantIdFromAccounts = matcher.group(1);
-                        if (!tenantIdFromAccounts.equals(useTenantId)) {
+                        if (useTenantId != null && !tenantIdFromAccounts.equals(useTenantId)) {
                             log.warnIgnoringTenantIdFromXml(useTenantId, tenantIdFromAccounts);
                         }
                         useTenantId = tenantIdFromAccounts;
