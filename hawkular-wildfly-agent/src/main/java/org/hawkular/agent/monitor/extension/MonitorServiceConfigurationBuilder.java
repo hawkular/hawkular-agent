@@ -982,7 +982,7 @@ public class MonitorServiceConfigurationBuilder {
             // can we build a graph of the full type hierarchy just to test to make sure it all is valid?
         }
 
-        if (enabled) {
+        if (!enabled) {
             log.infoNoEnabledResourceTypesConfigured("JMX");
         }
     }
