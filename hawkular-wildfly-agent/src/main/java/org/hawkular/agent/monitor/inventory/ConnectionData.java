@@ -74,4 +74,8 @@ public class ConnectionData {
         return username;
     }
 
+    @Override
+    public String toString() {
+        return getUri().toString();
+    }
 }

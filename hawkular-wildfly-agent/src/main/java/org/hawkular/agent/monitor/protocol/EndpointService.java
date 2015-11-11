@@ -360,7 +360,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         // keep polling/listening for changes
         status = ServiceStatus.RUNNING;
 
-        log.debugf("Started endpoint service for [%s]", getEndpoint());
+        log.debugf("Started [%s]", toString());
     }
 
     public void stop() {
@@ -371,7 +371,12 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         status = ServiceStatus.STOPPED;
 
-        log.debugf("Stopped endpoint service for [%s]", getEndpoint());
+        log.debugf("Stopped [%s]", toString());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s[%s]", getClass().getSimpleName(), getEndpoint());
     }
 
     private Avail toAvail(Pattern pattern, Object value) {

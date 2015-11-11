@@ -94,6 +94,9 @@ public class ProtocolServices {
                     DMREndpointService endpointService = new DMREndpointService(feedId, endpoint, resourceTypeManager,
                             clientFactory, diagnostics.getDMRDiagnostics());
                     builder.endpointService(endpointService);
+
+                    log.debugf("[%s] created with resource type sets [%s]", endpointService,
+                            server.getResourceTypeSets());
                 }
             }
 
@@ -116,6 +119,9 @@ public class ProtocolServices {
                     JMXEndpointService endpointService = new JMXEndpointService(feedId, endpoint, resourceTypeManager,
                             diagnostics.getJMXDiagnostics());
                     builder.endpointService(endpointService);
+
+                    log.debugf("[%s] created with resource type sets [%s]", endpointService,
+                            server.getResourceTypeSets());
                 }
             }
 
@@ -140,6 +146,9 @@ public class ProtocolServices {
                     PlatformEndpointService endpointService = new PlatformEndpointService(feedId, endpoint,
                             resourceTypeManager, diagnostics.getPlatformDiagnostics());
                     builder.endpointService(endpointService);
+
+                    log.debugf("[%s] created with resource type sets [%s]", endpointService,
+                            server.getResourceTypeSets());
                 }
             }
 

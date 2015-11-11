@@ -110,4 +110,9 @@ public final class MonitoredEndpoint {
     public boolean isLocal() {
         return connectionData == null;
     }
+
+    @Override
+    public String toString() {
+        return String.format("Endpoint[%s]:[%s]", getName(), getConnectionData());
+    }
 }
