@@ -244,7 +244,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     /**
-     * @return a {@link ResourceTypeManager} shared over all {@link MonitoredEndpoint}s of the given protocol.
+     * @return the {@link ResourceTypeManager} used by this endpoint
      */
     public ResourceTypeManager<L> getResourceTypeManager() {
         return resourceTypeManager;
