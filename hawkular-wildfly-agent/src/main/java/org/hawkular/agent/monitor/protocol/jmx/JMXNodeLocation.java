@@ -35,34 +35,37 @@ public class JMXNodeLocation implements NodeLocation {
     private final ObjectName objectName;
 
     public JMXNodeLocation(ObjectName objectName) {
-        super();
-        if (objectName == null) {
-            throw new IllegalArgumentException(
-                    "Cannot create a new [" + getClass().getName() + "] with a null objectName");
-        }
         this.objectName = objectName;
-        this.canonicalKeys = Collections.unmodifiableSet(new TreeSet<>(objectName.getKeyPropertyList().keySet()));
-
+        if (this.objectName == null) {
+            this.canonicalKeys = Collections.emptySet();
+        } else {
+            this.canonicalKeys = Collections.unmodifiableSet(new TreeSet<>(objectName.getKeyPropertyList().keySet()));
+        }
     }
 
     public JMXNodeLocation(String objectName) throws MalformedObjectNameException {
-        this(new ObjectName(objectName));
+        this((objectName != null) ? new ObjectName(objectName) : null);
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         JMXNodeLocation other = (JMXNodeLocation) obj;
         if (objectName == null) {
-            if (other.objectName != null)
+            if (other.objectName != null) {
                 return false;
-        } else if (!objectName.equals(other.objectName))
+            }
+        } else if (!objectName.equals(other.objectName)) {
             return false;
+        }
         return true;
     }
 
@@ -76,12 +79,12 @@ public class JMXNodeLocation implements NodeLocation {
 
     @Override
     public int hashCode() {
-        return objectName.hashCode();
+        return (objectName != null) ? objectName.hashCode() : 0;
     }
 
     @Override
     public String toString() {
-        return objectName.getCanonicalName();
+        return (objectName != null) ? objectName.getCanonicalName() : "";
     }
 
 }

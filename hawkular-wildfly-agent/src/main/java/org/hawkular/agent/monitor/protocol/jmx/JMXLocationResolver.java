@@ -33,7 +33,7 @@ public class JMXLocationResolver implements LocationResolver<JMXNodeLocation> {
 
     @Override
     public JMXNodeLocation absolutize(JMXNodeLocation base, JMXNodeLocation location) {
-        return location;
+        return (location.getObjectName() != null) ? location : base;
     }
 
     @Override
