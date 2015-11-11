@@ -27,8 +27,7 @@ public class PlatformLocationResolver implements LocationResolver<PlatformNodeLo
 
     @Override
     public PlatformNodeLocation absolutize(PlatformNodeLocation base, PlatformNodeLocation location) {
-        PlatformPath basePath = base.getPlatformPath();
-        if (basePath.equals(PlatformPath.empty())) {
+        if (base == null || base.getPlatformPath().equals(PlatformPath.empty())) {
             return location;
         } else {
             PlatformPath path = ((PlatformNodeLocation) location).getPlatformPath();
@@ -37,7 +36,7 @@ public class PlatformLocationResolver implements LocationResolver<PlatformNodeLo
                 return base;
             } else {
                 /* combine the two */
-                PlatformPath absPath = PlatformPath.builder().segments(basePath).segments(path).build();
+                PlatformPath absPath = PlatformPath.builder().segments(base.getPlatformPath()).segments(path).build();
                 return new PlatformNodeLocation(absPath);
             }
         }
