@@ -251,10 +251,12 @@ public class MonitorServiceConfiguration {
 
             public ProtocolConfiguration<L> build() {
                 for (EndpointConfiguration server : endpoints.values()) {
-                    for (Name resourceTypeSetName : server.getResourceTypeSets()) {
-                        if (!typeSets.getResourceTypeSets().containsKey(resourceTypeSetName)) {
-                            log.warnResourceTypeSetDoesNotExist(server.getName().toString(),
-                                    resourceTypeSetName.toString());
+                    if (server.getResourceTypeSets() != null) {
+                        for (Name resourceTypeSetName : server.getResourceTypeSets()) {
+                            if (!typeSets.getResourceTypeSets().containsKey(resourceTypeSetName)) {
+                                log.warnResourceTypeSetDoesNotExist(server.getName().toString(),
+                                        resourceTypeSetName.toString());
+                            }
                         }
                     }
                 }

@@ -112,8 +112,7 @@ public class MonitorServiceConfigurationBuilder {
         TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context);
         platformConfigBuilder.typeSets(platformTypeSets);
         if (!platformTypeSets.isDisabledOrEmpty()) {
-            EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, Collections.emptySet(), null,
-                    null);
+            EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null);
             platformConfigBuilder.endpoint(endpoint);
         }
 
