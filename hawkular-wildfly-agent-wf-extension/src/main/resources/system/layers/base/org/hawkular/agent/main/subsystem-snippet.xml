@@ -617,6 +617,89 @@
                        metricSets="Transactions Metrics" />
   </resource-type-set-dmr>
 
+  <!-- JMX metadata for monitoring Jolokia-enabled applications -->
+
+  <avail-set-jmx name="RuntimeAvailsJMX" enabled="true">
+    <avail-jmx name="VM Avail"
+               interval="30"
+               timeUnits="seconds"
+               attribute="StartTime"
+               upRegex="[0123456789]+" />
+  </avail-set-jmx>
+
+  <avail-set-jmx name="MemoryPoolAvailsJMX" enabled="true">
+    <avail-jmx name="Memory Pool Avail"
+               interval="30"
+               timeUnits="seconds"
+               attribute="Valid"
+               upRegex="[tT].*" />
+  </avail-set-jmx>
+
+  <metric-set-jmx name="RuntimeMetricsJMX" enabled="true">
+    <metric-jmx name="VM Uptime"
+                interval="30"
+                timeUnits="seconds"
+                metricUnits="milliseconds"
+                attribute="Uptime" />
+    <metric-jmx name="Used Heap Memory"
+                interval="30"
+                timeUnits="seconds"
+                metricUnits="bytes"
+                objectName="java.lang:type=Memory"
+                attribute="HeapMemoryUsage#used" />
+    <metric-jmx name="Aggregate GC Collection Time"
+                interval="30"
+                timeUnits="seconds"
+                metricUnits="milliseconds"
+                objectName="java.lang:type=GarbageCollector,name=*"
+                attribute="CollectionTime" />
+  </metric-set-jmx>
+
+  <metric-set-jmx name="MemoryPoolMetricsJMX" enabled="true">
+    <metric-jmx name="Initial"
+                interval="2"
+                timeUnits="minutes"
+                metricUnits="bytes"
+                attribute="Usage#init" />
+    <metric-jmx name="Used"
+                interval="1"
+                timeUnits="minutes"
+                metricUnits="bytes"
+                attribute="Usage#used" />
+    <metric-jmx name="Committed"
+                interval="1"
+                timeUnits="minutes"
+                metricUnits="bytes"
+                attribute="Usage#committed" />
+    <metric-jmx name="Max"
+                interval="2"
+                timeUnits="minutes"
+                metricUnits="bytes"
+                attribute="Usage#max" />
+  </metric-set-jmx>
+
+  <resource-type-set-jmx name="MainJMX" enabled="true">
+    <resource-type-jmx name="Runtime MBean"
+                       resourceNameTemplate="JMX [%_ManagedServerName%][%type%]"
+                       objectName="java.lang:type=Runtime"
+                       metricSets="RuntimeMetricsJMX"
+                       availSets="RuntimeAvailsJMX" >
+      <resource-config-jmx name="OS Name" objectName="java.lang:type=OperatingSystem" attribute="Name" />
+      <resource-config-jmx name="Java VM Name" attribute="VmName" />
+    </resource-type-jmx>
+  </resource-type-set-jmx>
+
+  <resource-type-set-jmx name="MemoryPoolJMX" enabled="true">
+    <resource-type-jmx name="Memory Pool MBean"
+                       parents="Runtime MBean"
+                       resourceNameTemplate="JMX [%_ManagedServerName%] %type% %name%"
+                       objectName="java.lang:type=MemoryPool,name=*"
+                       metricSets="MemoryPoolMetricsJMX"
+                       availSets="MemoryPoolAvailsJMX" >
+      <resource-config-jmx name="Type" attribute="Type" />
+    </resource-type-jmx>
+  </resource-type-set-jmx>
+
   <managed-servers>
     <remote-dmr name="Another Remote Server"
                 enabled="false"
@@ -630,6 +713,7 @@
                enabled="true"
                resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Hawkular" />
 
+    <remote-jmx name="Remote JMX" enabled="false" resourceTypeSets="MainJMX,MemoryPoolJMX" url="http://localhost:8080/jolokia-war"/>
   </managed-servers>
 
   <platform enabled="true">
