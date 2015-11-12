@@ -219,14 +219,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         inventoryListenerSupport.fireDiscoverAllFinished(resources);
     }
 
-    private String generateMeasurementKey(AttributeLocation<L> location) {
-        String loc = location.toString();
-        StringBuilder stringBuilder = new StringBuilder(feedId.length() + 1 + loc.length());
-        return stringBuilder
-                .append(feedId)
-                .append('.')
-                .append(loc)
-                .toString();
+    private String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
+        String key = instance.getID().getIDString();
+        return key;
     }
 
     @Override
@@ -280,7 +275,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                     avail = toAvail(instance.getType().getUpPattern(), o);
                 }
                 long ts = System.currentTimeMillis();
-                String key = generateMeasurementKey(location);
+                String key = generateMeasurementKey(instance);
                 AvailDataPoint dataPoint = new AvailDataPoint(key, ts, avail);
                 consumer.accept(dataPoint);
             }
@@ -314,7 +309,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                     value = toDouble(o);
                 }
                 long ts = System.currentTimeMillis();
-                String key = generateMeasurementKey(location);
+                String key = generateMeasurementKey(instance);
                 MetricDataPoint dataPoint = new MetricDataPoint(key, ts, value, instance.getType().getMetricType());
                 consumer.accept(dataPoint);
             }
