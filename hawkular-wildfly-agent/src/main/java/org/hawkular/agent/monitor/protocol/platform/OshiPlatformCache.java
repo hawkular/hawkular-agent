@@ -19,10 +19,10 @@ package org.hawkular.agent.monitor.protocol.platform;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
-import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
 
@@ -41,10 +41,11 @@ import oshi.software.os.OperatingSystem;
  * @author John Mazzitelli
  */
 public class OshiPlatformCache {
-    private static final Pattern BRACKETED_NAME_PATTERN = Pattern.compile(".*\\[(.*)\\].*");
-
-    private final SystemInfo sysInfo;
+    private SystemInfo sysInfo;
     private final Map<Constants.PlatformResourceType, Map<String, ? extends Object>> sysInfoCache;
+    private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private final ReadLock rLock = rwLock.readLock();
+    private final WriteLock wLock = rwLock.writeLock();
 
     public OshiPlatformCache() {
         sysInfo = new SystemInfo();
@@ -57,21 +58,43 @@ public class OshiPlatformCache {
      * from the underlying operating system).
      */
     public void refresh() {
-        sysInfoCache.clear();
+        wLock.lock();
+        try {
+            sysInfo = new SystemInfo();
+            sysInfoCache.clear();
+        } finally {
+            wLock.unlock();
+        }
     }
 
     /**
      * @return information about the operating system.
      */
     public OperatingSystem getOperatingSystem() {
-        if (!sysInfoCache.containsKey(PlatformResourceType.OPERATING_SYSTEM)) {
-            HashMap<String, OperatingSystem> cache = new HashMap<>(1);
-            OperatingSystem os = sysInfo.getOperatingSystem();
-            cache.put(PlatformResourceType.OPERATING_SYSTEM.getName().getNameString(), os);
-            sysInfoCache.put(PlatformResourceType.OPERATING_SYSTEM, cache);
+        OperatingSystem ret;
+
+        wLock.lock();
+        try {
+            if (!sysInfoCache.containsKey(PlatformResourceType.OPERATING_SYSTEM)) {
+                HashMap<String, OperatingSystem> cache = new HashMap<>(1);
+                OperatingSystem os = sysInfo.getOperatingSystem();
+                cache.put(PlatformResourceType.OPERATING_SYSTEM.getName().getNameString(), os);
+                sysInfoCache.put(PlatformResourceType.OPERATING_SYSTEM, cache);
+            }
+        } finally {
+            // downgrade to a read-only lock since we just need it to read from the cache
+            rLock.lock();
+            try {
+                wLock.unlock();
+                ret = (OperatingSystem) sysInfoCache.get(PlatformResourceType.OPERATING_SYSTEM)
+                        .get(PlatformResourceType.OPERATING_SYSTEM.getName().getNameString());
+
+            } finally {
+                rLock.unlock();
+            }
         }
-        return (OperatingSystem) sysInfoCache.get(PlatformResourceType.OPERATING_SYSTEM)
-                .get(PlatformResourceType.OPERATING_SYSTEM.getName().getNameString());
+
+        return ret;
     }
 
     /**
@@ -79,31 +102,62 @@ public class OshiPlatformCache {
      */
     @SuppressWarnings("unchecked")
     public Map<String, OSFileStore> getFileStores() {
-        if (!sysInfoCache.containsKey(PlatformResourceType.FILE_STORE)) {
-            HashMap<String, OSFileStore> cache = new HashMap<>();
-            OSFileStore[] arr = sysInfo.getHardware().getFileStores();
-            if (arr != null) {
-                for (OSFileStore item : arr) {
-                    cache.put(item.getName(), item);
+        Map<String, OSFileStore> ret;
+
+        wLock.lock();
+        try {
+            if (!sysInfoCache.containsKey(PlatformResourceType.FILE_STORE)) {
+                HashMap<String, OSFileStore> cache = new HashMap<>();
+                OSFileStore[] arr = sysInfo.getHardware().getFileStores();
+                if (arr != null) {
+                    for (OSFileStore item : arr) {
+                        cache.put(item.getName(), item);
+                    }
                 }
+                sysInfoCache.put(PlatformResourceType.FILE_STORE, cache);
             }
-            sysInfoCache.put(PlatformResourceType.FILE_STORE, cache);
+        } finally {
+            // downgrade to a read-only lock since we just need it to read from the cache
+            rLock.lock();
+            try {
+                wLock.unlock();
+                ret = (Map<String, OSFileStore>) sysInfoCache.get(PlatformResourceType.FILE_STORE);
+            } finally {
+                rLock.unlock();
+            }
         }
-        return (Map<String, OSFileStore>) sysInfoCache.get(PlatformResourceType.FILE_STORE);
+
+        return ret;
     }
 
     /**
      * @return information about all the platform's memory
      */
     public Memory getMemory() {
-        if (!sysInfoCache.containsKey(PlatformResourceType.MEMORY)) {
-            HashMap<String, Memory> cache = new HashMap<>(1);
-            Memory mem = sysInfo.getHardware().getMemory();
-            cache.put(PlatformResourceType.MEMORY.getName().getNameString(), mem);
-            sysInfoCache.put(PlatformResourceType.MEMORY, cache);
+        Memory ret;
+
+        wLock.lock();
+        try {
+
+            if (!sysInfoCache.containsKey(PlatformResourceType.MEMORY)) {
+                HashMap<String, Memory> cache = new HashMap<>(1);
+                Memory mem = sysInfo.getHardware().getMemory();
+                cache.put(PlatformResourceType.MEMORY.getName().getNameString(), mem);
+                sysInfoCache.put(PlatformResourceType.MEMORY, cache);
+            }
+        } finally {
+            // downgrade to a read-only lock since we just need it to read from the cache
+            rLock.lock();
+            try {
+                wLock.unlock();
+                ret = (Memory) sysInfoCache.get(PlatformResourceType.MEMORY)
+                        .get(PlatformResourceType.MEMORY.getName().getNameString());
+            } finally {
+                rLock.unlock();
+            }
         }
-        return (Memory) sysInfoCache.get(PlatformResourceType.MEMORY)
-                .get(PlatformResourceType.MEMORY.getName().getNameString());
+
+        return ret;
     }
 
     /**
@@ -111,17 +165,33 @@ public class OshiPlatformCache {
      */
     @SuppressWarnings("unchecked")
     public Map<String, Processor> getProcessors() {
-        if (!sysInfoCache.containsKey(PlatformResourceType.PROCESSOR)) {
-            HashMap<String, Processor> cache = new HashMap<>();
-            Processor[] arr = sysInfo.getHardware().getProcessors();
-            if (arr != null) {
-                for (Processor item : arr) {
-                    cache.put(String.valueOf(item.getProcessorNumber()), item);
+        Map<String, Processor> ret;
+
+        wLock.lock();
+        try {
+
+            if (!sysInfoCache.containsKey(PlatformResourceType.PROCESSOR)) {
+                HashMap<String, Processor> cache = new HashMap<>();
+                Processor[] arr = sysInfo.getHardware().getProcessors();
+                if (arr != null) {
+                    for (Processor item : arr) {
+                        cache.put(String.valueOf(item.getProcessorNumber()), item);
+                    }
                 }
+                sysInfoCache.put(PlatformResourceType.PROCESSOR, cache);
             }
-            sysInfoCache.put(PlatformResourceType.PROCESSOR, cache);
+        } finally {
+            // downgrade to a read-only lock since we just need it to read from the cache
+            rLock.lock();
+            try {
+                wLock.unlock();
+                ret = (Map<String, Processor>) sysInfoCache.get(PlatformResourceType.PROCESSOR);
+            } finally {
+                rLock.unlock();
+            }
         }
-        return (Map<String, Processor>) sysInfoCache.get(PlatformResourceType.PROCESSOR);
+
+        return ret;
     }
 
     /**
@@ -129,17 +199,33 @@ public class OshiPlatformCache {
      */
     @SuppressWarnings("unchecked")
     public Map<String, PowerSource> getPowerSources() {
-        if (!sysInfoCache.containsKey(PlatformResourceType.POWER_SOURCE)) {
-            HashMap<String, PowerSource> cache = new HashMap<>();
-            PowerSource[] arr = sysInfo.getHardware().getPowerSources();
-            if (arr != null) {
-                for (PowerSource item : arr) {
-                    cache.put(item.getName(), item);
+        Map<String, PowerSource> ret;
+
+        wLock.lock();
+        try {
+
+            if (!sysInfoCache.containsKey(PlatformResourceType.POWER_SOURCE)) {
+                HashMap<String, PowerSource> cache = new HashMap<>();
+                PowerSource[] arr = sysInfo.getHardware().getPowerSources();
+                if (arr != null) {
+                    for (PowerSource item : arr) {
+                        cache.put(item.getName(), item);
+                    }
                 }
+                sysInfoCache.put(PlatformResourceType.POWER_SOURCE, cache);
             }
-            sysInfoCache.put(PlatformResourceType.POWER_SOURCE, cache);
+        } finally {
+            // downgrade to a read-only lock since we just need it to read from the cache
+            rLock.lock();
+            try {
+                wLock.unlock();
+                ret = (Map<String, PowerSource>) sysInfoCache.get(PlatformResourceType.POWER_SOURCE);
+            } finally {
+                rLock.unlock();
+            }
         }
-        return (Map<String, PowerSource>) sysInfoCache.get(PlatformResourceType.POWER_SOURCE);
+
+        return ret;
     }
 
     /**
@@ -364,22 +450,4 @@ public class OshiPlatformCache {
 
         return results;
     }
-
-    /**
-     * Returns the name of the OSHI object based on an inventory name which is typically something like
-     * "Processor [1]" or "File Store [/opt]" or "Memory".
-     *
-     * @param id the ID of the resource as found in inventory
-     * @return the name of the object that OSHI will understand
-     */
-    private String parseBracketedNameValue(ID id) {
-        // most have named like "File Store [/opt]" or "Processor [1]"
-        Matcher m = BRACKETED_NAME_PATTERN.matcher(id.getIDString());
-        if (m.matches()) {
-            return m.group(1);
-        } else {
-            return id.getIDString(); // Memory doesn't have a bracketed name
-        }
-    }
-
 }

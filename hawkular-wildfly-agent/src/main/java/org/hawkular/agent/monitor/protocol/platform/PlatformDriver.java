@@ -83,6 +83,7 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
             Map<PlatformPath, PlatformResourceNode> nodes = null;
             Name metricToCollect = new Name(location.getAttribute()); // we know these are all metrics (no avails)
             try (Context timerContext = diagnostics.getRequestTimer().time()) {
+                platform.refresh(); // refresh to make sure we get the latest data (TODO: bulk collect to avoid this)
                 nodes = platform.discoverResources(location.getLocation().getPlatformPath());
                 switch (nodes.size()) {
                     case 0:

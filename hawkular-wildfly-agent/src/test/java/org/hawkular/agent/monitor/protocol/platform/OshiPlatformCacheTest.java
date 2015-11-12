@@ -17,6 +17,9 @@
 package org.hawkular.agent.monitor.protocol.platform;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
@@ -36,6 +39,84 @@ import oshi.util.Util;
  * This is just a simple test that lets us see the oshi API working.
  */
 public class OshiPlatformCacheTest {
+
+    @Test
+    public void testConcurrency() {
+        // Have two threads repeatedly get data and refresh the data
+        // to make sure it never blocks and no problems occur.
+        // These just test the locking - make sure we won't block concurrent access;
+        // we don't actually look at the platform values.
+
+        OshiPlatformCache oshi = new OshiPlatformCache();
+
+        final CountDownLatch goLatch = new CountDownLatch(1);
+        final int maxLoops = 10;
+        final AtomicInteger t1Attempts = new AtomicInteger(0);
+        final AtomicInteger t2Attempts = new AtomicInteger(0);
+        final CountDownLatch doneLatch1 = new CountDownLatch(1);
+        final CountDownLatch doneLatch2 = new CountDownLatch(1);
+
+        Thread t1 = new Thread(new Runnable() {
+            public void run() {
+                try {
+                    // should never take this long, but just a precaution
+                    goLatch.await(10, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    print("thread 1 interrupted");
+                    return;
+                }
+
+                for (int i = 0; i < maxLoops; i++) {
+                    oshi.getOperatingSystem();
+                    oshi.getFileStores();
+                    oshi.getMemory();
+                    oshi.getProcessors();
+                    oshi.getPowerSources();
+                    oshi.refresh();
+                    t1Attempts.incrementAndGet();
+                }
+
+                doneLatch1.countDown();
+            }
+        });
+
+        Thread t2 = new Thread(new Runnable() {
+            public void run() {
+                try {
+                    // should never take this long, but just a precaution
+                    goLatch.await(10, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    print("thread 2 interrupted");
+                    return;
+                }
+                for (int i = 0; i < maxLoops; i++) {
+                    oshi.getOperatingSystem();
+                    oshi.getFileStores();
+                    oshi.getMemory();
+                    oshi.getProcessors();
+                    oshi.getPowerSources();
+                    oshi.refresh();
+                    t2Attempts.incrementAndGet();
+                }
+
+                doneLatch2.countDown();
+            }
+        });
+
+        t1.start();
+        t2.start();
+        goLatch.countDown();
+        try {
+            doneLatch1.await(30, TimeUnit.SECONDS);
+            doneLatch2.await(30, TimeUnit.SECONDS);
+        } catch (InterruptedException ie) {
+            Assert.fail("Concurrency test was interrupted and did not finish");
+        }
+
+        // make sure we executed everything we expected - if not, we must have blocked somewhere
+        Assert.assertEquals(maxLoops, t1Attempts.get());
+        Assert.assertEquals(maxLoops, t2Attempts.get());
+    }
 
     @Test
     public void testDiscover() {
@@ -192,16 +273,19 @@ public class OshiPlatformCacheTest {
     @Test
     public void testRefresh() {
         OshiPlatformCache oshi = new OshiPlatformCache();
+        Object os1 = oshi.getOperatingSystem();
         Object mem1 = oshi.getMemory();
         Object fs1 = oshi.getFileStores();
         Object proc1 = oshi.getProcessors();
         Object ps1 = oshi.getPowerSources();
 
         // see that they are cached - same objects as before
+        Object os2 = oshi.getOperatingSystem();
         Object mem2 = oshi.getMemory();
         Object fs2 = oshi.getFileStores();
         Object proc2 = oshi.getProcessors();
         Object ps2 = oshi.getPowerSources();
+        Assert.assertSame(os1, os2);
         Assert.assertSame(mem1, mem2);
         Assert.assertSame(fs1, fs2);
         Assert.assertSame(proc1, proc2);
@@ -209,11 +293,13 @@ public class OshiPlatformCacheTest {
 
         // refresh and see that they are now different
         oshi.refresh();
+        os2 = oshi.getOperatingSystem();
         mem2 = oshi.getMemory();
         fs2 = oshi.getFileStores();
         proc2 = oshi.getProcessors();
         ps2 = oshi.getPowerSources();
-        //Assert.assertNotSame(mem1, mem2); OSHI returns the same Memory object always (must have its own cache)
+        Assert.assertNotSame(os1, os2);
+        Assert.assertNotSame(mem1, mem2);
         Assert.assertNotSame(fs1, fs2);
         Assert.assertNotSame(proc1, proc2);
         Assert.assertNotSame(ps1, ps2);
