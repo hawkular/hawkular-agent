@@ -74,24 +74,17 @@
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <appendAssemblyId>true</appendAssemblyId>
-          <archive>
-            <manifest>
-              <mainClass>org.hawkular.wildfly.agent.installer.AgentInstaller</mainClass>
-            </manifest>
-          </archive>
-          <descriptors>
-            <descriptor>src/main/assembly/standalone-jar-assembly.xml</descriptor>
-          </descriptors>
-        </configuration>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.4.2</version>
         <executions>
           <execution>
             <phase>package</phase>
             <goals>
-              <goal>single</goal>
+              <goal>shade</goal>
             </goals>
+            <configuration>
+              <dependency-reduced-pom>false</dependency-reduced-pom>
+            </configuration>
           </execution>
         </executions>
       </plugin>
