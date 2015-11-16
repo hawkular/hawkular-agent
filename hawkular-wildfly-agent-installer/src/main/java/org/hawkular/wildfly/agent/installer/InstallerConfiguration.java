@@ -18,7 +18,6 @@ package org.hawkular.wildfly.agent.installer;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
@@ -35,7 +34,11 @@ import org.jboss.logging.Logger;
 public class InstallerConfiguration {
     private static final Logger log = Logger.getLogger(AgentInstaller.class);
 
+    // these are standalone command line options that are *not* found in the config .properties file
     static final String OPTION_INSTALLER_CONFIG = "installer-config";
+    static final String OPTION_ENCRYPTION_KEY = "encryption-key";
+
+    // these are command line options that can also be defined in the config .properties file
     static final String OPTION_WILDFLY_HOME = "wildfly-home";
     static final String OPTION_MODULE_DISTRIBUTION = "module-dist";
     static final String OPTION_SERVER_CONFIG = "server-config";
@@ -61,6 +64,12 @@ public class InstallerConfiguration {
                 .argName(InstallerConfiguration.OPTION_INSTALLER_CONFIG)
                 .longOpt(InstallerConfiguration.OPTION_INSTALLER_CONFIG)
                 .desc("Installer .properties configuration file")
+                .numberOfArgs(1)
+                .build());
+        options.addOption(Option.builder()
+                .argName(InstallerConfiguration.OPTION_ENCRYPTION_KEY)
+                .longOpt(InstallerConfiguration.OPTION_ENCRYPTION_KEY)
+                .desc("If specified, this is used to decode the properties that were encrypted")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
@@ -155,7 +164,7 @@ public class InstallerConfiguration {
 
     private final Properties properties;
 
-    public InstallerConfiguration(CommandLine commandLine) throws IOException {
+    public InstallerConfiguration(CommandLine commandLine) throws Exception {
         this.properties = new Properties();
 
         // we allow the user to set system properties through the -D argument
@@ -202,11 +211,29 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_HAWKULAR_PASSWORD);
         setProperty(properties, commandLine, OPTION_HAWKULAR_SECURITY_KEY);
         setProperty(properties, commandLine, OPTION_HAWKULAR_SECURITY_SECRET);
+
+        // if we were told the passwords were encrypted, use the key to decode the values
+        String encryptionKey = commandLine.getOptionValue(OPTION_ENCRYPTION_KEY, null);
+        if (encryptionKey != null) {
+            decodeProperty(properties, OPTION_KEYSTORE_PASSWORD, encryptionKey);
+            decodeProperty(properties, OPTION_KEY_PASSWORD, encryptionKey);
+            decodeProperty(properties, OPTION_HAWKULAR_PASSWORD, encryptionKey);
+            decodeProperty(properties, OPTION_HAWKULAR_SECURITY_SECRET, encryptionKey);
+        }
+
     }
 
     private void setProperty(Properties props, CommandLine commandLine, String option) {
         String value = commandLine.getOptionValue(option);
         if (value != null) {
+            properties.setProperty(option, value);
+        }
+    }
+
+    private void decodeProperty(Properties prop, String option, String encryptionKey) throws Exception {
+        String value = properties.getProperty(option, null);
+        if (value != null) {
+            value = EncoderDecoder.decode(encryptionKey, value);
             properties.setProperty(option, value);
         }
     }

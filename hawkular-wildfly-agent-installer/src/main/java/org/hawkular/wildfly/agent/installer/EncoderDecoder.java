@@ -38,7 +38,7 @@ public final class EncoderDecoder {
      * @return the encrypted message
      * @throws Exception on error
      */
-    public static final String encode(String key, String clearText) throws Exception {
+    public static String encode(String key, String clearText) throws Exception {
         if (clearText == null) {
             return null;
         }
@@ -66,7 +66,7 @@ public final class EncoderDecoder {
      * @return the original, clear text message that was encoded
      * @throws Exception on error
      */
-    public static final String decode(String key, String encodedString) throws Exception {
+    public static String decode(String key, String encodedString) throws Exception {
         if (encodedString == null) {
             return null;
         }
