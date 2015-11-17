@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-wildfly-agent-itest-parent</artifactId>
-    <version>0.13.2.Final-SNAPSHOT</version>
+    <version>0.13.2.Final</version>
   </parent>
 
   <artifactId>hawkular-wildfly-agent-itest-dist</artifactId>
@@ -43,13 +43,13 @@
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-wildfly-agent-wf-extension</artifactId>
-      <version>0.13.2.Final-SNAPSHOT</version>
+      <version>0.13.2.Final</version>
       <type>zip</type>
     </dependency>
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-wildfly-agent-helloworld-war</artifactId>
-      <version>0.13.2.Final-SNAPSHOT</version>
+      <version>0.13.2.Final</version>
       <type>war</type>
     </dependency>
     <dependency>
