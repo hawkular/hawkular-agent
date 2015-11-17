@@ -57,6 +57,20 @@ public class AgentInstaller {
             CommandLine commandLine = new DefaultParser().parse(options, args);
             InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
 
+            // IF we were told the passwords were encrypted THEN
+            //   IF we were given the key on the command line THEN
+            //      Decode with the key given on the command line
+            //   ELSE
+            //      Decode with the key the user gives us over stdin
+            boolean passwordsEncrypted = commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY);
+            if (passwordsEncrypted) {
+                String key = commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY, null);
+                if (key == null) {
+                    key = readPasswordFromStdin("Encryption key:");
+                }
+                installerConfig.decodeProperties(key);
+            }
+
             String jbossHome = installerConfig.getWildFlyHome();
             if (jbossHome == null) {
                 // user did not provide us with a wildfly home - let's see if we are sitting in a wildfly home already

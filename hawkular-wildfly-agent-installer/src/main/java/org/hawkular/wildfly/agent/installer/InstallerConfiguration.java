@@ -71,6 +71,7 @@ public class InstallerConfiguration {
                 .longOpt(InstallerConfiguration.OPTION_ENCRYPTION_KEY)
                 .desc("If specified, this is used to decode the properties that were encrypted")
                 .numberOfArgs(1)
+                .optionalArg(true) // if no argument is given, we'll ask on stdin for it
                 .build());
         options.addOption(Option.builder()
                 .argName(InstallerConfiguration.OPTION_WILDFLY_HOME)
@@ -211,16 +212,6 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_HAWKULAR_PASSWORD);
         setProperty(properties, commandLine, OPTION_HAWKULAR_SECURITY_KEY);
         setProperty(properties, commandLine, OPTION_HAWKULAR_SECURITY_SECRET);
-
-        // if we were told the passwords were encrypted, use the key to decode the values
-        String encryptionKey = commandLine.getOptionValue(OPTION_ENCRYPTION_KEY, null);
-        if (encryptionKey != null) {
-            decodeProperty(properties, OPTION_KEYSTORE_PASSWORD, encryptionKey);
-            decodeProperty(properties, OPTION_KEY_PASSWORD, encryptionKey);
-            decodeProperty(properties, OPTION_HAWKULAR_PASSWORD, encryptionKey);
-            decodeProperty(properties, OPTION_HAWKULAR_SECURITY_SECRET, encryptionKey);
-        }
-
     }
 
     private void setProperty(Properties props, CommandLine commandLine, String option) {
@@ -228,6 +219,13 @@ public class InstallerConfiguration {
         if (value != null) {
             properties.setProperty(option, value);
         }
+    }
+
+    public void decodeProperties(String encryptionKey) throws Exception {
+        decodeProperty(properties, OPTION_KEYSTORE_PASSWORD, encryptionKey);
+        decodeProperty(properties, OPTION_KEY_PASSWORD, encryptionKey);
+        decodeProperty(properties, OPTION_HAWKULAR_PASSWORD, encryptionKey);
+        decodeProperty(properties, OPTION_HAWKULAR_SECURITY_SECRET, encryptionKey);
     }
 
     private void decodeProperty(Properties prop, String option, String encryptionKey) throws Exception {
