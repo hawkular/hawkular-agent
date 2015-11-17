@@ -61,9 +61,9 @@
         <configuration>
           <mainClass>org.hawkular.wildfly.agent.installer.AgentInstaller</mainClass>
           <arguments>
-            <argument>--wildfly-home=${org.hawkular.wildfly.home}</argument>
+            <argument>--target-location=${org.hawkular.wildfly.home}</argument>
             <argument>--module-dist=${project.basedir}/../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</argument>
-            <argument>--hawkular-server-url=http://127.0.0.1:8080</argument>
+            <argument>--server-url=http://127.0.0.1:8080</argument>
           </arguments>
           <systemProperties>
             <systemProperty>
