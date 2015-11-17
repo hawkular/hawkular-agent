@@ -71,7 +71,7 @@ public class AgentInstaller {
                 installerConfig.decodeProperties(key);
             }
 
-            String jbossHome = installerConfig.getWildFlyHome();
+            String jbossHome = installerConfig.getTargetLocation();
             if (jbossHome == null) {
                 // user did not provide us with a wildfly home - let's see if we are sitting in a wildfly home already
                 File jbossHomeFile = new File(".").getCanonicalFile();
@@ -80,20 +80,19 @@ public class AgentInstaller {
                         jbossHomeFile.canRead() &&
                         new File(jbossHomeFile, "modules").isDirectory())) {
                     throw new MissingOptionException(
-                            InstallerConfiguration.OPTION_WILDFLY_HOME + " must be specified");
+                            InstallerConfiguration.OPTION_TARGET_LOCATION + " must be specified");
                 }
                 // looks like our current working directory is a WildFly home - use that
                 jbossHome = jbossHomeFile.getCanonicalPath();
             }
 
-            if ((installerConfig.getHawkularUsername() == null || installerConfig.getHawkularPassword() == null)
-                    && (installerConfig.getHawkularSecurityKey() == null
-                            || installerConfig.getHawkularSecuritySecret() == null)) {
+            if ((installerConfig.getUsername() == null || installerConfig.getPassword() == null)
+                    && (installerConfig.getSecurityKey() == null || installerConfig.getSecuritySecret() == null)) {
                 throw new MissingOptionException(
-                        "You must provide Hawkular credentials in the installer configuration");
+                        "You must provide credentials (username/password or key/secret) in installer configuration");
             }
 
-            URL hawkularServerUrl = new URL(installerConfig.getHawkularServerUrl());
+            URL hawkularServerUrl = new URL(installerConfig.getServerUrl());
             String moduleZip = installerConfig.getModuleDistribution();
 
             URL moduleZipUrl;
@@ -160,11 +159,11 @@ public class AgentInstaller {
                 }
             }
 
-            String serverConfig = installerConfig.getServerConfig();
-            if (serverConfig != null) {
-                configurationBldr.serverConfig(serverConfig);
+            String targetConfig = installerConfig.getTargetConfig();
+            if (targetConfig != null) {
+                configurationBldr.serverConfig(targetConfig);
             } else {
-                serverConfig = DeploymentConfiguration.DEFAULT_SERVER_CONFIG;
+                targetConfig = DeploymentConfiguration.DEFAULT_SERVER_CONFIG;
                 // we'll use this in case of https to resolve server configuration directory
             }
 
@@ -203,13 +202,13 @@ public class AgentInstaller {
                 if (!(keystoreSrcFile.isFile() && keystoreSrcFile.canRead())) {
                     throw new FileNotFoundException("Cannot read " + keystoreSrcFile.getAbsolutePath());
                 }
-                File serverConfigDir;
-                if (new File(serverConfig).isAbsolute()) {
-                    serverConfigDir = new File(serverConfig).getParentFile();
+                File targetConfigDir;
+                if (new File(targetConfig).isAbsolute()) {
+                    targetConfigDir = new File(targetConfig).getParentFile();
                 } else {
-                    serverConfigDir = new File(jbossHome, serverConfig).getParentFile();
+                    targetConfigDir = new File(jbossHome, targetConfig).getParentFile();
                 }
-                Path keystoreDst = Paths.get(serverConfigDir.getAbsolutePath()).resolve(keystoreSrcFile.getName());
+                Path keystoreDst = Paths.get(targetConfigDir.getAbsolutePath()).resolve(keystoreSrcFile.getName());
                 // never overwrite target keystore
                 if (!keystoreDst.toFile().exists()) {
                     log.info("Copy [" + keystoreSrcFile.getAbsolutePath() + "] to [" + keystoreDst.toString() + "]");
@@ -305,19 +304,18 @@ public class AgentInstaller {
                     .append(" useSSL=\"true\"");
         }
 
-        if (installerConfig.getHawkularUsername() != null && !installerConfig.getHawkularUsername().isEmpty()) {
-            xml.append(" username=\"" + installerConfig.getHawkularUsername() + "\"");
+        if (installerConfig.getUsername() != null && !installerConfig.getUsername().isEmpty()) {
+            xml.append(" username=\"" + installerConfig.getUsername() + "\"");
         }
-        if (installerConfig.getHawkularPassword() != null && !installerConfig.getHawkularPassword().isEmpty()) {
-            xml.append(" password=\"" + installerConfig.getHawkularPassword() + "\"");
+        if (installerConfig.getPassword() != null && !installerConfig.getPassword().isEmpty()) {
+            xml.append(" password=\"" + installerConfig.getPassword() + "\"");
         }
 
-        if (installerConfig.getHawkularSecurityKey() != null && !installerConfig.getHawkularSecurityKey().isEmpty()) {
-            xml.append(" securityKey=\"" + installerConfig.getHawkularSecurityKey() + "\"");
+        if (installerConfig.getSecurityKey() != null && !installerConfig.getSecurityKey().isEmpty()) {
+            xml.append(" securityKey=\"" + installerConfig.getSecurityKey() + "\"");
         }
-        if (installerConfig.getHawkularSecuritySecret() != null
-                && !installerConfig.getHawkularSecuritySecret().isEmpty()) {
-            xml.append(" securitySecret=\"" + installerConfig.getHawkularSecuritySecret() + "\"");
+        if (installerConfig.getSecuritySecret() != null && !installerConfig.getSecuritySecret().isEmpty()) {
+            xml.append(" securitySecret=\"" + installerConfig.getSecuritySecret() + "\"");
         }
 
         xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");
@@ -361,7 +359,7 @@ public class AgentInstaller {
     }
 
     private static URL getHawkularServerAgentDownloadUrl(InstallerConfiguration config) throws MalformedURLException {
-        String serverUrl = String.format("%s/hawkular-wildfly-agent/download", config.getHawkularServerUrl());
+        String serverUrl = String.format("%s/hawkular-wildfly-agent/download", config.getServerUrl());
         return new URL(serverUrl);
     }
 

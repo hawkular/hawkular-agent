@@ -39,19 +39,19 @@ public class InstallerConfiguration {
     static final String OPTION_ENCRYPTION_KEY = "encryption-key";
 
     // these are command line options that can also be defined in the config .properties file
-    static final String OPTION_WILDFLY_HOME = "wildfly-home";
+    static final String OPTION_TARGET_LOCATION = "target-location";
     static final String OPTION_MODULE_DISTRIBUTION = "module-dist";
-    static final String OPTION_SERVER_CONFIG = "server-config";
+    static final String OPTION_TARGET_CONFIG = "target-config";
     static final String OPTION_SUBSYSTEM_SNIPPET = "subsystem-snippet";
-    static final String OPTION_HAWKULAR_SERVER_URL = "hawkular-server-url";
+    static final String OPTION_SERVER_URL = "server-url";
     static final String OPTION_KEYSTORE_PATH = "keystore-path";
     static final String OPTION_KEYSTORE_PASSWORD = "keystore-password";
     static final String OPTION_KEY_PASSWORD = "key-password";
     static final String OPTION_KEY_ALIAS = "key-alias";
-    static final String OPTION_HAWKULAR_USERNAME = "hawkular-username";
-    static final String OPTION_HAWKULAR_PASSWORD = "hawkular-password";
-    static final String OPTION_HAWKULAR_SECURITY_KEY = "hawkular-security-key";
-    static final String OPTION_HAWKULAR_SECURITY_SECRET = "hawkular-security-secret";
+    static final String OPTION_USERNAME = "username";
+    static final String OPTION_PASSWORD = "password";
+    static final String OPTION_SECURITY_KEY = "security-key";
+    static final String OPTION_SECURITY_SECRET = "security-secret";
 
     static Options buildCommandLineOptions() {
         Options options = new Options();
@@ -69,14 +69,15 @@ public class InstallerConfiguration {
         options.addOption(Option.builder()
                 .argName(InstallerConfiguration.OPTION_ENCRYPTION_KEY)
                 .longOpt(InstallerConfiguration.OPTION_ENCRYPTION_KEY)
-                .desc("If specified, this is used to decode the properties that were encrypted")
+                .desc("If specified, this is used to decode the properties that were encrypted. If you do not " +
+                        "provide a value with the option, you will be prompted for one.")
                 .numberOfArgs(1)
                 .optionalArg(true) // if no argument is given, we'll ask on stdin for it
                 .build());
         options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_WILDFLY_HOME)
-                .longOpt(InstallerConfiguration.OPTION_WILDFLY_HOME)
-                .desc("Target WildFly home directory")
+                .argName(InstallerConfiguration.OPTION_TARGET_LOCATION)
+                .longOpt(InstallerConfiguration.OPTION_TARGET_LOCATION)
+                .desc("Target home directory of the application server where the agent is to be installed")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
@@ -86,16 +87,16 @@ public class InstallerConfiguration {
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL)
-                .longOpt(InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL)
-                .desc("Hawkular Server URL")
+                .argName(InstallerConfiguration.OPTION_SERVER_URL)
+                .longOpt(InstallerConfiguration.OPTION_SERVER_URL)
+                .desc("Server URL where the agent will send its monitoring data")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_SERVER_CONFIG)
-                .longOpt(InstallerConfiguration.OPTION_SERVER_CONFIG)
-                .desc("Server config to write to. Can be either absolute path or relative to "
-                        + InstallerConfiguration.OPTION_WILDFLY_HOME)
+                .argName(InstallerConfiguration.OPTION_TARGET_CONFIG)
+                .longOpt(InstallerConfiguration.OPTION_TARGET_CONFIG)
+                .desc("The target configuration file to write to. Can be either absolute path or relative to "
+                        + InstallerConfiguration.OPTION_TARGET_LOCATION)
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
@@ -109,54 +110,56 @@ public class InstallerConfiguration {
         options.addOption(Option.builder()
                 .argName(InstallerConfiguration.OPTION_KEYSTORE_PATH)
                 .longOpt(InstallerConfiguration.OPTION_KEYSTORE_PATH)
-                .desc("Keystore file. Required when " + InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL
+                .desc("Keystore file. Required when " + InstallerConfiguration.OPTION_SERVER_URL
                         + " protocol is https")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
                 .argName(InstallerConfiguration.OPTION_KEYSTORE_PASSWORD)
                 .longOpt(InstallerConfiguration.OPTION_KEYSTORE_PASSWORD)
-                .desc("Keystore password. When " + InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL
+                .desc("Keystore password. When " + InstallerConfiguration.OPTION_SERVER_URL
                         + " protocol is https and this option is not passed, installer will ask for password")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
                 .argName(InstallerConfiguration.OPTION_KEY_PASSWORD)
                 .longOpt(InstallerConfiguration.OPTION_KEY_PASSWORD)
-                .desc("Key password. When " + InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL
+                .desc("Key password. When " + InstallerConfiguration.OPTION_SERVER_URL
                         + " protocol is https and this option is not passed, installer will ask for password")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
                 .argName(InstallerConfiguration.OPTION_KEY_ALIAS)
                 .longOpt(InstallerConfiguration.OPTION_KEY_ALIAS)
-                .desc("Key alias. Required when " + InstallerConfiguration.OPTION_HAWKULAR_SERVER_URL
+                .desc("Key alias. Required when " + InstallerConfiguration.OPTION_SERVER_URL
                         + " protocol is https")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_HAWKULAR_USERNAME)
-                .longOpt(InstallerConfiguration.OPTION_HAWKULAR_USERNAME)
-                .desc("User the agent will use when connecting to Hawkular Server. Ignored if a key is provided.")
+                .argName(InstallerConfiguration.OPTION_USERNAME)
+                .longOpt(InstallerConfiguration.OPTION_USERNAME)
+                .desc("User the agent will use when connecting to Hawkular Server. Ignored if " + OPTION_SECURITY_KEY
+                        + " is provided.")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option
                 .builder()
-                .argName(InstallerConfiguration.OPTION_HAWKULAR_PASSWORD)
-                .longOpt(InstallerConfiguration.OPTION_HAWKULAR_PASSWORD)
-                .desc("Credentials agent will use when connecting to Hawkular Server. Ignored if a key is provided.")
+                .argName(InstallerConfiguration.OPTION_PASSWORD)
+                .longOpt(InstallerConfiguration.OPTION_PASSWORD)
+                .desc("Credentials agent will use when connecting to Hawkular Server. Ignored if "
+                        + OPTION_SECURITY_KEY + " is provided.")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_HAWKULAR_SECURITY_KEY)
-                .longOpt(InstallerConfiguration.OPTION_HAWKULAR_SECURITY_KEY)
-                .desc("Security key agent will use when authenticating with Hawkular Server.")
+                .argName(InstallerConfiguration.OPTION_SECURITY_KEY)
+                .longOpt(InstallerConfiguration.OPTION_SECURITY_KEY)
+                .desc("Security key that the agent will use when authenticating with Hawkular Server.")
                 .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_HAWKULAR_SECURITY_SECRET)
-                .longOpt(InstallerConfiguration.OPTION_HAWKULAR_SECURITY_SECRET)
-                .desc("Security secret agent will use when authenticating with Hawkular Server.")
+                .argName(InstallerConfiguration.OPTION_SECURITY_SECRET)
+                .longOpt(InstallerConfiguration.OPTION_SECURITY_SECRET)
+                .desc("Security secret that the agent will use when authenticating with Hawkular Server.")
                 .numberOfArgs(1)
                 .build());
 
@@ -199,19 +202,19 @@ public class InstallerConfiguration {
         }
 
         // now we override the defaults with options the user provided us
-        setProperty(properties, commandLine, OPTION_WILDFLY_HOME);
+        setProperty(properties, commandLine, OPTION_TARGET_LOCATION);
         setProperty(properties, commandLine, OPTION_MODULE_DISTRIBUTION);
-        setProperty(properties, commandLine, OPTION_SERVER_CONFIG);
+        setProperty(properties, commandLine, OPTION_TARGET_CONFIG);
         setProperty(properties, commandLine, OPTION_SUBSYSTEM_SNIPPET);
-        setProperty(properties, commandLine, OPTION_HAWKULAR_SERVER_URL);
+        setProperty(properties, commandLine, OPTION_SERVER_URL);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PATH);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PASSWORD);
         setProperty(properties, commandLine, OPTION_KEY_PASSWORD);
         setProperty(properties, commandLine, OPTION_KEY_ALIAS);
-        setProperty(properties, commandLine, OPTION_HAWKULAR_USERNAME);
-        setProperty(properties, commandLine, OPTION_HAWKULAR_PASSWORD);
-        setProperty(properties, commandLine, OPTION_HAWKULAR_SECURITY_KEY);
-        setProperty(properties, commandLine, OPTION_HAWKULAR_SECURITY_SECRET);
+        setProperty(properties, commandLine, OPTION_USERNAME);
+        setProperty(properties, commandLine, OPTION_PASSWORD);
+        setProperty(properties, commandLine, OPTION_SECURITY_KEY);
+        setProperty(properties, commandLine, OPTION_SECURITY_SECRET);
     }
 
     private void setProperty(Properties props, CommandLine commandLine, String option) {
@@ -224,8 +227,8 @@ public class InstallerConfiguration {
     public void decodeProperties(String encryptionKey) throws Exception {
         decodeProperty(properties, OPTION_KEYSTORE_PASSWORD, encryptionKey);
         decodeProperty(properties, OPTION_KEY_PASSWORD, encryptionKey);
-        decodeProperty(properties, OPTION_HAWKULAR_PASSWORD, encryptionKey);
-        decodeProperty(properties, OPTION_HAWKULAR_SECURITY_SECRET, encryptionKey);
+        decodeProperty(properties, OPTION_PASSWORD, encryptionKey);
+        decodeProperty(properties, OPTION_SECURITY_SECRET, encryptionKey);
     }
 
     private void decodeProperty(Properties prop, String option, String encryptionKey) throws Exception {
@@ -240,24 +243,24 @@ public class InstallerConfiguration {
         return properties.getProperty(OPTION_INSTALLER_CONFIG);
     }
 
-    public String getWildFlyHome() {
-        return properties.getProperty(OPTION_WILDFLY_HOME);
+    public String getTargetLocation() {
+        return properties.getProperty(OPTION_TARGET_LOCATION);
     }
 
     public String getModuleDistribution() {
         return properties.getProperty(OPTION_MODULE_DISTRIBUTION);
     }
 
-    public String getServerConfig() {
-        return properties.getProperty(OPTION_SERVER_CONFIG);
+    public String getTargetConfig() {
+        return properties.getProperty(OPTION_TARGET_CONFIG);
     }
 
     public String getSubsystemSnippet() {
         return properties.getProperty(OPTION_SUBSYSTEM_SNIPPET);
     }
 
-    public String getHawkularServerUrl() {
-        return properties.getProperty(OPTION_HAWKULAR_SERVER_URL);
+    public String getServerUrl() {
+        return properties.getProperty(OPTION_SERVER_URL);
     }
 
     public String getKeystorePath() {
@@ -276,19 +279,19 @@ public class InstallerConfiguration {
         return properties.getProperty(OPTION_KEY_ALIAS);
     }
 
-    public String getHawkularUsername() {
-        return properties.getProperty(OPTION_HAWKULAR_USERNAME);
+    public String getUsername() {
+        return properties.getProperty(OPTION_USERNAME);
     }
 
-    public String getHawkularPassword() {
-        return properties.getProperty(OPTION_HAWKULAR_PASSWORD);
+    public String getPassword() {
+        return properties.getProperty(OPTION_PASSWORD);
     }
 
-    public String getHawkularSecurityKey() {
-        return properties.getProperty(OPTION_HAWKULAR_SECURITY_KEY);
+    public String getSecurityKey() {
+        return properties.getProperty(OPTION_SECURITY_KEY);
     }
 
-    public String getHawkularSecuritySecret() {
-        return properties.getProperty(OPTION_HAWKULAR_SECURITY_SECRET);
+    public String getSecuritySecret() {
+        return properties.getProperty(OPTION_SECURITY_SECRET);
     }
 }

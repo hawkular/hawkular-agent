@@ -74,34 +74,72 @@ public class InstallerConfigurationTest {
         Options options = InstallerConfiguration.buildCommandLineOptions();
         CommandLine commandLine = new DefaultParser().parse(options,
                 args("--installer-config", "classpath:test-installer.properties",
-                        "--wildfly-home", "/opt/wildfly/OVERRIDE",
-                        "--server-config", "standalone/configuration/OVERRIDE.xml",
+                        "--target-location", "/opt/wildfly/OVERRIDE",
+                        "--target-config", "standalone/configuration/OVERRIDE.xml",
                         "--subsystem-snippet", "subdir/subsystem-snippetOVERRIDE.xml",
-                        "--hawkular-server-url", "http://OVERRIDE:8080",
+                        "--server-url", "http://OVERRIDE:8080",
                         "--keystore-path", "/tmp/OVERRIDE/path",
                         "--keystore-password", "OVERRIDE-keystore-password",
                         "--key-password", "OVERRIDE-key-password",
                         "--key-alias", "OVERRIDE-alias",
-                        "--hawkular-username", "OVERRIDE-username",
-                        "--hawkular-password", "OVERRIDE-password",
-                        "--hawkular-security-key", "OVERRIDE-key",
-                        "--hawkular-security-secret", "OVERRIDE-secret",
+                        "--username", "OVERRIDE-username",
+                        "--password", "OVERRIDE-password",
+                        "--security-key", "OVERRIDE-key",
+                        "--security-secret", "OVERRIDE-secret",
                         "--module-dist", "/OVERRIDE/dist.zip"
                 ));
         InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
-        Assert.assertEquals("/opt/wildfly/OVERRIDE", installerConfig.getWildFlyHome());
-        Assert.assertEquals("standalone/configuration/OVERRIDE.xml", installerConfig.getServerConfig());
+        Assert.assertEquals("/opt/wildfly/OVERRIDE", installerConfig.getTargetLocation());
+        Assert.assertEquals("standalone/configuration/OVERRIDE.xml", installerConfig.getTargetConfig());
         Assert.assertEquals("subdir/subsystem-snippetOVERRIDE.xml", installerConfig.getSubsystemSnippet());
-        Assert.assertEquals("http://OVERRIDE:8080", installerConfig.getHawkularServerUrl());
+        Assert.assertEquals("http://OVERRIDE:8080", installerConfig.getServerUrl());
         Assert.assertEquals("/tmp/OVERRIDE/path", installerConfig.getKeystorePath());
         Assert.assertEquals("OVERRIDE-keystore-password", installerConfig.getKeystorePassword());
         Assert.assertEquals("OVERRIDE-key-password", installerConfig.getKeyPassword());
         Assert.assertEquals("OVERRIDE-alias", installerConfig.getKeyAlias());
-        Assert.assertEquals("OVERRIDE-username", installerConfig.getHawkularUsername());
-        Assert.assertEquals("OVERRIDE-password", installerConfig.getHawkularPassword());
-        Assert.assertEquals("OVERRIDE-key", installerConfig.getHawkularSecurityKey());
-        Assert.assertEquals("OVERRIDE-secret", installerConfig.getHawkularSecuritySecret());
+        Assert.assertEquals("OVERRIDE-username", installerConfig.getUsername());
+        Assert.assertEquals("OVERRIDE-password", installerConfig.getPassword());
+        Assert.assertEquals("OVERRIDE-key", installerConfig.getSecurityKey());
+        Assert.assertEquals("OVERRIDE-secret", installerConfig.getSecuritySecret());
         Assert.assertEquals("/OVERRIDE/dist.zip", installerConfig.getModuleDistribution());
+    }
+
+    @Test
+    public void testEncryptionKeyArg() throws Exception {
+        Options options = InstallerConfiguration.buildCommandLineOptions();
+
+        // specify just the option without a value
+        CommandLine commandLine = new DefaultParser().parse(options,
+                args("--encryption-key", "--target-location", "/opt"));
+        InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
+        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
+        Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertNull(commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+
+        // specify the option with the value
+        commandLine = new DefaultParser().parse(options,
+                args("--encryption-key", "abc", "--target-location", "/opt"));
+        installerConfig = new InstallerConfiguration(commandLine);
+        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
+        Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertEquals("abc", commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+    }
+
+    @Test
+    public void testBadProps() throws Exception {
+        Options options = InstallerConfiguration.buildCommandLineOptions();
+
+        try {
+            new DefaultParser().parse(options, args("--bad", "bad"));
+            Assert.fail("Should have failed on bad argument");
+        } catch (Exception ok) {
+        }
+
+        try {
+            new DefaultParser().parse(options, args("--target-location", ".", "--bad"));
+            Assert.fail("Should have failed on bad argument");
+        } catch (Exception ok) {
+        }
     }
 
     private String[] args(String... a) {
@@ -109,18 +147,18 @@ public class InstallerConfigurationTest {
     }
 
     private void assertTestProperties(InstallerConfiguration installerConfig) {
-        Assert.assertEquals("/opt/wildfly/test", installerConfig.getWildFlyHome());
-        Assert.assertEquals("standalone/configuration/test.xml", installerConfig.getServerConfig());
+        Assert.assertEquals("/opt/wildfly/test", installerConfig.getTargetLocation());
+        Assert.assertEquals("standalone/configuration/test.xml", installerConfig.getTargetConfig());
         Assert.assertEquals("subdir/subsystem-snippet.xml", installerConfig.getSubsystemSnippet());
-        Assert.assertEquals("http://test:8080", installerConfig.getHawkularServerUrl());
+        Assert.assertEquals("http://test:8080", installerConfig.getServerUrl());
         Assert.assertEquals("/tmp/test/path", installerConfig.getKeystorePath());
         Assert.assertEquals("test-keystore-password", installerConfig.getKeystorePassword());
         Assert.assertEquals("test-key-password", installerConfig.getKeyPassword());
         Assert.assertEquals("test-alias", installerConfig.getKeyAlias());
-        Assert.assertEquals("test-username", installerConfig.getHawkularUsername());
-        Assert.assertEquals("test-password", installerConfig.getHawkularPassword());
-        Assert.assertEquals("test-key", installerConfig.getHawkularSecurityKey());
-        Assert.assertEquals("test-secret", installerConfig.getHawkularSecuritySecret());
+        Assert.assertEquals("test-username", installerConfig.getUsername());
+        Assert.assertEquals("test-password", installerConfig.getPassword());
+        Assert.assertEquals("test-key", installerConfig.getSecurityKey());
+        Assert.assertEquals("test-secret", installerConfig.getSecuritySecret());
         Assert.assertEquals("/test/dist.zip", installerConfig.getModuleDistribution());
     }
 }
