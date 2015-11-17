@@ -59,7 +59,17 @@ public class AgentInstaller {
 
             String jbossHome = installerConfig.getWildFlyHome();
             if (jbossHome == null) {
-                throw new MissingOptionException(InstallerConfiguration.OPTION_WILDFLY_HOME + " must be specified");
+                // user did not provide us with a wildfly home - let's see if we are sitting in a wildfly home already
+                File jbossHomeFile = new File(".").getCanonicalFile();
+                if (!(jbossHomeFile.exists() &&
+                        jbossHomeFile.isDirectory() &&
+                        jbossHomeFile.canRead() &&
+                        new File(jbossHomeFile, "modules").isDirectory())) {
+                    throw new MissingOptionException(
+                            InstallerConfiguration.OPTION_WILDFLY_HOME + " must be specified");
+                }
+                // looks like our current working directory is a WildFly home - use that
+                jbossHome = jbossHomeFile.getCanonicalPath();
             }
 
             if ((installerConfig.getHawkularUsername() == null || installerConfig.getHawkularPassword() == null)
