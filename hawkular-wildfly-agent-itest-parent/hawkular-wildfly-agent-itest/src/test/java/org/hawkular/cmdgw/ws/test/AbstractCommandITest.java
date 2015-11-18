@@ -91,8 +91,8 @@ public abstract class AbstractCommandITest {
     protected static final String managementPasword = System.getProperty("hawkular.agent.itest.mgmt.password");
     protected static final int managementPort;
     protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
-    protected static final String testPasword = "P@ssw0rd";
-    protected static final String testUser = "igor";
+    protected static final String testPasword = "password";
+    protected static final String testUser = "jdoe";
 
     private static final Object waitForAccountsLock = new Object();
 
