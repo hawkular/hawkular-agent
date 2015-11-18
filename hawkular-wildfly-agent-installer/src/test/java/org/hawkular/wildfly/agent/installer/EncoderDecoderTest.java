@@ -16,35 +16,33 @@
  */
 package org.hawkular.wildfly.agent.installer;
 
+import java.security.SecureRandom;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 public class EncoderDecoderTest {
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testEncoderDecoderWithNullKey() throws Exception {
+        byte[] salt = SecureRandom.getSeed(8);
+        EncoderDecoder.encode("useless", null, salt);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testEncoderDecoderWithNullSalt() throws Exception {
+        EncoderDecoder.encode("useless", "mahkey", null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testEncoderDecoderWithNullKeyAndSalt() throws Exception {
+        EncoderDecoder.encode("useless", null, null);
+    }
+
     @Test
-    public void testEncoderDecoderWithNull() throws Exception {
-        Assert.assertNull(EncoderDecoder.encode("useless", null));
-        Assert.assertNull(EncoderDecoder.decode("useless", null));
-        try {
-            EncoderDecoder.encode(null, "");
-            Assert.fail("null key should not be allowed in encode");
-        } catch (Exception expected) {
-        }
-        try {
-            EncoderDecoder.decode(null, "");
-            Assert.fail("null key should not be allowed in decode");
-        } catch (Exception expected) {
-        }
-        try {
-            EncoderDecoder.encode("", "");
-            Assert.fail("empty key should not be allowed in encode");
-        } catch (Exception expected) {
-        }
-        try {
-            EncoderDecoder.decode("", "");
-            Assert.fail("empty key should not be allowed in decode");
-        } catch (Exception expected) {
-        }
+    public void testEncoderDecoderWithNullMessage() throws Exception {
+        byte[] salt = SecureRandom.getSeed(8);
+        Assert.assertNull(EncoderDecoder.encode(null, "mahkey", salt));
     }
 
     @Test
@@ -57,11 +55,14 @@ public class EncoderDecoderTest {
     }
 
     private void assertEncodeDecode(String key, String clearText) throws Exception {
-        String encodedString = EncoderDecoder.encode(key, clearText);
-        String decodedString = EncoderDecoder.decode(key, encodedString);
+        // the salt is a 8-byte random sequence, provided by the consumer.
+        // it's used for generating the actual key (our "key" here is actually the "password" for the key)
+        byte[] salt = SecureRandom.getSeed(6);
+
+        String encodedString = EncoderDecoder.encode(clearText, key, salt);
+        String decodedString = EncoderDecoder.decode(encodedString, key, salt);
         System.out.printf("key=[%s], clearText=[%s], encoded=[%s], decoded=[%s]\n",
                 key, clearText, encodedString, decodedString);
         Assert.assertEquals(clearText, decodedString);
     }
-
 }

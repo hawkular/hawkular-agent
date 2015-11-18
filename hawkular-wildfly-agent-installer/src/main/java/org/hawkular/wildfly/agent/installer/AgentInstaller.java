@@ -59,16 +59,38 @@ public class AgentInstaller {
 
             // IF we were told the passwords were encrypted THEN
             //   IF we were given the key on the command line THEN
-            //      Decode with the key given on the command line
+            //      Use the key given on the command line for decoding
             //   ELSE
-            //      Decode with the key the user gives us over stdin
+            //      Use the key the user gives us over stdin for decoding
+            //
+            //   IF we were given the salt on the command line THEN
+            //      Use the salt given on the command line for decoding
+            //   ELSE
+            //      Use the salt the user gives us over stdin for decoding
+            //
+            // Decode using the key and salt.
             boolean passwordsEncrypted = commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY);
             if (passwordsEncrypted) {
                 String key = commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY, null);
+                String saltAsString = commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT, null);
                 if (key == null) {
                     key = readPasswordFromStdin("Encryption key:");
                 }
-                installerConfig.decodeProperties(key);
+
+                boolean saltSpecified = commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_SALT);
+                if (!saltSpecified) {
+                    saltAsString = key;
+                }
+
+                if (saltAsString == null) {
+                    saltAsString = readPasswordFromStdin("Salt:");
+                }
+
+                assert saltAsString != null;
+                assert key != null;
+
+                byte[] salt = saltAsString.getBytes("UTF-8");
+                installerConfig.decodeProperties(key, salt);
             }
 
             String jbossHome = installerConfig.getTargetLocation();

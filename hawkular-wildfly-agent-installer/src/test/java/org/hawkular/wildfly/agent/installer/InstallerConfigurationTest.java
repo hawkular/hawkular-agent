@@ -115,6 +115,7 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("/opt", installerConfig.getTargetLocation());
         Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
         Assert.assertNull(commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertNull(commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT));
 
         // specify the option with the value
         commandLine = new DefaultParser().parse(options,
@@ -123,6 +124,16 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("/opt", installerConfig.getTargetLocation());
         Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
         Assert.assertEquals("abc", commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertNull(commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT));
+
+        // specify also the salt
+        commandLine = new DefaultParser().parse(options,
+                args("--encryption-key", "abc", "--encryption-salt", "abcd1234", "--target-location", "/opt"));
+        installerConfig = new InstallerConfiguration(commandLine);
+        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
+        Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertEquals("abc", commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertEquals("abcd1234", commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT));
     }
 
     @Test

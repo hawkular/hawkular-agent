@@ -37,6 +37,7 @@ public class InstallerConfiguration {
     // these are standalone command line options that are *not* found in the config .properties file
     static final String OPTION_INSTALLER_CONFIG = "installer-config";
     static final String OPTION_ENCRYPTION_KEY = "encryption-key";
+    static final String OPTION_ENCRYPTION_SALT = "encryption-salt";
 
     // these are command line options that can also be defined in the config .properties file
     static final String OPTION_TARGET_LOCATION = "target-location";
@@ -71,6 +72,14 @@ public class InstallerConfiguration {
                 .longOpt(InstallerConfiguration.OPTION_ENCRYPTION_KEY)
                 .desc("If specified, this is used to decode the properties that were encrypted. If you do not " +
                         "provide a value with the option, you will be prompted for one.")
+                .numberOfArgs(1)
+                .optionalArg(true) // if no argument is given, we'll ask on stdin for it
+                .build());
+        options.addOption(Option.builder()
+                .argName(InstallerConfiguration.OPTION_ENCRYPTION_SALT)
+                .longOpt(InstallerConfiguration.OPTION_ENCRYPTION_SALT)
+                .desc("The salt used for generating the key. Recommended, if encryption is used. If not specified, " +
+                        "the same value as the key will be used.")
                 .numberOfArgs(1)
                 .optionalArg(true) // if no argument is given, we'll ask on stdin for it
                 .build());
@@ -224,17 +233,17 @@ public class InstallerConfiguration {
         }
     }
 
-    public void decodeProperties(String encryptionKey) throws Exception {
-        decodeProperty(properties, OPTION_KEYSTORE_PASSWORD, encryptionKey);
-        decodeProperty(properties, OPTION_KEY_PASSWORD, encryptionKey);
-        decodeProperty(properties, OPTION_PASSWORD, encryptionKey);
-        decodeProperty(properties, OPTION_SECURITY_SECRET, encryptionKey);
+    public void decodeProperties(String encryptionKey, byte[] salt) throws Exception {
+        decodeProperty(properties, OPTION_KEYSTORE_PASSWORD, encryptionKey, salt);
+        decodeProperty(properties, OPTION_KEY_PASSWORD, encryptionKey, salt);
+        decodeProperty(properties, OPTION_PASSWORD, encryptionKey, salt);
+        decodeProperty(properties, OPTION_SECURITY_SECRET, encryptionKey, salt);
     }
 
-    private void decodeProperty(Properties prop, String option, String encryptionKey) throws Exception {
+    private void decodeProperty(Properties prop, String option, String key, byte[] salt) throws Exception {
         String value = properties.getProperty(option, null);
         if (value != null) {
-            value = EncoderDecoder.decode(encryptionKey, value);
+            value = EncoderDecoder.decode(value, key, salt);
             properties.setProperty(option, value);
         }
     }
