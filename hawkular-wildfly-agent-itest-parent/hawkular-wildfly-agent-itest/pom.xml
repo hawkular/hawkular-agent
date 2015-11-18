@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-wildfly-agent-itest-parent</artifactId>
-    <version>0.13.3.Final</version>
+    <version>0.13.4.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-wildfly-agent-itest</artifactId>
@@ -164,7 +164,7 @@
         <dependency>
           <groupId>org.hawkular.agent</groupId>
           <artifactId>hawkular-wildfly-agent-itest-dist</artifactId>
-          <version>0.13.3.Final</version>
+          <version>0.13.4.Final-SNAPSHOT</version>
           <scope>test</scope>
           <type>zip</type>
         </dependency>
