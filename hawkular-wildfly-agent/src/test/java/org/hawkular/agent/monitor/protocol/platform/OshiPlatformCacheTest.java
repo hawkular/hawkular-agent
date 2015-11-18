@@ -383,17 +383,17 @@ public class OshiPlatformCacheTest {
         int i = 0;
         for (Processor processor : processors.values()) {
             String name = processor.getName();
-            String family = processor.getFamily();
+            String family =""; //processor.getFamily();
             String identifier = processor.getIdentifier();
-            String model = processor.getModel();
-            String stepping = processor.getStepping();
+            String model = "";//processor.getModel();
+            String stepping ="";// processor.getStepping();
             String vendor = processor.getVendor();
             double systemCpuLoad = processor.getSystemCpuLoad();
             double systemLoadAverage = processor.getSystemLoadAverage();
             int processorNumber = processor.getProcessorNumber();
             long systemUpTime = processor.getSystemUptime();
             long vendorFrequency = processor.getVendorFreq();
-            boolean isCpu64bit = processor.isCpu64bit();
+            boolean isCpu64bit =true;// processor.isCpu64bit();
             long[] processorCpuLoadTicks = processor.getProcessorCpuLoadTicks();
             long[] systemCpuLoadTicks = processor.getSystemCpuLoadTicks();
 
