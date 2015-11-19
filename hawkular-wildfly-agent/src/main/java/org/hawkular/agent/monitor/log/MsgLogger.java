@@ -255,4 +255,12 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10053, value = "Could not store availability data for monitored endpoint [%s]")
     void errorFailedToStoreAvails(String endpoint, @Cause Throwable t);
 
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10054, value = "Agent encountered errors during start up and will be stopped.")
+    void errorFailedToStartAgent(@Cause Throwable t);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10055, value = "Agent encountered errors during shutdown.")
+    void warnFailedToStopAgent(@Cause Throwable t);
+
 }

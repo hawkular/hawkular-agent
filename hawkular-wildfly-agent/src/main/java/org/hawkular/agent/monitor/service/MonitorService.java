@@ -22,7 +22,6 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -206,23 +205,23 @@ public class MonitorService implements Service<MonitorService> {
                 }
             }
             MonitorServiceConfiguration.StorageAdapterConfiguration runtimeStorageAdapter = //
-                    new MonitorServiceConfiguration.StorageAdapterConfiguration(
-                            bootStorageAdapter.getType(),
-                            bootStorageAdapter.getUsername(),
-                            bootStorageAdapter.getPassword(),
-                            bootStorageAdapter.getSecurityKey(),
-                            bootStorageAdapter.getSecuritySecret(),
-                            useTenantId,
-                            useUrl,
-                            bootStorageAdapter.isUseSSL(),
-                            bootStorageAdapter.getServerOutboundSocketBindingRef(),
-                            bootStorageAdapter.getAccountsContext(),
-                            bootStorageAdapter.getInventoryContext(),
-                            bootStorageAdapter.getMetricsContext(),
-                            bootStorageAdapter.getFeedcommContext(),
-                            bootStorageAdapter.getKeystorePath(),
-                            bootStorageAdapter.getKeystorePassword(),
-                            bootStorageAdapter.getSecurityRealm());
+            new MonitorServiceConfiguration.StorageAdapterConfiguration(
+                    bootStorageAdapter.getType(),
+                    bootStorageAdapter.getUsername(),
+                    bootStorageAdapter.getPassword(),
+                    bootStorageAdapter.getSecurityKey(),
+                    bootStorageAdapter.getSecuritySecret(),
+                    useTenantId,
+                    useUrl,
+                    bootStorageAdapter.isUseSSL(),
+                    bootStorageAdapter.getServerOutboundSocketBindingRef(),
+                    bootStorageAdapter.getAccountsContext(),
+                    bootStorageAdapter.getInventoryContext(),
+                    bootStorageAdapter.getMetricsContext(),
+                    bootStorageAdapter.getFeedcommContext(),
+                    bootStorageAdapter.getKeystorePath(),
+                    bootStorageAdapter.getKeystorePassword(),
+                    bootStorageAdapter.getSecurityRealm());
 
             return bootConfiguration.cloneWith(runtimeStorageAdapter);
         }
@@ -408,88 +407,98 @@ public class MonitorService implements Service<MonitorService> {
             return; // we are already started
         }
 
-        log.infoStarting();
-
-        this.configuration = buildRuntimeConfiguration(this.bootConfiguration,
-                this.httpSocketBindingValue, this.httpsSocketBindingValue, this.serverOutboundSocketBindingValue,
-                this.trustOnlySSLContextValues);
-        log.infoUsingServerSideUrl(this.configuration.getStorageAdapter().getUrl());
-
-        // prepare the builder that will create our HTTP/REST clients to the hawkular server infrastructure
-        SSLContext ssl = getSslContext(this.configuration, this.trustOnlySSLContextValues);
-        this.httpClientBuilder = new HttpClientBuilder(this.configuration.getStorageAdapter(), ssl);
-
-        // get our self identifiers
-        this.localModelControllerClientFactory =
-                ModelControllerClientFactory.createLocal(modelControllerValue.getValue());
-        try (ModelControllerClient c = localModelControllerClientFactory.createClient()) {
-            this.feedId = DMREndpointService.lookupServerIdentifier(c);
-        } catch (IOException e1) {
-            log.errorf(e1, "Could not load feedId over local ModelControllerClient connection");
-        }
-
-        // build the diagnostics object that will be used to track our own performance
-        final MetricRegistry metricRegistry = new MetricRegistry();
-        this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
-
-        // if we are participating in a full Hawkular environment, we need to do some additional things:
-        // 1. determine our tenant ID dynamically
-        // 2. register our feed ID
-        // 3. connect to the server's feed comm channel
-        // 4. prepare the thread pool that will store discovered resources into inventory
-        if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
-            if (this.configuration.getStorageAdapter().getTenantId() == null) {
-                log.errorNoTenantIdFromAccounts();
-                return;
-            }
-            try {
-                registerFeed();
-            } catch (Exception e) {
-                log.errorCannotDoAnythingWithoutFeed(e);
-                return;
-            }
-
-            // try to connect to the server via command-gateway channel; if it fails, just log an error but keep going
-            try {
-                connectToCommandGatewayCommChannel();
-            } catch (Exception e) {
-                log.errorCannotEstablishFeedComm(e);
-            }
-
-        } else {
-            if (this.configuration.getStorageAdapter().getTenantId() == null) {
-                log.errorMustHaveTenantIdConfigured();
-                return;
-            }
-        }
-
-        // start the storage adapter
         try {
-            startStorageAdapter();
-        } catch (Exception e) {
-            log.errorCannotStartStorageAdapter(e);
-            return;
+            log.infoStarting();
+
+            this.configuration = buildRuntimeConfiguration(this.bootConfiguration,
+                    this.httpSocketBindingValue,
+                    this.httpsSocketBindingValue,
+                    this.serverOutboundSocketBindingValue,
+                    this.trustOnlySSLContextValues);
+            log.infoUsingServerSideUrl(this.configuration.getStorageAdapter().getUrl());
+
+            // prepare the builder that will create our HTTP/REST clients to the hawkular server infrastructure
+            SSLContext ssl = getSslContext(this.configuration, this.trustOnlySSLContextValues);
+            this.httpClientBuilder = new HttpClientBuilder(this.configuration.getStorageAdapter(), ssl);
+
+            // get our self identifiers
+            this.localModelControllerClientFactory = ModelControllerClientFactory
+                    .createLocal(modelControllerValue.getValue());
+            try (ModelControllerClient c = localModelControllerClientFactory.createClient()) {
+                this.feedId = DMREndpointService.lookupServerIdentifier(c);
+            } catch (Exception e) {
+                throw new Exception("Could not obtain local feed ID", e);
+            }
+
+            // build the diagnostics object that will be used to track our own performance
+            final MetricRegistry metricRegistry = new MetricRegistry();
+            this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
+
+            // if we are participating in a full Hawkular environment, we need to do some additional things:
+            // 1. determine our tenant ID dynamically
+            // 2. register our feed ID
+            // 3. connect to the server's feed comm channel
+            // 4. prepare the thread pool that will store discovered resources into inventory
+            if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
+                if (this.configuration.getStorageAdapter().getTenantId() == null) {
+                    log.errorNoTenantIdFromAccounts();
+                    throw new Exception("Failed to get tenant ID");
+                }
+                try {
+                    registerFeed();
+                } catch (Exception e) {
+                    log.errorCannotDoAnythingWithoutFeed(e);
+                    throw new Exception("Agent needs a feed to run");
+                }
+
+                // try to connect to the server via command-gateway channel; keep going on error
+                try {
+                    connectToCommandGatewayCommChannel();
+                } catch (Exception e) {
+                    log.errorCannotEstablishFeedComm(e);
+                }
+
+            } else {
+                if (this.configuration.getStorageAdapter().getTenantId() == null) {
+                    log.errorMustHaveTenantIdConfigured();
+                    throw new Exception("Agent needs a tenant ID to run");
+                }
+            }
+
+            // start the storage adapter
+            try {
+                startStorageAdapter();
+            } catch (Exception e) {
+                log.errorCannotStartStorageAdapter(e);
+                throw new Exception("Agent cannot start storage adapter");
+            }
+
+            try {
+                startScheduler();
+            } catch (Exception e) {
+                log.errorCannotInitializeScheduler(e);
+                throw new Exception("Agent cannot initialize scheduler");
+            }
+
+            ProtocolServices ps = ProtocolServices.builder(feedId, diagnostics, trustOnlySSLContextValues) //
+                    .dmrProtocolService(localModelControllerClientFactory, configuration.getDmrConfiguration())
+                    .jmxProtocolService(configuration.getJmxConfiguration())
+                    .platformProtocolService(configuration.getPlatformConfiguration())
+                    .build();
+            ps.addInventoryListener(inventoryStorageProxy);
+            ps.addInventoryListener(schedulerService);
+            protocolServices = ps;
+            protocolServices.start();
+
+            started = true;
+
+        } catch (Throwable t) {
+            log.errorFailedToStartAgent(t);
+
+            // artifically shutdown the agent - agent will be disabled now
+            started = true;
+            stopMonitorService();
         }
-
-        try {
-            startScheduler();
-        } catch (Exception e) {
-            log.errorCannotInitializeScheduler(e);
-        }
-
-        ProtocolServices ps = ProtocolServices.builder(feedId, diagnostics, trustOnlySSLContextValues) //
-                .dmrProtocolService(localModelControllerClientFactory, configuration.getDmrConfiguration())
-                .jmxProtocolService(configuration.getJmxConfiguration())
-                .platformProtocolService(configuration.getPlatformConfiguration())
-                .build();
-        ps.addInventoryListener(inventoryStorageProxy);
-        ps.addInventoryListener(schedulerService);
-        this.protocolServices = ps;
-        this.protocolServices.start();
-
-        // restart the scheduler - this will begin metric collections for our new inventory
-
-        started = true;
     }
 
     /**
@@ -499,39 +508,48 @@ public class MonitorService implements Service<MonitorService> {
         if (!isMonitorServiceStarted()) {
             return; // we are already stopped
         }
+
         log.infoStopping();
 
-        // disconnect from the feed comm channel
-        if (feedComm != null) {
-            feedComm.disconnect();
-            feedComm = null;
-        }
-
-        this.protocolServices.removeInventoryListener(inventoryStorageProxy);
-        this.protocolServices.removeInventoryListener(schedulerService);
-        this.protocolServices.stop();
-
-        // shutdown scheduler
-        stopScheduler();
-
-        // stop diagnostic reporting and spit out a final diagnostics report
-        if (diagnosticsReporter != null) {
-            diagnosticsReporter.stop();
-            if (configuration.getDiagnostics().isEnabled()) {
-                diagnosticsReporter.report();
+        try {
+            // disconnect from the feed comm channel
+            if (feedComm != null) {
+                feedComm.disconnect();
+                feedComm = null;
             }
+
+            if (protocolServices != null) {
+                protocolServices.removeInventoryListener(inventoryStorageProxy);
+                protocolServices.removeInventoryListener(schedulerService);
+                protocolServices.stop();
+                protocolServices = null;
+            }
+
+            // shutdown scheduler
+            stopScheduler();
+
+            // stop diagnostic reporting and spit out a final diagnostics report
+            if (diagnosticsReporter != null) {
+                diagnosticsReporter.stop();
+                if (configuration.getDiagnostics().isEnabled()) {
+                    diagnosticsReporter.report();
+                }
+                diagnosticsReporter = null;
+            }
+
+            // now stop the storage adapter
+            stopStorageAdapter();
+
+            // cleanup the state listener
+            if (serverStateListener != null) {
+                processStateValue.getValue().removePropertyChangeListener(serverStateListener);
+                serverStateListener = null;
+            }
+        } catch (Throwable t) {
+            log.warnFailedToStopAgent(t);
+        } finally {
+            started = false;
         }
-
-        // now stop the storage adapter
-        stopStorageAdapter();
-
-        // cleanup the state listener
-        if (serverStateListener != null) {
-            processStateValue.getValue().removePropertyChangeListener(serverStateListener);
-            serverStateListener = null;
-        }
-
-        started = false;
     }
 
     /**
@@ -610,6 +628,7 @@ public class MonitorService implements Service<MonitorService> {
     private void stopStorageAdapter() {
         if (storageAdapter != null) {
             storageAdapter.shutdown();
+            storageAdapter = null;
         }
     }
 
