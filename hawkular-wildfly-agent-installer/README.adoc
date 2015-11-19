@@ -23,8 +23,8 @@ Command line parameter `module-dist` is required unless installer retrieves Hawk
 
    java -jar target/hawkular-wildfly-agent-installer-0.10.1.Final-SNAPSHOT-standalone.jar \
      --module-dist=/path/to/module.zip \
-     --wildfly-home=/opt/wildfly-9.0.0.Final \
-     --hawkular-server-url=http://localhost:8080
+     --target-location=/opt/wildfly-9.0.0.Final \
+     --server-url=http://localhost:8080
 
 Hawkular WildFly Agent is then installed to WildFly Server `/opt/wildfly-9.0.0.Final` as a module and is able to report to Hawkular Server located at `http://localhost:8080`.
 
@@ -86,9 +86,9 @@ If you have need to package an agent in your own WildFly distribution, you can d
             <includePluginDependencies>true</includePluginDependencies>
             <mainClass>org.hawkular.wildfly.agent.installer.AgentInstaller</mainClass>
             <arguments>
-              <argument>--wildfly-home=${wildfly.home}</argument>
+              <argument>--target-location=${wildfly.home}</argument>
               <argument>--module=${project.build.directory}/hawkular-modules/hawkular-wildfly-agent-wf-extension.zip</argument>
-              <argument>--hawkular-server-url=http://localhost:8080</argument>
+              <argument>--server-url=http://localhost:8080</argument>
             </arguments>
           </configuration>
         </execution>
