@@ -88,6 +88,7 @@ public class ModulesTest {
         String expected = IOUtils.toString(expectedIn, "utf-8");
         expected = expected.replaceAll("\r", "");
         String found = FileUtils.readFileToString(foundFile, "utf-8");
+        found = found.replaceAll("\r", "");
         Assert.assertEquals(expected, found);
 
         for (ModuleResource resourceName : request.getResources()) {
