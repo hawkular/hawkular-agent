@@ -383,17 +383,42 @@ public class OshiPlatformCacheTest {
         int i = 0;
         for (Processor processor : processors.values()) {
             String name = processor.getName();
-            String family = processor.getFamily();
+            String family;
+            try {
+                family = processor.getFamily();
+            } catch (UnsupportedOperationException e) {
+                family = "";
+                e.printStackTrace();
+            }
             String identifier = processor.getIdentifier();
-            String model = processor.getModel();
-            String stepping = processor.getStepping();
+            String model;
+            try {
+                model = processor.getModel();
+            } catch (UnsupportedOperationException e) {
+                model = "";
+                e.printStackTrace();
+            }
+            String stepping;
+            try {
+               stepping =  processor.getStepping();
+            } catch (UnsupportedOperationException e) {
+                stepping = "";
+                e.printStackTrace();
+            }
+
             String vendor = processor.getVendor();
             double systemCpuLoad = processor.getSystemCpuLoad();
             double systemLoadAverage = processor.getSystemLoadAverage();
             int processorNumber = processor.getProcessorNumber();
             long systemUpTime = processor.getSystemUptime();
             long vendorFrequency = processor.getVendorFreq();
-            boolean isCpu64bit = processor.isCpu64bit();
+            boolean isCpu64bit;
+            try {
+                isCpu64bit = processor.isCpu64bit();
+            } catch (UnsupportedOperationException e) {
+                e.printStackTrace();
+                isCpu64bit = false;
+            }
             long[] processorCpuLoadTicks = processor.getProcessorCpuLoadTicks();
             long[] systemCpuLoadTicks = processor.getSystemCpuLoadTicks();
 
