@@ -86,6 +86,7 @@ public class ModulesTest {
         File foundFile = new File(moduleDir, "module.xml");
 
         String expected = IOUtils.toString(expectedIn, "utf-8");
+        expected = expected.replaceAll("\r", "");
         String found = FileUtils.readFileToString(foundFile, "utf-8");
         Assert.assertEquals(expected, found);
 
