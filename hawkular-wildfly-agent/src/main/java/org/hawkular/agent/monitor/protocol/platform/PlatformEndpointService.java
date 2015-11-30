@@ -35,7 +35,7 @@ public class PlatformEndpointService extends EndpointService<PlatformNodeLocatio
     /** @see org.hawkular.agent.monitor.protocol.EndpointService#openSession() */
     @Override
     public PlatformSession openSession() {
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = new OshiPlatformCache(getFeedId());
         PlatformDriver driver = new PlatformDriver(oshi, getDiagnostics());
         return new PlatformSession(getFeedId(), getEndpoint(), getResourceTypeManager(), driver,
                 getLocationResolver());

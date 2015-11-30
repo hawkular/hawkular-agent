@@ -47,7 +47,7 @@ public class OshiPlatformCacheTest {
         // These just test the locking - make sure we won't block concurrent access;
         // we don't actually look at the platform values.
 
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = newOshiPlatformCache();
 
         final CountDownLatch goLatch = new CountDownLatch(1);
         final int maxLoops = 10;
@@ -120,7 +120,7 @@ public class OshiPlatformCacheTest {
 
     @Test
     public void testDiscover() {
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = newOshiPlatformCache();
         Map<PlatformPath, PlatformResourceNode> map;
         PlatformPath query;
 
@@ -205,7 +205,7 @@ public class OshiPlatformCacheTest {
     @Test
     public void testMetrics() {
         Double val;
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = newOshiPlatformCache();
 
         // Memory
         for (Name metricName : PlatformResourceType.MEMORY.getMetricNames()) {
@@ -272,7 +272,7 @@ public class OshiPlatformCacheTest {
 
     @Test
     public void testRefresh() {
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = newOshiPlatformCache();
         Object os1 = oshi.getOperatingSystem();
         Object mem1 = oshi.getMemory();
         Object fs1 = oshi.getFileStores();
@@ -307,7 +307,7 @@ public class OshiPlatformCacheTest {
 
     @Test
     public void getOperatingSystemInfo() {
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = newOshiPlatformCache();
         OperatingSystem os = oshi.getOperatingSystem();
 
         Assert.assertNotNull(os);
@@ -329,7 +329,7 @@ public class OshiPlatformCacheTest {
 
     @Test
     public void getFileStores() {
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = newOshiPlatformCache();
         Map<String, OSFileStore> filestores = oshi.getFileStores();
         Assert.assertNotNull(filestores);
 
@@ -356,7 +356,7 @@ public class OshiPlatformCacheTest {
 
     @Test
     public void getMemory() {
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = newOshiPlatformCache();
         Memory memory = oshi.getMemory();
         Assert.assertNotNull(memory);
 
@@ -374,7 +374,7 @@ public class OshiPlatformCacheTest {
 
     @Test
     public void getProcessors() {
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = newOshiPlatformCache();
         Map<String, Processor> processors = oshi.getProcessors();
         Assert.assertNotNull(processors);
 
@@ -438,7 +438,7 @@ public class OshiPlatformCacheTest {
 
     @Test
     public void getPowerSources() {
-        OshiPlatformCache oshi = new OshiPlatformCache();
+        OshiPlatformCache oshi = newOshiPlatformCache();
         Map<String, PowerSource> powersources = oshi.getPowerSources();
         Assert.assertNotNull(powersources);
 
@@ -468,6 +468,10 @@ public class OshiPlatformCacheTest {
                 print("  toString=[%s]", powersource.toString());
             }
         }
+    }
+
+    private OshiPlatformCache newOshiPlatformCache() {
+        return new OshiPlatformCache("testFeedId");
     }
 
     private void print(String msg, Object... args) {

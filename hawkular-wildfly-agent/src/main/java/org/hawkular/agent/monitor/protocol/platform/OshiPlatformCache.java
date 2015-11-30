@@ -46,10 +46,12 @@ public class OshiPlatformCache {
     private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
     private final ReadLock rLock = rwLock.readLock();
     private final WriteLock wLock = rwLock.writeLock();
+    private final String feedId;
 
-    public OshiPlatformCache() {
+    public OshiPlatformCache(String feedId) {
         sysInfo = new SystemInfo();
         sysInfoCache = new HashMap<>(5);
+        this.feedId = feedId;
     }
 
     /**
@@ -359,7 +361,7 @@ public class OshiPlatformCache {
 
         // we will need the os path regardless of what we do in this method, so build it now
         OperatingSystem os = getOperatingSystem();
-        String osId = os.toString();
+        String osId = this.feedId + "_OperatingSystem";
         PlatformPath osPath = PlatformPath.builder()
                 .segment(PlatformResourceType.OPERATING_SYSTEM, osId)
                 .build();
