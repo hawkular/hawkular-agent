@@ -47,7 +47,7 @@
     "spy" => false,
     "stale-connection-checker-class-name" => undefined,
     "stale-connection-checker-properties" => undefined,
-    "statistics-enabled" => false,
+    "statistics-enabled" => true,
     "track-statements" => "NOWARN",
     "tracking" => false,
     "transaction-isolation" => undefined,
@@ -68,7 +68,7 @@
     "statistics" => {
         "pool" => {
             "ActiveCount" => 0,
-            "AvailableCount" => 0,
+            "AvailableCount" => 20,
             "AverageBlockingTime" => 0L,
             "AverageCreationTime" => 0L,
             "AverageGetTime" => 0L,
@@ -121,7 +121,7 @@
             "XAStartCount" => 0L,
             "XAStartMaxTime" => 0L,
             "XAStartTotalTime" => 0L,
-            "statistics-enabled" => false
+            "statistics-enabled" => true
         },
         "jdbc" => {
             "PreparedStatementCacheAccessCount" => 0L,
@@ -130,7 +130,7 @@
             "PreparedStatementCacheDeleteCount" => 0L,
             "PreparedStatementCacheHitCount" => 0L,
             "PreparedStatementCacheMissCount" => 0L,
-            "statistics-enabled" => false
+            "statistics-enabled" => true
         }
     },
     "xa-datasource-properties" => {

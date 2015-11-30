@@ -47,7 +47,7 @@
     "spy" => false,
     "stale-connection-checker-class-name" => undefined,
     "stale-connection-checker-properties" => undefined,
-    "statistics-enabled" => false,
+    "statistics-enabled" => true,
     "track-statements" => "NOWARN",
     "tracking" => false,
     "transaction-isolation" => undefined,

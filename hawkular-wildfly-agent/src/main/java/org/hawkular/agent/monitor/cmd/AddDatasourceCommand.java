@@ -84,6 +84,7 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
                     .attribute(XA_DATASOURCE_CLASS, request.getXaDataSourceClass()) //
                     .attribute(USER_NAME, request.getUserName()) //
                     .attribute(PASSWORD, request.getPassword()) //
+                    .attribute(STATISTICS_ENABLED, true) //
                     .parentBuilder();
         } else {
             dsDmrResourceType = DATASOURCE;
@@ -100,6 +101,7 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
                     .attribute(CONNECTION_URL, request.getConnectionUrl()) //
                     .attribute(USER_NAME, request.getUserName()) //
                     .attribute(PASSWORD, request.getPassword()) //
+                    .attribute(STATISTICS_ENABLED, true) //
                     .parentBuilder();
 
         }

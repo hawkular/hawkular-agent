@@ -28,6 +28,7 @@ public interface SubsystemDatasourceConstants {
         String NAME = "name";
         String PASSWORD = "password";
         String USER_NAME = "user-name";
+        String STATISTICS_ENABLED = "statistics-enabled";
     }
     public interface DatasourceNodeConstants extends DatasourceNodeCommonConstants {
         String CONNECTION_URL = "connection-url";
