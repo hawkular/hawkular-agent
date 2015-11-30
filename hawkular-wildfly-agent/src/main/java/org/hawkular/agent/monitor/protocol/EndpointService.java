@@ -98,15 +98,15 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         return value;
     }
 
-    protected final MonitoredEndpoint endpoint;
-    protected final String feedId;
-    protected final InventoryListenerSupport inventoryListenerSupport = new InventoryListenerSupport();
-    protected final ResourceManager<L> resourceManager;
-    protected final ResourceTypeManager<L> resourceTypeManager;
-    protected final LocationResolver<L> locationResolver;
+    private final MonitoredEndpoint endpoint;
+    private final String feedId;
+    private final InventoryListenerSupport inventoryListenerSupport = new InventoryListenerSupport();
+    private final ResourceManager<L> resourceManager;
+    private final ResourceTypeManager<L> resourceTypeManager;
+    private final LocationResolver<L> locationResolver;
+    private final ProtocolDiagnostics diagnostics;
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
-    protected final ProtocolDiagnostics diagnostics;
 
     public EndpointService(String feedId, MonitoredEndpoint endpoint, ResourceTypeManager<L> resourceTypeManager,
             LocationResolver<L> locationResolver, ProtocolDiagnostics diagnostics) {
@@ -243,6 +243,14 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      */
     public ResourceTypeManager<L> getResourceTypeManager() {
         return resourceTypeManager;
+    }
+
+    public LocationResolver<L> getLocationResolver() {
+        return locationResolver;
+    }
+
+    public ProtocolDiagnostics getDiagnostics() {
+        return diagnostics;
     }
 
     @Override

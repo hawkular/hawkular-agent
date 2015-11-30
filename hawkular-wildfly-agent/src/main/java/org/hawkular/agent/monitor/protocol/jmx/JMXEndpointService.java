@@ -41,8 +41,9 @@ public class JMXEndpointService
     @Override
     public JMXSession openSession() {
         J4pClient client = clientFactory.createClient();
-        Driver<JMXNodeLocation> driver = new JMXDriver(client, diagnostics);
-        return new JMXSession(feedId, endpoint, resourceTypeManager, driver, locationResolver, client);
+        Driver<JMXNodeLocation> driver = new JMXDriver(client, getDiagnostics());
+        return new JMXSession(getFeedId(), getEndpoint(), getResourceTypeManager(), driver, getLocationResolver(),
+                client);
     }
 
 }
