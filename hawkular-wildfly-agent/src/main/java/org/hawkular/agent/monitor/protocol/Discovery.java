@@ -124,10 +124,7 @@ public final class Discovery<L> {
                 L location = entry.getKey(); // this is the unique DMR address for this resource
                 String resourceName = session.getLocationResolver().applyTemplate(childType.getResourceNameTemplate(),
                         location, session.getEndpoint().getName());
-                ID id = InventoryIdUtil.generateResourceId(
-                        session.getFeedId(),
-                        session.getEndpoint(),
-                        location.toString());
+                ID id = InventoryIdUtil.generateResourceId(session.getEndpoint(), location.toString());
                 Builder<L> builder = Resource.<L> builder() //
                         .id(id) //
                         .name(new Name(resourceName))

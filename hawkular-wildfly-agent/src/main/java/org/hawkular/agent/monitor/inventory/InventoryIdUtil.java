@@ -24,19 +24,12 @@ package org.hawkular.agent.monitor.inventory;
 public class InventoryIdUtil {
     public static class ResourceIdParts {
 
-        private final String feedId;
         private final String managedServerName;
         private final String idPart;
 
-        private ResourceIdParts(String feedId, String managedServerName, String idPart) {
-            super();
-            this.feedId = feedId;
+        private ResourceIdParts(String managedServerName, String idPart) {
             this.managedServerName = managedServerName;
             this.idPart = idPart;
-        }
-
-        public String getFeedId() {
-            return feedId;
         }
 
         public String getManagedServerName() {
@@ -49,7 +42,7 @@ public class InventoryIdUtil {
     }
 
     /**
-     * Given a resource ID generated via {@link InventoryIdUtil#generateResourceId(String, ManagedServer, String)}
+     * Given a resource ID generated via {@link InventoryIdUtil#generateResourceId(ManagedServer, String)}
      * this returns the different parts that make up that resource ID.
      *
      * @param resourceId the full resource ID to be parsed
@@ -60,11 +53,11 @@ public class InventoryIdUtil {
             throw new IllegalArgumentException("Invalid resource ID - cannot be null");
         }
 
-        String[] parts = resourceId.split("~", 3);
-        if (parts.length != 3) {
+        String[] parts = resourceId.split("~", 2);
+        if (parts.length != 2) {
             throw new IllegalArgumentException("Cannot parse invalid ID: " + resourceId);
         }
-        return new ResourceIdParts(parts[0], parts[1], parts[2]);
+        return new ResourceIdParts(parts[0], parts[1]);
     }
 
     /**
@@ -76,8 +69,8 @@ public class InventoryIdUtil {
      *
      * @return the resource ID
      */
-    public static ID generateResourceId(String feedId, MonitoredEndpoint endpoint, String idPart) {
-        ID id = new ID(String.format("%s~%s~%s", feedId, endpoint.getName(), idPart));
+    public static ID generateResourceId(MonitoredEndpoint endpoint, String idPart) {
+        ID id = new ID(String.format("%s~%s", endpoint.getName(), idPart));
         return id;
     }
 
