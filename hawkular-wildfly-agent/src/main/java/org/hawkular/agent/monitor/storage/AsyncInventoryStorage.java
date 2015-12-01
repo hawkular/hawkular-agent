@@ -208,7 +208,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             org.hawkular.inventory.api.model.MetricType.Blueprint blueprint = //
                     new org.hawkular.inventory.api.model.MetricType.Blueprint(getInventoryId(metricType),
-                            metricType.getName().getNameString(), mu, metricDataType, metricType.getProperties(), null,
+                            metricType.getName().getNameString(), mu, metricDataType, metricType.getProperties(),
+                            metricType.getInterval().seconds(),
+                            null,
                             null);
 
             entity(blueprint, org.hawkular.inventory.api.model.MetricType.class);

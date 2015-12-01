@@ -63,7 +63,7 @@
     <version.org.hawkular.bus>0.7.2.Final</version.org.hawkular.bus>
     <version.org.hawkular.cmdgw>0.10.3.Final</version.org.hawkular.cmdgw>
     <version.org.hawkular.commons>0.2.3.Final</version.org.hawkular.commons>
-    <version.org.hawkular.inventory>0.8.0-Final</version.org.hawkular.inventory>
+    <version.org.hawkular.inventory>0.9.0.Final</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.9.0.Final</version.org.hawkular.metrics>
     <version.org.hawkular.nest>0.7.1.Final</version.org.hawkular.nest>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
