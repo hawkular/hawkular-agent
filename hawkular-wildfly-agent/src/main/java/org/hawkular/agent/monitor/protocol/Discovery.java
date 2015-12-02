@@ -58,7 +58,7 @@ public final class Discovery<L> {
                 final AttributeLocation<L> instanceLocation =
                         session.getLocationResolver().absolutize(parentLocation, location);
                 if (session.getDriver().attributeExists(instanceLocation)) {
-                    ID id = InventoryIdUtil.generateMetricInstanceId(resourceId, metricType);
+                    ID id = InventoryIdUtil.generateMetricInstanceId(session.getFeedId(), resourceId, metricType);
                     Name name = metricType.getName();
 
                     MeasurementInstance<L, MetricType<L>> metricInstance = new MeasurementInstance<>(id, name,
@@ -77,7 +77,7 @@ public final class Discovery<L> {
                 final AttributeLocation<L> instanceLocation =
                         session.getLocationResolver().absolutize(parentLocation, location);
                 if (session.getDriver().attributeExists(instanceLocation)) {
-                    ID id = InventoryIdUtil.generateAvailInstanceId(resourceId, availType);
+                    ID id = InventoryIdUtil.generateAvailInstanceId(session.getFeedId(), resourceId, availType);
                     Name name = availType.getName();
 
                     MeasurementInstance<L, AvailType<L>> availInstance = new MeasurementInstance<>(id, name,
