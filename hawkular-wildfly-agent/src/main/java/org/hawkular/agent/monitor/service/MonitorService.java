@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -511,22 +512,51 @@ public class MonitorService implements Service<MonitorService> {
 
         log.infoStopping();
 
+        AtomicReference<Throwable> error = new AtomicReference<>(null);  // will hold the first error we encountered
+
         try {
+            // We must do a few things first before we can shutdown the scheduler.
+            // But we also must make sure we shutdown the scheduler so we kill its threads.
+            // Otherwise we hang the shutdown of the entire server. So make sure we get to "stopScheduler".
+
             // disconnect from the feed comm channel
-            if (feedComm != null) {
-                feedComm.disconnect();
-                feedComm = null;
+            try {
+                if (feedComm != null) {
+                    feedComm.disconnect();
+                    feedComm = null;
+                }
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+                log.debug("Cannot shutdown feed comm but will continue shutdown", t);
             }
 
-            if (protocolServices != null) {
-                protocolServices.removeInventoryListener(inventoryStorageProxy);
-                protocolServices.removeInventoryListener(schedulerService);
-                protocolServices.stop();
-                protocolServices = null;
+            try {
+                if (protocolServices != null) {
+                    protocolServices.stop();
+                    protocolServices.removeInventoryListener(inventoryStorageProxy);
+                    protocolServices.removeInventoryListener(schedulerService);
+                    protocolServices = null;
+                }
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+                log.debug("Cannot shutdown protocol services but will continue shutdown", t);
             }
 
-            // shutdown scheduler
-            stopScheduler();
+            // shutdown scheduler and then the storage adapter - make sure we always attempt both
+            try {
+                stopScheduler();
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+                log.debug("Cannot shutdown scheduler but will continue shutdown", t);
+            }
+
+            // now stop the storage adapter
+            try {
+                stopStorageAdapter();
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+                log.debug("Cannot shutdown storage adapter but will continue shutdown", t);
+            }
 
             // stop diagnostic reporting and spit out a final diagnostics report
             if (diagnosticsReporter != null) {
@@ -537,13 +567,15 @@ public class MonitorService implements Service<MonitorService> {
                 diagnosticsReporter = null;
             }
 
-            // now stop the storage adapter
-            stopStorageAdapter();
-
             // cleanup the state listener
             if (serverStateListener != null) {
                 processStateValue.getValue().removePropertyChangeListener(serverStateListener);
                 serverStateListener = null;
+            }
+
+            // We attempted to clean everything we could. If we hit an error, throw it to log our shutdown wasn't clean
+            if (error.get() != null) {
+                throw error.get();
             }
         } catch (Throwable t) {
             log.warnFailedToStopAgent(t);

@@ -402,6 +402,8 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
         status.assertRunning(getClass(), "stop()");
         status = ServiceStatus.STOPPING;
 
+        log.infof("Stopping scheduler [%s] and its [%d] jobs", this.name, jobs.size());
+
         try {
             for (List<ScheduledFuture<?>> perEndpointJobs : jobs.values()) {
                 for (ScheduledFuture<?> job : perEndpointJobs) {
@@ -410,6 +412,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
             }
             executorService.shutdown();
             executorService.awaitTermination(5, TimeUnit.SECONDS);
+            log.infof("Scheduler [%s] stopped", this.name);
 
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt(); // Preserve interrupt status

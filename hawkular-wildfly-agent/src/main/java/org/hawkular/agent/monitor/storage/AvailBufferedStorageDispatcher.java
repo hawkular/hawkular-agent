@@ -79,7 +79,7 @@ public class AvailBufferedStorageDispatcher implements Consumer<AvailDataPoint> 
         private boolean keepRunning = true;
 
         public Worker(BlockingQueue<AvailDataPoint> queue) {
-            super("Hawkular-Monitor-Storage-Dispatcher-Avail");
+            super("Hawkular-WildFly-Agent-Storage-Dispatcher-Avail");
             this.queue = queue;
         }
 

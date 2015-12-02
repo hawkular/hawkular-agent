@@ -20,32 +20,19 @@ package org.hawkular.agent.monitor.service;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public enum ServiceStatus {
-    INITIAL() {
-        @Override
-        public void assertInitialOrStopped(Class<?> cl, String action) {
-        }
-    },
-    STARTING, //
-    RUNNING() {
-        @Override
-        public void assertRunning(Class<?> cl, String action) {
-        }
-    }, //
-    STOPPING, //
-    STOPPED() {
-        @Override
-        public void assertInitialOrStopped(Class<?> cl, String action) {
-        }
-    };
+    INITIAL, STARTING, RUNNING, STOPPING, STOPPED;
+
     public void assertInitialOrStopped(Class<?> cl, String action) throws IllegalStateException {
-        throw new IllegalStateException(
-                "[" + cl.getName() + "] must be in state [" + RUNNING + "] rather than [" + this + "] to perfrom ["
-                        + action + "]");
+        if (this != INITIAL && this != STOPPED) {
+            throw new IllegalStateException("[" + cl.getName() + "] must be in state [" + INITIAL + "] or ["
+                    + STOPPED + "] rather than [" + this + "] to perform [" + action + "]");
+        }
     }
 
     public void assertRunning(Class<?> cl, String action) throws IllegalStateException {
-        throw new IllegalStateException(
-                "[" + cl.getName() + "] must be in state [" + RUNNING + "] rather than [" + this + "] to perfrom ["
-                        + action + "]");
+        if (this != RUNNING) {
+            throw new IllegalStateException("[" + cl.getName() + "] must be in state [" + RUNNING + "] rather than ["
+                    + this + "] to perform [" + action + "]");
+        }
     }
 }

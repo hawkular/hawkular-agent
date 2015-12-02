@@ -437,7 +437,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         private boolean keepRunning = true;
 
         public Worker(ArrayBlockingQueue<QueueElement> queue) {
-            super("Hawkular-Monitor-Inventory-Storage");
+            super("Hawkular-WildFly-Agent-Inventory-Storage");
             this.queue = queue;
         }
 

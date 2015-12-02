@@ -79,7 +79,7 @@ public class MetricBufferedStorageDispatcher implements Consumer<MetricDataPoint
         private boolean keepRunning = true;
 
         public Worker(BlockingQueue<MetricDataPoint> queue) {
-            super("Hawkular-Monitor-Storage-Dispatcher-Metric");
+            super("Hawkular-WildFly-Agent-Storage-Dispatcher-Metric");
             this.queue = queue;
         }
 

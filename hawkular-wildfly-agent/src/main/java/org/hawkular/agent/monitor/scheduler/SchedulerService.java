@@ -59,11 +59,11 @@ public class SchedulerService implements InventoryListener {
 
         // create the schedulers - we use two: one for metric collections and one for avail checks
         this.metricStorage = new MetricBufferedStorageDispatcher(configuration, storageAdapter, diagnostics);
-        this.metricScheduler = IntervalBasedScheduler.forMetrics("Hawkular-Monitor-Scheduler-Metrics",
+        this.metricScheduler = IntervalBasedScheduler.forMetrics("Hawkular-WildFly-Agent-Scheduler-Metrics",
                 configuration.getMetricSchedulerThreads(), metricStorage);
 
         this.availStorage = new AvailBufferedStorageDispatcher(configuration, storageAdapter, diagnostics);
-        this.availScheduler = IntervalBasedScheduler.forAvails("Hawkular-Monitor-Scheduler-Avail",
+        this.availScheduler = IntervalBasedScheduler.forAvails("Hawkular-WildFly-Agent-Scheduler-Avail",
                 configuration.getAvailSchedulerThreads(), availStorage);
     }
 
@@ -84,7 +84,7 @@ public class SchedulerService implements InventoryListener {
     }
 
     public void stop() {
-        status.assertInitialOrStopped(getClass(), "stop()");
+        status.assertRunning(getClass(), "stop()");
         status = ServiceStatus.STOPPING;
 
         log.infoStoppingScheduler();
