@@ -592,6 +592,9 @@
       <resource-config-dmr name="Datasource Class" attribute="datasource-class" />
       <resource-config-dmr name="Enabled"          attribute="enabled" />
       <resource-config-dmr name="JNDI Name"        attribute="jndi-name" />
+      <resource-config-dmr name="Username"         attribute="user-name" />
+      <resource-config-dmr name="Password"         attribute="password" />
+      <resource-config-dmr name="Security Domain"  attribute="security-domain" />
     </resource-type-dmr>
   </resource-type-set-dmr>
 
@@ -605,6 +608,9 @@
       <resource-config-dmr name="XA Datasource Class" attribute="xa-datasource-class" />
       <resource-config-dmr name="Enabled"             attribute="enabled" />
       <resource-config-dmr name="JNDI Name"           attribute="jndi-name" />
+      <resource-config-dmr name="Username"            attribute="user-name" />
+      <resource-config-dmr name="Password"            attribute="password" />
+      <resource-config-dmr name="Security Domain"     attribute="security-domain" />
     </resource-type-dmr>
   </resource-type-set-dmr>
 
