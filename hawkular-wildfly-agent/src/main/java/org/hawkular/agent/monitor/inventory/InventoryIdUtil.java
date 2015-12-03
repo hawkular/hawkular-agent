@@ -83,7 +83,7 @@ public class InventoryIdUtil {
      * @return the ID
      */
     public static ID generateMetricInstanceId(String feedId, ID resourceId, MetricType<?> metricType) {
-        ID id = new ID(String.format("MI~R~[%s~%s]~MT~%s", feedId, resourceId, metricType.getName()));
+        ID id = new ID(String.format("MI~R~[%s/%s]~MT~%s", feedId, resourceId, metricType.getName()));
         return id;
     }
 
@@ -96,7 +96,7 @@ public class InventoryIdUtil {
      * @return the ID
      */
     public static ID generateAvailInstanceId(String feedId, ID resourceId, AvailType<?> availType) {
-        ID id = new ID(String.format("AI~R~[%s~%s]~AT~%s", feedId, resourceId, availType.getName()));
+        ID id = new ID(String.format("AI~R~[%s/%s]~AT~%s", feedId, resourceId, availType.getName()));
         return id;
     }
 }
