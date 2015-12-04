@@ -32,10 +32,6 @@ public class DMRNodeLocation implements NodeLocation {
         return EMPTY;
     }
 
-    /**
-     * @param pathAddress2
-     * @return
-     */
     public static DMRNodeLocation of(ModelNode addressNode) {
         return new DMRNodeLocation(PathAddress.pathAddress(addressNode));
     }

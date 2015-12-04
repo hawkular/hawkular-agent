@@ -55,6 +55,24 @@ public interface Driver<L> {
     Object fetchAttribute(AttributeLocation<L> attributeLocation) throws ProtocolException;
 
     /**
+     * Fetches the attribute value specified by the given {@code attributeLocation} from a {@link MonitoredEndpoint} and
+     * returns it as the values in the given map.
+     *
+     * Assumes the {@link AttributeLocation#getLocation()} is a multi-target path (e.g. it contains wildcards)
+     * and returns a map of all attribute values keyed on the resource location. If attributeLocation is not
+     * multi-targeted the map will just contain a single entry.
+     *
+     * Use this method (as opposed to {@link #fetchAttribute(AttributeLocation)}) if you need to know which
+     * resource locations returned which attribute values. The values returned are the same in both methods, this
+     * just allows you to correlate which location returned which value.
+     *
+     * @param attributeLocation the attribute to retrieve
+     * @return the attribute value or null if there is no such attribute or if the attribute is unset.
+     * @throws ProtocolException on any problems related to the retrieval
+     */
+    Map<L, Object> fetchAttributeAsMap(AttributeLocation<L> attributeLocation) throws ProtocolException;
+
+    /**
      * Returns {@code true} if the given {@code attributeLocation} exists on a {@link MonitoredEndpoint} or
      * {@code false} otherwise. This method should return {@code true} for attributes that exist but are unset.
      *

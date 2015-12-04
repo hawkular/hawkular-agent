@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hawkular.agent.monitor.protocol.LocationResolver;
+import org.hawkular.agent.monitor.protocol.ProtocolException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.dmr.ModelNode;
@@ -39,6 +40,42 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
             }
         }
         return true;
+    }
+
+    @Override
+    public String findWildcardMatch(DMRNodeLocation multiTargetLocation, DMRNodeLocation singleLocation)
+            throws ProtocolException {
+
+        PathAddress multiTargetPaths = multiTargetLocation.getPathAddress();
+        for (int i = 0; i < multiTargetPaths.size(); i++) {
+            PathElement multiTargetPathElement = multiTargetPaths.getElement(i);
+            if (multiTargetPathElement.isWildcard()) {
+                PathElement singleLocationPathElement;
+                try {
+                    singleLocationPathElement = singleLocation.getPathAddress().getElement(i);
+                } catch (Exception e) {
+                    throw new ProtocolException(String.format("[%s] doesn't have the same path size as [%s]",
+                            singleLocation, multiTargetLocation));
+                }
+
+                // DMR wildcards are only in values ("/name=*" not "/*=value")
+                if (singleLocationPathElement.getKey().equals(multiTargetPathElement.getKey())) {
+                    return singleLocationPathElement.getValue();
+                } else {
+                    throw new ProtocolException(String.format("[%s] doesn't match the multi-target key in [%s]",
+                            singleLocation, multiTargetLocation));
+                }
+            }
+        }
+
+        // nothing matched - single location must not have resulted from a query using the given multi-target location
+        throw new ProtocolException(String.format("[%s] doesn't match the wildcard from [%s]", singleLocation,
+                multiTargetLocation));
+    }
+
+    @Override
+    public boolean isMultiTarget(DMRNodeLocation location) {
+        return location.getPathAddress().isMultiTarget();
     }
 
     @Override

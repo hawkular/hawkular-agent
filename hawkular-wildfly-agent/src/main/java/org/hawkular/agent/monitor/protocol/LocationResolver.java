@@ -28,6 +28,29 @@ import org.hawkular.agent.monitor.inventory.NodeLocation;
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
  */
 public interface LocationResolver<L> {
+    /**
+     * Given a multi-target location (e.g. a location with a wildcard) and a single location,
+     * this returns that portion of the single location that matches the multi-target wildcard.
+     *
+     * @param multiTargetLocation a query that was used to find the given singleLocation
+     * @param singleLocation a single absolute location that has the multiTargetLocation wildcard resolved
+     * @return the portion of the single location that matches the multi-target location wildcard
+     * @throws ProtocolException if the single location doesn't have any matching portion
+     */
+    String findWildcardMatch(L multiTargetLocation, L singleLocation) throws ProtocolException;
+
+    /**
+     * Returns true if the location could refer to more than one target. For example,
+     * this typically will return true if the location has a wildcard in it.
+     * Note that just because this returns true does not mean there are multiple targets; there
+     * could be 0 or 1 or more. It depends on what the wildcard matches.
+     *
+     * @param location the location to test
+     *
+     * @return <code>true</code> if location can refer to multiple targets,
+     *         false if it refers to a single location
+     */
+    boolean isMultiTarget(L location);
 
     /**
      * Resolves the given {@code location} relative to the given {@code base} and returns the resolved location. Note

@@ -104,4 +104,25 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
         }
     }
 
+    @Override
+    public Map<PlatformNodeLocation, Object> fetchAttributeAsMap(AttributeLocation<PlatformNodeLocation> location)
+            throws ProtocolException {
+
+        // short-circuit if its only one location
+        if (!new PlatformLocationResolver().isMultiTarget(location.getLocation())) {
+            Object o = fetchAttribute(location);
+            return Collections.singletonMap(location.getLocation(), o);
+        }
+
+        Map<PlatformNodeLocation, PlatformResourceNode> nodes = fetchNodes(location.getLocation());
+        Map<PlatformNodeLocation, Object> attribsMap = new HashMap<>(nodes.size());
+        for (Entry<PlatformNodeLocation, PlatformResourceNode> entry : nodes.entrySet()) {
+            AttributeLocation<PlatformNodeLocation> platformLocation = new AttributeLocation<PlatformNodeLocation>(
+                    entry.getKey(), location.getAttribute());
+            Object attribValue = fetchAttribute(platformLocation);
+            attribsMap.put(entry.getKey(), attribValue);
+        }
+
+        return Collections.unmodifiableMap(attribsMap);
+    }
 }

@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.protocol;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,6 +37,7 @@ import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Consumer;
+import org.hawkular.agent.monitor.util.Util;
 
 /**
  * A bunch of discovery methods.
@@ -158,25 +160,52 @@ public final class Discovery<L> {
         }
     }
 
-    private <N> void discoverResourceConfiguration(ID resourceId, ResourceType<L> type,
-            L parentAddress, N baseNode,
-            Resource.Builder<L> builder, Session<L> session) {
-        Collection<ResourceConfigurationPropertyType<L>> configPropTypes = type
-                .getResourceConfigurationPropertyTypes();
-        for (ResourceConfigurationPropertyType<L> configPropType : configPropTypes) {
+    private <N> void discoverResourceConfiguration(
+            ID resourceId,
+            ResourceType<L> type,
+            L parentAddress,
+            N baseNode,
+            Resource.Builder<L> builder,
+            Session<L> session) {
+
+        Collection<ResourceConfigurationPropertyType<L>> confPropTypes = type.getResourceConfigurationPropertyTypes();
+        for (ResourceConfigurationPropertyType<L> confPropType : confPropTypes) {
             try {
-                AttributeLocation<L> location = configPropType.getAttributeLocation();
-                final AttributeLocation<L> instanceLocation =
-                        session.getLocationResolver().absolutize(parentAddress, location);
-                Object o = session.getDriver().fetchAttribute(instanceLocation);
-                String val = o == null ? null : o.toString();
+                final AttributeLocation<L> location = confPropType.getAttributeLocation();
+                final LocationResolver<L> locationResolver = session.getLocationResolver();
+                final AttributeLocation<L> instanceLocation = locationResolver.absolutize(parentAddress, location);
+                final Driver<L> driver = session.getDriver();
+
+                String resConfPropValue;
+
+                if (!locationResolver.isMultiTarget(instanceLocation.getLocation())) {
+                    Object o = driver.fetchAttribute(instanceLocation);
+                    resConfPropValue = ((o == null) ? null : o.toString());
+                } else {
+                    // This resource config is a conglomeration of attrib values across multiple locations. We need to
+                    // aggregate them all into a map and store the map as the resource configuration property value.
+                    Map<L, Object> attribMap = driver.fetchAttributeAsMap(instanceLocation);
+                    if (attribMap == null || attribMap.isEmpty()) {
+                        resConfPropValue = null;
+                    } else {
+                        Map<String, String> resConfigPropMap = new HashMap<>(attribMap.size());
+                        L multiTargetLocation = instanceLocation.getLocation();
+                        for (Map.Entry<L, Object> entry : attribMap.entrySet()) {
+                            L singleLocation = entry.getKey();
+                            String attribValue = String.valueOf(entry.getValue());
+                            String attribKey = locationResolver.findWildcardMatch(multiTargetLocation, singleLocation);
+                            resConfigPropMap.put(attribKey, attribValue);
+                        }
+                        resConfPropValue = Util.toJson(resConfigPropMap);
+                    }
+                }
 
                 ResourceConfigurationPropertyInstance<L> cpi = new ResourceConfigurationPropertyInstance<>(
-                        ID.NULL_ID, configPropType.getName(), instanceLocation, configPropType, val);
+                        ID.NULL_ID, confPropType.getName(), instanceLocation, confPropType, resConfPropValue);
 
                 builder.resourceConfigurationProperty(cpi);
             } catch (Exception e) {
-                log.warnf(e, "Failed to discover config [%s] for resource [%s]", configPropType, parentAddress);
+                log.warnf(e, "Failed to discover config [%s] for resource [%s]", confPropType, parentAddress);
             }
         }
     }

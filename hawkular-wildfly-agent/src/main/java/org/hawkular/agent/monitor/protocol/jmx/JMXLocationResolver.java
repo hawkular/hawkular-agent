@@ -24,12 +24,40 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.protocol.LocationResolver;
+import org.hawkular.agent.monitor.protocol.ProtocolException;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @see LocationResolver
  */
 public class JMXLocationResolver implements LocationResolver<JMXNodeLocation> {
+
+    @Override
+    public String findWildcardMatch(JMXNodeLocation multiTargetLocation, JMXNodeLocation singleLocation)
+            throws ProtocolException {
+
+        for (String multiTargetPathKey : multiTargetLocation.getCanonicalKeys()) {
+            String multiTargetPathValue = multiTargetLocation.getObjectName().getKeyProperty(multiTargetPathKey);
+            if ("*".equals(multiTargetPathValue)) {
+                String singleLocationPathValue = singleLocation.getObjectName().getKeyProperty(multiTargetPathKey);
+                if (singleLocationPathValue != null) {
+                    return singleLocationPathValue;
+                } else {
+                    throw new ProtocolException(String.format("[%s] doesn't match the multi-target key in [%s]",
+                            singleLocation, multiTargetLocation));
+                }
+            }
+        }
+
+        // nothing matched - single location must not have resulted from a query using the given multi-target location
+        throw new ProtocolException(String.format("[%s] doesn't match the wildcard from [%s]", singleLocation,
+                multiTargetLocation));
+    }
+
+    @Override
+    public boolean isMultiTarget(JMXNodeLocation location) {
+        return location.getObjectName().isPattern();
+    }
 
     @Override
     public JMXNodeLocation absolutize(JMXNodeLocation base, JMXNodeLocation location) {
