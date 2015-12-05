@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
@@ -65,7 +64,10 @@ public class JMXDriver implements Driver<JMXNodeLocation> {
         try {
 
             J4pSearchRequest searchReq = new J4pSearchRequest(query.getObjectName().getCanonicalName());
-            J4pSearchResponse searchResponse = client.execute(searchReq);
+            J4pSearchResponse searchResponse;
+            try (Context timerContext = diagnostics.getRequestTimer().time()) {
+                searchResponse = client.execute(searchReq);
+            }
 
             Map<JMXNodeLocation, ObjectName> result = new HashMap<>();
             for (ObjectName objectName : searchResponse.getObjectNames()) {
@@ -73,9 +75,10 @@ public class JMXDriver implements Driver<JMXNodeLocation> {
                 result.put(location, objectName);
             }
             return Collections.unmodifiableMap(result);
-        } catch (MalformedObjectNameException e) {
-            throw new ProtocolException(e);
         } catch (J4pException e) {
+            diagnostics.getErrorRate().mark(1);
+            throw new ProtocolException(e);
+        } catch (Exception e) {
             throw new ProtocolException(e);
         }
     }
@@ -118,6 +121,26 @@ public class JMXDriver implements Driver<JMXNodeLocation> {
             diagnostics.getErrorRate().mark(1);
             throw new ProtocolException(e);
         }
+    }
+
+    @Override
+    public Map<JMXNodeLocation, Object> fetchAttributeAsMap(AttributeLocation<JMXNodeLocation> location)
+            throws ProtocolException {
+
+        // short-circuit if its only one location
+        if (!new JMXLocationResolver().isMultiTarget(location.getLocation())) {
+            Object o = fetchAttribute(location);
+            return Collections.singletonMap(location.getLocation(), o);
+        }
+
+        Map<JMXNodeLocation, ObjectName> nodes = fetchNodes(location.getLocation());
+        Map<JMXNodeLocation, Object> attribsMap = new HashMap<>(nodes.size());
+        for (Map.Entry<JMXNodeLocation, ObjectName> entry : nodes.entrySet()) {
+            Object o = fetchAttribute(new AttributeLocation<>(entry.getKey(), location.getAttribute()));
+            attribsMap.put(entry.getKey(), o);
+        }
+
+        return Collections.unmodifiableMap(attribsMap);
     }
 
     public J4pClient getClient() {

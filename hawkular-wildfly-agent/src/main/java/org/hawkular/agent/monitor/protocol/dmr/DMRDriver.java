@@ -37,6 +37,7 @@ import org.hawkular.agent.monitor.protocol.ProtocolException;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.hawkular.dmr.api.OperationBuilder.ReadAttributeOperationBuilder;
+import org.hawkular.dmr.api.OperationBuilder.ReadResourceOperationBuilder;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
@@ -163,16 +164,60 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
         return postProcessAttribute(useAttribute, toObject(value));
     }
 
+    @Override
+    public Map<DMRNodeLocation, Object> fetchAttributeAsMap(AttributeLocation<DMRNodeLocation> location)
+            throws ProtocolException {
+
+        // short-circuit if its only one location
+        if (!new DMRLocationResolver().isMultiTarget(location.getLocation())) {
+            Object o = fetchAttribute(location);
+            return Collections.singletonMap(location.getLocation(), o);
+        }
+
+        String[] attribute = location.getAttribute().split("#");
+
+        Map<DMRNodeLocation, ModelNode> nodes = fetchNodes(location.getLocation());
+        Map<DMRNodeLocation, Object> attribsMap = new HashMap<>(nodes.size());
+        for (Map.Entry<DMRNodeLocation, ModelNode> entry : nodes.entrySet()) {
+            ModelNode attribNode = entry.getValue().get(attribute[0]);
+
+            if (attribute.length > 1 && attribNode != null && attribNode.isDefined()) {
+                attribNode = attribNode.get(attribute[1]);
+            }
+
+            Object attribObjectValue;
+            if (attribNode == null || !attribNode.isDefined()) {
+                attribObjectValue = null;
+            } else {
+                attribObjectValue = postProcessAttribute(attribute[attribute.length == 1 ? 0 : 1],
+                        toObject(attribNode));
+            }
+
+            attribsMap.put(entry.getKey(), attribObjectValue);
+        }
+
+        return Collections.unmodifiableMap(attribsMap);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public Map<DMRNodeLocation, ModelNode> fetchNodes(DMRNodeLocation query) throws ProtocolException {
 
-        Optional<ModelNode> resultNode = OperationBuilder.readResource()//
+        ReadResourceOperationBuilder<?> opBuilder = OperationBuilder
+                .readResource()//
                 .address(query.getPathAddress()) //
-                .includeRuntime() //
-                .execute(client) //
-                // .assertSuccess() declared resources do not need to exist
-                .getOptionalResultNode();
+                .includeRuntime();
+
+        // time the execute separately - we want to time ONLY the execute call
+        OperationResult<?> opResult;
+        try (Context timerContext = diagnostics.getRequestTimer().time()) {
+            opResult = opBuilder.execute(client);
+        } catch (Exception e) {
+            diagnostics.getErrorRate().mark(1);
+            throw new ProtocolException("Error fetching nodes for query [" + query + "]", e);
+        }
+
+        Optional<ModelNode> resultNode = opResult.getOptionalResultNode();
         if (resultNode.isPresent()) {
             ModelNode n = resultNode.get();
             if (n.getType() == ModelType.OBJECT) {

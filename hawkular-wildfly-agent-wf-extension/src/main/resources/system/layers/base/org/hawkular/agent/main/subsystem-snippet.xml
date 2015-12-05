@@ -595,6 +595,9 @@
       <resource-config-dmr name="Username"         attribute="user-name" />
       <resource-config-dmr name="Password"         attribute="password" />
       <resource-config-dmr name="Security Domain"  attribute="security-domain" />
+      <resource-config-dmr name="Connection Properties"
+                           path="/connection-properties=*"
+                           attribute="value" />
     </resource-type-dmr>
   </resource-type-set-dmr>
 
@@ -611,6 +614,9 @@
       <resource-config-dmr name="Username"            attribute="user-name" />
       <resource-config-dmr name="Password"            attribute="password" />
       <resource-config-dmr name="Security Domain"     attribute="security-domain" />
+      <resource-config-dmr name="Datasource Properties"
+                           path="/xa-datasource-properties=*"
+                           attribute="value" />
     </resource-type-dmr>
   </resource-type-set-dmr>
 

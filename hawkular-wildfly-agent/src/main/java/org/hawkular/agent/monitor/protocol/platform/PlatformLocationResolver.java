@@ -16,13 +16,57 @@
  */
 package org.hawkular.agent.monitor.protocol.platform;
 
+import java.util.List;
+
 import org.hawkular.agent.monitor.protocol.LocationResolver;
+import org.hawkular.agent.monitor.protocol.ProtocolException;
+import org.hawkular.agent.monitor.protocol.platform.PlatformPath.PathSegment;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @see LocationResolver
  */
 public class PlatformLocationResolver implements LocationResolver<PlatformNodeLocation> {
+
+    @Override
+    public String findWildcardMatch(PlatformNodeLocation multiTargetLocation, PlatformNodeLocation singleLocation)
+            throws ProtocolException {
+        List<PathSegment> multiTargetPaths = multiTargetLocation.getPlatformPath().getSegments();
+        for (int i = 0; i < multiTargetPaths.size(); i++) {
+            PathSegment multiTargetPathElement = multiTargetPaths.get(i);
+            if (PlatformPath.ANY_NAME.equals(multiTargetPathElement.getName())) {
+                PathSegment singleLocationPathElement;
+                try {
+                    singleLocationPathElement = singleLocation.getPlatformPath().getSegments().get(i);
+                } catch (Exception e) {
+                    throw new ProtocolException(String.format("[%s] doesn't have the same path size as [%s]",
+                            singleLocation, multiTargetLocation));
+                }
+
+                // DMR wildcards are only in names, not types ("File Store=*" not "*=/usr")
+                if (singleLocationPathElement.getType().equals(multiTargetPathElement.getType())) {
+                    return singleLocationPathElement.getName();
+                } else {
+                    throw new ProtocolException(String.format("[%s] doesn't match the multi-target key in [%s]",
+                            singleLocation, multiTargetLocation));
+                }
+            }
+        }
+
+        // nothing matched - single location must not have resulted from a query using the given multi-target location
+        throw new ProtocolException(String.format("[%s] doesn't match the wildcard from [%s]", singleLocation,
+                multiTargetLocation));
+    }
+
+    @Override
+    public boolean isMultiTarget(PlatformNodeLocation location) {
+        for (PathSegment segment : location.getPlatformPath().getSegments()) {
+            if (PlatformPath.ANY_NAME.equals(segment.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     public PlatformNodeLocation absolutize(PlatformNodeLocation base, PlatformNodeLocation location) {
