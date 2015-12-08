@@ -388,7 +388,8 @@ public class OshiPlatformCacheTest {
                 family = processor.getFamily();
             } catch (UnsupportedOperationException e) {
                 family = "";
-                print(processor.getClass().getName() + ".getFamily() unsupported on "+ System.getProperty("os.name") +" "+ System.getProperty("os.version") +" "+ System.getProperty("os.arch"));
+                print(processor.getClass().getName() + ".getFamily() unsupported on " + System.getProperty("os.name")
+                        + " " + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
             }
             String identifier = processor.getIdentifier();
             String model;
@@ -396,14 +397,16 @@ public class OshiPlatformCacheTest {
                 model = processor.getModel();
             } catch (UnsupportedOperationException e) {
                 model = "";
-                print(processor.getClass().getName() + ".getModel() unsupported on " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
+                print(processor.getClass().getName() + ".getModel() unsupported on " + System.getProperty("os.name")
+                        + " " + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
             }
             String stepping;
             try {
                stepping =  processor.getStepping();
             } catch (UnsupportedOperationException e) {
                 stepping = "";
-                print(processor.getClass().getName() + ".getStepping() unsupported on " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
+                print(processor.getClass().getName() + ".getStepping() unsupported on " + System.getProperty("os.name")
+                        + " " + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
             }
 
             String vendor = processor.getVendor();
@@ -416,7 +419,8 @@ public class OshiPlatformCacheTest {
             try {
                 isCpu64bit = processor.isCpu64bit();
             } catch (UnsupportedOperationException e) {
-                print(processor.getClass().getName() + ".isCpu64bit() unsupported on " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
+                print(processor.getClass().getName() + ".isCpu64bit() unsupported on " + System.getProperty("os.name")
+                        + " " + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
                 isCpu64bit = false;
             }
             long[] processorCpuLoadTicks = processor.getProcessorCpuLoadTicks();
