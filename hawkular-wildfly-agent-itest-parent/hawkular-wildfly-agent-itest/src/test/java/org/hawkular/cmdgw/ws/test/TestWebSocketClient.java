@@ -575,11 +575,17 @@ public class TestWebSocketClient implements Closeable {
             List<MessageReport> finalReports = conversationResult.poll(timeout, TimeUnit.MILLISECONDS);
 
             List<Throwable> errors = new ArrayList<>();
-            for (MessageReport report : finalReports) {
-                if (!report.passed()) {
-                    errors.add(report.getThrowable());
+
+            if (finalReports != null) {
+                for (MessageReport report : finalReports) {
+                    if (!report.passed()) {
+                        errors.add(report.getThrowable());
+                    }
                 }
+            } else {
+                errors.add(new Throwable("Could not get conversation results after " + timeout + "ms"));
             }
+
             switch (errors.size()) {
                 case 0:
                     /* passed */
