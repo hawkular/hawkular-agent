@@ -499,7 +499,7 @@
 
   <resource-type-set-dmr name="Main" enabled="true">
     <resource-type-dmr name="WildFly Server"
-                       resourceNameTemplate="WildFly Server [${jboss.node.name:localhost}]"
+                       resourceNameTemplate="${jboss.node.name:localhost}/%ManagedServerName"
                        path="/"
                        metricSets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
                        availSets="Server Availability">
@@ -532,7 +532,7 @@
 
   <resource-type-set-dmr name="Deployment" enabled="true">
     <resource-type-dmr name="Deployment"
-                       resourceNameTemplate="Deployment [%2]"
+                       resourceNameTemplate="%2"
                        path="/deployment=*"
                        parents="WildFly Server"
                        metricSets="Undertow Metrics"
@@ -582,7 +582,7 @@
 
   <resource-type-set-dmr name="Datasource" enabled="true">
     <resource-type-dmr name="Datasource"
-                       resourceNameTemplate="Datasource [%-]"
+                       resourceNameTemplate="%-"
                        path="/subsystem=datasources/data-source=*"
                        parents="WildFly Server"
                        metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
@@ -603,7 +603,7 @@
 
   <resource-type-set-dmr name="XA Datasource" enabled="true">
     <resource-type-dmr name="XA Datasource"
-                       resourceNameTemplate="XA Datasource [%-]"
+                       resourceNameTemplate="%-"
                        path="/subsystem=datasources/xa-data-source=*"
                        parents="WildFly Server"
                        metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
@@ -622,7 +622,7 @@
 
   <resource-type-set-dmr name="JDBC Driver" enabled="true">
     <resource-type-dmr name="JDBC Driver"
-                       resourceNameTemplate="JDBC Driver [%-]"
+                       resourceNameTemplate="%-"
                        path="/subsystem=datasources/jdbc-driver=*"
                        parents="WildFly Server" />
   </resource-type-set-dmr>
