@@ -42,6 +42,14 @@ public interface SubsystemAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition AUTO_DISCOVERY_SCAN_PERIOD_SECS = new SimpleAttributeDefinitionBuilder(
+            "autoDiscoveryScanPeriodSecs", ModelType.INT)
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     SimpleAttributeDefinition NUM_METRIC_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
             "numMetricSchedulerThreads", ModelType.INT)
             .setAllowNull(true)

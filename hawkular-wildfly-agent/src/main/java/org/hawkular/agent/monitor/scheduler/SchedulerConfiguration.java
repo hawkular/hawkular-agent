@@ -18,11 +18,9 @@ package org.hawkular.agent.monitor.scheduler;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 
-/**
- * @author John Mazzitelli
- *
- */
 public class SchedulerConfiguration {
+
+    public static final int DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS = 3600;
 
     public static final int DEFAULT_NUM_METRIC_SCHEDULER_THREADS = 2;
     public static final int DEFAULT_NUM_AVAIL_SCHEDULER_THREADS = 2;
@@ -31,6 +29,8 @@ public class SchedulerConfiguration {
     public static final int DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE = 100;
     public static final int DEFAULT_AVAIL_DISPATCHER_BUFFER_SIZE = 500;
     public static final int DEFAULT_AVAIL_DISPATCHER_MAX_BATCH_SIZE = 50;
+
+    private int autoDiscoveryScanPeriodSecs = DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS;
 
     private int metricSchedulerThreads = DEFAULT_NUM_METRIC_SCHEDULER_THREADS;
     private int availSchedulerThreads = DEFAULT_NUM_AVAIL_SCHEDULER_THREADS;
@@ -45,6 +45,13 @@ public class SchedulerConfiguration {
     private MonitorServiceConfiguration.StorageAdapterConfiguration storageAdapterConfig;
     private MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig;
 
+    public int getAutoDiscoveryScanPeriodSecs() {
+        return autoDiscoveryScanPeriodSecs;
+    }
+
+    public void setAutoDiscoveryScanPeriodSecs(int periodSecs) {
+        this.autoDiscoveryScanPeriodSecs = periodSecs;
+    }
 
     public int getMetricSchedulerThreads() {
         return metricSchedulerThreads;

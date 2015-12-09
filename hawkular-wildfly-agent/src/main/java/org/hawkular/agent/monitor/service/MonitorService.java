@@ -669,13 +669,14 @@ public class MonitorService implements Service<MonitorService> {
      * Do NOT call this until you know all resources have been discovered
      * and the inventories have been built.
      *
-     * @throws Exception
+     * @throws Exception on error
      */
     private void startScheduler() throws Exception {
         if (this.schedulerService == null) {
             SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
             schedulerConfig.setDiagnosticsConfig(this.configuration.getDiagnostics());
             schedulerConfig.setStorageAdapterConfig(this.configuration.getStorageAdapter());
+            schedulerConfig.setAutoDiscoveryScanPeriodSecs(this.configuration.getAutoDiscoveryScanPeriodSecs());
             schedulerConfig.setMetricSchedulerThreads(this.configuration.getNumMetricSchedulerThreads());
             schedulerConfig.setAvailSchedulerThreads(this.configuration.getNumAvailSchedulerThreads());
             schedulerConfig.setMetricDispatcherBufferSize(this.configuration.getMetricDispatcherBufferSize());
@@ -683,10 +684,7 @@ public class MonitorService implements Service<MonitorService> {
             schedulerConfig.setAvailDispatcherBufferSize(this.configuration.getAvailDispatcherBufferSize());
             schedulerConfig.setAvailDispatcherMaxBatchSize(this.configuration.getAvailDispatcherMaxBatchSize());
 
-            this.schedulerService = new SchedulerService(
-                    schedulerConfig,
-                    this.diagnostics,
-                    this.storageAdapter);
+            this.schedulerService = new SchedulerService(schedulerConfig, this.diagnostics, this.storageAdapter);
         }
 
         this.schedulerService.start();
