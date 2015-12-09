@@ -110,6 +110,7 @@ public interface SubsystemAttributes {
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
             API_JNDI,
+            AUTO_DISCOVERY_SCAN_PERIOD_SECS,
             NUM_METRIC_SCHEDULER_THREADS,
             NUM_AVAIL_SCHEDULER_THREADS,
             NUM_DMR_SCHEDULER_THREADS,

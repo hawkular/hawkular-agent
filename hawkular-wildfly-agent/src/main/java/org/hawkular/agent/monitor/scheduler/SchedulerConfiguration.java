@@ -21,8 +21,8 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 public class SchedulerConfiguration {
 
 
-    public static final int DEFAULT_NUM_METRIC_SCHEDULER_THREADS = 2;
-    public static final int DEFAULT_NUM_AVAIL_SCHEDULER_THREADS = 2;
+    public static final int DEFAULT_NUM_METRIC_SCHEDULER_THREADS = 4;
+    public static final int DEFAULT_NUM_AVAIL_SCHEDULER_THREADS = 4;
 
     public static final int DEFAULT_METRIC_DISPATCHER_BUFFER_SIZE = 1000;
     public static final int DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE = 100;

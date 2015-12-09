@@ -17,10 +17,7 @@
 
 -->
 <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
-           enabled="true"
-           apiJndiName="java:global/hawkular/agent/api"
-           numMetricSchedulerThreads="3"
-           numAvailSchedulerThreads="3">
+           enabled="true">
 
   <diagnostics enabled="true"
                reportTo="LOG"
