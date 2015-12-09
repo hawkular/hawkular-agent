@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
@@ -45,7 +46,7 @@ public interface SubsystemAttributes {
     SimpleAttributeDefinition AUTO_DISCOVERY_SCAN_PERIOD_SECS = new SimpleAttributeDefinitionBuilder(
             "autoDiscoveryScanPeriodSecs", ModelType.INT)
                     .setAllowNull(true)
-                    .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS))
+                    .setDefaultValue(new ModelNode(ProtocolServices.DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS))
                     .setAllowExpression(true)
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();

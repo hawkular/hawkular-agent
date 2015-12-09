@@ -20,6 +20,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 
@@ -41,14 +45,22 @@ import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
 import org.hawkular.agent.monitor.protocol.platform.PlatformEndpointService;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformSession;
+import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 import org.jboss.msc.value.InjectedValue;
 
 /**
- * A bunch of {@link ProtocolService}s.
+ * This object contains all the {@link ProtocolService}s and their inventories (that is, all the managed
+ * DMR endpoints, managed JMX endpoints, etc).
+ *
+ * This object will also periodically trigger auto-discovery scans on all managed endpoints to help
+ * keep the inventory up-to-date.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ * @author John Mazzitelli
  */
 public class ProtocolServices {
+    public static final int DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS = 3600;
+
     public static class Builder {
         private final String feedId;
         private ProtocolService<DMRNodeLocation, DMRSession> dmrProtocolService;
@@ -56,15 +68,23 @@ public class ProtocolServices {
         private ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService;
         private final Map<String, InjectedValue<SSLContext>> sslContexts;
         private final Diagnostics diagnostics;
+        private int autoDiscoveryScanPeriodSecs;
 
         public Builder(String feedId, Map<String, InjectedValue<SSLContext>> sslContexts, Diagnostics diagnostics) {
             this.feedId = feedId;
             this.sslContexts = sslContexts;
             this.diagnostics = diagnostics;
+            this.autoDiscoveryScanPeriodSecs = DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS;
         }
 
         public ProtocolServices build() {
-            return new ProtocolServices(dmrProtocolService, jmxProtocolService, platformProtocolService);
+            return new ProtocolServices(dmrProtocolService, jmxProtocolService, platformProtocolService,
+                    autoDiscoveryScanPeriodSecs);
+        }
+
+        public Builder autoDiscoveryScanPeriodSecs(int periodSecs) {
+            this.autoDiscoveryScanPeriodSecs = periodSecs;
+            return this;
         }
 
         public Builder dmrProtocolService(
@@ -169,15 +189,21 @@ public class ProtocolServices {
     private final ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService;
     private final List<ProtocolService<?, ?>> services;
 
+    // used to execute auto-discovery scans periodically
+    private final int autoDiscoveryScanPeriodSecs;
+    private ScheduledExecutorService autoDiscoveryExecutor = null;
+
     public ProtocolServices(
             ProtocolService<DMRNodeLocation, DMRSession> dmrProtocolService,
             ProtocolService<JMXNodeLocation, JMXSession> jmxProtocolService,
-            ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService) {
+            ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService,
+            int autoDiscoveryScanPeriodSecs) {
         this.dmrProtocolService = dmrProtocolService;
         this.jmxProtocolService = jmxProtocolService;
         this.platformProtocolService = platformProtocolService;
         this.services = Collections.unmodifiableList(Arrays.asList(dmrProtocolService, jmxProtocolService,
                 platformProtocolService));
+        this.autoDiscoveryScanPeriodSecs = autoDiscoveryScanPeriodSecs;
     }
 
     @SuppressWarnings("unchecked")
@@ -196,6 +222,8 @@ public class ProtocolServices {
         for (ProtocolService<?, ?> service : services) {
             service.start();
         }
+
+        startAutoDiscovery();
     }
 
     public void discoverAll() {
@@ -205,6 +233,8 @@ public class ProtocolServices {
     }
 
     public void stop() {
+        stopAutoDiscovery();
+
         for (ProtocolService<?, ?> service : services) {
             service.stop();
         }
@@ -236,5 +266,47 @@ public class ProtocolServices {
 
     public List<ProtocolService<?, ?>> getServices() {
         return services;
+    }
+
+    private void startAutoDiscovery() {
+        if (this.autoDiscoveryScanPeriodSecs > 0) {
+            log.infoAutoDiscoveryEnabled(this.autoDiscoveryScanPeriodSecs);
+
+            ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
+                    "Hawkular WildFly Agent Auto-Discovery Scan");
+            this.autoDiscoveryExecutor = Executors.newSingleThreadScheduledExecutor(threadFactory);
+
+            Runnable job = new Runnable() {
+                @Override
+                public void run() {
+                    // make sure we don't let exceptions bubble out - that would stop all future scans from executing
+                    try {
+                        ProtocolServices.this.discoverAll();
+                    } catch (Throwable t) {
+                        log.errorAutoDiscoveryFailed(t);
+                    }
+                }
+            };
+
+            // perform an initial discovery now, and then periodically thereafter
+            this.autoDiscoveryExecutor.scheduleAtFixedRate(job, 0, autoDiscoveryScanPeriodSecs, TimeUnit.SECONDS);
+        } else {
+            log.infoAutoDiscoveryDisabled();
+            this.autoDiscoveryExecutor = null;
+
+            // we still must perform an initial discovery to obtain our inventory
+            try {
+                discoverAll();
+            } catch (Throwable t) {
+                log.errorAutoDiscoveryFailed(t);
+            }
+        }
+    }
+
+    private void stopAutoDiscovery() {
+        if (this.autoDiscoveryExecutor != null) {
+            log.debugf("Shutting down auto-discovery job");
+            this.autoDiscoveryExecutor.shutdownNow();
+        }
     }
 }

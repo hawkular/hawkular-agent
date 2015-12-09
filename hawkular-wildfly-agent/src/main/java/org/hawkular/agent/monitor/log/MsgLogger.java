@@ -260,7 +260,19 @@ public interface MsgLogger extends BasicLogger {
     void errorFailedToStartAgent(@Cause Throwable t);
 
     @LogMessage(level = Level.WARN)
-    @Message(id = 10055, value = "Agent encountered errors during shutdown.")
+    @Message(id = 10055, value = "Agent encountered errors during shutdown")
     void warnFailedToStopAgent(@Cause Throwable t);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10056, value = "Periodic auto-discovery scans have been disabled")
+    void infoAutoDiscoveryDisabled();
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10057, value = "Auto-discovery scans will be performed every [%d] seconds")
+    void infoAutoDiscoveryEnabled(int periodSeconds);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10058, value = "Auto-discovery scan failed")
+    void errorAutoDiscoveryFailed(@Cause Throwable t);
 
 }
