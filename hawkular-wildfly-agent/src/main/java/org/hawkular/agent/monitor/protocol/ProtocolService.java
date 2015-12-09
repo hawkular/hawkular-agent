@@ -54,7 +54,6 @@ public class ProtocolService<L, S extends Session<L>> {
 
     private final Map<String, EndpointService<L, S>> endpointServices;
     public ProtocolService(Map<String, EndpointService<L, S>> endpointServices) {
-        super();
         this.endpointServices = endpointServices;
     }
 

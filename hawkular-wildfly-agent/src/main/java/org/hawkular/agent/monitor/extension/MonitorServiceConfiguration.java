@@ -204,6 +204,7 @@ public class MonitorServiceConfiguration {
 
         private final boolean subsystemEnabled;
         private final String apiJndi;
+        private final int autoDiscoveryScanPeriodSecs;
         private final int numMetricSchedulerThreads;
         private final int numAvailSchedulerThreads;
         private final int numDmrSchedulerThreads;
@@ -212,12 +213,14 @@ public class MonitorServiceConfiguration {
         private final int availDispatcherBufferSize;
         private final int availDispatcherMaxBatchSize;
 
-        public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int numMetricSchedulerThreads,
-                int numAvailSchedulerThreads, int numDmrSchedulerThreads, int metricDispatcherBufferSize,
-                int metricDispatcherMaxBatchSize, int availDispatcherBufferSize, int availDispatcherMaxBatchSize) {
+        public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int autoDiscoveryScanPeriodSecs,
+                int numMetricSchedulerThreads, int numAvailSchedulerThreads, int numDmrSchedulerThreads,
+                int metricDispatcherBufferSize, int metricDispatcherMaxBatchSize, int availDispatcherBufferSize,
+                int availDispatcherMaxBatchSize) {
             super();
             this.subsystemEnabled = subsystemEnabled;
             this.apiJndi = apiJndi;
+            this.autoDiscoveryScanPeriodSecs = autoDiscoveryScanPeriodSecs;
             this.numMetricSchedulerThreads = numMetricSchedulerThreads;
             this.numAvailSchedulerThreads = numAvailSchedulerThreads;
             this.numDmrSchedulerThreads = numDmrSchedulerThreads;
@@ -367,6 +370,10 @@ public class MonitorServiceConfiguration {
 
     public String getApiJndi() {
         return globalConfiguration.apiJndi;
+    }
+
+    public int getAutoDiscoveryScanPeriodSecs() {
+        return globalConfiguration.autoDiscoveryScanPeriodSecs;
     }
 
     public int getNumMetricSchedulerThreads() {

@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
@@ -41,6 +42,14 @@ public interface SubsystemAttributes {
             .setAllowExpression(true)
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
+
+    SimpleAttributeDefinition AUTO_DISCOVERY_SCAN_PERIOD_SECS = new SimpleAttributeDefinitionBuilder(
+            "autoDiscoveryScanPeriodSecs", ModelType.INT)
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(ProtocolServices.DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     SimpleAttributeDefinition NUM_METRIC_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
             "numMetricSchedulerThreads", ModelType.INT)
@@ -101,6 +110,7 @@ public interface SubsystemAttributes {
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
             API_JNDI,
+            AUTO_DISCOVERY_SCAN_PERIOD_SECS,
             NUM_METRIC_SCHEDULER_THREADS,
             NUM_AVAIL_SCHEDULER_THREADS,
             NUM_DMR_SCHEDULER_THREADS,

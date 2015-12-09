@@ -357,8 +357,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public final void start() {
         status.assertInitialOrStopped(getClass(), "start()");
         status = ServiceStatus.STARTING;
-        // scan all
-        doDiscoverAll();
+
+        // HWKAGENT-38 - now that we perform auto-discovery, let's not scan all here
+        // doDiscoverAll();
 
         // keep polling/listening for changes
         status = ServiceStatus.RUNNING;
