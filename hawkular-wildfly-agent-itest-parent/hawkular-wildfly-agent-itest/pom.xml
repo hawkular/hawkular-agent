@@ -136,6 +136,7 @@
       <!-- Integration tests -->
       <id>itest</id>
       <properties>
+        <hawkular.agent.itest.includes>**/*ITest.class</hawkular.agent.itest.includes>
         <hawkular.agent.itest.run.dir>${project.build.directory}/hawkular-wildfly-agent-itest-dist</hawkular.agent.itest.run.dir>
         <hawkular.agent.itest.mgmt.user>itest-admin</hawkular.agent.itest.mgmt.user>
         <hawkular.agent.itest.mgmt.password>JGM4-74rK</hawkular.agent.itest.mgmt.password>
@@ -226,12 +227,15 @@
             </executions>
           </plugin>
 
+          <!-- To run a subset of tests, specify the test class paths explicitly. For example:
+               -Dhawkular.agent.itest.includes=**/MyITest.class,**/EchoCommandITest.class -Pitest
+          -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <includes>
-                <include>**/*ITest.class</include>
+                <include>${hawkular.agent.itest.includes}</include>
               </includes>
               <systemPropertyVariables>
                 <hawkular.bind.address>${hawkular.bind.address}</hawkular.bind.address>
