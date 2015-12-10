@@ -37,7 +37,8 @@ public class OperationFullDiscoveryScan implements OperationStepHandler {
                 long start = System.currentTimeMillis();
                 service.getProtocolServices().discoverAll();
                 long duration = System.currentTimeMillis() - start;
-                opContext.getResult().set(String.format("Full discovery completed in [%d] millseconds", duration));
+                opContext.getResult()
+                        .set(String.format("Full inventory discovery scan completed in [%d] milliseconds", duration));
             } else {
                 throw new OperationFailedException("Agent is not started");
             }

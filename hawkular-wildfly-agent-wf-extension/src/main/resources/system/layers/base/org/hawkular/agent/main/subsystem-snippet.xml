@@ -515,15 +515,12 @@
   </resource-type-set-dmr>
 
   <resource-type-set-dmr name="Hawkular" enabled="true">
-    <resource-type-dmr name="Bus Broker"
-                       resourceNameTemplate="Bus Broker"
-                       path="/subsystem=hawkular-bus-broker"
-                       parents="WildFly Server"/>
-    <resource-type-dmr name="Hawkular Wildfly Agent"
-                       resourceNameTemplate="Hawkular Wildfly Agent"
+    <resource-type-dmr name="Hawkular WildFly Agent"
+                       resourceNameTemplate="Hawkular WildFly Agent"
                        path="/subsystem=hawkular-wildfly-agent"
                        parents="WildFly Server">
-      <operation-dmr name="Status" operationName="status" path="/" />
+      <operation-dmr name="Status"                   operationName="status" />
+      <operation-dmr name="Inventory Discovery Scan" operationName="fullDiscoveryScan" />
     </resource-type-dmr>
   </resource-type-set-dmr>
 
@@ -534,10 +531,10 @@
                        parents="WildFly Server"
                        metricSets="Undertow Metrics"
                        availSets="Deployment Status">
-      <operation-dmr name="Deploy" operationName="deploy" path="/" />
-      <operation-dmr name="Redeploy" operationName="redeploy" path="/" />
-      <operation-dmr name="Remove" operationName="remove" path="/" />
-      <operation-dmr name="Undeploy" operationName="undeploy" path="/" />
+      <operation-dmr name="Deploy"   operationName="deploy"   />
+      <operation-dmr name="Redeploy" operationName="redeploy" />
+      <operation-dmr name="Remove"   operationName="remove"   />
+      <operation-dmr name="Undeploy" operationName="undeploy" />
     </resource-type-dmr>
 
     <resource-type-dmr name="SubDeployment"

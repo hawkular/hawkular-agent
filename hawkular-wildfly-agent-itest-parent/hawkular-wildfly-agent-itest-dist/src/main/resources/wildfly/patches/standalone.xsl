@@ -869,11 +869,12 @@
                              resourceNameTemplate="Bus Broker"
                              path="/subsystem=hawkular-bus-broker"
                              parents="WildFly Server"/>
-          <resource-type-dmr name="Monitor Agent"
-                             resourceNameTemplate="Monitor Agent"
-                             path="/subsystem=hawkular-monitor"
+          <resource-type-dmr name="Hawkular WildFly Agent"
+                             resourceNameTemplate="Hawkular WildFly Agent"
+                             path="/subsystem=hawkular-wildfly-agent"
                              parents="WildFly Server">
-            <operation-dmr name="Status" operationName="status" path="/" />
+            <operation-dmr name="Status" operationName="status" />
+            <operation-dmr name="Inventory Discovery Scan" operationName="fullDiscoveryScan" />
           </resource-type-dmr>
         </resource-type-set-dmr>
 
