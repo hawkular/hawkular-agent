@@ -145,6 +145,17 @@ public class TestWebSocketClient implements Closeable {
             return this;
         }
 
+        /**
+         * @param expectedRegex a text message regular expression to match
+         * @return this builder
+         */
+        public Builder expectRegex(String expectedRegex) {
+            ExpectedMessage expectedMessage = new ExpectedMessage(new PatternMatcher(expectedRegex),
+                    CoreMatchers.equalTo(PayloadType.TEXT), null, null);
+            expectedMessages.add(expectedMessage);
+            return this;
+        }
+
         public Builder expectWelcome(String answer) {
             return expectWelcome(answer, null);
         }

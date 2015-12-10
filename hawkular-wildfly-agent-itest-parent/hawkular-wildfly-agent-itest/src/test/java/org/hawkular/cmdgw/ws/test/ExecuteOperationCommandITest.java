@@ -64,4 +64,38 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
 
     }
 
+    @Test(dependsOnGroups = { "no-dependencies" }, groups = "exclusive-inventory-access")
+    public void testExecuteAgentDiscoveryScan() throws Throwable {
+        waitForAccountsAndInventory();
+
+        List<Resource> wfs = getResources("/test/resources", 1);
+        AssertJUnit.assertEquals(1, wfs.size());
+        CanonicalPath wfPath = wfs.get(0).getPath();
+        String feedId = wfPath.ids().getFeedId();
+        Resource agent = getResource("/feeds/" + feedId + "/resourceTypes/Hawkular%20WildFly%20Agent/resources",
+                (r -> r.getId() != null));
+
+        String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", " //
+                + "\"resourcePath\":\"" + agent.getPath().toString() + "\"," //
+                + "\"operationName\":\"Inventory Discovery Scan\"" //
+                + "}";
+        String response = "ExecuteOperationResponse={" //
+                + "\"operationName\":\"Inventory Discovery Scan\"," //
+                + "\"resourcePath\":\"" + agent.getPath() + "\"," //
+                + "\"destinationSessionId\":\"{{sessionId}}\"," //
+                + "\"status\":\"OK\"," //
+                + "\"message\":\"Performed [Inventory Discovery Scan] on a [DMR Node] given by Inventory path [" //
+                + agent.getPath() + "]\"" //
+                + "}";
+        try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
+                .url(baseGwUri + "/ui/ws") //
+                .expectWelcome(req) //
+                .expectGenericSuccess(wfPath.ids().getFeedId()) //
+                .expectText(response) //
+                .build()) {
+            testClient.validate(10000);
+        }
+
+    }
+
 }

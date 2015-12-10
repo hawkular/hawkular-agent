@@ -337,7 +337,7 @@
         </property>
       </activation>
       <properties>
-        <debug.failsafe.argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5007,server=y,suspend=n</debug.failsafe.argLine>
+        <debug.failsafe.argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5007,server=y,suspend=y</debug.failsafe.argLine>
         <debug.wildfly.argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n</debug.wildfly.argLine>
       </properties>
     </profile>
