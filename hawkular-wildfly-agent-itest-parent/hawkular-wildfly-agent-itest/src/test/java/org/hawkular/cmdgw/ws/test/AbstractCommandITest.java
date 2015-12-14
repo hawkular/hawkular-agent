@@ -133,16 +133,19 @@ public abstract class AbstractCommandITest {
 
     public static String readNode(Class<?> caller, String nodeFileName) throws IOException {
         URL url = caller.getResource(caller.getSimpleName() + "." + nodeFileName);
-
-        StringBuilder result = new StringBuilder();
-        try (Reader r = new InputStreamReader(url.openStream(), "utf-8")) {
-            char[] buff = new char[1024];
-            int len = 0;
-            while ((len = r.read(buff, 0, buff.length)) != -1) {
-                result.append(buff, 0, len);
+        if (url != null) {
+            StringBuilder result = new StringBuilder();
+            try (Reader r = new InputStreamReader(url.openStream(), "utf-8")) {
+                char[] buff = new char[1024];
+                int len = 0;
+                while ((len = r.read(buff, 0, buff.length)) != -1) {
+                    result.append(buff, 0, len);
+                }
             }
+            return result.toString();
+        } else {
+            return null;
         }
-        return result.toString();
     }
 
     public static void writeNode(Class<?> caller, ModelNode node, String nodeFileName)
@@ -189,11 +192,12 @@ public abstract class AbstractCommandITest {
             ModelNode actual = OperationBuilder.readResource().address(addressActual).includeRuntime()
                     .includeDefaults()
                     .recursive().execute(mcc).assertSuccess().getResultNode();
+            String expected = readNode(caller, expectedNodeFileName);
+            String actualString = actual.toString();
             if (saveActual) {
                 writeNode(caller, actual, expectedNodeFileName + ".actual.txt");
             }
-            String expected = readNode(caller, expectedNodeFileName);
-            Assert.assertEquals(actual.toString(), expected);
+            Assert.assertEquals(actualString, expected);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -286,7 +290,7 @@ public abstract class AbstractCommandITest {
                 /* some initial attempts may fail */
                 e = t;
                 System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + ATTEMPT_COUNT
-                        + " attempts, about to retry after " + ATTEMPT_DELAY + " ms");
+                        + " attempts, about to retry after " + ATTEMPT_DELAY + " ms: " + t.getMessage());
             }
             /* sleep one second */
             Thread.sleep(ATTEMPT_DELAY);

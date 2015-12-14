@@ -74,7 +74,6 @@ public class SubsystemAdd extends AbstractAddStepHandler {
 
         // bind the API to JNDI so other apps can use it, and prepare to build the binder service
         String jndiName = configuration.getApiJndi();
-        System.out.println("About to use jndiName = "+ jndiName);
         boolean bindJndi = (jndiName == null || jndiName.isEmpty()) ? false : true;
         if (bindJndi) {
             Object jndiObject = service.getHawkularMonitorContext();

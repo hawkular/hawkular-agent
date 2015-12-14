@@ -16,7 +16,6 @@
     limitations under the License.
 
 -->
-<!-- default value omitted: apiJndiName="java:global/hawkular/agent/api" -->
 <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
            enabled="false"
            autoDiscoveryScanPeriodSecs="3601"
@@ -27,16 +26,10 @@
            availDispatcherBufferSize="101"
            availDispatcherMaxBatchSize="26">
 
-  <!-- default value omitted: reportTo="LOG" -->
   <diagnostics enabled="false"
                interval="1"
                timeUnits="minutes"/>
 
-  <!-- default values omitted:
-          type="HAWKULAR"
-          inventoryContext="/hawkular/inventory/"
-          metricsContext="/hawkular/metrics/"
-  -->
   <storage-adapter username="jdoe"
                    password="password"
                    url="http://localhost:8080"
