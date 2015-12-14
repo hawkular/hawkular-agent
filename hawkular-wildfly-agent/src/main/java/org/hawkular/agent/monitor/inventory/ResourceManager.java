@@ -277,26 +277,38 @@ public final class ResourceManager<L> {
     public List<Resource<L>> removeResources(L query, LocationResolver<L> locationResolver) {
         graphLockWrite.lock();
         try {
-            List<Resource<L>> doomed = new ArrayList<Resource<L>>();
+            List<Resource<L>> doomedResources = new ArrayList<Resource<L>>();
             GraphIterator<Resource<L>, DefaultEdge> it = new DepthFirstIterator<>(this.resourcesGraph);
             while (it.hasNext()) {
                 Resource<L> resource = it.next();
-                if (locationResolver.isParent(query, resource.getLocation())) {
-                    doomed.add(resource);
+                if (locationResolver.matches(query, resource.getLocation())) {
+                    doomedResources.add(resource);
+                    getAllDescendants(resource, doomedResources);
                 }
             }
 
-            // we couldn't do this while iterator (a ConcurrentModificationException would have resulted)
+            // we couldn't do this while iterating (a ConcurrentModificationException would have resulted)
             // but now that we have the doomed resources, we can remove them from the graph now
-            for (Resource<L> resource : doomed) {
-                this.resourcesGraph.removeVertex(resource);
-                this.resourcesGraph.removeEdge(resource.getParent(), resource);
+            for (Resource<L> doomedResource : doomedResources) {
+                this.resourcesGraph.removeVertex(doomedResource);
+                this.resourcesGraph.removeEdge(doomedResource.getParent(), doomedResource);
             }
 
-            return Collections.unmodifiableList(doomed);
+            return Collections.unmodifiableList(doomedResources);
         } finally {
             graphLockWrite.unlock();
         }
+    }
+
+    // make sure you call this with a graph lock - either read or write
+    private void getAllDescendants(Resource<L> parent, List<Resource<L>> descendants) {
+        for (Resource<L> child : getChildren(parent)) {
+            if (!descendants.contains(child)) {
+                descendants.add(child);
+                getAllDescendants(child, descendants);
+            }
+        }
+        return;
     }
 
     /**

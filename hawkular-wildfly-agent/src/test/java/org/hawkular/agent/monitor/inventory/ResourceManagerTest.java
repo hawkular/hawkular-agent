@@ -16,8 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 import org.hawkular.agent.monitor.protocol.dmr.DMRLocationResolver;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
@@ -137,9 +137,10 @@ public class ResourceManagerTest {
         Assert.assertFalse(bIter.hasNext());
 
         // remove child2
-        List<Resource<DMRNodeLocation>> removed = rm.removeResources(child2.getLocation(), new DMRLocationResolver());
+        Collection<Resource<DMRNodeLocation>> removed = rm.removeResources(child2.getLocation(),
+                new DMRLocationResolver());
         Assert.assertEquals(1, removed.size());
-        Assert.assertEquals(child2, removed.get(0));
+        Assert.assertEquals(child2, removed.iterator().next());
 
         bIter = rm.getResourcesBreadthFirst().iterator();
         Assert.assertEquals(root1, bIter.next());
@@ -157,6 +158,96 @@ public class ResourceManagerTest {
         bIter = rm.getResourcesBreadthFirst().iterator();
         Assert.assertEquals(root1, bIter.next());
         Assert.assertEquals(root2, bIter.next());
+        Assert.assertFalse(bIter.hasNext());
+    }
+
+    @Test
+    public void testRemoveDescendants() {
+        ResourceType<DMRNodeLocation> type = ResourceType
+                .<DMRNodeLocation> builder().id(new ID("resType")).name(new Name("resTypeName"))
+                .location(DMRNodeLocation.empty())
+                .build();
+        ResourceManager<DMRNodeLocation> rm = new ResourceManager<>();
+        Resource<DMRNodeLocation> root1 = Resource
+                .<DMRNodeLocation> builder()
+                .id(new ID("root1"))
+                .name(new Name("root1Name"))
+                .location(DMRNodeLocation.empty())
+                .type(type)
+                .build();
+        Resource<DMRNodeLocation> child1 = Resource
+                .<DMRNodeLocation> builder()
+                .id(new ID("child1")).name(new Name("child1Name")).type(type).parent(root1)
+                .location(DMRNodeLocation.of("/child=1")).build();
+        Resource<DMRNodeLocation> grandChild1 = Resource
+                .<DMRNodeLocation> builder()
+                .id(new ID("grand1")).name(new Name("grand1Name")).type(type).parent(child1)
+                .location(DMRNodeLocation.of("/child=1/grandchild=1")).build();
+        Resource<DMRNodeLocation> greatGrandChild1 = Resource
+                .<DMRNodeLocation> builder()
+                .id(new ID("greatgrand1")).name(new Name("greatgrand1Name")).type(type).parent(grandChild1)
+                .location(DMRNodeLocation.of("/child=1/grandchild=1/greatgrand=1")).build();
+        Resource<DMRNodeLocation> grandChild2 = Resource
+                .<DMRNodeLocation> builder()
+                .id(new ID("grand2")).name(new Name("grand2Name")).type(type).parent(child1)
+                .location(DMRNodeLocation.of("/child=1/grandchild=2")).build();
+        Resource<DMRNodeLocation> greatGrandChild2 = Resource
+                .<DMRNodeLocation> builder()
+                .id(new ID("greatgrand2")).name(new Name("greatgrand2Name")).type(type).parent(grandChild2)
+                .location(DMRNodeLocation.of("/child=1/grandchild=2/greatgrand=2")).build();
+
+        // add hierarchy
+        rm.addResource(root1);
+        rm.addResource(child1);
+        rm.addResource(grandChild1);
+        rm.addResource(greatGrandChild1);
+        rm.addResource(grandChild2);
+        rm.addResource(greatGrandChild2);
+        Assert.assertEquals(6, rm.getResourcesBreadthFirst().size());
+        Assert.assertEquals(1, rm.getRootResources().size());
+
+        Assert.assertEquals(1, rm.getChildren(root1).size());
+        Assert.assertTrue(rm.getChildren(root1).contains(child1));
+        Assert.assertEquals(2, rm.getChildren(child1).size());
+        Assert.assertTrue(rm.getChildren(child1).contains(grandChild1));
+        Assert.assertTrue(rm.getChildren(child1).contains(grandChild2));
+        Assert.assertEquals(1, rm.getChildren(grandChild1).size());
+        Assert.assertTrue(rm.getChildren(grandChild1).contains(greatGrandChild1));
+        Assert.assertEquals(1, rm.getChildren(grandChild2).size());
+        Assert.assertTrue(rm.getChildren(grandChild2).contains(greatGrandChild2));
+        Assert.assertEquals(0, rm.getChildren(greatGrandChild1).size());
+        Assert.assertEquals(0, rm.getChildren(greatGrandChild2).size());
+
+        Assert.assertEquals(null, rm.getParent(root1));
+        Assert.assertEquals(root1, rm.getParent(child1));
+        Assert.assertEquals(child1, rm.getParent(grandChild1));
+        Assert.assertEquals(child1, rm.getParent(grandChild2));
+        Assert.assertEquals(grandChild1, rm.getParent(greatGrandChild1));
+        Assert.assertEquals(grandChild2, rm.getParent(greatGrandChild2));
+
+        // iterate breadth first
+        Iterator<Resource<DMRNodeLocation>> bIter = rm.getResourcesBreadthFirst().iterator();
+        Assert.assertEquals(root1, bIter.next());
+        Assert.assertEquals(child1, bIter.next());
+        Assert.assertEquals(grandChild1, bIter.next());
+        Assert.assertEquals(grandChild2, bIter.next());
+        Assert.assertEquals(greatGrandChild1, bIter.next());
+        Assert.assertEquals(greatGrandChild2, bIter.next());
+        Assert.assertFalse(bIter.hasNext());
+
+        // remove child1 and see that all its descendants are removed too
+        Collection<Resource<DMRNodeLocation>> removed = rm.removeResources(child1.getLocation(),
+                new DMRLocationResolver());
+        Assert.assertEquals(removed.toString(), 5, removed.size());
+        Assert.assertTrue(removed.contains(child1));
+        Assert.assertTrue(removed.contains(grandChild1));
+        Assert.assertTrue(removed.contains(greatGrandChild1));
+        Assert.assertTrue(removed.contains(grandChild2));
+        Assert.assertTrue(removed.contains(greatGrandChild2));
+
+        // only the root1 is left
+        bIter = rm.getResourcesBreadthFirst().iterator();
+        Assert.assertEquals(root1, bIter.next());
         Assert.assertFalse(bIter.hasNext());
     }
 }
