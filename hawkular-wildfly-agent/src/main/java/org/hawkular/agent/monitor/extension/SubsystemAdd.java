@@ -16,8 +16,6 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.util.List;
-
 import org.hawkular.agent.monitor.api.HawkularMonitorContext;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -26,7 +24,6 @@ import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.ServiceVerificationHandler;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.naming.ImmediateManagedReferenceFactory;
 import org.jboss.as.naming.ManagedReferenceFactory;
@@ -49,8 +46,7 @@ public class SubsystemAdd extends AbstractAddStepHandler {
     }
 
     @Override
-    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model,
-            ServiceVerificationHandler verificationHandler, List<ServiceController<?>> newControllers)
+    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
             throws OperationFailedException {
 
         ModelNode subsystemConfig = Resource.Tools.readModel(context.readResource(PathAddress.EMPTY_ADDRESS));
@@ -62,11 +58,10 @@ public class SubsystemAdd extends AbstractAddStepHandler {
             return;
         }
 
-        createService(context.getServiceTarget(), newControllers, verificationHandler, configuration);
+        createService(context.getServiceTarget(), configuration);
     }
 
-    private void createService(final ServiceTarget target, final List<ServiceController<?>> newControllers,
-            final ServiceVerificationHandler verificationHandler, final MonitorServiceConfiguration configuration) {
+    private void createService(final ServiceTarget target, final MonitorServiceConfiguration configuration) {
 
         // create and configure the service itself
         MonitorService service = new MonitorService(configuration);
@@ -74,12 +69,12 @@ public class SubsystemAdd extends AbstractAddStepHandler {
         // create the builder that will be responsible for preparing the service deployment
         ServiceBuilder<MonitorService> svcBuilder;
         svcBuilder = target.addService(SubsystemExtension.SERVICE_NAME, service);
-        svcBuilder.addListener(verificationHandler);
         svcBuilder.setInitialMode(ServiceController.Mode.ACTIVE);
         service.addDependencies(svcBuilder);
 
         // bind the API to JNDI so other apps can use it, and prepare to build the binder service
         String jndiName = configuration.getApiJndi();
+        System.out.println("About to use jndiName = "+ jndiName);
         boolean bindJndi = (jndiName == null || jndiName.isEmpty()) ? false : true;
         if (bindJndi) {
             Object jndiObject = service.getHawkularMonitorContext();
@@ -101,13 +96,11 @@ public class SubsystemAdd extends AbstractAddStepHandler {
             svcBuilder.addDependency(binderServiceName);
 
             // install the binder service
-            ServiceController<?> binderController = binderBuilder.install();
-            newControllers.add(binderController);
+            binderBuilder.install();
         }
 
         // install the monitor service
-        ServiceController<MonitorService> svcController = svcBuilder.install();
-        newControllers.add(svcController);
+        svcBuilder.install();
 
         return;
     }
