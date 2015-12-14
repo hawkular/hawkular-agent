@@ -34,8 +34,7 @@ public class ResourceTypeManagerTest {
     public void simpleGraphDMR() {
         ResourceType<DMRNodeLocation> rt1_1 = createResourceTypeDMR("res1.1", "/res1_1=*");
         ResourceType<DMRNodeLocation> rt1_2 = createResourceTypeDMR("res1.2", "/res1_2=*");
-        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true,
-                rt1_1, rt1_2);
+        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
         Map<Name, TypeSet<ResourceType<DMRNodeLocation>>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
@@ -46,21 +45,21 @@ public class ResourceTypeManagerTest {
 
         Set<ResourceType<DMRNodeLocation>> roots = rtm.getRootResourceTypes();
         Assert.assertEquals("The two types are root resources", 2, roots.size());
+
+        List<ResourceType<DMRNodeLocation>> types = rtm.getResourceTypesBreadthFirst();
+        Assert.assertEquals(rt1_1, types.get(0));
+        Assert.assertEquals(rt1_2, types.get(1));
     }
 
     @Test
     public void simpleParentChildGraphDMR() {
         ResourceType<DMRNodeLocation> rt1_1 = createResourceTypeDMR("res1_1", "/res1_1=*");
         ResourceType<DMRNodeLocation> rt1_2 = createResourceTypeDMR("res1_2", "/res1_2=*");
-        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true,
-                rt1_1, rt1_2);
+        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
-        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*",
-                rt1_1.getName());
-        ResourceType<DMRNodeLocation> rt2_2 = createResourceTypeDMR("res2_2", "/res2_2=*",
-                rt1_2.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", true,
-                rt2_1, rt2_2);
+        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*", rt1_1.getName());
+        ResourceType<DMRNodeLocation> rt2_2 = createResourceTypeDMR("res2_2", "/res2_2=*", rt1_2.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
 
         Map<Name, TypeSet<ResourceType<DMRNodeLocation>>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
@@ -75,50 +74,43 @@ public class ResourceTypeManagerTest {
         Assert.assertTrue(roots.contains(rt1_1));
         Assert.assertTrue(roots.contains(rt1_2));
 
-        Set<ResourceType<DMRNodeLocation>> outgoingEdgesOf;
-        outgoingEdgesOf = rtm.getParents(rt1_1);
-        Assert.assertTrue("Root resource has no parent", outgoingEdgesOf.isEmpty());
-        outgoingEdgesOf = rtm.getParents(rt1_2);
-        Assert.assertTrue("Root resource has no parent", outgoingEdgesOf.isEmpty());
-        outgoingEdgesOf = rtm.getParents(rt2_1);
-        Assert.assertTrue(outgoingEdgesOf.iterator().next().equals(rt1_1));
-        outgoingEdgesOf = rtm.getParents(rt2_2);
-        Assert.assertTrue(outgoingEdgesOf.iterator().next().equals(rt1_2));
+        Set<ResourceType<DMRNodeLocation>> parents;
+        parents = rtm.getParents(rt1_1);
+        Assert.assertTrue("Root resource has no parent", parents.isEmpty());
+        parents = rtm.getParents(rt1_2);
+        Assert.assertTrue("Root resource has no parent", parents.isEmpty());
+        parents = rtm.getParents(rt2_1);
+        Assert.assertTrue(parents.iterator().next().equals(rt1_1));
+        parents = rtm.getParents(rt2_2);
+        Assert.assertTrue(parents.iterator().next().equals(rt1_2));
 
-        Set<ResourceType<DMRNodeLocation>> incomingEdgesOf;
-        incomingEdgesOf = rtm.getChildren(rt1_1);
-        Assert.assertEquals(1, incomingEdgesOf.size());
-        Assert.assertTrue(incomingEdgesOf.iterator().next().equals(rt2_1));
-        incomingEdgesOf = rtm.getChildren(rt1_2);
-        Assert.assertEquals(1, incomingEdgesOf.size());
-        Assert.assertTrue(incomingEdgesOf.iterator().next().equals(rt2_2));
-        incomingEdgesOf = rtm.getChildren(rt2_1);
-        Assert.assertTrue("Has no children", incomingEdgesOf.isEmpty());
-        incomingEdgesOf = rtm.getChildren(rt2_2);
-        Assert.assertTrue("Has no children", incomingEdgesOf.isEmpty());
+        Set<ResourceType<DMRNodeLocation>> children;
+        children = rtm.getChildren(rt1_1);
+        Assert.assertEquals(1, children.size());
+        Assert.assertTrue(children.iterator().next().equals(rt2_1));
+        children = rtm.getChildren(rt1_2);
+        Assert.assertEquals(1, children.size());
+        Assert.assertTrue(children.iterator().next().equals(rt2_2));
+        children = rtm.getChildren(rt2_1);
+        Assert.assertTrue("Has no children", children.isEmpty());
+        children = rtm.getChildren(rt2_2);
+        Assert.assertTrue("Has no children", children.isEmpty());
 
     }
 
     @Test
     public void disabledTypesDMR() {
         ResourceType<DMRNodeLocation> rt1_1 = createResourceTypeDMR("res1_1", "/res1_1=*");
-        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true,
-                rt1_1);
+        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true, rt1_1);
 
-        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*",
-                rt1_1.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", false,
-                rt2_1);
+        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*", rt1_1.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", false, rt2_1);
 
-        ResourceType<DMRNodeLocation> rt3_1 = createResourceTypeDMR("res3_1", "/res3_1=*",
-                rt2_1.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set3 = createResourceTypeSetDMR("set3", true,
-                rt3_1);
+        ResourceType<DMRNodeLocation> rt3_1 = createResourceTypeDMR("res3_1", "/res3_1=*", rt2_1.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set3 = createResourceTypeSetDMR("set3", true, rt3_1);
 
-        ResourceType<DMRNodeLocation> rt4_1 = createResourceTypeDMR("res4_1", "/res4_1=*",
-                rt3_1.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set4 = createResourceTypeSetDMR("set4", true,
-                rt4_1);
+        ResourceType<DMRNodeLocation> rt4_1 = createResourceTypeDMR("res4_1", "/res4_1=*", rt3_1.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set4 = createResourceTypeSetDMR("set4", true, rt4_1);
 
         Map<Name, TypeSet<ResourceType<DMRNodeLocation>>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
@@ -140,23 +132,16 @@ public class ResourceTypeManagerTest {
     @Test
     public void disabledAllTypesDMR() {
         ResourceType<DMRNodeLocation> rt1_1 = createResourceTypeDMR("res1_1", "/res1_1=*");
-        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", false,
-                rt1_1);
+        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", false, rt1_1);
 
-        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*",
-                rt1_1.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", false,
-                rt2_1);
+        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*", rt1_1.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", false, rt2_1);
 
-        ResourceType<DMRNodeLocation> rt3_1 = createResourceTypeDMR("res3_1", "/res3_1=*",
-                rt2_1.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set3 = createResourceTypeSetDMR("set3", true,
-                rt3_1);
+        ResourceType<DMRNodeLocation> rt3_1 = createResourceTypeDMR("res3_1", "/res3_1=*", rt2_1.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set3 = createResourceTypeSetDMR("set3", true, rt3_1);
 
-        ResourceType<DMRNodeLocation> rt4_1 = createResourceTypeDMR("res4_1", "/res4_1=*",
-                rt3_1.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set4 = createResourceTypeSetDMR("set4", true,
-                rt4_1);
+        ResourceType<DMRNodeLocation> rt4_1 = createResourceTypeDMR("res4_1", "/res4_1=*", rt3_1.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set4 = createResourceTypeSetDMR("set4", true, rt4_1);
 
         Map<Name, TypeSet<ResourceType<DMRNodeLocation>>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
@@ -173,22 +158,15 @@ public class ResourceTypeManagerTest {
     public void deepGraphDMR() {
         ResourceType<DMRNodeLocation> rt1_1 = createResourceTypeDMR("res1_1", "/res1_1=*");
         ResourceType<DMRNodeLocation> rt1_2 = createResourceTypeDMR("res1_2", "/res1_2=*");
-        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true,
-                rt1_1, rt1_2);
+        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
-        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*",
-                rt1_1.getName());
-        ResourceType<DMRNodeLocation> rt2_2 = createResourceTypeDMR("res2_2", "/res2_2=*",
-                rt1_2.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", true,
-                rt2_1, rt2_2);
+        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*", rt1_1.getName());
+        ResourceType<DMRNodeLocation> rt2_2 = createResourceTypeDMR("res2_2", "/res2_2=*", rt1_2.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
 
-        ResourceType<DMRNodeLocation> rt3_1 = createResourceTypeDMR("res3_1", "/res3_1=*",
-                rt2_1.getName());
-        ResourceType<DMRNodeLocation> rt3_2 = createResourceTypeDMR("res3_2", "/res3_2=*",
-                rt2_2.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set3 = createResourceTypeSetDMR("set3", true,
-                rt3_1, rt3_2);
+        ResourceType<DMRNodeLocation> rt3_1 = createResourceTypeDMR("res3_1", "/res3_1=*", rt2_1.getName());
+        ResourceType<DMRNodeLocation> rt3_2 = createResourceTypeDMR("res3_2", "/res3_2=*", rt2_2.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set3 = createResourceTypeSetDMR("set3", true, rt3_1, rt3_2);
 
         Map<Name, TypeSet<ResourceType<DMRNodeLocation>>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
@@ -204,34 +182,31 @@ public class ResourceTypeManagerTest {
         Assert.assertTrue(roots.contains(rt1_1));
         Assert.assertTrue(roots.contains(rt1_2));
 
-        Set<ResourceType<DMRNodeLocation>> outgoingEdgesOf;
-        outgoingEdgesOf = rtm.getParents(rt1_1);
-        Assert.assertTrue("Root resource has no parent", outgoingEdgesOf.isEmpty());
-        outgoingEdgesOf = rtm.getParents(rt1_2);
-        Assert.assertTrue("Root resource has no parent", outgoingEdgesOf.isEmpty());
-        outgoingEdgesOf = rtm.getParents(rt2_1);
-        Assert.assertTrue(outgoingEdgesOf.iterator().next().equals(rt1_1));
-        outgoingEdgesOf = rtm.getParents(rt2_2);
-        Assert.assertTrue(outgoingEdgesOf.iterator().next().equals(rt1_2));
-        outgoingEdgesOf = rtm.getParents(rt3_1);
-        Assert.assertTrue(outgoingEdgesOf.iterator().next().equals(rt2_1));
-        outgoingEdgesOf = rtm.getParents(rt3_2);
-        Assert.assertTrue(outgoingEdgesOf.iterator().next().equals(rt2_2));
+        Set<ResourceType<DMRNodeLocation>> parents;
+        parents = rtm.getParents(rt1_1);
+        Assert.assertTrue("Root resource has no parent", parents.isEmpty());
+        parents = rtm.getParents(rt1_2);
+        Assert.assertTrue("Root resource has no parent", parents.isEmpty());
+        parents = rtm.getParents(rt2_1);
+        Assert.assertTrue(parents.iterator().next().equals(rt1_1));
+        parents = rtm.getParents(rt2_2);
+        Assert.assertTrue(parents.iterator().next().equals(rt1_2));
+        parents = rtm.getParents(rt3_1);
+        Assert.assertTrue(parents.iterator().next().equals(rt2_1));
+        parents = rtm.getParents(rt3_2);
+        Assert.assertTrue(parents.iterator().next().equals(rt2_2));
     }
 
     @Test
     public void multiParentGraphDMR() {
         ResourceType<DMRNodeLocation> rt1_1 = createResourceTypeDMR("res1_1", "/res1_1=*");
         ResourceType<DMRNodeLocation> rt1_2 = createResourceTypeDMR("res1_2", "/res1_2=*");
-        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true,
-                rt1_1, rt1_2);
+        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
-        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*",
-                rt1_1.getName());
-        ResourceType<DMRNodeLocation> rt2_2 = createResourceTypeDMR("res2_2", "/res2_2=*",
-                rt1_1.getName(), rt1_2.getName());
-        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", true,
-                rt2_1, rt2_2);
+        ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2_1", "/res2_1=*", rt1_1.getName());
+        ResourceType<DMRNodeLocation> rt2_2 = createResourceTypeDMR("res2_2", "/res2_2=*", rt1_1.getName(),
+                rt1_2.getName());
+        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
 
         Map<Name, TypeSet<ResourceType<DMRNodeLocation>>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
@@ -241,20 +216,35 @@ public class ResourceTypeManagerTest {
 
         Assert.assertEquals("There should be 4 types", 4, rtm.getResourceTypesBreadthFirst().size());
 
+        /*
+         * WHY DOESN'T THIS WORK?
+         *
+        
+        List<ResourceType<DMRNodeLocation>> coll = rtm.getResourceTypesBreadthFirst();
+        Iterator<ResourceType<DMRNodeLocation>> iter = coll.iterator();
+        Assert.assertEquals(coll.toString(), rt1_1, iter.next());
+        Assert.assertEquals(coll.toString(), rt2_1, iter.next());
+        Assert.assertEquals(coll.toString(), rt2_2, iter.next());
+        Assert.assertEquals(coll.toString(), rt1_2, iter.next());
+        
+         *
+         *
+         */
+
         Set<ResourceType<DMRNodeLocation>> roots = rtm.getRootResourceTypes();
         Assert.assertEquals("There are only two types that are root resources", 2, roots.size());
         Assert.assertTrue(roots.contains(rt1_1));
         Assert.assertTrue(roots.contains(rt1_2));
 
-        Set<ResourceType<DMRNodeLocation>> outgoingEdgesOf = rtm.getParents(rt2_1);
-        Assert.assertEquals("There is 1 parent", 1, outgoingEdgesOf.size());
-        for (ResourceType<DMRNodeLocation> edge : outgoingEdgesOf) {
+        Set<ResourceType<DMRNodeLocation>> parents = rtm.getParents(rt2_1);
+        Assert.assertEquals("There is 1 parent", 1, parents.size());
+        for (ResourceType<DMRNodeLocation> edge : parents) {
             Assert.assertTrue(edge.equals(rt1_1));
         }
 
-        outgoingEdgesOf = rtm.getParents(rt2_2);
-        Assert.assertEquals("There are 2 parents", 2, outgoingEdgesOf.size());
-        for (ResourceType<DMRNodeLocation> edge : outgoingEdgesOf) {
+        parents = rtm.getParents(rt2_2);
+        Assert.assertEquals("There are 2 parents", 2, parents.size());
+        for (ResourceType<DMRNodeLocation> edge : parents) {
             Assert.assertTrue(edge.equals(rt1_1) || edge.equals(rt1_2));
         }
     }
@@ -263,13 +253,11 @@ public class ResourceTypeManagerTest {
     public void ignoreSetsDMR() {
         ResourceType<DMRNodeLocation> rt1_1 = createResourceTypeDMR("res1.1", "/res1_1=*");
         ResourceType<DMRNodeLocation> rt1_2 = createResourceTypeDMR("res1.2", "/res1_1=*");
-        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true,
-                rt1_1, rt1_2);
+        TypeSet<ResourceType<DMRNodeLocation>> set1 = createResourceTypeSetDMR("set1", true, rt1_1, rt1_2);
 
         ResourceType<DMRNodeLocation> rt2_1 = createResourceTypeDMR("res2.1", "/res1_1=*");
         ResourceType<DMRNodeLocation> rt2_2 = createResourceTypeDMR("res2.2", "/res2_2=*");
-        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", true,
-                rt2_1, rt2_2);
+        TypeSet<ResourceType<DMRNodeLocation>> set2 = createResourceTypeSetDMR("set2", true, rt2_1, rt2_2);
 
         Map<Name, TypeSet<ResourceType<DMRNodeLocation>>> rTypeSetDmrMap = new HashMap<>();
         rTypeSetDmrMap.put(set1.getName(), set1);
@@ -300,8 +288,7 @@ public class ResourceTypeManagerTest {
         return typeSetBuilder.build();
     }
 
-    private ResourceType<DMRNodeLocation> createResourceTypeDMR(String name, String path,
-            Name... parents) {
+    private ResourceType<DMRNodeLocation> createResourceTypeDMR(String name, String path, Name... parents) {
         return ResourceType.<DMRNodeLocation> builder() //
                 .id(new ID(name)) //
                 .name(new Name(name)) //
