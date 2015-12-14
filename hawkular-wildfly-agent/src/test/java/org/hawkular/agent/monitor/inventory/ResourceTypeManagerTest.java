@@ -219,14 +219,12 @@ public class ResourceTypeManagerTest {
         /*
          * WHY DOESN'T THIS WORK?
          *
-        
         List<ResourceType<DMRNodeLocation>> coll = rtm.getResourceTypesBreadthFirst();
         Iterator<ResourceType<DMRNodeLocation>> iter = coll.iterator();
         Assert.assertEquals(coll.toString(), rt1_1, iter.next());
         Assert.assertEquals(coll.toString(), rt2_1, iter.next());
         Assert.assertEquals(coll.toString(), rt2_2, iter.next());
         Assert.assertEquals(coll.toString(), rt1_2, iter.next());
-        
          *
          *
          */
