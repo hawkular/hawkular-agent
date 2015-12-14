@@ -16,11 +16,8 @@
  */
 package org.hawkular.agent.monitor.protocol.jmx;
 
-import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.Map;
 
-import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.protocol.LocationResolver;
@@ -35,6 +32,10 @@ public class JMXLocationResolver implements LocationResolver<JMXNodeLocation> {
     @Override
     public String findWildcardMatch(JMXNodeLocation multiTargetLocation, JMXNodeLocation singleLocation)
             throws ProtocolException {
+
+        if (multiTargetLocation == null) {
+            throw new ProtocolException("multiTargetLocation is null");
+        }
 
         for (String multiTargetPathKey : multiTargetLocation.getCanonicalKeys()) {
             String multiTargetPathValue = multiTargetLocation.getObjectName().getKeyProperty(multiTargetPathKey);
@@ -61,44 +62,47 @@ public class JMXLocationResolver implements LocationResolver<JMXNodeLocation> {
 
     @Override
     public JMXNodeLocation absolutize(JMXNodeLocation base, JMXNodeLocation location) {
-        return (location.getObjectName() != null) ? location : base;
+        return (location != null && location.getObjectName() != null) ? location : base;
     }
 
     @Override
     public boolean isParent(JMXNodeLocation parent, JMXNodeLocation child) {
 
+        if (parent == null) {
+            throw new IllegalArgumentException(
+                    "Cannot compute [" + getClass().getName() + "].isParent() with a null parent argument");
+        }
+
         if (child == null) {
             throw new IllegalArgumentException(
-                    "Cannot compute [" + getClass().getName() + "].isParentOf() with a null child argument");
+                    "Cannot compute [" + getClass().getName() + "].isParent() with a null child argument");
         }
-        if (parent.getCanonicalKeys().size() > child.getCanonicalKeys().size()) {
-            /* this cannot be a patternt if it is longer than the child */
+
+        ObjectName parentObjectName = parent.getObjectName();
+        ObjectName childObjectName = child.getObjectName();
+
+        // no sense continuing if they aren't even in the same JMX domain
+        if (!parentObjectName.getDomain().equals(childObjectName.getDomain())) {
             return false;
         }
 
+        int parentKeyCount = parent.getCanonicalKeys().size();
+        int childKeyCount = child.getCanonicalKeys().size();
 
-        int prefixLength = parent.getCanonicalKeys().size();
-        ObjectName childObjectName = child.getObjectName();
-        if (prefixLength == child.getCanonicalKeys().size()) {
-            /* simple match for the same size */
-            return parent.getObjectName().apply(childObjectName);
+        // if the number of parent keys are greater than the number of child keys, it can't be the child's parent
+        if (parentKeyCount >= childKeyCount) {
+            return false;
         }
 
-        /* child is longer than this: let's cut the prefix out of child and match against this  */
-        Hashtable<String, String> prefixProps = new Hashtable<>(prefixLength + prefixLength / 2);
-        int i = 0;
-        Iterator<String> it = child.getCanonicalKeys().iterator();
-        while (i < prefixLength && it.hasNext()) {
-            String key = it.next();
-            prefixProps.put(key, childObjectName.getKeyProperty(key));
-            i++;
+        // if the child has all the parent keys and matches the parent's key values, its a child
+        for (String parentKey : parent.getCanonicalKeys()) {
+            String parentKeyValue = parentObjectName.getKeyProperty(parentKey);
+            if (!parentKeyValue.equals(childObjectName.getKeyProperty(parentKey))) {
+                return false; // it can't possibly be a child since it doesn't match
+            }
         }
-        try {
-            ObjectName prefixObjectName = new ObjectName(childObjectName.getDomain(), prefixProps);
-            return parent.getObjectName().apply(prefixObjectName);
-        } catch (MalformedObjectNameException e) {
-            throw new RuntimeException(e);
-        }
+
+        return true;
      }
 
     @Override

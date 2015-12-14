@@ -99,7 +99,7 @@ public final class ResourceManager<L> {
         try {
             this.resourcesGraph.addVertex(newResource);
             if (newResource.getParent() != null) {
-                this.resourcesGraph.addEdge(newResource, newResource.getParent());
+                this.resourcesGraph.addEdge(newResource.getParent(), newResource);
             }
         } finally {
             graphLockWrite.unlock();
@@ -142,7 +142,7 @@ public final class ResourceManager<L> {
     public Set<Resource<L>> getChildren(Resource<L> resource) {
         graphLockRead.lock();
         try {
-            Set<Resource<L>> directChildren = neighborIndex.predecessorsOf(resource);
+            Set<Resource<L>> directChildren = neighborIndex.successorsOf(resource);
             return Collections.unmodifiableSet(new HashSet<>(directChildren));
         } finally {
             graphLockRead.unlock();
@@ -161,7 +161,7 @@ public final class ResourceManager<L> {
         // We know all resources have at most one parent.
         graphLockRead.lock();
         try {
-            Set<Resource<L>> directParents = neighborIndex.successorsOf(resource);
+            Set<Resource<L>> directParents = neighborIndex.predecessorsOf(resource);
             if (directParents.isEmpty()) {
                 return null;
             }
@@ -220,7 +220,7 @@ public final class ResourceManager<L> {
             Set<Resource<L>> roots = new HashSet<>();
             Set<Resource<L>> allTypes = resourcesGraph.vertexSet();
             for (Resource<L> type : allTypes) {
-                if (neighborIndex.successorsOf(type).isEmpty()) {
+                if (neighborIndex.predecessorsOf(type).isEmpty()) {
                     roots.add(type);
                 }
             }
@@ -277,21 +277,38 @@ public final class ResourceManager<L> {
     public List<Resource<L>> removeResources(L query, LocationResolver<L> locationResolver) {
         graphLockWrite.lock();
         try {
-            List<Resource<L>> result = new ArrayList<Resource<L>>();
-            GraphIterator<Resource<L>, DefaultEdge> it = new DepthFirstIterator<Resource<L>, DefaultEdge>(
-                    this.resourcesGraph);
+            List<Resource<L>> doomedResources = new ArrayList<Resource<L>>();
+            GraphIterator<Resource<L>, DefaultEdge> it = new DepthFirstIterator<>(this.resourcesGraph);
             while (it.hasNext()) {
                 Resource<L> resource = it.next();
-                if (locationResolver.isParent(query, resource.getLocation())) {
-                    result.add(resource);
-                    this.resourcesGraph.removeVertex(resource);
-                    this.resourcesGraph.removeEdge(resource, resource.getParent());
+                if (locationResolver.matches(query, resource.getLocation())) {
+                    doomedResources.add(resource);
+                    getAllDescendants(resource, doomedResources);
                 }
             }
-            return Collections.unmodifiableList(result);
+
+            // we couldn't do this while iterating (a ConcurrentModificationException would have resulted)
+            // but now that we have the doomed resources, we can remove them from the graph now
+            for (Resource<L> doomedResource : doomedResources) {
+                this.resourcesGraph.removeVertex(doomedResource);
+                this.resourcesGraph.removeEdge(doomedResource.getParent(), doomedResource);
+            }
+
+            return Collections.unmodifiableList(doomedResources);
         } finally {
             graphLockWrite.unlock();
         }
+    }
+
+    // make sure you call this with a graph lock - either read or write
+    private void getAllDescendants(Resource<L> parent, List<Resource<L>> descendants) {
+        for (Resource<L> child : getChildren(parent)) {
+            if (!descendants.contains(child)) {
+                descendants.add(child);
+                getAllDescendants(child, descendants);
+            }
+        }
+        return;
     }
 
     /**
@@ -311,7 +328,7 @@ public final class ResourceManager<L> {
             for (Resource<L> resource : newResources) {
                 this.resourcesGraph.addVertex(resource);
                 if (resource.getParent() != null) {
-                    this.resourcesGraph.addEdge(resource, resource.getParent());
+                    this.resourcesGraph.addEdge(resource.getParent(), resource);
                 }
             }
         } finally {

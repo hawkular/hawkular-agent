@@ -105,7 +105,7 @@ public final class ResourceTypeManager<L> {
         Set<ResourceType<L>> roots = new HashSet<>();
         Set<ResourceType<L>> allTypes = resourceTypesGraph.vertexSet();
         for (ResourceType<L> type : allTypes) {
-            if (index.successorsOf(type).isEmpty()) {
+            if (index.predecessorsOf(type).isEmpty()) {
                 roots.add(type);
             }
         }
@@ -120,7 +120,7 @@ public final class ResourceTypeManager<L> {
      * @return the direct children of the given resource type
      */
     public Set<ResourceType<L>> getChildren(ResourceType<L> resourceType) {
-        Set<ResourceType<L>> directChildren = index.predecessorsOf(resourceType);
+        Set<ResourceType<L>> directChildren = index.successorsOf(resourceType);
         return Collections.unmodifiableSet(directChildren);
     }
 
@@ -132,7 +132,7 @@ public final class ResourceTypeManager<L> {
      * @return the direct parents of the given resource type
      */
     public Set<ResourceType<L>> getParents(ResourceType<L> resourceType) {
-        Set<ResourceType<L>> directParents = index.successorsOf(resourceType);
+        Set<ResourceType<L>> directParents = index.predecessorsOf(resourceType);
         return Collections.unmodifiableSet(directParents);
     }
 
@@ -170,7 +170,7 @@ public final class ResourceTypeManager<L> {
                         throw new IllegalStateException("Resource type [" + rType.getName()
                                 + "] has an unknown parent [" + parent + "]");
                     }
-                    resourceTypesGraph.addEdge(rType, parentResourceType);
+                    resourceTypesGraph.addEdge(parentResourceType, rType);
                 }
             }
         }

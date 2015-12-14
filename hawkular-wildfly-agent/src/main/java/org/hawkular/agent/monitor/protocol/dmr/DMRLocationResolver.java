@@ -46,6 +46,10 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
     public String findWildcardMatch(DMRNodeLocation multiTargetLocation, DMRNodeLocation singleLocation)
             throws ProtocolException {
 
+        if (multiTargetLocation == null) {
+            throw new ProtocolException("multiTargetLocation is null");
+        }
+
         PathAddress multiTargetPaths = multiTargetLocation.getPathAddress();
         for (int i = 0; i < multiTargetPaths.size(); i++) {
             PathElement multiTargetPathElement = multiTargetPaths.getElement(i);
@@ -82,6 +86,8 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
     public DMRNodeLocation absolutize(DMRNodeLocation base, DMRNodeLocation location) {
         if (base == null || base.getPathAddress().equals(PathAddress.EMPTY_ADDRESS)) {
             return location;
+        } else if (location == null) {
+            return base;
         } else {
             PathAddress basePath = base.getPathAddress();
             PathAddress path = ((DMRNodeLocation) location).getPathAddress();
@@ -105,6 +111,11 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
 
     @Override
     public boolean isParent(DMRNodeLocation parent, DMRNodeLocation child) {
+        if (parent == null) {
+            throw new IllegalArgumentException(
+                    "Cannot compute [" + getClass().getName() + "].isParent() with a null parent argument");
+        }
+
         if (child == null) {
             throw new IllegalArgumentException(
                     "Cannot compute [" + getClass().getName() + "].isParent() with a null child argument");
@@ -113,7 +124,7 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
         PathAddress parentPath = parent.getPathAddress();
         PathAddress childPath = child.getPathAddress();
         int parentLength = parentPath.size();
-        if (parentLength <= childPath.size()) {
+        if (parentLength < childPath.size()) {
             return matches(parentLength, parentPath, childPath);
         } else {
             return false;
