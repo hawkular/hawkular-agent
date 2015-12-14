@@ -16,6 +16,10 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.Iterator;
+import java.util.List;
+
+import org.hawkular.agent.monitor.protocol.dmr.DMRLocationResolver;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.junit.Assert;
 import org.junit.Test;
@@ -23,8 +27,7 @@ import org.junit.Test;
 public class ResourceManagerTest {
     @Test
     public void testEmptyResourceManager() {
-        ResourceManager<DMRNodeLocation> rm = //
-        new ResourceManager<DMRNodeLocation>();
+        ResourceManager<DMRNodeLocation> rm = new ResourceManager<>();
         Assert.assertNull(rm.getResource(new ID("foo")));
         Assert.assertTrue(rm.getResourcesBreadthFirst().isEmpty());
         Assert.assertTrue(rm.getRootResources().isEmpty());
@@ -37,32 +40,31 @@ public class ResourceManagerTest {
                 .<DMRNodeLocation> builder().id(new ID("resType")).name(new Name("resTypeName"))
                 .location(DMRNodeLocation.empty())
                 .build();
-        ResourceManager<DMRNodeLocation> rm = //
-        new ResourceManager<DMRNodeLocation>();
+        ResourceManager<DMRNodeLocation> rm = new ResourceManager<>();
         Resource<DMRNodeLocation> root1 = Resource
-                .<DMRNodeLocation> builder() //
-                .id(new ID("root1")) //
-                .name(new Name("root1Name")) //
+                .<DMRNodeLocation> builder()
+                .id(new ID("root1"))
+                .name(new Name("root1Name"))
                 .location(DMRNodeLocation.empty())
-                .type(type) //
+                .type(type)
                 .build();
         Resource<DMRNodeLocation> root2 = Resource
-                .<DMRNodeLocation> builder() //
+                .<DMRNodeLocation> builder()
                 .id(new ID("root2")).name(new Name("root2Name")).type(type)
                 .location(DMRNodeLocation.empty())
                 .build();
         Resource<DMRNodeLocation> child1 = Resource
-                .<DMRNodeLocation> builder() //
+                .<DMRNodeLocation> builder()
                 .id(new ID("child1")).name(new Name("child1Name")).type(type).parent(root1)
-                .location(DMRNodeLocation.empty()).build();
+                .location(DMRNodeLocation.of("/child=1")).build();
         Resource<DMRNodeLocation> child2 = Resource
-                .<DMRNodeLocation> builder() //
+                .<DMRNodeLocation> builder()
                 .id(new ID("child2")).name(new Name("child2Name")).type(type).parent(root1)
-                .location(DMRNodeLocation.empty()).build();
+                .location(DMRNodeLocation.of("/child=2")).build();
         Resource<DMRNodeLocation> grandChild1 = Resource
-                .<DMRNodeLocation> builder() //
+                .<DMRNodeLocation> builder()
                 .id(new ID("grand1")).name(new Name("grand1Name")).type(type).parent(child1)
-                .location(DMRNodeLocation.empty()).build();
+                .location(DMRNodeLocation.of("/child=1/grandchild=1")).build();
 
         // add root1
         rm.addResource(root1);
@@ -124,23 +126,9 @@ public class ResourceManagerTest {
         Assert.assertEquals(root1, rm.getParent(child2));
         Assert.assertEquals(child1, rm.getParent(grandChild1));
 
-        /*
-         * WHY DOESN'T THIS ITERATE LIKE IT SHOULD?
-         *
-
-        // iterate depth first which should be:
-        // root1 -> child1 -> grandchild1 -> child2 -> root2
-        dIter = rm.getDepthFirstIterator();
-        Assert.assertEquals(root1, dIter.next());
-        Assert.assertEquals(child1, dIter.next());
-        Assert.assertEquals(grandChild1, dIter.next());
-        Assert.assertEquals(child2, dIter.next());
-        Assert.assertEquals(root2, dIter.next());
-        Assert.assertFalse(dIter.hasNext());
-
         // iterate breadth first which should be (assuming roots are done in order)
         // root1 -> child1 -> child2 -> grandchild1 -> root2
-        bIter = rm.getBreadthFirstIterator();
+        Iterator<Resource<DMRNodeLocation>> bIter = rm.getResourcesBreadthFirst().iterator();
         Assert.assertEquals(root1, bIter.next());
         Assert.assertEquals(child1, bIter.next());
         Assert.assertEquals(child2, bIter.next());
@@ -148,9 +136,27 @@ public class ResourceManagerTest {
         Assert.assertEquals(root2, bIter.next());
         Assert.assertFalse(bIter.hasNext());
 
-         *
-         * THE ABOVE DOESN'T WORK AS EXPECTED
-         */
+        // remove child2
+        List<Resource<DMRNodeLocation>> removed = rm.removeResources(child2.getLocation(), new DMRLocationResolver());
+        Assert.assertEquals(1, removed.size());
+        Assert.assertEquals(child2, removed.get(0));
 
+        bIter = rm.getResourcesBreadthFirst().iterator();
+        Assert.assertEquals(root1, bIter.next());
+        Assert.assertEquals(child1, bIter.next());
+        Assert.assertEquals(grandChild1, bIter.next());
+        Assert.assertEquals(root2, bIter.next());
+        Assert.assertFalse(bIter.hasNext());
+
+        // remove child1 and see that it also removed grandchild1
+        removed = rm.removeResources(child1.getLocation(), new DMRLocationResolver());
+        Assert.assertEquals(2, removed.size());
+        Assert.assertTrue(removed.contains(child1));
+        Assert.assertTrue(removed.contains(grandChild1));
+
+        bIter = rm.getResourcesBreadthFirst().iterator();
+        Assert.assertEquals(root1, bIter.next());
+        Assert.assertEquals(root2, bIter.next());
+        Assert.assertFalse(bIter.hasNext());
     }
 }

@@ -67,6 +67,14 @@ public interface LocationResolver<L> {
         return attributeLocation.rebase(absolutize(base, attributeLocation.getLocation()));
     }
 
+    /**
+     * Returns true if the child is anywhere under the parent. That means if the child is a direct descendant,
+     * is a grandchild, great-grandchild, etc, this will return true.
+     *
+     * @param parent parent resource
+     * @param child child resource
+     * @return true if child is a descendant of the parent
+     */
     boolean isParent(L parent, L child);
 
     boolean matches(L query, L location);
