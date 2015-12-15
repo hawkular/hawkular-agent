@@ -83,6 +83,13 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.bus</groupId>
       <artifactId>hawkular-bus-common</artifactId>
       <scope>test</scope>
