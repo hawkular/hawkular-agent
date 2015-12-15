@@ -42,6 +42,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.RealmCallback;
 
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.ApiDeserializer;
 import org.hawkular.cmdgw.api.WelcomeResponse;
@@ -93,6 +94,7 @@ public abstract class AbstractCommandITest {
     protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
     protected static final String testPasword = "password";
     protected static final String testUser = "jdoe";
+    protected static final String feedId;
 
     private static final Object waitForAccountsLock = new Object();
 
@@ -109,6 +111,13 @@ public abstract class AbstractCommandITest {
         baseInvUri = "http://" + host + ":" + httpPort + "/hawkular/inventory";
         baseGwUri = "ws://" + host + ":" + httpPort + "/hawkular/command-gateway";
         authentication = "{\"username\":\"" + testUser + "\",\"password\":\"" + testPasword + "\"}";
+
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            feedId = DMREndpointService.lookupServerIdentifier(mcc);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not get feedId", e);
+        }
+
     }
 
     /**
@@ -249,8 +258,8 @@ public abstract class AbstractCommandITest {
      * @throws Throwable
      */
     protected CanonicalPath getCurrentASPath() throws Throwable {
-        List<Resource> wfs = getResources("/test/resources", 1);
-        log.fine("Resources under [" + "/test/resources" + "] = [" + wfs + "]");
+        List<Resource> wfs = getResources("/feeds/"+ feedId +"/resources", 1);
+        log.fine("Resources under [" + "/feeds/"+ feedId +"/resources" + "] = [" + wfs + "]");
         AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
         return wfPath;
@@ -364,7 +373,7 @@ public abstract class AbstractCommandITest {
         }
     }
 
-    protected ModelControllerClient newModelControllerClient() {
+    protected static ModelControllerClient newModelControllerClient() {
         final CallbackHandler callbackHandler = new CallbackHandler() {
             public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
                 for (Callback current : callbacks) {

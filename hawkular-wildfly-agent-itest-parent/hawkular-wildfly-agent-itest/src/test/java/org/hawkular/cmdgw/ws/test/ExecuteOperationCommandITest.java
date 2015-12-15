@@ -32,12 +32,11 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
     public void testExecuteOperation() throws Throwable {
         waitForAccountsAndInventory();
 
-        List<Resource> wfs = getResources("/test/resources", 1);
+        List<Resource> wfs = getResources("/feeds/"+ feedId +"/resources", 1);
         AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
-        String feedId = wfPath.ids().getFeedId();
         final String deploymentName = "hawkular-wildfly-agent-helloworld-war.war";
-        Resource deployment = getResource("/feeds/" + feedId + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/feeds/"+ feedId +"/resourceTypes/Deployment/resources",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", " //
@@ -68,11 +67,10 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
     public void testExecuteAgentDiscoveryScan() throws Throwable {
         waitForAccountsAndInventory();
 
-        List<Resource> wfs = getResources("/test/resources", 1);
+        List<Resource> wfs = getResources("/feeds/"+ feedId +"/resources", 1);
         AssertJUnit.assertEquals(1, wfs.size());
         CanonicalPath wfPath = wfs.get(0).getPath();
-        String feedId = wfPath.ids().getFeedId();
-        Resource agent = getResource("/feeds/" + feedId + "/resourceTypes/Hawkular%20WildFly%20Agent/resources",
+        Resource agent = getResource("/feeds/"+ feedId +"/resourceTypes/Hawkular%20WildFly%20Agent/resources",
                 (r -> r.getId() != null));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", " //

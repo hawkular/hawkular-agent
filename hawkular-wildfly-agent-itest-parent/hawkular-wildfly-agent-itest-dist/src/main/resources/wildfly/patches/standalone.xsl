@@ -1059,9 +1059,18 @@
     <xsl:copy>
       <xsl:copy-of select="node()|@*"/>
     </xsl:copy>
-    <cache-container name="hawkular-accounts" default-cache="role-cache" statistics-enabled="true">
+    <cache-container name="keycloak" jndi-name="infinispan/Keycloak">
+      <local-cache name="realms"/>
+      <local-cache name="users"/>
+      <local-cache name="sessions"/>
+      <local-cache name="loginFailures"/>
+    </cache-container>
+    <cache-container name="hawkular-accounts" default-cache="role-cache">
       <local-cache name="role-cache"/>
       <local-cache name="operation-cache"/>
+    </cache-container>
+    <cache-container name="hawkular-accounts-websocket" default-cache="session-cache">
+      <local-cache name="session-cache"/>
     </cache-container>
   </xsl:template>
 
