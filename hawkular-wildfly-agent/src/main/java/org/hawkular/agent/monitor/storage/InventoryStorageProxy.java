@@ -18,10 +18,9 @@ package org.hawkular.agent.monitor.storage;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryStorage;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 
 /**
- * A proxy that delegates to a {@link StorageAdapterConfiguration}.
+ * A proxy that delegates to a {@link StorageAdapter}.
  */
 public class InventoryStorageProxy implements InventoryStorage {
 
