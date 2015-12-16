@@ -101,18 +101,6 @@ public class SchedulerService implements InventoryListener {
     }
 
     @Override
-    public <L> void discoverAllFinished(InventoryEvent<L> event) {
-        List<Resource<L>> resources = event.getPayload();
-        SamplingService<L> service = event.getSamplingService();
-
-        log.debugf("Rescheduling jobs for all [%d] resources for endpoint [%s]",
-                resources.size(), service.getEndpoint());
-
-        metricScheduler.rescheduleAll(service, resources);
-        availScheduler.rescheduleAll(service, resources);
-    }
-
-    @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
         List<Resource<L>> resources = event.getPayload();
         SamplingService<L> service = event.getSamplingService();

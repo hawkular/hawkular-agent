@@ -34,14 +34,6 @@ public class InventoryStorageProxy implements InventoryStorage {
     }
 
     @Override
-    public <L> void discoverAllFinished(InventoryEvent<L> event) {
-        if (storageAdapter == null) {
-            throw new IllegalStateException("Storage infrastructure is not ready yet");
-        }
-        storageAdapter.discoverAllFinished(event);
-    }
-
-    @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");

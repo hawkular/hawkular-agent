@@ -61,13 +61,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             super();
         }
 
-        public void fireDiscoverAllFinished(List<Resource<L>> resources) {
-            InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
-            for (InventoryListener inventoryListener : inventoryListeners) {
-                inventoryListener.discoverAllFinished(event);
-            }
-        }
-
         public void fireResourcesAdded(List<Resource<L>> resources) {
             InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {

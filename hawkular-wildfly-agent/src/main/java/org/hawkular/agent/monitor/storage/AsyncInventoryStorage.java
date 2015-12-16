@@ -604,15 +604,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public <L> void discoverAllFinished(InventoryEvent<L> event) {
-        String feedId = event.getFeedId();
-        for (Resource<?> resource : event.getPayload()) {
-            diagnostics.getInventoryStorageBufferSize().inc();
-            queue.add(new QueueElement(feedId, resource));
-        }
-    }
-
-    @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
         String feedId = event.getFeedId();
         for (Resource<?> resource : event.getPayload()) {
