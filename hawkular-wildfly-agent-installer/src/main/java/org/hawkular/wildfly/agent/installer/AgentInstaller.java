@@ -247,7 +247,7 @@ public class AgentInstaller {
                 configurationBldr.addXmlEdit(createStorageAdapter(false, installerConfig));
             }
 
-            configurationBldr.addXmlEdit(createManagedServers());
+            configurationBldr.addXmlEdit(createManagedServers(installerConfig));
             configurationBldr.modulesHome("modules"); // we know module distro needs this as the assumed modules dir
 
             new ExtensionDeployer().install(configurationBldr.build());
@@ -367,11 +367,15 @@ public class AgentInstaller {
     }
 
 
-    private static XmlEdit createManagedServers() {
+    private static XmlEdit createManagedServers(InstallerConfiguration config) {
         String select = "/server/profile/"
                 + "*[namespace-uri()='urn:org.hawkular.agent:agent:1.0']/";
+        String managedServerName = config.getManagedServerName();
+        if (managedServerName == null || managedServerName.trim().isEmpty()) {
+            managedServerName = "Local"; // just make sure its something
+        }
         StringBuilder xml = new StringBuilder("<managed-servers>")
-                .append("<local-dmr name=\"Local\" enabled=\"true\" "
+                .append("<local-dmr name=\"" + managedServerName + "\" enabled=\"true\" "
                         + "resourceTypeSets=\"Main,Deployment,Web Component,EJB,Datasource,"
                         + "XA Datasource,JDBC Driver,Transaction Manager,Hawkular\" />")
                 .append("</managed-servers>");
