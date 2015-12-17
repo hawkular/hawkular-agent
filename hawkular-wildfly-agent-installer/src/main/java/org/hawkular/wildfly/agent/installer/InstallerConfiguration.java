@@ -53,6 +53,7 @@ public class InstallerConfiguration {
     static final String OPTION_PASSWORD = "password";
     static final String OPTION_SECURITY_KEY = "security-key";
     static final String OPTION_SECURITY_SECRET = "security-secret";
+    static final String OPTION_MANAGED_SERVER_NAME = "managed-server-name";
 
     static Options buildCommandLineOptions() {
         Options options = new Options();
@@ -114,8 +115,14 @@ public class InstallerConfiguration {
                 .desc("Customized subsystem XML content that overrides the default subsystem configuration")
                 .numberOfArgs(1)
                 .build());
+        options.addOption(Option.builder()
+                .argName(InstallerConfiguration.OPTION_MANAGED_SERVER_NAME)
+                .longOpt(InstallerConfiguration.OPTION_MANAGED_SERVER_NAME)
+                .desc("The agent will use this name to refer to the server where it is deployed and locally managing.")
+                .numberOfArgs(1)
+                .build());
 
-        // SSL related config options
+        // SSL/security related config options
         options.addOption(Option.builder()
                 .argName(InstallerConfiguration.OPTION_KEYSTORE_PATH)
                 .longOpt(InstallerConfiguration.OPTION_KEYSTORE_PATH)
@@ -215,6 +222,7 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_MODULE_DISTRIBUTION);
         setProperty(properties, commandLine, OPTION_TARGET_CONFIG);
         setProperty(properties, commandLine, OPTION_SUBSYSTEM_SNIPPET);
+        setProperty(properties, commandLine, OPTION_MANAGED_SERVER_NAME);
         setProperty(properties, commandLine, OPTION_SERVER_URL);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PATH);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PASSWORD);
@@ -302,5 +310,9 @@ public class InstallerConfiguration {
 
     public String getSecuritySecret() {
         return properties.getProperty(OPTION_SECURITY_SECRET);
+    }
+
+    public String getManagedServerName() {
+        return properties.getProperty(OPTION_MANAGED_SERVER_NAME);
     }
 }
