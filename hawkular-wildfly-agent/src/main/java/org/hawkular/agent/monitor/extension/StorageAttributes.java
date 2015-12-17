@@ -28,7 +28,7 @@ public interface StorageAttributes {
 
     SimpleAttributeDefinition TYPE = new SimpleAttributeDefinitionBuilder("type",
             ModelType.STRING)
-            .setAllowNull(false)
+            .setAllowNull(true)
             .setAllowExpression(true)
             .setDefaultValue(new ModelNode(MonitorServiceConfiguration.StorageReportTo.HAWKULAR.name()))
             .setValidator(EnumValidator.create(MonitorServiceConfiguration.StorageReportTo.class, false, true))

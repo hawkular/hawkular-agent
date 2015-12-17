@@ -18,7 +18,6 @@
 -->
 <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
            enabled="false"
-           apiJndiName="java:global/hawkular/agent/api"
            autoDiscoveryScanPeriodSecs="3601"
            numMetricSchedulerThreads="3"
            numAvailSchedulerThreads="3"
@@ -28,17 +27,13 @@
            availDispatcherMaxBatchSize="26">
 
   <diagnostics enabled="false"
-               reportTo="LOG"
                interval="1"
                timeUnits="minutes"/>
 
-  <storage-adapter type="HAWKULAR"
-                   username="jdoe"
+  <storage-adapter username="jdoe"
                    password="password"
                    url="http://localhost:8080"
-                   securityRealm="HawkularSecurityRealm"
-                   inventoryContext="/hawkular/inventory/"
-                   metricsContext="/hawkular/metrics/" />
+                   securityRealm="HawkularSecurityRealm" />
 
   <metric-set-dmr name="WildFly Memory Metrics">
     <metric-dmr name="Heap Used"

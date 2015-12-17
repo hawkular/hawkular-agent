@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>25</version>
+    <version>30</version>
   </parent>
 
   <groupId>org.hawkular.agent</groupId>
@@ -59,16 +59,14 @@
     <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <version.org.hamcrest>1.3</version.org.hamcrest>
-    <version.org.hawkular.accounts>1.1.4.Final</version.org.hawkular.accounts>
-    <version.org.hawkular.bus>0.7.3.Final</version.org.hawkular.bus>
-    <version.org.hawkular.cmdgw>0.10.5.Final</version.org.hawkular.cmdgw>
-    <version.org.hawkular.commons>0.2.5.Final</version.org.hawkular.commons>
-    <version.org.hawkular.inventory>0.10.1.Final</version.org.hawkular.inventory>
+    <version.org.hawkular.accounts>2.0.9.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.cmdgw>0.10.6.Final-SRC-revision-c7a75f0b7349f7d4895ec5f4813d576599ba5303</version.org.hawkular.cmdgw>
+    <version.org.hawkular.commons>0.3.1.Final</version.org.hawkular.commons>
+    <version.org.hawkular.inventory>0.11.0.Final-SRC-revision-39dcb4f52b66123da4f4640b1261abc6698fc468</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.10.0.Final</version.org.hawkular.metrics>
-    <version.org.hawkular.nest>0.7.1.Final</version.org.hawkular.nest>
+
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.2</version.org.jolokia>
-    <version.org.keycloak>1.6.1.Final</version.org.keycloak>
   </properties>
 
   <dependencyManagement>
@@ -135,9 +133,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.hawkular.bus</groupId>
+        <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-bus-common</artifactId>
-        <version>${version.org.hawkular.bus}</version>
+        <version>${version.org.hawkular.commons}</version>
         <!-- we know that we never need to use these so don't pull them in -->
         <exclusions>
           <exclusion>
@@ -177,7 +175,7 @@
 
       <dependency>
         <groupId>org.wildfly.bom</groupId>
-        <artifactId>jboss-javaee-7.0-wildfly</artifactId>
+        <artifactId>wildfly-javaee7</artifactId>
         <version>${version.org.wildfly}</version>
         <type>pom</type>
         <scope>import</scope>
