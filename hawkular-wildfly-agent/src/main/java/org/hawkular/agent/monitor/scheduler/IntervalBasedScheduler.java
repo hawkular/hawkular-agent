@@ -100,6 +100,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
                     @Override
                     public void report(Throwable e) {
                         log.errorFailedToStoreMetrics(endpointService.toString(), e);
+                        completionHandler.report(e);
                     }
                 });
             } catch (IllegalStateException ise) {
@@ -154,6 +155,7 @@ public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, 
                     @Override
                     public void report(Throwable e) {
                         log.errorFailedToStoreAvails(endpointService.toString(), e);
+                        completionHandler.report(e);
                     }
                 });
             } catch (IllegalStateException ise) {
