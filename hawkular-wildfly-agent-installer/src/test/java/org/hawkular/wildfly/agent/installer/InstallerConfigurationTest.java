@@ -78,6 +78,7 @@ public class InstallerConfigurationTest {
                         "--target-config", "standalone/configuration/OVERRIDE.xml",
                         "--subsystem-snippet", "subdir/subsystem-snippetOVERRIDE.xml",
                         "--server-url", "http://OVERRIDE:8080",
+                        "--managed-server-name", "MyLocalNameOVERRIDE",
                         "--keystore-path", "/tmp/OVERRIDE/path",
                         "--keystore-password", "OVERRIDE-keystore-password",
                         "--key-password", "OVERRIDE-key-password",
@@ -93,6 +94,7 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("standalone/configuration/OVERRIDE.xml", installerConfig.getTargetConfig());
         Assert.assertEquals("subdir/subsystem-snippetOVERRIDE.xml", installerConfig.getSubsystemSnippet());
         Assert.assertEquals("http://OVERRIDE:8080", installerConfig.getServerUrl());
+        Assert.assertEquals("MyLocalNameOVERRIDE", installerConfig.getManagedServerName());
         Assert.assertEquals("/tmp/OVERRIDE/path", installerConfig.getKeystorePath());
         Assert.assertEquals("OVERRIDE-keystore-password", installerConfig.getKeystorePassword());
         Assert.assertEquals("OVERRIDE-key-password", installerConfig.getKeyPassword());
@@ -162,6 +164,7 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("standalone/configuration/test.xml", installerConfig.getTargetConfig());
         Assert.assertEquals("subdir/subsystem-snippet.xml", installerConfig.getSubsystemSnippet());
         Assert.assertEquals("http://test:8080", installerConfig.getServerUrl());
+        Assert.assertEquals("MyLocalName", installerConfig.getManagedServerName());
         Assert.assertEquals("/tmp/test/path", installerConfig.getKeystorePath());
         Assert.assertEquals("test-keystore-password", installerConfig.getKeystorePassword());
         Assert.assertEquals("test-key-password", installerConfig.getKeyPassword());
