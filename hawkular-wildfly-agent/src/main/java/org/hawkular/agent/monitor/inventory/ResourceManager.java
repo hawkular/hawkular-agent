@@ -310,30 +310,4 @@ public final class ResourceManager<L> {
         }
         return;
     }
-
-    /**
-     * Replaces the set of {@link Resources} currently available in {@link #resourcesGraph} with the resources from the
-     * given {@code newResources} list. Note that this method eventually replaces the graph instance in
-     * {@link #resourcesGraph} together with {@link #neighborIndex} and {@link #resourceCache}.
-     *
-     * @param newResources a {@link List} of resources to replace the set of {@link Resources} currently available in
-     *            {@link #resourcesGraph}. {@code newResources} must be in breadth first order
-     * @throws IllegalArgumentException if the parent of any of the added resources is not in the graph.
-     */
-    public void replaceResources(List<Resource<L>> newResources) throws IllegalArgumentException {
-        graphLockWrite.lock();
-        try {
-            /* nuke the old graph */
-            reinitializeIfNecessary();
-            for (Resource<L> resource : newResources) {
-                this.resourcesGraph.addVertex(resource);
-                if (resource.getParent() != null) {
-                    this.resourcesGraph.addEdge(resource.getParent(), resource);
-                }
-            }
-        } finally {
-            graphLockWrite.unlock();
-        }
-    }
-
 }
