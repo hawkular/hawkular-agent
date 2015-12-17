@@ -188,7 +188,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
          */
         private void metricType(MeasurementType<?> metricType) {
             MetricUnit mu = MetricUnit.NONE;
-            MetricDataType metricDataType = MetricDataType.GAUGE;
+            MetricDataType metricDataType;
             if (metricType instanceof MetricType) {
                 mu = MetricUnit.valueOf(((MetricType<?>) metricType).getMetricUnits().name());
                 // we need to translate from metric API type to inventory API type
@@ -204,6 +204,11 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         break;
 
                 }
+            } else if (metricType instanceof AvailType) {
+                metricDataType = MetricDataType.AVAILABILITY;
+            } else {
+                throw new IllegalArgumentException(
+                        "Invalid measurement type - please report this bug: " + metricType.getClass());
             }
 
             org.hawkular.inventory.api.model.MetricType.Blueprint blueprint = //
