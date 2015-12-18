@@ -136,17 +136,6 @@
         <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-bus-common</artifactId>
         <version>${version.org.hawkular.commons}</version>
-        <!-- we know that we never need to use these so don't pull them in -->
-        <exclusions>
-          <exclusion>
-            <groupId>org.apache.activemq</groupId>
-            <artifactId>activemq-all</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.apache.activemq</groupId>
-            <artifactId>activemq-jaas</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -195,21 +184,8 @@
 
       <dependency>
         <groupId>org.wildfly</groupId>
-        <artifactId>wildfly-dist</artifactId>
-        <version>${version.org.wildfly}</version>
-        <type>zip</type>
-      </dependency>
-
-      <dependency>
-        <groupId>org.wildfly</groupId>
         <artifactId>wildfly-naming</artifactId>
         <version>${version.org.wildfly}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.wildfly.core</groupId>
-        <artifactId>wildfly-server</artifactId>
-        <version>${version.org.wildfly.core}</version>
       </dependency>
 
       <dependency>
@@ -227,6 +203,19 @@
 
     </dependencies>
   </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- maven-shade-plugin can be removed with hawkular-parent 31, see https://github.com/hawkular/hawkular-parent-pom/pull/61  -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>2.4.2</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
 </project>
 

@@ -31,6 +31,15 @@
   <xsl:strip-space elements="*" />
 
 
+  <xsl:template match="node()[name(.)='system-properties']">
+    <xsl:copy>
+      <xsl:apply-templates select="node()|@*"/>
+      <property>
+        <xsl:attribute name="name">hawkular.metrics.waitForService</xsl:attribute>
+        <xsl:attribute name="value">&#36;{hawkular.metrics.waitForService:true}</xsl:attribute>
+      </property>
+    </xsl:copy>
+  </xsl:template>
 
   <!-- Add the Agent Extension -->
   <xsl:template match="node()[name(.)='extensions']">

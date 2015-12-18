@@ -34,7 +34,6 @@
 
   <dependencies>
 
-    <!-- Import the CDI API, we use provided scope as the API is included in JBoss EAP 6 -->
     <dependency>
       <groupId>javax.enterprise</groupId>
       <artifactId>cdi-api</artifactId>
@@ -42,10 +41,9 @@
     </dependency>
 
     <dependency>
-      <groupId>javax</groupId>
-      <artifactId>javaee-api</artifactId>
+      <groupId>org.jboss.spec.javax.servlet</groupId>
+      <artifactId>jboss-servlet-api_3.1_spec</artifactId>
       <scope>provided</scope>
-      <version>7.0</version>
     </dependency>
 
   </dependencies>
