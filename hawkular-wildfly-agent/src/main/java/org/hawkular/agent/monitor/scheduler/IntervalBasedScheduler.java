@@ -54,6 +54,7 @@ import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
  * @param <T> the sublclass of {@link MeasurementType} to handle (such as metric types or avail types)
  * @param <D> the {@link DataPoint} type (such as metric data or avail data)
  */
+@Deprecated
 public abstract class IntervalBasedScheduler<T extends MeasurementType<Object>, D extends DataPoint> {
 
     /**
