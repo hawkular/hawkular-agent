@@ -376,6 +376,32 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         return String.format("%s[%s]", getClass().getSimpleName(), getEndpoint());
     }
 
+    @Override
+    public int hashCode() {
+        int result = 31 + ((endpoint == null) ? 0 : endpoint.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof EndpointService)) {
+            return false;
+        }
+        @SuppressWarnings({ "rawtypes" })
+        EndpointService other = (EndpointService) obj;
+        if (this.endpoint == null) {
+            if (other.endpoint != null) {
+                return false;
+            }
+        } else if (!this.endpoint.equals(other.endpoint)) {
+            return false;
+        }
+        return true;
+    }
+
     private Avail toAvail(Pattern pattern, Object value) {
         if (pattern == null) {
             if (value instanceof Boolean) {

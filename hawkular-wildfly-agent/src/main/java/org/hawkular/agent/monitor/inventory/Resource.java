@@ -33,8 +33,7 @@ public final class Resource<L> extends NodeLocationProvider<L> {
         private Resource<L> parent;
         private Set<MeasurementInstance<L, MetricType<L>>> metrics = new HashSet<>();
         private Set<MeasurementInstance<L, AvailType<L>>> avails = new HashSet<>();
-        private Set<ResourceConfigurationPropertyInstance<L>> //
-        resourceConfigurationProperties = new HashSet<>();
+        private Set<ResourceConfigurationPropertyInstance<L>> resourceConfigurationProperties = new HashSet<>();
 
         private Builder() {
             super();
@@ -81,8 +80,7 @@ public final class Resource<L> extends NodeLocationProvider<L> {
     private final Resource<L> parent;
     private final Set<MeasurementInstance<L, MetricType<L>>> metrics;
     private final Set<MeasurementInstance<L, AvailType<L>>> avails;
-    private final Set<ResourceConfigurationPropertyInstance<L>> //
-    resourceConfigurationProperties;
+    private final Set<ResourceConfigurationPropertyInstance<L>> resourceConfigurationProperties;
 
     private Resource(ID id, Name name, L location, ResourceType<L> resourceType, Resource<L> parent,
             Set<MeasurementInstance<L, MetricType<L>>> metrics, Set<MeasurementInstance<L, AvailType<L>>> avails,

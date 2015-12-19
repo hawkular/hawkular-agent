@@ -17,6 +17,9 @@
 package org.hawkular.agent.monitor.inventory;
 
 /**
+ * This abstract class simply is here as a common way for subclasses to be provided
+ * an attribute location. Extending subclasses become {@link NamedObject}s as well.
+ *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public abstract class AttributeLocationProvider<L> extends NamedObject {
