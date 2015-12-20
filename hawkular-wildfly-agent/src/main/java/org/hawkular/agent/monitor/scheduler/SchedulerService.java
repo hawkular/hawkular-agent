@@ -107,8 +107,9 @@ public class SchedulerService implements InventoryListener {
 
         log.debugf("Scheduling jobs for [%d] new resources for endpoint [%s]",
                 resources.size(), service.getEndpoint());
-        metricScheduler.schedule(service, resources);
-        availScheduler.schedule(service, resources);
+
+        ((MeasurementScheduler) metricScheduler).schedule(service, resources);
+        ((MeasurementScheduler) availScheduler).schedule(service, resources);
     }
 
     @Override
@@ -119,8 +120,8 @@ public class SchedulerService implements InventoryListener {
         log.debugf("Unscheduling jobs for [%d] obsolete resources for endpoint [%s]",
                 resources.size(), service.getEndpoint());
 
-        metricScheduler.unschedule(service, resources);
-        availScheduler.unschedule(service, resources);
+        ((MeasurementScheduler) metricScheduler).unschedule(service, resources);
+        ((MeasurementScheduler) availScheduler).unschedule(service, resources);
     }
 
 }
