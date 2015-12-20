@@ -120,6 +120,17 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     /**
+     * Works only before {@link #start()} or after {@link #stop()}.
+     *
+     * @param listener to remove
+     */
+    public void removeInventoryListener(InventoryListener listener) {
+        status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
+        this.inventoryListenerSupport.inventoryListeners.remove(listener);
+        log.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
+    }
+
+    /**
      * Opens a new protocl specific {@link Session} - do not forget to close it!
      *
      * @return a new {@link Session}
@@ -309,17 +320,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             log.errorCouldNotAccess(this, e);
         }
 
-    }
-
-    /**
-     * Works only before {@link #start()} or after {@link #stop()}.
-     *
-     * @param listener to remove
-     */
-    public void removeInventoryListener(InventoryListener listener) {
-        status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
-        this.inventoryListenerSupport.inventoryListeners.remove(listener);
-        log.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
     }
 
     /**
