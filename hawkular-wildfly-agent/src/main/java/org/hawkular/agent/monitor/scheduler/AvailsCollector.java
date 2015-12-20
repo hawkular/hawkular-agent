@@ -48,7 +48,8 @@ class AvailsCollector<L> extends MeasurementCollector<L, AvailType<L>, AvailData
         try {
             while (!Thread.interrupted()) {
 
-                long next = getPriorityQueue().getNextExpectedCollectionTime();
+                ScheduledCollectionsQueue<L, AvailType<L>> queue = getScheduledCollectionsQueue();
+                long next = queue.getNextExpectedCollectionTime();
 
                 if (next == Long.MIN_VALUE) {
                     Thread.sleep(10_000); // nothing scheduled; sleep for a bit and see if we get something later
@@ -56,7 +57,7 @@ class AvailsCollector<L> extends MeasurementCollector<L, AvailType<L>, AvailData
                     long delay = next - System.currentTimeMillis();
                     if (delay <= 0) {
                         // we're late, we're late, for a very important date - collect now
-                        Set<MeasurementInstance<L, AvailType<L>>> instances = getPriorityQueue().getNextScheduledSet();
+                        Set<MeasurementInstance<L, AvailType<L>>> instances = queue.getNextScheduledSet();
                         getEndpointService().measureAvails(instances, new Consumer<AvailDataPoint>() {
                             @Override
                             public void accept(AvailDataPoint dataPoint) {

@@ -48,7 +48,8 @@ class MetricsCollector<L> extends MeasurementCollector<L, MetricType<L>, MetricD
         try {
             while (!Thread.interrupted()) {
 
-                long next = getPriorityQueue().getNextExpectedCollectionTime();
+                ScheduledCollectionsQueue<L, MetricType<L>> queue = getScheduledCollectionsQueue();
+                long next = queue.getNextExpectedCollectionTime();
 
                 if (next == Long.MIN_VALUE) {
                     Thread.sleep(10_000); // nothing scheduled; sleep for a bit and see if we get something later
@@ -56,8 +57,7 @@ class MetricsCollector<L> extends MeasurementCollector<L, MetricType<L>, MetricD
                     long delay = next - System.currentTimeMillis();
                     if (delay <= 0) {
                         // we're late, we're late, for a very important date - collect now
-                        Set<MeasurementInstance<L, MetricType<L>>> instances = getPriorityQueue()
-                                .getNextScheduledSet();
+                        Set<MeasurementInstance<L, MetricType<L>>> instances = queue.getNextScheduledSet();
                         getEndpointService().measureMetrics(instances, new Consumer<MetricDataPoint>() {
                             @Override
                             public void accept(MetricDataPoint dataPoint) {

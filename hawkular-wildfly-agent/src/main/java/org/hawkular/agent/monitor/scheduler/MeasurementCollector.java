@@ -34,7 +34,7 @@ public abstract class MeasurementCollector<L, T extends MeasurementType<L>, D ex
     static final MsgLogger LOG = AgentLoggers.getLogger(MeasurementCollector.class);
 
     private final SamplingService<L> endpointService;
-    private final ScheduledCollectionsQueue<L, T> priorityQueue;
+    private final ScheduledCollectionsQueue<L, T> queue;
     private final Consumer<D> completionHandler;
 
     /**
@@ -44,14 +44,14 @@ public abstract class MeasurementCollector<L, T extends MeasurementType<L>, D ex
      * handler should store the data appropriately.
      *
      * @param endpointService where the resource is whose data is to be collected
-     * @param priorityQueue the queue that determines what is scheduled next for collection
+     * @param queue the queue that determines what is scheduled next for collection
      * @param completionHandler when the data are found (or if an error occurs) this object is notified
      */
     public MeasurementCollector(SamplingService<L> endpointService,
-            ScheduledCollectionsQueue<L, T> priorityQueue,
+            ScheduledCollectionsQueue<L, T> queue,
             Consumer<D> completionHandler) {
         this.endpointService = endpointService;
-        this.priorityQueue = priorityQueue;
+        this.queue = queue;
         this.completionHandler = completionHandler;
     }
 
@@ -59,8 +59,8 @@ public abstract class MeasurementCollector<L, T extends MeasurementType<L>, D ex
         return endpointService;
     }
 
-    protected ScheduledCollectionsQueue<L, T> getPriorityQueue() {
-        return priorityQueue;
+    protected ScheduledCollectionsQueue<L, T> getScheduledCollectionsQueue() {
+        return queue;
     }
 
     protected Consumer<D> getCompletionHandler() {

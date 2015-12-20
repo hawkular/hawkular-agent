@@ -120,7 +120,7 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
     /** the name of the scheduler */
     private final String name;
 
-    /** thread pool used by the scheduler to execute the difference metrics/avails jobs. */
+    /** thread pool used by the scheduler to execute the different metrics/avails jobs. */
     private final ExecutorService executorService;
 
     /** prioritized queue for each endpoint that indicates what metrics are next to be collected */
@@ -166,7 +166,7 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
         ScheduledCollectionsQueue<L, T> queue = createOrGetScheduledCollectionsQueue(endpointService);
         queue.schedule(schedules);
 
-        LOG.debugf("Scheduler [%s]: [%d] measurements for [%d] resources have been submitted for endpoint [%s]",
+        LOG.debugf("Scheduler [%s]: [%d] measurements for [%d] resources have been scheduled for endpoint [%s]",
                 this.name, schedules.size(), resources.size(), endpointService);
     }
 
@@ -178,10 +178,14 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
      */
     public void unschedule(SamplingService<L> endpointService, List<Resource<L>> resources) {
         status.assertRunning(getClass(), "unschedule()");
+
         ScheduledCollectionsQueue<L, T> queue = getScheduledCollectionsQueue(endpointService);
         if (queue != null) {
             queue.unschedule(resources);
         }
+
+        LOG.debugf("Scheduler [%s]: all measurements for [%d] resources have been unscheduled for endpoint [%s]",
+                this.name, resources.size(), endpointService);
     }
 
     /**
