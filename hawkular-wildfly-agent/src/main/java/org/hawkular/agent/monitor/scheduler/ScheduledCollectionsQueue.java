@@ -41,7 +41,7 @@ public class ScheduledCollectionsQueue<L, T extends MeasurementType<L>> {
     //  WARNING: make sure you synchronize access to this queue!
     //           Right now code just uses "synchronized" blocks, but should introduce R/W locks in future
     private final PriorityQueue<ScheduledMeasurementInstance<L, T>> priorityQueue;
-    
+
     public ScheduledCollectionsQueue() {
         this.priorityQueue = new PriorityQueue<>();
     }
