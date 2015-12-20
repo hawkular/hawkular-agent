@@ -40,7 +40,7 @@ import org.hawkular.agent.monitor.util.Consumer;
 import org.hawkular.agent.monitor.util.Util;
 
 /**
- * A bunch of discovery methods.
+ * Discovers resources.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
@@ -94,24 +94,29 @@ public final class Discovery<L> {
     }
 
     /**
-     * Performs the discovery and stores the discovered inventory in this object's inventory manager. This discovers a
-     * tree with parent resources at the top of the tree and children at the bottom (that is to say, a resource will
-     * have an outgoing edge to its parent and incoming edges from its children).
+     * Performs a full discovery starting with resources whose types are the root resource types and works its way
+     * down to all children.
      *
-     * @param listener if not null, will be a listener that gets notified when resources are discovered
+     * @param session session used to query the managed endpoint
+     * @param resourceConsumer if not null, will be a listener that gets notified when resources are discovered
      *
      * @throws Exception if discovery failed
      */
     public void discoverAllResources(Session<L> session, Consumer<Resource<L>> resourceConsumer) {
-
         Set<ResourceType<L>> rootTypes = session.getResourceTypeManager().getRootResourceTypes();
-
         for (ResourceType<L> rootType : rootTypes) {
             discoverChildren(null, rootType, session, resourceConsumer);
         }
-
     }
 
+    /**
+     * Discovers children of the given type underneath the given parent.
+     *
+     * @param parent look under this resource to find its children (if null, this looks for root resources)
+     * @param childType only find children of this type
+     * @param session session used to query the managed endpoint
+     * @param resourceConsumer if not null, will be a listener that gets notified when resources are discovered
+     */
     public <N> void discoverChildren(Resource<L> parent, ResourceType<L> childType, Session<L> session,
             Consumer<Resource<L>> resourceConsumer) {
 
@@ -145,7 +150,9 @@ public final class Discovery<L> {
 
                 Resource<L> resource = builder.build();
                 log.debugf("Discovered resource [%s]", resource);
-                resourceConsumer.accept(resource);
+                if (resourceConsumer != null) {
+                    resourceConsumer.accept(resource);
+                }
 
                 // recursively discover children of child types
                 Set<ResourceType<L>> childTypes = session.getResourceTypeManager()

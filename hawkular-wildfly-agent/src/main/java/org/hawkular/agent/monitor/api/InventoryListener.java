@@ -24,8 +24,7 @@ package org.hawkular.agent.monitor.api;
 public interface InventoryListener {
     /**
      * Notifies this listener that the resource in {@link InventoryEvent#getPayload()} was added to the monitored
-     * endpoint. Note that this event is fired only for resources added by the present agent. Resources added by other
-     * means can only be detected by a full discovery - see {@link #discoverAllFinished(InventoryEvent)}.
+     * endpoint.
      *
      * @param event the {@link InventoryEvent}
      */
@@ -33,8 +32,7 @@ public interface InventoryListener {
 
     /**
      * Notifies this listener that the resource in {@link InventoryEvent#getPayload()} was removed from the monitored
-     * endpoint. Note that this event is fired only for resources removed by the present agent. Resources removed by
-     * other means can only be detected by a full discovery - see {@link #discoverAllFinished(InventoryEvent)}.
+     * endpoint.
      *
      * @param event the {@link InventoryEvent}
      */

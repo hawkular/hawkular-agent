@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -88,8 +89,8 @@ public final class ResourceManager<L> {
     }
 
     /**
-     * Adds the given resource to the resource hierarchy. If the resource is a child of a parent, that parent must
-     * already be known or an exception is thrown.
+     * Adds the given resource to the resource hierarchy, replacing the resource if it already exists.
+     * If the resource is a child of a parent, that parent must already be known or an exception is thrown.
      *
      * @param newResource the new resource to be added
      * @throws IllegalArgumentException if the new resource's parent does not yet exist in the hierarchy
@@ -97,10 +98,25 @@ public final class ResourceManager<L> {
     public void addResource(Resource<L> newResource) throws IllegalArgumentException {
         graphLockWrite.lock();
         try {
-            this.resourcesGraph.addVertex(newResource);
+            boolean added = this.resourcesGraph.addVertex(newResource);
+            if (!added) {
+                // looks like this resource already exists, we want to replace it but keep all edges intact
+                Resource<L> oldResource = getResource(newResource.getID());
+                Set<Resource<L>> children = getChildren(oldResource);
+                this.resourcesGraph.removeVertex(oldResource); // this removes all edges
+                this.resourcesGraph.addVertex(newResource);
+                children.forEach(new Consumer<Resource<L>>() {
+                    @Override
+                    public void accept(Resource<L> child) {
+                        ResourceManager.this.resourcesGraph.addEdge(newResource, child);
+                    }
+                });
+            }
+
             if (newResource.getParent() != null) {
                 this.resourcesGraph.addEdge(newResource.getParent(), newResource);
             }
+
         } finally {
             graphLockWrite.unlock();
         }
@@ -197,11 +213,23 @@ public final class ResourceManager<L> {
         graphLockRead.lock();
         try {
             List<Resource<L>> result = new ArrayList<Resource<L>>();
-            GraphIterator<Resource<L>, DefaultEdge> it = new BreadthFirstIterator<Resource<L>, DefaultEdge>(
-                    this.resourcesGraph);
-            while (it.hasNext()) {
-                result.add(it.next());
+
+            Set<Resource<L>> roots = getRootResources();
+            if (roots.isEmpty()) {
+                throw new IllegalStateException("There are no root nodes; cannot traverse");
             }
+
+            roots.forEach(new Consumer<Resource<L>>() {
+                @Override
+                public void accept(Resource<L> rootNode) {
+                    GraphIterator<Resource<L>, DefaultEdge> it = new BreadthFirstIterator<Resource<L>, DefaultEdge>(
+                            ResourceManager.this.resourcesGraph, rootNode);
+                    while (it.hasNext()) {
+                        result.add(it.next());
+                    }
+                }
+            });
+
             return Collections.unmodifiableList(result);
         } finally {
             graphLockRead.unlock();
@@ -235,21 +263,25 @@ public final class ResourceManager<L> {
             return;
         }
 
-        StringBuilder graphString = new StringBuilder();
-        for (Resource<L> resource : getResourcesBreadthFirst()) {
+        try {
+            StringBuilder graphString = new StringBuilder();
+            for (Resource<L> resource : getResourcesBreadthFirst()) {
 
-            // append some indents based on depth of resource in tree
-            Resource<L> parent = resource.getParent();
-            while (parent != null) {
-                graphString.append("...");
-                parent = parent.getParent();
+                // append some indents based on depth of resource in tree
+                Resource<L> parent = resource.getParent();
+                while (parent != null) {
+                    graphString.append("...");
+                    parent = parent.getParent();
+                }
+
+                // append resource to string
+                graphString.append(resource).append("\n");
             }
 
-            // append resource to string
-            graphString.append(resource).append("\n");
+            log.debugf("%s\n%s\nDiscovery duration: [%d]ms", logMsg, graphString, duration);
+        } catch (Exception e) {
+            log.debugf(e, "Cannot log tree graph");
         }
-
-        log.debugf("%s\n%s\nDiscovery duration: [%d]ms", logMsg, graphString, duration);
     }
 
     /**
@@ -291,7 +323,6 @@ public final class ResourceManager<L> {
             // but now that we have the doomed resources, we can remove them from the graph now
             for (Resource<L> doomedResource : doomedResources) {
                 this.resourcesGraph.removeVertex(doomedResource);
-                this.resourcesGraph.removeEdge(doomedResource.getParent(), doomedResource);
             }
 
             return Collections.unmodifiableList(doomedResources);

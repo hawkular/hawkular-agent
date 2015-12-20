@@ -57,10 +57,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     private class InventoryListenerSupport {
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
 
-        public InventoryListenerSupport() {
-            super();
-        }
-
         public void fireResourcesAdded(List<Resource<L>> resources) {
             InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
@@ -183,13 +179,14 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         Discovery<L> discovery = new Discovery<>();
 
         long duration = 0L;
-        final ArrayList<Resource<L>> resources = new ArrayList<>();
+        final List<Resource<L>> added = new ArrayList<>();
         try (S session = openSession()) {
             long start = System.currentTimeMillis();
 
             discovery.discoverAllResources(session, new Consumer<Resource<L>>() {
                 public void accept(Resource<L> resource) {
-                    resources.add(resource);
+                    resourceManager.addResource(resource);
+                    added.add(resource);
                 }
 
                 @Override
@@ -197,19 +194,13 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                     log.errorCouldNotAccess(EndpointService.this, e);
                 }
             });
-
             duration = System.currentTimeMillis() - start;
-
         } catch (Exception e) {
             log.errorCouldNotAccess(this, e);
         }
 
-        resourceManager.replaceResources(resources);
         resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
-
-        /* there should be a listener for syncing with the remote inventory and also one to start the collection
-         * of metrics */
-        inventoryListenerSupport.fireDiscoverAllFinished(resources);
+        inventoryListenerSupport.fireResourcesAdded(added);
     }
 
     private String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
@@ -350,11 +341,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public final void start() {
         status.assertInitialOrStopped(getClass(), "start()");
         status = ServiceStatus.STARTING;
-
-        // HWKAGENT-38 - now that we perform auto-discovery, let's not scan all here
-        // doDiscoverAll();
-
-        // keep polling/listening for changes
+        // nothing to do
         status = ServiceStatus.RUNNING;
 
         log.debugf("Started [%s]", toString());
@@ -363,9 +350,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public void stop() {
         status.assertRunning(getClass(), "stop()");
         status = ServiceStatus.STOPPING;
-
-        // stop polling/listening for changes
-
+        // nothing to do
         status = ServiceStatus.STOPPED;
 
         log.debugf("Stopped [%s]", toString());

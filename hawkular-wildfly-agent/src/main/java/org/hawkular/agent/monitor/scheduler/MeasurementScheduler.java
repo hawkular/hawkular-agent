@@ -21,20 +21,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.inventory.AvailType;
-import org.hawkular.agent.monitor.inventory.Interval;
-import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricType;
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -60,25 +55,22 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
      * Static method that builds a scheduler for metric collection.
      *
      * @param name the name of the scheduler (used for things like naming the threads)
-     * @param schedulerThreads number of core threads in the thread pool
      * @param completionHandler object that is notified of metric values when they are collected
      *
      * @return the new metric collection scheduler
      */
     public static <LL> MeasurementScheduler<LL, MetricType<LL>, MetricDataPoint> forMetrics(
-            String name, int schedulerThreads, Consumer<MetricDataPoint> completionHandler) {
+            String name, Consumer<MetricDataPoint> completionHandler) {
 
-        return new MeasurementScheduler<LL, MetricType<LL>, MetricDataPoint>(name, schedulerThreads,
-                completionHandler) {
+        return new MeasurementScheduler<LL, MetricType<LL>, MetricDataPoint>(name, completionHandler) {
 
             /**
              * @return the collector that will be used to get metrics for resources at the given endpoint.
              */
             @Override
             protected Runnable createCollector(SamplingService<LL> endpointService,
-                    Consumer<MetricDataPoint> completionHandler) {
-                return new MetricsCollector<LL>(endpointService, createOrGetScheduledCollectionsQueue(endpointService),
-                        completionHandler);
+                    ScheduledCollectionsQueue<LL, MetricType<LL>> queue, Consumer<MetricDataPoint> completionHandler) {
+                return new MetricsCollector<LL>(endpointService, queue, completionHandler);
             }
 
             /**
@@ -96,25 +88,22 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
      * Static method that builds a scheduler for availability checking.
      *
      * @param name the name of the scheduler (used for things like naming the threads)
-     * @param schedulerThreads number of core threads in the thread pool
      * @param completionHandler object that is notified of availability results when they are checked
      *
      * @return the new availability checking scheduler
      */
     public static <LL> MeasurementScheduler<LL, AvailType<LL>, AvailDataPoint> forAvails(
-            String name, int schedulerThreads, Consumer<AvailDataPoint> completionHandler) {
+            String name, Consumer<AvailDataPoint> completionHandler) {
 
-        return new MeasurementScheduler<LL, AvailType<LL>, AvailDataPoint>(name, schedulerThreads,
-                completionHandler) {
+        return new MeasurementScheduler<LL, AvailType<LL>, AvailDataPoint>(name, completionHandler) {
 
             /**
              * @return the collector that will be used to check availabilities for resources at the given endpoint.
              */
             @Override
             protected Runnable createCollector(SamplingService<LL> endpointService,
-                    Consumer<AvailDataPoint> completionHandler) {
-                return new AvailsCollector<LL>(endpointService, createOrGetScheduledCollectionsQueue(endpointService),
-                        completionHandler);
+                    ScheduledCollectionsQueue<LL, AvailType<LL>> queue, Consumer<AvailDataPoint> completionHandler) {
+                return new AvailsCollector<LL>(endpointService, queue, completionHandler);
             }
 
             /**
@@ -132,13 +121,10 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
     private final String name;
 
     /** thread pool used by the scheduler to execute the difference metrics/avails jobs. */
-    private final ScheduledExecutorService executorService;
+    private final ExecutorService executorService;
 
     /** prioritized queue for each endpoint that indicates what metrics are next to be collected */
     private final Map<SamplingService<L>, ScheduledCollectionsQueue<L, T>> queues = new HashMap<>();
-
-    /** jobs that are to be executed - note the jobs are grouped by monitored endpoint. */
-    private final Map<MonitoredEndpoint, List<ScheduledFuture<?>>> DO_I_NEED_jobs = new HashMap<>();
 
     /** object that will be notified when metric data or avail results have been collected and ready to be stored */
     private final Consumer<D> completionHandler;
@@ -147,85 +133,21 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
     /**
-     * The actual scheduler constructor. To build schedulers, call {@link #forMetrics(String, int, Consumer)}
-     * or {@link #forAvails(String, int, Consumer)}.
+     * The actual scheduler constructor.
+     * To build schedulers, call {@link #forMetrics(String, Consumer)} or {@link #forAvails(String, Consumer)}.
      *
      * @param name name of scheduler
-     * @param schedulerThreads number of threads in thread pool
      * @param completionHandler object notified when a job is done and its data needs to be stored
      */
-    private MeasurementScheduler(String name, int schedulerThreads, Consumer<D> completionHandler) {
+    private MeasurementScheduler(String name, Consumer<D> completionHandler) {
         this.name = name;
         this.completionHandler = completionHandler;
         ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true, name);
-        this.executorService = Executors.newScheduledThreadPool(schedulerThreads, threadFactory);
+        this.executorService = Executors.newCachedThreadPool(threadFactory);
     }
 
     /**
-     * This will reschedule all metric collection and avail checking jobs for the given endpoint.
-     * Any jobs running currently for that endpoint will be canceled, and the given resources will
-     * have their metric/avail jobs recreated and rescheduled.
-     *
-     * @param endpointService defines where the resources are
-     * @param resources the resources whose metric collections/avail checks are to be rescheduled
-     */
-    public void rescheduleAll(SamplingService<L> endpointService, List<Resource<L>> resources) {
-
-        status.assertRunning(getClass(), "rescheduleAll()");
-
-        // FIXME: consider if we need to lock the jobs here and elsewhere
-
-        MonitoredEndpoint endpoint = endpointService.getEndpoint();
-
-        // if there are any jobs currently running for the given endpoint, cancel them now
-        List<ScheduledFuture<?>> oldJobs = DO_I_NEED_jobs.get(endpoint);
-        if (oldJobs != null) {
-            LOG.debugf("Scheduler [%s]: canceling [%d] jobs for endpoint [%s]",
-                    this.name, oldJobs.size(), endpointService);
-
-            for (ScheduledFuture<?> oldJob : oldJobs) {
-                oldJob.cancel(false);
-            }
-        }
-
-        List<ScheduledFuture<?>> endpointJobs = new ArrayList<>();
-        Map<Interval, Collection<MeasurementInstance<L, T>>> instancesByInterval = new HashMap<>();
-        for (Resource<L> resource : resources) {
-            Collection<MeasurementInstance<L, T>> resourceInstances = getMeasurementInstances(resource);
-            for (MeasurementInstance<L, T> instance : resourceInstances) {
-                Interval interval = instance.getType().getInterval();
-                Collection<MeasurementInstance<L, T>> instances = instancesByInterval.get(interval);
-                if (instances == null) {
-                    instances = new ArrayList<>();
-                    instancesByInterval.put(interval, instances);
-                }
-                instances.add(instance);
-            }
-        }
-
-        int measurementInstances = 0;
-        for (Entry<Interval, Collection<MeasurementInstance<L, T>>> en : instancesByInterval.entrySet()) {
-            Interval interval = en.getKey();
-            Collection<MeasurementInstance<L, T>> instances = en.getValue();
-            ScheduledFuture<?> future = executorService.scheduleWithFixedDelay(
-                    createJob(endpointService, instances, completionHandler),
-                    0,
-                    interval.millis(),
-                    java.util.concurrent.TimeUnit.MILLISECONDS);
-            endpointJobs.add(future);
-            measurementInstances += instances.size();
-        }
-
-        DO_I_NEED_jobs.put(endpointService.getEndpoint(), endpointJobs);
-        LOG.debugf("Scheduler [%s]: [%d] jobs ([%d] measurements) have been submitted for endpoint [%s]",
-                this.name, endpointJobs.size(), measurementInstances, endpointService);
-    }
-
-    /**
-     * Schedules metric collections and avail checks for the given resources.
-     *
-     * Unliked {@link #rescheduleAll(SamplingService, List)}, this method keeps currently scheduled jobs
-     * in place.
+     * Schedules collections for all measurements for the given resources.
      *
      * @param endpointService defines where the resources are
      * @param resources the resources whose metric collections/avail checks are to be added to the scheduler
@@ -243,31 +165,33 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
 
         ScheduledCollectionsQueue<L, T> queue = createOrGetScheduledCollectionsQueue(endpointService);
         queue.schedule(schedules);
+
+        LOG.debugf("Scheduler [%s]: [%d] measurements for [%d] resources have been submitted for endpoint [%s]",
+                this.name, schedules.size(), resources.size(), endpointService);
     }
 
     /**
-     * Removes any existing metric collections and avail checks that are scheduled for the given resources.
-     *
-     * Unliked {@link #rescheduleAll(SamplingService, List)}, this method keeps other currently scheduled jobs
-     * in place.
+     * Removes any existing collections that are scheduled for the given resources.
      *
      * @param endpointService defines where the resources are
      * @param resources the resources whose metric collections/avail checks are to be removed from the scheduler
      */
     public void unschedule(SamplingService<L> endpointService, List<Resource<L>> resources) {
         status.assertRunning(getClass(), "unschedule()");
-        // TODO remove resources from scheduled ones
-        LOG.warn("TODO: UNSCHEDULE() IS NOT IMPLEMENTED");
+        ScheduledCollectionsQueue<L, T> queue = getScheduledCollectionsQueue(endpointService);
+        if (queue != null) {
+            queue.unschedule(resources);
+        }
     }
 
     /**
      * Call this to get the scheduled collections queue for the given endpoint. If it doesn't yet exist
-     * one will be created.
+     * one will be created and its collector thread will be created.
      *
      * @param endpointService the endpoint service whose queue is to be retrieved (and created if necessary)
      * @return the queue assigned to the given endpoint service
      */
-    protected ScheduledCollectionsQueue<L, T> createOrGetScheduledCollectionsQueue(
+    private ScheduledCollectionsQueue<L, T> createOrGetScheduledCollectionsQueue(
             SamplingService<L> endpointService) {
 
         synchronized (this.queues) {
@@ -275,6 +199,10 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
             if (q == null) {
                 q = new ScheduledCollectionsQueue<L, T>();
                 this.queues.put(endpointService, q);
+
+                // create our collector thread to start processing the collections
+                Runnable collector = createCollector(endpointService, q, completionHandler);
+                this.executorService.submit(collector);
             }
             return q;
         }
@@ -282,19 +210,17 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
 
     /**
      * Returns the scheduled collections queue associated with the given endpoint service. If one has not been
-     * created yet an exception is thrown.
+     * created yet null is returned.
      *
      * @param endpointService
-     * @return the queue assigned to the given endpoint service
+     * @return the queue assigned to the given endpoint service or null if the endpoint service
+     *         does not have a priority queue
      *
-     * @throws IllegalStateException if the endpoint service does not have a priority queue 
+     * @see #createOrGetScheduledCollectionsQueue(SamplingService)
      */
     private ScheduledCollectionsQueue<L, T> getScheduledCollectionsQueue(SamplingService<L> endpointService) {
         synchronized (this.queues) {
             ScheduledCollectionsQueue<L, T> q = this.queues.get(endpointService);
-            if (q == null) {
-                throw new IllegalStateException("There is no priority queue for endpoint: " + endpointService);
-            }
             return q;
         }
     }
@@ -311,18 +237,12 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
         status.assertRunning(getClass(), "stop()");
         status = ServiceStatus.STOPPING;
 
-        LOG.infof("Stopping scheduler [%s] and its [%d] jobs", this.name, DO_I_NEED_jobs.size());
+        LOG.debugf("Stopping scheduler [%s]", this.name);
 
         try {
-            for (List<ScheduledFuture<?>> perEndpointJobs : DO_I_NEED_jobs.values()) {
-                for (ScheduledFuture<?> job : perEndpointJobs) {
-                    job.cancel(false);
-                }
-            }
             executorService.shutdown();
             executorService.awaitTermination(5, TimeUnit.SECONDS);
             LOG.infof("Scheduler [%s] stopped", this.name);
-
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt(); // Preserve interrupt status
         } finally {
@@ -333,11 +253,13 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
     /**
      * Creates the object that will be responsible for collecting the data;
      *
-     * @param endpointService
-     * @param completionHandler
+     * @param endpointService the resources whose data is to be collected are managed by this endpoint
+     * @param queue contains the scheduled measurements
+     * @param completionHandler handler to process the measurement collection results
      * @return the collector object
      */
-    protected abstract Runnable createCollector(SamplingService<L> endpointService, Consumer<D> completionHandler);
+    protected abstract Runnable createCollector(SamplingService<L> endpointService,
+            ScheduledCollectionsQueue<L, T> queue, Consumer<D> completionHandler);
 
     /**
      * Given a resource, this returns the measurement instances that this scheduler should collect for it.

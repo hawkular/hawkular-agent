@@ -18,11 +18,14 @@ package org.hawkular.agent.monitor.scheduler;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
+import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 
@@ -103,6 +106,22 @@ public class ScheduledCollectionsQueue<L, T extends MeasurementType<L>> {
     public void schedule(Collection<ScheduledMeasurementInstance<L, T>> schedules) {
         synchronized (priorityQueue) {
             priorityQueue.addAll(schedules);
+        }
+    }
+
+    /**
+     * Unschedules all measurement collections for all given resources.
+     *
+     * @param resources all measurements for all these resources will be unscheduled
+     */
+    public void unschedule(List<Resource<L>> resources) {
+        synchronized (priorityQueue) {
+            priorityQueue.removeIf(new Predicate<ScheduledMeasurementInstance<L, T>>() {
+                @Override
+                public boolean test(ScheduledMeasurementInstance<L, T> measInst) {
+                    return resources.contains(measInst.getResource());
+                }
+            });
         }
     }
 }

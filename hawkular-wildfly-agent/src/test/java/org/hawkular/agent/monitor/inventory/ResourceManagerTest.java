@@ -29,9 +29,104 @@ public class ResourceManagerTest {
     public void testEmptyResourceManager() {
         ResourceManager<DMRNodeLocation> rm = new ResourceManager<>();
         Assert.assertNull(rm.getResource(new ID("foo")));
-        Assert.assertTrue(rm.getResourcesBreadthFirst().isEmpty());
         Assert.assertTrue(rm.getRootResources().isEmpty());
+        try {
+            rm.getResourcesBreadthFirst();
+            Assert.fail("Should have failed since we don't have any root resources");
+        } catch (IllegalStateException expected) {
+        }
+    }
 
+    @Test
+    public void testReplaceExistingResource() {
+        String rootIdString = "root1";
+        String childIdString = "child1";
+        String grandChildIdString = "grand1";
+
+        ResourceType<DMRNodeLocation> type = ResourceType.<DMRNodeLocation> builder()
+                .id(new ID("resType"))
+                .name(new Name("resTypeName"))
+                .location(DMRNodeLocation.empty())
+                .build();
+        ResourceManager<DMRNodeLocation> rm = new ResourceManager<>();
+        Resource<DMRNodeLocation> root1 = Resource.<DMRNodeLocation> builder()
+                .id(new ID(rootIdString))
+                .name(new Name("root1Name"))
+                .location(DMRNodeLocation.empty())
+                .type(type)
+                .build();
+        Resource<DMRNodeLocation> child1 = Resource.<DMRNodeLocation> builder()
+                .id(new ID(childIdString))
+                .name(new Name("child1Name"))
+                .type(type)
+                .parent(root1)
+                .location(DMRNodeLocation.of("/child=1"))
+                .build();
+        Resource<DMRNodeLocation> grandChild1 = Resource.<DMRNodeLocation> builder()
+                .id(new ID(grandChildIdString))
+                .name(new Name("grand1Name"))
+                .type(type)
+                .parent(child1)
+                .location(DMRNodeLocation.of("/child=1/grandchild=1"))
+                .build();
+
+        // add root1
+        rm.addResource(root1);
+        rm.addResource(child1);
+        rm.addResource(grandChild1);
+
+        // make sure our inventory is what we expect: root1 -> child1 -> grandchild1
+        Iterator<Resource<DMRNodeLocation>> bIter = rm.getResourcesBreadthFirst().iterator();
+        Assert.assertEquals(root1, bIter.next());
+        Assert.assertEquals(child1, bIter.next());
+        Assert.assertEquals(grandChild1, bIter.next());
+        Assert.assertFalse(bIter.hasNext());
+        Assert.assertEquals("root1Name", rm.getResource(new ID(rootIdString)).getName().getNameString());
+        Assert.assertEquals("child1Name", rm.getResource(new ID(childIdString)).getName().getNameString());
+        Assert.assertEquals("grand1Name", rm.getResource(new ID(grandChildIdString)).getName().getNameString());
+
+        // now replace resources (we aren't adding new, we are replacing existing resources)
+        Resource<DMRNodeLocation> root1_update = Resource.<DMRNodeLocation> builder()
+                .id(new ID(rootIdString))
+                .name(new Name("root1NameUPDATE"))
+                .location(DMRNodeLocation.empty())
+                .type(type)
+                .build();
+        Resource<DMRNodeLocation> child1_update = Resource.<DMRNodeLocation> builder()
+                .id(new ID(childIdString))
+                .name(new Name("child1NameUPDATE"))
+                .type(type)
+                .parent(root1)
+                .location(DMRNodeLocation.of("/child=1"))
+                .build();
+        Resource<DMRNodeLocation> grandChild1_update = Resource.<DMRNodeLocation> builder()
+                .id(new ID(grandChildIdString))
+                .name(new Name("grand1NameUPDATE"))
+                .type(type)
+                .parent(child1)
+                .location(DMRNodeLocation.of("/child=1/grandchild=1"))
+                .build();
+
+        rm.addResource(child1_update);
+        rm.addResource(grandChild1_update);
+        rm.addResource(root1_update);
+
+        // make sure our inventory is still what we expect: root1 -> child1 -> grandchild1
+        bIter = rm.getResourcesBreadthFirst().iterator();
+        Assert.assertEquals(root1_update, bIter.next());
+        Assert.assertEquals(child1_update, bIter.next());
+        Assert.assertEquals(grandChild1_update, bIter.next());
+        Assert.assertFalse(bIter.hasNext());
+
+        // the new IDs should all be the same as the old ones
+        Assert.assertEquals(root1.getID(), rm.getResource(root1_update.getID()).getID());
+        Assert.assertEquals(child1.getID(), rm.getResource(child1_update.getID()).getID());
+        Assert.assertEquals(grandChild1.getID(), rm.getResource(grandChild1_update.getID()).getID());
+
+        // but the names should be updated
+        Assert.assertEquals("root1NameUPDATE", rm.getResource(new ID(rootIdString)).getName().getNameString());
+        Assert.assertEquals("child1NameUPDATE", rm.getResource(new ID(childIdString)).getName().getNameString());
+        Assert.assertEquals("grand1NameUPDATE", rm.getResource(new ID(grandChildIdString)).getName().getNameString());
     }
 
     @Test
