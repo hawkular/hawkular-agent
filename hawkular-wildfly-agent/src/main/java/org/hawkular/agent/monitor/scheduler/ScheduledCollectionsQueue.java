@@ -18,7 +18,6 @@ package org.hawkular.agent.monitor.scheduler;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -114,7 +113,7 @@ public class ScheduledCollectionsQueue<L, T extends MeasurementType<L>> {
      *
      * @param resources all measurements for all these resources will be unscheduled
      */
-    public void unschedule(List<Resource<L>> resources) {
+    public void unschedule(Collection<Resource<L>> resources) {
         synchronized (priorityQueue) {
             priorityQueue.removeIf(new Predicate<ScheduledMeasurementInstance<L, T>>() {
                 @Override
