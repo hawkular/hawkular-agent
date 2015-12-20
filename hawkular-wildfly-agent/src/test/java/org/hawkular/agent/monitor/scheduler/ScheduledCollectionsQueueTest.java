@@ -69,7 +69,7 @@ public class ScheduledCollectionsQueueTest {
         ScheduledCollectionsQueue<DMRNodeLocation, MetricType<DMRNodeLocation>> q = new ScheduledCollectionsQueue<>();
         Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
         Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
-        
+
         int collInterval = 1500;
         MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>> measInstance;
         measInstance = createMeasurementInstance("metricName", createMetricType("metricTypeName", collInterval));
@@ -87,7 +87,7 @@ public class ScheduledCollectionsQueueTest {
         Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.getNextScheduledSet();
         Assert.assertEquals(1, scheduledSet.size());
         Assert.assertTrue(scheduledSet.contains(schedule.getMeasurementInstance()));
-        
+
         // now see that the queue is now empty
         Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
         Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
