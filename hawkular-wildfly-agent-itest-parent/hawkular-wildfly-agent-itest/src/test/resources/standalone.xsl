@@ -658,7 +658,7 @@
                              resourceNameTemplate="Datasource [%-]"
                              path="/subsystem=datasources/data-source=*"
                              parents="WildFly Server"
-                             metricSets="Datasource Pool Metrics,Datasource JDBC Metrics" />
+                             metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
             <resource-config-dmr name="Connection URL"   attribute="connection-url" />
             <resource-config-dmr name="Driver Name"      attribute="driver-name" />
             <resource-config-dmr name="Driver Class"     attribute="driver-class" />
@@ -671,6 +671,7 @@
             <resource-config-dmr name="Connection Properties"
                                  path="/connection-properties=*"
                                  attribute="value" />
+          </resource-type-dmr>
         </resource-type-set-dmr>
 
         <resource-type-set-dmr name="XA Datasource" enabled="true">
@@ -678,7 +679,7 @@
                              resourceNameTemplate="XA Datasource [%-]"
                              path="/subsystem=datasources/xa-data-source=*"
                              parents="WildFly Server"
-                             metricSets="Datasource Pool Metrics,Datasource JDBC Metrics" />
+                             metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
             <resource-config-dmr name="Driver Name"         attribute="driver-name" />
             <resource-config-dmr name="XA Datasource Class" attribute="xa-datasource-class" />
             <resource-config-dmr name="Enabled"             attribute="enabled" />
@@ -689,6 +690,7 @@
             <resource-config-dmr name="Datasource Properties"
                                  path="/xa-datasource-properties=*"
                                  attribute="value" />
+          </resource-type-dmr>
         </resource-type-set-dmr>
 
         <resource-type-set-dmr name="JDBC Driver" enabled="true">
