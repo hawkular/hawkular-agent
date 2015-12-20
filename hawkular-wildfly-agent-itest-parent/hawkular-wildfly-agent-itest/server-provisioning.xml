@@ -16,12 +16,10 @@
     limitations under the License.
 
 -->
-<subsystem xmlns="urn:org.hawkular.nest:nest:1.0" enabled="true">
-
-  <nest-name>autogenerate</nest-name>
-
-  <custom-configuration>
-    <property name="custom-prop" value="custom-prop-val"/>
-  </custom-configuration>
-
-</subsystem>
+<server-provisioning xmlns="urn:wildfly:server-provisioning:1.1" extract-schemas="true"
+  copy-module-artifacts="true">
+  <feature-packs>
+    <feature-pack groupId="org.hawkular.agent" artifactId="hawkular-wildfly-agent-feature-pack" version="${project.version}" />
+    <feature-pack groupId="org.hawkular.accounts" artifactId="hawkular-accounts-feature-pack" version="${version.org.hawkular.accounts}" />
+  </feature-packs>
+</server-provisioning>

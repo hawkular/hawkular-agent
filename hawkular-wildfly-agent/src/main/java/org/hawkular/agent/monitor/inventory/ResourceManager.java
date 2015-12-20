@@ -40,8 +40,6 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.GraphIterator;
 
-import com.google.common.io.Resources;
-
 /**
  * Holds the graph of resources. The graph itself is never exposed externally - {@link ResourceManager} rather provides
  * methods to retrieve data from the graph and to change the data in the graph.

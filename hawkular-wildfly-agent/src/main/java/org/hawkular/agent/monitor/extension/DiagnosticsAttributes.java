@@ -56,7 +56,7 @@ public interface DiagnosticsAttributes {
 
     SimpleAttributeDefinition REPORT_TO = new SimpleAttributeDefinitionBuilder("reportTo",
             ModelType.STRING)
-            .setAllowNull(false)
+            .setAllowNull(true)
             .setAllowExpression(true)
             .setDefaultValue(new ModelNode(MonitorServiceConfiguration.DiagnosticsReportTo.LOG.name()))
             .setValidator(EnumValidator.create(MonitorServiceConfiguration.DiagnosticsReportTo.class, false, true))
