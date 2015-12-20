@@ -45,9 +45,8 @@ class MetricsCollector<L> extends MeasurementCollector<L, MetricType<L>, MetricD
      */
     @Override
     public void run() {
-        try {
-            while (!Thread.interrupted()) {
-
+        while (!Thread.interrupted()) {
+            try {
                 ScheduledCollectionsQueue<L, MetricType<L>> queue = getScheduledCollectionsQueue();
                 long next = queue.getNextExpectedCollectionTime();
 
@@ -75,13 +74,13 @@ class MetricsCollector<L> extends MeasurementCollector<L, MetricType<L>, MetricD
                         Thread.sleep(delay);
                     }
                 }
+            } catch (InterruptedException ie) {
+                return;
+            } catch (IllegalStateException ise) {
+                LOG.debugf("Cannot collect metrics for endpoint [%s] - not ready yet: %s", getEndpointService(), ise);
+            } catch (Throwable t) {
+                LOG.warnf(t, "Unexpected error caught in MetricsCollector for endpoint [%s]", getEndpointService());
             }
-        } catch (InterruptedException ie) {
-            return;
-        } catch (IllegalStateException ise) {
-            LOG.debugf("Cannot collect metrics for endpoint [%s] - not ready yet: %s", getEndpointService(), ise);
-        } catch (Throwable t) {
-            LOG.warnf(t, "Unexpected error caught in MetricsCollector for endpoint [%s]", getEndpointService());
         }
     }
 }

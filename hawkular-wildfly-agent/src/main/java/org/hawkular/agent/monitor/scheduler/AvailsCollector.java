@@ -45,9 +45,8 @@ class AvailsCollector<L> extends MeasurementCollector<L, AvailType<L>, AvailData
      */
     @Override
     public void run() {
-        try {
-            while (!Thread.interrupted()) {
-
+        while (!Thread.interrupted()) {
+            try {
                 ScheduledCollectionsQueue<L, AvailType<L>> queue = getScheduledCollectionsQueue();
                 long next = queue.getNextExpectedCollectionTime();
 
@@ -75,13 +74,13 @@ class AvailsCollector<L> extends MeasurementCollector<L, AvailType<L>, AvailData
                         Thread.sleep(delay);
                     }
                 }
+            } catch (InterruptedException ie) {
+                return;
+            } catch (IllegalStateException ise) {
+                LOG.debugf("Cannot check avails for endpoint [%s] - not ready yet: %s", getEndpointService(), ise);
+            } catch (Throwable t) {
+                LOG.warnf(t, "Unexpected error caught in AvailsCollector for endpoint [%s]", getEndpointService());
             }
-        } catch (InterruptedException ie) {
-            return;
-        } catch (IllegalStateException ise) {
-            LOG.debugf("Cannot check avails for endpoint [%s] - not ready yet: %s", getEndpointService(), ise);
-        } catch (Throwable t) {
-            LOG.warnf(t, "Unexpected error caught in AvailsCollector for endpoint [%s]", getEndpointService());
         }
     }
 }
