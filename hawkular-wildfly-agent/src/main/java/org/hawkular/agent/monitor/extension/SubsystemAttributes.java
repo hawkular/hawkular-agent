@@ -51,22 +51,6 @@ public interface SubsystemAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition NUM_METRIC_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
-            "numMetricSchedulerThreads", ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_NUM_METRIC_SCHEDULER_THREADS))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
-    SimpleAttributeDefinition NUM_AVAIL_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
-            "numAvailSchedulerThreads", ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_NUM_AVAIL_SCHEDULER_THREADS))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
-
     SimpleAttributeDefinition NUM_DMR_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
             "numDmrSchedulerThreads", ModelType.INT)
             .setAllowNull(true)
@@ -111,8 +95,6 @@ public interface SubsystemAttributes {
             ENABLED,
             API_JNDI,
             AUTO_DISCOVERY_SCAN_PERIOD_SECS,
-            NUM_METRIC_SCHEDULER_THREADS,
-            NUM_AVAIL_SCHEDULER_THREADS,
             NUM_DMR_SCHEDULER_THREADS,
             METRIC_DISPATCHER_BUFFER_SIZE,
             METRIC_DISPATCHER_MAX_BATCH_SIZE,

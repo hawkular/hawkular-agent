@@ -205,8 +205,6 @@ public class MonitorServiceConfiguration {
         private final boolean subsystemEnabled;
         private final String apiJndi;
         private final int autoDiscoveryScanPeriodSecs;
-        private final int numMetricSchedulerThreads;
-        private final int numAvailSchedulerThreads;
         private final int numDmrSchedulerThreads;
         private final int metricDispatcherBufferSize;
         private final int metricDispatcherMaxBatchSize;
@@ -214,15 +212,13 @@ public class MonitorServiceConfiguration {
         private final int availDispatcherMaxBatchSize;
 
         public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int autoDiscoveryScanPeriodSecs,
-                int numMetricSchedulerThreads, int numAvailSchedulerThreads, int numDmrSchedulerThreads,
+                int numDmrSchedulerThreads,
                 int metricDispatcherBufferSize, int metricDispatcherMaxBatchSize, int availDispatcherBufferSize,
                 int availDispatcherMaxBatchSize) {
             super();
             this.subsystemEnabled = subsystemEnabled;
             this.apiJndi = apiJndi;
             this.autoDiscoveryScanPeriodSecs = autoDiscoveryScanPeriodSecs;
-            this.numMetricSchedulerThreads = numMetricSchedulerThreads;
-            this.numAvailSchedulerThreads = numAvailSchedulerThreads;
             this.numDmrSchedulerThreads = numDmrSchedulerThreads;
             this.metricDispatcherBufferSize = metricDispatcherBufferSize;
             this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
@@ -374,14 +370,6 @@ public class MonitorServiceConfiguration {
 
     public int getAutoDiscoveryScanPeriodSecs() {
         return globalConfiguration.autoDiscoveryScanPeriodSecs;
-    }
-
-    public int getNumMetricSchedulerThreads() {
-        return globalConfiguration.numMetricSchedulerThreads;
-    }
-
-    public int getNumAvailSchedulerThreads() {
-        return globalConfiguration.numAvailSchedulerThreads;
     }
 
     public int getNumDmrSchedulerThreads() {

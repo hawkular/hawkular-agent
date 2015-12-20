@@ -755,8 +755,6 @@ public class MonitorServiceConfigurationBuilder {
         boolean subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
         String apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
         int autoDiscoveryScanPeriodSecs = getInt(config, context, SubsystemAttributes.AUTO_DISCOVERY_SCAN_PERIOD_SECS);
-        int numMetricSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_METRIC_SCHEDULER_THREADS);
-        int numAvailSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_AVAIL_SCHEDULER_THREADS);
         int numDmrSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_DMR_SCHEDULER_THREADS);
         int metricDispatcherBufferSize = getInt(config, context, SubsystemAttributes.METRIC_DISPATCHER_BUFFER_SIZE);
         int metricDispatcherMaxBatchSize = getInt(config, context,
@@ -765,7 +763,7 @@ public class MonitorServiceConfigurationBuilder {
         int availDispatcherMaxBatchSize = getInt(config, context, SubsystemAttributes.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
 
         return new GlobalConfiguration(subsystemEnabled, apiJndi, autoDiscoveryScanPeriodSecs,
-                numMetricSchedulerThreads, numAvailSchedulerThreads, numDmrSchedulerThreads,
+                numDmrSchedulerThreads,
                 metricDispatcherBufferSize, metricDispatcherMaxBatchSize, availDispatcherBufferSize,
                 availDispatcherMaxBatchSize);
     }
