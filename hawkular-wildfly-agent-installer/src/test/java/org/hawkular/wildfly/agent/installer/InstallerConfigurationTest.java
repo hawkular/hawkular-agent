@@ -74,6 +74,7 @@ public class InstallerConfigurationTest {
         Options options = InstallerConfiguration.buildCommandLineOptions();
         CommandLine commandLine = new DefaultParser().parse(options,
                 args("--installer-config", "classpath:test-installer.properties",
+                        "--enabled", "false",
                         "--target-location", "/opt/wildfly/OVERRIDE",
                         "--target-config", "standalone/configuration/OVERRIDE.xml",
                         "--subsystem-snippet", "subdir/subsystem-snippetOVERRIDE.xml",
@@ -90,6 +91,7 @@ public class InstallerConfigurationTest {
                         "--module-dist", "/OVERRIDE/dist.zip"
                 ));
         InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
+        Assert.assertFalse(installerConfig.isEnabled());
         Assert.assertEquals("/opt/wildfly/OVERRIDE", installerConfig.getTargetLocation());
         Assert.assertEquals("standalone/configuration/OVERRIDE.xml", installerConfig.getTargetConfig());
         Assert.assertEquals("subdir/subsystem-snippetOVERRIDE.xml", installerConfig.getSubsystemSnippet());
@@ -160,6 +162,7 @@ public class InstallerConfigurationTest {
     }
 
     private void assertTestProperties(InstallerConfiguration installerConfig) {
+        Assert.assertTrue(installerConfig.isEnabled());
         Assert.assertEquals("/opt/wildfly/test", installerConfig.getTargetLocation());
         Assert.assertEquals("standalone/configuration/test.xml", installerConfig.getTargetConfig());
         Assert.assertEquals("subdir/subsystem-snippet.xml", installerConfig.getSubsystemSnippet());
