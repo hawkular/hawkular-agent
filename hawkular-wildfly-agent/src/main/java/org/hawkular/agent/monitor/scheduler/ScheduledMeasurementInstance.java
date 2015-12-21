@@ -42,10 +42,14 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
      */
     public static <LL> Set<ScheduledMeasurementInstance<LL, MetricType<LL>>> createMetrics(Resource<LL> resource) {
 
+        long now = System.currentTimeMillis(); // use the same time for all collection time calcs for better grouping
         Set<ScheduledMeasurementInstance<LL, MetricType<LL>>> set = new HashSet<>(resource.getMetrics().size());
         Collection<MeasurementInstance<LL, MetricType<LL>>> metrics = resource.getMetrics();
         for (MeasurementInstance<LL, MetricType<LL>> metric : metrics) {
-            set.add(new ScheduledMeasurementInstance<LL, MetricType<LL>>(resource, metric));
+            ScheduledMeasurementInstance<LL, MetricType<LL>> meas;
+            meas = new ScheduledMeasurementInstance<LL, MetricType<LL>>(resource, metric);
+            meas.setNextCollectionTime(metric.getType().getInterval().millis() + now);
+            set.add(meas);
         }
         return set;
     }
@@ -59,10 +63,14 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
      */
     public static <LL> Set<ScheduledMeasurementInstance<LL, AvailType<LL>>> createAvails(Resource<LL> resource) {
 
+        long now = System.currentTimeMillis(); // use the same time for all collection time calcs for better grouping
         Set<ScheduledMeasurementInstance<LL, AvailType<LL>>> set = new HashSet<>(resource.getAvails().size());
         Collection<MeasurementInstance<LL, AvailType<LL>>> avails = resource.getAvails();
         for (MeasurementInstance<LL, AvailType<LL>> avail : avails) {
-            set.add(new ScheduledMeasurementInstance<LL, AvailType<LL>>(resource, avail));
+            ScheduledMeasurementInstance<LL, AvailType<LL>> meas;
+            meas = new ScheduledMeasurementInstance<LL, AvailType<LL>>(resource, avail);
+            meas.setNextCollectionTime(avail.getType().getInterval().millis() + now);
+            set.add(meas);
         }
 
         return set;
@@ -106,6 +114,8 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
      * @param nextCollectionTime the new collection time when this measurement will be scheduled
      */
     public void setNextCollectionTime(long nextCollectionTime) {
+        // round to the nearest second - this helps group schedule sets better
+        nextCollectionTime = ((nextCollectionTime + 999) / 1000) * 1000;
         this.nextCollectionTime = nextCollectionTime;
     }
 
