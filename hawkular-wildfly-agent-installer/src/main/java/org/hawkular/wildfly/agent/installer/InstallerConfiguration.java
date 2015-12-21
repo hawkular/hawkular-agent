@@ -40,6 +40,7 @@ public class InstallerConfiguration {
     static final String OPTION_ENCRYPTION_SALT = "encryption-salt";
 
     // these are command line options that can also be defined in the config .properties file
+    static final String OPTION_ENABLED = "enabled";
     static final String OPTION_TARGET_LOCATION = "target-location";
     static final String OPTION_MODULE_DISTRIBUTION = "module-dist";
     static final String OPTION_TARGET_CONFIG = "target-config";
@@ -83,6 +84,12 @@ public class InstallerConfiguration {
                         "the same value as the key will be used.")
                 .numberOfArgs(1)
                 .optionalArg(true) // if no argument is given, we'll ask on stdin for it
+                .build());
+        options.addOption(Option.builder()
+                .argName(InstallerConfiguration.OPTION_ENABLED)
+                .longOpt(InstallerConfiguration.OPTION_ENABLED)
+                .desc("Indicates if the agent should be enabled at startup")
+                .numberOfArgs(1)
                 .build());
         options.addOption(Option.builder()
                 .argName(InstallerConfiguration.OPTION_TARGET_LOCATION)
@@ -218,6 +225,7 @@ public class InstallerConfiguration {
         }
 
         // now we override the defaults with options the user provided us
+        setProperty(properties, commandLine, OPTION_ENABLED);
         setProperty(properties, commandLine, OPTION_TARGET_LOCATION);
         setProperty(properties, commandLine, OPTION_MODULE_DISTRIBUTION);
         setProperty(properties, commandLine, OPTION_TARGET_CONFIG);
@@ -258,6 +266,10 @@ public class InstallerConfiguration {
 
     public String getInstallerConfig() {
         return properties.getProperty(OPTION_INSTALLER_CONFIG);
+    }
+
+    public boolean isEnabled() {
+        return Boolean.parseBoolean(properties.getProperty(OPTION_ENABLED, "true"));
     }
 
     public String getTargetLocation() {

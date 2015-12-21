@@ -127,44 +127,56 @@ class XmlConfigBuilder {
                     continue;
                 }
                 debug("Expression evaluated to " + nl.getLength() + " nodes");
-                Document contentDoc = null;
-                if (xmlEdit.getContent() != null) {
-                    debug("Loading content XML from file " + xmlEdit.getContent());
-                    contentDoc = dBuilder.parse(xmlEdit.getContent().openStream());
-                } else {
-                    debug("Loading content XML from string");
-                    contentDoc = dBuilder.parse(new ByteArrayInputStream(xmlEdit.getXml().getBytes()));
-                }
-
-                for (int i = 0; i < nl.getLength(); i++) {
-                    Node node = nl.item(i);
-                    if (node instanceof Element) {
-                        Element element = (Element) node;
-                        Node inserting = contentDoc.getDocumentElement().cloneNode(true);
-                        srcDoc.adoptNode(inserting);
-                        String recentNs = findRecentNamespaceFromXpath(expression);
-                        // is the root node of inserting content already
-                        // present?
-
-                        XPathExpression contentExpr = createContentRootExpression(contentDoc, recentNs, namespace,
-                                xmlEdit.getAttribute());
-                        NodeList existingNodes = (NodeList) contentExpr.evaluate(element, XPathConstants.NODESET);
-                        if (existingNodes.getLength() > 0) {
-                            // we need to remove those? (could be many)
-                            // we'll replace the last guy
-                            element.replaceChild(inserting, existingNodes.item(existingNodes.getLength() - 1));
-                        } else {
-                            element.appendChild(inserting);
+                if (xmlEdit.isAttributeContent()) {
+                    String attribValue = xmlEdit.getXml(); // we only support XML. Stream content in future if we need
+                    for (int i = 0; i < nl.getLength(); i++) {
+                        Node node = nl.item(i);
+                        if (node instanceof Element) {
+                            Element element = (Element) node;
+                            element.setAttribute(xmlEdit.getAttribute(), attribValue);
+                            break;
                         }
+                    }
+                } else {
+                    Document contentDoc = null;
+                    if (xmlEdit.getContent() != null) {
+                        debug("Loading content XML from file " + xmlEdit.getContent());
+                        contentDoc = dBuilder.parse(xmlEdit.getContent().openStream());
+                    } else {
+                        debug("Loading content XML from string");
+                        contentDoc = dBuilder.parse(new ByteArrayInputStream(xmlEdit.getXml().getBytes()));
+                    }
 
-                        String contentNs = getNameSpace(contentDoc);
-                        // find most recent NS from inserted node back to root
-                        // node and assign to it
-                        recentNs = findRecentNamespace(srcDoc, inserting);
-                        if (contentNs == null && recentNs != null) {
-                            // content document does not have namespace, let's
-                            // rename it to our namespace
-                            renameNamespaceRecursive(srcDoc, inserting, recentNs);
+                    for (int i = 0; i < nl.getLength(); i++) {
+                        Node node = nl.item(i);
+                        if (node instanceof Element) {
+                            Element element = (Element) node;
+                            Node inserting = contentDoc.getDocumentElement().cloneNode(true);
+                            srcDoc.adoptNode(inserting);
+                            String recentNs = findRecentNamespaceFromXpath(expression);
+                            // is the root node of inserting content already
+                            // present?
+
+                            XPathExpression contentExpr = createContentRootExpression(contentDoc, recentNs, namespace,
+                                    xmlEdit.getAttribute());
+                            NodeList existingNodes = (NodeList) contentExpr.evaluate(element, XPathConstants.NODESET);
+                            if (existingNodes.getLength() > 0) {
+                                // we need to remove those? (could be many)
+                                // we'll replace the last guy
+                                element.replaceChild(inserting, existingNodes.item(existingNodes.getLength() - 1));
+                            } else {
+                                element.appendChild(inserting);
+                            }
+
+                            String contentNs = getNameSpace(contentDoc);
+                            // find most recent NS from inserted node back to root
+                            // node and assign to it
+                            recentNs = findRecentNamespace(srcDoc, inserting);
+                            if (contentNs == null && recentNs != null) {
+                                // content document does not have namespace, let's
+                                // rename it to our namespace
+                                renameNamespaceRecursive(srcDoc, inserting, recentNs);
+                            }
                         }
                     }
                 }
