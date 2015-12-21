@@ -181,15 +181,11 @@ public class XmlConfigBuilderTest {
         printFile(builder.getTargetFile());
         printDocument(doc);
 
-        // TODO: the code really works, I just can't get these stupid XPaths to pick what I want in these tests.
-        // But if you look at the printed output from above, you'll see it really does what I want.
-        /*
         // this first test is just to make sure we started with a subsystem under namespace foo with name=bar
-        assertXpath("/server/subsystem[namespace-uri()='foo'][@name='bar']/child",
+        assertXpath("/server/foo:subsystem[@name='bar']/foo:child",
                 dBuilder.parse(getResourceFile("root.xml")), 1);
-        assertXpath("/server/subsystem[namespace-uri()='foo'][@name='bar']/child", doc, 0);
-        assertXpath("/server/subsystem[namespace-uri()='foo'][@name='barUPDATE']/child", doc, 1);
-        */
+        assertXpath("/server/foo:subsystem[@name='bar']/foo:child", doc, 0);
+        assertXpath("/server/foo:subsystem[@name='barUPDATE']/foo:child", doc, 1);
     }
 
     @Test
