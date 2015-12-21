@@ -29,6 +29,10 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
     public MeasurementType(ID id, Name name, AttributeLocation<L> location, Interval interval) {
         super(id, name, location);
         this.interval = interval;
+
+        if (interval.seconds() < 1) {
+            throw new IllegalArgumentException("Interval is too small: " + interval);
+        }
     }
 
     /**

@@ -20,17 +20,10 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 
 public class SchedulerConfiguration {
 
-
-    public static final int DEFAULT_NUM_METRIC_SCHEDULER_THREADS = 4;
-    public static final int DEFAULT_NUM_AVAIL_SCHEDULER_THREADS = 4;
-
     public static final int DEFAULT_METRIC_DISPATCHER_BUFFER_SIZE = 1000;
     public static final int DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE = 100;
     public static final int DEFAULT_AVAIL_DISPATCHER_BUFFER_SIZE = 500;
     public static final int DEFAULT_AVAIL_DISPATCHER_MAX_BATCH_SIZE = 50;
-
-    private int metricSchedulerThreads = DEFAULT_NUM_METRIC_SCHEDULER_THREADS;
-    private int availSchedulerThreads = DEFAULT_NUM_AVAIL_SCHEDULER_THREADS;
 
     private int metricDispatcherBufferSize = DEFAULT_METRIC_DISPATCHER_BUFFER_SIZE;
     private int metricDispatcherMaxBatchSize = DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE;
@@ -41,22 +34,6 @@ public class SchedulerConfiguration {
 
     private MonitorServiceConfiguration.StorageAdapterConfiguration storageAdapterConfig;
     private MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig;
-
-    public int getMetricSchedulerThreads() {
-        return metricSchedulerThreads;
-    }
-
-    public void setMetricSchedulerThreads(int schedulerThreads) {
-        this.metricSchedulerThreads = schedulerThreads;
-    }
-
-    public int getAvailSchedulerThreads() {
-        return availSchedulerThreads;
-    }
-
-    public void setAvailSchedulerThreads(int schedulerThreads) {
-        this.availSchedulerThreads = schedulerThreads;
-    }
 
     public int getMetricDispatcherBufferSize() {
         return metricDispatcherBufferSize;

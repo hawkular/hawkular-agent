@@ -57,17 +57,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     private class InventoryListenerSupport {
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
 
-        public InventoryListenerSupport() {
-            super();
-        }
-
-        public void fireDiscoverAllFinished(List<Resource<L>> resources) {
-            InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
-            for (InventoryListener inventoryListener : inventoryListeners) {
-                inventoryListener.discoverAllFinished(event);
-            }
-        }
-
         public void fireResourcesAdded(List<Resource<L>> resources) {
             InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
@@ -131,6 +120,17 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     /**
+     * Works only before {@link #start()} or after {@link #stop()}.
+     *
+     * @param listener to remove
+     */
+    public void removeInventoryListener(InventoryListener listener) {
+        status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
+        this.inventoryListenerSupport.inventoryListeners.remove(listener);
+        log.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
+    }
+
+    /**
      * Opens a new protocl specific {@link Session} - do not forget to close it!
      *
      * @return a new {@link Session}
@@ -190,13 +190,14 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         Discovery<L> discovery = new Discovery<>();
 
         long duration = 0L;
-        final ArrayList<Resource<L>> resources = new ArrayList<>();
+        final List<Resource<L>> added = new ArrayList<>();
         try (S session = openSession()) {
             long start = System.currentTimeMillis();
 
             discovery.discoverAllResources(session, new Consumer<Resource<L>>() {
                 public void accept(Resource<L> resource) {
-                    resources.add(resource);
+                    resourceManager.addResource(resource);
+                    added.add(resource);
                 }
 
                 @Override
@@ -204,19 +205,13 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                     log.errorCouldNotAccess(EndpointService.this, e);
                 }
             });
-
             duration = System.currentTimeMillis() - start;
-
         } catch (Exception e) {
             log.errorCouldNotAccess(this, e);
         }
 
-        resourceManager.replaceResources(resources);
         resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
-
-        /* there should be a listener for syncing with the remote inventory and also one to start the collection
-         * of metrics */
-        inventoryListenerSupport.fireDiscoverAllFinished(resources);
+        inventoryListenerSupport.fireResourcesAdded(added);
     }
 
     private String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
@@ -328,17 +323,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     /**
-     * Works only before {@link #start()} or after {@link #stop()}.
-     *
-     * @param listener to remove
-     */
-    public void removeInventoryListener(InventoryListener listener) {
-        status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
-        this.inventoryListenerSupport.inventoryListeners.remove(listener);
-        log.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
-    }
-
-    /**
      * Remove resources matching the given {@code location} and all their direct and indirect descendant resources.
      *
      * @param location a location that can contain wildcards
@@ -357,11 +341,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public final void start() {
         status.assertInitialOrStopped(getClass(), "start()");
         status = ServiceStatus.STARTING;
-
-        // HWKAGENT-38 - now that we perform auto-discovery, let's not scan all here
-        // doDiscoverAll();
-
-        // keep polling/listening for changes
+        // nothing to do
         status = ServiceStatus.RUNNING;
 
         log.debugf("Started [%s]", toString());
@@ -370,9 +350,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public void stop() {
         status.assertRunning(getClass(), "stop()");
         status = ServiceStatus.STOPPING;
-
-        // stop polling/listening for changes
-
+        // nothing to do
         status = ServiceStatus.STOPPED;
 
         log.debugf("Stopped [%s]", toString());
@@ -381,6 +359,32 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     @Override
     public String toString() {
         return String.format("%s[%s]", getClass().getSimpleName(), getEndpoint());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 31 + ((endpoint == null) ? 0 : endpoint.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof EndpointService)) {
+            return false;
+        }
+        @SuppressWarnings({ "rawtypes" })
+        EndpointService other = (EndpointService) obj;
+        if (this.endpoint == null) {
+            if (other.endpoint != null) {
+                return false;
+            }
+        } else if (!this.endpoint.equals(other.endpoint)) {
+            return false;
+        }
+        return true;
     }
 
     private Avail toAvail(Pattern pattern, Object value) {

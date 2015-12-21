@@ -677,8 +677,6 @@ public class MonitorService implements Service<MonitorService> {
             SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
             schedulerConfig.setDiagnosticsConfig(this.configuration.getDiagnostics());
             schedulerConfig.setStorageAdapterConfig(this.configuration.getStorageAdapter());
-            schedulerConfig.setMetricSchedulerThreads(this.configuration.getNumMetricSchedulerThreads());
-            schedulerConfig.setAvailSchedulerThreads(this.configuration.getNumAvailSchedulerThreads());
             schedulerConfig.setMetricDispatcherBufferSize(this.configuration.getMetricDispatcherBufferSize());
             schedulerConfig.setMetricDispatcherMaxBatchSize(this.configuration.getMetricDispatcherMaxBatchSize());
             schedulerConfig.setAvailDispatcherBufferSize(this.configuration.getAvailDispatcherBufferSize());

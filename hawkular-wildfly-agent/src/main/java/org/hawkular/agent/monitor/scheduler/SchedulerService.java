@@ -42,8 +42,8 @@ import org.hawkular.agent.monitor.storage.StorageAdapter;
 public class SchedulerService implements InventoryListener {
     private static final MsgLogger log = AgentLoggers.getLogger(SchedulerService.class);
     private final Diagnostics diagnostics;
-    private final IntervalBasedScheduler<MetricType<Object>, MetricDataPoint> metricScheduler;
-    private final IntervalBasedScheduler<AvailType<Object>, AvailDataPoint> availScheduler;
+    private final MeasurementScheduler<Object, MetricType<Object>, MetricDataPoint> metricScheduler;
+    private final MeasurementScheduler<Object, AvailType<Object>, AvailDataPoint> availScheduler;
     private final MetricBufferedStorageDispatcher metricStorage;
     private final AvailBufferedStorageDispatcher availStorage;
 
@@ -59,12 +59,12 @@ public class SchedulerService implements InventoryListener {
 
         // create the schedulers - we use two: one for metric collections and one for avail checks
         this.metricStorage = new MetricBufferedStorageDispatcher(configuration, storageAdapter, diagnostics);
-        this.metricScheduler = IntervalBasedScheduler.forMetrics("Hawkular-WildFly-Agent-Scheduler-Metrics",
-                configuration.getMetricSchedulerThreads(), metricStorage);
+        this.metricScheduler = MeasurementScheduler.forMetrics("Hawkular-WildFly-Agent-Scheduler-Metrics",
+                metricStorage);
 
         this.availStorage = new AvailBufferedStorageDispatcher(configuration, storageAdapter, diagnostics);
-        this.availScheduler = IntervalBasedScheduler.forAvails("Hawkular-WildFly-Agent-Scheduler-Avail",
-                configuration.getAvailSchedulerThreads(), availStorage);
+        this.availScheduler = MeasurementScheduler.forAvails("Hawkular-WildFly-Agent-Scheduler-Avail",
+                availStorage);
     }
 
     public void start() {
@@ -101,18 +101,6 @@ public class SchedulerService implements InventoryListener {
     }
 
     @Override
-    public <L> void discoverAllFinished(InventoryEvent<L> event) {
-        List<Resource<L>> resources = event.getPayload();
-        SamplingService<L> service = event.getSamplingService();
-
-        log.debugf("Rescheduling jobs for all [%d] resources for endpoint [%s]",
-                resources.size(), service.getEndpoint());
-
-        metricScheduler.rescheduleAll(service, resources);
-        availScheduler.rescheduleAll(service, resources);
-    }
-
-    @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
         List<Resource<L>> resources = event.getPayload();
         SamplingService<L> service = event.getSamplingService();
@@ -120,8 +108,8 @@ public class SchedulerService implements InventoryListener {
         log.debugf("Scheduling jobs for [%d] new resources for endpoint [%s]",
                 resources.size(), service.getEndpoint());
 
-        metricScheduler.schedule(service, resources);
-        availScheduler.schedule(service, resources);
+        ((MeasurementScheduler) metricScheduler).schedule(service, resources);
+        ((MeasurementScheduler) availScheduler).schedule(service, resources);
     }
 
     @Override
@@ -132,8 +120,8 @@ public class SchedulerService implements InventoryListener {
         log.debugf("Unscheduling jobs for [%d] obsolete resources for endpoint [%s]",
                 resources.size(), service.getEndpoint());
 
-        metricScheduler.unschedule(service, resources);
-        availScheduler.unschedule(service, resources);
+        ((MeasurementScheduler) metricScheduler).unschedule(service, resources);
+        ((MeasurementScheduler) availScheduler).unschedule(service, resources);
     }
 
 }

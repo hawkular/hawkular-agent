@@ -96,9 +96,6 @@
 
       <!-- Hawkular WildFly Agent subsystem -->
       <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
-                 apiJndiName="java:global/hawkular/agent/api"
-                 numMetricSchedulerThreads="3"
-                 numAvailSchedulerThreads="3"
                  enabled="true">
 
         <diagnostics enabled="true"
@@ -588,6 +585,8 @@
                                  attribute="qualified-host-name" />
             <resource-config-dmr name="Version"
                                  attribute="release-version" />
+            <resource-config-dmr name="Product Name"
+                                 attribute="product-name" />
             <resource-config-dmr name="Bound Address"
                                  path="/socket-binding-group=standard-sockets/socket-binding=http"
                                  attribute="bound-address" />
@@ -596,15 +595,11 @@
         </resource-type-set-dmr>
 
         <resource-type-set-dmr name="Hawkular" enabled="true">
-          <resource-type-dmr name="Bus Broker"
-                             resourceNameTemplate="Bus Broker"
-                             path="/subsystem=hawkular-bus-broker"
-                             parents="WildFly Server"/>
           <resource-type-dmr name="Hawkular WildFly Agent"
                              resourceNameTemplate="Hawkular WildFly Agent"
                              path="/subsystem=hawkular-wildfly-agent"
                              parents="WildFly Server">
-            <operation-dmr name="Status" operationName="status" />
+            <operation-dmr name="Status"                   operationName="status" />
             <operation-dmr name="Inventory Discovery Scan" operationName="fullDiscoveryScan" />
           </resource-type-dmr>
         </resource-type-set-dmr>
@@ -663,7 +658,20 @@
                              resourceNameTemplate="Datasource [%-]"
                              path="/subsystem=datasources/data-source=*"
                              parents="WildFly Server"
-                             metricSets="Datasource Pool Metrics,Datasource JDBC Metrics" />
+                             metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
+            <resource-config-dmr name="Connection URL"   attribute="connection-url" />
+            <resource-config-dmr name="Driver Name"      attribute="driver-name" />
+            <resource-config-dmr name="Driver Class"     attribute="driver-class" />
+            <resource-config-dmr name="Datasource Class" attribute="datasource-class" />
+            <resource-config-dmr name="Enabled"          attribute="enabled" />
+            <resource-config-dmr name="JNDI Name"        attribute="jndi-name" />
+            <resource-config-dmr name="Username"         attribute="user-name" />
+            <resource-config-dmr name="Password"         attribute="password" />
+            <resource-config-dmr name="Security Domain"  attribute="security-domain" />
+            <resource-config-dmr name="Connection Properties"
+                                 path="/connection-properties=*"
+                                 attribute="value" />
+          </resource-type-dmr>
         </resource-type-set-dmr>
 
         <resource-type-set-dmr name="XA Datasource" enabled="true">
@@ -671,7 +679,18 @@
                              resourceNameTemplate="XA Datasource [%-]"
                              path="/subsystem=datasources/xa-data-source=*"
                              parents="WildFly Server"
-                             metricSets="Datasource Pool Metrics,Datasource JDBC Metrics" />
+                             metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
+            <resource-config-dmr name="Driver Name"         attribute="driver-name" />
+            <resource-config-dmr name="XA Datasource Class" attribute="xa-datasource-class" />
+            <resource-config-dmr name="Enabled"             attribute="enabled" />
+            <resource-config-dmr name="JNDI Name"           attribute="jndi-name" />
+            <resource-config-dmr name="Username"            attribute="user-name" />
+            <resource-config-dmr name="Password"            attribute="password" />
+            <resource-config-dmr name="Security Domain"     attribute="security-domain" />
+            <resource-config-dmr name="Datasource Properties"
+                                 path="/xa-datasource-properties=*"
+                                 attribute="value" />
+          </resource-type-dmr>
         </resource-type-set-dmr>
 
         <resource-type-set-dmr name="JDBC Driver" enabled="true">

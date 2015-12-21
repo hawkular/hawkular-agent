@@ -23,24 +23,8 @@ package org.hawkular.agent.monitor.api;
  */
 public interface InventoryListener {
     /**
-     * Notifies the listener that the full discovery of resources has finished. The list in
-     * {@link InventoryEvent#getPayload()} is immutable and contains all resources discovered in breadth first
-     * order.
-     * <p>
-     * If the listener maintains a list of resources, this notification means that that the content of the old list
-     * should be thrown away and replaced by the list in {@link InventoryEvent#getPayload()}.
-     * <p>
-     * Note that during full discovery {@link #resourceAdded(InventoryEvent)} is not
-     * invoked for resources delivered via {@link #discoverAllFinished(InventoryEvent)}.
-     *
-     * @param event the {@link InventoryEvent}
-     */
-    <L> void discoverAllFinished(InventoryEvent<L> event);
-
-    /**
      * Notifies this listener that the resource in {@link InventoryEvent#getPayload()} was added to the monitored
-     * endpoint. Note that this event is fired only for resources added by the present agent. Resources added by other
-     * means can only be detected by a full discovery - see {@link #discoverAllFinished(InventoryEvent)}.
+     * endpoint.
      *
      * @param event the {@link InventoryEvent}
      */
@@ -48,8 +32,7 @@ public interface InventoryListener {
 
     /**
      * Notifies this listener that the resource in {@link InventoryEvent#getPayload()} was removed from the monitored
-     * endpoint. Note that this event is fired only for resources removed by the present agent. Resources removed by
-     * other means can only be detected by a full discovery - see {@link #discoverAllFinished(InventoryEvent)}.
+     * endpoint.
      *
      * @param event the {@link InventoryEvent}
      */

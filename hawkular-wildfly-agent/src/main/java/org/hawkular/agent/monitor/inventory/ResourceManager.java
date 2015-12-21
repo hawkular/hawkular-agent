@@ -86,8 +86,8 @@ public final class ResourceManager<L> {
     }
 
     /**
-     * Adds the given resource to the resource hierarchy. If the resource is a child of a parent, that parent must
-     * already be known or an exception is thrown.
+     * Adds the given resource to the resource hierarchy, replacing the resource if it already exists.
+     * If the resource is a child of a parent, that parent must already be known or an exception is thrown.
      *
      * @param newResource the new resource to be added
      * @throws IllegalArgumentException if the new resource's parent does not yet exist in the hierarchy
@@ -95,10 +95,22 @@ public final class ResourceManager<L> {
     public void addResource(Resource<L> newResource) throws IllegalArgumentException {
         graphLockWrite.lock();
         try {
-            this.resourcesGraph.addVertex(newResource);
+            boolean added = this.resourcesGraph.addVertex(newResource);
+            if (!added) {
+                // looks like this resource already exists, we want to replace it but keep all edges intact
+                Resource<L> oldResource = getResource(newResource.getID());
+                Set<Resource<L>> children = getChildren(oldResource);
+                this.resourcesGraph.removeVertex(oldResource); // this removes all edges
+                this.resourcesGraph.addVertex(newResource);
+                for (Resource<L> child : children) {
+                    ResourceManager.this.resourcesGraph.addEdge(newResource, child);
+                }
+            }
+
             if (newResource.getParent() != null) {
                 this.resourcesGraph.addEdge(newResource.getParent(), newResource);
             }
+
         } finally {
             graphLockWrite.unlock();
         }
@@ -195,11 +207,23 @@ public final class ResourceManager<L> {
         graphLockRead.lock();
         try {
             List<Resource<L>> result = new ArrayList<Resource<L>>();
-            GraphIterator<Resource<L>, DefaultEdge> it = new BreadthFirstIterator<Resource<L>, DefaultEdge>(
-                    this.resourcesGraph);
-            while (it.hasNext()) {
-                result.add(it.next());
+
+            Set<Resource<L>> roots = getRootResources();
+            if (roots.isEmpty()) {
+                throw new IllegalStateException("There are no root nodes; cannot traverse");
             }
+
+            // loop over each root resource and traverse their tree hierarchy breadth-first
+            // roots.forEach(root -> new BreadthFirstIterator<>(ResourceManager.this.resourcesGraph, root)
+            //     .forEachRemaining(it -> result.add(it)));
+            for (Resource<L> root : roots) {
+                GraphIterator<Resource<L>, DefaultEdge> it = new BreadthFirstIterator<Resource<L>, DefaultEdge>(
+                        ResourceManager.this.resourcesGraph, root);
+                while (it.hasNext()) {
+                    result.add(it.next());
+                }
+            }
+
             return Collections.unmodifiableList(result);
         } finally {
             graphLockRead.unlock();
@@ -233,21 +257,25 @@ public final class ResourceManager<L> {
             return;
         }
 
-        StringBuilder graphString = new StringBuilder();
-        for (Resource<L> resource : getResourcesBreadthFirst()) {
+        try {
+            StringBuilder graphString = new StringBuilder();
+            for (Resource<L> resource : getResourcesBreadthFirst()) {
 
-            // append some indents based on depth of resource in tree
-            Resource<L> parent = resource.getParent();
-            while (parent != null) {
-                graphString.append("...");
-                parent = parent.getParent();
+                // append some indents based on depth of resource in tree
+                Resource<L> parent = resource.getParent();
+                while (parent != null) {
+                    graphString.append("...");
+                    parent = parent.getParent();
+                }
+
+                // append resource to string
+                graphString.append(resource).append("\n");
             }
 
-            // append resource to string
-            graphString.append(resource).append("\n");
+            log.debugf("%s\n%s\nDiscovery duration: [%d]ms", logMsg, graphString, duration);
+        } catch (Exception e) {
+            log.debugf(e, "Cannot log tree graph");
         }
-
-        log.debugf("%s\n%s\nDiscovery duration: [%d]ms", logMsg, graphString, duration);
     }
 
     /**
@@ -289,7 +317,6 @@ public final class ResourceManager<L> {
             // but now that we have the doomed resources, we can remove them from the graph now
             for (Resource<L> doomedResource : doomedResources) {
                 this.resourcesGraph.removeVertex(doomedResource);
-                this.resourcesGraph.removeEdge(doomedResource.getParent(), doomedResource);
             }
 
             return Collections.unmodifiableList(doomedResources);
@@ -308,30 +335,4 @@ public final class ResourceManager<L> {
         }
         return;
     }
-
-    /**
-     * Replaces the set of {@link Resources} currently available in {@link #resourcesGraph} with the resources from the
-     * given {@code newResources} list. Note that this method eventually replaces the graph instance in
-     * {@link #resourcesGraph} together with {@link #neighborIndex} and {@link #resourceCache}.
-     *
-     * @param newResources a {@link List} of resources to replace the set of {@link Resources} currently available in
-     *            {@link #resourcesGraph}. {@code newResources} must be in breadth first order
-     * @throws IllegalArgumentException if the parent of any of the added resources is not in the graph.
-     */
-    public void replaceResources(List<Resource<L>> newResources) throws IllegalArgumentException {
-        graphLockWrite.lock();
-        try {
-            /* nuke the old graph */
-            reinitializeIfNecessary();
-            for (Resource<L> resource : newResources) {
-                this.resourcesGraph.addVertex(resource);
-                if (resource.getParent() != null) {
-                    this.resourcesGraph.addEdge(resource.getParent(), resource);
-                }
-            }
-        } finally {
-            graphLockWrite.unlock();
-        }
-    }
-
 }

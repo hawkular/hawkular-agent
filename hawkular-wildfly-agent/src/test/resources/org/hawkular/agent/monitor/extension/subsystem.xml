@@ -19,8 +19,6 @@
 <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
            enabled="false"
            autoDiscoveryScanPeriodSecs="3601"
-           numMetricSchedulerThreads="3"
-           numAvailSchedulerThreads="3"
            metricDispatcherBufferSize="201"
            metricDispatcherMaxBatchSize="51"
            availDispatcherBufferSize="101"

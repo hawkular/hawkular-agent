@@ -127,11 +127,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public <L> void discoverAllFinished(InventoryEvent<L> event) {
-        inventoryStorage.discoverAllFinished(event);
-    }
-
-    @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
         inventoryStorage.resourcesAdded(event);
     }
