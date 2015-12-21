@@ -56,7 +56,7 @@ class MetricsCollector<L> extends MeasurementCollector<L, MetricType<L>, MetricD
                     long delay = next - System.currentTimeMillis();
                     if (delay <= 0) {
                         // we're late, we're late, for a very important date - collect now
-                        Set<MeasurementInstance<L, MetricType<L>>> instances = queue.getNextScheduledSet();
+                        Set<MeasurementInstance<L, MetricType<L>>> instances = queue.popNextScheduledSet();
                         getEndpointService().measureMetrics(instances, new Consumer<MetricDataPoint>() {
                             @Override
                             public void accept(MetricDataPoint dataPoint) {

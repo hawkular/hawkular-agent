@@ -106,8 +106,24 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
         return nextCollectionTime;
     }
 
+    /**
+     * This sets the next collection time to the given collection time.
+     * If you just want to set the next collection time based on the collection interval,
+     * use {@link #setNextCollectionTime()} instead.
+     *
+     * @param nextCollectionTime the new collection time when this measurement will be scheduled
+     */
     public void setNextCollectionTime(long nextCollectionTime) {
         this.nextCollectionTime = nextCollectionTime;
+    }
+
+    /**
+     * This will set the next collection time based on the measurement's collection interval
+     * and the current time.
+     */
+    public void setNextCollectionTime() {
+        long interval = getMeasurementInstance().getType().getInterval().millis();
+        setNextCollectionTime(System.currentTimeMillis() + interval);
     }
 
     @Override

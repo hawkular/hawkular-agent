@@ -39,10 +39,21 @@ import org.junit.Test;
 public class ScheduledCollectionsQueueTest {
 
     @Test
+    public void testInvalidInterval() throws InterruptedException {
+        createMetricType("goodInterval", 1000);
+
+        try {
+            createMetricType("badInterval", 500);
+            Assert.fail("Should have thrown exception due to the interval being too small");
+        } catch (IllegalArgumentException expected) {
+        }
+    }
+
+    @Test
     public void testUnschedule() throws InterruptedException {
         ScheduledCollectionsQueue<DMRNodeLocation, MetricType<DMRNodeLocation>> q = new ScheduledCollectionsQueue<>();
         Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
-        Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
+        Assert.assertTrue("Nothing scheduled!", q.popNextScheduledSet().isEmpty());
 
         int collInterval = 1000;
         MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>> measInstance;
@@ -55,20 +66,19 @@ public class ScheduledCollectionsQueueTest {
         q.schedule(Collections.singleton(schedule));
 
         // now that something is scheduled, let's see that the queue gives us the right answers
-        // do NOT call getNextScheduledSet because that pops things off the queue
         Assert.assertTrue(q.getNextExpectedCollectionTime() > System.currentTimeMillis());
 
         // unschedule and see that the queue goes empty
         q.unschedule(Collections.singleton(resource));
         Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
-        Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
+        Assert.assertTrue("Nothing scheduled!", q.popNextScheduledSet().isEmpty());
     }
 
     @Test
     public void testSimpleSchedule() throws InterruptedException {
         ScheduledCollectionsQueue<DMRNodeLocation, MetricType<DMRNodeLocation>> q = new ScheduledCollectionsQueue<>();
         Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
-        Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
+        Assert.assertTrue("Nothing scheduled!", q.popNextScheduledSet().isEmpty());
 
         int collInterval = 1500;
         MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>> measInstance;
@@ -79,18 +89,18 @@ public class ScheduledCollectionsQueueTest {
         ScheduledMeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>> schedule;
         schedule = new ScheduledMeasurementInstance<>(resource, measInstance);
         q.schedule(Collections.singleton(schedule));
-        Assert.assertTrue("The scheduled collection time isn't here yet", q.getNextScheduledSet().isEmpty());
+        Assert.assertTrue("The scheduled collection time isn't here yet", q.popNextScheduledSet().isEmpty());
 
         // now that something is scheduled, let's see that the queue gives us the right answers
-        Assert.assertTrue(q.getNextExpectedCollectionTime() > System.currentTimeMillis());
+        long nextExpectedCollectionTime = q.getNextExpectedCollectionTime();
+        Assert.assertTrue(nextExpectedCollectionTime > System.currentTimeMillis());
         Thread.sleep(collInterval); // wait for the collection time to pass
-        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.getNextScheduledSet();
+        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.popNextScheduledSet();
         Assert.assertEquals(1, scheduledSet.size());
         Assert.assertTrue(scheduledSet.contains(schedule.getMeasurementInstance()));
 
-        // now see that the queue is now empty
-        Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
-        Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
+        // now see that the reschedule works
+        Assert.assertTrue(nextExpectedCollectionTime + collInterval <= q.getNextExpectedCollectionTime());
     }
 
     @Test
@@ -114,16 +124,16 @@ public class ScheduledCollectionsQueueTest {
         q.schedule(Arrays.asList(schedule1, schedule2));
 
         // let's see that the queue gives us the right answers
-        Assert.assertTrue(q.getNextExpectedCollectionTime() > System.currentTimeMillis());
+        long nextExpectedCollectionTime = q.getNextExpectedCollectionTime();
+        Assert.assertTrue(nextExpectedCollectionTime > System.currentTimeMillis());
         Thread.sleep(collInterval); // wait for the collection time to pass
-        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.getNextScheduledSet();
+        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.popNextScheduledSet();
         Assert.assertEquals(2, scheduledSet.size());
         Assert.assertTrue(scheduledSet.contains(schedule1.getMeasurementInstance()));
         Assert.assertTrue(scheduledSet.contains(schedule2.getMeasurementInstance()));
 
-        // now see that the queue is now empty
-        Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
-        Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
+        // now see that the reschedule works
+        Assert.assertTrue(nextExpectedCollectionTime + collInterval <= q.getNextExpectedCollectionTime());
     }
 
     @Test
@@ -131,7 +141,7 @@ public class ScheduledCollectionsQueueTest {
         ScheduledCollectionsQueue<DMRNodeLocation, MetricType<DMRNodeLocation>> q = new ScheduledCollectionsQueue<>();
 
         int collInterval1 = 1000;
-        int collInterval2 = 2000;
+        int collInterval2 = 1500;
         MetricType<DMRNodeLocation> metricType1 = createMetricType("metricTypeName1", collInterval1);
         MetricType<DMRNodeLocation> metricType2 = createMetricType("metricTypeName2", collInterval1);
         MetricType<DMRNodeLocation> metricType3 = createMetricType("metricTypeName3", collInterval2);
@@ -152,11 +162,11 @@ public class ScheduledCollectionsQueueTest {
         schedule3 = new ScheduledMeasurementInstance<>(resource, measInstance3);
         q.schedule(Arrays.asList(schedule1, schedule2, schedule3));
 
-        // let's see that the queue gives us the right answers (remember getNextScheduledSet pops off the queue)
+        // let's see that the queue gives us the right answers (remember popNextScheduledSet reschedules)
         long firstCollectionTime = q.getNextExpectedCollectionTime();
         Assert.assertTrue(firstCollectionTime > System.currentTimeMillis());
         Thread.sleep(collInterval1); // wait for the first collection time to pass
-        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.getNextScheduledSet();
+        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.popNextScheduledSet();
         Assert.assertEquals("The first set should only have 2 of the 3 schedules", 2, scheduledSet.size());
         Assert.assertTrue(scheduledSet.contains(schedule1.getMeasurementInstance()));
         Assert.assertTrue(scheduledSet.contains(schedule2.getMeasurementInstance()));
@@ -166,15 +176,11 @@ public class ScheduledCollectionsQueueTest {
         Assert.assertTrue("Next collection should be after the first", secondCollectionTime > firstCollectionTime);
         Assert.assertTrue(q.getNextExpectedCollectionTime() > System.currentTimeMillis());
         Thread.sleep(collInterval2); // wait for the second collection time to pass
-        scheduledSet = q.getNextScheduledSet();
+        scheduledSet = q.popNextScheduledSet();
         Assert.assertEquals("The second set should only have 1 of the 3 schedules", 1, scheduledSet.size());
         Assert.assertFalse(scheduledSet.contains(schedule1.getMeasurementInstance()));
         Assert.assertFalse(scheduledSet.contains(schedule2.getMeasurementInstance()));
         Assert.assertTrue(scheduledSet.contains(schedule3.getMeasurementInstance()));
-
-        // now see that the queue is now empty
-        Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
-        Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
     }
 
     @Test
@@ -205,24 +211,20 @@ public class ScheduledCollectionsQueueTest {
 
         // let's see that the queue gives us the right answers
         Thread.sleep(collInterval);
-        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.getNextScheduledSet();
+        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.popNextScheduledSet();
         Assert.assertEquals("Should have 3 schedules even those they are for 2 resources", 3, scheduledSet.size());
         Assert.assertTrue(scheduledSet.contains(schedule1.getMeasurementInstance()));
         Assert.assertTrue(scheduledSet.contains(schedule2.getMeasurementInstance()));
         Assert.assertTrue(scheduledSet.contains(schedule3.getMeasurementInstance()));
-
-        // now see that the queue is now empty
-        Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
-        Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
     }
 
     @Test
     public void testUnscheduleResource() throws InterruptedException {
         ScheduledCollectionsQueue<DMRNodeLocation, MetricType<DMRNodeLocation>> q = new ScheduledCollectionsQueue<>();
 
-        int collInterval1 = 500;
-        int collInterval2 = 750;
-        int collInterval3 = 1000;
+        int collInterval1 = 1000;
+        int collInterval2 = 1250;
+        int collInterval3 = 1500;
         MetricType<DMRNodeLocation> metricType1 = createMetricType("metricTypeName1", collInterval1);
         MetricType<DMRNodeLocation> metricType2 = createMetricType("metricTypeName2", collInterval2);
         MetricType<DMRNodeLocation> metricType3 = createMetricType("metricTypeName3", collInterval3);
@@ -247,15 +249,11 @@ public class ScheduledCollectionsQueueTest {
         // now unschedule for resource1 and see the first and third schedule go away
         q.unschedule(Collections.singletonList(resource1));
         Thread.sleep(collInterval3);
-        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.getNextScheduledSet();
+        Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.popNextScheduledSet();
         Assert.assertEquals("Should have 1 schedule left for resource2 only", 1, scheduledSet.size());
         Assert.assertFalse(scheduledSet.contains(schedule1.getMeasurementInstance()));
         Assert.assertTrue(scheduledSet.contains(schedule2.getMeasurementInstance()));
         Assert.assertFalse(scheduledSet.contains(schedule3.getMeasurementInstance()));
-
-        // now see that the queue is now empty
-        Assert.assertEquals("Nothing scheduled!", Long.MIN_VALUE, q.getNextExpectedCollectionTime());
-        Assert.assertTrue("Nothing scheduled!", q.getNextScheduledSet().isEmpty());
     }
 
     private Resource<DMRNodeLocation> createResource(String name,

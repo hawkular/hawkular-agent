@@ -48,6 +48,7 @@ public class ScheduledCollectionsQueue<L, T extends MeasurementType<L>> {
     /**
      * Returns the time when the next collection is to be done.
      * If there are no scheduled collections at all, this returns Long#MIN_VALUE.
+     * Nothing is popped off the queue by this method.
      *
      * @return the time when the next expected collection time is to be
      */
@@ -63,16 +64,18 @@ public class ScheduledCollectionsQueue<L, T extends MeasurementType<L>> {
     }
 
     /**
-     * Returns a set of the next measurements to be collected. The returned set will
-     * be those measurements to be collected at the same time (see {@link #getNextExpectedCollectionTime()})
-     * but could be across multiple resources.
+     * Pops off of the queue the set of the next measurements to be collected.
+     * The returned set will be those measurements to be collected at the same time
+     * (see {@link #getNextExpectedCollectionTime()}) but could be across multiple resources.
+     *
+     * A new set of measurements will be rescheduled according to their intervals and pushed back on the queue.
      *
      * If the next scheduled set of collections is to occur in the future or there are no schedules at all
      * then this returns an empty set. In other words, this returns those collections that need to be performed now.
      *
      * @return the next set of collections that need to be made
      */
-    public Set<MeasurementInstance<L, T>> getNextScheduledSet() {
+    public Set<MeasurementInstance<L, T>> popNextScheduledSet() {
 
         Set<MeasurementInstance<L, T>> nextScheduledSet = new HashSet<>();
 
@@ -86,10 +89,17 @@ public class ScheduledCollectionsQueue<L, T extends MeasurementType<L>> {
             // Start picking things off the queue. We gobble up all the metrics at the head of the queue
             // next scheduled to be collected, but only for the same next collection time.
             ScheduledMeasurementInstance<L, T> next = first;
-            while ((next != null) && (next.getNextCollectionTime() == first.getNextCollectionTime())) {
+            long firstCollectionTime = first.getNextCollectionTime();
+            while ((next != null) && (next.getNextCollectionTime() == firstCollectionTime)) {
                 ScheduledMeasurementInstance<L, T> queueItem = priorityQueue.poll();
-                LOG.debugf("Next measurement scheduled=", queueItem);
+                LOG.debugf("Popped measurement off queue=", queueItem);
                 nextScheduledSet.add(queueItem.getMeasurementInstance());
+
+                // reschedule it
+                queueItem.setNextCollectionTime();
+                priorityQueue.offer(queueItem);
+
+                // peek ahead at the next scheduled collection
                 next = priorityQueue.peek();
             }
         }

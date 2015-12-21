@@ -56,7 +56,7 @@ class AvailsCollector<L> extends MeasurementCollector<L, AvailType<L>, AvailData
                     long delay = next - System.currentTimeMillis();
                     if (delay <= 0) {
                         // we're late, we're late, for a very important date - collect now
-                        Set<MeasurementInstance<L, AvailType<L>>> instances = queue.getNextScheduledSet();
+                        Set<MeasurementInstance<L, AvailType<L>>> instances = queue.popNextScheduledSet();
                         getEndpointService().measureAvails(instances, new Consumer<AvailDataPoint>() {
                             @Override
                             public void accept(AvailDataPoint dataPoint) {
