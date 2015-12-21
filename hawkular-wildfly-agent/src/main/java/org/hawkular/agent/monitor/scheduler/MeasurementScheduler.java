@@ -156,13 +156,7 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
         status.assertRunning(getClass(), "schedule()");
 
         List<ScheduledMeasurementInstance<L, T>> schedules = new ArrayList<>();
-        resources.forEach(new java.util.function.Consumer<Resource<L>>() {
-            @Override
-            public void accept(Resource<L> res) {
-                schedules.addAll(getScheduledMeasurementInstances(res));
-            }
-        });
-
+        resources.forEach(r -> schedules.addAll(getScheduledMeasurementInstances(r)));
         ScheduledCollectionsQueue<L, T> queue = createOrGetScheduledCollectionsQueue(endpointService);
         queue.schedule(schedules);
 

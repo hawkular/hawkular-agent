@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -103,12 +102,7 @@ public final class ResourceManager<L> {
                 Set<Resource<L>> children = getChildren(oldResource);
                 this.resourcesGraph.removeVertex(oldResource); // this removes all edges
                 this.resourcesGraph.addVertex(newResource);
-                children.forEach(new Consumer<Resource<L>>() {
-                    @Override
-                    public void accept(Resource<L> child) {
-                        ResourceManager.this.resourcesGraph.addEdge(newResource, child);
-                    }
-                });
+                children.forEach(r -> ResourceManager.this.resourcesGraph.addEdge(newResource, r));
             }
 
             if (newResource.getParent() != null) {
@@ -217,16 +211,9 @@ public final class ResourceManager<L> {
                 throw new IllegalStateException("There are no root nodes; cannot traverse");
             }
 
-            roots.forEach(new Consumer<Resource<L>>() {
-                @Override
-                public void accept(Resource<L> rootNode) {
-                    GraphIterator<Resource<L>, DefaultEdge> it = new BreadthFirstIterator<Resource<L>, DefaultEdge>(
-                            ResourceManager.this.resourcesGraph, rootNode);
-                    while (it.hasNext()) {
-                        result.add(it.next());
-                    }
-                }
-            });
+            // loop over each root resource and traverse their tree hierarchy breadth-first
+            roots.forEach(root -> new BreadthFirstIterator<>(ResourceManager.this.resourcesGraph, root)
+                    .forEachRemaining(it -> result.add(it)));
 
             return Collections.unmodifiableList(result);
         } finally {

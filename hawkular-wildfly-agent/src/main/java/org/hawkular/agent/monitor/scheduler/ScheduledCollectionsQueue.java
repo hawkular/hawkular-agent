@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
@@ -125,12 +124,7 @@ public class ScheduledCollectionsQueue<L, T extends MeasurementType<L>> {
      */
     public void unschedule(Collection<Resource<L>> resources) {
         synchronized (priorityQueue) {
-            priorityQueue.removeIf(new Predicate<ScheduledMeasurementInstance<L, T>>() {
-                @Override
-                public boolean test(ScheduledMeasurementInstance<L, T> measInst) {
-                    return resources.contains(measInst.getResource());
-                }
-            });
+            priorityQueue.removeIf(mi -> resources.contains(mi.getResource()));
         }
     }
 }

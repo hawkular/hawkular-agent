@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
@@ -45,13 +44,7 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
 
         Set<ScheduledMeasurementInstance<LL, MetricType<LL>>> set = new HashSet<>(resource.getMetrics().size());
         Collection<MeasurementInstance<LL, MetricType<LL>>> metrics = resource.getMetrics();
-        metrics.forEach(new Consumer<MeasurementInstance<LL, MetricType<LL>>>() {
-            @Override
-            public void accept(MeasurementInstance<LL, MetricType<LL>> instance) {
-                set.add(new ScheduledMeasurementInstance<LL, MetricType<LL>>(resource, instance));
-            }
-        });
-
+        metrics.forEach(i -> set.add(new ScheduledMeasurementInstance<LL, MetricType<LL>>(resource, i)));
         return set;
     }
 
@@ -66,13 +59,7 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
 
         Set<ScheduledMeasurementInstance<LL, AvailType<LL>>> set = new HashSet<>(resource.getAvails().size());
         Collection<MeasurementInstance<LL, AvailType<LL>>> avails = resource.getAvails();
-        avails.forEach(new Consumer<MeasurementInstance<LL, AvailType<LL>>>() {
-            @Override
-            public void accept(MeasurementInstance<LL, AvailType<LL>> instance) {
-                set.add(new ScheduledMeasurementInstance<LL, AvailType<LL>>(resource, instance));
-            }
-        });
-
+        avails.forEach(i -> set.add(new ScheduledMeasurementInstance<LL, AvailType<LL>>(resource, i)));
         return set;
     }
 
