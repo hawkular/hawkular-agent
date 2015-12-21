@@ -91,12 +91,12 @@ public class ScheduledCollectionsQueue<L, T extends MeasurementType<L>> {
             long firstCollectionTime = first.getNextCollectionTime();
             while ((next != null) && (next.getNextCollectionTime() == firstCollectionTime)) {
                 ScheduledMeasurementInstance<L, T> queueItem = priorityQueue.poll();
-                LOG.debugf("Popped measurement off queue=", queueItem);
                 nextScheduledSet.add(queueItem.getMeasurementInstance());
 
                 // reschedule it
                 queueItem.setNextCollectionTime();
                 priorityQueue.offer(queueItem);
+                LOG.debugf("Popped measurement off queue and rescheduled: %s", queueItem);
 
                 // peek ahead at the next scheduled collection
                 next = priorityQueue.peek();

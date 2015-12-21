@@ -102,7 +102,9 @@ public final class ResourceManager<L> {
                 Set<Resource<L>> children = getChildren(oldResource);
                 this.resourcesGraph.removeVertex(oldResource); // this removes all edges
                 this.resourcesGraph.addVertex(newResource);
-                children.forEach(r -> ResourceManager.this.resourcesGraph.addEdge(newResource, r));
+                for (Resource<L> child : children) {
+                    ResourceManager.this.resourcesGraph.addEdge(newResource, child);
+                }
             }
 
             if (newResource.getParent() != null) {
@@ -212,8 +214,15 @@ public final class ResourceManager<L> {
             }
 
             // loop over each root resource and traverse their tree hierarchy breadth-first
-            roots.forEach(root -> new BreadthFirstIterator<>(ResourceManager.this.resourcesGraph, root)
-                    .forEachRemaining(it -> result.add(it)));
+            // roots.forEach(root -> new BreadthFirstIterator<>(ResourceManager.this.resourcesGraph, root)
+            //     .forEachRemaining(it -> result.add(it)));
+            for (Resource<L> root : roots) {
+                GraphIterator<Resource<L>, DefaultEdge> it = new BreadthFirstIterator<Resource<L>, DefaultEdge>(
+                        ResourceManager.this.resourcesGraph, root);
+                while (it.hasNext()) {
+                    result.add(it.next());
+                }
+            }
 
             return Collections.unmodifiableList(result);
         } finally {

@@ -44,7 +44,9 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
 
         Set<ScheduledMeasurementInstance<LL, MetricType<LL>>> set = new HashSet<>(resource.getMetrics().size());
         Collection<MeasurementInstance<LL, MetricType<LL>>> metrics = resource.getMetrics();
-        metrics.forEach(i -> set.add(new ScheduledMeasurementInstance<LL, MetricType<LL>>(resource, i)));
+        for (MeasurementInstance<LL, MetricType<LL>> metric : metrics) {
+            set.add(new ScheduledMeasurementInstance<LL, MetricType<LL>>(resource, metric));
+        }
         return set;
     }
 
@@ -59,7 +61,10 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
 
         Set<ScheduledMeasurementInstance<LL, AvailType<LL>>> set = new HashSet<>(resource.getAvails().size());
         Collection<MeasurementInstance<LL, AvailType<LL>>> avails = resource.getAvails();
-        avails.forEach(i -> set.add(new ScheduledMeasurementInstance<LL, AvailType<LL>>(resource, i)));
+        for (MeasurementInstance<LL, AvailType<LL>> avail : avails) {
+            set.add(new ScheduledMeasurementInstance<LL, AvailType<LL>>(resource, avail));
+        }
+
         return set;
     }
 
