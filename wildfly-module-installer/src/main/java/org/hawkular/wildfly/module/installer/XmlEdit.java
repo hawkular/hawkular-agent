@@ -31,8 +31,11 @@ import java.net.URL;
  * otherwise {@link attribute} is taken as the only one for
  * xpath expression.
  *
- * @author lzoubek@redhat.com
+ * If {@link #isAttributeContent()} is true, the content is just a string (non-XML)
+ * that is used to replace/insert an attribute value. In other words, if {@link #isAttributeContent()}
+ * is true, {@link #getSelect()} should be an XPath to an attribute, not an element node.
  *
+ * @author lzoubek@redhat.com
  */
 public class XmlEdit {
 
@@ -40,6 +43,7 @@ public class XmlEdit {
     private URL content;
     private String xml;
     private String attribute;
+    private boolean isAttributeContent = false;
 
     public XmlEdit() {
 
@@ -57,6 +61,11 @@ public class XmlEdit {
 
     public XmlEdit withAttribute(String attribute) {
         this.attribute = attribute;
+        return this;
+    }
+
+    public XmlEdit withIsAttributeContent(boolean flag) {
+        this.isAttributeContent = flag;
         return this;
     }
 
@@ -92,9 +101,18 @@ public class XmlEdit {
         this.content = content;
     }
 
+    public boolean isAttributeContent() {
+        return isAttributeContent;
+    }
+
+    public void setAttributeContent(boolean isAttributeContent) {
+        this.isAttributeContent = isAttributeContent;
+    }
+
     @Override
     public String toString() {
         return new StringBuilder(getClass().getName()+"[").append("select=" + this.select)
+                .append(" is-attribute-content=" + isAttributeContent)
                 .append(content == null ? "" : " content=" + content)
                 .append(attribute == null ? "" : " attribute=" + attribute)
                 .append(xml == null ? "" : " xml=" + this.xml).append("]").toString();

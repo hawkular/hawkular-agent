@@ -64,6 +64,7 @@
             <argument>--target-location=${org.hawkular.wildfly.home}</argument>
             <argument>--module-dist=${project.basedir}/../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</argument>
             <argument>--server-url=http://127.0.0.1:8080</argument>
+            <argument>--enabled=true</argument>
           </arguments>
           <systemProperties>
             <systemProperty>

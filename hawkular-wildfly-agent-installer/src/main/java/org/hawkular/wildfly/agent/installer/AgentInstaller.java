@@ -248,6 +248,7 @@ public class AgentInstaller {
             }
 
             configurationBldr.addXmlEdit(createManagedServers(installerConfig));
+            configurationBldr.addXmlEdit(setEnableFlag(installerConfig));
             configurationBldr.modulesHome("modules"); // we know module distro needs this as the assumed modules dir
 
             new ExtensionDeployer().install(configurationBldr.build());
@@ -382,6 +383,12 @@ public class AgentInstaller {
 
         // replaces <managed-servers> under urn:org.hawkular.agent:agent:1.0 subsystem with above content
         return new XmlEdit(select, xml.toString());
+    }
+
+    private static XmlEdit setEnableFlag(InstallerConfiguration config) {
+        String select = "/server/profile/*[namespace-uri()='urn:org.hawkular.agent:agent:1.0'][@enabled]";
+        String isEnabled = String.valueOf(config.isEnabled());
+        return new XmlEdit(select, isEnabled).withIsAttributeContent(true).withAttribute("enabled");
     }
 
     private static URL getHawkularServerAgentDownloadUrl(InstallerConfiguration config) throws MalformedURLException {
