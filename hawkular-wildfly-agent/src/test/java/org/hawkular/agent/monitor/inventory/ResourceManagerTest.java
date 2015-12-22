@@ -19,12 +19,14 @@ package org.hawkular.agent.monitor.inventory;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.hawkular.agent.monitor.inventory.ResourceManager.AddResult;
 import org.hawkular.agent.monitor.protocol.dmr.DMRLocationResolver;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class ResourceManagerTest {
+
     @Test
     public void testEmptyResourceManager() {
         ResourceManager<DMRNodeLocation> rm = new ResourceManager<>();
@@ -71,9 +73,9 @@ public class ResourceManagerTest {
                 .build();
 
         // add root1
-        rm.addResource(root1);
-        rm.addResource(child1);
-        rm.addResource(grandChild1);
+        Assert.assertEquals(AddResult.ADDED, rm.addResource(root1));
+        Assert.assertEquals(AddResult.ADDED, rm.addResource(child1));
+        Assert.assertEquals(AddResult.ADDED, rm.addResource(grandChild1));
 
         // make sure our inventory is what we expect: root1 -> child1 -> grandchild1
         Iterator<Resource<DMRNodeLocation>> bIter = rm.getResourcesBreadthFirst().iterator();
@@ -107,9 +109,9 @@ public class ResourceManagerTest {
                 .location(DMRNodeLocation.of("/child=1/grandchild=1"))
                 .build();
 
-        rm.addResource(child1_update);
-        rm.addResource(grandChild1_update);
-        rm.addResource(root1_update);
+        Assert.assertEquals(AddResult.MODIFIED, rm.addResource(child1_update));
+        Assert.assertEquals(AddResult.MODIFIED, rm.addResource(grandChild1_update));
+        Assert.assertEquals(AddResult.MODIFIED, rm.addResource(root1_update));
 
         // make sure our inventory is still what we expect: root1 -> child1 -> grandchild1
         bIter = rm.getResourcesBreadthFirst().iterator();
@@ -124,6 +126,22 @@ public class ResourceManagerTest {
         Assert.assertEquals(grandChild1.getID(), rm.getResource(grandChild1_update.getID()).getID());
 
         // but the names should be updated
+        Assert.assertEquals("root1NameUPDATE", rm.getResource(new ID(rootIdString)).getName().getNameString());
+        Assert.assertEquals("child1NameUPDATE", rm.getResource(new ID(childIdString)).getName().getNameString());
+        Assert.assertEquals("grand1NameUPDATE", rm.getResource(new ID(grandChildIdString)).getName().getNameString());
+
+        // try to add them again - since they didn't change, inventory should stay the same
+        Assert.assertEquals(AddResult.UNCHANGED, rm.addResource(child1_update));
+        Assert.assertEquals(AddResult.UNCHANGED, rm.addResource(grandChild1_update));
+        Assert.assertEquals(AddResult.UNCHANGED, rm.addResource(root1_update));
+        bIter = rm.getResourcesBreadthFirst().iterator();
+        Assert.assertEquals(root1_update, bIter.next());
+        Assert.assertEquals(child1_update, bIter.next());
+        Assert.assertEquals(grandChild1_update, bIter.next());
+        Assert.assertFalse(bIter.hasNext());
+        Assert.assertEquals(root1.getID(), rm.getResource(root1_update.getID()).getID());
+        Assert.assertEquals(child1.getID(), rm.getResource(child1_update.getID()).getID());
+        Assert.assertEquals(grandChild1.getID(), rm.getResource(grandChild1_update.getID()).getID());
         Assert.assertEquals("root1NameUPDATE", rm.getResource(new ID(rootIdString)).getName().getNameString());
         Assert.assertEquals("child1NameUPDATE", rm.getResource(new ID(childIdString)).getName().getNameString());
         Assert.assertEquals("grand1NameUPDATE", rm.getResource(new ID(grandChildIdString)).getName().getNameString());

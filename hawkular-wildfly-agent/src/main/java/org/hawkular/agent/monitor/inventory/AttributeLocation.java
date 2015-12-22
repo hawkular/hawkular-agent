@@ -23,7 +23,7 @@ package org.hawkular.agent.monitor.inventory;
  *
  * @param <L> the type of the location of the node this attribute belongs to
  */
-public final class AttributeLocation<L> {
+public final class AttributeLocation<L> implements Comparable<AttributeLocation<L>> {
     private final String attribute;
     private final String fullPath;
     private final L location;
@@ -33,6 +33,20 @@ public final class AttributeLocation<L> {
         this.location = location;
         this.attribute = attribute;
         this.fullPath = location.toString() + "#" + attribute;
+    }
+
+    /**
+     * @return the name of the attribute
+     */
+    public String getAttribute() {
+        return attribute;
+    }
+
+    /**
+     * @return the location of the node this attribute belongs to
+     */
+    public L getLocation() {
+        return location;
     }
 
     @Override
@@ -57,20 +71,6 @@ public final class AttributeLocation<L> {
         return true;
     }
 
-    /**
-     * @return the name of the attribute
-     */
-    public String getAttribute() {
-        return attribute;
-    }
-
-    /**
-     * @return the location of the node this attribute belongs to
-     */
-    public L getLocation() {
-        return location;
-    }
-
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -93,4 +93,40 @@ public final class AttributeLocation<L> {
     public String toString() {
         return fullPath;
     }
+
+    @Override
+    public int compareTo(AttributeLocation<L> other) {
+        L thisLocation = this.getLocation();
+        L otherLocation = other.getLocation();
+        if (thisLocation == null) {
+            if (otherLocation != null) {
+                return -1;
+            }
+        } else if (otherLocation == null) {
+            return 1;
+        } else {
+            int c = thisLocation.toString().compareTo(otherLocation.toString());
+            if (c != 0) {
+                return c;
+            }
+        }
+
+        String thisAttribute = this.getAttribute();
+        String otherAttribute = other.getAttribute();
+        if (thisAttribute == null) {
+            if (otherAttribute != null) {
+                return -1;
+            }
+        } else if (otherAttribute == null) {
+            return 1;
+        } else {
+            int c = thisAttribute.compareTo(otherAttribute);
+            if (c != 0) {
+                return c;
+            }
+        }
+
+        return 0;
+    }
+
 }

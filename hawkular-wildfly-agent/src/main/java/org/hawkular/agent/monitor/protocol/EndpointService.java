@@ -35,6 +35,7 @@ import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NodeLocation;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
+import org.hawkular.agent.monitor.inventory.ResourceManager.AddResult;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
@@ -163,8 +164,10 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             for (Resource<L> parent : parents) {
                 discovery.discoverChildren(parent, childType, session, new Consumer<Resource<L>>() {
                     public void accept(Resource<L> resource) {
-                        resourceManager.addResource(resource);
-                        added.add(resource);
+                        AddResult result = resourceManager.addResource(resource);
+                        if (result != AddResult.UNCHANGED) {
+                            added.add(resource);
+                        }
                     }
 
                     @Override
@@ -196,8 +199,10 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
             discovery.discoverAllResources(session, new Consumer<Resource<L>>() {
                 public void accept(Resource<L> resource) {
-                    resourceManager.addResource(resource);
-                    added.add(resource);
+                    AddResult result = resourceManager.addResource(resource);
+                    if (result != AddResult.UNCHANGED) {
+                        added.add(resource);
+                    }
                 }
 
                 @Override
