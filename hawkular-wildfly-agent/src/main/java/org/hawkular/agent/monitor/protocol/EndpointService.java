@@ -55,6 +55,8 @@ import org.hawkular.agent.monitor.util.Consumer;
  * @param <S> the protocol specific {@link Session}
  */
 public abstract class EndpointService<L, S extends Session<L>> implements SamplingService<L> {
+    private static final MsgLogger LOG = AgentLoggers.getLogger(EndpointService.class);
+
     private class InventoryListenerSupport {
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
 
@@ -71,21 +73,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 inventoryListener.resourceRemoved(event);
             }
         }
-
-    }
-
-    private static final MsgLogger log = AgentLoggers.getLogger(EndpointService.class);
-
-    private static double toDouble(Object valueObject) {
-        double value;
-        if (valueObject == null) {
-            value = Double.NaN;
-        } else if (valueObject instanceof Number) {
-            value = ((Number) valueObject).doubleValue();
-        } else {
-            value = Double.valueOf(valueObject.toString());
-        }
-        return value;
     }
 
     private final MonitoredEndpoint endpoint;
@@ -117,7 +104,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public void addInventoryListener(InventoryListener listener) {
         status.assertInitialOrStopped(getClass(), "addInventoryListener()");
         this.inventoryListenerSupport.inventoryListeners.add(listener);
-        log.debugf("Added inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
+        LOG.debugf("Added inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
     }
 
     /**
@@ -128,7 +115,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public void removeInventoryListener(InventoryListener listener) {
         status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
         this.inventoryListenerSupport.inventoryListeners.remove(listener);
-        log.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
+        LOG.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
     }
 
     /**
@@ -144,7 +131,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      */
     public void discoverAll() {
         status.assertRunning(getClass(), "discoverAll()");
-        log.debugf("Being asked to discover all resources for endpoint [%s]", getEndpoint());
+        LOG.debugf("Being asked to discover all resources for endpoint [%s]", getEndpoint());
 
         Discovery<L> discovery = new Discovery<>();
 
@@ -163,12 +150,12 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
                 @Override
                 public void report(Throwable e) {
-                    log.errorCouldNotAccess(EndpointService.this, e);
+                    LOG.errorCouldNotAccess(EndpointService.this, e);
                 }
             });
             duration = System.currentTimeMillis() - start;
         } catch (Exception e) {
-            log.errorCouldNotAccess(this, e);
+            LOG.errorCouldNotAccess(this, e);
         }
 
         resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
@@ -184,7 +171,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      */
     public void discoverChildren(L parentLocation, ResourceType<L> childType) {
         status.assertRunning(getClass(), "discoverChildren()");
-        log.debugf("Being asked to discover children of type [%s] under parent [%s] for endpoint [%s]",
+        LOG.debugf("Being asked to discover children of type [%s] under parent [%s] for endpoint [%s]",
                 childType, parentLocation, getEndpoint());
         Discovery<L> discovery = new Discovery<>();
         try (S session = openSession()) {
@@ -202,13 +189,13 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
                     @Override
                     public void report(Throwable e) {
-                        log.errorCouldNotAccess(EndpointService.this, e);
+                        LOG.errorCouldNotAccess(EndpointService.this, e);
                     }
                 });
             }
             inventoryListenerSupport.fireResourcesAdded(Collections.unmodifiableList(added));
         } catch (Exception e) {
-            log.errorCouldNotAccess(this, e);
+            LOG.errorCouldNotAccess(this, e);
         }
     }
 
@@ -231,9 +218,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         return resourceManager;
     }
 
-    /**
-     * @return the {@link ResourceTypeManager} used by this endpoint
-     */
     public ResourceTypeManager<L> getResourceTypeManager() {
         return resourceTypeManager;
     }
@@ -252,7 +236,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         status.assertRunning(getClass(), "measureAvails()");
 
-        log.debugf("Checking [%d] avails for endpoint [%s]", instances.size(), getEndpoint());
+        LOG.debugf("Checking [%d] avails for endpoint [%s]", instances.size(), getEndpoint());
 
         try (S session = openSession()) {
             Driver<L> driver = session.getDriver();
@@ -281,7 +265,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
-            log.errorCouldNotAccess(this, e);
+            LOG.errorCouldNotAccess(this, e);
         }
     }
 
@@ -291,7 +275,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         status.assertRunning(getClass(), "measureMetrics()");
 
-        log.debugf("Collecting [%d] metrics for endpoint [%s]", instances.size(), getEndpoint());
+        LOG.debugf("Collecting [%d] metrics for endpoint [%s]", instances.size(), getEndpoint());
 
         try (S session = openSession()) {
             Driver<L> driver = session.getDriver();
@@ -315,7 +299,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
-            log.errorCouldNotAccess(this, e);
+            LOG.errorCouldNotAccess(this, e);
         }
 
     }
@@ -331,7 +315,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             List<Resource<L>> removed = resourceManager.removeResources(location, session.getLocationResolver());
             inventoryListenerSupport.fireResourcesRemoved(removed);
         } catch (Exception e) {
-            log.errorCouldNotAccess(this, e);
+            LOG.errorCouldNotAccess(this, e);
         }
 
     }
@@ -342,7 +326,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         // nothing to do
         status = ServiceStatus.RUNNING;
 
-        log.debugf("Started [%s]", toString());
+        LOG.debugf("Started [%s]", toString());
     }
 
     public void stop() {
@@ -351,7 +335,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         // nothing to do
         status = ServiceStatus.STOPPED;
 
-        log.debugf("Stopped [%s]", toString());
+        LOG.debugf("Stopped [%s]", toString());
     }
 
     @Override
@@ -383,6 +367,18 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             return false;
         }
         return true;
+    }
+
+    private double toDouble(Object valueObject) {
+        double value;
+        if (valueObject == null) {
+            value = Double.NaN;
+        } else if (valueObject instanceof Number) {
+            value = ((Number) valueObject).doubleValue();
+        } else {
+            value = Double.valueOf(valueObject.toString());
+        }
+        return value;
     }
 
     private Avail toAvail(Pattern pattern, Object value) {
