@@ -139,55 +139,11 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public abstract S openSession();
 
     /**
-     * Discovers all resources, puts them to {@link #resourceManager} and triggers
-     * {@link InventoryListener#discoverAllFinished(InventoryEvent)}.
+     * Discovers all resources via {@link Discovery#discoverAllResources(Session, Consumer)}, puts them in
+     * {@link #resourceManager} and triggers any listeners listening for new inventory.
      */
     public void discoverAll() {
         status.assertRunning(getClass(), "discoverAll()");
-        doDiscoverAll();
-    }
-
-    /**
-     * Discovers child resources of the given {@code parentLocation}, puts them to {@link #resourceManager} and triggers
-     * {@link InventoryListener#resourcesAdded(InventoryEvent)}.
-     *
-     * @param parentLocation the location under which the discovery should happen
-     * @param childType the resources of this type will be discovered.
-     */
-    public void discoverChildren(L parentLocation, ResourceType<L> childType) {
-        status.assertRunning(getClass(), "discoverChildren()");
-        Discovery<L> discovery = new Discovery<>();
-        try (S session = openSession()) {
-            /* FIXME: resourceManager should be write-locked here over find and add */
-            List<Resource<L>> parents = resourceManager.findResources(parentLocation, session.getLocationResolver());
-            List<Resource<L>> added = new ArrayList<>();
-            for (Resource<L> parent : parents) {
-                discovery.discoverChildren(parent, childType, session, new Consumer<Resource<L>>() {
-                    public void accept(Resource<L> resource) {
-                        AddResult result = resourceManager.addResource(resource);
-                        if (result != AddResult.UNCHANGED) {
-                            added.add(resource);
-                        }
-                    }
-
-                    @Override
-                    public void report(Throwable e) {
-                        log.errorCouldNotAccess(EndpointService.this, e);
-                    }
-                });
-            }
-            inventoryListenerSupport.fireResourcesAdded(Collections.unmodifiableList(added));
-        } catch (Exception e) {
-            log.errorCouldNotAccess(this, e);
-        }
-    }
-
-    /**
-     * Calls {@link Discovery#discoverAllResources(Session, Consumer)}, buffers the discovered resources in a list and
-     * when the discovery is finished, submits the dicovered resources to {@link #resourceManager} using
-     * {@link ResourceManager#replaceResources(List)}.
-     */
-    private void doDiscoverAll() {
         log.debugf("Being asked to discover all resources for endpoint [%s]", getEndpoint());
 
         Discovery<L> discovery = new Discovery<>();
@@ -217,6 +173,43 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
         inventoryListenerSupport.fireResourcesAdded(added);
+    }
+
+    /**
+     * Discovers child resources of the given {@code parentLocation}, puts them to {@link #resourceManager} and triggers
+     * {@link InventoryListener#resourcesAdded(InventoryEvent)}.
+     *
+     * @param parentLocation the location under which the discovery should happen
+     * @param childType the resources of this type will be discovered.
+     */
+    public void discoverChildren(L parentLocation, ResourceType<L> childType) {
+        status.assertRunning(getClass(), "discoverChildren()");
+        log.debugf("Being asked to discover children of type [%s] under parent [%s] for endpoint [%s]",
+                childType, parentLocation, getEndpoint());
+        Discovery<L> discovery = new Discovery<>();
+        try (S session = openSession()) {
+            /* FIXME: resourceManager should be write-locked here over find and add */
+            List<Resource<L>> parents = resourceManager.findResources(parentLocation, session.getLocationResolver());
+            List<Resource<L>> added = new ArrayList<>();
+            for (Resource<L> parent : parents) {
+                discovery.discoverChildren(parent, childType, session, new Consumer<Resource<L>>() {
+                    public void accept(Resource<L> resource) {
+                        AddResult result = resourceManager.addResource(resource);
+                        if (result != AddResult.UNCHANGED) {
+                            added.add(resource);
+                        }
+                    }
+
+                    @Override
+                    public void report(Throwable e) {
+                        log.errorCouldNotAccess(EndpointService.this, e);
+                    }
+                });
+            }
+            inventoryListenerSupport.fireResourcesAdded(Collections.unmodifiableList(added));
+        } catch (Exception e) {
+            log.errorCouldNotAccess(this, e);
+        }
     }
 
     private String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
