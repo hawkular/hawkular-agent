@@ -240,7 +240,7 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
         LOG.debugf("Stopping scheduler [%s]", this.name);
 
         try {
-            executorService.shutdown();
+            executorService.shutdownNow();
             executorService.awaitTermination(5, TimeUnit.SECONDS);
             LOG.infof("Scheduler [%s] stopped", this.name);
         } catch (InterruptedException ie) {
