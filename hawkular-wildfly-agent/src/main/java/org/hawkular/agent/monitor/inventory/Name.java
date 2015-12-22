@@ -19,7 +19,7 @@ package org.hawkular.agent.monitor.inventory;
 /**
  * @author John Mazzitelli
  */
-public class Name {
+public class Name implements Comparable<Name> {
     private final String name;
 
     public Name(String name) {
@@ -43,8 +43,8 @@ public class Name {
         if (!(obj instanceof Name)) {
             return false;
         }
-        String thisName = getNameString();
-        String thatName = ((Name) obj).getNameString();
+        String thisName = this.name;
+        String thatName = ((Name) obj).name;
         if (thisName == null) {
             return thatName == null;
         }
@@ -63,5 +63,10 @@ public class Name {
     @Override
     public String toString() {
         return getNameString();
+    }
+
+    @Override
+    public int compareTo(Name other) {
+        return this.name.compareTo(other.name);
     }
 }

@@ -17,7 +17,9 @@
 package org.hawkular.agent.monitor.inventory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,6 +58,13 @@ import org.jgrapht.traverse.GraphIterator;
  */
 public final class ResourceManager<L> {
     /**
+     * Enumeration that indicates the results of the {@link ResourceManager#addResource(Resource)} method.
+     */
+    public enum AddResult {
+        ADDED, MODIFIED, UNCHANGED
+    }
+
+    /**
      * This class listens for resources getting added and removed from the graph and updates its internal cache to
      * reflect the changes. The internal cache lets us retrieve resources quickly by resource ID.
      */
@@ -68,6 +77,58 @@ public final class ResourceManager<L> {
         @Override
         public void vertexRemoved(GraphVertexChangeEvent<Resource<L>> e) {
             resourceCache.remove(e.getVertex().getID());
+        }
+    }
+
+    /**
+     * This is used to see if a new resource is actually the same as a resource already
+     * in inventory. This only checks those things that, if changed, warrant the inventory to
+     * be updated.
+     */
+    private class ResourceComparator implements Comparator<Resource<L>> {
+
+        @Override
+        public int compare(Resource<L> r1, Resource<L> r2) {
+            // make sure we are looking at the same resource
+            int c = r1.getID().compareTo(r2.getID());
+            if (c != 0) {
+                return c;
+            }
+
+            // see if the names changed
+            c = r1.getName().compareTo(r2.getName());
+            if (c != 0) {
+                return c;
+            }
+
+            // see if the resource configuration property values are the same
+            Collection<ResourceConfigurationPropertyInstance<L>> rcp1 = r1.getResourceConfigurationProperties();
+            Collection<ResourceConfigurationPropertyInstance<L>> rcp2 = r2.getResourceConfigurationProperties();
+            if (rcp1.size() == rcp2.size()) {
+                if (!rcp1.isEmpty()) {
+                    Map<ResourceConfigurationPropertyInstance<L>, String> rcp1Map = new HashMap<>(rcp1.size());
+                    for (ResourceConfigurationPropertyInstance<L> rcp1Item : rcp1) {
+                        rcp1Map.put(rcp1Item, rcp1Item.getValue());
+                    }
+                    Map<ResourceConfigurationPropertyInstance<L>, String> rcp2Map = new HashMap<>(rcp2.size());
+                    for (ResourceConfigurationPropertyInstance<L> rcp2Item : rcp2) {
+                        rcp2Map.put(rcp2Item, rcp2Item.getValue());
+                    }
+                    if (!rcp1Map.equals(rcp2Map)) {
+                        return rcp1Map.hashCode() < rcp2Map.hashCode() ? -1 : 1;
+                    }
+                }
+            } else {
+                return rcp1.size() < rcp2.size() ? -1 : 1;
+            }
+
+            // see if the general properties are the same
+            if (!r1.getProperties().equals(r2.getProperties())) {
+                return r1.getProperties().hashCode() < r2.getProperties().hashCode() ? -1 : 1;
+            }
+
+            // everything we care about didn't change - consider them the same resource
+            return 0;
         }
     }
 
@@ -89,27 +150,50 @@ public final class ResourceManager<L> {
      * Adds the given resource to the resource hierarchy, replacing the resource if it already exists.
      * If the resource is a child of a parent, that parent must already be known or an exception is thrown.
      *
+     * The return value has the following semantics:
+     * <ul>
+     * <li>ADDED means the resource was new and was added to the inventory.</li>
+     * <li>MODIFIED means the resource was already in inventory but is different from before
+     *              and so inventory was updated.</li>
+     * <li>UNCHANGED means the resource was already in inventory and is the same.</li>
+     * </ul>
+     *
      * @param newResource the new resource to be added
+     * @return the results
      * @throws IllegalArgumentException if the new resource's parent does not yet exist in the hierarchy
      */
-    public void addResource(Resource<L> newResource) throws IllegalArgumentException {
+    public AddResult addResource(Resource<L> newResource) throws IllegalArgumentException {
+        AddResult result;
+
         graphLockWrite.lock();
         try {
             boolean added = this.resourcesGraph.addVertex(newResource);
             if (!added) {
-                // looks like this resource already exists, we want to replace it but keep all edges intact
+                // Looks like this resource already exists.
+                // If the resource changed, we want to replace it but keep all edges intact.
+                // If the resource did not change, we don't do anything.
                 Resource<L> oldResource = getResource(newResource.getID());
-                Set<Resource<L>> children = getChildren(oldResource);
-                this.resourcesGraph.removeVertex(oldResource); // this removes all edges
-                this.resourcesGraph.addVertex(newResource);
-                for (Resource<L> child : children) {
-                    ResourceManager.this.resourcesGraph.addEdge(newResource, child);
+
+                if (new ResourceComparator().compare(oldResource, newResource) != 0) {
+                    Set<Resource<L>> children = getChildren(oldResource);
+                    this.resourcesGraph.removeVertex(oldResource); // removes all edges! remember to put parent back
+                    this.resourcesGraph.addVertex(newResource);
+                    for (Resource<L> child : children) {
+                        ResourceManager.this.resourcesGraph.addEdge(newResource, child);
+                    }
+                    result = AddResult.MODIFIED;
+                } else {
+                    result = AddResult.UNCHANGED;
                 }
+            } else {
+                result = AddResult.ADDED;
             }
 
-            if (newResource.getParent() != null) {
+            if (result != AddResult.UNCHANGED && newResource.getParent() != null) {
                 this.resourcesGraph.addEdge(newResource.getParent(), newResource);
             }
+
+            return result;
 
         } finally {
             graphLockWrite.unlock();
@@ -240,10 +324,10 @@ public final class ResourceManager<L> {
         graphLockRead.lock();
         try {
             Set<Resource<L>> roots = new HashSet<>();
-            Set<Resource<L>> allTypes = resourcesGraph.vertexSet();
-            for (Resource<L> type : allTypes) {
-                if (neighborIndex.predecessorsOf(type).isEmpty()) {
-                    roots.add(type);
+            Set<Resource<L>> allResources = resourcesGraph.vertexSet();
+            for (Resource<L> resource : allResources) {
+                if (neighborIndex.predecessorsOf(resource).isEmpty()) {
+                    roots.add(resource);
                 }
             }
             return Collections.unmodifiableSet(roots);

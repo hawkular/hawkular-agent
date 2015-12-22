@@ -19,7 +19,8 @@ package org.hawkular.agent.monitor.inventory;
 /**
  * Can be used to identify object instances.
  */
-public class ID {
+public class ID implements Comparable<ID> {
+
     public static final ID NULL_ID = new ID(null);
 
     private final String id;
@@ -48,8 +49,8 @@ public class ID {
         if (!(obj instanceof ID)) {
             return false;
         }
-        String thisIDString = getIDString();
-        String thatIDString = ((ID) obj).getIDString();
+        String thisIDString = this.id;
+        String thatIDString = ((ID) obj).id;
         if (thisIDString == null) {
             return thatIDString == null;
         }
@@ -68,5 +69,10 @@ public class ID {
     @Override
     public String toString() {
         return getIDString();
+    }
+
+    @Override
+    public int compareTo(ID other) {
+        return this.id.compareTo(other.id);
     }
 }
