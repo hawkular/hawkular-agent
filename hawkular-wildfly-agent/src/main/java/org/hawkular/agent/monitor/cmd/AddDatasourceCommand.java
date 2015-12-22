@@ -56,8 +56,7 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMRSession> //
-            endpointService,
+            EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath,
             BasicMessageWithExtraData<AddDatasourceRequest> envelope, AddDatasourceResponse response,
             CommandContext context, DMRSession dmrContext) throws Exception {

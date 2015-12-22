@@ -44,8 +44,7 @@ public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathReq
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMRSession> //
-            endpointService,
+            EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath,
             BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context,
             DMRSession dmrContext) throws Exception {

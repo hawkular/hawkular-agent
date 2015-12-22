@@ -49,8 +49,7 @@ public class DeployApplicationCommand
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMRSession> //
-            endpointService,
+            EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath, BasicMessageWithExtraData<DeployApplicationRequest> envelope,
             DeployApplicationResponse response, CommandContext context, DMRSession dmrContext)
                     throws Exception {

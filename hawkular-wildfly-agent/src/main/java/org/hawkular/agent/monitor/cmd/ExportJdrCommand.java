@@ -55,8 +55,7 @@ public class ExportJdrCommand extends AbstractResourcePathCommand<ExportJdrReque
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMRSession> //
-            endpointService,
+            EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath, BasicMessageWithExtraData<ExportJdrRequest> envelope, ExportJdrResponse response,
             CommandContext context, DMRSession dmrContext) throws Exception {
         ExportJdrRequest request = envelope.getBasicMessage();

@@ -157,8 +157,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
      * @throws Exception if anything goes wrong
      */
     protected abstract BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMRSession>//
-            endpointService,
+            EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath, BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context,
             DMRSession dmrContext)
                     throws Exception;

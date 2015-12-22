@@ -66,8 +66,7 @@ public class ExecuteOperationCommand extends
 
     @Override
     protected BinaryData execute(ModelControllerClient controllerClient,
-            EndpointService<DMRNodeLocation, DMRSession> //
-            endpointService,
+            EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath,
             BasicMessageWithExtraData<ExecuteOperationRequest> envelope, ExecuteOperationResponse response,
             CommandContext context, DMRSession dmrContext) throws Exception {
