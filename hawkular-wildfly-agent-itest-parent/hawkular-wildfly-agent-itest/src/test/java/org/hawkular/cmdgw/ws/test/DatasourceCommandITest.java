@@ -162,6 +162,10 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
 
+            // see that the resource has been persisted to hawkular-inventory
+            getResource("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
+                    (r -> r.getId().contains(datasourceName)), 1, 1);
+
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
                     + "\"resourcePath\":\"" + removePath + "\"" //
                     + "}";
@@ -183,6 +187,10 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             }
 
             assertResourceExists(mcc, dsAddress, false);
+
+            // this should be gone now, let's make sure it does get deleted from h-inventory
+            assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
+                    (r -> r.getId().contains(datasourceName)), 5, 5000);
 
         }
     }
@@ -256,7 +264,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
                     + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""//
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""
                     + "}";
 
             try (TestWebSocketClient testClient =
@@ -309,7 +317,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
                     + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""//
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""
                     + "}";
 
             try (TestWebSocketClient testClient =

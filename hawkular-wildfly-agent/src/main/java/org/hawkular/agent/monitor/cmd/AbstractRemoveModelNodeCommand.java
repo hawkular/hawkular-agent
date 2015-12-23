@@ -43,10 +43,13 @@ public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathReq
     }
 
     @Override
-    protected BinaryData execute(ModelControllerClient controllerClient,
+    protected BinaryData execute(
+            ModelControllerClient controllerClient,
             EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath,
-            BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context,
+            BasicMessageWithExtraData<REQ> envelope,
+            RESP response,
+            CommandContext context,
             DMRSession dmrContext) throws Exception {
         try {
             OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
@@ -58,6 +61,9 @@ public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathReq
             OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
                     .assertSuccess();
         }
+
+        DMRNodeLocation doomedLocation = DMRNodeLocation.of(modelNodePath);
+        endpointService.removeResources(doomedLocation);
         return null;
     }
 
