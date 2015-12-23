@@ -57,11 +57,37 @@ import org.jgrapht.traverse.GraphIterator;
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
  */
 public final class ResourceManager<L> {
+
     /**
-     * Enumeration that indicates the results of the {@link ResourceManager#addResource(Resource)} method.
+     * Indicates the results of the {@link ResourceManager#addResource(Resource)} method.
      */
-    public enum AddResult {
-        ADDED, MODIFIED, UNCHANGED
+    public static class AddResult<L> {
+        public enum Effect {
+            ADDED, MODIFIED, UNCHANGED
+        }
+
+        private final Resource<L> resource;
+        private final Effect effect;
+
+        public AddResult(Effect effect, Resource<L> resource) {
+            this.resource = resource;
+            this.effect = effect;
+        }
+
+        /**
+         * Indicates the effect that the add method had on the inventory.
+         */
+        public Effect getEffect() {
+            return effect;
+        }
+
+        /**
+         * @return the resource that was actually populated into inventory. This could be
+         *         different than the one given to the resource manager to add.
+         */
+        public Resource<L> getResource() {
+            return resource;
+        }
     }
 
     /**
@@ -135,7 +161,6 @@ public final class ResourceManager<L> {
     private static final MsgLogger log = AgentLoggers.getLogger(ResourceManager.class);
     private final ReadWriteLock graphLock = new ReentrantReadWriteLock(true);
     private final Lock graphLockRead = graphLock.readLock();
-
     private final Lock graphLockWrite = graphLock.writeLock();
     private volatile DirectedNeighborIndex<Resource<L>, DefaultEdge> neighborIndex;
     private volatile Map<ID, Resource<L>> resourceCache;
@@ -147,10 +172,12 @@ public final class ResourceManager<L> {
     }
 
     /**
-     * Adds the given resource to the resource hierarchy, replacing the resource if it already exists.
+     * Adds the given resource to the resource hierarchy, replacing the resource if it already exist but
+     * has changed.
+     *
      * If the resource is a child of a parent, that parent must already be known or an exception is thrown.
      *
-     * The return value has the following semantics:
+     * The return value's {@link AddResult#getEffect() effect} has the following semantics:
      * <ul>
      * <li>ADDED means the resource was new and was added to the inventory.</li>
      * <li>MODIFIED means the resource was already in inventory but is different from before
@@ -158,16 +185,39 @@ public final class ResourceManager<L> {
      * <li>UNCHANGED means the resource was already in inventory and is the same.</li>
      * </ul>
      *
+     * The return value's {@link AddResult#getResource() resource} is the resource object stored in the
+     * internal hierarchical graph, which may or may not be the same as the <code>newResource</code>
+     * that was passed into this method.
+     *
      * @param newResource the new resource to be added
-     * @return the results
+     * @return the results - see above for a detailed description of these results
      * @throws IllegalArgumentException if the new resource's parent does not yet exist in the hierarchy
      */
-    public AddResult addResource(Resource<L> newResource) throws IllegalArgumentException {
-        AddResult result;
+    public AddResult<L> addResource(Resource<L> newResource) throws IllegalArgumentException {
+        AddResult<L> result;
 
         graphLockWrite.lock();
         try {
+            // Need to make sure we keep our resources consistent. If the newResource has a parent,
+            // and that parent is not the same instance we have in our graph, we need to recreate the
+            // newResource such that it refers to our instance of the parent.
+            // Do this BEFORE we attempt to add the new resource to the graph.
+            if (newResource.getParent() != null) {
+                Resource<L> parentInGraph = getResource(newResource.getParent().getID());
+                if (parentInGraph == null) {
+                    throw new IllegalArgumentException(
+                            String.format("The new resource [%s] has a parent [%s] that has not been added yet",
+                            newResource, newResource.getParent()));
+                }
+
+                // if parents are not the same instance, create a new resource with the parent we have in the graph
+                if (parentInGraph != newResource.getParent()) {
+                    newResource = Resource.<L> builder(newResource).parent(parentInGraph).build();
+                }
+            }
+
             boolean added = this.resourcesGraph.addVertex(newResource);
+
             if (!added) {
                 // Looks like this resource already exists.
                 // If the resource changed, we want to replace it but keep all edges intact.
@@ -181,15 +231,15 @@ public final class ResourceManager<L> {
                     for (Resource<L> child : children) {
                         ResourceManager.this.resourcesGraph.addEdge(newResource, child);
                     }
-                    result = AddResult.MODIFIED;
+                    result = new AddResult<>(AddResult.Effect.MODIFIED, newResource);
                 } else {
-                    result = AddResult.UNCHANGED;
+                    result = new AddResult<>(AddResult.Effect.UNCHANGED, oldResource);
                 }
             } else {
-                result = AddResult.ADDED;
+                result = new AddResult<>(AddResult.Effect.ADDED, newResource);
             }
 
-            if (result != AddResult.UNCHANGED && newResource.getParent() != null) {
+            if ((result.getEffect() != AddResult.Effect.UNCHANGED) && (newResource.getParent() != null)) {
                 this.resourcesGraph.addEdge(newResource.getParent(), newResource);
             }
 
@@ -244,15 +294,17 @@ public final class ResourceManager<L> {
     }
 
     /**
-     * Returns the direct parent of the given resource.
+     * Returns the direct parent of the given resource. This examines the internal hierarchical graph
+     * to determine parentage.
      *
      * @param resource the resource whose parent is to be returned
      *
      * @return the direct parent of the given resource, or null if this is a root resource without a parent
+     *
+     * @throws IllegalArgumentException if the resource itself is not found in the graph
      */
     public Resource<L> getParent(Resource<L> resource) {
-        // We could do resource.getParent(), but so could our caller. Here, let's go through the graph to get it.
-        // We know all resources have at most one parent.
+        // do NOT call resource.getParent(), we want the one in our graph, not the one in the resource object
         graphLockRead.lock();
         try {
             Set<Resource<L>> directParents = neighborIndex.predecessorsOf(resource);
@@ -266,11 +318,11 @@ public final class ResourceManager<L> {
     }
 
     /**
-     * Given a resource ID this will return the resource with that ID or <code>null</code> if there is no resource with
-     * that ID.
+     * Given a resource ID this will return the resource with that ID that is found in the internal
+     * hierarchical graph or <code>null</code> if there is no resource with that ID in the graph.
      *
      * @param resourceId the ID of the resource to retrieve
-     * @return the resource or null
+     * @return the resource as found in the internal graph or <code>null</code>
      */
     public Resource<L> getResource(ID resourceId) {
         graphLockRead.lock();
@@ -363,19 +415,6 @@ public final class ResourceManager<L> {
     }
 
     /**
-     * Always call with {@link #graphLockWrite} locked.
-     */
-    private void reinitializeIfNecessary() {
-        if (this.resourceCache == null || this.resourceCache.size() > 0) {
-            this.resourcesGraph = new ListenableDirectedGraph<>(DefaultEdge.class);
-            this.neighborIndex = new DirectedNeighborIndex<>(this.resourcesGraph);
-            this.resourcesGraph.addGraphListener(neighborIndex);
-            this.resourceCache = new HashMap<>();
-            this.resourcesGraph.addVertexSetListener(new VertexCacheListener());
-        }
-    }
-
-    /**
      * Remove the resources from {@link #resourcesGraph} matching the given {@code query} including all direct and
      * indirect descendants.
      *
@@ -406,6 +445,19 @@ public final class ResourceManager<L> {
             return Collections.unmodifiableList(doomedResources);
         } finally {
             graphLockWrite.unlock();
+        }
+    }
+
+    /**
+     * Always call with {@link #graphLockWrite} locked.
+     */
+    private void reinitializeIfNecessary() {
+        if (this.resourceCache == null || this.resourceCache.size() > 0) {
+            this.resourcesGraph = new ListenableDirectedGraph<>(DefaultEdge.class);
+            this.neighborIndex = new DirectedNeighborIndex<>(this.resourcesGraph);
+            this.resourcesGraph.addGraphListener(neighborIndex);
+            this.resourceCache = new HashMap<>();
+            this.resourcesGraph.addVertexSetListener(new VertexCacheListener());
         }
     }
 

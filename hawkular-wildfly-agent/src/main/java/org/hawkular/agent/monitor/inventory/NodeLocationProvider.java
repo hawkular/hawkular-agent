@@ -34,6 +34,19 @@ public abstract class NodeLocationProvider<L> extends NamedObject {
             super();
         }
 
+        /**
+         * Creates a builder with the given object as a starting template.
+         * You can use this to clone an object as well as build one
+         * that looks similar to the given template object.
+         *
+         * @param template start with the data found in the given template
+         */
+        protected Builder(NodeLocationProvider<L> template) {
+            id(template.getID());
+            name(template.getName());
+            location(template.getLocation());
+        }
+
         public This id(ID id) {
             this.id = id;
             return getThis();

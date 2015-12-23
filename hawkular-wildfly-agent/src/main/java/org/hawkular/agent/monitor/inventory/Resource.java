@@ -39,6 +39,21 @@ public final class Resource<L> extends NodeLocationProvider<L> {
             super();
         }
 
+        public Builder(Resource<L> template) {
+            super(template);
+            parent(template.getParent());
+            type(template.getResourceType());
+            for (MeasurementInstance<L, MetricType<L>> m : template.getMetrics()) {
+                metric(m);
+            }
+            for (MeasurementInstance<L, AvailType<L>> a : template.getAvails()) {
+                avail(a);
+            }
+            for (ResourceConfigurationPropertyInstance<L> r : template.getResourceConfigurationProperties()) {
+                resourceConfigurationProperty(r);
+            }
+        }
+
         public Builder<L> parent(Resource<L> parent) {
             this.parent = parent;
             return this;
@@ -74,6 +89,17 @@ public final class Resource<L> extends NodeLocationProvider<L> {
 
     public static <L> Builder<L> builder() {
         return new Builder<L>();
+    }
+
+    /**
+     * Creates a builder with the given resource as a starting template.
+     * You can use this to clone a resource as well as build a resource
+     * that looks similar to the given template resource.
+     *
+     * @param template start with the data found in the given template resource
+     */
+    public static <L> Builder<L> builder(Resource<L> template) {
+        return new Builder<L>(template);
     }
 
     private final ResourceType<L> resourceType;

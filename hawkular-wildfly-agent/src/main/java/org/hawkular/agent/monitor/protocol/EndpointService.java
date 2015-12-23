@@ -142,9 +142,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
             discovery.discoverAllResources(session, new Consumer<Resource<L>>() {
                 public void accept(Resource<L> resource) {
-                    AddResult result = resourceManager.addResource(resource);
-                    if (result != AddResult.UNCHANGED) {
-                        added.add(resource);
+                    AddResult<L> result = resourceManager.addResource(resource);
+                    if (result.getEffect() != AddResult.Effect.UNCHANGED) {
+                        added.add(result.getResource());
                     }
                 }
 
@@ -181,9 +181,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             for (Resource<L> parent : parents) {
                 discovery.discoverChildren(parent, childType, session, new Consumer<Resource<L>>() {
                     public void accept(Resource<L> resource) {
-                        AddResult result = resourceManager.addResource(resource);
-                        if (result != AddResult.UNCHANGED) {
-                            added.add(resource);
+                        AddResult<L> result = resourceManager.addResource(resource);
+                        if (result.getEffect() != AddResult.Effect.UNCHANGED) {
+                            added.add(result.getResource());
                         }
                     }
 

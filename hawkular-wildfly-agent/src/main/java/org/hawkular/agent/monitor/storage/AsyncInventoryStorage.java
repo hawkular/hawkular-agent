@@ -484,8 +484,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     builder.resourceType(resourceType);
 
                     if (resource.getParent() != null && !resource.getParent().isPersisted()) {
-                        log.errorf("Cannot persist a resource until its parent is persisted: [%s]", resource);
-                        continue;
+                        log.debugf("Parent [%s] of resource [%s] might not have been persisted. "
+                                + "This may or may not cause problems storing to inventory.",
+                                resource.getParent(), resource);
                     }
 
                     builder.resource(resource);

@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.hawkular.agent.monitor.inventory.ResourceManager.AddResult;
+import org.hawkular.agent.monitor.inventory.ResourceManager.AddResult.Effect;
 import org.hawkular.agent.monitor.protocol.dmr.DMRLocationResolver;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.junit.Assert;
@@ -37,6 +38,88 @@ public class ResourceManagerTest {
             Assert.fail("Should have failed since we don't have any root resources");
         } catch (IllegalStateException expected) {
         }
+    }
+
+    @Test
+    public void testResourceIsPersisted() {
+        // Make sure when we add a resource, that we set its parent to the one in the graph.
+        // We need to do this so the resource has the correct parent (so, for example,
+        // the resource knows if its parent has been persisted or not e.g. Resource.isPersisted).
+
+        String rootIdString = "root1";
+        String childIdString = "child1";
+
+        ResourceType<DMRNodeLocation> type = ResourceType.<DMRNodeLocation> builder()
+                .id(new ID("resType"))
+                .name(new Name("resTypeName"))
+                .location(DMRNodeLocation.empty())
+                .build();
+        ResourceManager<DMRNodeLocation> rm = new ResourceManager<>();
+        Resource<DMRNodeLocation> originalRoot = Resource.<DMRNodeLocation> builder()
+                .id(new ID(rootIdString))
+                .name(new Name("root1Name"))
+                .location(DMRNodeLocation.empty())
+                .type(type)
+                .build();
+
+        // add root
+        addResourceAndTest(rm, originalRoot, Effect.ADDED);
+
+        // simulate that we persisted it
+        originalRoot.setPersisted(true);
+
+        // make sure our inventory is what we expect: root1 -> child1 -> grandchild1
+        Iterator<Resource<DMRNodeLocation>> bIter = rm.getResourcesBreadthFirst().iterator();
+        Assert.assertEquals(originalRoot, bIter.next());
+        Assert.assertFalse(bIter.hasNext());
+        Assert.assertEquals("root1Name", rm.getResource(new ID(rootIdString)).getName().getNameString());
+        Assert.assertTrue(rm.getResource(new ID(rootIdString)).isPersisted());
+
+        // perform "full discovery" - we'll find a new resource as a child of a parent we already know about
+        Resource<DMRNodeLocation> discoveredRoot = Resource.<DMRNodeLocation> builder()
+                .id(new ID(rootIdString))
+                .name(new Name("root1Name"))
+                .location(DMRNodeLocation.empty())
+                .type(type)
+                .build();
+        Resource<DMRNodeLocation> discoveredChild = Resource.<DMRNodeLocation> builder()
+                .id(new ID(childIdString))
+                .name(new Name("child1Name"))
+                .type(type)
+                .parent(discoveredRoot)
+                .location(DMRNodeLocation.of("/child=1"))
+                .build();
+
+        AddResult<DMRNodeLocation> addResultRoot = addResourceAndTest(rm, discoveredRoot, Effect.UNCHANGED);
+        AddResult<DMRNodeLocation> addResultChild = addResourceAndTest(rm, discoveredChild, Effect.ADDED);
+
+        Assert.assertSame("The original root should still be there",
+                originalRoot, addResultRoot.getResource());
+        Assert.assertNotSame("Child should not be same (parent instance was different so a new child was created)",
+                discoveredChild, addResultChild.getResource());
+
+        // simulate that we persisted it
+        discoveredChild = addResultChild.getResource();
+        discoveredChild.setPersisted(true);
+
+        // make sure the inventory is as we expect
+        bIter = rm.getResourcesBreadthFirst().iterator();
+        Assert.assertEquals(originalRoot, bIter.next()); // the original root
+        Assert.assertEquals(discoveredChild, bIter.next()); // the new child
+        Assert.assertFalse(bIter.hasNext());
+
+        // Check the IDs
+        Assert.assertEquals(originalRoot.getID(), rm.getResource(discoveredRoot.getID()).getID());
+        Assert.assertEquals(discoveredChild.getID(), rm.getResource(discoveredChild.getID()).getID());
+
+        // persisted flags should be true
+        Assert.assertTrue("Should be persisted", rm.getResource(new ID(rootIdString)).isPersisted());
+        Assert.assertTrue("Should be persisted", rm.getResource(new ID(childIdString)).isPersisted());
+
+        // the child's parent should have been replaced with the one in inventory
+        Resource<DMRNodeLocation> child = rm.getResource(new ID(childIdString));
+        Assert.assertTrue("Parent should be persisted", child.getParent().isPersisted());
+        Assert.assertSame("Child's parent should be the original root", originalRoot, child.getParent());
     }
 
     @Test
@@ -73,9 +156,9 @@ public class ResourceManagerTest {
                 .build();
 
         // add root1
-        Assert.assertEquals(AddResult.ADDED, rm.addResource(root1));
-        Assert.assertEquals(AddResult.ADDED, rm.addResource(child1));
-        Assert.assertEquals(AddResult.ADDED, rm.addResource(grandChild1));
+        addResourceAndTest(rm, root1, Effect.ADDED);
+        addResourceAndTest(rm, child1, Effect.ADDED);
+        addResourceAndTest(rm, grandChild1, Effect.ADDED);
 
         // make sure our inventory is what we expect: root1 -> child1 -> grandchild1
         Iterator<Resource<DMRNodeLocation>> bIter = rm.getResourcesBreadthFirst().iterator();
@@ -109,9 +192,9 @@ public class ResourceManagerTest {
                 .location(DMRNodeLocation.of("/child=1/grandchild=1"))
                 .build();
 
-        Assert.assertEquals(AddResult.MODIFIED, rm.addResource(child1_update));
-        Assert.assertEquals(AddResult.MODIFIED, rm.addResource(grandChild1_update));
-        Assert.assertEquals(AddResult.MODIFIED, rm.addResource(root1_update));
+        addResourceAndTest(rm, child1_update, Effect.MODIFIED);
+        addResourceAndTest(rm, grandChild1_update, Effect.MODIFIED);
+        addResourceAndTest(rm, root1_update, Effect.MODIFIED);
 
         // make sure our inventory is still what we expect: root1 -> child1 -> grandchild1
         bIter = rm.getResourcesBreadthFirst().iterator();
@@ -131,9 +214,9 @@ public class ResourceManagerTest {
         Assert.assertEquals("grand1NameUPDATE", rm.getResource(new ID(grandChildIdString)).getName().getNameString());
 
         // try to add them again - since they didn't change, inventory should stay the same
-        Assert.assertEquals(AddResult.UNCHANGED, rm.addResource(child1_update));
-        Assert.assertEquals(AddResult.UNCHANGED, rm.addResource(grandChild1_update));
-        Assert.assertEquals(AddResult.UNCHANGED, rm.addResource(root1_update));
+        addResourceAndTest(rm, child1_update, Effect.UNCHANGED);
+        addResourceAndTest(rm, grandChild1_update, Effect.UNCHANGED);
+        addResourceAndTest(rm, root1_update, Effect.UNCHANGED);
         bIter = rm.getResourcesBreadthFirst().iterator();
         Assert.assertEquals(root1_update, bIter.next());
         Assert.assertEquals(child1_update, bIter.next());
@@ -180,7 +263,7 @@ public class ResourceManagerTest {
                 .location(DMRNodeLocation.of("/child=1/grandchild=1")).build();
 
         // add root1
-        rm.addResource(root1);
+        addResourceAndTest(rm, root1, Effect.ADDED);
         Assert.assertEquals(1, rm.getResourcesBreadthFirst().size());
         Assert.assertTrue(rm.getResourcesBreadthFirst().contains(root1));
         Assert.assertEquals(root1, rm.getResource(root1.getID()));
@@ -189,19 +272,19 @@ public class ResourceManagerTest {
         Assert.assertTrue(rm.getRootResources().contains(root1));
 
         // add child1
-        rm.addResource(child1);
+        addResourceAndTest(rm, child1, Effect.ADDED);
         Assert.assertEquals(2, rm.getResourcesBreadthFirst().size());
         Assert.assertTrue(rm.getResourcesBreadthFirst().contains(child1));
         Assert.assertEquals(child1, rm.getResource(child1.getID()));
 
         // add grandChild1
-        rm.addResource(grandChild1);
+        addResourceAndTest(rm, grandChild1, Effect.ADDED);
         Assert.assertEquals(3, rm.getResourcesBreadthFirst().size());
         Assert.assertTrue(rm.getResourcesBreadthFirst().contains(grandChild1));
         Assert.assertEquals(grandChild1, rm.getResource(grandChild1.getID()));
 
         // add root2
-        rm.addResource(root2);
+        addResourceAndTest(rm, root2, Effect.ADDED);
         Assert.assertEquals(4, rm.getResourcesBreadthFirst().size());
         Assert.assertTrue(rm.getResourcesBreadthFirst().contains(root2));
         Assert.assertEquals(root2, rm.getResource(root2.getID()));
@@ -210,7 +293,7 @@ public class ResourceManagerTest {
         Assert.assertTrue(rm.getRootResources().contains(root2));
 
         // add child2
-        rm.addResource(child2);
+        addResourceAndTest(rm, child2, Effect.ADDED);
         Assert.assertEquals(5, rm.getResourcesBreadthFirst().size());
         Assert.assertTrue(rm.getResourcesBreadthFirst().contains(child2));
         Assert.assertEquals(child2, rm.getResource(child2.getID()));
@@ -310,12 +393,12 @@ public class ResourceManagerTest {
                 .location(DMRNodeLocation.of("/child=1/grandchild=2/greatgrand=2")).build();
 
         // add hierarchy
-        rm.addResource(root1);
-        rm.addResource(child1);
-        rm.addResource(grandChild1);
-        rm.addResource(greatGrandChild1);
-        rm.addResource(grandChild2);
-        rm.addResource(greatGrandChild2);
+        addResourceAndTest(rm, root1, Effect.ADDED);
+        addResourceAndTest(rm, child1, Effect.ADDED);
+        addResourceAndTest(rm, grandChild1, Effect.ADDED);
+        addResourceAndTest(rm, greatGrandChild1, Effect.ADDED);
+        addResourceAndTest(rm, grandChild2, Effect.ADDED);
+        addResourceAndTest(rm, greatGrandChild2, Effect.ADDED);
         Assert.assertEquals(6, rm.getResourcesBreadthFirst().size());
         Assert.assertEquals(1, rm.getRootResources().size());
 
@@ -362,5 +445,15 @@ public class ResourceManagerTest {
         bIter = rm.getResourcesBreadthFirst().iterator();
         Assert.assertEquals(root1, bIter.next());
         Assert.assertFalse(bIter.hasNext());
+    }
+
+    private AddResult<DMRNodeLocation> addResourceAndTest(
+            ResourceManager<DMRNodeLocation> rm,
+            Resource<DMRNodeLocation> resource,
+            Effect effectToExpect) {
+
+        AddResult<DMRNodeLocation> addResult = rm.addResource(resource);
+        Assert.assertEquals(effectToExpect, addResult.getEffect());
+        return addResult;
     }
 }
