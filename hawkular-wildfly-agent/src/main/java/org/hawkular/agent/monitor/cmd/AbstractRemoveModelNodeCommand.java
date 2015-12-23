@@ -53,8 +53,8 @@ public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathReq
                     .assertSuccess();
         } catch (DmrApiException e) {
             /* A workaround for https://issues.jboss.org/browse/WFLY-5528 */
-            log.warn("Trying to remove xa-data-source for the second time,"
-                    + " see https://issues.jboss.org/browse/WFLY-5528");
+            log.warnf("Trying to remove resource [%s] for second time, see https://issues.jboss.org/browse/WFLY-5528",
+                    modelNodePath);
             OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
                     .assertSuccess();
         }
