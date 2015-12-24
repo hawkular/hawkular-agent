@@ -97,6 +97,11 @@ public class AsyncInventoryStorage implements InventoryStorage {
         public Resource<?> getResource() {
             return resource;
         }
+
+        @Override
+        public String toString() {
+            return String.format("%s:%s:%s", getClass().getSimpleName(), getFeedId(), getResource());
+        }
     }
 
     /**
@@ -458,6 +463,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     AsyncInventoryStorage.this.diagnostics.getInventoryStorageBufferSize().dec(resources.size());
 
                     try {
+                        log.debugf("Adding [%d] resources that were found in inventory work queue", resources.size());
                         storeAllResources(resources);
                     } catch (InterruptedException ie) {
                         throw ie;
@@ -620,7 +626,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
     @Override
     public <L> void resourceRemoved(InventoryEvent<L> event) {
-        log.warnf("[%s].removeResource() needs to be implemented", getClass().getName());
+        log.warnf("[%s].removeResource() needs to be implemented: %s", getClass().getName(), event.getPayload());
     }
 
 }
