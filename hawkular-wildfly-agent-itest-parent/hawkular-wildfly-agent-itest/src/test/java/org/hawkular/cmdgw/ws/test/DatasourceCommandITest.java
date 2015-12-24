@@ -209,7 +209,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
+            getResource("/feeds/" + feedId + "/resourceTypes/XA%20Datasource/resources",
                     (r -> r.getId().contains(xaDatasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
@@ -235,7 +235,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
+            assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/XA%20Datasource/resources",
                     (r -> r.getId().contains(xaDatasourceName)), 5, 5000);
         }
     }
