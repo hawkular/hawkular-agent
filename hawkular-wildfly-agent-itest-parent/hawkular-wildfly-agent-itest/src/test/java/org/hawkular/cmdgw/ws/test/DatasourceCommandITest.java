@@ -122,7 +122,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"driverName\":\"" + driverName + "\"," //
                     + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
                     + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl
-                    + "\",\"xaProp2\":\"xaVal2\"}," + "\"userName\":\"" + userName + "\"," //
+                    + "\",\"loginTimeout\":\"2\"}," + "\"userName\":\"" + userName + "\"," //
                     + "\"password\":\"" + password + "\"" //
                     + "}";
             String response = "AddDatasourceResponse={"//
@@ -164,7 +164,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             // see that the resource has been persisted to hawkular-inventory
             getResource("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
-                    (r -> r.getId().contains(datasourceName)), 1, 1);
+                    (r -> r.getId().contains(datasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
                     + "\"resourcePath\":\"" + removePath + "\"" //
@@ -208,6 +208,10 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
 
+            // see that the resource has been persisted to hawkular-inventory
+            getResource("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
+                    (r -> r.getId().contains(xaDatasourceName)));
+
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
                     + "\"resourcePath\":\"" + removePath + "\"" //
                     + "}";
@@ -230,6 +234,9 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             assertResourceExists(mcc, dsAddress, false);
 
+            // this should be gone now, let's make sure it does get deleted from h-inventory
+            assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
+                    (r -> r.getId().contains(xaDatasourceName)), 5, 5000);
         }
     }
 
@@ -307,7 +314,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"jndiName\":\"" + changedXaDatasourceJndiName + "\"," //
             // changing or removing of props seems to be broken
                     + "\"datasourceProperties\":{\"URL\":\"" + changedXaDsUrl
-                    + "\",\"xaProp3\":\"xaVal3\"}," //
+                    + "\",\"loginTimeout\":\"3\"}," //
                     + "\"driverName\":\"" + driverName + "\"," //
                     + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
                     + "\"userName\":\"" + userName + "\"," //

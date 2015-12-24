@@ -61,6 +61,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
 
         public void fireResourcesAdded(List<Resource<L>> resources) {
+            LOG.infof("Firing inventory event for [%s] resources ADDED", resources.size());
             InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.resourcesAdded(event);
@@ -68,6 +69,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
 
         public void fireResourcesRemoved(List<Resource<L>> resources) {
+            LOG.infof("Firing inventory event for [%s] resources REMOVED", resources.size());
             InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.resourceRemoved(event);
@@ -131,7 +133,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      */
     public void discoverAll() {
         status.assertRunning(getClass(), "discoverAll()");
-        LOG.debugf("Being asked to discover all resources for endpoint [%s]", getEndpoint());
+        LOG.infof("Being asked to discover all resources for endpoint [%s]", getEndpoint());
 
         Discovery<L> discovery = new Discovery<>();
 
