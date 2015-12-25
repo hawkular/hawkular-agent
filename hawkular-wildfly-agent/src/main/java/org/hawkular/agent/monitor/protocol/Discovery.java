@@ -50,65 +50,6 @@ public final class Discovery<L> {
 
     private static final MsgLogger log = AgentLoggers.getLogger(Discovery.class);
 
-    private <N> void addMetricAndAvailInstances(ID resourceId, ResourceType<L> type,
-            L parentLocation, N baseNode,
-            Resource.Builder<L> builder, Session<L> session) {
-
-        for (MetricType<L> metricType : type.getMetricTypes()) {
-            AttributeLocation<L> location = metricType.getAttributeLocation();
-            try {
-                final AttributeLocation<L> instanceLocation =
-                        session.getLocationResolver().absolutize(parentLocation, location);
-                if (session.getDriver().attributeExists(instanceLocation)) {
-                    ID id = InventoryIdUtil.generateMetricInstanceId(session.getFeedId(), resourceId, metricType);
-                    Name name = metricType.getName();
-
-                    MeasurementInstance<L, MetricType<L>> metricInstance = new MeasurementInstance<>(id, name,
-                            instanceLocation, metricType);
-                    builder.metric(metricInstance);
-                }
-            } catch (ProtocolException e) {
-                log.warnFailedToLocate(e, metricType.getClass().getName(), String.valueOf(location),
-                        String.valueOf(parentLocation));
-            }
-        }
-
-        for (AvailType<L> availType : type.getAvailTypes()) {
-            AttributeLocation<L> location = availType.getAttributeLocation();
-            try {
-                final AttributeLocation<L> instanceLocation =
-                        session.getLocationResolver().absolutize(parentLocation, location);
-                if (session.getDriver().attributeExists(instanceLocation)) {
-                    ID id = InventoryIdUtil.generateAvailInstanceId(session.getFeedId(), resourceId, availType);
-                    Name name = availType.getName();
-
-                    MeasurementInstance<L, AvailType<L>> availInstance = new MeasurementInstance<>(id, name,
-                            instanceLocation, availType);
-                    builder.avail(availInstance);
-                }
-            } catch (ProtocolException e) {
-                log.warnFailedToLocate(e, availType.getClass().getName(), String.valueOf(location),
-                        String.valueOf(parentLocation));
-            }
-        }
-    }
-
-    /**
-     * Performs a full discovery starting with resources whose types are the root resource types and works its way
-     * down to all children.
-     *
-     * @param session session used to query the managed endpoint
-     * @param resourceConsumer if not null, will be a listener that gets notified when resources are discovered
-     *
-     * @throws Exception if discovery failed
-     */
-    public void discoverAllResources(Session<L> session, Consumer<Resource<L>> resourceConsumer) {
-        Set<ResourceType<L>> rootTypes = session.getResourceTypeManager().getRootResourceTypes();
-        for (ResourceType<L> rootType : rootTypes) {
-            discoverChildren(null, rootType, session, resourceConsumer);
-        }
-    }
-
     /**
      * Discovers children of the given type underneath the given parent.
      *
@@ -117,7 +58,10 @@ public final class Discovery<L> {
      * @param session session used to query the managed endpoint
      * @param resourceConsumer if not null, will be a listener that gets notified when resources are discovered
      */
-    public <N> void discoverChildren(Resource<L> parent, ResourceType<L> childType, Session<L> session,
+    public <N> void discoverChildren(
+            Resource<L> parent,
+            ResourceType<L> childType,
+            Session<L> session,
             Consumer<Resource<L>> resourceConsumer) {
 
         try {
@@ -132,8 +76,8 @@ public final class Discovery<L> {
                 String resourceName = session.getLocationResolver().applyTemplate(childType.getResourceNameTemplate(),
                         location, session.getEndpoint().getName());
                 ID id = InventoryIdUtil.generateResourceId(session.getEndpoint(), location.toString());
-                Builder<L> builder = Resource.<L> builder() //
-                        .id(id) //
+                Builder<L> builder = Resource.<L> builder()
+                        .id(id)
                         .name(new Name(resourceName))
                         .location(location)
                         .type(childType);
@@ -164,6 +108,7 @@ public final class Discovery<L> {
             }
         } catch (Exception e) {
             log.errorf(e, "Failed to discover resources in [%s]", session.getEndpoint());
+            resourceConsumer.report(e);
         }
     }
 
@@ -213,6 +158,52 @@ public final class Discovery<L> {
                 builder.resourceConfigurationProperty(cpi);
             } catch (Exception e) {
                 log.warnf(e, "Failed to discover config [%s] for resource [%s]", confPropType, parentAddress);
+            }
+        }
+    }
+
+    private <N> void addMetricAndAvailInstances(ID resourceId,
+            ResourceType<L> type,
+            L parentLocation,
+            N baseNode,
+            Resource.Builder<L> builder,
+            Session<L> session) {
+
+        for (MetricType<L> metricType : type.getMetricTypes()) {
+            AttributeLocation<L> location = metricType.getAttributeLocation();
+            try {
+                final AttributeLocation<L> instanceLocation = session.getLocationResolver().absolutize(parentLocation,
+                        location);
+                if (session.getDriver().attributeExists(instanceLocation)) {
+                    ID id = InventoryIdUtil.generateMetricInstanceId(session.getFeedId(), resourceId, metricType);
+                    Name name = metricType.getName();
+
+                    MeasurementInstance<L, MetricType<L>> metricInstance = new MeasurementInstance<>(id, name,
+                            instanceLocation, metricType);
+                    builder.metric(metricInstance);
+                }
+            } catch (ProtocolException e) {
+                log.warnFailedToLocate(e, metricType.getClass().getName(), String.valueOf(location),
+                        String.valueOf(parentLocation));
+            }
+        }
+
+        for (AvailType<L> availType : type.getAvailTypes()) {
+            AttributeLocation<L> location = availType.getAttributeLocation();
+            try {
+                final AttributeLocation<L> instanceLocation = session.getLocationResolver().absolutize(parentLocation,
+                        location);
+                if (session.getDriver().attributeExists(instanceLocation)) {
+                    ID id = InventoryIdUtil.generateAvailInstanceId(session.getFeedId(), resourceId, availType);
+                    Name name = availType.getName();
+
+                    MeasurementInstance<L, AvailType<L>> availInstance = new MeasurementInstance<>(id, name,
+                            instanceLocation, availType);
+                    builder.avail(availInstance);
+                }
+            } catch (ProtocolException e) {
+                log.warnFailedToLocate(e, availType.getClass().getName(), String.valueOf(location),
+                        String.valueOf(parentLocation));
             }
         }
     }

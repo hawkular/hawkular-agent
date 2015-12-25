@@ -16,10 +16,13 @@
  */
 package org.hawkular.agent.monitor.protocol;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.Avail;
@@ -102,6 +105,32 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         this.diagnostics = diagnostics;
     }
 
+    @Override
+    public String getFeedId() {
+        return feedId;
+    }
+
+    @Override
+    public MonitoredEndpoint getEndpoint() {
+        return endpoint;
+    }
+
+    public ResourceManager<L> getResourceManager() {
+        return resourceManager;
+    }
+
+    public ResourceTypeManager<L> getResourceTypeManager() {
+        return resourceTypeManager;
+    }
+
+    public LocationResolver<L> getLocationResolver() {
+        return locationResolver;
+    }
+
+    public ProtocolDiagnostics getDiagnostics() {
+        return diagnostics;
+    }
+
     /**
      * Works only before {@link #start()} or after {@link #stop()}.
      *
@@ -132,40 +161,31 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public abstract S openSession();
 
     /**
-     * Discovers all resources via {@link Discovery#discoverAllResources(Session, Consumer)}, puts them in
-     * {@link #resourceManager} and triggers any listeners listening for new inventory.
+     * Discovers all resources, puts them in the {@link #resourceManager},
+     * and triggers any listeners listening for new inventory.
+     *
+     * This will look for all root resources (resources whose types are that of the root resource types
+     * as defined by {@link ResourceTypeManager#getRootResourceTypes()} and then obtain all their
+     * children (recursively down to all descendents). Effectively, this discovers the full
+     * resource hierarchy.
      */
     public void discoverAll() {
         status.assertRunning(getClass(), "discoverAll()");
         LOG.infof("Being asked to discover all resources for endpoint [%s]", getEndpoint());
 
-        Discovery<L> discovery = new Discovery<>();
-
         long duration = 0L;
-        final List<Resource<L>> added = new ArrayList<>();
         try (S session = openSession()) {
             long start = System.currentTimeMillis();
-
-            discovery.discoverAllResources(session, new Consumer<Resource<L>>() {
-                public void accept(Resource<L> resource) {
-                    AddResult<L> result = resourceManager.addResource(resource);
-                    if (result.getEffect() != AddResult.Effect.UNCHANGED) {
-                        added.add(result.getResource());
-                    }
-                }
-
-                @Override
-                public void report(Throwable e) {
-                    LOG.errorCouldNotAccess(EndpointService.this, e);
-                }
-            });
+            Set<ResourceType<L>> rootTypes = resourceTypeManager.getRootResourceTypes();
+            for (ResourceType<L> rootType : rootTypes) {
+                discoverChildren(null, rootType, session);
+            }
             duration = System.currentTimeMillis() - start;
         } catch (Exception e) {
             LOG.errorCouldNotAccess(this, e);
         }
 
         resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
-        inventoryListenerSupport.fireResourcesAdded(Collections.unmodifiableList(added));
     }
 
     /**
@@ -174,18 +194,30 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      *
      * @param parentLocation the location under which the discovery should happen
      * @param childType the resources of this type will be discovered.
+     * @param session If not <code>null</code>, this session is used; if <code>null</code> one will be created.
+     *        If a non-null session is passed in, the caller is responsible for closing it - this method will
+     *        not close it. If a null session is passed in, this method will create and close a session itself.
      */
-    public void discoverChildren(L parentLocation, ResourceType<L> childType) {
+    public void discoverChildren(L parentLocation, ResourceType<L> childType, S session) {
         status.assertRunning(getClass(), "discoverChildren()");
         LOG.debugf("Being asked to discover children of type [%s] under parent [%s] for endpoint [%s]",
                 childType, parentLocation, getEndpoint());
-        Discovery<L> discovery = new Discovery<>();
-        try (S session = openSession()) {
+
+        S sessionToUse = null;
+        try {
+            sessionToUse = (session == null) ? openSession() : session;
+
             /* FIXME: resourceManager should be write-locked here over find and add */
-            List<Resource<L>> parents = resourceManager.findResources(parentLocation, session.getLocationResolver());
+            List<Resource<L>> parents;
+            if (parentLocation != null) {
+                parents = resourceManager.findResources(parentLocation, sessionToUse.getLocationResolver());
+            } else {
+                parents = Arrays.asList((Resource<L>) null);
+            }
             List<Resource<L>> added = new ArrayList<>();
+            Discovery<L> discovery = new Discovery<>();
             for (Resource<L> parent : parents) {
-                discovery.discoverChildren(parent, childType, session, new Consumer<Resource<L>>() {
+                discovery.discoverChildren(parent, childType, sessionToUse, new Consumer<Resource<L>>() {
                     public void accept(Resource<L> resource) {
                         AddResult<L> result = resourceManager.addResource(resource);
                         if (result.getEffect() != AddResult.Effect.UNCHANGED) {
@@ -202,38 +234,17 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             inventoryListenerSupport.fireResourcesAdded(Collections.unmodifiableList(added));
         } catch (Exception e) {
             LOG.errorCouldNotAccess(this, e);
+        } finally {
+            // We only close the session that we used if it was one we created;
+            // if the session was provided to us then the caller has the responsibility to close it.
+            if (session == null && sessionToUse != null) {
+                try {
+                    sessionToUse.close();
+                } catch (IOException ioe) {
+                    LOG.warnf("Could not close session created for children discovery", ioe);
+                }
+            }
         }
-    }
-
-    private String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
-        String key = instance.getID().getIDString();
-        return key;
-    }
-
-    @Override
-    public MonitoredEndpoint getEndpoint() {
-        return endpoint;
-    }
-
-    @Override
-    public String getFeedId() {
-        return feedId;
-    }
-
-    public ResourceManager<L> getResourceManager() {
-        return resourceManager;
-    }
-
-    public ResourceTypeManager<L> getResourceTypeManager() {
-        return resourceTypeManager;
-    }
-
-    public LocationResolver<L> getLocationResolver() {
-        return locationResolver;
-    }
-
-    public ProtocolDiagnostics getDiagnostics() {
-        return diagnostics;
     }
 
     @Override
@@ -373,6 +384,11 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             return false;
         }
         return true;
+    }
+
+    private String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
+        String key = instance.getID().getIDString();
+        return key;
     }
 
     private double toDouble(Object valueObject) {
