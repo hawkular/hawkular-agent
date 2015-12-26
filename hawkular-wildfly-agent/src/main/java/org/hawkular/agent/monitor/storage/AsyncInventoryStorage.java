@@ -80,7 +80,7 @@ import com.squareup.okhttp.Response;
  */
 public class AsyncInventoryStorage implements InventoryStorage {
 
-    private static class QueueElement {
+    private abstract static class QueueElement {
         private final String feedId;
         private final Resource<?> resource;
 
@@ -101,6 +101,18 @@ public class AsyncInventoryStorage implements InventoryStorage {
         @Override
         public String toString() {
             return String.format("%s:%s:%s", getClass().getSimpleName(), getFeedId(), getResource());
+        }
+    }
+
+    private static class AddResourceQueueElement extends QueueElement {
+        public AddResourceQueueElement(String feedId, Resource<?> resource) {
+            super(feedId, resource);
+        }
+    }
+
+    private static class RemoveResourceQueueElement extends QueueElement {
+        public RemoveResourceQueueElement(String feedId, Resource<?> resource) {
+            super(feedId, resource);
         }
     }
 
@@ -456,16 +468,44 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 while (keepRunning) {
                     // batch processing
                     QueueElement sample = queue.take();
-                    List<QueueElement> resources = new ArrayList<>();
-                    resources.add(sample);
-                    queue.drainTo(resources);
+                    List<QueueElement> qElements = new ArrayList<>();
+                    qElements.add(sample);
+                    queue.drainTo(qElements);
 
-                    AsyncInventoryStorage.this.diagnostics.getInventoryStorageBufferSize().dec(resources.size());
+                    AsyncInventoryStorage.this.diagnostics.getInventoryStorageBufferSize().dec(qElements.size());
 
                     try {
-                        log.debugf("Adding [%d] resources that were found in inventory work queue", resources.size());
-                        storeAllResources(resources);
+                        // We need to process contiguous groups of elements of the same types. So we need to
+                        // split the queue items we just drained into contiguous groups. For example, if we drained
+                        // queue elements in this order: "add resource A, add resource B, remove resource C,
+                        // remove resource D, add resource E, remove resource F" then we need to group them such that
+                        // contiguousGroups has 4 lists with list #1 being "add resource A, add resource B",
+                        // list #2 being "remove resource C, remove resource D", list item #3 being "add resource E"
+                        // and list item #4 being "remove resource F".
+                        List<List<QueueElement>> contiguousGroups = new ArrayList<>();
+                        List<QueueElement> nextGroup = new ArrayList<>();
+                        contiguousGroups.add(nextGroup); // seed it with an empty list
+                        for (QueueElement qElement : qElements) {
+                            if (!nextGroup.isEmpty() && (!nextGroup.get(0).getClass().isInstance(qElement))) {
+                                nextGroup = new ArrayList<>();
+                                contiguousGroups.add(nextGroup);
+                            }
+                            nextGroup.add(qElement);
+                        }
+
+                        // process the contiguous groups of queue elements
+                        for (List<QueueElement> contiguousGroup : contiguousGroups) {
+                            QueueElement firstElement = contiguousGroup.get(0);
+                            if (firstElement instanceof AddResourceQueueElement) {
+                                addResources(contiguousGroup);
+                            } else if (firstElement instanceof RemoveResourceQueueElement) {
+                                removeResources(contiguousGroup);
+                            } else {
+                                log.errorf("Invalid queue element - report this bug: %s", firstElement);
+                            }
+                        }
                     } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt(); // keep the interrupt flag
                         throw ie;
                     } catch (Exception e) {
                         // don't do anything - we don't want to kill our thread by bubbling this exception up.
@@ -480,98 +520,102 @@ public class AsyncInventoryStorage implements InventoryStorage {
             this.keepRunning = false;
         }
 
-        private void storeAllResources(List<QueueElement> resources) throws Exception {
-            if (resources != null && !resources.isEmpty()) {
-                for (QueueElement elem : resources) {
-                    Resource<?> resource = elem.getResource();
-                    BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(), elem.getFeedId());
-                    ResourceType<?> resourceType = resource.getResourceType();
+        private void removeResources(List<QueueElement> resources) throws Exception {
+            log.debugf("Removing [%d] resources that were found in inventory work queue", resources.size());
+            log.warnf("TODO: implement removeResources: %s", resources);
+        }
 
-                    builder.resourceType(resourceType);
+        private void addResources(List<QueueElement> resources) throws Exception {
+            log.debugf("Adding [%d] resources that were found in inventory work queue", resources.size());
+            for (QueueElement elem : resources) {
+                Resource<?> resource = elem.getResource();
+                BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(), elem.getFeedId());
+                ResourceType<?> resourceType = resource.getResourceType();
 
-                    if (resource.getParent() != null && !resource.getParent().isPersisted()) {
-                        log.debugf("Parent [%s] of resource [%s] might not have been persisted. "
-                                + "This may or may not cause problems storing to inventory.",
-                                resource.getParent(), resource);
-                    }
+                builder.resourceType(resourceType);
 
-                    builder.resource(resource);
+                if (resource.getParent() != null && !resource.getParent().isPersisted()) {
+                    log.debugf("Parent [%s] of resource [%s] might not have been persisted. "
+                            + "This may or may not cause problems storing to inventory.",
+                            resource.getParent(), resource);
+                }
 
-                    log.debugf("Storing resource and eventually its type in inventory: [%s]", resource);
+                builder.resource(resource);
 
-                    Map<String, Map<String, List<AbstractElement.Blueprint>>> payload = builder.build();
-                    if (!payload.isEmpty()) {
-                        try {
-                            StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
-                                    AsyncInventoryStorage.this.config.getInventoryContext());
-                            url.append("bulk");
-                            String jsonPayload = Util.toJson(payload);
+                log.debugf("Storing resource and eventually its type in inventory: [%s]", resource);
 
-                            log.tracef("About to send a bulk insert request to inventory: [%s]", jsonPayload);
+                Map<String, Map<String, List<AbstractElement.Blueprint>>> payload = builder.build();
+                if (!payload.isEmpty()) {
+                    try {
+                        StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
+                                AsyncInventoryStorage.this.config.getInventoryContext());
+                        url.append("bulk");
+                        String jsonPayload = Util.toJson(payload);
 
-                            // now send the REST request
-                            Request request = AsyncInventoryStorage.this.httpClientBuilder
-                                    .buildJsonPostRequest(url.toString(), null, jsonPayload);
+                        log.tracef("About to send a bulk insert request to inventory: [%s]", jsonPayload);
 
-                            final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
-                            Response response = AsyncInventoryStorage.this.httpClientBuilder
-                                    .getHttpClient()
-                                    .newCall(request)
-                                    .execute();
-                            final long durationNanos = timer.stop();
+                        // now send the REST request
+                        Request request = AsyncInventoryStorage.this.httpClientBuilder
+                                .buildJsonPostRequest(url.toString(), null, jsonPayload);
 
-                            final Reader responseBodyReader;
+                        final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
+                        Response response = AsyncInventoryStorage.this.httpClientBuilder
+                                .getHttpClient()
+                                .newCall(request)
+                                .execute();
+                        final long durationNanos = timer.stop();
 
-                            if (log.isDebugEnabled()) {
-                                long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
-                                log.debugf("Took [%d]ms to store resource [%s]", durationMs, resource.getName());
-                                String body = response.body().string();
-                                responseBodyReader = new StringReader(body);
-                                log.tracef("Body of bulk insert request response: %s", body);
-                            } else {
-                                responseBodyReader = response.body().charStream();
-                            }
+                        final Reader responseBodyReader;
 
-                            // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-                            if (response.code() != 201 && response.code() != 409) {
-                                throw new Exception("status-code=[" + response.code() + "], reason=["
-                                        + response.message() + "], url=[" + request.urlString() + "]");
-                            }
+                        if (log.isDebugEnabled()) {
+                            long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
+                            log.debugf("Took [%d]ms to store resource [%s]", durationMs, resource.getName());
+                            String body = response.body().string();
+                            responseBodyReader = new StringReader(body);
+                            log.tracef("Body of bulk insert request response: %s", body);
+                        } else {
+                            responseBodyReader = response.body().charStream();
+                        }
 
-                            TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>> typeRef = //
-                                    new TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>>() {
-                                    };
-                            LinkedHashMap<String, LinkedHashMap<String, Object>> responses = Util
-                                    .fromJson(responseBodyReader, typeRef);
-                            for (Entry<String, LinkedHashMap<String, Object>> typeEntry : responses.entrySet()) {
-                                for (Entry<String, Object> entityEntry : typeEntry.getValue().entrySet()) {
-                                    Object rawCode = entityEntry.getValue();
-                                    if (rawCode instanceof Integer) {
-                                        int code = ((Integer) rawCode).intValue();
-                                        switch (code) {
-                                            case 201: // success
-                                            case 409: // already existed
-                                                resource.getResourceType().setPersisted(true);
-                                                resource.setPersisted(true);
-                                                break;
-                                            default:
-                                                log.errorFailedToStorePathToInventory(code, typeEntry.getKey(),
-                                                        entityEntry.getKey());
-                                                break;
-                                        }
+                        // HTTP status of 201 means success, 409 means it already exists; anything else is an error
+                        if (response.code() != 201 && response.code() != 409) {
+                            throw new Exception("status-code=[" + response.code() + "], reason=["
+                                    + response.message() + "], url=[" + request.urlString() + "]");
+                        }
+
+                        TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>> typeRef = //
+                        new TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>>() {
+                        };
+                        LinkedHashMap<String, LinkedHashMap<String, Object>> responses = Util
+                                .fromJson(responseBodyReader, typeRef);
+                        for (Entry<String, LinkedHashMap<String, Object>> typeEntry : responses.entrySet()) {
+                            for (Entry<String, Object> entityEntry : typeEntry.getValue().entrySet()) {
+                                Object rawCode = entityEntry.getValue();
+                                if (rawCode instanceof Integer) {
+                                    int code = ((Integer) rawCode).intValue();
+                                    switch (code) {
+                                        case 201: // success
+                                        case 409: // already existed
+                                            resource.getResourceType().setPersisted(true);
+                                            resource.setPersisted(true);
+                                            break;
+                                        default:
+                                            log.errorFailedToStorePathToInventory(code, typeEntry.getKey(),
+                                                    entityEntry.getKey());
+                                            break;
                                     }
                                 }
                             }
-
-                            diagnostics.getInventoryRate().mark(1); // we processed 1 resource and its type
-
-                        } catch (InterruptedException ie) {
-                            throw ie;
-                        } catch (Exception e) {
-                            diagnostics.getStorageErrorRate().mark(1);
-                            log.errorFailedToStoreInventoryData(e);
-                            throw new Exception("Cannot create resource or its resourceType: " + resource, e);
                         }
+
+                        diagnostics.getInventoryRate().mark(1); // we processed 1 resource and its type
+
+                    } catch (InterruptedException ie) {
+                        throw ie;
+                    } catch (Exception e) {
+                        diagnostics.getStorageErrorRate().mark(1);
+                        log.errorFailedToStoreInventoryData(e);
+                        throw new Exception("Cannot create resource or its resourceType: " + resource, e);
                     }
                 }
             }
@@ -620,13 +664,17 @@ public class AsyncInventoryStorage implements InventoryStorage {
         String feedId = event.getFeedId();
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
-            queue.add(new QueueElement(feedId, resource));
+            queue.add(new AddResourceQueueElement(feedId, resource));
         }
     }
 
     @Override
     public <L> void resourceRemoved(InventoryEvent<L> event) {
-        log.warnf("[%s].removeResource() needs to be implemented: %s", getClass().getName(), event.getPayload());
+        String feedId = event.getFeedId();
+        for (Resource<?> resource : event.getPayload()) {
+            diagnostics.getInventoryStorageBufferSize().inc();
+            queue.add(new RemoveResourceQueueElement(feedId, resource));
+        }
     }
 
 }
