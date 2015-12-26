@@ -23,6 +23,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.Avail;
@@ -47,6 +53,7 @@ import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.util.Consumer;
+import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 
 /**
  * A service to discover and sample resources from a single {@link MonitoredEndpoint}. This service also owns the single
@@ -91,6 +98,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     private final ResourceTypeManager<L> resourceTypeManager;
     private final LocationResolver<L> locationResolver;
     private final ProtocolDiagnostics diagnostics;
+    private final ExecutorService fullDiscoveryScanThreadPool;
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
@@ -103,6 +111,15 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         this.resourceTypeManager = resourceTypeManager;
         this.locationResolver = locationResolver;
         this.diagnostics = diagnostics;
+
+        // This thread pool is used to limit the number of full discovery scans that are performed at any one time.
+        // At most one full discovery scan is being performed at a single time, with at most one other full
+        // discovery request queued up. Any other full discovery scan requests will be rejected because they are
+        // not needed - the queued discovery scan will do it. This minimizes redundant scans being performed.
+        ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
+                "Hawkular WildFly Agent Full Discovery Scan");
+        this.fullDiscoveryScanThreadPool = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(1), threadFactory);
     }
 
     @Override
@@ -171,21 +188,31 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      */
     public void discoverAll() {
         status.assertRunning(getClass(), "discoverAll()");
-        LOG.infof("Being asked to discover all resources for endpoint [%s]", getEndpoint());
 
-        long duration = 0L;
-        try (S session = openSession()) {
-            long start = System.currentTimeMillis();
-            Set<ResourceType<L>> rootTypes = resourceTypeManager.getRootResourceTypes();
-            for (ResourceType<L> rootType : rootTypes) {
-                discoverChildren(null, rootType, session);
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                LOG.infof("Being asked to discover all resources for endpoint [%s]", getEndpoint());
+                long duration = 0L;
+                try (S session = openSession()) {
+                    long start = System.currentTimeMillis();
+                    Set<ResourceType<L>> rootTypes = resourceTypeManager.getRootResourceTypes();
+                    for (ResourceType<L> rootType : rootTypes) {
+                        discoverChildren(null, rootType, session);
+                    }
+                    duration = System.currentTimeMillis() - start;
+                } catch (Exception e) {
+                    LOG.errorCouldNotAccess(EndpointService.this, e);
+                }
+                resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
             }
-            duration = System.currentTimeMillis() - start;
-        } catch (Exception e) {
-            LOG.errorCouldNotAccess(this, e);
-        }
+        };
 
-        resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
+        try {
+            this.fullDiscoveryScanThreadPool.execute(runnable);
+        } catch (RejectedExecutionException ree) {
+            LOG.debugf("Redundant full discovery scan will be ignored for endpoint [%s]", getEndpoint());
+        }
     }
 
     /**
