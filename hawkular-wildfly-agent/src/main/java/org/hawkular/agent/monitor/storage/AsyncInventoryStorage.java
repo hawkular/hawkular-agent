@@ -470,7 +470,14 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     QueueElement sample = queue.take();
                     List<QueueElement> qElements = new ArrayList<>();
                     qElements.add(sample);
-                    queue.drainTo(qElements);
+
+                    // Something is going on with inventory (things are being added or removed or both).
+                    // Because we want to do as much as possible in bulk, let's keep draining the queue
+                    // as long as things keep going into the queue. We'll stop once it looks like nothing
+                    // more is being added to the queue.
+                    do {
+                        Thread.sleep(2000);
+                    } while (queue.drainTo(qElements) > 0);
 
                     AsyncInventoryStorage.this.diagnostics.getInventoryStorageBufferSize().dec(qElements.size());
 
@@ -505,11 +512,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
                             }
                         }
                     } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt(); // keep the interrupt flag
                         throw ie;
                     } catch (Exception e) {
                         // don't do anything - we don't want to kill our thread by bubbling this exception up.
-                        // A log message was already logged in storeAllResources, so there is nothing for us to do.
+                        // A log message was already logged so there is nothing for us to do.
                     }
                 }
             } catch (InterruptedException ie) {
@@ -649,7 +655,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         this.config = config;
         this.httpClientBuilder = httpClientBuilder;
         this.diagnostics = diagnostics;
-        this.queue = new ArrayBlockingQueue<>(1000); // TODO make bufferSize configurable (it is 1000 right now)
+        this.queue = new ArrayBlockingQueue<>(10_000); // TODO make bufferSize configurable
         this.worker = new Worker(queue);
         this.worker.start();
     }
