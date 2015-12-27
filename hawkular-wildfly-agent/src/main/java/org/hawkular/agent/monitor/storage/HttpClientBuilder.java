@@ -126,6 +126,23 @@ public class HttpClientBuilder {
         return requestBuilder.get().build();
     }
 
+    public Request buildJsonDeleteRequest(String url, Map<String, String> headers) {
+        String base64Credentials = Util.base64Encode(username + ":" + password);
+
+        Builder requestBuilder = new Request.Builder()
+                .url(url)
+                .addHeader("Authorization", "Basic " + base64Credentials)
+                .addHeader("Accept", "application/json");
+
+        if (headers != null) {
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                requestBuilder.addHeader(header.getKey(), header.getValue());
+            }
+        }
+
+        return requestBuilder.delete().build();
+    }
+
     public Request buildJsonPostRequest(String url, Map<String, String> headers, String jsonPayload) {
         // make sure we are authenticated. see http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
         String base64Credentials = Util.base64Encode(username + ":" + password);

@@ -16,10 +16,19 @@
  */
 package org.hawkular.agent.monitor.protocol;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.Avail;
@@ -44,6 +53,7 @@ import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.util.Consumer;
+import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 
 /**
  * A service to discover and sample resources from a single {@link MonitoredEndpoint}. This service also owns the single
@@ -61,16 +71,22 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
 
         public void fireResourcesAdded(List<Resource<L>> resources) {
-            InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
-            for (InventoryListener inventoryListener : inventoryListeners) {
-                inventoryListener.resourcesAdded(event);
+            if (!resources.isEmpty()) {
+                LOG.debugf("Firing inventory event for [%s] added/modified resources", resources.size());
+                InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
+                for (InventoryListener inventoryListener : inventoryListeners) {
+                    inventoryListener.resourcesAdded(event);
+                }
             }
         }
 
         public void fireResourcesRemoved(List<Resource<L>> resources) {
-            InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
-            for (InventoryListener inventoryListener : inventoryListeners) {
-                inventoryListener.resourceRemoved(event);
+            if (!resources.isEmpty()) {
+                LOG.debugf("Firing inventory event for [%s] removed resources", resources.size());
+                InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
+                for (InventoryListener inventoryListener : inventoryListeners) {
+                    inventoryListener.resourceRemoved(event);
+                }
             }
         }
     }
@@ -82,6 +98,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     private final ResourceTypeManager<L> resourceTypeManager;
     private final LocationResolver<L> locationResolver;
     private final ProtocolDiagnostics diagnostics;
+    private final ExecutorService fullDiscoveryScanThreadPool;
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
@@ -94,6 +111,41 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         this.resourceTypeManager = resourceTypeManager;
         this.locationResolver = locationResolver;
         this.diagnostics = diagnostics;
+
+        // This thread pool is used to limit the number of full discovery scans that are performed at any one time.
+        // At most one full discovery scan is being performed at a single time, with at most one other full
+        // discovery request queued up. Any other full discovery scan requests will be rejected because they are
+        // not needed - the queued discovery scan will do it. This minimizes redundant scans being performed.
+        ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
+                "Hawkular WildFly Agent Full Discovery Scan");
+        this.fullDiscoveryScanThreadPool = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(1), threadFactory);
+    }
+
+    @Override
+    public String getFeedId() {
+        return feedId;
+    }
+
+    @Override
+    public MonitoredEndpoint getEndpoint() {
+        return endpoint;
+    }
+
+    public ResourceManager<L> getResourceManager() {
+        return resourceManager;
+    }
+
+    public ResourceTypeManager<L> getResourceTypeManager() {
+        return resourceTypeManager;
+    }
+
+    public LocationResolver<L> getLocationResolver() {
+        return locationResolver;
+    }
+
+    public ProtocolDiagnostics getDiagnostics() {
+        return diagnostics;
     }
 
     /**
@@ -126,40 +178,41 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public abstract S openSession();
 
     /**
-     * Discovers all resources via {@link Discovery#discoverAllResources(Session, Consumer)}, puts them in
-     * {@link #resourceManager} and triggers any listeners listening for new inventory.
+     * Discovers all resources, puts them in the {@link #resourceManager},
+     * and triggers any listeners listening for new inventory.
+     *
+     * This will look for all root resources (resources whose types are that of the root resource types
+     * as defined by {@link ResourceTypeManager#getRootResourceTypes()} and then obtain all their
+     * children (recursively down to all descendents). Effectively, this discovers the full
+     * resource hierarchy.
      */
     public void discoverAll() {
         status.assertRunning(getClass(), "discoverAll()");
-        LOG.debugf("Being asked to discover all resources for endpoint [%s]", getEndpoint());
 
-        Discovery<L> discovery = new Discovery<>();
-
-        long duration = 0L;
-        final List<Resource<L>> added = new ArrayList<>();
-        try (S session = openSession()) {
-            long start = System.currentTimeMillis();
-
-            discovery.discoverAllResources(session, new Consumer<Resource<L>>() {
-                public void accept(Resource<L> resource) {
-                    AddResult<L> result = resourceManager.addResource(resource);
-                    if (result.getEffect() != AddResult.Effect.UNCHANGED) {
-                        added.add(result.getResource());
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                LOG.infof("Being asked to discover all resources for endpoint [%s]", getEndpoint());
+                long duration = 0L;
+                try (S session = openSession()) {
+                    long start = System.currentTimeMillis();
+                    Set<ResourceType<L>> rootTypes = resourceTypeManager.getRootResourceTypes();
+                    for (ResourceType<L> rootType : rootTypes) {
+                        discoverChildren(null, rootType, session);
                     }
-                }
-
-                @Override
-                public void report(Throwable e) {
+                    duration = System.currentTimeMillis() - start;
+                } catch (Exception e) {
                     LOG.errorCouldNotAccess(EndpointService.this, e);
                 }
-            });
-            duration = System.currentTimeMillis() - start;
-        } catch (Exception e) {
-            LOG.errorCouldNotAccess(this, e);
-        }
+                resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
+            }
+        };
 
-        resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
-        inventoryListenerSupport.fireResourcesAdded(added);
+        try {
+            this.fullDiscoveryScanThreadPool.execute(runnable);
+        } catch (RejectedExecutionException ree) {
+            LOG.debugf("Redundant full discovery scan will be ignored for endpoint [%s]", getEndpoint());
+        }
     }
 
     /**
@@ -168,18 +221,30 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      *
      * @param parentLocation the location under which the discovery should happen
      * @param childType the resources of this type will be discovered.
+     * @param session If not <code>null</code>, this session is used; if <code>null</code> one will be created.
+     *        If a non-null session is passed in, the caller is responsible for closing it - this method will
+     *        not close it. If a null session is passed in, this method will create and close a session itself.
      */
-    public void discoverChildren(L parentLocation, ResourceType<L> childType) {
+    public void discoverChildren(L parentLocation, ResourceType<L> childType, S session) {
         status.assertRunning(getClass(), "discoverChildren()");
         LOG.debugf("Being asked to discover children of type [%s] under parent [%s] for endpoint [%s]",
                 childType, parentLocation, getEndpoint());
-        Discovery<L> discovery = new Discovery<>();
-        try (S session = openSession()) {
+
+        S sessionToUse = null;
+        try {
+            sessionToUse = (session == null) ? openSession() : session;
+
             /* FIXME: resourceManager should be write-locked here over find and add */
-            List<Resource<L>> parents = resourceManager.findResources(parentLocation, session.getLocationResolver());
+            List<Resource<L>> parents;
+            if (parentLocation != null) {
+                parents = resourceManager.findResources(parentLocation, sessionToUse.getLocationResolver());
+            } else {
+                parents = Arrays.asList((Resource<L>) null);
+            }
             List<Resource<L>> added = new ArrayList<>();
+            Discovery<L> discovery = new Discovery<>();
             for (Resource<L> parent : parents) {
-                discovery.discoverChildren(parent, childType, session, new Consumer<Resource<L>>() {
+                discovery.discoverChildren(parent, childType, sessionToUse, new Consumer<Resource<L>>() {
                     public void accept(Resource<L> resource) {
                         AddResult<L> result = resourceManager.addResource(resource);
                         if (result.getEffect() != AddResult.Effect.UNCHANGED) {
@@ -196,38 +261,17 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             inventoryListenerSupport.fireResourcesAdded(Collections.unmodifiableList(added));
         } catch (Exception e) {
             LOG.errorCouldNotAccess(this, e);
+        } finally {
+            // We only close the session that we used if it was one we created;
+            // if the session was provided to us then the caller has the responsibility to close it.
+            if (session == null && sessionToUse != null) {
+                try {
+                    sessionToUse.close();
+                } catch (IOException ioe) {
+                    LOG.warnf("Could not close session created for children discovery", ioe);
+                }
+            }
         }
-    }
-
-    private String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
-        String key = instance.getID().getIDString();
-        return key;
-    }
-
-    @Override
-    public MonitoredEndpoint getEndpoint() {
-        return endpoint;
-    }
-
-    @Override
-    public String getFeedId() {
-        return feedId;
-    }
-
-    public ResourceManager<L> getResourceManager() {
-        return resourceManager;
-    }
-
-    public ResourceTypeManager<L> getResourceTypeManager() {
-        return resourceTypeManager;
-    }
-
-    public LocationResolver<L> getLocationResolver() {
-        return locationResolver;
-    }
-
-    public ProtocolDiagnostics getDiagnostics() {
-        return diagnostics;
     }
 
     @Override
@@ -367,6 +411,11 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             return false;
         }
         return true;
+    }
+
+    private String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
+        String key = instance.getID().getIDString();
+        return key;
     }
 
     private double toDouble(Object valueObject) {

@@ -137,6 +137,6 @@
     },
     "xa-datasource-properties" => {
         "URL" => {"value" => "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000"},
-        "xaProp3" => {"value" => "xaVal3"}
+        "loginTimeout" => {"value" => "3"}
     }
 }

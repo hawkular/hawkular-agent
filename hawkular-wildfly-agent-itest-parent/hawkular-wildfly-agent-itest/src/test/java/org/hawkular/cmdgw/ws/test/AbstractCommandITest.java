@@ -270,11 +270,16 @@ public abstract class AbstractCommandITest {
     }
 
     protected Resource getResource(String listPath, Predicate<Resource> predicate) throws Throwable {
+        return getResource(listPath, predicate, ATTEMPT_COUNT, ATTEMPT_DELAY);
+    }
+
+    protected Resource getResource(String listPath, Predicate<Resource> predicate, int attemptCount, long attemptDelay)
+            throws Throwable {
         String url = baseInvUri + listPath;
         Throwable e = null;
-        for (int i = 0; i < ATTEMPT_COUNT; i++) {
+        for (int i = 0; i < attemptCount; i++) {
             try {
-                String body = getWithRetries(url);
+                String body = getWithRetries(url, attemptCount, attemptDelay);
                 TypeFactory tf = mapper.getTypeFactory();
                 JavaType listType = tf.constructCollectionType(ArrayList.class, Resource.class);
                 JsonNode node = mapper.readTree(body);
@@ -284,16 +289,15 @@ public abstract class AbstractCommandITest {
                     return found.get();
                 }
                 System.out.println("Could not find the right resource among " + result.size() + " resources on "
-                        + (i + 1) + " of " + ATTEMPT_COUNT + " attempts for URL [" + url + "]");
+                        + (i + 1) + " of " + attemptCount + " attempts for URL [" + url + "]");
                 // System.out.println(body);
             } catch (Throwable t) {
                 /* some initial attempts may fail */
                 e = t;
-                System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + ATTEMPT_COUNT
-                        + " attempts, about to retry after " + ATTEMPT_DELAY + " ms: " + t.getMessage());
+                System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + attemptCount
+                        + " attempts, about to retry after " + attemptDelay + " ms: " + t.getMessage());
             }
-            /* sleep one second */
-            Thread.sleep(ATTEMPT_DELAY);
+            Thread.sleep(attemptDelay);
         }
         if (e != null) {
             throw e;
@@ -303,11 +307,16 @@ public abstract class AbstractCommandITest {
     }
 
     protected List<Resource> getResources(String path, int minCount) throws Throwable {
+        return getResources(path, minCount, ATTEMPT_COUNT, ATTEMPT_DELAY);
+    }
+
+    protected List<Resource> getResources(String path, int minCount, int attemptCount, long attemptDelay)
+            throws Throwable {
         String url = baseInvUri + path;
         Throwable e = null;
-        for (int i = 0; i < ATTEMPT_COUNT; i++) {
+        for (int i = 0; i < attemptCount; i++) {
             try {
-                String body = getWithRetries(url);
+                String body = getWithRetries(url, attemptCount, attemptDelay);
                 TypeFactory tf = mapper.getTypeFactory();
                 JavaType listType = tf.constructCollectionType(ArrayList.class, Resource.class);
                 JsonNode node = mapper.readTree(body);
@@ -316,16 +325,15 @@ public abstract class AbstractCommandITest {
                     return result;
                 }
                 System.out.println("Got only " + result.size() + " resources while expected " + minCount + " on "
-                        + (i + 1) + " of " + ATTEMPT_COUNT + " attempts for URL [" + url + "]");
+                        + (i + 1) + " of " + attemptCount + " attempts for URL [" + url + "]");
                 // System.out.println(body);
             } catch (Throwable t) {
                 /* some initial attempts may fail */
                 e = t;
-                System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + ATTEMPT_COUNT
-                        + " attempts, about to retry after " + ATTEMPT_DELAY + " ms");
+                System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + attemptCount
+                        + " attempts, about to retry after " + attemptDelay + " ms");
             }
-            /* sleep one second */
-            Thread.sleep(ATTEMPT_DELAY);
+            Thread.sleep(attemptDelay);
         }
         if (e != null) {
             throw e;
@@ -335,8 +343,12 @@ public abstract class AbstractCommandITest {
     }
 
     protected String getWithRetries(String url) throws Throwable {
+        return getWithRetries(url, ATTEMPT_COUNT, ATTEMPT_DELAY);
+    }
+
+    protected String getWithRetries(String url, int attemptCount, long attemptDelay) throws Throwable {
         Throwable e = null;
-        for (int i = 0; i < ATTEMPT_COUNT; i++) {
+        for (int i = 0; i < attemptCount; i++) {
             try {
                 Request request = newAuthRequest().url(url).build();
                 Response response = client.newCall(request).execute();
@@ -347,16 +359,28 @@ public abstract class AbstractCommandITest {
                 /* some initial attempts may fail */
                 e = t;
             }
-            System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + ATTEMPT_COUNT
-                    + " attempts, about to retry after " + ATTEMPT_DELAY + " ms");
-            /* sleep one second */
-            Thread.sleep(ATTEMPT_DELAY);
+            System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + attemptCount
+                    + " attempts, about to retry after " + attemptDelay + " ms");
+            Thread.sleep(attemptDelay);
         }
         if (e != null) {
             throw e;
         } else {
             throw new AssertionError("Could not get [" + url + "]");
         }
+    }
+
+    protected void assertResourceNotInInventory(String listPath, Predicate<Resource> predicate, int attemptCount,
+            long attemptDelay) throws Throwable {
+        try {
+            for (int i = 0; i < attemptCount; i++) {
+                getResource(listPath, predicate, 1, 1);
+                Thread.sleep(attemptDelay);
+            }
+        } catch (AssertionError expected) {
+            return;
+        }
+        Assert.fail("resource is still in inventory. listPath=" + listPath);
     }
 
     protected Request.Builder newAuthRequest() {

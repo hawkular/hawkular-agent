@@ -431,8 +431,8 @@ public final class ResourceManager<L> {
             while (it.hasNext()) {
                 Resource<L> resource = it.next();
                 if (locationResolver.matches(query, resource.getLocation())) {
-                    doomedResources.add(resource);
                     getAllDescendants(resource, doomedResources);
+                    doomedResources.add(resource);
                 }
             }
 
@@ -465,8 +465,8 @@ public final class ResourceManager<L> {
     private void getAllDescendants(Resource<L> parent, List<Resource<L>> descendants) {
         for (Resource<L> child : getChildren(parent)) {
             if (!descendants.contains(child)) {
-                descendants.add(child);
                 getAllDescendants(child, descendants);
+                descendants.add(child);
             }
         }
         return;

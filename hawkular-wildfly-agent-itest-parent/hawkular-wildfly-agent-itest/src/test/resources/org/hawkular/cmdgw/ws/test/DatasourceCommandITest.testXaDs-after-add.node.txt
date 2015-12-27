@@ -137,6 +137,6 @@
     },
     "xa-datasource-properties" => {
         "URL" => {"value" => "jdbc:h2:mem:test"},
-        "xaProp2" => {"value" => "xaVal2"}
+        "loginTimeout" => {"value" => "2"}
     }
 }

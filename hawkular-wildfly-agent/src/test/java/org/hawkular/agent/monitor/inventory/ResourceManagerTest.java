@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.inventory;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.hawkular.agent.monitor.inventory.ResourceManager.AddResult;
 import org.hawkular.agent.monitor.inventory.ResourceManager.AddResult.Effect;
@@ -431,15 +432,15 @@ public class ResourceManagerTest {
         Assert.assertEquals(greatGrandChild2, bIter.next());
         Assert.assertFalse(bIter.hasNext());
 
-        // remove child1 and see that all its descendants are removed too
-        Collection<Resource<DMRNodeLocation>> removed = rm.removeResources(child1.getLocation(),
+        // remove child1 and see that all its descendants are removed too, in depth-first order
+        List<Resource<DMRNodeLocation>> removed = rm.removeResources(child1.getLocation(),
                 new DMRLocationResolver());
         Assert.assertEquals(removed.toString(), 5, removed.size());
-        Assert.assertTrue(removed.contains(child1));
-        Assert.assertTrue(removed.contains(grandChild1));
-        Assert.assertTrue(removed.contains(greatGrandChild1));
-        Assert.assertTrue(removed.contains(grandChild2));
-        Assert.assertTrue(removed.contains(greatGrandChild2));
+        Assert.assertTrue(removed.get(0).equals(greatGrandChild2));
+        Assert.assertTrue(removed.get(1).equals(grandChild2));
+        Assert.assertTrue(removed.get(2).equals(greatGrandChild1));
+        Assert.assertTrue(removed.get(3).equals(grandChild1));
+        Assert.assertTrue(removed.get(4).equals(child1));
 
         // only the root1 is left
         bIter = rm.getResourcesBreadthFirst().iterator();
