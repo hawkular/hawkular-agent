@@ -526,14 +526,44 @@ public class AsyncInventoryStorage implements InventoryStorage {
             this.keepRunning = false;
         }
 
-        private void removeResources(List<QueueElement> resources) throws Exception {
-            log.debugf("Removing [%d] resources that were found in inventory work queue", resources.size());
-            log.warnf("TODO: implement removeResources: %s", resources);
+        private void removeResources(List<QueueElement> removeQueueElements) throws Exception {
+            log.debugf("Removing [%d] resources that were found in inventory work queue", removeQueueElements.size());
+            StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
+                    AsyncInventoryStorage.this.config.getInventoryContext());
+            for (QueueElement resourceElement : removeQueueElements) {
+                StringBuilder deleteUrl = new StringBuilder(url.toString());
+                deleteUrl.append("feeds/").append(resourceElement.getFeedId()).append("/resources");
+                for (Resource<?> resource : getAncestry(resourceElement.getResource())) {
+                    deleteUrl.append('/');
+                    deleteUrl.append(Util.urlEncode(resource.getID().getIDString()));
+                }
+
+                Request request = AsyncInventoryStorage.this.httpClientBuilder
+                        .buildJsonDeleteRequest(deleteUrl.toString(), null);
+
+                long start = System.currentTimeMillis(); // we don't store this time in our diagnostics
+                Response response = AsyncInventoryStorage.this.httpClientBuilder
+                        .getHttpClient()
+                        .newCall(request)
+                        .execute();
+                final long duration = System.currentTimeMillis() - start;
+
+                if (response.code() != 204 && response.code() != 404) {
+                    // 204 means successfully deleted, 404 means it didn't exist in the first place.
+                    // In either case, the resource no longer exists which is what we want;
+                    // any other response code means it is an error and we didn't remove the resource.
+                    throw new Exception("status-code=[" + response.code() + "], reason=["
+                            + response.message() + "], url=[" + request.urlString() + "]");
+                }
+                log.debugf("Took [%d]ms to remove resource [%s]", duration, resourceElement.getResource());
+            }
+
+            return; // done removeResources
         }
 
-        private void addResources(List<QueueElement> resources) throws Exception {
-            log.debugf("Adding [%d] resources that were found in inventory work queue", resources.size());
-            for (QueueElement elem : resources) {
+        private void addResources(List<QueueElement> addQueueElements) throws Exception {
+            log.debugf("Adding [%d] resources that were found in inventory work queue", addQueueElements.size());
+            for (QueueElement elem : addQueueElements) {
                 Resource<?> resource = elem.getResource();
                 BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(), elem.getFeedId());
                 ResourceType<?> resourceType = resource.getResourceType();
@@ -573,6 +603,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                         final Reader responseBodyReader;
 
+                        // HTTP status of 201 means success, 409 means it already exists; anything else is an error
+                        if (response.code() != 201 && response.code() != 409) {
+                            throw new Exception("status-code=[" + response.code() + "], reason=["
+                                    + response.message() + "], url=[" + request.urlString() + "]");
+                        }
+
                         if (log.isDebugEnabled()) {
                             long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
                             log.debugf("Took [%d]ms to store resource [%s]", durationMs, resource.getName());
@@ -581,12 +617,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
                             log.tracef("Body of bulk insert request response: %s", body);
                         } else {
                             responseBodyReader = response.body().charStream();
-                        }
-
-                        // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-                        if (response.code() != 201 && response.code() != 409) {
-                            throw new Exception("status-code=[" + response.code() + "], reason=["
-                                    + response.message() + "], url=[" + request.urlString() + "]");
                         }
 
                         TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>> typeRef = //
@@ -627,6 +657,24 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
 
             return; // end of method
+        }
+
+        /**
+         * Returns a list of ancestors of the given resource.
+         * The first in the returned list is the top-level parent, followed by the rest of the resource's parentage.
+         * The final in the list is the given resource itself.
+         *
+         * @return resource's ancestry starting from the highest parent in the hierarchy down to the given resource.
+         */
+        public List<Resource<?>> getAncestry(Resource<?> resource) {
+            ArrayList<Resource<?>> ancestry = new ArrayList<>();
+            Resource<?> current = resource;
+            while (current != null) {
+                ancestry.add(current);
+                current = current.getParent();
+            }
+            Collections.reverse(ancestry);
+            return ancestry;
         }
     }
 
