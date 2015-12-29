@@ -453,6 +453,7 @@
                 path="/"
                 attribute="number-of-inflight-transactions" />
     <metric-dmr name="Number of Nested Transactions"
+                metricType="counter"
                 interval="10"
                 timeUnits="minutes"
                 path="/"
@@ -470,6 +471,7 @@
                 path="/"
                 attribute="number-of-timed-out-transactions" />
     <metric-dmr name="Number of Transactions"
+                metricType="counter"
                 interval="10"
                 timeUnits="minutes"
                 path="/"
