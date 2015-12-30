@@ -21,10 +21,26 @@
         <title>Example App Using Hawkular WildFly Agent JNDI</title>
     </head>
     <body>
-        <form action="CreateResourceServlet">
+        <form action="CreateResource">
             Enter an ID for a new resource:<br/>
             <textarea name="newResourceID"cols="20" rows="1"></textarea><br/>
             <input type="Submit" value="Create Resource" />
+            <input type="Reset" value="Clear" />
+        </form>
+        <form action="StoreMetric">
+            Enter the metric identification key:<br/>
+            <textarea name="metricKey"cols="20" rows="1"></textarea><br/>
+            Enter the metric value:<br/>
+            <textarea name="metricValue"cols="20" rows="1"></textarea><br/>
+            <input type="Submit" value="Store Metric" />
+            <input type="Reset" value="Clear" />
+        </form>
+        <form action="CheckAvail">
+            Enter the availability identification key:<br/>
+            <textarea name="availKey"cols="20" rows="1"></textarea><br/>
+            Enter the availability value (UP, DOWN, or UNKNOWN):<br/>
+            <textarea name="availValue"cols="20" rows="1"></textarea><br/>
+            <input type="Submit" value="Store Avail" />
             <input type="Reset" value="Clear" />
         </form>
 

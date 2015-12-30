@@ -16,13 +16,13 @@
  */
 package org.hawkular.agent.monitor.api;
 
-public class HawkularMonitorContextImpl implements HawkularMonitorContext {
+public class HawkularWildFlyAgentContextImpl implements HawkularWildFlyAgentContext {
 
     private final MetricStorage metricStorage;
     private final AvailStorage availStorage;
     private final InventoryStorage inventoryStorage;
 
-    public HawkularMonitorContextImpl(MetricStorage metricStorage, AvailStorage availStorage,
+    public HawkularWildFlyAgentContextImpl(MetricStorage metricStorage, AvailStorage availStorage,
             InventoryStorage inventoryStorage) {
         this.metricStorage = metricStorage;
         this.availStorage = availStorage;

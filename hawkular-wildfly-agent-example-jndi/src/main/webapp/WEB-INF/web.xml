@@ -20,13 +20,13 @@
   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0">
 
   <servlet>
-    <servlet-name>CreateResourceServlet</servlet-name>
-    <servlet-class>org.hawkular.agent.example.CreateResourceServlet</servlet-class>
+    <servlet-name>MyAppServlet</servlet-name>
+    <servlet-class>org.hawkular.agent.example.MyAppServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
 
   <servlet-mapping>
-    <servlet-name>CreateResourceServlet</servlet-name>
-    <url-pattern>/CreateResourceServlet</url-pattern>
+    <servlet-name>MyAppServlet</servlet-name>
+    <url-pattern>/MyAppServlet</url-pattern>
   </servlet-mapping>
 </web-app>

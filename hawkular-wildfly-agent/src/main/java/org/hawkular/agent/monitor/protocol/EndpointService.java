@@ -73,7 +73,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         public void fireResourcesAdded(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
                 LOG.debugf("Firing inventory event for [%s] added/modified resources", resources.size());
-                InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
+                InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
                 for (InventoryListener inventoryListener : inventoryListeners) {
                     inventoryListener.resourcesAdded(event);
                 }
@@ -83,7 +83,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         public void fireResourcesRemoved(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
                 LOG.debugf("Firing inventory event for [%s] removed resources", resources.size());
-                InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
+                InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
                 for (InventoryListener inventoryListener : inventoryListeners) {
                     inventoryListener.resourceRemoved(event);
                 }

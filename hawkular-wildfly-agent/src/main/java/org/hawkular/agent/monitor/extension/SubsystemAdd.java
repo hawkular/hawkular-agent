@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.api.HawkularMonitorContext;
+import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.MonitorService;
@@ -80,7 +80,7 @@ public class SubsystemAdd extends AbstractAddStepHandler {
             ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(jndiName);
             BinderService binderService = new BinderService(bindInfo.getBindName());
             ManagedReferenceFactory valueMRF = new ImmediateManagedReferenceFactory(jndiObject);
-            String jndiObjectClassName = HawkularMonitorContext.class.getName();
+            String jndiObjectClassName = HawkularWildFlyAgentContext.class.getName();
             ServiceName binderServiceName = bindInfo.getBinderServiceName();
             ServiceBuilder<?> binderBuilder = target
                     .addService(binderServiceName, binderService)

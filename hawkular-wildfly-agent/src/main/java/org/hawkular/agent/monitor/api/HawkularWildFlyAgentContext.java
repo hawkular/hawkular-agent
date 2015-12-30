@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.api;
 
-public interface HawkularMonitorContext {
+public interface HawkularWildFlyAgentContext {
 
     MetricStorage getMetricStorage();
 
