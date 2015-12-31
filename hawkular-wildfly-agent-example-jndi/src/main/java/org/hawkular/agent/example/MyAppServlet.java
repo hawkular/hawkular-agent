@@ -17,6 +17,7 @@
 package org.hawkular.agent.example;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
 
@@ -74,8 +75,12 @@ public class MyAppServlet extends HttpServlet {
             AvailDataPayloadBuilder payloadBuilder = availStorage.createAvailDataPayloadBuilder();
             payloadBuilder.addDataPoint(availKey, System.currentTimeMillis(), availValue);
             availStorage.store(payloadBuilder);
+
+            String results = String.format("<h1>Send Avail</h1>\n<p>Avail Key=%s</p>\n<p>Avail Value=%s</p>",
+                    availKey, availValue);
+            printResults(response, results);
         } catch (Exception e) {
-            e.printStackTrace();
+            printResults(response, "sendAvail failure: " + e);
         }
     }
 
@@ -88,8 +93,12 @@ public class MyAppServlet extends HttpServlet {
             MetricDataPayloadBuilder payloadBuilder = metricStorage.createMetricDataPayloadBuilder();
             payloadBuilder.addDataPoint(metricKey, System.currentTimeMillis(), metricValue, MetricType.GAUGE);
             metricStorage.store(payloadBuilder);
+
+            String results = String.format("<h1>Send Metric</h1>\n<p>Metric Key=%s</p>\n<p>Metric Value=%s</p>",
+                    metricKey, metricValue);
+            printResults(response, results);
         } catch (Exception e) {
-            e.printStackTrace();
+            printResults(response, "sendMetric failure: " + e);
         }
     }
 
@@ -102,6 +111,7 @@ public class MyAppServlet extends HttpServlet {
                     .id(new ID("My App ResourceType"))
                     .name(new Name("My App Resource Type"))
                     .parent(null)
+                    .location(new MyAppNodeLocation("/"))
                     .build();
 
             Resource<MyAppNodeLocation> resource = Resource.<MyAppNodeLocation> builder()
@@ -115,9 +125,20 @@ public class MyAppServlet extends HttpServlet {
             List<Resource<MyAppNodeLocation>> resources = Arrays.asList(resource);
             InventoryEvent<MyAppNodeLocation> event = new InventoryEvent<>(myAppSamplingService, resources);
             hawkularWildFlyAgent.getInventoryStorage().resourcesAdded(event);
+
+            String results = String.format("<h1>Create New Resource</h1>\n<p>Resource=%s</p>", resource);
+            printResults(response, results);
         } catch (Exception e) {
-            e.printStackTrace();
+            printResults(response, "createNewResource failure: " + e);
         }
     }
 
+    private void printResults(HttpServletResponse response, String msg) {
+        try {
+            PrintWriter out = response.getWriter();
+            out.println(msg);
+        } catch (IOException e) {
+            log("Cannot print results: " + msg, e);
+        }
+    }
 }
