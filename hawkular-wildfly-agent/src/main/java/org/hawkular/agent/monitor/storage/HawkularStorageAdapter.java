@@ -135,8 +135,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public <L> void resourceRemoved(InventoryEvent<L> event) {
-        inventoryStorage.resourceRemoved(event);
+    public <L> void resourcesRemoved(InventoryEvent<L> event) {
+        inventoryStorage.resourcesRemoved(event);
     }
 
     @Override

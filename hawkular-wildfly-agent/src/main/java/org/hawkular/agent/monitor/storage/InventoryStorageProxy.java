@@ -42,11 +42,11 @@ public class InventoryStorageProxy implements InventoryStorage {
     }
 
     @Override
-    public <L> void resourceRemoved(InventoryEvent<L> event) {
+    public <L> void resourcesRemoved(InventoryEvent<L> event) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
-        storageAdapter.resourceRemoved(event);
+        storageAdapter.resourcesRemoved(event);
     }
 
 }

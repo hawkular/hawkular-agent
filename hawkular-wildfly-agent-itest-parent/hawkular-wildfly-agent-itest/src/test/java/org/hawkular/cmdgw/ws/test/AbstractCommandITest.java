@@ -88,6 +88,7 @@ public abstract class AbstractCommandITest {
     protected static final String baseInvUri;
 
     protected static final String host;
+    protected static final int httpPort;
     private static final Logger log = Logger.getLogger(AbstractCommandITest.class.getName());
     protected static final String managementPasword = System.getProperty("hawkular.agent.itest.mgmt.password");
     protected static final int managementPort;
@@ -105,7 +106,7 @@ public abstract class AbstractCommandITest {
         }
         host = h;
         int portOffset = Integer.parseInt(System.getProperty("hawkular.port.offset", "0"));
-        int httpPort = portOffset + 8080;
+        httpPort = portOffset + 8080;
         managementPort = portOffset + 9990;
         baseAccountsUri = "http://" + host + ":" + httpPort + "/hawkular/accounts";
         baseInvUri = "http://" + host + ":" + httpPort + "/hawkular/inventory";

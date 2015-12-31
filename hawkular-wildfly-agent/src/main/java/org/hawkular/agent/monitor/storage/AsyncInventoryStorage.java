@@ -726,7 +726,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public <L> void resourceRemoved(InventoryEvent<L> event) {
+    public <L> void resourcesRemoved(InventoryEvent<L> event) {
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
             queue.add(new RemoveResourceQueueElement(feedId, resource));

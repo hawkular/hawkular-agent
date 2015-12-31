@@ -113,7 +113,7 @@ public class SchedulerService implements InventoryListener {
     }
 
     @Override
-    public <L> void resourceRemoved(InventoryEvent<L> event) {
+    public <L> void resourcesRemoved(InventoryEvent<L> event) {
         List<Resource<L>> resources = event.getPayload();
         SamplingService<L> service = event.getSamplingService();
 

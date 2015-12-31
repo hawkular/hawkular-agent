@@ -85,7 +85,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 LOG.debugf("Firing inventory event for [%s] removed resources", resources.size());
                 InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
                 for (InventoryListener inventoryListener : inventoryListeners) {
-                    inventoryListener.resourceRemoved(event);
+                    inventoryListener.resourcesRemoved(event);
                 }
             }
         }
