@@ -39,14 +39,10 @@ import org.jboss.logging.Logger;
 public class MyAppSamplingService implements SamplingService<MyAppNodeLocation> {
     private static final Logger log = Logger.getLogger(MyAppSamplingService.class);
 
-    private final String feedId;
     private final MonitoredEndpoint endpoint;
 
     public MyAppSamplingService() {
         try {
-            // this is our application's Hawkular feed identification
-            this.feedId = "My App Feed";
-
             // this is our endpoint that Hawkular uses to collect metrics and availabilities for our managed resources
             ConnectionData connectionData = new ConnectionData(new URI("myapp:local-uri"), null, null);
             EndpointConfiguration config = new EndpointConfiguration("My App Endpoint", true, Collections.emptyList(),
@@ -58,12 +54,7 @@ public class MyAppSamplingService implements SamplingService<MyAppNodeLocation> 
     }
 
     @Override
-    public String getFeedId() {
-        return this.feedId;
-    }
-
-    @Override
-    public MonitoredEndpoint getEndpoint() {
+    public MonitoredEndpoint getMonitoredEndpoint() {
         return this.endpoint;
     }
 

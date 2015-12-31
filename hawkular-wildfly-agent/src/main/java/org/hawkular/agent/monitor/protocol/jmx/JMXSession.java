@@ -33,10 +33,12 @@ public class JMXSession
         extends Session<JMXNodeLocation> {
     private final J4pClient client;
 
-    public JMXSession(String feedId, MonitoredEndpoint endpoint,
+    public JMXSession(String feedId,
+            MonitoredEndpoint endpoint,
             ResourceTypeManager<JMXNodeLocation> resourceTypeManager,
             Driver<JMXNodeLocation> driver,
-            LocationResolver<JMXNodeLocation> locationResolver, J4pClient client) {
+            LocationResolver<JMXNodeLocation> locationResolver,
+            J4pClient client) {
         super(feedId, endpoint, resourceTypeManager, driver, locationResolver);
         this.client = client;
     }

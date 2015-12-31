@@ -616,7 +616,7 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
 
-        this.storageAdapter.initialize(configuration.getStorageAdapter(), diagnostics, httpClientBuilder);
+        this.storageAdapter.initialize(feedId, configuration.getStorageAdapter(), diagnostics, httpClientBuilder);
 
         // provide our storage adapter to the proxies - allows external apps to use them to store its own data
         metricStorageProxy.setStorageAdapter(storageAdapter);

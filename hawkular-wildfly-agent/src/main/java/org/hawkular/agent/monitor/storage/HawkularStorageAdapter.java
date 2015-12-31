@@ -28,8 +28,9 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 
 public class HawkularStorageAdapter implements StorageAdapter {
-    @SuppressWarnings("unused")
     private static final MsgLogger log = AgentLoggers.getLogger(HawkularStorageAdapter.class);
+
+    private String feedId;
     private MonitorServiceConfiguration.StorageAdapterConfiguration config;
     private Diagnostics diagnostics;
     private HttpClientBuilder httpClientBuilder;
@@ -40,13 +41,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public void initialize(
+            String feedId,
             MonitorServiceConfiguration.StorageAdapterConfiguration config,
             Diagnostics diag,
             HttpClientBuilder httpClientBuilder) {
+        this.feedId = feedId;
         this.config = config;
         this.diagnostics = diag;
         this.httpClientBuilder = httpClientBuilder;
-        this.inventoryStorage = new AsyncInventoryStorage(config, httpClientBuilder, diagnostics);
+        this.inventoryStorage = new AsyncInventoryStorage(feedId, config, httpClientBuilder, diagnostics);
     }
 
     @Override
@@ -87,7 +90,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         // send to metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
-        metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, httpClientBuilder);
+        metricsAdapter.initialize(feedId, getStorageAdapterConfiguration(), diagnostics, httpClientBuilder);
         metricsAdapter.store(payloadBuilder);
 
         // looks like everything stored successfully
@@ -118,7 +121,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
         // send to metrics
         MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
-        metricsAdapter.initialize(getStorageAdapterConfiguration(), diagnostics, httpClientBuilder);
+        metricsAdapter.initialize(feedId, getStorageAdapterConfiguration(), diagnostics, httpClientBuilder);
         metricsAdapter.store(payloadBuilder);
 
         // looks like everything stored successfully

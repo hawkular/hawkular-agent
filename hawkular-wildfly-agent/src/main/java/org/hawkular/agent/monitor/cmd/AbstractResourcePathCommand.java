@@ -109,7 +109,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
                         this.getOperationName(envelope), entityType, managedServerName));
             }
 
-            validate(envelope, endpointService.getEndpoint());
+            validate(envelope, endpointService.getMonitoredEndpoint());
 
             DMRSession session = endpointService.openSession();
 

@@ -19,7 +19,6 @@ package org.hawkular.agent.monitor.api;
 import java.util.Collections;
 import java.util.List;
 
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Resource;
 
 /**
@@ -55,28 +54,6 @@ public class InventoryEvent<L> {
 
         this.samplingService = samplingService;
         this.payload = payload;
-    }
-
-    /**
-     * @return the {@link MonitoredEndpoint} resources in payload come from
-     */
-    public MonitoredEndpoint getEndpoint() {
-        MonitoredEndpoint me = this.samplingService.getEndpoint();
-        if (me == null) {
-            throw new IllegalStateException("Sampling service's endpoint is null");
-        }
-        return me;
-    }
-
-    /**
-     * @return the {@code feedId} associated with the resources in payload
-     */
-    public String getFeedId() {
-        String feedId = this.samplingService.getFeedId();
-        if (feedId == null) {
-            throw new IllegalStateException("Sampling service's feed ID is null");
-        }
-        return feedId;
     }
 
     /**

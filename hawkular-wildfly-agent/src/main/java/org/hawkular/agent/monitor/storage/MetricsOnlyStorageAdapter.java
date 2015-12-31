@@ -45,6 +45,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
     @Override
     public void initialize(
+            String feedId, // we don't use feedId since this MetricsOnlyStorageAdapter doesn't deal with inventory
             MonitorServiceConfiguration.StorageAdapterConfiguration config,
             Diagnostics diag,
             HttpClientBuilder httpClientBuilder) {
