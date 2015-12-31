@@ -75,6 +75,10 @@
   <profiles>
     <profile>
       <id>dev</id>
+      <properties>
+        <org.hawkular.dist.version>1.0.0.Alpha8</org.hawkular.dist.version>
+        <org.hawkular.wildfly.home>${basedir}/../../hawkular/dist/target/hawkular-${org.hawkular.dist.version}/hawkular-${org.hawkular.dist.version}</org.hawkular.wildfly.home>
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -85,8 +89,8 @@
                 <id>deploy</id>
                 <phase>install</phase>
                 <configuration>
-                  <target> <!-- You need to adapt them to your purposes! -->
-                    <property name="org.hawkular.wildfly.home" value="${basedir}/../../hawkular/dist/target/hawkular*/hawkular*" />
+                  <target>
+                    <property name="org.hawkular.wildfly.home" value="${org.hawkular.wildfly.home}" />
                     <property name="org.hawkular.wildfly.deployments" value="standalone/deployments" />
                     <copy file="${project.build.directory}/${project.build.finalName}.war" todir="${org.hawkular.wildfly.home}/${org.hawkular.wildfly.deployments}" />
                   </target>
@@ -96,6 +100,56 @@
                 </goals>
               </execution>
             </executions>
+          </plugin>
+
+          <!-- use the agent installer to install the agent extension module -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>install-agent-module</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>java</goal>
+                </goals>
+                <configuration>
+                  <includePluginDependencies>true</includePluginDependencies>
+                  <mainClass>org.hawkular.wildfly.agent.installer.AgentInstaller</mainClass>
+                  <arguments>
+                    <argument>--target-location=${org.hawkular.wildfly.home}</argument>
+                    <argument>--module=${basedir}/../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</argument>
+                    <argument>--server-url=http://localhost:8080</argument>
+                    <argument>--username=jdoe</argument>
+                    <argument>--password=password</argument>
+                  </arguments>
+                  <systemProperties>
+                    <!--
+                    <systemProperty>
+                      <key>log4j.configuration</key>
+                      <value>file:${basedir}/log4j.xml</value>
+                    </systemProperty>
+                    -->
+                    <systemProperty>
+                      <key>org.hawkular.wildfly.agent.installer.throw-exception-on-error</key>
+                      <value>true</value>
+                    </systemProperty>
+                  </systemProperties>
+                </configuration>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId>org.hawkular.agent</groupId>
+                <artifactId>hawkular-wildfly-agent-installer</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.hawkular.agent</groupId>
+                <artifactId>wildfly-module-installer</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+            </dependencies>
           </plugin>
         </plugins>
       </build>
