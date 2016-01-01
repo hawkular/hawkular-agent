@@ -45,6 +45,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
     @Override
     public void initialize(
+            String feedId, // we don't use feedId since this MetricsOnlyStorageAdapter doesn't deal with inventory
             MonitorServiceConfiguration.StorageAdapterConfiguration config,
             Diagnostics diag,
             HttpClientBuilder httpClientBuilder) {
@@ -209,7 +210,7 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public <L> void resourceRemoved(InventoryEvent<L> event) {
+    public <L> void resourcesRemoved(InventoryEvent<L> event) {
         throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 

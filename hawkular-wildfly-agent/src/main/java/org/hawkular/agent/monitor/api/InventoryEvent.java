@@ -16,9 +16,9 @@
  */
 package org.hawkular.agent.monitor.api;
 
+import java.util.Collections;
 import java.util.List;
 
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Resource;
 
 /**
@@ -32,33 +32,28 @@ import org.hawkular.agent.monitor.inventory.Resource;
  */
 public class InventoryEvent<L> {
 
-    private final String feedId;
-    private final MonitoredEndpoint endpoint;
     private final SamplingService<L> samplingService;
     private final List<Resource<L>> payload;
 
+    /**
+     * Creates an inventory event.
+     *
+     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
+     *                        identify the resources in the event, plus has methods that can be used to monitor
+     *                        the resources in the event.
+     * @param payload the list of resources associated with this event
+     */
+    public InventoryEvent(SamplingService<L> samplingService, List<Resource<L>> payload) {
+        if (samplingService == null) {
+            throw new IllegalArgumentException("Sampling service cannot be null");
+        }
 
-    public InventoryEvent(String feedId, MonitoredEndpoint endpoint, SamplingService<L> samplingService,
-            List<Resource<L>> payload) {
-        super();
-        this.feedId = feedId;
-        this.endpoint = endpoint;
+        if (payload == null) {
+            payload = Collections.emptyList();
+        }
+
         this.samplingService = samplingService;
         this.payload = payload;
-    }
-
-    /**
-     * @return the {@link MonitoredEndpoint} resources in payload come from
-     */
-    public MonitoredEndpoint getEndpoint() {
-        return endpoint;
-    }
-
-    /**
-     * @return the {@code feedId} associated with the resources in payload
-     */
-    public String getFeedId() {
-        return feedId;
     }
 
     /**

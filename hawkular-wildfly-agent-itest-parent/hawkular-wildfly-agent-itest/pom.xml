@@ -284,6 +284,12 @@
                       <version>${project.version}</version>
                       <type>war</type>
                     </artifactItem>
+                    <artifactItem>
+                      <groupId>org.hawkular.agent</groupId>
+                      <artifactId>hawkular-wildfly-agent-example-jndi</artifactId>
+                      <version>${project.version}</version>
+                      <type>war</type>
+                    </artifactItem>
                   </artifactItems>
                   <outputDirectory>${project.build.directory}/${project.artifactId}-${project.version}/modules/org/hawkular/nest/main/deployments</outputDirectory>
                 </configuration>

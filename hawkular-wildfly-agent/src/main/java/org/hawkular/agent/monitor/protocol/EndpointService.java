@@ -73,7 +73,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         public void fireResourcesAdded(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
                 LOG.debugf("Firing inventory event for [%s] added/modified resources", resources.size());
-                InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
+                InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
                 for (InventoryListener inventoryListener : inventoryListeners) {
                     inventoryListener.resourcesAdded(event);
                 }
@@ -83,9 +83,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         public void fireResourcesRemoved(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
                 LOG.debugf("Firing inventory event for [%s] removed resources", resources.size());
-                InventoryEvent<L> event = new InventoryEvent<L>(feedId, endpoint, EndpointService.this, resources);
+                InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
                 for (InventoryListener inventoryListener : inventoryListeners) {
-                    inventoryListener.resourceRemoved(event);
+                    inventoryListener.resourcesRemoved(event);
                 }
             }
         }
@@ -122,13 +122,12 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 new LinkedBlockingQueue<Runnable>(1), threadFactory);
     }
 
-    @Override
     public String getFeedId() {
         return feedId;
     }
 
     @Override
-    public MonitoredEndpoint getEndpoint() {
+    public MonitoredEndpoint getMonitoredEndpoint() {
         return endpoint;
     }
 
@@ -156,7 +155,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public void addInventoryListener(InventoryListener listener) {
         status.assertInitialOrStopped(getClass(), "addInventoryListener()");
         this.inventoryListenerSupport.inventoryListeners.add(listener);
-        LOG.debugf("Added inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
+        LOG.debugf("Added inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
     }
 
     /**
@@ -167,7 +166,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public void removeInventoryListener(InventoryListener listener) {
         status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
         this.inventoryListenerSupport.inventoryListeners.remove(listener);
-        LOG.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getEndpoint());
+        LOG.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
     }
 
     /**
@@ -192,7 +191,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                LOG.infof("Being asked to discover all resources for endpoint [%s]", getEndpoint());
+                LOG.infof("Being asked to discover all resources for endpoint [%s]", getMonitoredEndpoint());
                 long duration = 0L;
                 try (S session = openSession()) {
                     long start = System.currentTimeMillis();
@@ -211,7 +210,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         try {
             this.fullDiscoveryScanThreadPool.execute(runnable);
         } catch (RejectedExecutionException ree) {
-            LOG.debugf("Redundant full discovery scan will be ignored for endpoint [%s]", getEndpoint());
+            LOG.debugf("Redundant full discovery scan will be ignored for endpoint [%s]", getMonitoredEndpoint());
         }
     }
 
@@ -228,7 +227,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public void discoverChildren(L parentLocation, ResourceType<L> childType, S session) {
         status.assertRunning(getClass(), "discoverChildren()");
         LOG.debugf("Being asked to discover children of type [%s] under parent [%s] for endpoint [%s]",
-                childType, parentLocation, getEndpoint());
+                childType, parentLocation, getMonitoredEndpoint());
 
         S sessionToUse = null;
         try {
@@ -280,7 +279,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         status.assertRunning(getClass(), "measureAvails()");
 
-        LOG.debugf("Checking [%d] avails for endpoint [%s]", instances.size(), getEndpoint());
+        LOG.debugf("Checking [%d] avails for endpoint [%s]", instances.size(), getMonitoredEndpoint());
 
         try (S session = openSession()) {
             Driver<L> driver = session.getDriver();
@@ -319,7 +318,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         status.assertRunning(getClass(), "measureMetrics()");
 
-        LOG.debugf("Collecting [%d] metrics for endpoint [%s]", instances.size(), getEndpoint());
+        LOG.debugf("Collecting [%d] metrics for endpoint [%s]", instances.size(), getMonitoredEndpoint());
 
         try (S session = openSession()) {
             Driver<L> driver = session.getDriver();
@@ -384,7 +383,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
     @Override
     public String toString() {
-        return String.format("%s[%s]", getClass().getSimpleName(), getEndpoint());
+        return String.format("%s[%s]", getClass().getSimpleName(), getMonitoredEndpoint());
     }
 
     @Override

@@ -33,10 +33,12 @@ public class DMRSession extends Session<DMRNodeLocation> {
 
     private final ModelControllerClient client;
 
-    public DMRSession(String feedId, MonitoredEndpoint endpoint,
+    public DMRSession(String feedId,
+            MonitoredEndpoint endpoint,
             ResourceTypeManager<DMRNodeLocation> resourceTypeManager,
             Driver<DMRNodeLocation> driver,
-            LocationResolver<DMRNodeLocation> locationResolver, ModelControllerClient client) {
+            LocationResolver<DMRNodeLocation> locationResolver,
+            ModelControllerClient client) {
         super(feedId, endpoint, resourceTypeManager, driver, locationResolver);
         this.client = client;
     }

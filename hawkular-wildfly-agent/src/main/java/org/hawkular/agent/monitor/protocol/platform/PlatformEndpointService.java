@@ -37,7 +37,7 @@ public class PlatformEndpointService extends EndpointService<PlatformNodeLocatio
     public PlatformSession openSession() {
         OshiPlatformCache oshi = new OshiPlatformCache(getFeedId());
         PlatformDriver driver = new PlatformDriver(oshi, getDiagnostics());
-        return new PlatformSession(getFeedId(), getEndpoint(), getResourceTypeManager(), driver,
+        return new PlatformSession(getFeedId(), getMonitoredEndpoint(), getResourceTypeManager(), driver,
                 getLocationResolver());
     }
 

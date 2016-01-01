@@ -99,9 +99,9 @@ public class DMREndpointService
     @Override
     public DMRSession openSession() {
         ModelControllerClient client = modelControllerClientFactory.createClient();
-        Driver<DMRNodeLocation> driver = new DMRDriver(client, getEndpoint(), getDiagnostics());
-        return new DMRSession(getFeedId(), getEndpoint(), getResourceTypeManager(), driver, getLocationResolver(),
-                client);
+        Driver<DMRNodeLocation> driver = new DMRDriver(client, getMonitoredEndpoint(), getDiagnostics());
+        return new DMRSession(getFeedId(), getMonitoredEndpoint(), getResourceTypeManager(), driver,
+                getLocationResolver(), client);
     }
 
 }

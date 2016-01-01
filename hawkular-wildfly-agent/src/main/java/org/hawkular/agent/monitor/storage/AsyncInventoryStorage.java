@@ -690,16 +690,20 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return id;
     }
 
+    private final String feedId;
     private final MonitorServiceConfiguration.StorageAdapterConfiguration config;
     private final HttpClientBuilder httpClientBuilder;
     private final Diagnostics diagnostics;
     private final ArrayBlockingQueue<QueueElement> queue;
     private final Worker worker;
 
-    public AsyncInventoryStorage(StorageAdapterConfiguration config,
+    public AsyncInventoryStorage(
+            String feedId,
+            StorageAdapterConfiguration config,
             HttpClientBuilder httpClientBuilder,
             Diagnostics diagnostics) {
         super();
+        this.feedId = feedId;
         this.config = config;
         this.httpClientBuilder = httpClientBuilder;
         this.diagnostics = diagnostics;
@@ -715,7 +719,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
     @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
-        String feedId = event.getFeedId();
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
             queue.add(new AddResourceQueueElement(feedId, resource));
@@ -723,8 +726,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public <L> void resourceRemoved(InventoryEvent<L> event) {
-        String feedId = event.getFeedId();
+    public <L> void resourcesRemoved(InventoryEvent<L> event) {
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
             queue.add(new RemoveResourceQueueElement(feedId, resource));

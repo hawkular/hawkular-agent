@@ -42,8 +42,8 @@ public class JMXEndpointService
     public JMXSession openSession() {
         J4pClient client = clientFactory.createClient();
         Driver<JMXNodeLocation> driver = new JMXDriver(client, getDiagnostics());
-        return new JMXSession(getFeedId(), getEndpoint(), getResourceTypeManager(), driver, getLocationResolver(),
-                client);
+        return new JMXSession(getFeedId(), getMonitoredEndpoint(), getResourceTypeManager(), driver,
+                getLocationResolver(), client);
     }
 
 }

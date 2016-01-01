@@ -39,6 +39,7 @@
     <module>hawkular-wildfly-agent</module>
     <module>hawkular-wildfly-agent-feature-pack</module>
     <module>hawkular-wildfly-agent-wf-extension</module>
+    <module>hawkular-wildfly-agent-example-jndi</module>
     <module>hawkular-wildfly-agent-itest-parent</module>
     <module>wildfly-module-installer</module>
     <module>hawkular-wildfly-agent-installer</module>

@@ -29,12 +29,16 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
     /**
      * Initializes the storage adapter.
      *
+     * @param feedId identifies the feed that is storing data
      * @param config the configuration of the storage adapter
      * @param diag the object used to track internal diagnostic data for the storage adapter
      * @param selfId helps identify where we are hosted
      * @param httpClientBuilder used to communicate with the storage server
      */
-    void initialize(MonitorServiceConfiguration.StorageAdapterConfiguration config, Diagnostics diag,
+    void initialize(
+            String feedId,
+            MonitorServiceConfiguration.StorageAdapterConfiguration config,
+            Diagnostics diag,
             HttpClientBuilder httpClientBuilder);
 
     /**

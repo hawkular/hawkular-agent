@@ -23,18 +23,18 @@ package org.hawkular.agent.monitor.api;
  */
 public interface InventoryListener {
     /**
-     * Notifies this listener that the resource in {@link InventoryEvent#getPayload()} was added to the monitored
-     * endpoint.
+     * Notifies this listener that the resources in {@link InventoryEvent#getPayload()}
+     * were added to the monitored endpoint.
      *
      * @param event the {@link InventoryEvent}
      */
     <L> void resourcesAdded(InventoryEvent<L> event);
 
     /**
-     * Notifies this listener that the resource in {@link InventoryEvent#getPayload()} was removed from the monitored
-     * endpoint.
+     * Notifies this listener that the resources in {@link InventoryEvent#getPayload()}
+     * were removed from the monitored endpoint.
      *
      * @param event the {@link InventoryEvent}
      */
-    <L> void resourceRemoved(InventoryEvent<L> event);
+    <L> void resourcesRemoved(InventoryEvent<L> event);
 }

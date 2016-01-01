@@ -43,7 +43,7 @@ public class ProtocolService<L, S extends Session<L>> {
         }
 
         public Builder<L, S> endpointService(EndpointService<L, S> endpointService) {
-            endpointServices.put(endpointService.getEndpoint().getName(), endpointService);
+            endpointServices.put(endpointService.getMonitoredEndpoint().getName(), endpointService);
             return this;
         }
     }

@@ -39,12 +39,7 @@ public interface SamplingService<L> {
     /**
      * @return the endpoint this service is able to sample
      */
-    MonitoredEndpoint getEndpoint();
-
-    /**
-     * @return the {@code feedId} associated with the present endpoint
-     */
-    String getFeedId();
+    MonitoredEndpoint getMonitoredEndpoint();
 
     /**
      * Checks the availabilities defined by {@code instances} and reports them back to the given {@code consumer}.

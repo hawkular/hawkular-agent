@@ -33,8 +33,8 @@ import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLContext;
 
-import org.hawkular.agent.monitor.api.HawkularMonitorContext;
-import org.hawkular.agent.monitor.api.HawkularMonitorContextImpl;
+import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
+import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContextImpl;
 import org.hawkular.agent.monitor.cmd.FeedCommProcessor;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
@@ -299,8 +299,8 @@ public class MonitorService implements Service<MonitorService> {
     /**
      * @return the context that can be used by others for storing ad-hoc monitoring data
      */
-    public HawkularMonitorContext getHawkularMonitorContext() {
-        return new HawkularMonitorContextImpl(metricStorageProxy, availStorageProxy, inventoryStorageProxy);
+    public HawkularWildFlyAgentContext getHawkularMonitorContext() {
+        return new HawkularWildFlyAgentContextImpl(metricStorageProxy, availStorageProxy, inventoryStorageProxy);
     }
 
     /**
@@ -616,7 +616,7 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
 
-        this.storageAdapter.initialize(configuration.getStorageAdapter(), diagnostics, httpClientBuilder);
+        this.storageAdapter.initialize(feedId, configuration.getStorageAdapter(), diagnostics, httpClientBuilder);
 
         // provide our storage adapter to the proxies - allows external apps to use them to store its own data
         metricStorageProxy.setStorageAdapter(storageAdapter);
