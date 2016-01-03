@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2015 Red Hat, Inc. and/or its affiliates
+    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
     and other contributors as indicated by the @author tags.
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +33,7 @@
 
   <modules>
     <module>hawkular-wildfly-agent-helloworld-war</module>
+    <module>hawkular-wildfly-agent-example-jndi</module>
     <module>hawkular-wildfly-agent-itest</module>
   </modules>
 </project>
