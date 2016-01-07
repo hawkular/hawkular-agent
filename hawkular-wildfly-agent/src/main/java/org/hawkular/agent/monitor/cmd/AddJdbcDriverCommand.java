@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,15 +80,17 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
                 Collections.singleton(jarResource), DEFAULT_DRIVER_MODULE_DEPENDENCIES, null);
         new Modules(Modules.findModulesDir()).add(addModuleRequest);
 
-        OperationBuilder.add() //
+        OperationBuilder.add()
                 .address().subsystemDatasources().segment(JDBC_DRIVER, request.getDriverName()).parentBuilder()
                 .attribute(JdbcDriverNodeConstants.DRIVER_NAME, request.getDriverName())
                 .attribute(JdbcDriverNodeConstants.DRIVER_MODULE_NAME, request.getModuleName())
                 .attribute(JdbcDriverNodeConstants.DRIVER_CLASS_NAME, request.getDriverClass())
                 .attribute(JdbcDriverNodeConstants.DRIVER_MAJOR_VERSION, request.getDriverMajorVersion())
                 .attribute(JdbcDriverNodeConstants.DRIVER_MINOR_VERSION, request.getDriverMinorVersion())
-                .execute(controllerClient) //
+                .execute(controllerClient)
                 .assertSuccess();
+
+        endpointService.discoverAll();
 
         return null;
     }

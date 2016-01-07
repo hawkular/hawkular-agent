@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,6 +75,7 @@ public class DeployApplicationCommand
 
         DeploymentJBossASClient client = new DeploymentJBossASClient(dmrContext.getClient());
         client.deployStandalone(destFileName, envelope.getBinaryData(), enabled);
+        endpointService.discoverAll();
         return null;
     }
 
