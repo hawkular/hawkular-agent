@@ -201,17 +201,16 @@ public class MetricsOnlyStorageAdapter implements StorageAdapter {
 
     @Override
     public void shutdown() {
-        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
     }
 
     @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
-        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
+        // standalone Hawkular Metrics does not support inventory - do nothing
     }
 
     @Override
     public <L> void resourcesRemoved(InventoryEvent<L> event) {
-        throw new UnsupportedOperationException("Standalone Hawkular Metrics does not support inventory");
+        // standalone Hawkular Metrics does not support inventory - do nothing
     }
 
 }
