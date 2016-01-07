@@ -245,19 +245,17 @@ public class MonitorService implements Service<MonitorService> {
     private final InjectedValue<SocketBinding> httpSocketBindingValue = new InjectedValue<>();
     private final InjectedValue<SocketBinding> httpsSocketBindingValue = new InjectedValue<>();
     private final InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue = new InjectedValue<>();
-    // key=securityRealm
+    // key=securityRealm name as a String
     private final Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues = new HashMap<>();
 
     private boolean started = false;
 
     private PropertyChangeListener serverStateListener;
 
-    /** The configuration as declared in standalone.xml. This one should be used only to build the runtime configuration
-     * strored in {@link #configuration}. */
+    // Declared config found in standalone.xml. Only used to build the runtime configuration (see #configuration).
     private final MonitorServiceConfiguration bootConfiguration;
 
-    /** A version of {@link #bootConfiguration} with defaults properly set. @{link #configuration} is build in
-     * {@link #startMonitorService()} */
+    // A version of bootConfiguration with defaults properly set. This is build in startMonitorService().
     private MonitorServiceConfiguration configuration;
 
     // this is used to identify us to the Hawkular environment as a particular feed
