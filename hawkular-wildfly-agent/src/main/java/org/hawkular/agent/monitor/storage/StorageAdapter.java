@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,6 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
      * @param feedId identifies the feed that is storing data
      * @param config the configuration of the storage adapter
      * @param diag the object used to track internal diagnostic data for the storage adapter
-     * @param selfId helps identify where we are hosted
      * @param httpClientBuilder used to communicate with the storage server
      */
     void initialize(
