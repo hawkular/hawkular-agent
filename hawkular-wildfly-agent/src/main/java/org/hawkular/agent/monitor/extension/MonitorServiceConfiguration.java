@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,6 +54,7 @@ public class MonitorServiceConfiguration {
         private final String securityKey; // if !null, use key/secret rather than username/password to authenticate
         private final String securitySecret;
         private final String tenantId;
+        private final String feedId;
         private final String url;
         private final boolean useSSL;
         private final String serverOutboundSocketBindingRef;
@@ -72,6 +73,7 @@ public class MonitorServiceConfiguration {
                 String securityKey,
                 String securitySecret,
                 String tenantId,
+                String feedId,
                 String url,
                 boolean useSSL,
                 String serverOutboundSocketBindingRef,
@@ -89,6 +91,7 @@ public class MonitorServiceConfiguration {
             this.securityKey = securityKey;
             this.securitySecret = securitySecret;
             this.tenantId = tenantId;
+            this.feedId = feedId;
             this.url = url;
             this.useSSL = useSSL;
             this.serverOutboundSocketBindingRef = serverOutboundSocketBindingRef;
@@ -123,6 +126,18 @@ public class MonitorServiceConfiguration {
 
         public String getTenantId() {
             return tenantId;
+        }
+
+        /**
+         * This is the preconfigured feed ID and may not be set. If this is null (which under normal circumstances
+         * it probably is) the agent will determine its feed ID at runtime. If this is not null, this is
+         * the feed ID that the agent will be forced to use. It is here to allow a user to override the
+         * runtime algorithm the agent uses to determine its feed ID.
+         *
+         * @return the feed ID to be used; may be <code>null</code>
+         */
+        public String getFeedId() {
+            return feedId;
         }
 
         public String getUrl() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -717,6 +717,7 @@ public class MonitorServiceConfigurationBuilder {
         String serverOutboundSocketBindingRef = getString(storageAdapterConfig, context,
                 StorageAttributes.SERVER_OUTBOUND_SOCKET_BINDING_REF);
         String tenantId = getString(storageAdapterConfig, context, StorageAttributes.TENANT_ID);
+        String feedId = getString(storageAdapterConfig, context, StorageAttributes.FEED_ID);
         String accountsContext = getString(storageAdapterConfig, context, StorageAttributes.ACCOUNTS_CONTEXT);
         String inventoryContext = getString(storageAdapterConfig, context, StorageAttributes.INVENTORY_CONTEXT);
         String metricsContext = getString(storageAdapterConfig, context, StorageAttributes.METRICS_CONTEXT);
@@ -745,7 +746,7 @@ public class MonitorServiceConfigurationBuilder {
             throw new IllegalArgumentException("Must have a username/password or security key/secret");
         }
 
-        return new StorageAdapterConfiguration(type, username, password, key, secret, tenantId, url, useSSL,
+        return new StorageAdapterConfiguration(type, username, password, key, secret, tenantId, feedId, url, useSSL,
                 serverOutboundSocketBindingRef, accountsContext, inventoryContext, metricsContext, feedcommContext,
                 keystorePath, keystorePassword, securityRealm);
     }

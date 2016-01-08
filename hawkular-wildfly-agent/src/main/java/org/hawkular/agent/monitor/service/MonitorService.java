@@ -213,6 +213,7 @@ public class MonitorService implements Service<MonitorService> {
                     bootStorageAdapter.getSecurityKey(),
                     bootStorageAdapter.getSecuritySecret(),
                     useTenantId,
+                    bootStorageAdapter.getFeedId(),
                     useUrl,
                     bootStorageAdapter.isUseSSL(),
                     bootStorageAdapter.getServerOutboundSocketBindingRef(),
@@ -423,10 +424,15 @@ public class MonitorService implements Service<MonitorService> {
             // get our self identifiers
             this.localModelControllerClientFactory = ModelControllerClientFactory
                     .createLocal(modelControllerValue.getValue());
-            try (ModelControllerClient c = localModelControllerClientFactory.createClient()) {
-                this.feedId = DMREndpointService.lookupServerIdentifier(c);
-            } catch (Exception e) {
-                throw new Exception("Could not obtain local feed ID", e);
+
+            if (this.configuration.getStorageAdapter().getFeedId() != null) {
+                this.feedId = this.configuration.getStorageAdapter().getFeedId();
+            } else {
+                try (ModelControllerClient c = localModelControllerClientFactory.createClient()) {
+                    this.feedId = DMREndpointService.lookupServerIdentifier(c);
+                } catch (Exception e) {
+                    throw new Exception("Could not obtain local feed ID", e);
+                }
             }
 
             // build the diagnostics object that will be used to track our own performance
@@ -703,7 +709,6 @@ public class MonitorService implements Service<MonitorService> {
      */
     private void registerFeed() throws Exception {
         String desiredFeedId = this.feedId;
-        // this.feedId = desiredFeedId; // assume we will get what we want
 
         try {
             File feedFile = new File(getDataDirectory(), "feedId.txt");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -190,7 +190,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
             assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
-                    (r -> r.getId().contains(datasourceName)), 5, 5000);
+                    (r -> r.getId().contains(datasourceName)), 10, 5000);
 
         }
     }
@@ -236,7 +236,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
             assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/XA%20Datasource/resources",
-                    (r -> r.getId().contains(xaDatasourceName)), 5, 5000);
+                    (r -> r.getId().contains(xaDatasourceName)), 10, 5000);
         }
     }
 
