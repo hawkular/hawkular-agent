@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,6 +69,7 @@ import org.hawkular.inventory.api.model.StructuredData;
 
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.squareup.okhttp.Call;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
@@ -229,11 +230,15 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
 
             org.hawkular.inventory.api.model.MetricType.Blueprint blueprint = //
-                    new org.hawkular.inventory.api.model.MetricType.Blueprint(getInventoryId(metricType),
-                            metricType.getName().getNameString(), mu, metricDataType, metricType.getProperties(),
-                            metricType.getInterval().seconds(),
-                            null,
-                            null);
+            new org.hawkular.inventory.api.model.MetricType.Blueprint(
+                    getInventoryId(metricType),
+                    metricType.getName().getNameString(),
+                    mu,
+                    metricDataType,
+                    metricType.getProperties(),
+                    metricType.getInterval().seconds(),
+                    null,
+                    null);
 
             entity(blueprint, org.hawkular.inventory.api.model.MetricType.class);
 
@@ -382,8 +387,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
             // resource type
             String resourceTypeId = getInventoryId(resourceType);
             org.hawkular.inventory.api.model.ResourceType.Blueprint blueprint = //
-                    new org.hawkular.inventory.api.model.ResourceType.Blueprint(resourceTypeId,
-                            resourceType.getName().getNameString(), resourceType.getProperties(), null, null);
+            new org.hawkular.inventory.api.model.ResourceType.Blueprint(resourceTypeId,
+                    resourceType.getName().getNameString(), resourceType.getProperties(), null, null);
             entity(blueprint, org.hawkular.inventory.api.model.ResourceType.class);
 
             CanonicalPath parentPath = newPathPrefix().resourceType(getInventoryId(resourceType)).get();
@@ -422,7 +427,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             // resource configuration
             Collection<? extends ResourceConfigurationPropertyType<?>> rcpts = //
-                    resourceType.getResourceConfigurationPropertyTypes();
+            resourceType.getResourceConfigurationPropertyTypes();
 
             if (rcpts != null && !rcpts.isEmpty()) {
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
@@ -563,9 +568,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
         private void addResources(List<QueueElement> addQueueElements) throws Exception {
             log.debugf("Adding [%d] resources that were found in inventory work queue", addQueueElements.size());
+
+            // build one big bulk request that will be used to add everything
+            BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(),
+                    AsyncInventoryStorage.this.feedId);
             for (QueueElement elem : addQueueElements) {
                 Resource<?> resource = elem.getResource();
-                BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(), elem.getFeedId());
                 ResourceType<?> resourceType = resource.getResourceType();
 
                 builder.resourceType(resourceType);
@@ -579,80 +587,80 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 builder.resource(resource);
 
                 log.debugf("Storing resource and eventually its type in inventory: [%s]", resource);
+            }
 
-                Map<String, Map<String, List<AbstractElement.Blueprint>>> payload = builder.build();
-                if (!payload.isEmpty()) {
-                    try {
-                        StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
-                                AsyncInventoryStorage.this.config.getInventoryContext());
-                        url.append("bulk");
-                        String jsonPayload = Util.toJson(payload);
+            Map<String, Map<String, List<AbstractElement.Blueprint>>> payload = builder.build();
 
-                        log.tracef("About to send a bulk insert request to inventory: [%s]", jsonPayload);
+            if (!payload.isEmpty()) {
+                try {
+                    StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
+                            AsyncInventoryStorage.this.config.getInventoryContext());
+                    url.append("bulk");
+                    String jsonPayload = Util.toJson(payload);
+                    log.tracef("About to send a bulk insert request to inventory: [%s]", jsonPayload);
 
-                        // now send the REST request
-                        Request request = AsyncInventoryStorage.this.httpClientBuilder
-                                .buildJsonPostRequest(url.toString(), null, jsonPayload);
+                    // now send the REST request
+                    Request request = AsyncInventoryStorage.this.httpClientBuilder
+                            .buildJsonPostRequest(url.toString(), null, jsonPayload);
+                    Call call = AsyncInventoryStorage.this.httpClientBuilder.getHttpClient().newCall(request);
+                    final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
+                    Response response = call.execute();
+                    final long durationNanos = timer.stop();
 
-                        final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
-                        Response response = AsyncInventoryStorage.this.httpClientBuilder
-                                .getHttpClient()
-                                .newCall(request)
-                                .execute();
-                        final long durationNanos = timer.stop();
+                    // HTTP status of 201 means success, 409 means it already exists; anything else is an error
+                    if (response.code() != 201 && response.code() != 409) {
+                        throw new Exception("status-code=[" + response.code() + "], reason=["
+                                + response.message() + "], url=[" + request.urlString() + "]");
+                    }
 
-                        final Reader responseBodyReader;
+                    diagnostics.getInventoryRate().mark(addQueueElements.size());
 
-                        // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-                        if (response.code() != 201 && response.code() != 409) {
-                            throw new Exception("status-code=[" + response.code() + "], reason=["
-                                    + response.message() + "], url=[" + request.urlString() + "]");
-                        }
+                    final Reader responseBodyReader;
+                    if (log.isDebugEnabled()) {
+                        long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
+                        log.debugf("Took [%d]ms to store [%d] resources", durationMs, addQueueElements.size());
+                        String body = response.body().string();
+                        responseBodyReader = new StringReader(body);
+                        log.tracef("Body of bulk insert request response: %s", body);
+                    } else {
+                        responseBodyReader = response.body().charStream();
+                    }
 
-                        if (log.isDebugEnabled()) {
-                            long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
-                            log.debugf("Took [%d]ms to store resource [%s]", durationMs, resource.getName());
-                            String body = response.body().string();
-                            responseBodyReader = new StringReader(body);
-                            log.tracef("Body of bulk insert request response: %s", body);
-                        } else {
-                            responseBodyReader = response.body().charStream();
-                        }
-
-                        TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>> typeRef = //
-                        new TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>>() {
-                        };
-                        LinkedHashMap<String, LinkedHashMap<String, Object>> responses = Util
-                                .fromJson(responseBodyReader, typeRef);
-                        for (Entry<String, LinkedHashMap<String, Object>> typeEntry : responses.entrySet()) {
-                            for (Entry<String, Object> entityEntry : typeEntry.getValue().entrySet()) {
-                                Object rawCode = entityEntry.getValue();
-                                if (rawCode instanceof Integer) {
-                                    int code = ((Integer) rawCode).intValue();
-                                    switch (code) {
-                                        case 201: // success
-                                        case 409: // already existed
-                                            resource.getResourceType().setPersisted(true);
-                                            resource.setPersisted(true);
-                                            break;
-                                        default:
-                                            log.errorFailedToStorePathToInventory(code, typeEntry.getKey(),
-                                                    entityEntry.getKey());
-                                            break;
-                                    }
+                    TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>> typeRef = //
+                    new TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>>() {
+                    };
+                    LinkedHashMap<String, LinkedHashMap<String, Object>> responses = Util
+                            .fromJson(responseBodyReader, typeRef);
+                    for (Entry<String, LinkedHashMap<String, Object>> typeEntry : responses.entrySet()) {
+                        for (Entry<String, Object> entityEntry : typeEntry.getValue().entrySet()) {
+                            Object rawCode = entityEntry.getValue();
+                            if (rawCode instanceof Integer) {
+                                int code = ((Integer) rawCode).intValue();
+                                switch (code) {
+                                    case 201: // success
+                                    case 409: // already existed
+                                        break;
+                                    default:
+                                        log.errorFailedToStorePathToInventory(code, typeEntry.getKey(),
+                                                entityEntry.getKey());
+                                        break;
                                 }
                             }
                         }
-
-                        diagnostics.getInventoryRate().mark(1); // we processed 1 resource and its type
-
-                    } catch (InterruptedException ie) {
-                        throw ie;
-                    } catch (Exception e) {
-                        diagnostics.getStorageErrorRate().mark(1);
-                        log.errorFailedToStoreInventoryData(e);
-                        throw new Exception("Cannot create resource or its resourceType: " + resource, e);
                     }
+
+                    // mark our resource pojos to indicate we persisted everything to inventory
+                    for (QueueElement elem : addQueueElements) {
+                        elem.getResource().setPersisted(true);
+                        elem.getResource().getResourceType().setPersisted(true);
+                    }
+
+                } catch (InterruptedException ie) {
+                    throw ie;
+                } catch (Exception e) {
+                    diagnostics.getStorageErrorRate().mark(1);
+                    log.errorFailedToStoreInventoryData(e);
+                    throw new Exception("Cannot create resources or their resourceTypes", e);
                 }
             }
 
@@ -666,7 +674,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
          *
          * @return resource's ancestry starting from the highest parent in the hierarchy down to the given resource.
          */
-        public List<Resource<?>> getAncestry(Resource<?> resource) {
+        private List<Resource<?>> getAncestry(Resource<?> resource) {
             ArrayList<Resource<?>> ancestry = new ArrayList<>();
             Resource<?> current = resource;
             while (current != null) {
