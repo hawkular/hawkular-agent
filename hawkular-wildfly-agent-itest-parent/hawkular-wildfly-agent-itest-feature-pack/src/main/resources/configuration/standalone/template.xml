@@ -23,6 +23,15 @@
         <?EXTENSIONS?>
   </extensions>
 
+  <system-properties>
+    <property name="keycloak.import" value="${keycloak.import:${jboss.home.dir}/standalone/configuration/hawkular-realm.json}" />
+    <property name="keycloak.server.url" value="${keycloak.server.url:http://localhost:8080/auth}" />
+    <property name="hawkular.events.listener.rest.endpoint" value="http://localhost:8080/hawkular-accounts-events-backend/events" />
+    <property name="hawkular.backend" value="${hawkular.backend:embedded_cassandra}" />
+    <property name="secretstore.redirectTo" value="${secretstore.redirectTo:/hawkular-ui/tokens/{tokenId}}" />
+    <property name="secretstore.parametersToPersist" value="${secretstore.parametersToPersist:Hawkular-Persona}" />
+  </system-properties>
+
   <management>
     <security-realms>
       <security-realm name="ManagementRealm">

@@ -22,18 +22,30 @@
 
   <parent>
     <groupId>org.hawkular.agent</groupId>
-    <artifactId>hawkular-wildfly-agent-parent</artifactId>
+    <artifactId>hawkular-wildfly-agent-itest-parent</artifactId>
     <version>0.15.4.Final-SNAPSHOT</version>
   </parent>
-
-  <artifactId>hawkular-wildfly-agent-wf-extension</artifactId>
+  <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
   <packaging>pom</packaging>
 
-  <name>Hawkular Agent: WildFly Agent Module Extension Distribution</name>
-  <description>The distribution containing the module extension for the Hawkular WildFly Agent</description>
+  <name>Hawkular Agent: WildFly Agent Subsystem Feature Pack</name>
+  <description>A feature pack to be able to deploy a Hawkular WildFly Agent in a WildFly server.</description>
 
   <dependencies>
-    <!-- feature pack dependencies -->
+
+    <dependency>
+      <groupId>org.hawkular.accounts</groupId>
+      <artifactId>hawkular-accounts-feature-pack</artifactId>
+      <version>${version.org.hawkular.accounts}</version>
+      <type>zip</type>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
@@ -46,29 +58,30 @@
         </exclusion>
       </exclusions>
     </dependency>
+
   </dependencies>
 
   <build>
     <plugins>
+
       <plugin>
         <groupId>org.wildfly.build</groupId>
-        <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
+        <artifactId>wildfly-feature-pack-build-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>server-provisioning</id>
+            <id>feature-pack-build</id>
+            <phase>compile</phase>
             <goals>
               <goal>build</goal>
             </goals>
-            <phase>compile</phase>
             <configuration>
-              <config-file>server-provisioning.xml</config-file>
+              <config-file>feature-pack-build.xml</config-file>
             </configuration>
           </execution>
         </executions>
       </plugin>
 
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
@@ -81,17 +94,12 @@
               <descriptors>
                 <descriptor>assembly.xml</descriptor>
               </descriptors>
-              <finalName>${project.build.finalName}</finalName>
               <appendAssemblyId>false</appendAssemblyId>
-              <outputDirectory>${project.build.directory}</outputDirectory>
-              <workDirectory>${project.build.directory}/assembly/work</workDirectory>
               <tarLongFileMode>gnu</tarLongFileMode>
             </configuration>
           </execution>
         </executions>
       </plugin>
-
     </plugins>
   </build>
-
 </project>

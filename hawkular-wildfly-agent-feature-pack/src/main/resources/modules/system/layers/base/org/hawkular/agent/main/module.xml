@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2015 Red Hat, Inc. and/or its affiliates
+    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
     and other contributors as indicated by the @author tags.
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,6 +83,7 @@
     <module name="org.jboss.vfs"/>
 
     <!-- other dependencies we need -->
+    <module name="javaee.api"/> <!-- bus-commons -->
     <module name="org.apache.commons.logging"/> <!-- jolokia -->
     <module name="org.jboss.as.domain-management"/>
     <module name="org.jboss.as.naming"/>
