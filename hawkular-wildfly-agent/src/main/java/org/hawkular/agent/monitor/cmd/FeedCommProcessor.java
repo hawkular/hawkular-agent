@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,6 +80,9 @@ public class FeedCommProcessor implements WebSocketListener {
     private WebSocketCall webSocketCall;
     private WebSocket webSocket;
 
+    // if this is true, this object should never reconnect
+    private boolean destroyed = false;
+
     public FeedCommProcessor(HttpClientBuilder httpClientBuilder, MonitorServiceConfiguration config, String feedId,
             MonitorService discoveryService) {
 
@@ -113,11 +116,16 @@ public class FeedCommProcessor implements WebSocketListener {
 
     /**
      * Connects to the websocket endpoint. This first attempts to disconnect to any existing connection.
+     * If this object has previously been {@link #destroy() destroyed}, then the connect request is ignored.
      *
      * @throws Exception on failure
      */
     public void connect() throws Exception {
         disconnect(); // disconnect to any old connection we had
+
+        if (destroyed) {
+            return;
+        }
 
         log.debugf("About to connect a feed WebSocket client to endpoint [%s]", feedcommUrl);
 
@@ -143,6 +151,15 @@ public class FeedCommProcessor implements WebSocketListener {
             }
             webSocketCall = null;
         }
+    }
+
+    /**
+     * Call this when you know this processor object will never be used again.
+     */
+    public void destroy() {
+        this.destroyed = true;
+        stopReconnectJobThread();
+        disconnect();
     }
 
     /**
@@ -368,12 +385,16 @@ public class FeedCommProcessor implements WebSocketListener {
     }
 
     private void startReconnectJobThread() {
-        ReconnectJobThread newReconnectJob = new ReconnectJobThread();
+        ReconnectJobThread newReconnectJob = (!destroyed) ? new ReconnectJobThread() : null;
         ReconnectJobThread oldReconnectJob = reconnectJobThread.getAndSet(newReconnectJob);
+
         if (oldReconnectJob != null) {
             oldReconnectJob.interrupt();
         }
-        newReconnectJob.start();
+
+        if (newReconnectJob != null) {
+            newReconnectJob.start();
+        }
     }
 
     private void stopReconnectJobThread() {
@@ -394,7 +415,7 @@ public class FeedCommProcessor implements WebSocketListener {
             int attemptCount = 0;
             final long sleepInterval = 1000L;
             boolean keepTrying = true;
-            while (keepTrying) {
+            while (keepTrying && !destroyed) {
                 try {
                     attemptCount++;
                     Thread.sleep(sleepInterval);

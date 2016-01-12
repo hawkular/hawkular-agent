@@ -527,7 +527,7 @@ public class MonitorService implements Service<MonitorService> {
             // disconnect from the feed comm channel
             try {
                 if (feedComm != null) {
-                    feedComm.disconnect();
+                    feedComm.destroy();
                     feedComm = null;
                 }
             } catch (Throwable t) {
