@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,12 +26,14 @@ import com.codahale.metrics.Timer;
  */
 public final class ProtocolDiagnostics {
     private final Meter errorRate;
-
     private final Timer requestTimer;
-    public ProtocolDiagnostics(Timer requestTimer, Meter errorRate) {
+    private final Timer fullDiscoveryScanTimer;
+
+    public ProtocolDiagnostics(Timer requestTimer, Meter errorRate, Timer fullDiscoveryScanTimer) {
         super();
         this.requestTimer = requestTimer;
         this.errorRate = errorRate;
+        this.fullDiscoveryScanTimer = fullDiscoveryScanTimer;
     }
 
     /**
@@ -48,4 +50,10 @@ public final class ProtocolDiagnostics {
         return requestTimer;
     }
 
+    /**
+     * @return tracks the time it takes to perform a full discovery scan
+     */
+    public Timer getFullDiscoveryScanTimer() {
+        return fullDiscoveryScanTimer;
+    }
 }

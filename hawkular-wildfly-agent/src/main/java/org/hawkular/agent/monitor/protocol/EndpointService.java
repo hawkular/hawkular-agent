@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,6 +54,8 @@ import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.util.Consumer;
 import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
+
+import com.codahale.metrics.Timer.Context;
 
 /**
  * A service to discover and sample resources from a single {@link MonitoredEndpoint}. This service also owns the single
@@ -192,14 +194,15 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             @Override
             public void run() {
                 LOG.infof("Being asked to discover all resources for endpoint [%s]", getMonitoredEndpoint());
-                long duration = 0L;
+                long duration = -1;
                 try (S session = openSession()) {
-                    long start = System.currentTimeMillis();
                     Set<ResourceType<L>> rootTypes = resourceTypeManager.getRootResourceTypes();
+                    Context timer = getDiagnostics().getFullDiscoveryScanTimer().time();
                     for (ResourceType<L> rootType : rootTypes) {
                         discoverChildren(null, rootType, session);
                     }
-                    duration = System.currentTimeMillis() - start;
+                    long nanos = timer.stop();
+                    duration = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS);
                 } catch (Exception e) {
                     LOG.errorCouldNotAccess(EndpointService.this, e);
                 }

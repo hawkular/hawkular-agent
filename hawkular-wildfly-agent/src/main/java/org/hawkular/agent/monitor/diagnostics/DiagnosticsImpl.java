@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,8 +62,10 @@ public class DiagnosticsImpl implements Diagnostics {
     }
 
     private static ProtocolDiagnostics newDiagnostics(String prefix, String feedId, MetricRegistry registry) {
-        return new ProtocolDiagnostics(registry.timer(name(feedId, prefix + ".request-timer")),
-                registry.meter(name(feedId, prefix + ".error-rate")));
+        return new ProtocolDiagnostics(
+                registry.timer(name(feedId, prefix + ".request-timer")),
+                registry.meter(name(feedId, prefix + ".error-rate")),
+                registry.timer(name(feedId, prefix + ".full-discovery-scan-timer")));
     }
 
     @Override

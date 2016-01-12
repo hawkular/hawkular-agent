@@ -17,7 +17,8 @@
 
 -->
 <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
-           enabled="true">
+           enabled="true"
+           autoDiscoveryScanPeriodSecs="600">
 
   <diagnostics enabled="true"
                reportTo="LOG"
