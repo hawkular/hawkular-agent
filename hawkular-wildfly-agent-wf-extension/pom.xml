@@ -50,6 +50,7 @@
 
   <build>
     <plugins>
+
       <plugin>
         <groupId>org.wildfly.build</groupId>
         <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
@@ -67,6 +68,64 @@
         </executions>
       </plugin>
 
+      <!-- Unpack the upstream artifacts that host standalone*.xml stubs that we want to adapt in the next steps -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-deps</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/upstream-subsystem-templates</outputDirectory>
+              <includes>subsystem-templates/*.xml</includes>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.hawkular.agent</groupId>
+                  <artifactId>hawkular-wildfly-agent</artifactId>
+                  <version>${project.version}</version>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Generate the standalone*.xml stubs from the upstream originals using XSL transformations -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>xml-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>transform-standalone-xml</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>transform</goal>
+            </goals>
+            <configuration>
+              <transformationSets>
+                <transformationSet>
+                  <dir>${project.build.directory}/upstream-subsystem-templates/subsystem-templates</dir>
+                  <stylesheet>${basedir}/src/main/xsl/subsystem-snippet.xsl</stylesheet>
+                  <includes>
+                    <include>*.xml</include>
+                  </includes>
+                  <outputDir>${project.build.directory}/${project.build.finalName}/modules/system/layers/base/org/hawkular/agent/main</outputDir>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                      <pattern>^.*$</pattern>
+                      <replacement>subsystem-snippet.xml</replacement>
+                    </fileMapper>
+                  </fileMappers>
+                </transformationSet>
+              </transformationSets>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
