@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.ExecuteOperationRequest;
 import org.hawkular.cmdgw.api.ExecuteOperationResponse;
 import org.hawkular.dmr.api.OperationBuilder;
+import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
@@ -65,11 +66,14 @@ public class ExecuteOperationCommand extends
     }
 
     @Override
-    protected BinaryData execute(ModelControllerClient controllerClient,
+    protected BinaryData execute(
+            ModelControllerClient controllerClient,
             EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath,
-            BasicMessageWithExtraData<ExecuteOperationRequest> envelope, ExecuteOperationResponse response,
-            CommandContext context, DMRSession dmrContext) throws Exception {
+            BasicMessageWithExtraData<ExecuteOperationRequest> envelope,
+            ExecuteOperationResponse response,
+            CommandContext context,
+            DMRSession dmrContext) throws Exception {
         ExecuteOperationRequest request = envelope.getBasicMessage();
         CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
         String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
@@ -106,7 +110,8 @@ public class ExecuteOperationCommand extends
         response.setOperationName(request.getOperationName());
 
         final OperationBuilder.ByNameOperationBuilder<?> operation;
-        operation = OperationBuilder.byName(actualOperationName) //
+        operation = OperationBuilder
+                .byName(actualOperationName)
                 .address(opLocation.getPathAddress());
 
         Map<String, String> params = request.getParameters();
@@ -116,7 +121,9 @@ public class ExecuteOperationCommand extends
             }
         }
 
-        operation.execute(controllerClient).assertSuccess();
+        OperationResult<?> opResult = operation.execute(controllerClient).assertSuccess();
+        setServerRefreshIndicator(opResult, response);
+
         return null;
     }
 

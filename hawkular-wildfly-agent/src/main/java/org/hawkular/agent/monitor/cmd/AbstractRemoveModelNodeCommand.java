@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +27,7 @@ import org.hawkular.cmdgw.api.ResourcePathRequest;
 import org.hawkular.cmdgw.api.ResourcePathResponse;
 import org.hawkular.dmr.api.DmrApiException;
 import org.hawkular.dmr.api.OperationBuilder;
+import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
@@ -51,16 +52,30 @@ public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathReq
             RESP response,
             CommandContext context,
             DMRSession dmrContext) throws Exception {
+
+        OperationResult<?> opResult;
+
         try {
-            OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
+            opResult = OperationBuilder
+                    .remove()
+                    .address()
+                    .segments(modelNodePath)
+                    .parentBuilder()
+                    .execute(controllerClient)
                     .assertSuccess();
         } catch (DmrApiException e) {
             /* A workaround for https://issues.jboss.org/browse/WFLY-5528 */
-            log.warnf("Trying to remove resource [%s] for second time, see https://issues.jboss.org/browse/WFLY-5528",
-                    modelNodePath);
-            OperationBuilder.remove().address().segments(modelNodePath).parentBuilder().execute(controllerClient)
+            log.warnf("Attempt #2 to remove resource [%s], see JIRA WFLY-5528", modelNodePath);
+            opResult = OperationBuilder
+                    .remove()
+                    .address()
+                    .segments(modelNodePath)
+                    .parentBuilder()
+                    .execute(controllerClient)
                     .assertSuccess();
         }
+
+        setServerRefreshIndicator(opResult, response);
 
         DMRNodeLocation doomedLocation = DMRNodeLocation.of(modelNodePath);
         endpointService.removeResources(doomedLocation);

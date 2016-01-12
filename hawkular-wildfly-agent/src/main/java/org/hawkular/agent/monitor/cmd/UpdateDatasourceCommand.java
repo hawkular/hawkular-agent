@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +36,7 @@ import org.hawkular.cmdgw.api.UpdateDatasourceResponse;
 import org.hawkular.dmr.api.DmrApiException;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.CompositeOperationBuilder;
+import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.hawkular.dmr.api.SubsystemDatasourceConstants;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
@@ -63,17 +64,22 @@ public class UpdateDatasourceCommand
     }
 
     @Override
-    protected BinaryData execute(ModelControllerClient controllerClient,
+    protected BinaryData execute(
+            ModelControllerClient controllerClient,
             EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath,
-            BasicMessageWithExtraData<UpdateDatasourceRequest> envelope, UpdateDatasourceResponse response,
-            CommandContext context, DMRSession dmrContext) throws Exception {
+            BasicMessageWithExtraData<UpdateDatasourceRequest> envelope,
+            UpdateDatasourceResponse response,
+            CommandContext context,
+            DMRSession dmrContext) throws Exception {
+
         UpdateDatasourceRequest request = envelope.getBasicMessage();
 
         ModelNode adr = OperationBuilder.address().segments(modelNodePath).build();
 
         assertNotRename(adr, request.getDatasourceName());
 
+        OperationResult<?> opResult;
         final CompositeOperationBuilder<?> batch;
         final boolean isXaDatasource = isXa(adr);
         /* there is also request.isXaDatasource() that we ignore here */
@@ -92,12 +98,11 @@ public class UpdateDatasourceCommand
             syncProps(controllerClient, adr, XA_DATASOURCE_PROPERTIES, request.getDatasourceProperties(), batch,
                     isXaDatasource);
             try {
-                batch.execute(controllerClient).assertSuccess();
+                opResult = batch.execute(controllerClient).assertSuccess();
             } catch (DmrApiException e) {
                 /* A workaround for https://issues.jboss.org/browse/WFLY-5527 */
-                log.warn("Trying to update xa-datasource-properties for the second time,"
-                        + " see https://issues.jboss.org/browse/WFLY-5527");
-                batch.execute(controllerClient).assertSuccess();
+                log.warn("Update attempt #2 for xa-datasource-properties, see JIRA WFLY-5527");
+                opResult = batch.execute(controllerClient).assertSuccess();
             }
         } else {
 
@@ -112,9 +117,10 @@ public class UpdateDatasourceCommand
                     ;
             syncProps(controllerClient, adr, CONNECTION_PROPERTIES, request.getDatasourceProperties(), batch,
                     isXaDatasource);
-            batch.execute(controllerClient).assertSuccess();
-
+            opResult = batch.execute(controllerClient).assertSuccess();
         }
+
+        setServerRefreshIndicator(opResult, response);
 
         endpointService.discoverAll();
         return null;

@@ -31,6 +31,7 @@ import org.hawkular.cmdgw.api.AddJdbcDriverRequest;
 import org.hawkular.cmdgw.api.AddJdbcDriverResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmr.api.OperationBuilder;
+import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.hawkular.dmr.api.SubsystemDatasourceConstants;
 import org.hawkular.dmr.api.SubsystemDatasourceConstants.JdbcDriverNodeConstants;
 import org.hawkular.dmrclient.modules.AddModuleRequest;
@@ -80,7 +81,7 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
                 Collections.singleton(jarResource), DEFAULT_DRIVER_MODULE_DEPENDENCIES, null);
         new Modules(Modules.findModulesDir()).add(addModuleRequest);
 
-        OperationBuilder.add()
+        OperationResult<?> opResult = OperationBuilder.add()
                 .address().subsystemDatasources().segment(JDBC_DRIVER, request.getDriverName()).parentBuilder()
                 .attribute(JdbcDriverNodeConstants.DRIVER_NAME, request.getDriverName())
                 .attribute(JdbcDriverNodeConstants.DRIVER_MODULE_NAME, request.getModuleName())
@@ -89,6 +90,7 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
                 .attribute(JdbcDriverNodeConstants.DRIVER_MINOR_VERSION, request.getDriverMinorVersion())
                 .execute(controllerClient)
                 .assertSuccess();
+        setServerRefreshIndicator(opResult, response);
 
         endpointService.discoverAll();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
@@ -35,6 +36,8 @@ import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.cmdgw.api.ResourcePathRequest;
 import org.hawkular.cmdgw.api.ResourcePathResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
+import org.hawkular.cmdgw.api.ServerRefreshIndicator;
+import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
@@ -202,6 +205,24 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
                 this.getOperationName(envelope), entityType, envelope.getBasicMessage().getResourcePath());
         response.setMessage(msg);
 
+    }
+
+    /**
+     * Given the results of an operation, this will set the serverRefreshNeed found in those results
+     * in the given response.
+     *
+     * @param opResults contains the DMR results
+     * @param response the response message
+     */
+    protected void setServerRefreshIndicator(OperationResult<?> opResults, RESP response) {
+        Optional<String> processState = opResults.getOptionalProcessState();
+        if (processState.isPresent()) {
+            try {
+                response.setServerRefreshIndicator(ServerRefreshIndicator.valueOf(processState.get().toUpperCase()));
+            } catch (Exception e) {
+                log.warnf("Cannot set server refresh need - process state is invalid", e);
+            }
+        }
     }
 
     protected void assertLocalServer(MonitoredEndpoint endpoint) {
