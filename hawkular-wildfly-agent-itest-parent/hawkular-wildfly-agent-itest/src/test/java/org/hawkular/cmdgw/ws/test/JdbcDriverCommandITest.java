@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,13 +69,12 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     + "\"status\":\"OK\"," //
                     + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
                     + "}";
-            try (TestWebSocketClient testClient =
-                    TestWebSocketClient.builder() //
-                            .url(baseGwUri + "/ui/ws") //
-                            .expectWelcome(req, driverJarUrl) //
-                            .expectGenericSuccess(wfPath.ids().getFeedId()) //
-                            .expectText(response) //
-                            .build()) {
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
+                    .url(baseGwUri + "/ui/ws") //
+                    .expectWelcome(req, driverJarUrl) //
+                    .expectGenericSuccess(wfPath.ids().getFeedId()) //
+                    .expectText(response) //
+                    .build()) {
                 testClient.validate(10000);
             }
 
@@ -106,15 +105,15 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Performed [Remove] on a [JDBC Driver] given by Inventory path [" + removePath
-                    + "]\""//
+                    + "]\","//
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
                     + "}";
-            try (TestWebSocketClient testClient =
-                    TestWebSocketClient.builder() //
-                            .url(baseGwUri + "/ui/ws") //
-                            .expectWelcome(req) //
-                            .expectGenericSuccess(wfPath.ids().getFeedId()) //
-                            .expectText(response) //
-                            .build()) {
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
+                    .url(baseGwUri + "/ui/ws") //
+                    .expectWelcome(req) //
+                    .expectGenericSuccess(wfPath.ids().getFeedId()) //
+                    .expectText(response) //
+                    .build()) {
                 testClient.validate(10000);
             }
 

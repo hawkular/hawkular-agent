@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +30,7 @@ import org.hawkular.cmdgw.api.AddDatasourceResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.CompositeOperationBuilder;
+import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.hawkular.dmr.api.SubsystemDatasourceConstants;
 import org.hawkular.dmr.api.SubsystemDatasourceConstants.DatasourceNodeConstants;
 import org.hawkular.dmr.api.SubsystemDatasourceConstants.XaDatasourceNodeConstants;
@@ -55,11 +56,14 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
     }
 
     @Override
-    protected BinaryData execute(ModelControllerClient controllerClient,
+    protected BinaryData execute(
+            ModelControllerClient controllerClient,
             EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath,
-            BasicMessageWithExtraData<AddDatasourceRequest> envelope, AddDatasourceResponse response,
-            CommandContext context, DMRSession dmrContext) throws Exception {
+            BasicMessageWithExtraData<AddDatasourceRequest> envelope,
+            AddDatasourceResponse response,
+            CommandContext context,
+            DMRSession dmrContext) throws Exception {
         AddDatasourceRequest request = envelope.getBasicMessage();
         response.setDatasourceName(request.getDatasourceName());
         response.setXaDatasource(request.isXaDatasource());
@@ -112,7 +116,8 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
             }
         }
 
-        batch.execute(controllerClient).assertSuccess();
+        OperationResult<?> opResult = batch.execute(controllerClient).assertSuccess();
+        setServerRefreshIndicator(opResult, response);
 
         // TODO replace with endpointService.discoverChildren(parentLocation, childType)
         endpointService.discoverAll();

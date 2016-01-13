@@ -456,7 +456,8 @@
       </activation>
       <properties>
         <debug.failsafe.argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5007,server=y,suspend=y</debug.failsafe.argLine>
-        <debug.wildfly.argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n</debug.wildfly.argLine>
+        <!-- this can only be a single argument due to the way <javaOpt> works with wildfly maven plugin -->
+        <debug.wildfly.argLine>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n</debug.wildfly.argLine>
       </properties>
     </profile>
   </profiles>

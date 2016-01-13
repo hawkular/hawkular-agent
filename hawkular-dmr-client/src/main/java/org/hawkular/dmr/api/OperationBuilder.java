@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -460,6 +460,40 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
             }
         }
 
+        /**
+         * Should be called after {@link #assertSuccess()}.
+         *
+         * @return an equivalent of {@code responseNode.get(RESPONSE_HEADERS)}
+         */
+        public Optional<ModelNode> getOptionalResponseHeaders() {
+            if (responseNode.hasDefined(ModelDescriptionConstants.RESPONSE_HEADERS)) {
+                return Optional.of(responseNode.get(ModelDescriptionConstants.RESPONSE_HEADERS));
+            } else {
+                return Optional.empty();
+            }
+        }
+
+        /**
+         * Use this to know if the app server needs to be refreshed (e.g. either reloaded or restarted)
+         * based on the operation results.
+         *
+         * Should be called after {@link #assertSuccess()}.
+         *
+         * @return The state of the app server process if it is known from the operation results.
+         *         If the operation results do not indicate a state, the optional value will be empty.
+         */
+        public Optional<String> getOptionalProcessState() {
+            Optional<ModelNode> responseHeaders = getOptionalResponseHeaders();
+            if (responseHeaders.isPresent()) {
+                if (responseHeaders.get().hasDefined(ModelDescriptionConstants.PROCESS_STATE)) {
+                    return Optional.of(responseHeaders.get().get(ModelDescriptionConstants.PROCESS_STATE).asString());
+                } else {
+                    return Optional.empty();
+                }
+            } else {
+                return Optional.empty();
+            }
+        }
     }
 
     public static class ReadAttributeOperationBuilder<T extends ReadAttributeOperationBuilder<?>>

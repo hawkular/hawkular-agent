@@ -90,13 +90,12 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"message\":\"Added Datasource: " + datasourceName + "\""//
                     + "}";
 
-            try (TestWebSocketClient testClient =
-                    TestWebSocketClient.builder() //
-                            .url(baseGwUri + "/ui/ws") //
-                            .expectWelcome(req) //
-                            .expectGenericSuccess(wfPath.ids().getFeedId())//
-                            .expectText(response)
-                            .build()) {
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
+                    .url(baseGwUri + "/ui/ws") //
+                    .expectWelcome(req) //
+                    .expectGenericSuccess(wfPath.ids().getFeedId())//
+                    .expectText(response)
+                    .build()) {
                 testClient.validate(10000);
             }
 
@@ -133,13 +132,12 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Added Datasource: " + xaDatasourceName + "\""//
                     + "}";
-            try (TestWebSocketClient testClient =
-                    TestWebSocketClient.builder() //
-                            .url(baseGwUri + "/ui/ws") //
-                            .expectWelcome(req) //
-                            .expectGenericSuccess(wfPath.ids().getFeedId())//
-                            .expectText(response)
-                            .build()) {
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
+                    .url(baseGwUri + "/ui/ws") //
+                    .expectWelcome(req) //
+                    .expectGenericSuccess(wfPath.ids().getFeedId())//
+                    .expectText(response)
+                    .build()) {
                 testClient.validate(10000);
             }
 
@@ -174,15 +172,15 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
-                    + "]\""//
+                    + "]\","//
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
                     + "}";
-            try (TestWebSocketClient testClient =
-                    TestWebSocketClient.builder() //
-                            .url(baseGwUri + "/ui/ws") //
-                            .expectWelcome(req) //
-                            .expectGenericSuccess(wfPath.ids().getFeedId())//
-                            .expectText(response)
-                            .build()) {
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
+                    .url(baseGwUri + "/ui/ws") //
+                    .expectWelcome(req) //
+                    .expectGenericSuccess(wfPath.ids().getFeedId())//
+                    .expectText(response)
+                    .build()) {
                 testClient.validate(10000);
             }
 
@@ -220,15 +218,15 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
                     + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
-                    + "]\""//
+                    + "]\","//
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
                     + "}";
-            try (TestWebSocketClient testClient =
-                    TestWebSocketClient.builder() //
-                            .url(baseGwUri + "/ui/ws") //
-                            .expectWelcome(req) //
-                            .expectGenericSuccess(wfPath.ids().getFeedId())//
-                            .expectText(response)
-                            .build()) {
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
+                    .url(baseGwUri + "/ui/ws") //
+                    .expectWelcome(req) //
+                    .expectGenericSuccess(wfPath.ids().getFeedId())//
+                    .expectText(response)
+                    .build()) {
                 testClient.validate(10000);
             }
 
@@ -271,16 +269,16 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
                     + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\","
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
                     + "}";
 
-            try (TestWebSocketClient testClient =
-                    TestWebSocketClient.builder() //
-                            .url(baseGwUri + "/ui/ws") //
-                            .expectWelcome(req) //
-                            .expectGenericSuccess(wfPath.ids().getFeedId())//
-                            .expectText(response)
-                            .build()) {
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
+                    .url(baseGwUri + "/ui/ws") //
+                    .expectWelcome(req) //
+                    .expectGenericSuccess(wfPath.ids().getFeedId())//
+                    .expectText(response)
+                    .build()) {
                 testClient.validate(10000);
             }
 
@@ -324,16 +322,16 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
                     + "\"destinationSessionId\":\"{{sessionId}}\"," //
                     + "\"status\":\"OK\","//
-                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\""
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\","
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
                     + "}";
 
-            try (TestWebSocketClient testClient =
-                    TestWebSocketClient.builder() //
-                            .url(baseGwUri + "/ui/ws") //
-                            .expectWelcome(req) //
-                            .expectGenericSuccess(wfPath.ids().getFeedId()) //
-                            .expectText(response) //
-                            .build()) {
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
+                    .url(baseGwUri + "/ui/ws") //
+                    .expectWelcome(req) //
+                    .expectGenericSuccess(wfPath.ids().getFeedId()) //
+                    .expectText(response) //
+                    .build()) {
                 testClient.validate(10000);
             }
 
