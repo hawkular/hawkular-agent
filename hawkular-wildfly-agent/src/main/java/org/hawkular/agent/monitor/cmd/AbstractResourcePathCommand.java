@@ -218,9 +218,9 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
         Optional<String> processState = opResults.getOptionalProcessState();
         if (processState.isPresent()) {
             try {
-                response.setServerRefreshIndicator(ServerRefreshIndicator.valueOf(processState.get().toUpperCase()));
+                response.setServerRefreshIndicator(ServerRefreshIndicator.fromValue(processState.get().toUpperCase()));
             } catch (Exception e) {
-                log.warnf("Cannot set server refresh need - process state is invalid", e);
+                log.warnf("Cannot set server refresh indicator - process state is invalid", e);
             }
         }
     }
