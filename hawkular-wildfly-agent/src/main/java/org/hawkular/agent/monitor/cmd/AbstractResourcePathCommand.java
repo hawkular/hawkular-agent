@@ -208,8 +208,8 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
     }
 
     /**
-     * Given the results of an operation, this will set the serverRefreshNeed found in those results
-     * in the given response.
+     * Given the results of an operation, this will set the {@link ServerRefreshIndicator}
+     * found in those results in the given response.
      *
      * @param opResults contains the DMR results
      * @param response the response message
