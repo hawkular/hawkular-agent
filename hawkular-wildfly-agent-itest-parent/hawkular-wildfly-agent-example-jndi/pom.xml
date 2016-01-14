@@ -28,7 +28,7 @@
 
   <artifactId>hawkular-wildfly-agent-example-jndi</artifactId>
   <packaging>war</packaging>
-  <name>Hawkular Wildfly Agent: Example Custom Agent</name>
+  <name>Hawkular Agent: Example Custom Agent</name>
 
   <dependencies>
     <!-- Hawkular Agent is provided by the agent module dependency -->
