@@ -28,7 +28,7 @@
 
   <groupId>org.hawkular.agent</groupId>
   <artifactId>hawkular-wildfly-agent-parent</artifactId>
-  <version>0.15.5.Final-SNAPSHOT</version>
+  <version>0.15.5.Final</version>
   <packaging>pom</packaging>
 
   <name>Hawkular Agent: Parent</name>
@@ -48,7 +48,7 @@
     <connection>scm:git:git@github.com:hawkular/hawkular-agent.git</connection>
     <developerConnection>scm:git:git@github.com:hawkular/hawkular-agent.git</developerConnection>
     <url>https://github.com/hawkular/hawkular-agent</url>
-    <tag>head</tag>
+    <tag>0.15.5.Final</tag>
   </scm>
 
   <properties>
