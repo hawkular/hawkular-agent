@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 
     Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
@@ -16,9 +17,14 @@
     limitations under the License.
 
 -->
-<server-provisioning xmlns="urn:wildfly:server-provisioning:1.1" extract-schemas="true"
-  copy-module-artifacts="true">
-  <feature-packs>
-    <feature-pack groupId="org.hawkular.agent" artifactId="hawkular-wildfly-agent-itest-feature-pack" version="${project.version}" />
-  </feature-packs>
-</server-provisioning>
+
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xalan="http://xml.apache.org/xalan" version="2.0">
+
+  <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" xalan:indent-amount="4" standalone="no" />
+  <!-- <xsl:strip-space elements="*" /> -->
+
+  <xsl:template match="/*[local-name()='config']">
+    <xsl:copy-of select="//*[local-name()='subsystem']"/>
+  </xsl:template>
+
+</xsl:stylesheet>

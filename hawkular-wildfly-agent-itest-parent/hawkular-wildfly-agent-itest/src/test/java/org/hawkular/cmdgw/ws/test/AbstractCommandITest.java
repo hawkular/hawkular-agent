@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -263,11 +264,11 @@ public abstract class AbstractCommandITest {
      * @throws Throwable
      */
     protected CanonicalPath getCurrentASPath() throws Throwable {
-        List<Resource> wfs = getResources("/feeds/"+ feedId +"/resources", 1);
-        log.fine("Resources under [" + "/feeds/"+ feedId +"/resources" + "] = [" + wfs + "]");
+        List<Resource> servers = getResources("/feeds/"+ feedId +"/resources", 2);
+        List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
+                .collect(Collectors.toList());
         AssertJUnit.assertEquals(1, wfs.size());
-        CanonicalPath wfPath = wfs.get(0).getPath();
-        return wfPath;
+        return wfs.get(0).getPath();
     }
 
     protected Resource getResource(String listPath, Predicate<Resource> predicate) throws Throwable {

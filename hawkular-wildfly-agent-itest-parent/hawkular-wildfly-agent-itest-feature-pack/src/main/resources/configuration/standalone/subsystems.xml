@@ -19,15 +19,15 @@
 -->
 <config>
   <subsystems>
+    <!-- taken from Accounts -->
     <subsystem>logging.xml</subsystem>
-    <subsystem>batch-jberet.xml</subsystem>
+    <subsystem>batch.xml</subsystem>
     <subsystem>bean-validation.xml</subsystem>
-    <subsystem>datasources.xml</subsystem>
-    <subsystem>deployment-scanner.xml</subsystem>
+    <subsystem>keycloak-datasources.xml</subsystem>
     <subsystem>ee.xml</subsystem>
-    <subsystem>ejb3.xml</subsystem>
+    <subsystem>hawkular-accounts-ejb3.xml</subsystem>
     <subsystem>io.xml</subsystem>
-    <subsystem>infinispan.xml</subsystem>
+    <subsystem>keycloak-infinispan.xml</subsystem>
     <subsystem>jaxrs.xml</subsystem>
     <subsystem>jca.xml</subsystem>
     <subsystem>jdr.xml</subsystem>
@@ -42,11 +42,18 @@
     <subsystem>request-controller.xml</subsystem>
     <subsystem>sar.xml</subsystem>
     <subsystem>security-manager.xml</subsystem>
-    <subsystem>security.xml</subsystem>
+    <subsystem>hawkular-accounts-security.xml</subsystem>
     <subsystem>transactions.xml</subsystem>
     <subsystem>undertow.xml</subsystem>
     <subsystem>webservices.xml</subsystem>
     <subsystem>weld.xml</subsystem>
+    <subsystem>keycloak-server.xml</subsystem>
+    <subsystem>hawkular-accounts-keycloak-adapter.xml</subsystem>
+    <subsystem>deployment-scanner.xml</subsystem>
+    <subsystem>hawkular-accounts-messaging-activemq.xml</subsystem>
+    <subsystem>nest.xml</subsystem>
+
+    <!-- required by Agent -->
     <subsystem>hawkular-wildfly-agent.xml</subsystem>
   </subsystems>
 </config>

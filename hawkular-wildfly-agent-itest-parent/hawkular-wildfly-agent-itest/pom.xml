@@ -77,7 +77,7 @@
 
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
+      <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>provided</scope>
@@ -91,7 +91,7 @@
 
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
+      <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
       <exclusions>
@@ -102,32 +102,6 @@
       </exclusions>
     </dependency>
 
-    <dependency>
-      <groupId>org.hawkular.accounts</groupId>
-      <artifactId>hawkular-accounts-feature-pack</artifactId>
-      <version>${version.org.hawkular.accounts}</version>
-      <type>pom</type>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.accounts</groupId>
-      <artifactId>hawkular-accounts-feature-pack</artifactId>
-      <version>${version.org.hawkular.accounts}</version>
-      <type>zip</type>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-dmr-client</artifactId>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,11 +16,8 @@
  */
 package org.hawkular.cmdgw.ws.test;
 
-import java.util.List;
-
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
-import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 /**
@@ -32,9 +29,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
     public void testExecuteOperation() throws Throwable {
         waitForAccountsAndInventory();
 
-        List<Resource> wfs = getResources("/feeds/"+ feedId +"/resources", 1);
-        AssertJUnit.assertEquals(1, wfs.size());
-        CanonicalPath wfPath = wfs.get(0).getPath();
+        CanonicalPath wfPath = getCurrentASPath();
         final String deploymentName = "hawkular-wildfly-agent-helloworld-war.war";
         Resource deployment = getResource("/feeds/"+ feedId +"/resourceTypes/Deployment/resources",
                 (r -> r.getId().endsWith("=" + deploymentName)));
@@ -67,9 +62,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
     public void testExecuteAgentDiscoveryScan() throws Throwable {
         waitForAccountsAndInventory();
 
-        List<Resource> wfs = getResources("/feeds/"+ feedId +"/resources", 1);
-        AssertJUnit.assertEquals(1, wfs.size());
-        CanonicalPath wfPath = wfs.get(0).getPath();
+        CanonicalPath wfPath = getCurrentASPath();
         Resource agent = getResource("/feeds/"+ feedId +"/resourceTypes/Hawkular%20WildFly%20Agent/resources",
                 (r -> r.getId() != null));
 

@@ -32,10 +32,6 @@
   <name>Hawkular Agent: WildFly Agent Module Extension Distribution</name>
   <description>The distribution containing the module extension for the Hawkular WildFly Agent</description>
 
-  <properties>
-    <version.org.wildfly.build>1.1.0.Final</version.org.wildfly.build>
-  </properties>
-
   <dependencies>
     <!-- feature pack dependencies -->
     <dependency>
@@ -54,10 +50,10 @@
 
   <build>
     <plugins>
+
       <plugin>
         <groupId>org.wildfly.build</groupId>
         <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
-        <version>${version.org.wildfly.build}</version>
         <executions>
           <execution>
             <id>server-provisioning</id>
@@ -72,6 +68,64 @@
         </executions>
       </plugin>
 
+      <!-- Unpack the upstream artifacts that host standalone*.xml stubs that we want to adapt in the next steps -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-deps</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/upstream-subsystem-templates</outputDirectory>
+              <includes>subsystem-templates/*.xml</includes>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.hawkular.agent</groupId>
+                  <artifactId>hawkular-wildfly-agent</artifactId>
+                  <version>${project.version}</version>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Generate the standalone*.xml stubs from the upstream originals using XSL transformations -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>xml-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>transform-standalone-xml</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>transform</goal>
+            </goals>
+            <configuration>
+              <transformationSets>
+                <transformationSet>
+                  <dir>${project.build.directory}/upstream-subsystem-templates/subsystem-templates</dir>
+                  <stylesheet>${basedir}/src/main/xsl/subsystem-snippet.xsl</stylesheet>
+                  <includes>
+                    <include>*.xml</include>
+                  </includes>
+                  <outputDir>${project.build.directory}/${project.build.finalName}/modules/system/layers/base/org/hawkular/agent/main</outputDir>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                      <pattern>^.*$</pattern>
+                      <replacement>subsystem-snippet.xml</replacement>
+                    </fileMapper>
+                  </fileMappers>
+                </transformationSet>
+              </transformationSets>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -94,22 +148,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-
-      <!-- USAGE: mvn -Dorg.hawkular.wildfly.home=/opt/wildfly8 wildfly-extension:deploy -->
-      <plugin>
-        <groupId>org.wildfly.plugins</groupId>
-        <artifactId>wildfly-extension-maven-plugin</artifactId>
-        <configuration>
-          <moduleZip>${project.build.directory}/${project.build.finalName}.zip</moduleZip>
-          <jbossHome>${org.hawkular.wildfly.home}</jbossHome>
-          <modulesHome>modules</modulesHome>
-          <serverConfig>standalone/configuration/standalone.xml</serverConfig>
-          <subsystem>${project.basedir}/src/main/resources/system/layers/base/org/hawkular/agent/main/subsystem-snippet.xml</subsystem>
-          <profiles>
-            <profile>default</profile>
-          </profiles>
-        </configuration>
       </plugin>
 
     </plugins>
