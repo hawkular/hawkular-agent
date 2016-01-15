@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -114,7 +116,31 @@ public class AgentInstaller {
                         "You must provide credentials (username/password or key/secret) in installer configuration");
             }
 
-            URL hawkularServerUrl = new URL(installerConfig.getServerUrl());
+            String hawkularServerProtocol;
+            String hawkularServerHost;
+            String hawkularServerPort;
+
+            try {
+                URL hawkularServerUrl = new URL(installerConfig.getServerUrl());
+                hawkularServerProtocol = hawkularServerUrl.getProtocol();
+                hawkularServerHost = hawkularServerUrl.getHost();
+                hawkularServerPort = String.valueOf(hawkularServerUrl.getPort());
+            } catch (MalformedURLException mue) {
+                // its possible the user passed a URL with a WildFly expression like
+                // "http://${jboss.bind.address:localhost}:8080". Try to parse something like that.
+                Matcher m = Pattern.compile("(https?)://(.*):(\\d+)").matcher(installerConfig.getServerUrl());
+                if (!m.matches()) {
+                    throw mue;
+                }
+                try {
+                    hawkularServerProtocol = m.group(1);
+                    hawkularServerHost = m.group(2);
+                    hawkularServerPort = m.group(3);
+                } catch (Exception e) {
+                    throw mue;
+                }
+            }
+
             String moduleZip = installerConfig.getModuleDistribution();
 
             URL moduleZipUrl;
@@ -158,7 +184,7 @@ public class AgentInstaller {
             // deploy given module into given app server home directory and
             // set it up the way it talks to hawkular server on hawkularServerUrl
             // TODO support domain mode
-            File socketBindingSnippetFile = createSocketBindingSnippet(hawkularServerUrl);
+            File socketBindingSnippetFile = createSocketBindingSnippet(hawkularServerHost, hawkularServerPort);
             filesToDelete.add(socketBindingSnippetFile);
             Builder configurationBldr = DeploymentConfiguration.builder()
                     .jbossHome(new File(jbossHome))
@@ -190,7 +216,7 @@ public class AgentInstaller {
             }
 
             // If we are to talk to the Hawkular Server over HTTPS, we need to set up some additional things
-            if (hawkularServerUrl.getProtocol().equals("https")) {
+            if (hawkularServerProtocol.equals("https")) {
                 String keystorePath = installerConfig.getKeystorePath();
                 String keystorePass = installerConfig.getKeystorePassword();
                 String keyPass = installerConfig.getKeyPassword();
@@ -352,13 +378,12 @@ public class AgentInstaller {
     /**
      * Creates a (outbound) socket-binding snippet XML file
      *
-     * @param serverUrl the hawkular server URL
+     * @param host the host where the hawkular server is running
+     * @param port the port where the hawkular server is listening
      * @return file to the temporary socket binding snippet file (this should be cleaned up by the caller)
      * @throws IOException on error
      */
-    private static File createSocketBindingSnippet(URL serverUrl) throws IOException {
-        String host = serverUrl.getHost();
-        String port = String.valueOf(serverUrl.getPort());
+    private static File createSocketBindingSnippet(String host, String port) throws IOException {
         StringBuilder xml = new StringBuilder("<outbound-socket-binding name=\"hawkular\">\n")
             .append("  <remote-destination host=\""+host+"\" port=\""+port+"\" />\n")
             .append("</outbound-socket-binding>");
