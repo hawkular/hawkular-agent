@@ -159,12 +159,13 @@ public class MonitorService implements Service<MonitorService> {
                 }
             }
 
+            log.infoUsingServerSideUrl(useUrl);
+
             String useTenantId = bootStorageAdapter.getTenantId();
 
             if (bootStorageAdapter.getType() == StorageReportTo.HAWKULAR) {
                 try {
-                    StringBuilder url = Util.getContextUrlString(useUrl,
-                            bootStorageAdapter.getAccountsContext());
+                    StringBuilder url = Util.getContextUrlString(useUrl, bootStorageAdapter.getAccountsContext());
                     url.append("personas/current");
 
                     SSLContext sslContext = getSslContext(bootConfiguration, trustOnlySSLContextValues);
@@ -415,7 +416,6 @@ public class MonitorService implements Service<MonitorService> {
                     this.httpsSocketBindingValue,
                     this.serverOutboundSocketBindingValue,
                     this.trustOnlySSLContextValues);
-            log.infoUsingServerSideUrl(this.configuration.getStorageAdapter().getUrl());
 
             // prepare the builder that will create our HTTP/REST clients to the hawkular server infrastructure
             SSLContext ssl = getSslContext(this.configuration, this.trustOnlySSLContextValues);
