@@ -13,10 +13,6 @@
     "connectable" => false,
     "connection-listener-class" => undefined,
     "connection-listener-property" => undefined,
-    "connection-properties" => {
-        "prop1" => {"value" => "val1"},
-        "prop2" => {"value" => "val2"}
-    },
     "connection-url" => "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
     "datasource-class" => undefined,
     "driver-class" => "org.h2.Driver",
@@ -61,6 +57,10 @@
     "valid-connection-checker-class-name" => undefined,
     "valid-connection-checker-properties" => undefined,
     "validate-on-match" => undefined,
+    "connection-properties" => {
+        "prop1" => {"value" => "val1"},
+        "prop2" => {"value" => "val2"}
+    },
     "statistics" => {
         "pool" => {
             "ActiveCount" => 0,
