@@ -520,7 +520,11 @@
                              attribute="bound-address" />
         <resource-config-dmr name="Server State"
                              attribute="server-state" />
-        <operation-dmr name="JDR" operationName="generate-jdr-report" path="/subsystem=jdr" />
+
+        <operation-dmr name="JDR"      operationName="generate-jdr-report" path="/subsystem=jdr" />
+        <operation-dmr name="Reload"   operationName="reload" />
+        <operation-dmr name="Shutdown" operationName="shutdown" />
+
       </resource-type-dmr>
     </resource-type-set-dmr>
 
