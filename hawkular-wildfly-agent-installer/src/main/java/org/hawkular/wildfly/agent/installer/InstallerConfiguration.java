@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,6 +55,7 @@ public class InstallerConfiguration {
     static final String OPTION_SECURITY_KEY = "security-key";
     static final String OPTION_SECURITY_SECRET = "security-secret";
     static final String OPTION_MANAGED_SERVER_NAME = "managed-server-name";
+    static final String OPTION_FEED_ID = "feed-id";
 
     static Options buildCommandLineOptions() {
         Options options = new Options();
@@ -126,6 +127,12 @@ public class InstallerConfiguration {
                 .argName(InstallerConfiguration.OPTION_MANAGED_SERVER_NAME)
                 .longOpt(InstallerConfiguration.OPTION_MANAGED_SERVER_NAME)
                 .desc("The agent will use this name to refer to the server where it is deployed and locally managing.")
+                .numberOfArgs(1)
+                .build());
+        options.addOption(Option.builder()
+                .argName(InstallerConfiguration.OPTION_FEED_ID)
+                .longOpt(InstallerConfiguration.OPTION_FEED_ID)
+                .desc("The feed ID that the agent will use to identify its data.")
                 .numberOfArgs(1)
                 .build());
 
@@ -231,6 +238,7 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_TARGET_CONFIG);
         setProperty(properties, commandLine, OPTION_SUBSYSTEM_SNIPPET);
         setProperty(properties, commandLine, OPTION_MANAGED_SERVER_NAME);
+        setProperty(properties, commandLine, OPTION_FEED_ID);
         setProperty(properties, commandLine, OPTION_SERVER_URL);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PATH);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PASSWORD);
@@ -326,5 +334,9 @@ public class InstallerConfiguration {
 
     public String getManagedServerName() {
         return properties.getProperty(OPTION_MANAGED_SERVER_NAME);
+    }
+
+    public String getFeedId() {
+        return properties.getProperty(OPTION_FEED_ID);
     }
 }

@@ -353,6 +353,10 @@ public class AgentInstaller {
                     .append(" useSSL=\"true\"");
         }
 
+        if (installerConfig.getFeedId() != null && !installerConfig.getFeedId().isEmpty()) {
+            xml.append(" feedId=\"" + installerConfig.getFeedId() + "\"");
+        }
+
         if (installerConfig.getUsername() != null && !installerConfig.getUsername().isEmpty()) {
             xml.append(" username=\"" + installerConfig.getUsername() + "\"");
         }
