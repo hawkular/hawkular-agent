@@ -484,6 +484,79 @@
                   attribute="number-of-transactions" />
     </metric-set-dmr>
 
+    <metric-set-dmr name="JMS Queue Metrics" enabled="true">
+      <metric-dmr name="Consumer Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="consumer-count" />
+      <metric-dmr name="Delivering Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="delivering-count" />
+      <metric-dmr name="Message Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="message-count" />
+      <metric-dmr name="Messages Added"
+                  metricType="counter"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="messages-added" />
+      <metric-dmr name="Scheduled Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="scheduled-count" />
+    </metric-set-dmr>
+
+    <metric-set-dmr name="JMS Topic Metrics" enabled="true">
+      <metric-dmr name="Durable Message Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="durable-message-count" />
+      <metric-dmr name="Durable Subscription Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="durable-subscription-count" />
+      <metric-dmr name="Delivering Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="delivering-count" />
+      <metric-dmr name="Message Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="message-count" />
+      <metric-dmr name="Messages Added"
+                  metricType="counter"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="messages-added" />
+      <metric-dmr name="Non-Durable Message Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="non-durable-message-count" />
+      <metric-dmr name="Non-Durable Subscription Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="non-durable-subscription-count" />
+      <metric-dmr name="Subscription Count"
+                  interval="30"
+                  timeUnits="seconds"
+                  path="/"
+                  attribute="subscription-count" />
+    </metric-set-dmr>
+
     <avail-set-dmr name="Server Availability" enabled="true">
       <avail-dmr name="App Server"
                  interval="30"
@@ -643,6 +716,23 @@
                          metricSets="Transactions Metrics" />
     </resource-type-set-dmr>
 
+    <resource-type-set-dmr name="Messaging" enabled="true">
+      <resource-type-dmr name="Messaging Server"
+                         resourceNameTemplate="Messaging Server [%-]"
+                         path="/subsystem=messaging-activemq/server=*"
+                         parents="WildFly Server" />
+      <resource-type-dmr name="JMS Queue"
+                         resourceNameTemplate="JMS Queue [%-]"
+                         path="/jms-queue=*"
+                         parents="Messaging Server"
+                         metricSets="JMS Queue Metrics" />
+      <resource-type-dmr name="JMS Topic"
+                         resourceNameTemplate="JMS Topic [%-]"
+                         path="/jms-topic=*"
+                         parents="Messaging Server"
+                         metricSets="JMS Topic Metrics" />
+    </resource-type-set-dmr>
+
     <!-- JMX metadata for monitoring Jolokia-enabled applications -->
 
     <avail-set-jmx name="RuntimeAvailsJMX" enabled="true">
@@ -733,11 +823,11 @@
                   port="9990"
                   username="adminUser"
                   password="adminPass"
-                  resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager" />
+                  resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging" />
 
       <local-dmr name="Local"
                  enabled="true"
-                 resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Hawkular" />
+                 resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Hawkular" />
 
       <remote-jmx name="Remote JMX" enabled="false" resourceTypeSets="MainJMX,MemoryPoolJMX" url="http://localhost:8080/jolokia-war"/>
     </managed-servers>
