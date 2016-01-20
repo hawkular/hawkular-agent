@@ -183,6 +183,18 @@ public abstract class AbstractCommandITest {
         client.getDispatcher().getExecutorService().shutdown();
     }
 
+    protected void assertNodeAttributeEquals(ModelControllerClient mcc, ModelNode addressActual, String attributeName,
+            String expectedAttributeValue) {
+        String actualAttributeValue = OperationBuilder.readAttribute()
+                .address(addressActual)
+                .includeDefaults()
+                .execute(mcc)
+                .assertSuccess()
+                .getResultNode()
+                .asString();
+        Assert.assertEquals(actualAttributeValue, expectedAttributeValue);
+    }
+
     protected void assertNodeEquals(ModelControllerClient mcc, ModelNode addressActual, Class<?> caller,
             String expectedNodeFileName) {
         assertNodeEquals(mcc, addressActual, caller, expectedNodeFileName, false);
