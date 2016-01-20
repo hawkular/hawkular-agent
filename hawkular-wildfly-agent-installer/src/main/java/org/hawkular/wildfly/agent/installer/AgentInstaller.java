@@ -120,6 +120,10 @@ public class AgentInstaller {
             String hawkularServerHost;
             String hawkularServerPort;
 
+            if (installerConfig.getServerUrl() == null) {
+                throw new MissingOptionException("You must provide the Hawkular Server URL");
+            }
+
             try {
                 URL hawkularServerUrl = new URL(installerConfig.getServerUrl());
                 hawkularServerProtocol = hawkularServerUrl.getProtocol();
