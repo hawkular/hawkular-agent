@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.cmd;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import org.hawkular.agent.monitor.inventory.ID;
@@ -97,14 +98,25 @@ public class StatisticsControlCommand
         final CompositeOperationBuilder<?> batch = OperationBuilder.composite();
 
         if (datasources.isPresent()) {
-            batch.writeAttribute()
-                    .address(PathAddress.parseCLIStyleAddress("/subsystem=datasources/data-source=*"))
-                    .attribute("statistics-enabled", datasources.get().toString())
-                    .parentBuilder();
-            batch.writeAttribute()
-                    .address(PathAddress.parseCLIStyleAddress("/subsystem=datasources/xa-data-source=*"))
-                    .attribute("statistics-enabled", datasources.get().toString())
-                    .parentBuilder();
+            List<String> dsList = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=datasources"),
+                    "data-source", controllerClient);
+            List<String> xaList = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=datasources"),
+                    "xa-data-source", controllerClient);
+
+            for (String ds : dsList) {
+                String dsAddr = String.format("/subsystem=datasources/data-source=%s", ds);
+                batch.writeAttribute()
+                        .address(PathAddress.parseCLIStyleAddress(dsAddr))
+                        .attribute("statistics-enabled", datasources.get().toString())
+                        .parentBuilder();
+            }
+            for (String xa : xaList) {
+                String xaAddr = String.format("/subsystem=datasources/xa-data-source=%s", xa);
+                batch.writeAttribute()
+                        .address(PathAddress.parseCLIStyleAddress(xaAddr))
+                        .attribute("statistics-enabled", datasources.get().toString())
+                        .parentBuilder();
+            }
         }
 
         if (ejb3.isPresent()) {
@@ -115,17 +127,29 @@ public class StatisticsControlCommand
         }
 
         if (infinispan.isPresent()) {
-            batch.writeAttribute()
-                    .address(PathAddress.parseCLIStyleAddress("/subsystem=infinispan/cache-container=*"))
-                    .attribute("statistics-enabled", infinispan.get().toString())
-                    .parentBuilder();
+            List<String> list = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=infinispan"),
+                    "cache-container", controllerClient);
+
+            for (String name : list) {
+                String addr = String.format("/subsystem=infinispan/cache-container=%s", name);
+                batch.writeAttribute()
+                        .address(PathAddress.parseCLIStyleAddress(addr))
+                        .attribute("statistics-enabled", infinispan.get().toString())
+                        .parentBuilder();
+            }
         }
 
         if (messaging.isPresent()) {
-            batch.writeAttribute()
-                    .address(PathAddress.parseCLIStyleAddress("/subsystem=messaging-activemq/server=*"))
-                    .attribute("statistics-enabled", messaging.get().toString())
-                    .parentBuilder();
+            List<String> list = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=messaging-activemq"),
+                    "server", controllerClient);
+
+            for (String name : list) {
+                String addr = String.format("/subsystem=messaging-activemq/server=%s", name);
+                batch.writeAttribute()
+                        .address(PathAddress.parseCLIStyleAddress(addr))
+                        .attribute("statistics-enabled", messaging.get().toString())
+                        .parentBuilder();
+            }
         }
 
         if (transactions.isPresent()) {
@@ -153,6 +177,15 @@ public class StatisticsControlCommand
             return Optional.empty();
         }
         return Optional.of(setting == StatisticsSetting.ENABLED);
+    }
+
+    private List<String> getChildrenNames(PathAddress parentPath, String childType, ModelControllerClient mcc) {
+        return OperationBuilder.readChildrenNames()
+                .address(parentPath)
+                .childType(childType)
+                .execute(mcc)
+                .assertSuccess()
+                .getList();
     }
 
     @Override

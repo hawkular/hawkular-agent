@@ -44,12 +44,13 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
             String response = "StatisticsControlResponse={"
                     + "\"resourcePath\":\"" + wfPath + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
-                    + "\"status\":\"OK\""
+                    + "\"status\":\"OK\","
                     + "\"message\":\"Statistics for server [" + wfPath.toString()
                     + "] have been enabled for subsystems "
                     + "[datasources, EJB3, infinispan, messaging, transactions, web]"
                     + ", disabled for subsystems []"
-                    + ", and left as-is for subsystems []\""
+                    + ", and left as-is for subsystems []\","
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
 
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
@@ -106,11 +107,12 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
             String response = "StatisticsControlResponse={"
                     + "\"resourcePath\":\"" + wfPath + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
-                    + "\"status\":\"OK\""
+                    + "\"status\":\"OK\","
                     + "\"message\":\"Statistics for server [" + wfPath.toString()
                     + "] have been enabled for subsystems [], disabled for subsystems "
                     + "[datasources, EJB3, infinispan, messaging, transactions, web]"
-                    + ", and left as-is for subsystems []\""
+                    + ", and left as-is for subsystems []\","
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
 
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
@@ -177,10 +179,11 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
             String response = "StatisticsControlResponse={"
                     + "\"resourcePath\":\"" + wfPath + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
-                    + "\"status\":\"OK\""
+                    + "\"status\":\"OK\","
                     + "\"message\":\"Statistics for server [" + wfPath.toString()
                     + "] have been enabled for subsystems [], disabled for subsystems [transactions]"
-                    + ", and left as-is for subsystems [datasources, EJB3, infinispan, messaging, web]\""
+                    + ", and left as-is for subsystems [datasources, EJB3, infinispan, messaging, web]\","
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
 
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
