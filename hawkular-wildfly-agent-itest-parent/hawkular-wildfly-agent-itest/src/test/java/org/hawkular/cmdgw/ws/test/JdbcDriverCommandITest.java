@@ -30,6 +30,8 @@ import org.testng.annotations.Test;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class JdbcDriverCommandITest extends AbstractCommandITest {
+    public static final String GROUP = "JdbcDriverCommandITest";
+
     private static final String driverFileNameAfterAdd = "driver-after-add.node.txt";
     private static final String driverName = "mysql";
 
@@ -37,7 +39,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
         return new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources").add("jdbc-driver", driverName);
     }
 
-    @Test(dependsOnGroups = { "exclusive-inventory-access" })
+    @Test(groups = { GROUP }, dependsOnGroups = { ExportJdrCommandITest.GROUP })
     public void testAddJdbcDriver() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -53,27 +55,27 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             URL driverJarUrl = new URL(driverJarRawUrl);
             final String driverJarName = new File(driverJarUrl.getPath()).getName();
 
-            String req = "AddJdbcDriverRequest={\"authentication\":" + authentication + "," //
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                    + "\"driverName\":\"" + driverName + "\"," //
-                    + "\"driverClass\":\"com.mysql.jdbc.Driver\"," //
-                    + "\"driverMajorVersion\":\"5\"," //
-                    + "\"driverMinorVersion\":\"1\"," //
-                    + "\"moduleName\":\"com.mysql\"," //
-                    + "\"driverJarName\":\"" + driverJarName + "\"" //
+            String req = "AddJdbcDriverRequest={\"authentication\":" + authentication + ","
+                    + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                    + "\"driverName\":\"" + driverName + "\","
+                    + "\"driverClass\":\"com.mysql.jdbc.Driver\","
+                    + "\"driverMajorVersion\":\"5\","
+                    + "\"driverMinorVersion\":\"1\","
+                    + "\"moduleName\":\"com.mysql\","
+                    + "\"driverJarName\":\"" + driverJarName + "\""
                     + "}";
-            String response = "AddJdbcDriverResponse={" //
-                    + "\"driverName\":\"" + driverName + "\"," //
-                    + "\"resourcePath\":\"" + wfPath + "\"," //
-                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
-                    + "\"status\":\"OK\"," //
-                    + "\"message\":\"Added JDBC Driver: " + driverName + "\"" //
+            String response = "AddJdbcDriverResponse={"
+                    + "\"driverName\":\"" + driverName + "\","
+                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"OK\","
+                    + "\"message\":\"Added JDBC Driver: " + driverName + "\""
                     + "}";
-            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
-                    .url(baseGwUri + "/ui/ws") //
-                    .expectWelcome(req, driverJarUrl) //
-                    .expectGenericSuccess(wfPath.ids().getFeedId()) //
-                    .expectText(response) //
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req, driverJarUrl)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectText(response)
                     .build()) {
                 testClient.validate(10000);
             }
@@ -82,7 +84,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(dependsOnMethods = { "testAddJdbcDriver" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAddJdbcDriver" })
     public void testRemoveJdbcDriver() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -97,22 +99,21 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 2);
             assertResourceExists(mcc, driverAddress, true);
 
-            String req = "RemoveJdbcDriverRequest={\"authentication\":" + authentication + ", " //
-                    + "\"resourcePath\":\"" + removePath + "\"" //
+            String req = "RemoveJdbcDriverRequest={\"authentication\":" + authentication + ", "
+                    + "\"resourcePath\":\"" + removePath + "\""
                     + "}";
-            String response = "RemoveJdbcDriverResponse={"//
-                    + "\"resourcePath\":\"" + removePath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
-                    + "\"status\":\"OK\","//
+            String response = "RemoveJdbcDriverResponse={"
+                    + "\"resourcePath\":\"" + removePath.toString() + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"OK\","
                     + "\"message\":\"Performed [Remove] on a [JDBC Driver] given by Inventory path [" + removePath
-                    + "]\","//
-                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
+                    + "]\""
                     + "}";
-            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
-                    .url(baseGwUri + "/ui/ws") //
-                    .expectWelcome(req) //
-                    .expectGenericSuccess(wfPath.ids().getFeedId()) //
-                    .expectText(response) //
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectText(response)
                     .build()) {
                 testClient.validate(10000);
             }
@@ -121,5 +122,4 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
 
         }
     }
-
 }

@@ -16,14 +16,23 @@
  */
 package org.hawkular.cmdgw.ws.test;
 
+import org.hawkular.agent.test.HawkularWildFlyAgentContextITest;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.junit.AfterClass;
 import org.testng.annotations.Test;
 
 public class StatisticsControlCommandITest extends AbstractCommandITest {
+    public static final String GROUP = "StatisticsControlCommandITest";
 
-    @Test(groups = { "no-dependencies" })
+    @AfterClass
+    public void afterClass() throws Throwable {
+        // WARNING: we want to reload to clear the reload-required state, but this puts the server in a bad state
+        // reload();
+    }
+
+    @Test(groups = { GROUP }, dependsOnGroups = { HawkularWildFlyAgentContextITest.GROUP })
     public void testEnableStatistics() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -86,7 +95,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(groups = { "no-dependencies" }, dependsOnMethods = { "testEnableStatistics" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testEnableStatistics" })
     public void testDisableStatistics() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -148,7 +157,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(groups = { "no-dependencies" }, dependsOnMethods = { "testDisableStatistics" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testDisableStatistics" })
     public void testEnableStatisticsSubset() throws Throwable {
         waitForAccountsAndInventory();
 
