@@ -79,7 +79,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     "statistics-enabled",
                     "true");
             assertNodeAttributeEquals(mcc,
-                    Address.parse("/subsystem=infinispan/cache-container=hawkular-alerts").getAddressNode(),
+                    Address.parse("/subsystem=infinispan/cache-container=ejb").getAddressNode(),
                     "statistics-enabled",
                     "true");
 
@@ -141,7 +141,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     "statistics-enabled",
                     "false");
             assertNodeAttributeEquals(mcc,
-                    Address.parse("/subsystem=infinispan/cache-container=hawkular-alerts").getAddressNode(),
+                    Address.parse("/subsystem=infinispan/cache-container=ejb").getAddressNode(),
                     "statistics-enabled",
                     "false");
 
@@ -173,7 +173,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
             // turn on statistics for only one subsystem, leaving the rest disabled
             String req = "StatisticsControlRequest={\"authentication\":" + authentication + ", "
                     + "\"resourcePath\":\"" + wfPath.toString() + "\","
-                    + "\"transactions\":\"DISABLED\""
+                    + "\"transactions\":\"ENABLED\""
                     + "}";
 
             String response = "StatisticsControlResponse={"
