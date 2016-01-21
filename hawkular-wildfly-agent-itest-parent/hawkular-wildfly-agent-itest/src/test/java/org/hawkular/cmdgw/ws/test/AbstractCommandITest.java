@@ -187,6 +187,7 @@ public abstract class AbstractCommandITest {
             String expectedAttributeValue) {
         String actualAttributeValue = OperationBuilder.readAttribute()
                 .address(addressActual)
+                .name(attributeName)
                 .includeDefaults()
                 .execute(mcc)
                 .assertSuccess()

@@ -68,11 +68,11 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     "true");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=transactions").getAddressNode(),
-                    "statistics-enabled",
+                    "enable-statistics",
                     "true");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=ejb3").getAddressNode(),
-                    "statistics-enabled",
+                    "enable-statistics",
                     "true");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=messaging-activemq/server=default").getAddressNode(),
@@ -130,11 +130,11 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     "false");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=transactions").getAddressNode(),
-                    "statistics-enabled",
+                    "enable-statistics",
                     "false");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=ejb3").getAddressNode(),
-                    "statistics-enabled",
+                    "enable-statistics",
                     "false");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=messaging-activemq/server=default").getAddressNode(),
@@ -163,11 +163,11 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     "false");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=transactions").getAddressNode(),
-                    "statistics-enabled",
+                    "enable-statistics",
                     "false");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=ejb3").getAddressNode(),
-                    "statistics-enabled",
+                    "enable-statistics",
                     "false");
 
             // turn on statistics for only one subsystem, leaving the rest disabled
@@ -201,11 +201,11 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     "false");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=transactions").getAddressNode(),
-                    "statistics-enabled",
+                    "enable-statistics",
                     "true");
             assertNodeAttributeEquals(mcc,
                     Address.parse("/subsystem=ejb3").getAddressNode(),
-                    "statistics-enabled",
+                    "enable-statistics",
                     "false");
 
         }
