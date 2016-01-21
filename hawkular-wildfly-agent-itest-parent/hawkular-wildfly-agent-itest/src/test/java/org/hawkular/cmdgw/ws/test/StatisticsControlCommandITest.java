@@ -149,7 +149,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     }
 
     @Test(groups = { "no-dependencies" }, dependsOnMethods = { "testDisableStatistics" })
-    public void testDisableStatisticsSubset() throws Throwable {
+    public void testEnableStatisticsSubset() throws Throwable {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
@@ -181,7 +181,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
                     + "\"message\":\"Statistics for server [" + wfPath.toString()
-                    + "] have been enabled for subsystems [], disabled for subsystems [transactions]"
+                    + "] have been enabled for subsystems [transactions], disabled for subsystems []"
                     + ", and left as-is for subsystems [datasources, EJB3, infinispan, messaging, web]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
