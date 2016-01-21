@@ -28,6 +28,8 @@ import org.testng.annotations.Test;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class DatasourceCommandITest extends AbstractCommandITest {
+    public static final String GROUP = "DatasourceCommandITest";
+
     private static final String datasourceConnectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1";
     private static final String datasourceJndiName = "java:/testH2Ds";
     private static final String datasourceName = "testH2Ds";
@@ -57,7 +59,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                 .add(isXaDatasource ? "xa-data-source" : "data-source", dsName);
     }
 
-    @Test(dependsOnGroups = { "exclusive-inventory-access" })
+    @Test(groups = { GROUP }, dependsOnGroups = { JdbcDriverCommandITest.GROUP })
     public void testAddDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -68,32 +70,32 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             /* define the mock and its behavior */
-            String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                    + "\"xaDatasource\":\"false\"," //
-                    + "\"datasourceName\":\"" + datasourceName + "\"," //
-                    + "\"jndiName\":\"" + datasourceJndiName + "\"," //
-                    + "\"datasourceProperties\":{\"prop1\":\"val1\",\"prop2\":\"val2\"}," //
-                    + "\"driverName\":\"" + driverName + "\"," //
-                    + "\"driverClass\":\"" + driverClass + "\"," //
-                    + "\"connectionUrl\":\"" + datasourceConnectionUrl + "\"," //
-                    + "\"userName\":\"" + userName + "\"," //
-                    + "\"password\":\"" + password + "\"" //
+            String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", "
+                    + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                    + "\"xaDatasource\":\"false\","
+                    + "\"datasourceName\":\"" + datasourceName + "\","
+                    + "\"jndiName\":\"" + datasourceJndiName + "\","
+                    + "\"datasourceProperties\":{\"prop1\":\"val1\",\"prop2\":\"val2\"},"
+                    + "\"driverName\":\"" + driverName + "\","
+                    + "\"driverClass\":\"" + driverClass + "\","
+                    + "\"connectionUrl\":\"" + datasourceConnectionUrl + "\","
+                    + "\"userName\":\"" + userName + "\","
+                    + "\"password\":\"" + password + "\""
                     + "}";
 
-            String response = "AddDatasourceResponse={"//
-                    + "\"xaDatasource\":false,"//
-                    + "\"datasourceName\":\"" + datasourceName + "\","//
-                    + "\"resourcePath\":\"" + wfPath + "\","//
-                    + "\"destinationSessionId\":\"{{sessionId}}\","//
-                    + "\"status\":\"OK\","//
-                    + "\"message\":\"Added Datasource: " + datasourceName + "\""//
+            String response = "AddDatasourceResponse={"
+                    + "\"xaDatasource\":false,"
+                    + "\"datasourceName\":\"" + datasourceName + "\","
+                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"OK\","
+                    + "\"message\":\"Added Datasource: " + datasourceName + "\""
                     + "}";
 
-            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
-                    .url(baseGwUri + "/ui/ws") //
-                    .expectWelcome(req) //
-                    .expectGenericSuccess(wfPath.ids().getFeedId())//
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
                     .expectText(response)
                     .build()) {
                 testClient.validate(10000);
@@ -104,7 +106,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(dependsOnGroups = { "exclusive-inventory-access" })
+    @Test(groups = { GROUP }, dependsOnGroups = { JdbcDriverCommandITest.GROUP })
     public void testAddXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
@@ -113,29 +115,29 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         try (ModelControllerClient mcc = newModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, false);
 
-            String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", " //
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\"," //
-                    + "\"xaDatasource\":\"true\"," //
-                    + "\"datasourceName\":\"" + xaDatasourceName + "\"," //
-                    + "\"jndiName\":\"" + xaDatasourceJndiName + "\"," //
-                    + "\"driverName\":\"" + driverName + "\"," //
-                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
+            String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", "
+                    + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                    + "\"xaDatasource\":\"true\","
+                    + "\"datasourceName\":\"" + xaDatasourceName + "\","
+                    + "\"jndiName\":\"" + xaDatasourceJndiName + "\","
+                    + "\"driverName\":\"" + driverName + "\","
+                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\","
                     + "\"datasourceProperties\":{\"URL\":\"" + xaDataSourceUrl
-                    + "\",\"loginTimeout\":\"2\"}," + "\"userName\":\"" + userName + "\"," //
-                    + "\"password\":\"" + password + "\"" //
+                    + "\",\"loginTimeout\":\"2\"}," + "\"userName\":\"" + userName + "\","
+                    + "\"password\":\"" + password + "\""
                     + "}";
-            String response = "AddDatasourceResponse={"//
-                    + "\"xaDatasource\":true,"//
-                    + "\"datasourceName\":\"" + xaDatasourceName + "\","//
-                    + "\"resourcePath\":\"" + wfPath + "\","//
-                    + "\"destinationSessionId\":\"{{sessionId}}\","//
-                    + "\"status\":\"OK\","//
-                    + "\"message\":\"Added Datasource: " + xaDatasourceName + "\""//
+            String response = "AddDatasourceResponse={"
+                    + "\"xaDatasource\":true,"
+                    + "\"datasourceName\":\"" + xaDatasourceName + "\","
+                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"OK\","
+                    + "\"message\":\"Added Datasource: " + xaDatasourceName + "\""
                     + "}";
-            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
-                    .url(baseGwUri + "/ui/ws") //
-                    .expectWelcome(req) //
-                    .expectGenericSuccess(wfPath.ids().getFeedId())//
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
                     .expectText(response)
                     .build()) {
                 testClient.validate(10000);
@@ -144,10 +146,112 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
 
         }
-
     }
 
-    @Test(dependsOnMethods = { "testUpdateDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAddDatasource" })
+    public void testUpdateDatasource() throws Throwable {
+        waitForAccountsAndInventory();
+
+        CanonicalPath wfPath = getCurrentASPath();
+        ModelNode dsAddress = datasourceAddess(datasourceName, false);
+
+        String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
+                + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
+
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
+
+            final String changedConnectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
+
+            String req = "UpdateDatasourceRequest={\"authentication\":" + authentication + ", "
+                    + "\"resourcePath\":\"" + dsPath + "\","
+                    + "\"datasourceName\":\"" + datasourceName + "\","
+                    + "\"jndiName\":\"" + datasourceJndiName + "\","
+                    + "\"datasourceProperties\":{\"prop1\":\"val1.1\",\"prop3\":\"val3\"},"
+                    + "\"driverName\":\"" + driverName + "\","
+                    + "\"driverClass\":\"" + driverClass + "\","
+                    + "\"connectionUrl\":\"" + changedConnectionUrl + "\","
+                    + "\"userName\":\"" + userName + "\","
+                    + "\"password\":\"" + password + "\""
+                    + "}";
+
+            String response = "UpdateDatasourceResponse={"
+                    + "\"resourcePath\":\"" + dsPath.toString() + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"OK\","
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\","
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
+                    + "}";
+
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectText(response)
+                    .build()) {
+                testClient.validate(10000);
+            }
+
+            assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterUpdate);
+
+            // reload causes that shut down hook of WF plugin shuts down the server
+            // reload();
+        }
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAddXaDatasource" })
+    public void testUpdateXaDatasource() throws Throwable {
+        waitForAccountsAndInventory();
+
+        CanonicalPath wfPath = getCurrentASPath();
+        ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
+
+        String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
+                + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
+
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
+
+            final String changedXaDatasourceJndiName = xaDatasourceJndiName + "_changed";
+            final String changedXaDsUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
+
+            String req = "UpdateDatasourceRequest={\"authentication\":" + authentication + ", "
+                    + "\"resourcePath\":\"" + dsPath + "\","
+                    + "\"datasourceName\":\"" + xaDatasourceName + "\","
+                    + "\"jndiName\":\"" + changedXaDatasourceJndiName + "\","
+                    // changing or removing of props seems to be broken
+                    + "\"datasourceProperties\":{\"URL\":\"" + changedXaDsUrl
+                    + "\",\"loginTimeout\":\"3\"},"
+                    + "\"driverName\":\"" + driverName + "\","
+                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\","
+                    + "\"userName\":\"" + userName + "\","
+                    + "\"password\":\"" + password + "\""
+                    + "}";
+            String response = "UpdateDatasourceResponse={"
+                    + "\"resourcePath\":\"" + dsPath.toString() + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"OK\","
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\","
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
+                    + "}";
+
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectText(response)
+                    .build()) {
+                testClient.validate(10000);
+            }
+
+            assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterUpdate, false);
+
+            // reload causes that shut down hook of WF plugin shuts down the server
+            // reload();
+        }
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateDatasource" })
     public void testRemoveDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -164,21 +268,21 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             getResource("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
                     (r -> r.getId().contains(datasourceName)));
 
-            String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
-                    + "\"resourcePath\":\"" + removePath + "\"" //
+            String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
+                    + "\"resourcePath\":\"" + removePath + "\""
                     + "}";
-            String response = "RemoveDatasourceResponse={"//
-                    + "\"resourcePath\":\"" + removePath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
-                    + "\"status\":\"OK\","//
+            String response = "RemoveDatasourceResponse={"
+                    + "\"resourcePath\":\"" + removePath.toString() + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"OK\","
                     + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
-                    + "]\","//
-                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
+                    + "]\","
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
-            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
-                    .url(baseGwUri + "/ui/ws") //
-                    .expectWelcome(req) //
-                    .expectGenericSuccess(wfPath.ids().getFeedId())//
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
                     .expectText(response)
                     .build()) {
                 testClient.validate(10000);
@@ -193,7 +297,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(dependsOnMethods = { "testUpdateXaDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateXaDatasource" })
     public void testRemoveXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -210,21 +314,21 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             getResource("/feeds/" + feedId + "/resourceTypes/XA%20Datasource/resources",
                     (r -> r.getId().contains(xaDatasourceName)));
 
-            String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", " //
-                    + "\"resourcePath\":\"" + removePath + "\"" //
+            String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
+                    + "\"resourcePath\":\"" + removePath + "\""
                     + "}";
-            String response = "RemoveDatasourceResponse={"//
-                    + "\"resourcePath\":\"" + removePath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
-                    + "\"status\":\"OK\","//
+            String response = "RemoveDatasourceResponse={"
+                    + "\"resourcePath\":\"" + removePath.toString() + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"OK\","
                     + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
-                    + "]\","//
-                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
+                    + "]\","
+                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
-            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
-                    .url(baseGwUri + "/ui/ws") //
-                    .expectWelcome(req) //
-                    .expectGenericSuccess(wfPath.ids().getFeedId())//
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
                     .expectText(response)
                     .build()) {
                 testClient.validate(10000);
@@ -237,110 +341,4 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     (r -> r.getId().contains(xaDatasourceName)), 10, 5000);
         }
     }
-
-    @Test(dependsOnMethods = { "testAddDatasource" })
-    public void testUpdateDatasource() throws Throwable {
-        waitForAccountsAndInventory();
-
-        CanonicalPath wfPath = getCurrentASPath();
-        ModelNode dsAddress = datasourceAddess(datasourceName, false);
-
-        String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
-                + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
-
-        try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
-
-            final String changedConnectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
-
-            String req = "UpdateDatasourceRequest={\"authentication\":" + authentication + ", " //
-                    + "\"resourcePath\":\"" + dsPath + "\"," //
-                    + "\"datasourceName\":\"" + datasourceName + "\"," //
-                    + "\"jndiName\":\"" + datasourceJndiName + "\"," //
-                    + "\"datasourceProperties\":{\"prop1\":\"val1.1\",\"prop3\":\"val3\"}," //
-                    + "\"driverName\":\"" + driverName + "\"," //
-                    + "\"driverClass\":\"" + driverClass + "\"," //
-                    + "\"connectionUrl\":\"" + changedConnectionUrl + "\"," //
-                    + "\"userName\":\"" + userName + "\"," //
-                    + "\"password\":\"" + password + "\"" //
-                    + "}";
-
-            String response = "UpdateDatasourceResponse={"//
-                    + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
-                    + "\"status\":\"OK\","//
-                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\","
-                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
-                    + "}";
-
-            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
-                    .url(baseGwUri + "/ui/ws") //
-                    .expectWelcome(req) //
-                    .expectGenericSuccess(wfPath.ids().getFeedId())//
-                    .expectText(response)
-                    .build()) {
-                testClient.validate(10000);
-            }
-
-            assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterUpdate);
-
-            // reload causes that shut down hook of WF plugin shuts down the server
-            // reload();
-
-        }
-    }
-
-    @Test(dependsOnMethods = { "testAddXaDatasource" })
-    public void testUpdateXaDatasource() throws Throwable {
-        waitForAccountsAndInventory();
-
-        CanonicalPath wfPath = getCurrentASPath();
-        ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
-
-        String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
-                + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
-
-        try (ModelControllerClient mcc = newModelControllerClient()) {
-            assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
-
-            final String changedXaDatasourceJndiName = xaDatasourceJndiName + "_changed";
-            final String changedXaDsUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
-
-            String req = "UpdateDatasourceRequest={\"authentication\":" + authentication + ", " //
-                    + "\"resourcePath\":\"" + dsPath + "\"," //
-                    + "\"datasourceName\":\"" + xaDatasourceName + "\"," //
-                    + "\"jndiName\":\"" + changedXaDatasourceJndiName + "\"," //
-            // changing or removing of props seems to be broken
-                    + "\"datasourceProperties\":{\"URL\":\"" + changedXaDsUrl
-                    + "\",\"loginTimeout\":\"3\"}," //
-                    + "\"driverName\":\"" + driverName + "\"," //
-                    + "\"xaDataSourceClass\":\"" + xaDataSourceClass + "\"," //
-                    + "\"userName\":\"" + userName + "\"," //
-                    + "\"password\":\"" + password + "\"" //
-                    + "}";
-            String response = "UpdateDatasourceResponse={"//
-                    + "\"resourcePath\":\"" + dsPath.toString() + "\"," //
-                    + "\"destinationSessionId\":\"{{sessionId}}\"," //
-                    + "\"status\":\"OK\","//
-                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\","
-                    + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""//
-                    + "}";
-
-            try (TestWebSocketClient testClient = TestWebSocketClient.builder() //
-                    .url(baseGwUri + "/ui/ws") //
-                    .expectWelcome(req) //
-                    .expectGenericSuccess(wfPath.ids().getFeedId()) //
-                    .expectText(response) //
-                    .build()) {
-                testClient.validate(10000);
-            }
-
-            assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterUpdate, false);
-
-            // reload causes that shut down hook of WF plugin shuts down the server
-            // reload();
-
-        }
-    }
-
 }

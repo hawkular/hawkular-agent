@@ -122,10 +122,6 @@ public abstract class AbstractCommandITest {
 
     }
 
-    /**
-     * @param msg
-     * @return
-     */
     protected static String assertWelcomeResponse(String msg) {
         String welcomeRe = "\\QWelcomeResponse={\"sessionId\":\"\\E.*";
         AssertJUnit.assertTrue("[" + msg + "] does not match [" + welcomeRe + "]", msg.matches(welcomeRe));
@@ -177,10 +173,35 @@ public abstract class AbstractCommandITest {
     protected OkHttpClient client;
     protected ObjectMapper mapper;
 
+    @BeforeMethod
+    public void before() {
+        JsonFactory f = new JsonFactory();
+        mapper = new ObjectMapper(f);
+        InventoryJacksonConfig.configure(mapper);
+        this.client = new OkHttpClient();
+
+        // trace(OperationBuilder.class);
+        setLogger("org.hawkular.agent.monitor.cmd", Level.TRACE);
+
+    }
+
     @AfterMethod
     public void after() {
         // Trigger shutdown of the dispatcher's executor so this process can exit cleanly.
         client.getDispatcher().getExecutorService().shutdown();
+    }
+
+    protected void assertNodeAttributeEquals(ModelControllerClient mcc, ModelNode addressActual, String attributeName,
+            String expectedAttributeValue) {
+        String actualAttributeValue = OperationBuilder.readAttribute()
+                .address(addressActual)
+                .name(attributeName)
+                .includeDefaults()
+                .execute(mcc)
+                .assertSuccess()
+                .getResultNode()
+                .asString();
+        Assert.assertEquals(actualAttributeValue, expectedAttributeValue);
     }
 
     protected void assertNodeEquals(ModelControllerClient mcc, ModelNode addressActual, Class<?> caller,
@@ -228,10 +249,6 @@ public abstract class AbstractCommandITest {
 
     }
 
-    /**
-     * @param request
-     * @throws IOException
-     */
     protected void assertResourceExists(ModelControllerClient mcc, ModelNode address, boolean expectedExists)
             throws IOException {
         ModelNode request = new ModelNode();
@@ -247,20 +264,8 @@ public abstract class AbstractCommandITest {
 
     }
 
-    @BeforeMethod
-    public void before() {
-        JsonFactory f = new JsonFactory();
-        mapper = new ObjectMapper(f);
-        InventoryJacksonConfig.configure(mapper);
-        this.client = new OkHttpClient();
-
-        // trace(OperationBuilder.class);
-        setLogger("org.hawkular.agent.monitor.cmd", Level.TRACE);
-
-    }
-
     /**
-     * @return the {@link CanonicalPath} or the only AS server present in inventory
+     * @return the {@link CanonicalPath} of the only AS server present in inventory
      * @throws Throwable
      */
     protected CanonicalPath getCurrentASPath() throws Throwable {
@@ -435,6 +440,11 @@ public abstract class AbstractCommandITest {
         }
     }
 
+    /**
+     * WARNING! For some reason, the server never comes back up clean after the reload.
+     * If you want to use this, you will have to fix it - because once you ask for the server
+     * to reload, it is broken thereafter.
+     */
     protected void reload() {
         // System.out.println("About to reload");
         try (ModelControllerClient mcc = newModelControllerClient()) {

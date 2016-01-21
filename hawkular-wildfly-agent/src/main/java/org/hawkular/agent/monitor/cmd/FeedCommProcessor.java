@@ -65,6 +65,7 @@ public class FeedCommProcessor implements WebSocketListener {
         VALID_COMMANDS.put(RemoveDatasourceCommand.REQUEST_CLASS.getName(), RemoveDatasourceCommand.class);
         VALID_COMMANDS.put(RemoveJdbcDriverCommand.REQUEST_CLASS.getName(), RemoveJdbcDriverCommand.class);
         VALID_COMMANDS.put(UpdateDatasourceCommand.REQUEST_CLASS.getName(), UpdateDatasourceCommand.class);
+        VALID_COMMANDS.put(StatisticsControlCommand.REQUEST_CLASS.getName(), StatisticsControlCommand.class);
     }
 
     private final int disconnectCode = 1000;

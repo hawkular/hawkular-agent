@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,31 +24,28 @@ import org.testng.annotations.Test;
  * @author Juraci Paixão Kröhling
  */
 public class ExportJdrCommandITest extends AbstractCommandITest {
+    public static final String GROUP = "ExportJdrCommandITest";
 
-    @Test(dependsOnGroups = { "no-dependencies" }, groups = "export-jdr")
+    @Test(groups = { GROUP }, dependsOnGroups = { ExecuteOperationCommandITest.GROUP })
     public void exportJdrCommand() throws Throwable {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
 
         try (ModelControllerClient ignored = newModelControllerClient()) {
-
-            String req = "ExportJdrRequest={\"authentication\":" + authentication + ", " //
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\"" //
+            String req = "ExportJdrRequest={\"authentication\":" + authentication + ", "
+                    + "\"resourcePath\":\"" + wfPath.toString() + "\""
                     + "}";
             String responsePattern = "\\QExportJdrResponse={\\E.*";
-            try (TestWebSocketClient testClient =
-                    TestWebSocketClient.builder() //
-                            .url(baseGwUri + "/ui/ws") //
-                            .expectWelcome(req) //
-                            .expectGenericSuccess(wfPath.ids().getFeedId()) //
-                            .expectBinary(responsePattern, new TestWebSocketClient.ZipWithOneEntryMatcher()) //
-                            .build()) {
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectBinary(responsePattern, new TestWebSocketClient.ZipWithOneEntryMatcher())
+                    .build()) {
                 /* 120 seconds, as JDR takes long to execute */
                 testClient.validate(120_000);
             }
-
         }
     }
-
 }

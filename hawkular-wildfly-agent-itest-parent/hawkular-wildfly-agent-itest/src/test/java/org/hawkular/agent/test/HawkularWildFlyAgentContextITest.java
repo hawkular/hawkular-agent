@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@ package org.hawkular.agent.test;
 
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.cmdgw.ws.test.AbstractCommandITest;
+import org.hawkular.cmdgw.ws.test.DatasourceCommandITest;
 import org.testng.annotations.Test;
 
 /**
@@ -25,8 +26,9 @@ import org.testng.annotations.Test;
  * This assumes the example-jndi WAR is deployed in the test app server.
  */
 public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
+    public static final String GROUP = "HawkularWildFlyAgentContextITest";
 
-    @Test(dependsOnGroups = { "no-dependencies" }, groups = "agent-from-jndi")
+    @Test(groups = { GROUP }, dependsOnGroups = { DatasourceCommandITest.GROUP })
     public void testAgentFromJNDI() throws Throwable {
         waitForAccountsAndInventory();
 
