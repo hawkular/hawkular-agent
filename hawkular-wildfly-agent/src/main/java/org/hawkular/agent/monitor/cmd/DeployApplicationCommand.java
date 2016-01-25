@@ -16,8 +16,11 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
+import java.util.Collection;
+
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
@@ -69,7 +72,22 @@ public class DeployApplicationCommand
                     String.format("Cannot deploy application: unknown resource [%s]", resourcePath));
         }
 
-        // find the operation we need to execute - make sure it exists and get the address for the resource to invoke
+        // find the operation we need to execute - make sure it exists
+        Collection<Operation<DMRNodeLocation>> ops = resource.getResourceType().getOperations();
+        boolean canDeploy = false;
+        log.tracef("Searching for Deploy operation among operations [%s] for resource [%s].", ops, resource.getID());
+        for (Operation<DMRNodeLocation> op : ops) {
+            if ("Deploy".equals(op.getName().getNameString())) {
+                canDeploy = true;
+                break;
+            }
+        }
+
+        if (!canDeploy) {
+            throw new IllegalArgumentException(
+                    String.format("Cannot deploy application to [%s]. That feature is disabled.", resource));
+        }
+
         MessageUtils.prepareResourcePathResponse(request, response);
         response.setDestinationFileName(request.getDestinationFileName());
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,8 @@ public abstract class NamedObject extends IDObject {
      * Creates a named object.
      *
      * @param id the id of the object; if null, name will be used as its ID
-     * @param name the name of the object; must not be null
+     * @param name the name of the object; must not be null - typically this is determined
+     *             from the agent configuration as defined in the standalone.xml configuration.
      */
     public NamedObject(ID id, Name name) {
         super((id != null && !id.equals(ID.NULL_ID)) ? id : (name != null) ? new ID(name.getNameString()) : null);
