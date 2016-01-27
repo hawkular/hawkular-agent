@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -239,12 +239,7 @@ public class Util {
      * @return the given string as a Base64 encoded string.
      */
     public static String base64Encode(String plainTextString) {
-        try {
-            String encoded = Base64.getMimeEncoder().encodeToString(plainTextString.getBytes("UTF-8"));
-            return encoded;
-        } catch (UnsupportedEncodingException e) {
-            // UTF-8 should always be there; if it isn't, that's very bad
-            throw new RuntimeException("Charset UTF-8 is not available");
-        }
+        String encoded = new String(Base64.getEncoder().encode(plainTextString.getBytes()));
+        return encoded;
     }
 }
