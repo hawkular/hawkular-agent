@@ -241,7 +241,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     .expectGenericSuccess(wfPath.ids().getFeedId())
                     .expectText(response)
                     .build()) {
-                testClient.validate(10000);
+                testClient.validate(20000);
             }
 
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterUpdate, false);

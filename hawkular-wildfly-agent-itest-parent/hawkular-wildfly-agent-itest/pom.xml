@@ -34,6 +34,7 @@
   <properties>
     <debug.failsafe.argLine />
     <debug.wildfly.argLine />
+    <hawkular.test.staging.dir>${project.build.directory}/staging</hawkular.test.staging.dir>
   </properties>
 
   <dependencies>
@@ -254,18 +255,32 @@
                     </artifactItem>
                     <artifactItem>
                       <groupId>org.hawkular.agent</groupId>
-                      <artifactId>hawkular-wildfly-agent-helloworld-war</artifactId>
-                      <version>${project.version}</version>
-                      <type>war</type>
-                    </artifactItem>
-                    <artifactItem>
-                      <groupId>org.hawkular.agent</groupId>
                       <artifactId>hawkular-wildfly-agent-example-jndi</artifactId>
                       <version>${project.version}</version>
                       <type>war</type>
                     </artifactItem>
                   </artifactItems>
                   <outputDirectory>${project.build.directory}/${project.artifactId}-${project.version}/modules/org/hawkular/nest/main/deployments</outputDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <!-- put a deployment in a staging directory; used for deploy tests -->
+                <id>copy-deployments-to-staging</id>
+                <phase>test-compile</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <stripVersion>true</stripVersion>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.hawkular.agent</groupId>
+                      <artifactId>hawkular-wildfly-agent-helloworld-war</artifactId>
+                      <version>${project.version}</version>
+                      <type>war</type>
+                    </artifactItem>
+                  </artifactItems>
+                  <outputDirectory>${hawkular.test.staging.dir}</outputDirectory>
                 </configuration>
               </execution>
             </executions>
@@ -335,6 +350,9 @@
                 <hawkular.bind.address>${hawkular.bind.address}</hawkular.bind.address>
                 <hawkular.port.offset>${hawkular.port.offset}</hawkular.port.offset>
 
+                <!-- we put application in here so our test can deploy it -->
+                <hawkular.test.staging.dir>${hawkular.test.staging.dir}</hawkular.test.staging.dir>
+
                 <!-- output over-the-wire traffic -->
                 <org.apache.commons.logging.Log>
                   org.apache.commons.logging.impl.SimpleLog
@@ -359,7 +377,7 @@
             </executions>
           </plugin>
 
-          <!-- Start WildFly from the folder where the provisionig plugin has prepared it -->
+          <!-- Start WildFly from the folder where the provisioning plugin has prepared it -->
           <plugin>
             <groupId>org.wildfly.plugins</groupId>
             <artifactId>wildfly-maven-plugin</artifactId>
