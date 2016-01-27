@@ -597,6 +597,7 @@
         <operation-dmr name="JDR"      operationName="generate-jdr-report" path="/subsystem=jdr" />
         <operation-dmr name="Reload"   operationName="reload" />
         <operation-dmr name="Shutdown" operationName="shutdown" />
+        <operation-dmr name="Deploy"   operationName="deploy"   />
 
       </resource-type-dmr>
     </resource-type-set-dmr>
@@ -618,7 +619,6 @@
                          parents="WildFly Server"
                          metricSets="Undertow Metrics"
                          availSets="Deployment Status">
-        <operation-dmr name="Deploy"   operationName="deploy"   />
         <operation-dmr name="Redeploy" operationName="redeploy" />
         <operation-dmr name="Remove"   operationName="remove"   />
         <operation-dmr name="Undeploy" operationName="undeploy" />
