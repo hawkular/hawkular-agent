@@ -17,8 +17,8 @@
 package org.hawkular.agent.test;
 
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
-import org.hawkular.cmdgw.ws.test.AbstractCommandITest;
-import org.hawkular.cmdgw.ws.test.DatasourceCommandITest;
+import org.hawkular.agent.ws.test.AbstractCommandITest;
+import org.hawkular.agent.ws.test.DatasourceCommandITest;
 import org.testng.annotations.Test;
 
 /**
