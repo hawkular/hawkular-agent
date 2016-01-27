@@ -124,6 +124,10 @@ public class ExecuteOperationCommand extends
         OperationResult<?> opResult = operation.execute(controllerClient).assertSuccess();
         setServerRefreshIndicator(opResult, response);
 
+        // because we don't know if the effects of the operation will alter inventory,
+        // let's request a full discovery scan just in case.
+        endpointService.discoverAll();
+
         return null;
     }
 
