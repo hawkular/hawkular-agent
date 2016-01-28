@@ -17,6 +17,7 @@
 package org.hawkular.agent.ws.test;
 
 import org.hawkular.agent.test.HawkularWildFlyAgentContextITest;
+import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
