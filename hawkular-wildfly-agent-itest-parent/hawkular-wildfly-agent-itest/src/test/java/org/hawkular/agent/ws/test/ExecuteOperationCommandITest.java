@@ -27,38 +27,6 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
     public static final String GROUP = "ExecuteOperationCommandITest";
 
     @Test(groups = { GROUP }, dependsOnGroups = { EchoCommandITest.GROUP })
-    public void testExecuteOperation() throws Throwable {
-        waitForAccountsAndInventory();
-
-        CanonicalPath wfPath = getCurrentASPath();
-        final String deploymentName = "hawkular-wildfly-agent-helloworld-war.war";
-        Resource deployment = getResource("/feeds/" + feedId + "/resourceTypes/Deployment/resources",
-                (r -> r.getId().endsWith("=" + deploymentName)));
-
-        String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + deployment.getPath().toString() + "\","
-                + "\"operationName\":\"Redeploy\""
-                + "}";
-        String response = "ExecuteOperationResponse={"
-                + "\"operationName\":\"Redeploy\","
-                + "\"resourcePath\":\"" + deployment.getPath() + "\","
-                + "\"destinationSessionId\":\"{{sessionId}}\","
-                + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Redeploy] on a [DMR Node] given by Inventory path ["
-                + deployment.getPath() + "]\""
-                + "}";
-        try (TestWebSocketClient testClient = TestWebSocketClient.builder()
-                .url(baseGwUri + "/ui/ws")
-                .expectWelcome(req)
-                .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
-                .build()) {
-            testClient.validate(10000);
-        }
-
-    }
-
-    @Test(groups = { GROUP }, dependsOnGroups = { EchoCommandITest.GROUP })
     public void testExecuteAgentDiscoveryScan() throws Throwable {
         waitForAccountsAndInventory();
 
