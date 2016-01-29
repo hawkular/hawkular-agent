@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,9 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.hawkular.agent.monitor.api.Avail;
@@ -26,6 +29,11 @@ import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.util.Util;
+
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
 public class HawkularStorageAdapter implements StorageAdapter {
     private static final MsgLogger log = AgentLoggers.getLogger(HawkularStorageAdapter.class);
@@ -35,6 +43,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     private Diagnostics diagnostics;
     private HttpClientBuilder httpClientBuilder;
     private AsyncInventoryStorage inventoryStorage;
+    private Map<String, String> tenantIdHeader;
 
     public HawkularStorageAdapter() {
     }
@@ -49,7 +58,24 @@ public class HawkularStorageAdapter implements StorageAdapter {
         this.config = config;
         this.diagnostics = diag;
         this.httpClientBuilder = httpClientBuilder;
-        this.inventoryStorage = new AsyncInventoryStorage(feedId, config, httpClientBuilder, diagnostics);
+
+        switch (config.getType()) {
+            case HAWKULAR:
+                // We are in a full hawkular environment - so we will integrate with inventory.
+                this.inventoryStorage = new AsyncInventoryStorage(feedId, config, httpClientBuilder, diagnostics);
+                this.tenantIdHeader = null;
+                break;
+
+            case METRICS:
+                // We are only integrating with standalone Hawkular Metrics which does not support inventory.
+                // In addition, we have to tell metrics what our tenant ID is via HTTP header.
+                this.inventoryStorage = null;
+                this.tenantIdHeader = Collections.singletonMap("Hawkular-Tenant", config.getTenantId());
+                break;
+
+            default:
+                throw new IllegalArgumentException("Invalid type. Please report this bug: " + config.getType());
+        }
     }
 
     @Override
@@ -59,12 +85,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public MetricDataPayloadBuilder createMetricDataPayloadBuilder() {
-        return new HawkularMetricDataPayloadBuilder();
+        return new MetricDataPayloadBuilderImpl();
     }
 
     @Override
     public AvailDataPayloadBuilder createAvailDataPayloadBuilder() {
-        return new HawkularAvailDataPayloadBuilder();
+        return new AvailDataPayloadBuilderImpl();
     }
 
     @Override
@@ -87,15 +113,48 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public void store(MetricDataPayloadBuilder payloadBuilder) {
+        String jsonPayload = "?";
 
-        // send to metrics
-        MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
-        metricsAdapter.initialize(feedId, getStorageAdapterConfiguration(), diagnostics, httpClientBuilder);
-        metricsAdapter.store(payloadBuilder);
+        try {
+            // get the payload in JSON format
+            jsonPayload = payloadBuilder.toPayload().toString();
 
-        // looks like everything stored successfully
-        // the metrics storage adapter already did this, so don't duplicate the stats here
-        //diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
+            // build the REST URL...
+            StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext());
+            url.append("metrics/data");
+
+            // now send the REST request
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), tenantIdHeader, jsonPayload);
+
+            final String jsonPayloadFinal = jsonPayload;
+            this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+                    log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
+                    diagnostics.getStorageErrorRate().mark(1);
+                }
+
+                @Override
+                public void onResponse(Response response) throws IOException {
+                    // HTTP status of 200 means success; anything else is an error
+                    if (response.code() != 200) {
+                        IOException e = new IOException("status-code=[" + response.code() + "], reason=["
+                                + response.message() + "], url=[" + request.urlString() + "]");
+                        log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
+                        diagnostics.getStorageErrorRate().mark(1);
+                        throw e;
+                    }
+
+                    // looks like everything stored successfully
+                    diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
+
+                }
+            });
+
+        } catch (Throwable t) {
+            log.errorFailedToStoreMetricData(t, jsonPayload);
+            diagnostics.getStorageErrorRate().mark(1);
+        }
     }
 
     @Override
@@ -118,29 +177,68 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public void store(AvailDataPayloadBuilder payloadBuilder) {
+        String jsonPayload = "?";
 
-        // send to metrics
-        MetricsOnlyStorageAdapter metricsAdapter = new MetricsOnlyStorageAdapter();
-        metricsAdapter.initialize(feedId, getStorageAdapterConfiguration(), diagnostics, httpClientBuilder);
-        metricsAdapter.store(payloadBuilder);
+        try {
+            // get the payload in JSON format
+            jsonPayload = payloadBuilder.toPayload().toString();
 
-        // looks like everything stored successfully
-        // the metrics storage adapter already did this, so don't duplicate the stats here
-        //diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
+            // build the REST URL...
+            StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext());
+            url.append("availability/data");
+
+            // now send the REST request
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), tenantIdHeader, jsonPayload);
+
+            final String jsonPayloadFinal = jsonPayload;
+            this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+                    log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
+                    diagnostics.getStorageErrorRate().mark(1);
+                }
+
+                @Override
+                public void onResponse(Response response) throws IOException {
+                    // HTTP status of 200 means success; anything else is an error
+                    if (response.code() != 200) {
+                        IOException e = new IOException("status-code=[" + response.code() + "], reason=["
+                                + response.message() + "], url=[" + request.urlString() + "]");
+                        log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
+                        diagnostics.getStorageErrorRate().mark(1);
+                        throw e;
+                    }
+
+                    // looks like everything stored successfully
+                    diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
+
+                }
+            });
+
+        } catch (Throwable t) {
+            log.errorFailedToStoreAvailData(t, jsonPayload);
+            diagnostics.getStorageErrorRate().mark(1);
+        }
     }
 
     @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
-        inventoryStorage.resourcesAdded(event);
+        if (inventoryStorage != null) {
+            inventoryStorage.resourcesAdded(event);
+        }
     }
 
     @Override
     public <L> void resourcesRemoved(InventoryEvent<L> event) {
-        inventoryStorage.resourcesRemoved(event);
+        if (inventoryStorage != null) {
+            inventoryStorage.resourcesRemoved(event);
+        }
     }
 
     @Override
     public void shutdown() {
-        inventoryStorage.shutdown();
+        if (inventoryStorage != null) {
+            inventoryStorage.shutdown();
+        }
     }
 }
