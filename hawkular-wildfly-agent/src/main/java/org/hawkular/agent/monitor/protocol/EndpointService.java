@@ -193,7 +193,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                LOG.infof("Being asked to discover all resources for endpoint [%s]", getMonitoredEndpoint());
+                LOG.infoDiscoveryRequested(getMonitoredEndpoint());
                 long duration = -1;
                 try (S session = openSession()) {
                     Set<ResourceType<L>> rootTypes = resourceTypeManager.getRootResourceTypes();

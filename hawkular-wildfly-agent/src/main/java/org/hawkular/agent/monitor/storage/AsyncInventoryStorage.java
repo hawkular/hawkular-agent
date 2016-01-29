@@ -513,7 +513,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                             } else if (firstElement instanceof RemoveResourceQueueElement) {
                                 removeResources(contiguousGroup);
                             } else {
-                                log.errorf("Invalid queue element - report this bug: %s", firstElement);
+                                log.errorInvalidQueueElement(firstElement.getClass());
                             }
                         }
                     } catch (InterruptedException ie) {
