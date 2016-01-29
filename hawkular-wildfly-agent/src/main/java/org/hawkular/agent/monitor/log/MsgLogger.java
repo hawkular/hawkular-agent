@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,7 @@ import java.util.List;
 
 import javax.management.MalformedObjectNameException;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolException;
@@ -274,5 +275,9 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.WARN)
     @Message(id = 10058, value = "Auto-discovery scan failed")
     void errorAutoDiscoveryFailed(@Cause Throwable t);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10059, value = "Agent is using storage adapter mode [%s]")
+    void infoStorageAdapterMode(StorageReportTo type);
 
 }

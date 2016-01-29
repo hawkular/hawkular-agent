@@ -116,6 +116,8 @@ public class MonitorService implements Service<MonitorService> {
         final MonitorServiceConfiguration.StorageAdapterConfiguration bootStorageAdapter = bootConfiguration
                 .getStorageAdapter();
 
+        log.infoStorageAdapterMode(bootStorageAdapter.getType());
+
         if (bootStorageAdapter.getTenantId() != null && bootStorageAdapter.getUrl() != null) {
             return bootConfiguration;
         } else {
