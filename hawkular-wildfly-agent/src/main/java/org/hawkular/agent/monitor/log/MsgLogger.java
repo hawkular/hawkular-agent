@@ -280,4 +280,36 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10059, value = "Agent is using storage adapter mode [%s]")
     void infoStorageAdapterMode(StorageReportTo type);
 
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10060, value = "Could not close [%s]")
+    void errorCannotClose(@Cause Throwable t, String name);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10061, value = "Failed to discover resources in [%s]")
+    void errorFailedToDiscoverResources(@Cause Throwable t, MonitoredEndpoint endpoint);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10062, value = "Invalid queue element - report this bug: %s")
+    void errorInvalidQueueElement(Class<?> Element);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10063, value = "Feed ID has been registered [%s]")
+    void infoUsingFeedId(String id);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10064, value = "Server gave us a feed ID [%s] but we wanted [%s]")
+    void errorUnwantedFeedId(String acquiredFeedId, String desiredFeedId);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10065, value = "Received request to perform [%s] on a [%s] given by inventory path [%s]")
+    void infoReceivedResourcePathCommand(String operationName, String entityType, String resourcePath);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10066, value = "Being asked to discover all resources for endpoint [%s]")
+    void infoDiscoveryRequested(MonitoredEndpoint monitoredEndpoint);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10067, value = "Feed ID [%s] was already registered; it will be reused")
+    void infoFeedIdAlreadyRegistered(String feedId);
+
 }

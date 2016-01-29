@@ -81,8 +81,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
 
         REQ request = envelope.getBasicMessage();
         String rawResourcePath = request.getResourcePath();
-        log.infof("Received request to perform [%s] on a [%s] given by inventory path [%s]",
-                this.getOperationName(envelope), entityType, rawResourcePath);
+        log.infoReceivedResourcePathCommand(this.getOperationName(envelope), entityType, rawResourcePath);
 
         RESP response = createResponse();
         MessageUtils.prepareResourcePathResponse(request, response);
@@ -137,7 +136,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
                 try {
                     controllerClient.close();
                 } catch (Exception e) {
-                    log.errorf(e, "Could not close a [%s]", controllerClient.getClass().getName());
+                    log.errorCannotClose(e, controllerClient.getClass().getName());
                 }
             }
         }

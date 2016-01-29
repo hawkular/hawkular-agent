@@ -737,17 +737,17 @@ public class MonitorService implements Service<MonitorService> {
                 final String feedObjectFromServer = httpResponse.body().string();
                 final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
                 if (desiredFeedId.equals(feed.getId())) {
-                    log.infof("Feed ID registered [%s]", feed.getId());
+                    log.infoUsingFeedId(feed.getId());
                 } else {
-                    log.errorf("Server gave us a feed ID [%s] but we wanted [%s]", feed.getId(), desiredFeedId);
+                    log.errorUnwantedFeedId(feed.getId(), desiredFeedId);
                     // should we throw an error here or just use the feed ID we were given?
-                    log.errorf("Using feed ID [%s]; make sure the agent doesn't lose its data file", feed.getId());
+                    log.debugf("Using feed ID [%s]; make sure the agent doesn't lose its data file", feed.getId());
                 }
 
                 this.feedId = feed.getId();
 
             } else if (httpResponse.code() == 409) {
-                log.infof("Feed ID [%s] was already registered; it will be reused", this.feedId);
+                log.infoFeedIdAlreadyRegistered(this.feedId);
             } else {
                 throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
                         + httpResponse.message() + "], url=[" + request.urlString() + "]");
