@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,7 @@ public class MetricDataPayloadBuilderTest {
 
     @Test
     public void testEmpty() {
-        MetricsOnlyMetricDataPayloadBuilder builder = new MetricsOnlyMetricDataPayloadBuilder();
+        MetricDataPayloadBuilderImpl builder = new MetricDataPayloadBuilderImpl();
         Assert.assertEquals(3, builder.toObjectPayload().size());
         Assert.assertEquals("{\"counters\":[],\"availabilities\":[],\"gauges\":[]}", builder.toPayload());
     }
@@ -38,7 +38,7 @@ public class MetricDataPayloadBuilderTest {
         List<Map<String, Object>> objectPayload;
         Map<String, Object> dataListById;
 
-        MetricsOnlyMetricDataPayloadBuilder builder = new MetricsOnlyMetricDataPayloadBuilder();
+        MetricDataPayloadBuilderImpl builder = new MetricDataPayloadBuilderImpl();
         builder.addDataPoint("one", 12345, 1.2, MetricType.GAUGE);
         objectPayload = builder.toObjectPayload().get("gauges");
         Assert.assertEquals(1, objectPayload.size());
@@ -73,7 +73,7 @@ public class MetricDataPayloadBuilderTest {
         Map<String, Object> oneDataListById;
         Map<String, Object> twoDataListById;
 
-        MetricsOnlyMetricDataPayloadBuilder builder = new MetricsOnlyMetricDataPayloadBuilder();
+        MetricDataPayloadBuilderImpl builder = new MetricDataPayloadBuilderImpl();
         builder.addDataPoint("one", 12345, 1.2, MetricType.GAUGE);
         builder.addDataPoint("two", 45678, 11.22, MetricType.GAUGE);
         builder.addDataPoint("one", 56789, 9.8, MetricType.GAUGE);

@@ -56,7 +56,6 @@ import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
-import org.hawkular.agent.monitor.storage.MetricsOnlyStorageAdapter;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.Feed;
@@ -604,22 +603,8 @@ public class MonitorService implements Service<MonitorService> {
      * @throws Exception if failed to start the storage adapter
      */
     private void startStorageAdapter() throws Exception {
-        // determine what our backend storage should be and create its associated adapter
-        switch (configuration.getStorageAdapter().getType()) {
-            case HAWKULAR: {
-                this.storageAdapter = new HawkularStorageAdapter();
-                break;
-            }
-            case METRICS: {
-                this.storageAdapter = new MetricsOnlyStorageAdapter();
-                break;
-            }
-            default: {
-                throw new IllegalArgumentException("Invalid storage adapter: "
-                        + configuration.getStorageAdapter());
-            }
-        }
-
+        // create the storage adapter that will write our metrics/inventory data to backend storage on server
+        this.storageAdapter = new HawkularStorageAdapter();
         this.storageAdapter.initialize(feedId, configuration.getStorageAdapter(), diagnostics, httpClientBuilder);
 
         // provide our storage adapter to the proxies - allows external apps to use them to store its own data

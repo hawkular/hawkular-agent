@@ -64,7 +64,7 @@
     <version.org.hawkular.cmdgw>0.10.10.Final-SRC-revision-6dc6896</version.org.hawkular.cmdgw>
     <version.org.hawkular.commons>0.3.4.Final</version.org.hawkular.commons>
     <version.org.hawkular.inventory>0.12.1.Final</version.org.hawkular.inventory>
-    <version.org.hawkular.metrics>0.11.0.Final</version.org.hawkular.metrics>
+    <version.org.hawkular.metrics>0.12.0-SNAPSHOT</version.org.hawkular.metrics>
 
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.2</version.org.jolokia>

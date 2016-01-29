@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@ import org.hawkular.agent.monitor.util.Util;
  * data points one by one. After all data points are added, you can get the payload in
  * either an {@link #toObjectPayload() object} format or a {@link #toPayload() JSON} format.
  */
-public class MetricsOnlyAvailDataPayloadBuilder implements AvailDataPayloadBuilder {
+public class AvailDataPayloadBuilderImpl implements AvailDataPayloadBuilder {
 
     // key is avail ID, value is list of data points where a data point is a map with timestamp and value
     private Map<String, List<Map<String, Object>>> allAvail = new HashMap<>();
