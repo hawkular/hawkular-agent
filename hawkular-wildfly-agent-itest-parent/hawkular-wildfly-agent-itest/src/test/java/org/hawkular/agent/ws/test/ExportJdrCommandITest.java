@@ -43,8 +43,8 @@ public class ExportJdrCommandITest extends AbstractCommandITest {
                     .expectGenericSuccess(wfPath.ids().getFeedId())
                     .expectBinary(responsePattern, new TestWebSocketClient.ZipWithOneEntryMatcher())
                     .build()) {
-                /* 120 seconds, as JDR takes long to execute */
-                testClient.validate(120_000);
+                /* 240 seconds, as JDR takes long to execute */
+                testClient.validate(240_000);
             }
         }
     }
