@@ -121,16 +121,16 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
                     execute(controllerClient, endpointService, modelNodePath, envelope, response, context, session);
             success(envelope, response);
 
-        } catch (Exception e) {
+        } catch (Throwable t) {
             response.setStatus(ResponseStatus.ERROR);
             String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX").withZone(ZoneOffset.UTC)
                     .format(Instant.ofEpochMilli(timestampBeforeExecution));
 
             String msg = String.format(
                     "Could not perform [%s] on a [%s] given by inventory path [%s] requested on [%s]: %s",
-                    this.getOperationName(envelope), entityType, rawResourcePath, formattedTimestamp, e.getMessage());
+                    this.getOperationName(envelope), entityType, rawResourcePath, formattedTimestamp, t.getMessage());
             response.setMessage(msg);
-            log.debug(msg, e);
+            log.debug(msg, t);
         } finally {
             if (controllerClient != null) {
                 try {
