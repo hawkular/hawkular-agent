@@ -31,3 +31,5 @@ nb-configuration.xml
 # KDE
 .directory
 
+# MacOS DS_Store
+.DS_Store

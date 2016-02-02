@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.ws.test;
 
+import org.hawkular.cmdgw.ws.test.EchoCommandITest;
+import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
 import org.testng.annotations.Test;
