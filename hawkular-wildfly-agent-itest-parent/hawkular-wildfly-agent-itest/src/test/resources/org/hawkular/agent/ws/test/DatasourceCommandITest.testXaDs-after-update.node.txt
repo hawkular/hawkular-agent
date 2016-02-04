@@ -31,6 +31,7 @@
     "no-tx-separate-pool" => false,
     "pad-xid" => false,
     "password" => "sa",
+    "pool-fair" => undefined,
     "pool-prefill" => undefined,
     "pool-use-strict-min" => undefined,
     "prepared-statements-cache-size" => undefined,
