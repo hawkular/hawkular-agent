@@ -52,13 +52,21 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
 
     /**
      * Stores the given collected metric data points.
+     * This is an asynchronous call. But if a <code>waitMillis</code> is provided, it indicates the caller is willing
+     * to wait up to that amount of milliseconds for the store to complete before returning.
+     *
      * @param datapoints the data to be stored
+     * @param waitMillis the amount of milliseconds to wait for the store to complete before returning (0==no wait).
      */
-    void storeMetrics(Set<MetricDataPoint> datapoints);
+    void storeMetrics(Set<MetricDataPoint> datapoints, long waitMillis);
 
     /**
      * Stores the given availability check data points.
+     * This is an asynchronous call. But if a <code>waitMillis</code> is provided, it indicates the caller is willing
+     * to wait up to that amount of milliseconds for the store to complete before returning.
+     *
      * @param datapoints the data to be stored
+     * @param waitMillis the amount of milliseconds to wait for the store to complete before returning (0==no wait).
      */
-    void storeAvails(Set<AvailDataPoint> datapoints);
+    void storeAvails(Set<AvailDataPoint> datapoints, long waitMillis);
 }

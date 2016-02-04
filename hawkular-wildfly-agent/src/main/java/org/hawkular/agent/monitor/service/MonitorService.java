@@ -24,8 +24,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -33,6 +38,7 @@ import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLContext;
 
+import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContextImpl;
 import org.hawkular.agent.monitor.cmd.FeedCommProcessor;
@@ -44,13 +50,20 @@ import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
+import org.hawkular.agent.monitor.inventory.AvailType;
+import org.hawkular.agent.monitor.inventory.MeasurementInstance;
+import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
+import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
@@ -515,6 +528,7 @@ public class MonitorService implements Service<MonitorService> {
      */
     public void stopMonitorService() {
         if (!isMonitorServiceStarted()) {
+            log.infoStoppedAlready();
             return; // we are already stopped
         }
 
@@ -538,8 +552,11 @@ public class MonitorService implements Service<MonitorService> {
                 log.debug("Cannot shutdown feed comm but will continue shutdown", t);
             }
 
+            Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> availsToChange = null;
+
             try {
                 if (protocolServices != null) {
+                    availsToChange = getAvailsToChange();
                     protocolServices.stop();
                     protocolServices.removeInventoryListener(inventoryStorageProxy);
                     protocolServices.removeInventoryListener(schedulerService);
@@ -552,7 +569,10 @@ public class MonitorService implements Service<MonitorService> {
 
             // shutdown scheduler and then the storage adapter - make sure we always attempt both
             try {
-                stopScheduler();
+                if (schedulerService != null) {
+                    schedulerService.stop();
+                    schedulerService = null;
+                }
             } catch (Throwable t) {
                 error.compareAndSet(null, t);
                 log.debug("Cannot shutdown scheduler but will continue shutdown", t);
@@ -560,7 +580,11 @@ public class MonitorService implements Service<MonitorService> {
 
             // now stop the storage adapter
             try {
-                stopStorageAdapter();
+                if (storageAdapter != null) {
+                    changeAvails(availsToChange); // notice we do this AFTER we shutdown the scheduler!
+                    storageAdapter.shutdown();
+                    storageAdapter = null;
+                }
             } catch (Throwable t) {
                 error.compareAndSet(null, t);
                 log.debug("Cannot shutdown storage adapter but will continue shutdown", t);
@@ -590,6 +614,47 @@ public class MonitorService implements Service<MonitorService> {
         } finally {
             started = false;
         }
+    }
+
+    private void changeAvails(Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> availsToChange) {
+        if (availsToChange != null && !availsToChange.isEmpty() && storageAdapter != null) {
+            long now = System.currentTimeMillis();
+            Set<AvailDataPoint> datapoints = new HashSet<AvailDataPoint>();
+            for (EndpointService<?, ?> endpointService : availsToChange.keySet()) {
+                EndpointConfiguration config = endpointService.getMonitoredEndpoint().getEndpointConfiguration();
+                Avail setAvailOnShutdown = config.getSetAvailOnShutdown();
+                if (setAvailOnShutdown != null) {
+                    List<MeasurementInstance<?, AvailType<?>>> avails = availsToChange.get(endpointService);
+                    for (MeasurementInstance avail : avails) {
+                        AvailDataPoint availDataPoint = new AvailDataPoint(
+                                endpointService.generateMeasurementKey(avail), now, setAvailOnShutdown);
+                        datapoints.add(availDataPoint);
+                    }
+                }
+            }
+            storageAdapter.storeAvails(datapoints, 60_000L); // wait for the store to complete, but not forever
+        }
+    }
+
+    private Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> getAvailsToChange() {
+        Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> avails = new HashMap<>();
+        for (ProtocolService<?, ?> protocolService : protocolServices.getServices()){
+            for (EndpointService<?, ?> endpointService : protocolService.getEndpointServices().values()) {
+                EndpointConfiguration config = endpointService.getMonitoredEndpoint().getEndpointConfiguration();
+                Avail setAvailOnShutdown = config.getSetAvailOnShutdown();
+                if (setAvailOnShutdown != null) {
+                    List<MeasurementInstance<?, AvailType<?>>> esAvails = new ArrayList<>();
+                    avails.put(endpointService, esAvails);
+                    ResourceManager<?> rm = endpointService.getResourceManager();
+                    List<Resource<?>> resources = (List<Resource<?>>) (List<?>) rm.getResourcesBreadthFirst();
+                    for (Resource<?> resource : resources) {
+                        Collection<?> resourceAvails = resource.getAvails();
+                        esAvails.addAll((Collection<MeasurementInstance<?, AvailType<?>>>) resourceAvails);
+                    }
+                }
+            }
+        }
+        return avails;
     }
 
     /**
@@ -649,16 +714,6 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * Shuts down the internals of the storage adapter.
-     */
-    private void stopStorageAdapter() {
-        if (storageAdapter != null) {
-            storageAdapter.shutdown();
-            storageAdapter = null;
-        }
-    }
-
-    /**
      * Builds the scheduler's configuraton and starts the scheduler.
      * Do NOT call this until you know all resources have been discovered
      * and the inventories have been built.
@@ -679,16 +734,6 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         this.schedulerService.start();
-    }
-
-    /**
-     * Stops the scheduler, which means no more metric collections or avail checks will be performed.
-     */
-    private void stopScheduler() {
-        if (schedulerService != null) {
-            schedulerService.stop();
-            schedulerService = null;
-        }
     }
 
     /**

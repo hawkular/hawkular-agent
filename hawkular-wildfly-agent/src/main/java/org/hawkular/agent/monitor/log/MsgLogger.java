@@ -312,4 +312,8 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10067, value = "Feed ID [%s] was already registered; it will be reused")
     void infoFeedIdAlreadyRegistered(String feedId);
 
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10068, value = "Agent is already stopped.")
+    void infoStoppedAlready();
+
 }

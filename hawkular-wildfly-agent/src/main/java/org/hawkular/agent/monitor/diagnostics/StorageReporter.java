@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.metrics.client.common.MetricType;
@@ -80,33 +79,33 @@ public class StorageReporter extends ScheduledReporter {
             SortedMap<String, Meter> meters,
             SortedMap<String, Timer> timers) {
 
-        MonitoredEndpoint localDmrEndpoint = MonitoredEndpoint.getDefaultLocalDmrEndpoint();
+        String ourName = "_self";
 
         if (!gauges.isEmpty()) {
             Set<MetricDataPoint> samples = new HashSet<>(gauges.size());
             for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
                 Gauge<Integer> gauge = entry.getValue();
-                String key = feedId + "."+ localDmrEndpoint.getName() +"."+ entry.getKey();
+                String key = feedId + "." + ourName + "." + entry.getKey();
                 samples.add(new MetricDataPoint(
                         key,
                         System.currentTimeMillis(),
                         gauge.getValue(),
                         MetricType.GAUGE));
             }
-            storageAdapter.storeMetrics(samples);
+            storageAdapter.storeMetrics(samples, 0);
         }
 
         if (!counters.isEmpty()) {
             Set<MetricDataPoint> samples = new HashSet<>(counters.size());
             for (Map.Entry<String, Counter> entry : counters.entrySet()) {
-                String key = feedId + "."+ localDmrEndpoint.getName() +"."+ entry.getKey();
+                String key = feedId + "." + ourName + "." + entry.getKey();
                 samples.add(new MetricDataPoint(
                         key,
                         System.currentTimeMillis(),
                         entry.getValue().getCount(),
                         MetricType.COUNTER));
             }
-            storageAdapter.storeMetrics(samples);
+            storageAdapter.storeMetrics(samples, 0);
 
         }
 
@@ -114,28 +113,28 @@ public class StorageReporter extends ScheduledReporter {
             Set<MetricDataPoint> samples = new HashSet<>(meters.size());
             for (Map.Entry<String, Meter> entry : meters.entrySet()) {
                 Meter meter = entry.getValue();
-                String key = feedId + "."+ localDmrEndpoint.getName() +"."+ entry.getKey();
+                String key = feedId + "." + ourName + "." + entry.getKey();
                 samples.add(new MetricDataPoint(
                         key,
                         System.currentTimeMillis(),
                         meter.getOneMinuteRate(),
                         MetricType.GAUGE));
             }
-            storageAdapter.storeMetrics(samples);
+            storageAdapter.storeMetrics(samples, 0);
         }
 
         if (!timers.isEmpty()) {
             Set<MetricDataPoint> samples = new HashSet<>(timers.size());
             for (Map.Entry<String, Timer> entry : timers.entrySet()) {
                 Timer timer = entry.getValue();
-                String key = feedId + "."+ localDmrEndpoint.getName() +"."+ entry.getKey();
+                String key = feedId + "." + ourName + "." + entry.getKey();
                 samples.add(new MetricDataPoint(
                         key,
                         System.currentTimeMillis(),
                         timer.getSnapshot().get75thPercentile(),
                         MetricType.GAUGE));
             }
-            storageAdapter.storeMetrics(samples);
+            storageAdapter.storeMetrics(samples, 0);
         }
     }
 

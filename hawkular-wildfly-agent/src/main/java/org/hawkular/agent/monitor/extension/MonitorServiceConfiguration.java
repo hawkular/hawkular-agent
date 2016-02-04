@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.TypeSets;
@@ -309,15 +310,17 @@ public class MonitorServiceConfiguration {
         private final Collection<Name> resourceTypeSets;
         private final ConnectionData connectionData;
         private final String securityRealm;
+        private final Avail setAvailOnShutdown;
 
         public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
-                ConnectionData connectionData, String securityRealm) {
+                ConnectionData connectionData, String securityRealm, Avail setAvailOnShutdown) {
             super();
             this.name = name;
             this.enabled = enabled;
             this.resourceTypeSets = resourceTypeSets;
             this.connectionData = connectionData;
             this.securityRealm = securityRealm;
+            this.setAvailOnShutdown = setAvailOnShutdown;
         }
 
         public Collection<Name> getResourceTypeSets() {
@@ -344,6 +347,12 @@ public class MonitorServiceConfiguration {
             return connectionData == null;
         }
 
+        /**
+         * @return if not null, when the agent shuts down all avail metrics for the endpoint will be set to this value.
+         */
+        public Avail getSetAvailOnShutdown() {
+            return setAvailOnShutdown;
+        }
     }
 
     private final GlobalConfiguration globalConfiguration;

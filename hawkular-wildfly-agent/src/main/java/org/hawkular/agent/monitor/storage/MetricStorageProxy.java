@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,10 +43,10 @@ public class MetricStorageProxy implements MetricStorage {
     }
 
     @Override
-    public void store(MetricDataPayloadBuilder payloadBuilder) {
+    public void store(MetricDataPayloadBuilder payloadBuilder, long waitMillis) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
-        storageAdapter.store(payloadBuilder);
+        storageAdapter.store(payloadBuilder, waitMillis);
     }
 }
