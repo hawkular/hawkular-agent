@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,6 +75,9 @@ public class InstallerConfigurationTest {
         CommandLine commandLine = new DefaultParser().parse(options,
                 args("--installer-config", "classpath:test-installer.properties",
                         "--enabled", "false",
+                        "--feed-id", "OVERRIDE-feed-id",
+                        "--tenant-id", "OVERRIDE-tenant-id",
+                        "--metrics-only", "true",
                         "--target-location", "/opt/wildfly/OVERRIDE",
                         "--target-config", "standalone/configuration/OVERRIDE.xml",
                         "--subsystem-snippet", "subdir/subsystem-snippetOVERRIDE.xml",
@@ -106,6 +109,9 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("OVERRIDE-key", installerConfig.getSecurityKey());
         Assert.assertEquals("OVERRIDE-secret", installerConfig.getSecuritySecret());
         Assert.assertEquals("/OVERRIDE/dist.zip", installerConfig.getModuleDistribution());
+        Assert.assertEquals("OVERRIDE-feed-id", installerConfig.getFeedId());
+        Assert.assertEquals("OVERRIDE-tenant-id", installerConfig.getTenantId());
+        Assert.assertTrue(installerConfig.isMetricsOnlyMode());
     }
 
     @Test
@@ -177,5 +183,8 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("test-key", installerConfig.getSecurityKey());
         Assert.assertEquals("test-secret", installerConfig.getSecuritySecret());
         Assert.assertEquals("/test/dist.zip", installerConfig.getModuleDistribution());
+        Assert.assertEquals("test-feed-id", installerConfig.getFeedId());
+        Assert.assertEquals("test-tenant-id", installerConfig.getTenantId());
+        Assert.assertFalse("Default metrics-only should have been false", installerConfig.isMetricsOnlyMode());
     }
 }

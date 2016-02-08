@@ -129,6 +129,9 @@ public class AgentInstaller {
                 hawkularServerProtocol = hawkularServerUrl.getProtocol();
                 hawkularServerHost = hawkularServerUrl.getHost();
                 hawkularServerPort = String.valueOf(hawkularServerUrl.getPort());
+                if ("-1".equals(hawkularServerPort)) {
+                    hawkularServerPort = "80";
+                }
             } catch (MalformedURLException mue) {
                 // its possible the user passed a URL with a WildFly expression like
                 // "http://${jboss.bind.address:localhost}:8080". Try to parse something like that.
@@ -349,8 +352,21 @@ public class AgentInstaller {
      */
     private static XmlEdit createStorageAdapter(boolean withHttps, InstallerConfiguration installerConfig) {
         String select = "/server/profile/*[namespace-uri()='urn:org.hawkular.agent:agent:1.0']/";
-        StringBuilder xml = new StringBuilder("<storage-adapter")
-                .append(" type=\"HAWKULAR\"");
+        StringBuilder xml = new StringBuilder("<storage-adapter");
+
+        String tenantId = installerConfig.getTenantId();
+        if (installerConfig.isMetricsOnlyMode()) {
+            xml.append(" type=\"METRICS\"");
+            if (tenantId == null || tenantId.isEmpty()) {
+                throw new IllegalArgumentException("You must specify tenant-id when in metrics-only mode");
+            }
+        } else {
+            xml.append(" type=\"HAWKULAR\"");
+        }
+
+        if (tenantId != null && !tenantId.isEmpty()) {
+            xml.append(" tenantId=\"" + tenantId + "\"");
+        }
 
         if (withHttps) {
             xml.append(" securityRealm=\"" + SECURITY_REALM_NAME + "\"")
@@ -379,8 +395,8 @@ public class AgentInstaller {
         xml.append("/>");
 
         // replaces <storage-adapter> under urn:org.hawkular.agent:agent:1.0 subsystem with above content
-        // but only if it has type="HAWKULAR"
-        return new XmlEdit(select, xml.toString()).withAttribute("type");
+        // we ignore whether the original storage-adapter has type of HAWKULAR or METRICS
+        return new XmlEdit(select, xml.toString()).withAttribute("type").withIsIgnoreAttributeValue(true);
     }
 
     /**

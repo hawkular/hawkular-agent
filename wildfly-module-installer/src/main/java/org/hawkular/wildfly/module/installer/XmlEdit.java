@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,6 +35,11 @@ import java.net.URL;
  * that is used to replace/insert an attribute value. In other words, if {@link #isAttributeContent()}
  * is true, {@link #getSelect()} should be an XPath to an attribute, not an element node.
  *
+ * If {@link #isIgnoreAttributeValue()} is true, then when matching an element with the
+ * given {@link #getAttribute() attribute}, the matching won't care about the attribute value.
+ * Use this normally if you know there is only one element with the given attribute but the attribute
+ * value is unknown. This lets you match that element without caring about the value.
+ *
  * @author lzoubek@redhat.com
  */
 public class XmlEdit {
@@ -44,6 +49,7 @@ public class XmlEdit {
     private String xml;
     private String attribute;
     private boolean isAttributeContent = false;
+    private boolean isIgnoreAttributeValue = false;
 
     public XmlEdit() {
 
@@ -66,6 +72,11 @@ public class XmlEdit {
 
     public XmlEdit withIsAttributeContent(boolean flag) {
         this.isAttributeContent = flag;
+        return this;
+    }
+
+    public XmlEdit withIsIgnoreAttributeValue(boolean flag) {
+        this.isIgnoreAttributeValue = flag;
         return this;
     }
 
@@ -109,10 +120,19 @@ public class XmlEdit {
         this.isAttributeContent = isAttributeContent;
     }
 
+    public boolean isIgnoreAttributeValue() {
+        return isIgnoreAttributeValue;
+    }
+
+    public void setIgnoreAttributeValue(boolean isIgnoreAttributeValue) {
+        this.isIgnoreAttributeValue = isIgnoreAttributeValue;
+    }
+
     @Override
     public String toString() {
         return new StringBuilder(getClass().getName()+"[").append("select=" + this.select)
                 .append(" is-attribute-content=" + isAttributeContent)
+                .append(" is-ignore-attribute-value=" + isIgnoreAttributeValue)
                 .append(content == null ? "" : " content=" + content)
                 .append(attribute == null ? "" : " attribute=" + attribute)
                 .append(xml == null ? "" : " xml=" + this.xml).append("]").toString();

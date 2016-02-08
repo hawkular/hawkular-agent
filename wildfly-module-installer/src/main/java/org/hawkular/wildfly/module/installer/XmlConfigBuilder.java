@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -154,15 +154,12 @@ class XmlConfigBuilder {
                             Node inserting = contentDoc.getDocumentElement().cloneNode(true);
                             srcDoc.adoptNode(inserting);
                             String recentNs = findRecentNamespaceFromXpath(expression);
-                            // is the root node of inserting content already
-                            // present?
-
+                            // is the root node of inserting content already present?
                             XPathExpression contentExpr = createContentRootExpression(contentDoc, recentNs, namespace,
-                                    xmlEdit.getAttribute());
+                                    xmlEdit.getAttribute(), xmlEdit.isIgnoreAttributeValue());
                             NodeList existingNodes = (NodeList) contentExpr.evaluate(element, XPathConstants.NODESET);
                             if (existingNodes.getLength() > 0) {
-                                // we need to remove those? (could be many)
-                                // we'll replace the last guy
+                                // we need to remove those? (could be many)... we'll just replace the last guy
                                 element.replaceChild(inserting, existingNodes.item(existingNodes.getLength() - 1));
                             } else {
                                 element.appendChild(inserting);
@@ -266,6 +263,11 @@ class XmlConfigBuilder {
     }
 
     public static String element2Xpath(Element element, String prefix, String defaultPrefix, String identityAttribute) {
+        return element2Xpath(element, prefix, defaultPrefix, identityAttribute, false);
+    }
+
+    public static String element2Xpath(Element element, String prefix, String defaultPrefix, String identityAttribute,
+            boolean ignoreAttributeValue) {
         StringBuilder sb = new StringBuilder("/");
         String ns = element.getAttribute("xmlns");
         String pref = "";
@@ -276,7 +278,11 @@ class XmlConfigBuilder {
         }
         sb.append(pref + element.getLocalName());
         if (identityAttribute != null && !identityAttribute.isEmpty()) {
-            sb.append("[@" + identityAttribute + "='" + element.getAttribute(identityAttribute) + "']");
+            if (ignoreAttributeValue) {
+                sb.append("[@" + identityAttribute + "]");
+            } else {
+                sb.append("[@" + identityAttribute + "='" + element.getAttribute(identityAttribute) + "']");
+            }
         } else {
             // use all attributes
             NamedNodeMap attributes = element.getAttributes();
@@ -294,11 +300,7 @@ class XmlConfigBuilder {
                     sbAttributes.append("@" + node.getNodeName() + "='" + node.getNodeValue() + "' and ");
                 }
                 if (validAttributes > 0) {
-                    sbAttributes.delete(sbAttributes.length() - 5, sbAttributes.length()); // delete
-                                                                                           // last
-                                                                                           // '
-                                                                                           // and
-                                                                                           // '
+                    sbAttributes.delete(sbAttributes.length() - 5, sbAttributes.length()); // delete last ' and '
                     sbAttributes.append("]");
                     sb.append(sbAttributes.toString());
                 }
@@ -309,22 +311,23 @@ class XmlConfigBuilder {
     }
 
     private XPathExpression createContentRootExpression(Document contentDoc, String contentNamespace,
-            String rootNamespace, String identityAttribute)
+            String rootNamespace, String identityAttribute, boolean ignoreAttributeValue)
             throws Exception {
         String expression = null;
 
         if (contentNamespace != null) {
             expression = element2Xpath(contentDoc.getDocumentElement(), PREFIX_CONTENT, PREFIX_CONTENT,
-                    identityAttribute);
+                    identityAttribute, ignoreAttributeValue);
             namespaceContext.mapping(PREFIX_CONTENT, contentNamespace);
         } else {
             String ns = getNameSpace(contentDoc);
             if (ns != null) {
-                expression = element2Xpath(contentDoc.getDocumentElement(), PREFIX_CONTENT, null, identityAttribute);
+                expression = element2Xpath(contentDoc.getDocumentElement(), PREFIX_CONTENT, null, identityAttribute,
+                        ignoreAttributeValue);
                 namespaceContext.mapping(PREFIX_CONTENT, ns);
             } else {
                 expression = element2Xpath(contentDoc.getDocumentElement(), PREFIX_CONTENT,
-                        rootNamespace == null ? null : PREFIX, identityAttribute);
+                        rootNamespace == null ? null : PREFIX, identityAttribute, ignoreAttributeValue);
             }
         }
 

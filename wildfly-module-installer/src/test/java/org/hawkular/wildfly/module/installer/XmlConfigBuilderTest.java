@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -129,7 +129,14 @@ public class XmlConfigBuilderTest {
         Assert.assertEquals("/x:test[@attr1='val1' and @attr2='val2']",
                 XmlConfigBuilder.element2Xpath(xml("<test attr1=\"val1\" xmlns=\"foo\"  attr2=\"val2\"></test>")
                         .getDocumentElement(), "x", null));
-
+        // element with attributes, limit xpath to only look at one attribute
+        Assert.assertEquals("/test[@attr1='val1']",
+                XmlConfigBuilder.element2Xpath(xml("<test attr1=\"val1\"  attr2=\"val2\"></test>")
+                        .getDocumentElement(), "x", null, "attr1"));
+        // element with attributes, limit xpath to only look at one attribute and don't care about its value
+        Assert.assertEquals("/test[@attr1]",
+                XmlConfigBuilder.element2Xpath(xml("<test attr1=\"val1\"  attr2=\"val2\"></test>")
+                        .getDocumentElement(), "x", null, "attr1", true));
     }
 
     @Test
@@ -145,6 +152,25 @@ public class XmlConfigBuilderTest {
                                                                      // different
                                                                      // name
                                                                      // unchanged
+    }
+
+    @Test
+    public void testIgnoreAttributeValue() throws Exception {
+        // notice we are changing the one that does NOT have a namespace
+        XmlEdit edit = new XmlEdit("/server",
+                "<subsystem name=\"fooUPDATE\"><childUPDATE attrUPDATE=\"value2UPDATE\"></childUPDATE></subsystem>");
+        edit.withAttribute("name");
+        edit.withIsIgnoreAttributeValue(true);
+
+        XmlConfigBuilder builder = new XmlConfigBuilder(getResourceFile("root.xml"), getTempFile());
+        builder.edit(edit);
+        builder.build();
+
+        Document doc = dBuilder.parse(builder.getTargetFile());
+        printDocument(doc);
+        assertXpath("/server/subsystem[@name='fooUPDATE']/childUPDATE", doc, 1);
+        assertXpath("/server/subsystem[@name='foo']", doc, 0);
+        assertXpath("/server/subsystem[@name='foo']/child", doc, 0);
     }
 
     @Test

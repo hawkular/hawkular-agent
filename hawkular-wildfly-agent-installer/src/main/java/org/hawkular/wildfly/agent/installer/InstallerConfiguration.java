@@ -56,6 +56,8 @@ public class InstallerConfiguration {
     static final String OPTION_SECURITY_SECRET = "security-secret";
     static final String OPTION_MANAGED_SERVER_NAME = "managed-server-name";
     static final String OPTION_FEED_ID = "feed-id";
+    static final String OPTION_TENANT_ID = "tenant-id";
+    static final String OPTION_METRICS_ONLY_MODE = "metrics-only";
 
     static Options buildCommandLineOptions() {
         Options options = new Options();
@@ -133,6 +135,20 @@ public class InstallerConfiguration {
                 .argName(InstallerConfiguration.OPTION_FEED_ID)
                 .longOpt(InstallerConfiguration.OPTION_FEED_ID)
                 .desc("The feed ID that the agent will use to identify its data.")
+                .numberOfArgs(1)
+                .build());
+        options.addOption(Option.builder()
+                .argName(InstallerConfiguration.OPTION_TENANT_ID)
+                .longOpt(InstallerConfiguration.OPTION_TENANT_ID)
+                .desc("The tenant ID that the agent will ask to be used. Usually only used when in metrics-only mode.")
+                .numberOfArgs(1)
+                .build());
+        options.addOption(Option.builder()
+                .argName(InstallerConfiguration.OPTION_METRICS_ONLY_MODE)
+                .longOpt(InstallerConfiguration.OPTION_METRICS_ONLY_MODE)
+                .desc("If true, the agent will be configured to run in metrics-only mode (inventory will not be stored"
+                        + " and no websocket connection to a Hawkular Server will be made.)"
+                        + " If true, you must specify a tenant-id.")
                 .numberOfArgs(1)
                 .build());
 
@@ -239,6 +255,8 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_SUBSYSTEM_SNIPPET);
         setProperty(properties, commandLine, OPTION_MANAGED_SERVER_NAME);
         setProperty(properties, commandLine, OPTION_FEED_ID);
+        setProperty(properties, commandLine, OPTION_TENANT_ID);
+        setProperty(properties, commandLine, OPTION_METRICS_ONLY_MODE);
         setProperty(properties, commandLine, OPTION_SERVER_URL);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PATH);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PASSWORD);
@@ -338,5 +356,13 @@ public class InstallerConfiguration {
 
     public String getFeedId() {
         return properties.getProperty(OPTION_FEED_ID);
+    }
+
+    public String getTenantId() {
+        return properties.getProperty(OPTION_TENANT_ID);
+    }
+
+    public boolean isMetricsOnlyMode() {
+        return Boolean.parseBoolean(properties.getProperty(OPTION_METRICS_ONLY_MODE, "false"));
     }
 }
