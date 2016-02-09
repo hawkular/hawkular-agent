@@ -61,7 +61,7 @@
     <version.org.hamcrest>1.3</version.org.hamcrest>
 
     <version.org.hawkular.accounts>2.0.18.Final</version.org.hawkular.accounts>
-    <version.org.hawkular.cmdgw>0.10.11.Final-SRC-revision-6858e69c9543587bcc15da618c6cec80b08dd108</version.org.hawkular.cmdgw>
+    <version.org.hawkular.cmdgw>0.10.11.Final-SRC-revision-00de032</version.org.hawkular.cmdgw>
     <version.org.hawkular.commons>0.3.5.Final</version.org.hawkular.commons>
     <version.org.hawkular.inventory>0.13.0.Final-SRC-revision-8030a5aa969e3ff5bab534112ea2b5b91c8088d7</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.13.0-SRC-revision-c9260099383bcaab020b9623dff7baa1a421e73e</version.org.hawkular.metrics>

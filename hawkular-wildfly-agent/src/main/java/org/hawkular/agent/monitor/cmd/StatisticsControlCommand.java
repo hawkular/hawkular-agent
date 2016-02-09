@@ -40,16 +40,20 @@ import org.hawkular.cmdgw.api.StatisticsSetting;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.CompositeOperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.OperationResult;
+import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.CanonicalPath;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.ModelType;
 
 /**
  * Turns on or off statistics for several WildFly subsystems.
+ * This command can also be used to obtain the state of the statistics enable flags
+ * of all the subsystems, even if you don't want to turn on or off any of them.
  */
 public class StatisticsControlCommand
         extends AbstractResourcePathCommand<StatisticsControlRequest, StatisticsControlResponse> {
-    @SuppressWarnings("unused")
     private static final MsgLogger log = AgentLoggers.getLogger(StatisticsControlCommand.class);
     public static final Class<StatisticsControlRequest> REQUEST_CLASS = StatisticsControlRequest.class;
 
@@ -95,9 +99,11 @@ public class StatisticsControlCommand
         Optional<Boolean> transactions = getStatisticsEnabledFlag(request.getTransactions());
         Optional<Boolean> web = getStatisticsEnabledFlag(request.getWeb());
 
+        boolean somethingToDo = false;
         final CompositeOperationBuilder<?> batch = OperationBuilder.composite();
 
         if (datasources.isPresent()) {
+            somethingToDo = true;
             List<String> dsList = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=datasources"),
                     "data-source", controllerClient);
             List<String> xaList = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=datasources"),
@@ -120,6 +126,7 @@ public class StatisticsControlCommand
         }
 
         if (ejb3.isPresent()) {
+            somethingToDo = true;
             batch.writeAttribute()
                     .address(PathAddress.parseCLIStyleAddress("/subsystem=ejb3"))
                     .attribute("enable-statistics", ejb3.get().toString())
@@ -127,6 +134,7 @@ public class StatisticsControlCommand
         }
 
         if (infinispan.isPresent()) {
+            somethingToDo = true;
             List<String> list = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=infinispan"),
                     "cache-container", controllerClient);
 
@@ -140,6 +148,7 @@ public class StatisticsControlCommand
         }
 
         if (messaging.isPresent()) {
+            somethingToDo = true;
             List<String> list = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=messaging-activemq"),
                     "server", controllerClient);
 
@@ -153,6 +162,7 @@ public class StatisticsControlCommand
         }
 
         if (transactions.isPresent()) {
+            somethingToDo = true;
             batch.writeAttribute()
                     .address(PathAddress.parseCLIStyleAddress("/subsystem=transactions"))
                     .attribute("enable-statistics", transactions.get().toString())
@@ -160,16 +170,149 @@ public class StatisticsControlCommand
         }
 
         if (web.isPresent()) {
+            somethingToDo = true;
             batch.writeAttribute()
                     .address(PathAddress.parseCLIStyleAddress("/subsystem=undertow"))
                     .attribute("statistics-enabled", web.get().toString())
                     .parentBuilder();
         }
 
-        OperationResult<?> opResult = batch.execute(controllerClient).assertSuccess();
-        setServerRefreshIndicator(opResult, response);
+        if (somethingToDo) {
+            OperationResult<?> opResult = batch.execute(controllerClient).assertSuccess();
+            setServerRefreshIndicator(opResult, response);
+        }
+
+        // Tell requestor what the current state is of all the enable flags,
+        // even if they didn't ask to change some or all of them.
+        // We need to do this here in execute() as opposed to in success()
+        // because we still need to talk to the server and it is only here where we have the client.
+
+        if (request.getDatasources() != null) {
+            response.setDatasources(request.getDatasources());
+        } else {
+            // ask the server
+            StatisticsSetting currentState;
+            currentState = getCurrentStateFromServer(controllerClient,
+                    "/subsystem=datasources/data-source=*", "statistics-enabled");
+            if (currentState == null) {
+                currentState = getCurrentStateFromServer(controllerClient,
+                        "/subsystem=datasources/xa-data-source=*", "statistics-enabled");
+            }
+            response.setDatasources(currentState);
+        }
+
+        if (request.getEjb3() != null) {
+            response.setEjb3(request.getEjb3());
+        } else {
+            // ask the server
+            StatisticsSetting currentState = getCurrentStateFromServer(controllerClient,
+                    "/subsystem=ejb3", "enable-statistics");
+            response.setEjb3(currentState);
+        }
+
+        if (request.getInfinispan() != null) {
+            response.setInfinispan(request.getInfinispan());
+        } else {
+            // ask the server
+            StatisticsSetting currentState = getCurrentStateFromServer(controllerClient,
+                    "/subsystem=infinispan/cache-container=*", "statistics-enabled");
+            response.setInfinispan(currentState);
+        }
+
+        if (request.getMessaging() != null) {
+            response.setMessaging(request.getMessaging());
+        } else {
+            // ask the server
+            StatisticsSetting currentState = getCurrentStateFromServer(controllerClient,
+                    "/subsystem=messaging-activemq/server=*", "statistics-enabled");
+            response.setMessaging(currentState);
+        }
+
+        if (request.getTransactions() != null) {
+            response.setTransactions(request.getTransactions());
+        } else {
+            // ask the server
+            StatisticsSetting currentState = getCurrentStateFromServer(controllerClient,
+                    "/subsystem=transactions", "enable-statistics");
+            response.setTransactions(currentState);
+        }
+
+        if (request.getWeb() != null) {
+            response.setWeb(request.getWeb());
+        } else {
+            // ask the server
+            StatisticsSetting currentState = getCurrentStateFromServer(controllerClient,
+                    "/subsystem=undertow", "statistics-enabled");
+            response.setWeb(currentState);
+        }
 
         return null;
+    }
+
+    private StatisticsSetting getCurrentStateFromServer(ModelControllerClient controllerClient, String addr,
+            String attribName) {
+
+        try {
+            ModelNode result = new OperationBuilder().readAttribute()
+                    .address(PathAddress.parseCLIStyleAddress(addr))
+                    .name(attribName)
+                    .execute(controllerClient)
+                    .assertSuccess()
+                    .getResultNode();
+
+            log.debugf("Getting current statistics flag for address [%s][%s]. Type=[%s]:%s", addr, attribName,
+                    result.getType(), result.toJSONString(true));
+
+            // here's the thing - some subsystems with statistics will enable the stats on the subsystem level
+            // (like transactions) but others enable stats on each individual resource (like
+            // datasources, where each datasource can have stats enabled or disabled individually).
+            // Our StatisticsControlRequest turns stats on or off across the subsystem (so if you say turn
+            // stats on for datasources, we set it across all datasources) to avoid having the
+            // client bear the burden of specifying each individual resource for those subsystems that have
+            // stats per resource (like datasources). But the problem there is we need to remember that it is possible
+            // that a WildFly server had previously been configured to enable SOME resource stats but not ALL
+            // resource stats (for example, maybe datasource "foo" has stats enabled but datasource "bar" has
+            // them disabled). In this case, we can't tell the requestor about this (unless we change the
+            // JSON response, but that puts more burden on the client to know what to do with that info).
+            // We can only say if the datasource subsystem has them enabled or disabled. In this case
+            // where one resource has them enabled and another disabled, we just look
+            // at the first one we get - if its enabled, we'll say the subsystem has stats enabled, if its
+            // disabled we'll say the subsystem is disabled. This is purely arbitrary, but its something we
+            // have to deal with if we want to make it easy on the client. If they enabled or disable
+            // stats using us (StatisticsControlRequest) this isn't a problem because we set them ALL or unset
+            // them ALL. We never turn some on or some off. But there are cases where the enable flags will
+            // be mixed. We could introduce a "MIXED" enum (in addition to ENABLED and DISABLED) but I'm
+            // not sure that helps the user all that much anyway. But perhaps we can add that in the future.
+            // For now we return null if mixed.
+
+            if (result.getType() == ModelType.LIST) {
+                // Go through the list of each resource's enabled flag:
+                //   - If they are all enabled or all disabled, we indicate that.
+                //   - If there is a mix, then to indicate that we return null.
+                Boolean aggregate = null;
+                for (ModelNode resourceNode : result.asList()) {
+                    ModelNode resourceResult = JBossASClient.getResults(resourceNode);
+                    boolean booleanFlag = resourceResult.asBoolean();
+                    if (aggregate == null) {
+                        aggregate = Boolean.valueOf(booleanFlag);
+                    } else {
+                        if (aggregate.booleanValue() != booleanFlag) {
+                            return null; // MIXED! some were enabled, some were disabled
+                        }
+                    }
+                }
+
+                if (aggregate == null) {
+                    return null; // there are no resources for this subsystem, so neither enabled nor disabled
+                } else {
+                    return (aggregate.booleanValue()) ? StatisticsSetting.ENABLED : StatisticsSetting.DISABLED;
+                }
+            } else {
+                return (result.asBoolean()) ? StatisticsSetting.ENABLED : StatisticsSetting.DISABLED;
+            }
+        } catch (Throwable t) {
+            return null; // we don't know
+        }
     }
 
     private Optional<Boolean> getStatisticsEnabledFlag(StatisticsSetting setting) {
