@@ -239,10 +239,10 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10049, value = "Could not access resources of endpoint [%s]")
     void errorCouldNotAccess(EndpointService<?, ?> endpoint, @Cause Throwable e);
 
-    @LogMessage(level = Level.WARN)
-    @Message(id = 10050, value = "The tenant ID [%s] set in standalone.xml or domain.xml or similar xml file will be"
-            + " ignored in favor of tenant ID [%s] retrieved from Hawkular Accounts")
-    void warnIgnoringTenantIdFromXml(String tenantIdXml, String tenantIdAccounts);
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10050, value = "The tenant ID [%s] set in the agent configuration does not match the"
+            + " tenant ID [%s] retrieved from Hawkular Accounts.")
+    void errorWrongTenantId(String tenantIdXml, String tenantIdAccounts);
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10051, value = "The tenant ID could not be retrieved from Hawkular Accounts")
