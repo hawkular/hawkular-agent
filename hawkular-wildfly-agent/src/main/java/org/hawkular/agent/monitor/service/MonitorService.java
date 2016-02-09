@@ -198,7 +198,9 @@ public class MonitorService implements Service<MonitorService> {
                     if (matcher.find()) {
                         String tenantIdFromAccounts = matcher.group(1);
                         if (useTenantId != null && !tenantIdFromAccounts.equals(useTenantId)) {
-                            log.warnIgnoringTenantIdFromXml(useTenantId, tenantIdFromAccounts);
+                            log.errorWrongTenantId(useTenantId, tenantIdFromAccounts);
+                            throw new Exception("Aborting agent startup because the desired tenant ID [" + useTenantId
+                                    + "] does not match the actual tenant ID [" + tenantIdFromAccounts + "]");
                         }
                         useTenantId = tenantIdFromAccounts;
                     }
