@@ -52,6 +52,12 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "}";
 
             String response = "StatisticsControlResponse={"
+                    + "\"web\":\"ENABLED\","
+                    + "\"transactions\":\"ENABLED\","
+                    + "\"datasources\":\"ENABLED\","
+                    + "\"infinispan\":\"ENABLED\","
+                    + "\"ejb3\":\"ENABLED\","
+                    + "\"messaging\":\"ENABLED\","
                     + "\"resourcePath\":\"" + wfPath + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
@@ -94,6 +100,9 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     "true");
 
         }
+
+        // test that we can see they were all enabled
+        testReadOnlyStatistics(true);
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testEnableStatistics" })
@@ -115,6 +124,12 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "}";
 
             String response = "StatisticsControlResponse={"
+                    + "\"web\":\"DISABLED\","
+                    + "\"transactions\":\"DISABLED\","
+                    + "\"datasources\":\"DISABLED\","
+                    + "\"infinispan\":\"DISABLED\","
+                    + "\"ejb3\":\"DISABLED\","
+                    + "\"messaging\":\"DISABLED\","
                     + "\"resourcePath\":\"" + wfPath + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
@@ -155,6 +170,63 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     "statistics-enabled",
                     "false");
 
+            // test that we can see they were all disabled
+            testReadOnlyStatistics(false);
+        }
+    }
+
+    private void testReadOnlyStatistics(boolean expectedEnabledFlag) throws Throwable {
+        waitForAccountsAndInventory();
+
+        CanonicalPath wfPath = getCurrentASPath();
+
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+
+            // sanity check - make sure they really are what we expect
+            assertNodeAttributeEquals(mcc,
+                    Address.parse("/subsystem=undertow").getAddressNode(),
+                    "statistics-enabled",
+                    String.valueOf(expectedEnabledFlag));
+            assertNodeAttributeEquals(mcc,
+                    Address.parse("/subsystem=transactions").getAddressNode(),
+                    "enable-statistics",
+                    String.valueOf(expectedEnabledFlag));
+            assertNodeAttributeEquals(mcc,
+                    Address.parse("/subsystem=ejb3").getAddressNode(),
+                    "enable-statistics",
+                    String.valueOf(expectedEnabledFlag));
+
+            String flagString = (expectedEnabledFlag) ? "ENABLED" : "DISABLED";
+
+            // just ask for statistics settings only - we aren't turning on or off any
+            String req = "StatisticsControlRequest={\"authentication\":" + authentication + ", "
+                    + "\"resourcePath\":\"" + wfPath.toString() + "\""
+                    + "}";
+
+            String response = "StatisticsControlResponse={"
+                    + "\"web\":\"" + flagString + "\","
+                    + "\"transactions\":\"" + flagString + "\","
+                    + "\"datasources\":\"" + flagString + "\","
+                    + "\"infinispan\":\"" + flagString + "\","
+                    + "\"ejb3\":\"" + flagString + "\","
+                    + "\"messaging\":\"" + flagString + "\","
+                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"OK\","
+                    + "\"message\":\"Statistics for server [" + wfPath.toString()
+                    + "] have been enabled for subsystems [], disabled for subsystems []"
+                    + ", and left as-is for subsystems "
+                    + "[datasources, EJB3, infinispan, messaging, transactions, web]\""
+                    + "}";
+
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectText(response)
+                    .build()) {
+                testClient.validate(10000);
+            }
         }
     }
 
@@ -187,6 +259,12 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "}";
 
             String response = "StatisticsControlResponse={"
+                    + "\"web\":\"DISABLED\","
+                    + "\"transactions\":\"ENABLED\","
+                    + "\"datasources\":\"DISABLED\","
+                    + "\"infinispan\":\"DISABLED\","
+                    + "\"ejb3\":\"DISABLED\","
+                    + "\"messaging\":\"DISABLED\","
                     + "\"resourcePath\":\"" + wfPath + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
