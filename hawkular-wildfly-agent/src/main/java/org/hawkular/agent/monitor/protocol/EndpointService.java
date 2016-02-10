@@ -415,7 +415,14 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         return true;
     }
 
-    private String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
+    /**
+     * Given a measurement instance, this will generate the key to be used when
+     * storing that measurement instance to storage.
+     *
+     * @param instance measurement instance whose key is to be returned
+     * @return the measurement instance key
+     */
+    public String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
         String key = instance.getID().getIDString();
         return key;
     }

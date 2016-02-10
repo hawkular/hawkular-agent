@@ -77,7 +77,7 @@ public class MyAppServlet extends HttpServlet {
 
             AvailDataPayloadBuilder payloadBuilder = availStorage.createAvailDataPayloadBuilder();
             payloadBuilder.addDataPoint(availKey, System.currentTimeMillis(), availValue);
-            availStorage.store(payloadBuilder);
+            availStorage.store(payloadBuilder, 0);
 
             String results = String.format("<h1>Send Avail</h1>\n<p>Avail Key=%s</p>\n<p>Avail Value=%s</p>",
                     availKey, availValue);
@@ -95,7 +95,7 @@ public class MyAppServlet extends HttpServlet {
 
             MetricDataPayloadBuilder payloadBuilder = metricStorage.createMetricDataPayloadBuilder();
             payloadBuilder.addDataPoint(metricKey, System.currentTimeMillis(), metricValue, MetricType.GAUGE);
-            metricStorage.store(payloadBuilder);
+            metricStorage.store(payloadBuilder, 0);
 
             String results = String.format("<h1>Send Metric</h1>\n<p>Metric Key=%s</p>\n<p>Metric Value=%s</p>",
                     metricKey, metricValue);

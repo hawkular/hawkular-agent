@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,8 +25,11 @@ public interface MetricStorage {
 
     /**
      * Stores the metric data found in the given builder.
+     * This is an asynchronous call. But if a <code>waitMillis</code> is provided, it indicates the caller is willing
+     * to wait up to that amount of milliseconds for the store to complete before returning.
      *
      * @param payloadBuilder contains the metric data to store
+     * @param waitMillis the amount of milliseconds to wait for the store to complete before returning (0==no wait)
      */
-    void store(MetricDataPayloadBuilder payloadBuilder);
+    void store(MetricDataPayloadBuilder payloadBuilder, long waitMillis);
 }

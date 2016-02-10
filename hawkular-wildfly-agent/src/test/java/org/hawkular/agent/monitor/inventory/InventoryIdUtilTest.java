@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,9 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.Collections;
+
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
 import org.junit.Assert;
 import org.junit.Test;
@@ -27,18 +30,18 @@ public class InventoryIdUtilTest {
         ID id;
         ResourceIdParts parts;
 
-        id = InventoryIdUtil.generateResourceId(
-                new MonitoredEndpoint("testmanagedserver", null, null), "/test/id/path");
+        EndpointConfiguration endpointConfig = new EndpointConfiguration("testmanagedserver", true,
+                Collections.emptyList(), null, null, null);
+        MonitoredEndpoint me = MonitoredEndpoint.of(endpointConfig, null);
 
+        id = InventoryIdUtil.generateResourceId(me, "/test/id/path");
         Assert.assertEquals("testmanagedserver~/test/id/path", id.toString());
         parts = InventoryIdUtil.parseResourceId(id.getIDString());
         Assert.assertEquals("testmanagedserver", parts.getManagedServerName());
         Assert.assertEquals("/test/id/path", parts.getIdPart());
 
         // test that you can have ~ in the last part of the ID
-        id = InventoryIdUtil.generateResourceId(
-                new MonitoredEndpoint("testmanagedserver", null, null), "~/~test/~id/~path");
-
+        id = InventoryIdUtil.generateResourceId(me, "~/~test/~id/~path");
         Assert.assertEquals("testmanagedserver~~/~test/~id/~path", id.toString());
         parts = InventoryIdUtil.parseResourceId(id.getIDString());
         Assert.assertEquals("testmanagedserver", parts.getManagedServerName());

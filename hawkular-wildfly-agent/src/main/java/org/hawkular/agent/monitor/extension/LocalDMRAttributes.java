@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +16,11 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import org.hawkular.agent.monitor.api.Avail;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
+import org.jboss.as.controller.operations.validation.EnumValidator;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
@@ -33,6 +35,15 @@ public interface LocalDMRAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition SET_AVAIL_ON_SHUTDOWN = new SimpleAttributeDefinitionBuilder("setAvailOnShutdown",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(Avail.DOWN.name()))
+                    .setValidator(EnumValidator.create(Avail.class, true, true))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder(
             "resourceTypeSets",
             ModelType.STRING)
@@ -43,6 +54,7 @@ public interface LocalDMRAttributes {
 
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
+            SET_AVAIL_ON_SHUTDOWN,
             RESOURCE_TYPE_SETS
     };
 }

@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
+import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsReportTo;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
@@ -111,7 +112,7 @@ public class MonitorServiceConfigurationBuilder {
         TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context);
         platformConfigBuilder.typeSets(platformTypeSets);
         if (!platformTypeSets.isDisabledOrEmpty()) {
-            EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null);
+            EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null, Avail.DOWN);
             platformConfigBuilder.endpoint(endpoint);
         }
 
@@ -1008,6 +1009,10 @@ public class MonitorServiceConfigurationBuilder {
                     String name = remoteDMRProperty.getName();
                     ModelNode remoteDMRValueNode = remoteDMRProperty.getValue();
                     boolean enabled = getBoolean(remoteDMRValueNode, context, RemoteDMRAttributes.ENABLED);
+                    String setAvailOnShutdownStr = getString(remoteDMRValueNode, context,
+                            RemoteDMRAttributes.SET_AVAIL_ON_SHUTDOWN);
+                    Avail setAvailOnShutdown = (setAvailOnShutdownStr == null) ? null
+                            : Avail.valueOf(setAvailOnShutdownStr);
                     String host = getString(remoteDMRValueNode, context, RemoteDMRAttributes.HOST);
                     int port = getInt(remoteDMRValueNode, context, RemoteDMRAttributes.PORT);
                     String username = getString(remoteDMRValueNode, context, RemoteDMRAttributes.USERNAME);
@@ -1023,8 +1028,8 @@ public class MonitorServiceConfigurationBuilder {
 
                     String protocol = useSsl ? "https-remoting" : "http-remoting";
                     ConnectionData connectionData = new ConnectionData(protocol, host, port, username, password);
-                    EndpointConfiguration endpoint = new EndpointConfiguration(
-                            name, enabled, resourceTypeSets, connectionData, securityRealm);
+                    EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
+                            connectionData, securityRealm, setAvailOnShutdown);
 
                     dmrConfigBuilder.endpoint(endpoint);
                 }
@@ -1041,11 +1046,15 @@ public class MonitorServiceConfigurationBuilder {
                 String name = localDMRProperty.getName();
                 ModelNode localDMRValueNode = localDMRProperty.getValue();
                 boolean enabled = getBoolean(localDMRValueNode, context, LocalDMRAttributes.ENABLED);
+                String setAvailOnShutdownStr = getString(localDMRValueNode, context,
+                        LocalDMRAttributes.SET_AVAIL_ON_SHUTDOWN);
+                Avail setAvailOnShutdown = (setAvailOnShutdownStr == null) ? null
+                        : Avail.valueOf(setAvailOnShutdownStr);
                 List<Name> resourceTypeSets = getNameListFromString(localDMRValueNode, context,
                         LocalDMRAttributes.RESOURCE_TYPE_SETS);
 
-                EndpointConfiguration endpoint = new EndpointConfiguration(
-                        name, enabled, resourceTypeSets, null, null);
+                EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets, null, null,
+                        setAvailOnShutdown);
                 dmrConfigBuilder.endpoint(endpoint);
             }
 
@@ -1058,6 +1067,10 @@ public class MonitorServiceConfigurationBuilder {
                     String name = remoteJMXProperty.getName();
                     ModelNode remoteJMXValueNode = remoteJMXProperty.getValue();
                     boolean enabled = getBoolean(remoteJMXValueNode, context, RemoteJMXAttributes.ENABLED);
+                    String setAvailOnShutdownStr = getString(remoteJMXValueNode, context,
+                            RemoteJMXAttributes.SET_AVAIL_ON_SHUTDOWN);
+                    Avail setAvailOnShutdown = (setAvailOnShutdownStr == null) ? null
+                            : Avail.valueOf(setAvailOnShutdownStr);
                     String urlStr = getString(remoteJMXValueNode, context, RemoteJMXAttributes.URL);
                     String username = getString(remoteJMXValueNode, context, RemoteJMXAttributes.USERNAME);
                     String password = getString(remoteJMXValueNode, context, RemoteJMXAttributes.PASSWORD);
@@ -1078,8 +1091,8 @@ public class MonitorServiceConfigurationBuilder {
                     }
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
-                    EndpointConfiguration endpoint = new EndpointConfiguration(
-                            name, enabled, resourceTypeSets, connectionData, securityRealm);
+                    EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
+                            connectionData, securityRealm, setAvailOnShutdown);
 
                     jmxConfigBuilder.endpoint(endpoint);
                 }

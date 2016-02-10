@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
@@ -94,7 +96,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeMetrics(Set<MetricDataPoint> datapoints) {
+    public void storeMetrics(Set<MetricDataPoint> datapoints, long waitMillis) {
         if (datapoints == null || datapoints.isEmpty()) {
             return; // nothing to do
         }
@@ -106,13 +108,13 @@ public class HawkularStorageAdapter implements StorageAdapter {
             payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value, datapoint.getMetricType());
         }
 
-        store(payloadBuilder);
+        store(payloadBuilder, waitMillis);
 
         return;
     }
 
     @Override
-    public void store(MetricDataPayloadBuilder payloadBuilder) {
+    public void store(MetricDataPayloadBuilder payloadBuilder, long waitMillis) {
         String jsonPayload = "?";
 
         try {
@@ -126,30 +128,45 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), tenantIdHeader, jsonPayload);
 
+            final CountDownLatch latch = (waitMillis <= 0) ? null : new CountDownLatch(1);
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
-                    diagnostics.getStorageErrorRate().mark(1);
+                    try {
+                        log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
+                        diagnostics.getStorageErrorRate().mark(1);
+                    } finally {
+                        if (latch != null) {
+                            latch.countDown();
+                        }
+                    }
                 }
 
                 @Override
                 public void onResponse(Response response) throws IOException {
-                    // HTTP status of 200 means success; anything else is an error
-                    if (response.code() != 200) {
-                        IOException e = new IOException("status-code=[" + response.code() + "], reason=["
-                                + response.message() + "], url=[" + request.urlString() + "]");
-                        log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
-                        diagnostics.getStorageErrorRate().mark(1);
-                        throw e;
+                    try {
+                        // HTTP status of 200 means success; anything else is an error
+                        if (response.code() != 200) {
+                            IOException e = new IOException("status-code=[" + response.code() + "], reason=["
+                                    + response.message() + "], url=[" + request.urlString() + "]");
+                            log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
+                            diagnostics.getStorageErrorRate().mark(1);
+                        } else {
+                            // looks like everything stored successfully
+                            diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
+                        }
+                    } finally {
+                        if (latch != null) {
+                            latch.countDown();
+                        }
                     }
-
-                    // looks like everything stored successfully
-                    diagnostics.getMetricRate().mark(payloadBuilder.getNumberDataPoints());
-
                 }
             });
+
+            if (latch != null) {
+                latch.await(waitMillis, TimeUnit.MILLISECONDS);
+            }
 
         } catch (Throwable t) {
             log.errorFailedToStoreMetricData(t, jsonPayload);
@@ -158,7 +175,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public void storeAvails(Set<AvailDataPoint> datapoints) {
+    public void storeAvails(Set<AvailDataPoint> datapoints, long waitMillis) {
         if (datapoints == null || datapoints.isEmpty()) {
             return; // nothing to do
         }
@@ -170,13 +187,13 @@ public class HawkularStorageAdapter implements StorageAdapter {
             payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value);
         }
 
-        store(payloadBuilder);
+        store(payloadBuilder, waitMillis);
 
         return;
     }
 
     @Override
-    public void store(AvailDataPayloadBuilder payloadBuilder) {
+    public void store(AvailDataPayloadBuilder payloadBuilder, long waitMillis) {
         String jsonPayload = "?";
 
         try {
@@ -190,30 +207,45 @@ public class HawkularStorageAdapter implements StorageAdapter {
             // now send the REST request
             Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), tenantIdHeader, jsonPayload);
 
+            final CountDownLatch latch = (waitMillis <= 0) ? null : new CountDownLatch(1);
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Request request, IOException e) {
-                    log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
-                    diagnostics.getStorageErrorRate().mark(1);
+                    try {
+                        log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
+                        diagnostics.getStorageErrorRate().mark(1);
+                    } finally {
+                        if (latch != null) {
+                            latch.countDown();
+                        }
+                    }
                 }
 
                 @Override
                 public void onResponse(Response response) throws IOException {
-                    // HTTP status of 200 means success; anything else is an error
-                    if (response.code() != 200) {
-                        IOException e = new IOException("status-code=[" + response.code() + "], reason=["
-                                + response.message() + "], url=[" + request.urlString() + "]");
-                        log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
-                        diagnostics.getStorageErrorRate().mark(1);
-                        throw e;
+                    try {
+                        // HTTP status of 200 means success; anything else is an error
+                        if (response.code() != 200) {
+                            IOException e = new IOException("status-code=[" + response.code() + "], reason=["
+                                    + response.message() + "], url=[" + request.urlString() + "]");
+                            log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
+                            diagnostics.getStorageErrorRate().mark(1);
+                        } else {
+                            // looks like everything stored successfully
+                            diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
+                        }
+                    } finally {
+                        if (latch != null) {
+                            latch.countDown();
+                        }
                     }
-
-                    // looks like everything stored successfully
-                    diagnostics.getAvailRate().mark(payloadBuilder.getNumberDataPoints());
-
                 }
             });
+
+            if (latch != null) {
+                latch.await(waitMillis, TimeUnit.MILLISECONDS);
+            }
 
         } catch (Throwable t) {
             log.errorFailedToStoreAvailData(t, jsonPayload);

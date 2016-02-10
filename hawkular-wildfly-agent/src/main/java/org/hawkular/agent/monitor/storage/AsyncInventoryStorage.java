@@ -723,6 +723,13 @@ public class AsyncInventoryStorage implements InventoryStorage {
     public void shutdown() {
         log.debugf("Shutting down async inventory storage");
         worker.stopRunning();
+        worker.interrupt();
+        try {
+            worker.join(60_000L); // wait for it to finish, but not forever
+        } catch (InterruptedException ie) {
+            // Preserve interrupt status
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override

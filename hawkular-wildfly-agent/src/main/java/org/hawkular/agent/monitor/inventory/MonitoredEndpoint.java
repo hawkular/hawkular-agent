@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,16 +29,6 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Endpoint
  */
 public final class MonitoredEndpoint {
 
-    /** A convenience constant */
-    private static final MonitoredEndpoint DEFAULT_LOCAL_DMR_ENDPOINT = new MonitoredEndpoint("_self", null, null);
-
-    /**
-     * @return {@link #DEFAULT_LOCAL_DMR_ENDPOINT}
-     */
-    public static MonitoredEndpoint getDefaultLocalDmrEndpoint() {
-        return DEFAULT_LOCAL_DMR_ENDPOINT;
-    }
-
     /**
      * Returns a new {@link MonitoredEndpoint} using name and {@link ConnectionData} from the given
      * {@code endpointConfiguration}.
@@ -49,22 +39,20 @@ public final class MonitoredEndpoint {
      * @return a new {@link MonitoredEndpoint}
      */
     public static MonitoredEndpoint of(EndpointConfiguration endpointConfiguration, SSLContext sslContext) {
-        return new MonitoredEndpoint(endpointConfiguration.getName(), endpointConfiguration.getConnectionData(),
-                sslContext);
+        return new MonitoredEndpoint(endpointConfiguration, sslContext);
     }
 
-    private final ConnectionData connectionData;
-    private final String name;
-
+    private final EndpointConfiguration endpointConfiguration;
     private final SSLContext sslContext;
 
-    MonitoredEndpoint(String name, ConnectionData connectionData, SSLContext sslContext) {
-        super();
-        if (name == null) {
+    private MonitoredEndpoint(EndpointConfiguration endpointConfiguration, SSLContext sslContext) {
+        if (endpointConfiguration == null) {
+            throw new IllegalArgumentException("Cannot create a new [" + getClass().getName() + "] without a config");
+        }
+        if (endpointConfiguration.getName() == null) {
             throw new IllegalArgumentException("Cannot create a new [" + getClass().getName() + "] with a null name");
         }
-        this.name = name;
-        this.connectionData = connectionData;
+        this.endpointConfiguration = endpointConfiguration;
         this.sslContext = sslContext;
     }
 
@@ -73,22 +61,28 @@ public final class MonitoredEndpoint {
         if (!(obj instanceof MonitoredEndpoint)) {
             return false;
         }
-        return name.equals(((MonitoredEndpoint) obj).name);
+        return endpointConfiguration.getName().equals(((MonitoredEndpoint) obj).endpointConfiguration.getName());
     }
 
     /**
-     * @return the {@link ConnectionData} to use when connecting to the endpoint or {@code null} if this is a local
-     *         endpoint
+     * @return the full configuration of the endpoint being monitored
+     */
+    public EndpointConfiguration getEndpointConfiguration() {
+        return endpointConfiguration;
+    }
+
+    /**
+     * @return the {@link ConnectionData} to use when connecting to the endpoint or null if this is a local endpoint
      */
     public ConnectionData getConnectionData() {
-        return connectionData;
+        return endpointConfiguration.getConnectionData();
     }
 
     /**
      * @return the name of this {@link MonitoredEndpoint}
      */
     public String getName() {
-        return name;
+        return endpointConfiguration.getName();
     }
 
     /**
@@ -100,7 +94,7 @@ public final class MonitoredEndpoint {
 
     @Override
     public int hashCode() {
-        return name.hashCode();
+        return endpointConfiguration.getName().hashCode();
     }
 
     /**
@@ -108,7 +102,7 @@ public final class MonitoredEndpoint {
      *         password, etc.; a shorthand for {@code connectionData == null}
      */
     public boolean isLocal() {
-        return connectionData == null;
+        return endpointConfiguration.getConnectionData() == null;
     }
 
     @Override

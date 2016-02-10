@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,6 +55,13 @@ public class MetricBufferedStorageDispatcher implements Consumer<MetricDataPoint
 
     public void shutdown() {
         worker.setKeepRunning(false);
+        worker.interrupt();
+        try {
+            worker.join(60_000L); // wait for it to finish, but not forever
+        } catch (InterruptedException ie) {
+            // Preserve interrupt status
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
@@ -95,7 +102,7 @@ public class MetricBufferedStorageDispatcher implements Consumer<MetricDataPoint
                     diagnostics.getMetricsStorageBufferSize().dec(samples.size());
 
                     // dispatch
-                    storageAdapter.storeMetrics(samples);
+                    storageAdapter.storeMetrics(samples, 0);
                 }
             } catch (InterruptedException ie) {
             }
