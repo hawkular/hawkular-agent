@@ -16,12 +16,17 @@ notifications:
     on_success: change
 install:
 - mvn -version -B
+- MY_PWD=$(pwd)
+- echo $MY_PWD
+- cd ~/; git clone https://github.com/ppalaga/license-maven-plugin.git; cd license-maven-plugin; git checkout 160213-git-bug; mvn clean install
+- cd "$MY_PWD"
 script:
 - git status
-- mvn -s .travis.maven.settings.xml license:check
+- mvn -s .travis.maven.settings.xml license:check --debug
 - git diff HEAD
-- mvn -s .travis.maven.settings.xml verify -Pitest -Dfailsafe.useFile=false --debug | grep -vF "[INFO] Downloading:" | grep
-  -vF "[INFO] Downloaded:"; test ${PIPESTATUS[0]} -eq 0
+#- mvn -s .travis.maven.settings.xml verify -Pitest -Dfailsafe.useFile=false --debug | grep -vF "[INFO] Downloading:" | grep
+#  -vF "[INFO] Downloaded:"; test ${PIPESTATUS[0]} -eq 0
+#
 env:
   global:
   - secure: DOP9OifGr7yBDNdkn1Tl58ur4tJzqFaNzVktmX+KgpjDbWtKE3cqyqf1pElyAbSpTm8kVf/UAxUPyCXdRh/W7jj2jB6Tc5kwBCqM8UHjJ6QuZVGnpih4lO6EImV1MDW2+MNWvun7kdUgtRjCWohaYh4pTPAwOk8v7IfeewH1Ud4=
