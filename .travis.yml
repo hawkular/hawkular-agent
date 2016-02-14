@@ -21,6 +21,7 @@ install:
 - cd ~/; git clone https://github.com/ppalaga/license-maven-plugin.git; cd license-maven-plugin; git checkout 160213-git-bug; mvn clean install
 - cd "$MY_PWD"
 script:
+- git fetch origin --unshallow
 - git status
 - mvn -s .travis.maven.settings.xml license:check --debug
 - git diff HEAD
