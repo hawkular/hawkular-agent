@@ -16,8 +16,10 @@ notifications:
     on_success: change
 install:
 - mvn -version -B
+# unshallow is needed by license-maven-plugin
+- git fetch origin --unshallow
 script:
-- mvn -s .travis.maven.settings.xml verify -Pitest -Dfailsafe.useFile=false -Dlicense.skip=true | grep -vF "[INFO] Downloading:" | grep
+- mvn -s .travis.maven.settings.xml verify -Pitest -Dfailsafe.useFile=false | grep -vF "[INFO] Downloading:" | grep
   -vF "[INFO] Downloaded:"; test ${PIPESTATUS[0]} -eq 0
 env:
   global:
