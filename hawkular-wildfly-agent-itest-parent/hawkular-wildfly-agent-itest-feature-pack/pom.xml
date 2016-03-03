@@ -28,35 +28,49 @@
   <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
   <packaging>pom</packaging>
 
-  <name>Hawkular Agent: WildFly Agent Subsystem Feature Pack</name>
-  <description>A feature pack to be able to deploy a Hawkular WildFly Agent in a WildFly server.</description>
+  <name>Hawkular Agent: WildFly Agent Feature Pack for Integration Tests</name>
+  <description>A feature pack that contains everything needed to prepare a distro against which Agent integration tests can be run.</description>
 
   <dependencies>
 
     <dependency>
       <groupId>org.hawkular.accounts</groupId>
       <artifactId>hawkular-accounts-feature-pack</artifactId>
-      <version>${version.org.hawkular.accounts}</version>
       <type>zip</type>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-example-jndi</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
     </dependency>
 
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
-      <version>${project.version}</version>
       <type>zip</type>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.cmdgw</groupId>
+      <artifactId>hawkular-command-gateway-war</artifactId>
+      <version>${version.org.hawkular.cmdgw}</version>
+      <type>war</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.inventory</groupId>
+      <artifactId>hawkular-inventory-dist</artifactId>
+      <version>${version.org.hawkular.inventory}</version>
+      <type>war</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.metrics</groupId>
+      <artifactId>hawkular-metrics-api-jaxrs</artifactId>
+      <version>${version.org.hawkular.metrics}</version>
+      <type>war</type>
     </dependency>
 
   </dependencies>
@@ -64,6 +78,7 @@
   <build>
     <plugins>
 
+      <!-- Unpack the upstream artifacts that host various *.xml files that we want to use unchanged or adapt in the next steps -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -75,46 +90,85 @@
               <goal>unpack</goal>
             </goals>
             <configuration>
-              <outputDirectory>${project.build.directory}/upstream-subsystem-templates</outputDirectory>
-              <includes>subsystem-templates/*.xml</includes>
               <artifactItems>
-                <artifactItem>
-                  <groupId>org.keycloak</groupId>
-                  <artifactId>keycloak-wildfly-server-subsystem</artifactId>
-                  <version>${version.org.keycloak}</version>
-                </artifactItem>
                 <artifactItem>
                   <groupId>org.hawkular.accounts</groupId>
                   <artifactId>hawkular-accounts-feature-pack</artifactId>
-                  <version>${version.org.hawkular.accounts}</version>
                   <type>zip</type>
+                  <includes>subsystem-templates/*.xml,configuration/**/*.xml</includes>
+                  <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.hawkular.agent</groupId>
+                  <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
+                  <type>zip</type>
+                  <includes>subsystem-templates/*.xml,configuration/**/*.xml</includes>
+                  <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
+        </executions>
+      </plugin>
+
+      <!-- Enhance various *.xml files taken from our dependencies using XSL transformations -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>xml-maven-plugin</artifactId>
+        <executions>
           <execution>
-            <!--
-              OK, this is a little bit weird step.
-              To make the provisioning plugin realize that we need the subsystems from accounts, we would have to
-              declare a module that would include the artifact with the subsystem-templates of accounts. Now inventory
-              feature pack does NOT need any such module - we just want to declare the same stuff as accounts.
-            -->
-            <id>copy-accounts-subsystem-templates</id>
-            <phase>prepare-package</phase>
+            <id>transform-xmls</id>
+            <phase>generate-resources</phase>
             <goals>
-              <goal>unpack</goal>
+              <goal>transform</goal>
             </goals>
             <configuration>
-              <outputDirectory>${project.build.directory}/${project.artifactId}-${project.version}</outputDirectory>
-              <includes>subsystem-templates/*xml</includes>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.hawkular.accounts</groupId>
-                  <artifactId>hawkular-accounts-feature-pack</artifactId>
-                  <version>${version.org.hawkular.accounts}</version>
-                  <type>zip</type>
-                </artifactItem>
-              </artifactItems>
+              <transformationSets>
+                <transformationSet>
+                  <dir>${project.build.directory}/feature-pack-resources</dir>
+                  <stylesheet>${basedir}/src/main/xsl/configuration/standalone/hawkular-wildfly-agent-itest-subsystems.xsl</stylesheet>
+                  <includes>
+                    <include>configuration/standalone/hawkular-accounts-subsystems.xml</include>
+                  </includes>
+                  <outputDir>${project.build.directory}/feature-pack-resources</outputDir>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                      <pattern>^.*$</pattern>
+                      <replacement>configuration/standalone/hawkular-wildfly-agent-itest-subsystems.xml</replacement>
+                    </fileMapper>
+                  </fileMappers>
+                </transformationSet>
+
+                <transformationSet>
+                  <dir>${project.build.directory}/feature-pack-resources</dir>
+                  <stylesheet>${basedir}/src/main/xsl/subsystem-templates/hawkular-wildfly-agent-itest-keycloak-adapter.xsl</stylesheet>
+                  <includes>
+                    <include>subsystem-templates/hawkular-accounts-keycloak-adapter.xml</include>
+                  </includes>
+                  <outputDir>${project.build.directory}/feature-pack-resources</outputDir>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                      <pattern>^subsystem-templates/hawkular-accounts-(.*)\.xml$</pattern>
+                      <replacement>subsystem-templates/hawkular-wildfly-agent-itest-$1.xml</replacement>
+                    </fileMapper>
+                  </fileMappers>
+                </transformationSet>
+                <transformationSet>
+                  <dir>${project.build.directory}/feature-pack-resources</dir>
+                  <stylesheet>${basedir}/src/main/xsl/subsystem-templates/hawkular-wildfly-agent-itest-messaging-activemq.xsl</stylesheet>
+                  <includes>
+                    <include>subsystem-templates/hawkular-accounts-messaging-activemq.xml</include>
+                  </includes>
+                  <outputDir>${project.build.directory}/feature-pack-resources</outputDir>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                      <pattern>^subsystem-templates/hawkular-accounts-(.*)\.xml$</pattern>
+                      <replacement>subsystem-templates/hawkular-wildfly-agent-itest-$1.xml</replacement>
+                    </fileMapper>
+                  </fileMappers>
+                </transformationSet>
+
+              </transformationSets>
             </configuration>
           </execution>
         </executions>
@@ -131,7 +185,7 @@
               <goal>build</goal>
             </goals>
             <configuration>
-              <config-file>feature-pack-build.xml</config-file>
+              <resources-dir>target/feature-pack-resources</resources-dir>
             </configuration>
           </execution>
         </executions>
@@ -157,6 +211,7 @@
           </execution>
         </executions>
       </plugin>
+
     </plugins>
   </build>
 </project>

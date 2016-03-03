@@ -129,6 +129,20 @@
       </dependency>
 
       <dependency>
+        <groupId>org.hawkular.accounts</groupId>
+        <artifactId>hawkular-accounts-feature-pack</artifactId>
+        <version>${version.org.hawkular.accounts}</version>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.agent</groupId>
+        <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
+        <version>${project.version}</version>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
         <groupId>org.hawkular.cmdgw</groupId>
         <artifactId>hawkular-command-gateway-api</artifactId>
         <version>${version.org.hawkular.cmdgw}</version>
@@ -162,6 +176,13 @@
         <groupId>org.jolokia</groupId>
         <artifactId>jolokia-client-java</artifactId>
         <version>${version.org.jolokia}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.wildfly</groupId>
+        <artifactId>wildfly-feature-pack</artifactId>
+        <version>${version.org.wildfly}</version>
+        <type>zip</type>
       </dependency>
 
       <dependency>

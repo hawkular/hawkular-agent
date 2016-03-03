@@ -18,41 +18,28 @@
 
 -->
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xalan="http://xml.apache.org/xalan"
-  xmlns:ds="urn:jboss:domain:datasources:3.0" xmlns:ra="urn:jboss:domain:resource-adapters:3.0" xmlns:ejb3="urn:jboss:domain:ejb3:3.0"
-  xmlns:logging="urn:jboss:domain:logging:3.0" xmlns:undertow="urn:jboss:domain:undertow:2.0" xmlns:tx="urn:jboss:domain:transactions:3.0"
-  version="2.0" exclude-result-prefixes="xalan ds ra ejb3 logging undertow tx">
-
-  <!-- will indicate if this is a "dev" build or "production" build -->
-  <xsl:param name="kettle.build.type" />
-  <xsl:param name="uuid.hawkular.accounts.backend" />
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xalan="http://xml.apache.org/xalan" version="2.0" exclude-result-prefixes="xalan">
 
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" xalan:indent-amount="4" standalone="no" />
   <xsl:strip-space elements="*" />
 
-
-  <xsl:template match="node()[name(.)='system-properties']">
+  <!-- //*[local-name()='config']/*[local-name()='supplement' and @name='default'] is an xPath's 1.0
+       way of saying of xPath's 2.0 prefix-less selector //*:config/*:supplement[@name='default']  -->
+  <xsl:template match="//*[local-name()='config']/*[local-name()='subsystem']">
     <xsl:copy>
-      <xsl:apply-templates select="node()|@*"/>
-      <property>
-        <xsl:attribute name="name">hawkular.metrics.waitForService</xsl:attribute>
-        <xsl:attribute name="value">&#36;{hawkular.metrics.waitForService:true}</xsl:attribute>
-      </property>
-    </xsl:copy>
-  </xsl:template>
 
-  <!-- //*[local-name()='secure-deployment'] is an xPath's 1.0 way of saying of xPath's 2.0 prefix-less selector //*:secure-deployment  -->
-  <xsl:template match="//*[*[local-name()='secure-deployment']]">
-    <xsl:copy>
-      <xsl:apply-templates select="@*|node()" />
+      <xsl:apply-templates select="@*|node()"/>
+
+      <xsl:variable name="secure-deployment-secret" select="*[local-name()='secure-deployment' and @name='hawkular-accounts.war']/*[local-name()='credential' and @name='secret']/text()" />
+
       <secure-deployment name="hawkular-inventory-dist.war">
         <realm>hawkular</realm>
         <resource>hawkular-accounts-backend</resource>
         <use-resource-role-mappings>true</use-resource-role-mappings>
         <enable-cors>true</enable-cors>
         <enable-basic-auth>true</enable-basic-auth>
-        <!-- copy the secret value from the previous available secure-deployment -->
-        <credential name="secret"><xsl:value-of select="*[local-name()='secure-deployment']/*[local-name()='credential' and @name='secret']/text()"/></credential>
+        <!-- copy the secret value from the hawkular-accounts.war secure-deployment -->
+        <credential name="secret"><xsl:value-of select="$secure-deployment-secret"/></credential>
       </secure-deployment>
       <secure-deployment name="hawkular-metrics-api-jaxrs.war">
         <realm>hawkular</realm>
@@ -61,7 +48,7 @@
         <enable-cors>true</enable-cors>
         <enable-basic-auth>true</enable-basic-auth>
         <!-- copy the secret value from the previous available secure-deployment -->
-        <credential name="secret"><xsl:value-of select="*[local-name()='secure-deployment']/*[local-name()='credential' and @name='secret']/text()"/></credential>
+        <credential name="secret"><xsl:value-of select="$secure-deployment-secret"/></credential>
       </secure-deployment>
       <secure-deployment name="hawkular-command-gateway-war.war">
         <realm>hawkular</realm>
@@ -70,15 +57,9 @@
         <enable-cors>true</enable-cors>
         <enable-basic-auth>true</enable-basic-auth>
         <!-- copy the secret value from the previous available secure-deployment -->
-        <credential name="secret"><xsl:value-of select="*[local-name()='secure-deployment']/*[local-name()='credential' and @name='secret']/text()"/></credential>
+        <credential name="secret"><xsl:value-of select="$secure-deployment-secret"/></credential>
       </secure-deployment>
-    </xsl:copy>
-  </xsl:template>
 
-  <xsl:template match="//*[local-name()='subsystem']/*[local-name()='server' and @name='default']">
-    <xsl:copy>
-      <xsl:apply-templates select="@*|node()"/>
-      <jms-topic name="HawkularInventoryChanges" entries="java:/topic/HawkularInventoryChanges"/>
     </xsl:copy>
   </xsl:template>
 
