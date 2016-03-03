@@ -282,7 +282,7 @@ public class AgentInstaller {
 
             configurationBldr.addXmlEdit(createManagedServers(installerConfig));
             configurationBldr.addXmlEdit(setEnableFlag(installerConfig));
-            configurationBldr.modulesHome("modules"); // we know module distro needs this as the assumed modules dir
+            configurationBldr.modulesHome("modules");
 
             new ExtensionDeployer().install(configurationBldr.build());
 
