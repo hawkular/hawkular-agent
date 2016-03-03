@@ -322,7 +322,7 @@
             <configuration>
               <jboss-home>${hawkular.agent.itest.run.dir}</jboss-home>
               <skip>${skipTests}</skip>
-              <startupTimeout>240</startupTimeout>
+              <startupTimeout>360</startupTimeout>
               <port>${hawkular.management.port}</port>
               <javaOpts>
                 <javaOpt>-server</javaOpt>
