@@ -241,4 +241,18 @@
     </dependencies>
   </dependencyManagement>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <excludes combine.children="append">
+            <exclude>hawkular-wildfly-agent-ansible-playbook/hosts</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>
