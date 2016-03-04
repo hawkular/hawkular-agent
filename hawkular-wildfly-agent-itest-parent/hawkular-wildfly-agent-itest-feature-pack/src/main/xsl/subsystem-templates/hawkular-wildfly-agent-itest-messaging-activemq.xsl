@@ -28,10 +28,14 @@
   <xsl:template
       match="//*[local-name()='config']/*[local-name()='subsystem']/*[local-name()='server' and @name='default']/*[local-name()='jms-topic' and @name='HawkularAccountsEvents']">
     <xsl:copy-of select="."/>
-    <xsl:element name="jms-topic" namespace="{namespace-uri()}">
-      <xsl:attribute name="name">HawkularInventoryChanges</xsl:attribute>
-      <xsl:attribute name="entries">java:/topic/HawkularInventoryChanges</xsl:attribute>
-    </xsl:element>
+    <jms-queue name="hawkular/metrics/gauges/new" entries="java:/queue/hawkular/metrics/gauges/new"/>
+    <jms-queue name="hawkular/metrics/counters/new" entries="java:/queue/hawkular/metrics/counters/new"/>
+    <jms-queue name="hawkular/metrics/availability/new" entries="java:/queue/hawkular/metrics/availability/new"/>
+
+    <jms-topic name="HawkularInventoryChanges" entries="java:/topic/HawkularInventoryChanges"/>
+    <jms-topic name="HawkularCommandEvent" entries="java:/topic/HawkularCommandEvent"/>
+    <jms-topic name="HawkularAvailData" entries="java:/topic/HawkularAvailData"/>
+    <jms-topic name="HawkularMetricData" entries="java:/topic/HawkularMetricData"/>
   </xsl:template>
 
   <!-- copy everything else as-is -->

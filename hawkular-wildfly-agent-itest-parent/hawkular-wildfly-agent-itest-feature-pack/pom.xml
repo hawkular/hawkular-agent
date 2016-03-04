@@ -68,7 +68,7 @@
 
     <dependency>
       <groupId>org.hawkular.metrics</groupId>
-      <artifactId>hawkular-metrics-api-jaxrs</artifactId>
+      <artifactId>hawkular-metrics-component</artifactId>
       <version>${version.org.hawkular.metrics}</version>
       <type>war</type>
     </dependency>

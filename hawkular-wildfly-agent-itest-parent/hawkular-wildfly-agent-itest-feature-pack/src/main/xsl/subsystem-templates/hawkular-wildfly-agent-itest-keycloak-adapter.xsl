@@ -41,7 +41,7 @@
         <!-- copy the secret value from the hawkular-accounts.war secure-deployment -->
         <credential name="secret"><xsl:value-of select="$secure-deployment-secret"/></credential>
       </secure-deployment>
-      <secure-deployment name="hawkular-metrics-api-jaxrs.war">
+      <secure-deployment name="hawkular-metrics-component.war">
         <realm>hawkular</realm>
         <resource>hawkular-accounts-backend</resource>
         <use-resource-role-mappings>true</use-resource-role-mappings>
