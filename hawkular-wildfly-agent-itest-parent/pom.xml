@@ -35,6 +35,7 @@
     <module>hawkular-wildfly-agent-helloworld-war</module>
     <module>hawkular-wildfly-agent-example-jndi</module>
     <module>hawkular-wildfly-agent-itest-feature-pack</module>
+    <module>hawkular-wildfly-agent-installer-itest</module>
     <module>hawkular-wildfly-agent-itest</module>
   </modules>
 </project>
