@@ -44,19 +44,96 @@
     <dependency>
       <groupId>org.wildfly</groupId>
       <artifactId>wildfly-feature-pack</artifactId>
-      <version>${version.org.wildfly}</version>
       <type>zip</type>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
   </dependencies>
 
   <build>
     <plugins>
+
+      <!-- Unpack the upstream artifacts that host various *.xml files that we want to use unchanged or adapt in the next steps -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.wildfly</groupId>
+                  <artifactId>wildfly-feature-pack</artifactId>
+                  <type>zip</type>
+                  <includes>configuration/**/*.xml</includes>
+                  <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Add hawkular-wildfly-agent.xml to the subsystems.xml taken from wildfly-feature-pack
+        and store the result as wildfly-agent-subsystems-subsystems.xml -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>xml-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>transform-xml</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>transform</goal>
+            </goals>
+            <configuration>
+              <transformationSets>
+                <transformationSet>
+                  <dir>${project.build.directory}/feature-pack-resources</dir>
+                  <stylesheet>${basedir}/src/main/xsl/configuration/standalone/hawkular-wildfly-agent-subsystems.xsl</stylesheet>
+                  <includes>
+                    <include>configuration/standalone/subsystems.xml</include>
+                  </includes>
+                  <outputDir>${project.build.directory}/feature-pack-resources</outputDir>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                      <pattern>^.*$</pattern>
+                      <replacement>configuration/standalone/hawkular-wildfly-agent-subsystems.xml</replacement>
+                    </fileMapper>
+                  </fileMappers>
+                </transformationSet>
+              </transformationSets>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Add the resources from src/main/resources to feature-pack-resources working directory -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${basedir}/src/main/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.wildfly.build</groupId>
         <artifactId>wildfly-feature-pack-build-maven-plugin</artifactId>
@@ -68,7 +145,7 @@
               <goal>build</goal>
             </goals>
             <configuration>
-              <config-file>feature-pack-build.xml</config-file>
+              <resources-dir>target/feature-pack-resources</resources-dir>
             </configuration>
           </execution>
         </executions>
@@ -88,15 +165,13 @@
               <descriptors>
                 <descriptor>assembly.xml</descriptor>
               </descriptors>
-              <finalName>${project.build.finalName}</finalName>
               <appendAssemblyId>false</appendAssemblyId>
-              <outputDirectory>${project.build.directory}</outputDirectory>
-              <workDirectory>${project.build.directory}/assembly/work</workDirectory>
               <tarLongFileMode>gnu</tarLongFileMode>
             </configuration>
           </execution>
         </executions>
       </plugin>
+
     </plugins>
   </build>
 

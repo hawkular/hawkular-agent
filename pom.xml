@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>35</version>
+    <version>36</version>
   </parent>
 
   <groupId>org.hawkular.agent</groupId>
@@ -60,11 +60,11 @@
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <version.org.hamcrest>1.3</version.org.hamcrest>
 
-    <version.org.hawkular.accounts>2.0.21.Final</version.org.hawkular.accounts>
-    <version.org.hawkular.cmdgw>0.10.11.Final</version.org.hawkular.cmdgw>
-    <version.org.hawkular.commons>0.3.5.Final</version.org.hawkular.commons>
-    <version.org.hawkular.inventory>0.12.2.Final</version.org.hawkular.inventory>
-    <version.org.hawkular.metrics>0.12.1.Final</version.org.hawkular.metrics>
+    <version.org.hawkular.accounts>2.0.22.Final</version.org.hawkular.accounts>
+    <version.org.hawkular.cmdgw>0.11.0.Final</version.org.hawkular.cmdgw>
+    <version.org.hawkular.commons>0.4.0.Final</version.org.hawkular.commons>
+    <version.org.hawkular.inventory>0.13.0.Final</version.org.hawkular.inventory>
+    <version.org.hawkular.metrics>0.13.0.Final</version.org.hawkular.metrics>
 
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.2</version.org.jolokia>
@@ -129,6 +129,20 @@
       </dependency>
 
       <dependency>
+        <groupId>org.hawkular.accounts</groupId>
+        <artifactId>hawkular-accounts-feature-pack</artifactId>
+        <version>${version.org.hawkular.accounts}</version>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.agent</groupId>
+        <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
+        <version>${project.version}</version>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
         <groupId>org.hawkular.cmdgw</groupId>
         <artifactId>hawkular-command-gateway-api</artifactId>
         <version>${version.org.hawkular.cmdgw}</version>
@@ -162,6 +176,13 @@
         <groupId>org.jolokia</groupId>
         <artifactId>jolokia-client-java</artifactId>
         <version>${version.org.jolokia}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.wildfly</groupId>
+        <artifactId>wildfly-feature-pack</artifactId>
+        <version>${version.org.wildfly}</version>
+        <type>zip</type>
       </dependency>
 
       <dependency>
