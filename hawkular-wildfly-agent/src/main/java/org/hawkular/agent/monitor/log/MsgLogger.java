@@ -316,4 +316,8 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10068, value = "Agent is already stopped.")
     void infoStoppedAlready();
 
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10069, value = "Cannot get tenant ID. Will retry in 60 seconds. Error=[%s]")
+    void errorRetryTenantId(String errorMsg);
+
 }

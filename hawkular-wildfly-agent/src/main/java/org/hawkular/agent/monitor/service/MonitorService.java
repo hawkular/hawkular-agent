@@ -178,41 +178,60 @@ public class MonitorService implements Service<MonitorService> {
             String useTenantId = bootStorageAdapter.getTenantId();
 
             if (bootStorageAdapter.getType() == StorageReportTo.HAWKULAR) {
-                try {
-                    StringBuilder url = Util.getContextUrlString(useUrl, bootStorageAdapter.getAccountsContext());
-                    url.append("personas/current");
+                long retryWait = 60_000; // we retry every minute
+                int retriesRemaining = 60; // we will retry once a minute for up to an hour (60 minutes)
+                while (retriesRemaining-- > 0) {
+                    try {
+                        StringBuilder url = Util.getContextUrlString(useUrl, bootStorageAdapter.getAccountsContext());
+                        url.append("personas/current");
 
-                    SSLContext sslContext = getSslContext(bootConfiguration, trustOnlySSLContextValues);
+                        SSLContext sslContext = getSslContext(bootConfiguration, trustOnlySSLContextValues);
 
-                    HttpClientBuilder httpClientBuilder = new HttpClientBuilder(bootConfiguration.getStorageAdapter(),
-                            sslContext);
+                        HttpClientBuilder httpClientBuilder = new HttpClientBuilder(
+                                bootConfiguration.getStorageAdapter(),
+                                sslContext);
 
-                    OkHttpClient httpclient = httpClientBuilder.getHttpClient();
+                        OkHttpClient httpclient = httpClientBuilder.getHttpClient();
 
-                    Request request = httpClientBuilder.buildJsonGetRequest(url.toString(), null);
-                    Response httpResponse = httpclient.newCall(request).execute();
+                        Request request = httpClientBuilder.buildJsonGetRequest(url.toString(), null);
+                        Response httpResponse = httpclient.newCall(request).execute();
 
-                    if (!httpResponse.isSuccessful()) {
-                        throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
-                                + httpResponse.message() + "], url=[" + url + "]");
-                    }
-
-                    final String fromServer = httpResponse.body().string();
-                    // depending on accounts is probably overkill because of 1 REST call, so let's process the
-                    // JSON via regex
-                    Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
-                    if (matcher.find()) {
-                        String tenantIdFromAccounts = matcher.group(1);
-                        if (useTenantId != null && !tenantIdFromAccounts.equals(useTenantId)) {
-                            log.errorWrongTenantId(useTenantId, tenantIdFromAccounts);
-                            throw new Exception("Aborting agent startup because the desired tenant ID [" + useTenantId
-                                    + "] does not match the actual tenant ID [" + tenantIdFromAccounts + "]");
+                        if (!httpResponse.isSuccessful()) {
+                            throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
+                                    + httpResponse.message() + "], url=[" + url + "]");
                         }
-                        useTenantId = tenantIdFromAccounts;
+
+                        final String fromServer = httpResponse.body().string();
+                        // depending on accounts is probably overkill because of 1 REST call, so let's process the
+                        // JSON via regex
+                        Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
+                        if (matcher.find()) {
+                            String tenantIdFromAccounts = matcher.group(1);
+                            if (useTenantId != null && !tenantIdFromAccounts.equals(useTenantId)) {
+                                log.errorWrongTenantId(useTenantId, tenantIdFromAccounts);
+                                throw new Exception(
+                                        "Aborting agent startup because the desired tenant ID [" + useTenantId
+                                                + "] does not match the actual tenant ID [" + tenantIdFromAccounts
+                                                + "]");
+                            }
+                            useTenantId = tenantIdFromAccounts;
+                        }
+
+                        if (useTenantId == null) {
+                            throw new Exception("Got a null tenantId which is invalid");
+                        }
+
+                        log.debugf("Tenant ID [%s]", useTenantId);
+                        retriesRemaining = 0; // we got our tenant ID, no need to keep retrying
+                    } catch (Throwable t) {
+                        log.errorRetryTenantId(t.toString());
+                        try {
+                            Thread.sleep(retryWait);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(ie);
+                        }
                     }
-                    log.debugf("Tenant ID [%s]", useTenantId == null ? "unknown" : useTenantId);
-                } catch (Throwable t) {
-                    throw new RuntimeException("Cannot get tenant ID", t);
                 }
             }
             MonitorServiceConfiguration.StorageAdapterConfiguration runtimeStorageAdapter = //
