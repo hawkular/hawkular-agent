@@ -31,17 +31,16 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.MissingOptionException;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.IOUtils;
 import org.hawkular.wildfly.module.installer.DeploymentConfiguration;
 import org.hawkular.wildfly.module.installer.DeploymentConfiguration.Builder;
 import org.hawkular.wildfly.module.installer.ExtensionDeployer;
 import org.hawkular.wildfly.module.installer.XmlEdit;
+import org.jboss.aesh.cl.CommandLine;
+import org.jboss.aesh.cl.internal.ProcessedCommand;
+import org.jboss.aesh.cl.parser.CommandLineParser;
+import org.jboss.aesh.cl.parser.CommandLineParserBuilder;
+import org.jboss.aesh.cl.parser.CommandLineParserException;
 import org.jboss.logging.Logger;
 
 public class AgentInstaller {
@@ -50,13 +49,20 @@ public class AgentInstaller {
     private static final String SECURITY_REALM_NAME = "HawkularRealm";
 
     public static void main(String[] args) throws Exception {
-        Options options = null;
+        ProcessedCommand<?> options = null;
 
         ArrayList<File> filesToDelete = new ArrayList<>();
 
         try {
             options = InstallerConfiguration.buildCommandLineOptions();
-            CommandLine commandLine = new DefaultParser().parse(options, args);
+            CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
+
+            StringBuilder argLine = new StringBuilder(InstallerConfiguration.COMMAND_NAME);
+            for (String str : args) {
+                argLine.append(' ').append(str);
+            }
+
+            CommandLine<?> commandLine = parser.parse(argLine.toString());
             InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
 
             // IF we were told the passwords were encrypted THEN
@@ -75,7 +81,7 @@ public class AgentInstaller {
             if (passwordsEncrypted) {
                 String key = commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY, null);
                 String saltAsString = commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT, null);
-                if (key == null) {
+                if (key == null || key.isEmpty()) {
                     key = readPasswordFromStdin("Encryption key:");
                 }
 
@@ -84,7 +90,7 @@ public class AgentInstaller {
                     saltAsString = key;
                 }
 
-                if (saltAsString == null) {
+                if (saltAsString == null || saltAsString.isEmpty()) {
                     saltAsString = readPasswordFromStdin("Salt:");
                 }
 
@@ -103,8 +109,7 @@ public class AgentInstaller {
                         jbossHomeFile.isDirectory() &&
                         jbossHomeFile.canRead() &&
                         new File(jbossHomeFile, "modules").isDirectory())) {
-                    throw new MissingOptionException(
-                            InstallerConfiguration.OPTION_TARGET_LOCATION + " must be specified");
+                    throw new Exception(InstallerConfiguration.OPTION_TARGET_LOCATION + " must be specified");
                 }
                 // looks like our current working directory is a WildFly home - use that
                 jbossHome = jbossHomeFile.getCanonicalPath();
@@ -112,7 +117,7 @@ public class AgentInstaller {
 
             if ((installerConfig.getUsername() == null || installerConfig.getPassword() == null)
                     && (installerConfig.getSecurityKey() == null || installerConfig.getSecuritySecret() == null)) {
-                throw new MissingOptionException(
+                throw new Exception(
                         "You must provide credentials (username/password or key/secret) in installer configuration");
             }
 
@@ -121,7 +126,7 @@ public class AgentInstaller {
             String hawkularServerPort;
 
             if (installerConfig.getServerUrl() == null) {
-                throw new MissingOptionException("You must provide the Hawkular Server URL");
+                throw new Exception("You must provide the Hawkular Server URL");
             }
 
             try {
@@ -229,8 +234,8 @@ public class AgentInstaller {
                 String keyPass = installerConfig.getKeyPassword();
                 String keyAlias = installerConfig.getKeyAlias();
                 if (keystorePath == null || keyAlias == null) {
-                    throw new ParseException(String.format("When using https protocol, the following keystore "
-                            + "command-line options are required: %s, %s",
+                    throw new Exception(String.format("When using https protocol, the following keystore "
+                            + "command line options are required: %s, %s",
                             InstallerConfiguration.OPTION_KEYSTORE_PATH, InstallerConfiguration.OPTION_KEY_ALIAS));
                 }
 
@@ -286,7 +291,7 @@ public class AgentInstaller {
 
             new ExtensionDeployer().install(configurationBldr.build());
 
-        } catch (ParseException pe) {
+        } catch (CommandLineParserException pe) {
             log.error(pe);
             printHelp(options);
             if (Boolean.getBoolean("org.hawkular.wildfly.agent.installer.throw-exception-on-error")) {
@@ -472,14 +477,10 @@ public class AgentInstaller {
         return null;
     }
 
-    private static void printHelp(Options options) {
+    private static void printHelp(ProcessedCommand<?> options) {
         if (options == null) {
             throw new RuntimeException("Cannot print help - options is null");
         }
-
-        HelpFormatter formatter = new HelpFormatter();
-        formatter.setWidth(120);
-        formatter.setOptionComparator(null);
-        formatter.printHelp("hawkular-wildfly-agent-installer", options);
+        System.out.println(options.printHelp());
     }
 }
