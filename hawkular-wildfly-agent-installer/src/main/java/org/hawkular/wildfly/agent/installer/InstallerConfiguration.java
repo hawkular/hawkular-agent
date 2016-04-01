@@ -23,9 +23,11 @@ import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
+import org.jboss.aesh.cl.CommandLine;
+import org.jboss.aesh.cl.internal.OptionType;
+import org.jboss.aesh.cl.internal.ProcessedCommand;
+import org.jboss.aesh.cl.internal.ProcessedCommandBuilder;
+import org.jboss.aesh.cl.internal.ProcessedOptionBuilder;
 import org.jboss.logging.Logger;
 
 /**
@@ -33,6 +35,9 @@ import org.jboss.logging.Logger;
  */
 public class InstallerConfiguration {
     private static final Logger log = Logger.getLogger(AgentInstaller.class);
+
+    // command name
+    static final String COMMAND_NAME = "hawkular-wildfly-agent-installer";
 
     // these are standalone command line options that are *not* found in the config .properties file
     static final String OPTION_INSTALLER_CONFIG = "installer-config";
@@ -59,168 +64,183 @@ public class InstallerConfiguration {
     static final String OPTION_TENANT_ID = "tenant-id";
     static final String OPTION_METRICS_ONLY_MODE = "metrics-only";
 
-    static Options buildCommandLineOptions() {
-        Options options = new Options();
+    static ProcessedCommand<?> buildCommandLineOptions() throws Exception {
+        ProcessedCommandBuilder cmd = new ProcessedCommandBuilder();
 
-        options.addOption(Option.builder("D")
-                .hasArgs()
+        cmd.name(COMMAND_NAME);
+
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name("D")
+                .shortName('D')
+                .optionType(OptionType.GROUP)
+                .type(String.class)
                 .valueSeparator('=')
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_INSTALLER_CONFIG)
-                .longOpt(InstallerConfiguration.OPTION_INSTALLER_CONFIG)
-                .desc("Installer .properties configuration file")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_ENCRYPTION_KEY)
-                .longOpt(InstallerConfiguration.OPTION_ENCRYPTION_KEY)
-                .desc("If specified, this is used to decode the properties that were encrypted. If you do not " +
-                        "provide a value with the option, you will be prompted for one.")
-                .numberOfArgs(1)
-                .optionalArg(true) // if no argument is given, we'll ask on stdin for it
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_ENCRYPTION_SALT)
-                .longOpt(InstallerConfiguration.OPTION_ENCRYPTION_SALT)
-                .desc("The salt used for generating the key. Recommended, if encryption is used. If not specified, " +
-                        "the same value as the key will be used.")
-                .numberOfArgs(1)
-                .optionalArg(true) // if no argument is given, we'll ask on stdin for it
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_ENABLED)
-                .longOpt(InstallerConfiguration.OPTION_ENABLED)
-                .desc("Indicates if the agent should be enabled at startup")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_TARGET_LOCATION)
-                .longOpt(InstallerConfiguration.OPTION_TARGET_LOCATION)
-                .desc("Target home directory of the application server where the agent is to be installed")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_MODULE_DISTRIBUTION)
-                .longOpt(InstallerConfiguration.OPTION_MODULE_DISTRIBUTION)
-                .desc("Hawkular WildFly Agent Module distribution zip file")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_SERVER_URL)
-                .longOpt(InstallerConfiguration.OPTION_SERVER_URL)
-                .desc("Server URL where the agent will send its monitoring data")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_TARGET_CONFIG)
-                .longOpt(InstallerConfiguration.OPTION_TARGET_CONFIG)
-                .desc("The target configuration file to write to. Can be either absolute path or relative to "
+                .description("Defines system properties to set")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_INSTALLER_CONFIG)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Installer .properties configuration file")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_ENCRYPTION_KEY)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .addDefaultValue("")
+                .description("If specified, this is used to decode the properties that were encrypted. "
+                        + "If you do not provide a value with the option, you will be prompted for one.")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_ENCRYPTION_SALT)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .addDefaultValue("")
+                .description("The salt used for generating the key. Recommended, if encryption is used. "
+                        + "If not specified, the same value as the key will be used.")
+                .create());
+
+        // the following are those options that can also be in the config file
+
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_ENABLED)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Indicates if the agent should be enabled at startup")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_TARGET_LOCATION)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Target home directory of the application server where the agent is to be installed")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_MODULE_DISTRIBUTION)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Hawkular WildFly Agent Module distribution zip file")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_SERVER_URL)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Server URL where the agent will send its monitoring data")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_TARGET_CONFIG)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("The target configuration file to write to. Can be either absolute path or relative to "
                         + InstallerConfiguration.OPTION_TARGET_LOCATION)
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_SUBSYSTEM_SNIPPET)
-                .longOpt(InstallerConfiguration.OPTION_SUBSYSTEM_SNIPPET)
-                .desc("Customized subsystem XML content that overrides the default subsystem configuration")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_MANAGED_SERVER_NAME)
-                .longOpt(InstallerConfiguration.OPTION_MANAGED_SERVER_NAME)
-                .desc("The agent will use this name to refer to the server where it is deployed and locally managing.")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_FEED_ID)
-                .longOpt(InstallerConfiguration.OPTION_FEED_ID)
-                .desc("The feed ID that the agent will use to identify its data.")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_TENANT_ID)
-                .longOpt(InstallerConfiguration.OPTION_TENANT_ID)
-                .desc("The tenant ID that the agent will ask to be used. Usually only used when in metrics-only mode.")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_METRICS_ONLY_MODE)
-                .longOpt(InstallerConfiguration.OPTION_METRICS_ONLY_MODE)
-                .desc("If true, the agent will be configured to run in metrics-only mode (inventory will not be stored"
-                        + " and no websocket connection to a Hawkular Server will be made.)"
-                        + " If true, you must specify a tenant-id.")
-                .numberOfArgs(1)
-                .build());
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_SUBSYSTEM_SNIPPET)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Customized subsystem XML content that overrides the default subsystem configuration")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_MANAGED_SERVER_NAME)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("The agent will use this name to refer to the server where it is deployed "
+                        + "and locally managing.")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_FEED_ID)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("The feed ID that the agent will use to identify its data.")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_TENANT_ID)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("The tenant ID that the agent will ask to be used. "
+                        + "Usually only used when in metrics-only mode.")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_METRICS_ONLY_MODE)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("If true, the agent will be configured to run in metrics-only mode "
+                        + "(inventory will not be stored and no websocket connection to a Hawkular "
+                        + "Server will be made.) If true, you must specify a tenant-id.")
+                .create());
 
         // SSL/security related config options
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_KEYSTORE_PATH)
-                .longOpt(InstallerConfiguration.OPTION_KEYSTORE_PATH)
-                .desc("Keystore file. Required when " + InstallerConfiguration.OPTION_SERVER_URL
-                        + " protocol is https")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_KEYSTORE_PASSWORD)
-                .longOpt(InstallerConfiguration.OPTION_KEYSTORE_PASSWORD)
-                .desc("Keystore password. When " + InstallerConfiguration.OPTION_SERVER_URL
-                        + " protocol is https and this option is not passed, installer will ask for password")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_KEY_PASSWORD)
-                .longOpt(InstallerConfiguration.OPTION_KEY_PASSWORD)
-                .desc("Key password. When " + InstallerConfiguration.OPTION_SERVER_URL
-                        + " protocol is https and this option is not passed, installer will ask for password")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_KEY_ALIAS)
-                .longOpt(InstallerConfiguration.OPTION_KEY_ALIAS)
-                .desc("Key alias. Required when " + InstallerConfiguration.OPTION_SERVER_URL
-                        + " protocol is https")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_USERNAME)
-                .longOpt(InstallerConfiguration.OPTION_USERNAME)
-                .desc("User the agent will use when connecting to Hawkular Server. Ignored if " + OPTION_SECURITY_KEY
-                        + " is provided.")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option
-                .builder()
-                .argName(InstallerConfiguration.OPTION_PASSWORD)
-                .longOpt(InstallerConfiguration.OPTION_PASSWORD)
-                .desc("Credentials agent will use when connecting to Hawkular Server. Ignored if "
-                        + OPTION_SECURITY_KEY + " is provided.")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_SECURITY_KEY)
-                .longOpt(InstallerConfiguration.OPTION_SECURITY_KEY)
-                .desc("Security key that the agent will use when authenticating with Hawkular Server.")
-                .numberOfArgs(1)
-                .build());
-        options.addOption(Option.builder()
-                .argName(InstallerConfiguration.OPTION_SECURITY_SECRET)
-                .longOpt(InstallerConfiguration.OPTION_SECURITY_SECRET)
-                .desc("Security secret that the agent will use when authenticating with Hawkular Server.")
-                .numberOfArgs(1)
-                .build());
 
-        return options;
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_KEYSTORE_PATH)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Keystore file. Required when " + InstallerConfiguration.OPTION_SERVER_URL
+                        + " protocol is https")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_KEYSTORE_PASSWORD)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Keystore password. When " + InstallerConfiguration.OPTION_SERVER_URL
+                        + " protocol is https and this option is not passed, installer will ask for password")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_KEY_PASSWORD)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Key password. When " + InstallerConfiguration.OPTION_SERVER_URL
+                        + " protocol is https and this option is not passed, installer will ask for password")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_KEY_ALIAS)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Key alias. Required when " + InstallerConfiguration.OPTION_SERVER_URL
+                        + " protocol is https")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_USERNAME)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("User the agent will use when connecting to Hawkular Server. Ignored if "
+                        + OPTION_SECURITY_KEY + " is provided.")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_PASSWORD)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Credentials agent will use when connecting to Hawkular Server. Ignored if "
+                        + OPTION_SECURITY_KEY + " is provided.")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_SECURITY_KEY)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Security key that the agent will use when authenticating with Hawkular Server.")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_SECURITY_SECRET)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Security secret that the agent will use when authenticating with Hawkular Server.")
+                .create());
+
+        return cmd.create();
     }
 
     private final Properties properties;
 
-    public InstallerConfiguration(CommandLine commandLine) throws Exception {
+    public InstallerConfiguration(CommandLine<?> commandLine) throws Exception {
+        if (commandLine.getParserException() != null) {
+            throw commandLine.getParserException();
+        }
+
         this.properties = new Properties();
 
         // we allow the user to set system properties through the -D argument
-        Properties sysprops = commandLine.getOptionProperties("D");
-        for (Map.Entry<Object, Object> sysprop : sysprops.entrySet()) {
-            System.setProperty(sysprop.getKey().toString(), sysprop.getValue().toString());
+        Map<String, String> sysprops = commandLine.getOptionProperties("D");
+        for (Map.Entry<String, String> sysprop : sysprops.entrySet()) {
+            System.setProperty(sysprop.getKey(), sysprop.getValue());
         }
 
         // seed our properties with the installer config properties file
@@ -268,7 +288,7 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_SECURITY_SECRET);
     }
 
-    private void setProperty(Properties props, CommandLine commandLine, String option) {
+    private void setProperty(Properties props, CommandLine<?> commandLine, String option) {
         String value = commandLine.getOptionValue(option);
         if (value != null) {
             properties.setProperty(option, value);

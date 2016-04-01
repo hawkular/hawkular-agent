@@ -21,19 +21,35 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URL;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
 import org.apache.commons.io.IOUtils;
+import org.jboss.aesh.cl.CommandLine;
+import org.jboss.aesh.cl.internal.ProcessedCommand;
+import org.jboss.aesh.cl.parser.CommandLineParser;
+import org.jboss.aesh.cl.parser.CommandLineParserBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class InstallerConfigurationTest {
     @Test
+    public void testSysPropArguments() throws Exception {
+        ProcessedCommand<?> options = InstallerConfiguration.buildCommandLineOptions();
+        CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
+        CommandLine<?> commandLine = parser
+                .parse(args(
+                        "--enabled", "true",
+                        "-DInstallerConfigurationTest.one=111",
+                        "--feed-id", "myfeed",
+                        "-DInstallerConfigurationTest.two=222"));
+        new InstallerConfiguration(commandLine);
+        Assert.assertEquals("111", System.getProperty("InstallerConfigurationTest.one"));
+        Assert.assertEquals("222", System.getProperty("InstallerConfigurationTest.two"));
+    }
+
+    @Test
     public void testLoadPropertiesFileFromClasspath() throws Exception {
-        Options options = InstallerConfiguration.buildCommandLineOptions();
-        CommandLine commandLine = new DefaultParser().parse(options,
-                args("--installer-config", "classpath:test-installer.properties"));
+        ProcessedCommand<?> options = InstallerConfiguration.buildCommandLineOptions();
+        CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
+        CommandLine<?> commandLine = parser.parse(args("--installer-config", "classpath:test-installer.properties"));
         InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
         assertTestProperties(installerConfig);
     }
@@ -41,9 +57,9 @@ public class InstallerConfigurationTest {
     @Test
     public void testLoadPropertiesFileFromUrl() throws Exception {
         URL url = InstallerConfigurationTest.class.getResource("/test-installer.properties");
-        Options options = InstallerConfiguration.buildCommandLineOptions();
-        CommandLine commandLine = new DefaultParser().parse(options,
-                args("--installer-config", url.toString()));
+        ProcessedCommand<?> options = InstallerConfiguration.buildCommandLineOptions();
+        CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
+        CommandLine<?> commandLine = parser.parse(args("--installer-config", url.toString()));
         InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
         assertTestProperties(installerConfig);
     }
@@ -59,9 +75,9 @@ public class InstallerConfigurationTest {
         }
 
         try {
-            Options options = InstallerConfiguration.buildCommandLineOptions();
-            CommandLine commandLine = new DefaultParser().parse(options,
-                    args("--installer-config", tempFile.getAbsolutePath()));
+            ProcessedCommand<?> options = InstallerConfiguration.buildCommandLineOptions();
+            CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
+            CommandLine<?> commandLine = parser.parse(args("--installer-config", tempFile.getAbsolutePath()));
             InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
             assertTestProperties(installerConfig);
         } finally {
@@ -71,8 +87,9 @@ public class InstallerConfigurationTest {
 
     @Test
     public void testOverridePropertiesFromArgs() throws Exception {
-        Options options = InstallerConfiguration.buildCommandLineOptions();
-        CommandLine commandLine = new DefaultParser().parse(options,
+        ProcessedCommand<?> options = InstallerConfiguration.buildCommandLineOptions();
+        CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
+        CommandLine<?> commandLine = parser.parse(
                 args("--installer-config", "classpath:test-installer.properties",
                         "--enabled", "false",
                         "--feed-id", "OVERRIDE-feed-id",
@@ -116,55 +133,75 @@ public class InstallerConfigurationTest {
 
     @Test
     public void testEncryptionKeyArg() throws Exception {
-        Options options = InstallerConfiguration.buildCommandLineOptions();
-
-        // specify just the option without a value
-        CommandLine commandLine = new DefaultParser().parse(options,
-                args("--encryption-key", "--target-location", "/opt"));
-        InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
-        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
-        Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
-        Assert.assertNull(commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
-        Assert.assertNull(commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT));
+        ProcessedCommand<?> options = InstallerConfiguration.buildCommandLineOptions();
+        CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
+        CommandLine<?> commandLine;
+        InstallerConfiguration installerConfig;
 
         // specify the option with the value
-        commandLine = new DefaultParser().parse(options,
-                args("--encryption-key", "abc", "--target-location", "/opt"));
+        commandLine = parser.parse(args("--encryption-key", "abc", "--target-location", "/opt"));
         installerConfig = new InstallerConfiguration(commandLine);
-        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
         Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
         Assert.assertEquals("abc", commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
         Assert.assertNull(commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT));
+        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
 
         // specify also the salt
-        commandLine = new DefaultParser().parse(options,
-                args("--encryption-key", "abc", "--encryption-salt", "abcd1234", "--target-location", "/opt"));
+        commandLine = parser
+                .parse(args("--encryption-key", "abc", "--encryption-salt", "abcd1234", "--target-location", "/opt"));
         installerConfig = new InstallerConfiguration(commandLine);
-        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
         Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
         Assert.assertEquals("abc", commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
         Assert.assertEquals("abcd1234", commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT));
+        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
+
+        // specify just the option without a value
+        commandLine = parser.parse(args("--encryption-key", "--target-location", "/opt"));
+        installerConfig = new InstallerConfiguration(commandLine);
+        Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertEquals("", commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertNull(commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT));
+        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
+
+        // specify just the option without a value, but put that option at the end (test fix to AESH-348)
+        commandLine = parser.parse(args("--target-location", "/opt", "--encryption-key"));
+        installerConfig = new InstallerConfiguration(commandLine);
+        Assert.assertTrue(commandLine.hasOption(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertEquals("", commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_KEY));
+        Assert.assertNull(commandLine.getOptionValue(InstallerConfiguration.OPTION_ENCRYPTION_SALT));
+        Assert.assertEquals("/opt", installerConfig.getTargetLocation());
     }
 
     @Test
     public void testBadProps() throws Exception {
-        Options options = InstallerConfiguration.buildCommandLineOptions();
+        ProcessedCommand<?> options = InstallerConfiguration.buildCommandLineOptions();
+        CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
 
         try {
-            new DefaultParser().parse(options, args("--bad", "bad"));
-            Assert.fail("Should have failed on bad argument");
+            CommandLine<?> results = parser.parse(args("--bad", "bad"));
+            new InstallerConfiguration(results);
+            Assert.fail("Should have failed on bad argument: " + results);
         } catch (Exception ok) {
+            //ok.printStackTrace();
+            //System.out.println(parser.printHelp());
         }
 
         try {
-            new DefaultParser().parse(options, args("--target-location", ".", "--bad"));
-            Assert.fail("Should have failed on bad argument");
+            CommandLine<?> results = parser.parse(args("--target-location", ".", "--bad"));
+            new InstallerConfiguration(results);
+            Assert.fail("Should have failed on bad argument: " + results);
         } catch (Exception ok) {
+            //ok.printStackTrace();
+            //System.out.println(parser.printHelp());
         }
     }
 
-    private String[] args(String... a) {
-        return a;
+    private String args(String... a) {
+        StringBuilder line = new StringBuilder(InstallerConfiguration.COMMAND_NAME);
+        for (String str : a) {
+            line.append(' ').append(str);
+        }
+        return line.toString();
     }
 
     private void assertTestProperties(InstallerConfiguration installerConfig) {
