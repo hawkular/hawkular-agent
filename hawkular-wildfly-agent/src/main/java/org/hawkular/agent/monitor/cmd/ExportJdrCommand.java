@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Collection;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Operation;
@@ -118,7 +119,8 @@ public class ExportJdrCommand extends AbstractResourcePathCommand<ExportJdrReque
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<ExportJdrRequest> envelope, MonitoredEndpoint endpoint) {
+    protected void validate(BasicMessageWithExtraData<ExportJdrRequest> envelope,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
     }
 
     @Override

@@ -99,9 +99,16 @@ public class ProtocolServices {
                 } else {
                     final ModelControllerClientFactory clientFactory;
                     final String securityRealm = server.getSecurityRealm();
-                    final SSLContext sslContext = securityRealm != null
-                            ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
-                    final MonitoredEndpoint endpoint = MonitoredEndpoint.of(server, sslContext);
+                    SSLContext sslContext = null;
+                    if (securityRealm != null) {
+                        InjectedValue<SSLContext> injectedValue = sslContexts.get(securityRealm);
+                        if (injectedValue == null) {
+                            throw new IllegalArgumentException("Unknown security realm: " + securityRealm);
+                        }
+                        sslContext = injectedValue.getOptionalValue();
+                    }
+                    final MonitoredEndpoint<EndpointConfiguration> endpoint = MonitoredEndpoint
+                            .<EndpointConfiguration> of(server, sslContext);
                     if (server.isLocal()) {
                         /* local */
                         clientFactory = localModelControllerClientFactory;
@@ -131,9 +138,16 @@ public class ProtocolServices {
             for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (server.isEnabled()) {
                     final String securityRealm = server.getSecurityRealm();
-                    final SSLContext sslContext = securityRealm != null
-                            ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
-                    final MonitoredEndpoint endpoint = MonitoredEndpoint.of(server, sslContext);
+                    SSLContext sslContext = null;
+                    if (securityRealm != null) {
+                        InjectedValue<SSLContext> injectedValue = sslContexts.get(securityRealm);
+                        if (injectedValue == null) {
+                            throw new IllegalArgumentException("Unknown security realm: " + securityRealm);
+                        }
+                        sslContext = injectedValue.getOptionalValue();
+                    }
+                    final MonitoredEndpoint<EndpointConfiguration> endpoint = MonitoredEndpoint
+                            .<EndpointConfiguration> of(server, sslContext);
                     ResourceTypeManager<JMXNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
                             protocolConfig.getTypeSets().getResourceTypeSets(), server.getResourceTypeSets());
                     JMXEndpointService endpointService = new JMXEndpointService(feedId, endpoint, resourceTypeManager,
@@ -158,9 +172,16 @@ public class ProtocolServices {
             for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (server.isEnabled()) {
                     final String securityRealm = server.getSecurityRealm();
-                    final SSLContext sslContext = securityRealm != null
-                            ? sslContexts.get(server.getSecurityRealm()).getOptionalValue() : null;
-                    final MonitoredEndpoint endpoint = MonitoredEndpoint.of(server, sslContext);
+                    SSLContext sslContext = null;
+                    if (securityRealm != null) {
+                        InjectedValue<SSLContext> injectedValue = sslContexts.get(securityRealm);
+                        if (injectedValue == null) {
+                            throw new IllegalArgumentException("Unknown security realm: " + securityRealm);
+                        }
+                        sslContext = injectedValue.getOptionalValue();
+                    }
+                    final MonitoredEndpoint<EndpointConfiguration> endpoint = MonitoredEndpoint
+                            .<EndpointConfiguration> of(server, sslContext);
                     ResourceTypeManager<PlatformNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
                             protocolConfig.getTypeSets().getResourceTypeSets(), server.getResourceTypeSets());
                     PlatformEndpointService endpointService = new PlatformEndpointService(feedId, endpoint,

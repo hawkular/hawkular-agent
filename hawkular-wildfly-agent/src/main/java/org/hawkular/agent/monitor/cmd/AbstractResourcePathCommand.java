@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil.ResourceIdParts;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
@@ -191,7 +192,8 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
      * @param envelope a DMR path to check
      * @param dmrEndpoint the request the {@code modelNodePath} comes from
      */
-    protected abstract void validate(BasicMessageWithExtraData<REQ> envelope, MonitoredEndpoint endpoint);
+    protected abstract void validate(BasicMessageWithExtraData<REQ> envelope,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint);
 
     /**
      * @return a new instance of the appropriate {@link ResourcePathResponse} subclass
@@ -224,7 +226,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
         }
     }
 
-    protected void assertLocalServer(MonitoredEndpoint endpoint) {
+    protected void assertLocalServer(MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
         if (!endpoint.isLocal()) {
             throw new IllegalStateException(String.format(
                     "Cannot perform [%s] on a [%s] on a non local instance of [%s].", operationName,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,7 +55,7 @@ public class SubsystemParsingTestCase extends SubsystemBaseParsingTestCase {
         List<ModelNode> operations = super.parse(subsystemXml);
 
         ///Check that we have the expected number of operations
-        final int expectedOperations = 31;
+        final int expectedOperations = 32;
         Assert.assertEquals("Wrong operations: " + operations, expectedOperations, operations.size());
 
         //Check that each operation has the correct content

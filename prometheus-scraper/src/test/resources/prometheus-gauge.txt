@@ -1,0 +1,4 @@
+# just a comment
+
+# TYPE go_memstats_alloc_bytes gauge
+go_memstats_alloc_bytes 4.14422136e+08

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
@@ -108,7 +109,8 @@ public class AddJdbcDriverCommand extends AbstractResourcePathCommand<AddJdbcDri
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<AddJdbcDriverRequest> envelope, MonitoredEndpoint endpoint) {
+    protected void validate(BasicMessageWithExtraData<AddJdbcDriverRequest> envelope,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
         assertLocalServer(endpoint);
     }
 

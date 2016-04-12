@@ -132,7 +132,7 @@ public interface MsgLogger extends BasicLogger {
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10023, value = "Discovery failed while probing endpoint [%s]")
-    void errorDiscoveryFailed(@Cause Exception e, MonitoredEndpoint endpoint);
+    void errorDiscoveryFailed(@Cause Exception e, MonitoredEndpoint<?> endpoint);
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10024, value = "Failed to store inventory data")
@@ -286,7 +286,7 @@ public interface MsgLogger extends BasicLogger {
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10061, value = "Failed to discover resources in [%s]")
-    void errorFailedToDiscoverResources(@Cause Throwable t, MonitoredEndpoint endpoint);
+    void errorFailedToDiscoverResources(@Cause Throwable t, MonitoredEndpoint<?> endpoint);
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10062, value = "Invalid queue element - report this bug: %s")
@@ -306,7 +306,7 @@ public interface MsgLogger extends BasicLogger {
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10066, value = "Being asked to discover all resources for endpoint [%s]")
-    void infoDiscoveryRequested(MonitoredEndpoint monitoredEndpoint);
+    void infoDiscoveryRequested(MonitoredEndpoint<?> monitoredEndpoint);
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10067, value = "Feed ID [%s] was already registered; it will be reused")

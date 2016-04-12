@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.cmd;
 
 import java.util.Collection;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Operation;
@@ -102,7 +103,8 @@ public class DeployApplicationCommand
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<DeployApplicationRequest> envelope, MonitoredEndpoint endpoint) {
+    protected void validate(BasicMessageWithExtraData<DeployApplicationRequest> envelope,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
     }
 
     @Override

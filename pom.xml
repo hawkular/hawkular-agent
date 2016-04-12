@@ -35,6 +35,7 @@
   <inceptionYear>2015</inceptionYear>
 
   <modules>
+    <module>prometheus-scraper</module>
     <module>hawkular-dmr-client</module>
     <module>hawkular-wildfly-agent</module>
     <module>hawkular-wildfly-agent-feature-pack</module>
@@ -58,6 +59,7 @@
     <version.com.samskivert.jmustache>1.11</version.com.samskivert.jmustache>
     <version.com.squareup.okhttp>2.4.0</version.com.squareup.okhttp>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
+    <version.io.prometheus.client>0.0.2</version.io.prometheus.client>
     <version.org.hamcrest>1.3</version.org.hamcrest>
 
     <version.org.hawkular.accounts>2.0.22.Final</version.org.hawkular.accounts>
@@ -102,6 +104,12 @@
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
         <version>${version.io.dropwizard.metrics}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.prometheus.client</groupId>
+        <artifactId>model</artifactId>
+        <version>${version.io.prometheus.client}</version>
       </dependency>
 
       <dependency>

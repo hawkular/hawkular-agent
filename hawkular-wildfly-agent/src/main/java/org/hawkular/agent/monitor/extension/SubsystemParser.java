@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -134,6 +134,10 @@ public class SubsystemParser implements XMLStreamConstants, XMLElementReader<Lis
                                     .addChild(builder(RemoteJMXDefinition.INSTANCE)
                                             .setXmlElementName(RemoteJMXDefinition.REMOTE_JMX)
                                             .addAttributes(RemoteJMXAttributes.ATTRIBUTES)
+                                    )
+                                    .addChild(builder(RemotePrometheusDefinition.INSTANCE)
+                                            .setXmlElementName(RemotePrometheusDefinition.REMOTE_PROMETHEUS)
+                                            .addAttributes(RemotePrometheusAttributes.ATTRIBUTES)
                                     )
                             )
 

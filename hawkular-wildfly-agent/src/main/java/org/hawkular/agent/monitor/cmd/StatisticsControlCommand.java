@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Resource;
@@ -367,7 +368,8 @@ public class StatisticsControlCommand
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<StatisticsControlRequest> envelope, MonitoredEndpoint endpoint) {
+    protected void validate(BasicMessageWithExtraData<StatisticsControlRequest> envelope,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
     }
 
     @Override

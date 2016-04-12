@@ -32,7 +32,8 @@ public class InventoryIdUtilTest {
 
         EndpointConfiguration endpointConfig = new EndpointConfiguration("testmanagedserver", true,
                 Collections.emptyList(), null, null, null);
-        MonitoredEndpoint me = MonitoredEndpoint.of(endpointConfig, null);
+        MonitoredEndpoint<EndpointConfiguration> me = MonitoredEndpoint.<EndpointConfiguration> of(endpointConfig,
+                null);
 
         id = InventoryIdUtil.generateResourceId(me, "/test/id/path");
         Assert.assertEquals("testmanagedserver~/test/id/path", id.toString());

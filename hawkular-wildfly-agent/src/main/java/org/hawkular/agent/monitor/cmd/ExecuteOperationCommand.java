@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.cmd;
 import java.util.Collection;
 import java.util.Map;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Operation;
@@ -132,7 +133,8 @@ public class ExecuteOperationCommand extends
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<ExecuteOperationRequest> envelope, MonitoredEndpoint endpoint) {
+    protected void validate(BasicMessageWithExtraData<ExecuteOperationRequest> envelope,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
     }
 
 }

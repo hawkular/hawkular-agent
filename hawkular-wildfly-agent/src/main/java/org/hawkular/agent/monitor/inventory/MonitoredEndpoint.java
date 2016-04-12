@@ -18,7 +18,7 @@ package org.hawkular.agent.monitor.inventory;
 
 import javax.net.ssl.SSLContext;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 
 /**
  * A named protocol specific endpoint to monitor.
@@ -27,7 +27,7 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Endpoint
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
  */
-public final class MonitoredEndpoint {
+public final class MonitoredEndpoint<C extends AbstractEndpointConfiguration> {
 
     /**
      * Returns a new {@link MonitoredEndpoint} using name and {@link ConnectionData} from the given
@@ -38,14 +38,15 @@ public final class MonitoredEndpoint {
      *            associated
      * @return a new {@link MonitoredEndpoint}
      */
-    public static MonitoredEndpoint of(EndpointConfiguration endpointConfiguration, SSLContext sslContext) {
-        return new MonitoredEndpoint(endpointConfiguration, sslContext);
+    public static <C extends AbstractEndpointConfiguration> MonitoredEndpoint<C> of(C endpointConfiguration,
+            SSLContext sslContext) {
+        return new MonitoredEndpoint<C>(endpointConfiguration, sslContext);
     }
 
-    private final EndpointConfiguration endpointConfiguration;
+    private final C endpointConfiguration;
     private final SSLContext sslContext;
 
-    private MonitoredEndpoint(EndpointConfiguration endpointConfiguration, SSLContext sslContext) {
+    private MonitoredEndpoint(C endpointConfiguration, SSLContext sslContext) {
         if (endpointConfiguration == null) {
             throw new IllegalArgumentException("Cannot create a new [" + getClass().getName() + "] without a config");
         }
@@ -61,13 +62,13 @@ public final class MonitoredEndpoint {
         if (!(obj instanceof MonitoredEndpoint)) {
             return false;
         }
-        return endpointConfiguration.getName().equals(((MonitoredEndpoint) obj).endpointConfiguration.getName());
+        return endpointConfiguration.getName().equals(((MonitoredEndpoint<C>) obj).endpointConfiguration.getName());
     }
 
     /**
      * @return the full configuration of the endpoint being monitored
      */
-    public EndpointConfiguration getEndpointConfiguration() {
+    public C getEndpointConfiguration() {
         return endpointConfiguration;
     }
 
