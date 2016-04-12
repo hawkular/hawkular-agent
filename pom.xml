@@ -35,6 +35,7 @@
   <inceptionYear>2015</inceptionYear>
 
   <modules>
+    <module>prometheus-scraper</module>
     <module>hawkular-dmr-client</module>
     <module>hawkular-wildfly-agent</module>
     <module>hawkular-wildfly-agent-feature-pack</module>
