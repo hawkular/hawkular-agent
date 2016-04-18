@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.protocol;
 
 import java.io.Closeable;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NodeLocation;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
@@ -32,14 +33,15 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
  */
 public abstract class Session<L> implements Closeable {
 
-    private final MonitoredEndpoint endpoint;
+    private final MonitoredEndpoint<EndpointConfiguration> endpoint;
     private final String feedId;
     private final Driver<L> driver;
     private final LocationResolver<L> locationResolver;
 
     private final ResourceTypeManager<L> resourceTypeManager;
 
-    public Session(String feedId, MonitoredEndpoint endpoint, ResourceTypeManager<L> resourceTypeManager,
+    public Session(String feedId, MonitoredEndpoint<EndpointConfiguration> endpoint,
+            ResourceTypeManager<L> resourceTypeManager,
             Driver<L> driver, LocationResolver<L> locationResolver) {
         super();
         this.feedId = feedId;
@@ -49,7 +51,7 @@ public abstract class Session<L> implements Closeable {
         this.locationResolver = locationResolver;
     }
 
-    public MonitoredEndpoint getEndpoint() {
+    public MonitoredEndpoint<EndpointConfiguration> getEndpoint() {
         return endpoint;
     }
 

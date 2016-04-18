@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
@@ -106,10 +107,11 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
     }
 
     private final ModelControllerClient client;
-    private final MonitoredEndpoint endpoint;
+    private final MonitoredEndpoint<EndpointConfiguration> endpoint;
     private final ProtocolDiagnostics diagnostics;
 
-    public DMRDriver(ModelControllerClient client, MonitoredEndpoint endpoint, ProtocolDiagnostics diagnostics) {
+    public DMRDriver(ModelControllerClient client, MonitoredEndpoint<EndpointConfiguration> endpoint,
+            ProtocolDiagnostics diagnostics) {
         super();
         this.client = client;
         this.endpoint = endpoint;

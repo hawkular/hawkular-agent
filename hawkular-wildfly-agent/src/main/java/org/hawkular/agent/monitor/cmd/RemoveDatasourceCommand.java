@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.RemoveDatasourceRequest;
@@ -46,7 +47,8 @@ public class RemoveDatasourceCommand
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<RemoveDatasourceRequest> envelope, MonitoredEndpoint endpoint) {
+    protected void validate(BasicMessageWithExtraData<RemoveDatasourceRequest> envelope,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
     }
 
 

@@ -47,6 +47,7 @@ import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
+import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolServices;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
@@ -311,6 +312,7 @@ public class MonitorService implements Service<MonitorService> {
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
 
     private ProtocolServices protocolServices;
+    private DynamicProtocolServices dynamicProtocolServices;
 
     private ModelControllerClientFactory localModelControllerClientFactory;
 
@@ -513,7 +515,7 @@ public class MonitorService implements Service<MonitorService> {
                 throw new Exception("Agent cannot initialize scheduler");
             }
 
-            ProtocolServices ps = ProtocolServices.builder(feedId, diagnostics, trustOnlySSLContextValues) //
+            ProtocolServices ps = ProtocolServices.builder(feedId, diagnostics, trustOnlySSLContextValues)
                     .dmrProtocolService(localModelControllerClientFactory, configuration.getDmrConfiguration())
                     .jmxProtocolService(configuration.getJmxConfiguration())
                     .platformProtocolService(configuration.getPlatformConfiguration())
@@ -523,6 +525,13 @@ public class MonitorService implements Service<MonitorService> {
             ps.addInventoryListener(schedulerService);
             protocolServices = ps;
             protocolServices.start();
+
+            DynamicProtocolServices dps = DynamicProtocolServices.builder(feedId, trustOnlySSLContextValues)
+                    .prometheusDynamicProtocolService(configuration.getPrometheusConfiguration(),
+                            getHawkularMonitorContext())
+                    .build();
+            dynamicProtocolServices = dps;
+            dynamicProtocolServices.start();
 
             started = true;
 
@@ -564,6 +573,18 @@ public class MonitorService implements Service<MonitorService> {
                 log.debug("Cannot shutdown feed comm but will continue shutdown", t);
             }
 
+            // stop our dynamic protocol services
+            try {
+                if (dynamicProtocolServices != null) {
+                    dynamicProtocolServices.stop();
+                    dynamicProtocolServices = null;
+                }
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+                log.debug("Cannot shutdown dynamic protocol services but will continue shutdown", t);
+            }
+
+            // stop our normal protocol services
             Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> availsToChange = null;
 
             try {
@@ -633,7 +654,8 @@ public class MonitorService implements Service<MonitorService> {
             long now = System.currentTimeMillis();
             Set<AvailDataPoint> datapoints = new HashSet<AvailDataPoint>();
             for (EndpointService<?, ?> endpointService : availsToChange.keySet()) {
-                EndpointConfiguration config = endpointService.getMonitoredEndpoint().getEndpointConfiguration();
+                EndpointConfiguration config = (EndpointConfiguration) endpointService.getMonitoredEndpoint()
+                        .getEndpointConfiguration();
                 Avail setAvailOnShutdown = config.getSetAvailOnShutdown();
                 if (setAvailOnShutdown != null) {
                     List<MeasurementInstance<?, AvailType<?>>> avails = availsToChange.get(endpointService);
@@ -652,16 +674,19 @@ public class MonitorService implements Service<MonitorService> {
         Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> avails = new HashMap<>();
         for (ProtocolService<?, ?> protocolService : protocolServices.getServices()){
             for (EndpointService<?, ?> endpointService : protocolService.getEndpointServices().values()) {
-                EndpointConfiguration config = endpointService.getMonitoredEndpoint().getEndpointConfiguration();
+                EndpointConfiguration config = (EndpointConfiguration) endpointService.getMonitoredEndpoint()
+                        .getEndpointConfiguration();
                 Avail setAvailOnShutdown = config.getSetAvailOnShutdown();
                 if (setAvailOnShutdown != null) {
-                    List<MeasurementInstance<?, AvailType<?>>> esAvails = new ArrayList<>();
-                    avails.put(endpointService, esAvails);
                     ResourceManager<?> rm = endpointService.getResourceManager();
-                    List<Resource<?>> resources = (List<Resource<?>>) (List<?>) rm.getResourcesBreadthFirst();
-                    for (Resource<?> resource : resources) {
-                        Collection<?> resourceAvails = resource.getAvails();
-                        esAvails.addAll((Collection<MeasurementInstance<?, AvailType<?>>>) resourceAvails);
+                    if (!rm.getRootResources().isEmpty()) {
+                        List<MeasurementInstance<?, AvailType<?>>> esAvails = new ArrayList<>();
+                        avails.put(endpointService, esAvails);
+                        List<Resource<?>> resources = (List<Resource<?>>) (List<?>) rm.getResourcesBreadthFirst();
+                        for (Resource<?> resource : resources) {
+                            Collection<?> resourceAvails = resource.getAvails();
+                            esAvails.addAll((Collection<MeasurementInstance<?, AvailType<?>>>) resourceAvails);
+                        }
                     }
                 }
             }

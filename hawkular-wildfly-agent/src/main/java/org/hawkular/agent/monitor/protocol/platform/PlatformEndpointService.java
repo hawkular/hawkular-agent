@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.protocol.platform;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.EndpointService;
@@ -27,7 +28,7 @@ import org.hawkular.agent.monitor.protocol.EndpointService;
  */
 public class PlatformEndpointService extends EndpointService<PlatformNodeLocation, PlatformSession> {
 
-    public PlatformEndpointService(String feedId, MonitoredEndpoint endpoint,
+    public PlatformEndpointService(String feedId, MonitoredEndpoint<EndpointConfiguration> endpoint,
             ResourceTypeManager<PlatformNodeLocation> resourceTypeManager, ProtocolDiagnostics diagnostics) {
         super(feedId, endpoint, resourceTypeManager, new PlatformLocationResolver(), diagnostics);
     }

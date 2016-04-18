@@ -36,6 +36,7 @@ import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
@@ -93,7 +94,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
     }
 
-    private final MonitoredEndpoint endpoint;
+    private final MonitoredEndpoint<EndpointConfiguration> endpoint;
     private final String feedId;
     private final InventoryListenerSupport inventoryListenerSupport = new InventoryListenerSupport();
     private final ResourceManager<L> resourceManager;
@@ -104,8 +105,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
-    public EndpointService(String feedId, MonitoredEndpoint endpoint, ResourceTypeManager<L> resourceTypeManager,
-            LocationResolver<L> locationResolver, ProtocolDiagnostics diagnostics) {
+    public EndpointService(String feedId, MonitoredEndpoint<EndpointConfiguration> endpoint,
+            ResourceTypeManager<L> resourceTypeManager, LocationResolver<L> locationResolver,
+            ProtocolDiagnostics diagnostics) {
         super();
         this.feedId = feedId;
         this.endpoint = endpoint;
@@ -129,7 +131,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     @Override
-    public MonitoredEndpoint getMonitoredEndpoint() {
+    public MonitoredEndpoint<EndpointConfiguration> getMonitoredEndpoint() {
         return endpoint;
     }
 

@@ -304,27 +304,49 @@ public class MonitorServiceConfiguration {
         }
     }
 
-    public static class EndpointConfiguration {
+    public static class DynamicProtocolConfiguration {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public static class Builder {
+            private Map<String, DynamicEndpointConfiguration> endpoints = new LinkedHashMap<>();
+
+            public Builder endpoint(DynamicEndpointConfiguration endpoint) {
+                endpoints.put(endpoint.getName(), endpoint);
+                return this;
+            }
+
+            public DynamicProtocolConfiguration build() {
+                return new DynamicProtocolConfiguration(endpoints);
+            }
+        }
+
+        private final Map<String, DynamicEndpointConfiguration> endpoints;
+
+        public DynamicProtocolConfiguration(Map<String, DynamicEndpointConfiguration> managedServers) {
+            this.endpoints = managedServers;
+        }
+
+        public Map<String, DynamicEndpointConfiguration> getEndpoints() {
+            return endpoints;
+        }
+    }
+
+    public static class AbstractEndpointConfiguration {
         private final String name;
         private final boolean enabled;
-        private final Collection<Name> resourceTypeSets;
         private final ConnectionData connectionData;
         private final String securityRealm;
-        private final Avail setAvailOnShutdown;
 
-        public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
-                ConnectionData connectionData, String securityRealm, Avail setAvailOnShutdown) {
+        public AbstractEndpointConfiguration(String name, boolean enabled, ConnectionData connectionData,
+                String securityRealm) {
             super();
             this.name = name;
             this.enabled = enabled;
-            this.resourceTypeSets = resourceTypeSets;
             this.connectionData = connectionData;
             this.securityRealm = securityRealm;
-            this.setAvailOnShutdown = setAvailOnShutdown;
-        }
-
-        public Collection<Name> getResourceTypeSets() {
-            return resourceTypeSets;
         }
 
         public boolean isEnabled() {
@@ -346,6 +368,22 @@ public class MonitorServiceConfiguration {
         public boolean isLocal() {
             return connectionData == null;
         }
+    }
+
+    public static class EndpointConfiguration extends AbstractEndpointConfiguration {
+        private final Collection<Name> resourceTypeSets;
+        private final Avail setAvailOnShutdown;
+
+        public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
+                ConnectionData connectionData, String securityRealm, Avail setAvailOnShutdown) {
+            super(name, enabled, connectionData, securityRealm);
+            this.resourceTypeSets = resourceTypeSets;
+            this.setAvailOnShutdown = setAvailOnShutdown;
+        }
+
+        public Collection<Name> getResourceTypeSets() {
+            return resourceTypeSets;
+        }
 
         /**
          * @return if not null, when the agent shuts down all avail metrics for the endpoint will be set to this value.
@@ -355,19 +393,52 @@ public class MonitorServiceConfiguration {
         }
     }
 
+    /**
+     * Dynamic endpoints do not have explicit concepts of inventory or metric metadata.
+     * It is up to the implementation of the dynamic protocol handler to deal with inventory (if it wants)
+     * or ignore it entirely. The same with metric metadata as well.
+     */
+    public static class DynamicEndpointConfiguration extends AbstractEndpointConfiguration {
+        private final Map<String, String> labels;
+        private final int interval;
+        private final TimeUnit timeUnits;
+
+        public DynamicEndpointConfiguration(String name, boolean enabled, Map<String, String> labels,
+                ConnectionData connectionData, String securityRealm, int interval, TimeUnit timeUnits) {
+            super(name, enabled, connectionData, securityRealm);
+            this.labels = labels;
+            this.interval = interval;
+            this.timeUnits = timeUnits;
+        }
+
+        public Map<String, String> getLabels() {
+            return labels;
+        }
+
+        public int getInterval() {
+            return interval;
+        }
+
+        public TimeUnit getTimeUnits() {
+            return timeUnits;
+        }
+    }
+
     private final GlobalConfiguration globalConfiguration;
     private final DiagnosticsConfiguration diagnostics;
     private final StorageAdapterConfiguration storageAdapter;
     private final ProtocolConfiguration<DMRNodeLocation> dmrConfiguration;
     private final ProtocolConfiguration<JMXNodeLocation> jmxConfiguration;
     private final ProtocolConfiguration<PlatformNodeLocation> platformConfiguration;
+    private final DynamicProtocolConfiguration prometheusConfiguration;
 
     public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration,
             DiagnosticsConfiguration diagnostics,
             StorageAdapterConfiguration storageAdapter,
             ProtocolConfiguration<DMRNodeLocation> dmrConfiguration,
             ProtocolConfiguration<JMXNodeLocation> jmxConfiguration,
-            ProtocolConfiguration<PlatformNodeLocation> platformConfiguration) {
+            ProtocolConfiguration<PlatformNodeLocation> platformConfiguration,
+            DynamicProtocolConfiguration prometheusConfiguration) {
         super();
         this.globalConfiguration = globalConfiguration;
         this.diagnostics = diagnostics;
@@ -375,6 +446,7 @@ public class MonitorServiceConfiguration {
         this.dmrConfiguration = dmrConfiguration;
         this.jmxConfiguration = jmxConfiguration;
         this.platformConfiguration = platformConfiguration;
+        this.prometheusConfiguration = prometheusConfiguration;
     }
 
     public GlobalConfiguration getGlobalConfiguration() {
@@ -424,7 +496,7 @@ public class MonitorServiceConfiguration {
     public MonitorServiceConfiguration cloneWith(StorageAdapterConfiguration newStorageAdapter) {
         return new MonitorServiceConfiguration(globalConfiguration,
                 diagnostics, newStorageAdapter, dmrConfiguration,
-                jmxConfiguration, platformConfiguration);
+                jmxConfiguration, platformConfiguration, prometheusConfiguration);
     }
 
     public ProtocolConfiguration<DMRNodeLocation> getDmrConfiguration() {
@@ -437,6 +509,10 @@ public class MonitorServiceConfiguration {
 
     public ProtocolConfiguration<PlatformNodeLocation> getPlatformConfiguration() {
         return platformConfiguration;
+    }
+
+    public DynamicProtocolConfiguration getPrometheusConfiguration() {
+        return prometheusConfiguration;
     }
 
 }

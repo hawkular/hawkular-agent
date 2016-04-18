@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.api;
 
 import java.util.Collection;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
@@ -39,7 +40,7 @@ public interface SamplingService<L> {
     /**
      * @return the endpoint this service is able to sample
      */
-    MonitoredEndpoint getMonitoredEndpoint();
+    MonitoredEndpoint<EndpointConfiguration> getMonitoredEndpoint();
 
     /**
      * Checks the availabilities defined by {@code instances} and reports them back to the given {@code consumer}.

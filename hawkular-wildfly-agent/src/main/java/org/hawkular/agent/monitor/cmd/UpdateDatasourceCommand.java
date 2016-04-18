@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -215,7 +216,8 @@ public class UpdateDatasourceCommand
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<UpdateDatasourceRequest> envelope, MonitoredEndpoint endpoint) {
+    protected void validate(BasicMessageWithExtraData<UpdateDatasourceRequest> envelope,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
     }
 
 }

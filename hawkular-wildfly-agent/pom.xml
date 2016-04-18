@@ -86,6 +86,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>prometheus-scraper</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-bus-common</artifactId>
     </dependency>

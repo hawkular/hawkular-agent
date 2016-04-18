@@ -19,9 +19,11 @@ package org.hawkular.agent.monitor.extension;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -31,6 +33,8 @@ import javax.management.ObjectName;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsReportTo;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicProtocolConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.GlobalConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ProtocolConfiguration;
@@ -75,6 +79,7 @@ public class MonitorServiceConfigurationBuilder {
     private ProtocolConfiguration.Builder<DMRNodeLocation> dmrConfigBuilder;
     private ProtocolConfiguration.Builder<JMXNodeLocation> jmxConfigBuilder;
     private ProtocolConfiguration.Builder<PlatformNodeLocation> platformConfigBuilder;
+    private DynamicProtocolConfiguration.Builder prometheusConfigBuilder;
 
     private DiagnosticsConfiguration diagnostics;
     private StorageAdapterConfiguration storageAdapter;
@@ -91,6 +96,7 @@ public class MonitorServiceConfigurationBuilder {
         dmrConfigBuilder = ProtocolConfiguration.builder();
         jmxConfigBuilder = ProtocolConfiguration.builder();
         platformConfigBuilder = ProtocolConfiguration.builder();
+        prometheusConfigBuilder = DynamicProtocolConfiguration.builder();
 
         TypeSets.Builder<DMRNodeLocation> dmrTypeSetsBuilder = TypeSets.builder();
         TypeSets.Builder<JMXNodeLocation> jmxTypeSetsBuilder = TypeSets.builder();
@@ -125,7 +131,7 @@ public class MonitorServiceConfigurationBuilder {
 
         return new MonitorServiceConfiguration(globalConfiguration,
                 diagnostics, storageAdapter, dmrConfigBuilder.build(), jmxConfigBuilder.build(),
-                platformConfigBuilder.build());
+                platformConfigBuilder.build(), prometheusConfigBuilder.build());
     }
 
     private static void determineMetricSetDmr(ModelNode config,
@@ -342,9 +348,9 @@ public class MonitorServiceConfigurationBuilder {
 
                             AvailType<JMXNodeLocation> avail = new AvailType<JMXNodeLocation>(ID.NULL_ID,
                                     new Name(availName), location,
-                                    new Interval(getInt(availValueNode, context, DMRAvailAttributes.INTERVAL),
-                                            getTimeUnit(availValueNode, context, DMRAvailAttributes.TIME_UNITS)),
-                                    Pattern.compile(getString(availValueNode, context, DMRAvailAttributes.UP_REGEX)));
+                                    new Interval(getInt(availValueNode, context, JMXAvailAttributes.INTERVAL),
+                                            getTimeUnit(availValueNode, context, JMXAvailAttributes.TIME_UNITS)),
+                                    Pattern.compile(getString(availValueNode, context, JMXAvailAttributes.UP_REGEX)));
                             typeSetBuilder.type(avail);
                         } catch (MalformedObjectNameException e) {
                             log.warnMalformedJMXObjectName(objectName, e);
@@ -1098,6 +1104,46 @@ public class MonitorServiceConfigurationBuilder {
                 }
             }
 
+            // PROMETHEUS
+            if (managedServersValueNode.hasDefined(RemotePrometheusDefinition.REMOTE_PROMETHEUS)) {
+                List<Property> remotePromsList = managedServersValueNode
+                        .get(RemotePrometheusDefinition.REMOTE_PROMETHEUS)
+                        .asPropertyList();
+                for (Property remotePromProperty : remotePromsList) {
+                    String name = remotePromProperty.getName();
+                    ModelNode remotePromValueNode = remotePromProperty.getValue();
+                    boolean enabled = getBoolean(remotePromValueNode, context, RemotePrometheusAttributes.ENABLED);
+                    String urlStr = getString(remotePromValueNode, context, RemotePrometheusAttributes.URL);
+                    String username = getString(remotePromValueNode, context, RemotePrometheusAttributes.USERNAME);
+                    String password = getString(remotePromValueNode, context, RemotePrometheusAttributes.PASSWORD);
+                    String securityRealm = getString(remotePromValueNode, context,
+                            RemotePrometheusAttributes.SECURITY_REALM);
+                    Map<String, String> labels = getMapFromString(remotePromValueNode, context,
+                            RemotePrometheusAttributes.LABELS);
+                    int interval = getInt(remotePromValueNode, context, RemotePrometheusAttributes.INTERVAL);
+                    String timeUnitsStr = getString(remotePromValueNode, context,
+                            RemotePrometheusAttributes.TIME_UNITS);
+                    TimeUnit timeUnits = TimeUnit.valueOf(timeUnitsStr.toUpperCase());
+
+                    // make sure the URL is at least syntactically valid
+                    URI url;
+                    try {
+                        url = new URI(urlStr);
+                    } catch (Exception e) {
+                        throw new OperationFailedException("Invalid remote Prometheus URL: " + urlStr, e);
+                    }
+
+                    if (url.getScheme().equalsIgnoreCase("https") && securityRealm == null) {
+                        throw new OperationFailedException("If using SSL, you must define a security realm: " + name);
+                    }
+
+                    ConnectionData connectionData = new ConnectionData(url, username, password);
+                    DynamicEndpointConfiguration endpoint = new DynamicEndpointConfiguration(name, enabled, labels,
+                            connectionData, securityRealm, interval, timeUnits);
+
+                    prometheusConfigBuilder.endpoint(endpoint);
+                }
+            }
         }
     }
 
@@ -1160,6 +1206,27 @@ public class MonitorServiceConfigurationBuilder {
             return names;
         } else {
             return Collections.emptyList();
+        }
+    }
+
+    private static Map<String, String> getMapFromString(ModelNode modelNode, OperationContext context,
+            SimpleAttributeDefinition attrib) throws OperationFailedException {
+        ModelNode value = attrib.resolveModelAttribute(context, modelNode);
+        if (value.isDefined()) {
+            Map<String, String> map = new HashMap<>();
+            String commaSeparatedList = value.asString();
+            StringTokenizer strtok = new StringTokenizer(commaSeparatedList, ",");
+            while (strtok.hasMoreTokens()) {
+                String nameValueToken = strtok.nextToken().trim();
+                String[] nameValueArr = nameValueToken.split("=");
+                if (nameValueArr.length != 2) {
+                    throw new OperationFailedException("missing '=' in name-value pair: " + commaSeparatedList);
+                }
+                map.put(nameValueArr[0].trim(), nameValueArr[1].trim());
+            }
+            return map;
+        } else {
+            return Collections.emptyMap();
         }
     }
 
