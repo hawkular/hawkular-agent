@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -97,9 +97,9 @@ public class DeploymentConfiguration {
     private Set<String> profiles = new HashSet<>();
 
     /**
-     * Denotes whether we setup standalone-*.xml or domain.xml
+     * Denotes whether we setup standalone-*.xml or domain.xml or host.xml
      */
-    private boolean domain;
+    private ConfigType configType;
 
     /**
      * Causes {@link ExtensionDeploymentException} to be thrown if any of <strong>select</strong>
@@ -112,8 +112,8 @@ public class DeploymentConfiguration {
         return profiles;
     }
 
-    public boolean isDomain() {
-        return domain;
+    public ConfigType getConfigType() {
+        return configType;
     }
 
     public URL getModule() {
@@ -148,8 +148,8 @@ public class DeploymentConfiguration {
         return socketBinding;
     }
 
-    public void setDomain(boolean domain) {
-        this.domain = domain;
+    public void setConfigType(ConfigType configType) {
+        this.configType = configType;
     }
 
     public void setProfiles(Set<String> profiles) {
@@ -248,8 +248,8 @@ public class DeploymentConfiguration {
             return this;
         }
 
-        public Builder domain(boolean domain) {
-            configuration.setDomain(domain);
+        public Builder configType(ConfigType configType) {
+            configuration.setConfigType(configType);
             return this;
         }
 
@@ -266,12 +266,26 @@ public class DeploymentConfiguration {
         public Builder serverConfig(String serverConfig) {
             configuration.setSourceServerConfig(serverConfig);
             configuration.setTargetServerConfig(serverConfig);
+
+            // if we haven't been told what type of config it is, determine it by looking at the file name
+            if (configuration.configType == null) {
+                if (serverConfig.matches(".*standalone[^/]*.xml")) {
+                    configType(ConfigType.STANDALONE);
+                } else if (serverConfig.matches(".*host[^/]*.xml")) {
+                    configType(ConfigType.HOST);
+                } else if (serverConfig.matches(".*domain[^/]*.xml")) {
+                    configType(ConfigType.DOMAIN);
+                } else {
+                    configType(ConfigType.STANDALONE); // filename is weird, just assume standalone
+                }
+            }
+
             return this;
         }
 
         public DeploymentConfiguration build() {
             // add defaults if needed
-            if (configuration.isDomain() && configuration.getProfiles().isEmpty()) {
+            if (configuration.getConfigType() == ConfigType.DOMAIN && configuration.getProfiles().isEmpty()) {
                 addProfile("default");
             }
             if (configuration.getSocketBindingGroups().isEmpty()) {

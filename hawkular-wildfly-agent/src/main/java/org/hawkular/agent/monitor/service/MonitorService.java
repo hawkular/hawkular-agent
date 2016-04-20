@@ -51,6 +51,7 @@ import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolServices;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
@@ -77,9 +78,12 @@ import org.hawkular.inventory.api.model.Feed;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
+import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.domain.management.SecurityRealm;
 import org.jboss.as.domain.management.security.SSLContextService;
+import org.jboss.as.host.controller.DomainModelControllerService;
+import org.jboss.as.host.controller.HostControllerEnvironment;
 import org.jboss.as.network.OutboundSocketBinding;
 import org.jboss.as.network.SocketBinding;
 import org.jboss.as.server.ServerEnvironment;
@@ -115,8 +119,8 @@ public class MonitorService implements Service<MonitorService> {
      * On cetrain circumstances, this method may return the {@code bootConfiguration} instance without any modification.
      *
      * @param bootConfiguration the boot configuration
-     * @param httpSocketBindingValue the httpSocketBindingValue
-     * @param httpsSocketBindingValue the httpsSocketBindingValue
+     * @param httpSocketBindingValue the httpSocketBindingValue (not available if agent is inside host controller)
+     * @param httpsSocketBindingValue the httpsSocketBindingValue (not available if agent is inside host controller)
      * @param serverOutboundSocketBindingValue the serverOutboundSocketBindingValue
      * @param trustOnlySSLContextValues the serverOutboundSocketBindingValue
      * @return the runtime configuration
@@ -290,6 +294,9 @@ public class MonitorService implements Service<MonitorService> {
     // Declared config found in standalone.xml. Only used to build the runtime configuration (see #configuration).
     private final MonitorServiceConfiguration bootConfiguration;
 
+    // Indicates if we are running in a standalone server or in a host controller (or something similar)
+    private final ProcessType processType;
+
     // A version of bootConfiguration with defaults properly set. This is build in startMonitorService().
     private MonitorServiceConfiguration configuration;
 
@@ -320,9 +327,10 @@ public class MonitorService implements Service<MonitorService> {
 
     private ModelControllerClientFactory localModelControllerClientFactory;
 
-    public MonitorService(MonitorServiceConfiguration bootConfiguration) {
+    public MonitorService(MonitorServiceConfiguration bootConfiguration, ProcessType processType) {
         super();
         this.bootConfiguration = bootConfiguration;
+        this.processType = processType;
     }
 
     @Override
@@ -344,45 +352,70 @@ public class MonitorService implements Service<MonitorService> {
      * @param bldr the service builder used to add dependencies
      */
     public void addDependencies(ServiceBuilder<MonitorService> bldr) {
-        bldr.addDependency(ServerEnvironmentService.SERVICE_NAME, ServerEnvironment.class, serverEnvironmentValue);
-        bldr.addDependency(Services.JBOSS_SERVER_CONTROLLER, ModelController.class, modelControllerValue);
+        if (this.processType.isManagedDomain()) {
+            // we are in the host controller
+            // NOTE: host controller does not yet have an equivalent for ServerEnvironment, we workaround this later
+            bldr.addDependency(DomainModelControllerService.SERVICE_NAME, ModelController.class, modelControllerValue);
+        } else {
+            // we are in standalone mode
+            bldr.addDependency(ServerEnvironmentService.SERVICE_NAME, ServerEnvironment.class, serverEnvironmentValue);
+            bldr.addDependency(Services.JBOSS_SERVER_CONTROLLER, ModelController.class, modelControllerValue);
+        }
         bldr.addDependency(ControlledProcessStateService.SERVICE_NAME, ControlledProcessStateService.class,
                 processStateValue);
-        bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("http"), SocketBinding.class,
-                httpSocketBindingValue);
-        bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("https"), SocketBinding.class,
-                httpsSocketBindingValue);
-        if (this.bootConfiguration.getStorageAdapter().getServerOutboundSocketBindingRef() != null) {
-            bldr.addDependency(OutboundSocketBinding.OUTBOUND_SOCKET_BINDING_BASE_SERVICE_NAME
-                    .append(this.bootConfiguration.getStorageAdapter().getServerOutboundSocketBindingRef()),
-                    OutboundSocketBinding.class, serverOutboundSocketBindingValue);
+
+        StorageAdapterConfiguration storageAdapterConfig = this.bootConfiguration.getStorageAdapter();
+
+        // if the URL is not explicitly defined, we need some dependencies to help us build it
+        if (storageAdapterConfig.getUrl() == null || storageAdapterConfig.getUrl().isEmpty()) {
+            if (storageAdapterConfig.getServerOutboundSocketBindingRef() == null ||
+                    storageAdapterConfig.getServerOutboundSocketBindingRef().isEmpty()) {
+                // The outbound binding isn't given, so we'll assume we are co-located with the server.
+                // In this case, we need our own http/https binding so we know what our local server is bound to.
+                // Note that this is an invalid configuration if we are in host controller, so error out in that case
+                if (this.processType.isManagedDomain()) {
+                    throw new IllegalStateException("Do not know where the external Hawkular server is. Aborting.");
+                }
+                bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("http"), SocketBinding.class,
+                        httpSocketBindingValue);
+                bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("https"), SocketBinding.class,
+                        httpsSocketBindingValue);
+            } else {
+                // TODO: broken when deployed in host controller. see https://issues.jboss.org/browse/WFCORE-1505
+                // When that is fixed, remove this if-statement entirely.
+                if (this.processType.isManagedDomain()) {
+                    throw new IllegalStateException("When deployed in host controller, you must use the URL attribute"
+                            + " and not the outbound socket binding. "
+                            + "See bug https://issues.jboss.org/browse/WFCORE-1505 for more.");
+                }
+                bldr.addDependency(OutboundSocketBinding.OUTBOUND_SOCKET_BINDING_BASE_SERVICE_NAME
+                        .append(storageAdapterConfig.getServerOutboundSocketBindingRef()),
+                        OutboundSocketBinding.class, serverOutboundSocketBindingValue);
+            }
         }
 
         // get the security realm ssl context for the storage adapter
-        if (this.bootConfiguration.getStorageAdapter().getSecurityRealm() != null) {
+        if (storageAdapterConfig.getSecurityRealm() != null) {
             InjectedValue<SSLContext> iv = new InjectedValue<>();
-            this.trustOnlySSLContextValues.put(this.bootConfiguration.getStorageAdapter().getSecurityRealm(), iv);
+            this.trustOnlySSLContextValues.put(storageAdapterConfig.getSecurityRealm(), iv);
 
             // if we ever need our own private key, we can add another dependency with trustStoreOnly=false
             boolean trustStoreOnly = true;
             SSLContextService.ServiceUtil.addDependency(
                     bldr,
                     iv,
-                    SecurityRealm.ServiceUtil
-                            .createServiceName(this.bootConfiguration.getStorageAdapter().getSecurityRealm()),
+                    SecurityRealm.ServiceUtil.createServiceName(storageAdapterConfig.getSecurityRealm()),
                     trustStoreOnly);
         }
 
         // get the security realms for any configured remote DMR and JMX and Prometheus servers that require ssl
-        for (EndpointConfiguration endpoint : this.bootConfiguration.getDmrConfiguration().getEndpoints()
-                .values()) {
+        for (EndpointConfiguration endpoint : this.bootConfiguration.getDmrConfiguration().getEndpoints().values()) {
             String securityRealm = endpoint.getSecurityRealm();
             if (securityRealm != null) {
                 addSslContext(securityRealm, bldr);
             }
         }
-        for (EndpointConfiguration endpoint : this.bootConfiguration.getJmxConfiguration().getEndpoints()
-                .values()) {
+        for (EndpointConfiguration endpoint : this.bootConfiguration.getJmxConfiguration().getEndpoints().values()) {
             String securityRealm = endpoint.getSecurityRealm();
             if (securityRealm != null) {
                 addSslContext(securityRealm, bldr);
@@ -740,9 +773,19 @@ public class MonitorService implements Service<MonitorService> {
      * @return the directory where our agent service can write data files. This directory survives restarts.
      */
     private File getDataDirectory() {
-        File dataDir = new File(this.serverEnvironmentValue.getValue().getServerDataDir(), "hawkular-agent");
-        dataDir.mkdirs();
-        return dataDir;
+        File dataDir;
+
+        if (this.processType.isManagedDomain()) {
+            // TODO use the host environment once its available: https://issues.jboss.org/browse/WFCORE-1506
+            dataDir = new File(System.getProperty(HostControllerEnvironment.DOMAIN_DATA_DIR));
+        } else {
+            dataDir = this.serverEnvironmentValue.getValue().getServerDataDir();
+        }
+
+        File agentDataDir = new File(dataDir, "hawkular-agent");
+
+        agentDataDir.mkdirs();
+        return agentDataDir;
     }
 
     /**

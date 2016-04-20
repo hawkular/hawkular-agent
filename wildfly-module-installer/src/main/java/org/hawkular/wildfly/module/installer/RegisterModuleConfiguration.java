@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * this class holds all inputs for changes to be made in standalone.xml or domain.xml
+ * this class holds all inputs for changes to be made in standalone.xml or domain.xml or host.xml
  * @author lzoubek
  */
 class RegisterModuleConfiguration {
@@ -37,7 +37,7 @@ class RegisterModuleConfiguration {
     private Set<String> socketBindingGroups;
     private List<XmlEdit> xmlEdits;
     private String moduleId;
-    private boolean domain;
+    private ConfigType configType = null; // null means we'll look at targetServerConfig filename to figure it out
     private Set<String> profiles;
     private boolean failNoMatch;
 
@@ -49,6 +49,7 @@ class RegisterModuleConfiguration {
     public String toString() {
         return new StringBuilder("RegisterOptions: [")
                 .append("\n  serverConfig = " + targetServerConfig)
+                .append("\n  configType = " + configType)
                 .append("\n  serverConfigBackup = " + sourceServerConfig)
                 .append("\n  moduleId = " + moduleId)
                 .append("\n  subsystem = " + subsystem)
@@ -78,7 +79,7 @@ class RegisterModuleConfiguration {
         this.xmlEdits = configuration.xmlEdits == null ? this.xmlEdits : configuration.xmlEdits;
         this.moduleId = configuration.moduleId == null ? this.moduleId : configuration.moduleId;
         this.failNoMatch = configuration.failNoMatch;
-        this.domain = configuration.domain;
+        this.configType = configuration.configType == null ? this.configType : configuration.configType;
         this.profiles = configuration.profiles == null ? this.profiles : configuration.profiles;
         return this;
     }
@@ -100,6 +101,25 @@ class RegisterModuleConfiguration {
 
     public RegisterModuleConfiguration targetServerConfig(File targetServerConfig) {
         this.targetServerConfig = targetServerConfig;
+
+        // if we haven't been told what type of config it is, determine it by looking at the file name
+        if (this.configType == null) {
+            if (targetServerConfig.getName().matches(".*standalone[^/]*.xml")) {
+                configType(ConfigType.STANDALONE);
+            } else if (targetServerConfig.getName().matches(".*host[^/]*.xml")) {
+                configType(ConfigType.HOST);
+            } else if (targetServerConfig.getName().matches(".*domain[^/]*.xml")) {
+                configType(ConfigType.DOMAIN);
+            } else {
+                configType(ConfigType.STANDALONE); // filename is weird, just assume standalone
+            }
+        }
+
+        return this;
+    }
+
+    public RegisterModuleConfiguration configType(ConfigType configType) {
+        this.configType = configType;
         return this;
     }
 
@@ -120,11 +140,6 @@ class RegisterModuleConfiguration {
 
     public RegisterModuleConfiguration xmlEdits(List<XmlEdit> inserts) {
         this.xmlEdits = inserts;
-        return this;
-    }
-
-    public RegisterModuleConfiguration domain(boolean domain) {
-        this.domain = domain;
         return this;
     }
 
@@ -168,8 +183,8 @@ class RegisterModuleConfiguration {
         return failNoMatch;
     }
 
-    public boolean isDomain() {
-        return domain;
+    public ConfigType getConfigType() {
+        return configType;
     }
 
     public Set<String> getProfiles() {

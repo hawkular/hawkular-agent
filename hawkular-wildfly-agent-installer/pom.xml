@@ -59,7 +59,9 @@
 
   <build>
     <plugins>
-      <!-- USAGE: mvn -Dorg.hawkular.wildfly.home=/opt/wildfly9 exec:java -->
+      <!-- USAGE: mvn -Dorg.hawkular.wildfly.home=/opt/wildfly10 exec:java -->
+      <!-- If you want to run the installer in a debugger: -->
+      <!-- USAGE: mvn -Dorg.hawkular.wildfly.home=/opt/wildfly10 exec:exec -Pdebug-installer -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
@@ -70,6 +72,10 @@
             <argument>--module-dist=${project.basedir}/../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</argument>
             <argument>--server-url=http://127.0.0.1:8080</argument>
             <argument>--enabled=true</argument>
+            <!--
+            <argument>-target-config=domain/configuration/host.xml</argument>
+            <argument>-target-config=domain/configuration/domain.xml</argument>
+            -->
           </arguments>
           <systemProperties>
             <systemProperty>
@@ -101,5 +107,45 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>debug-installer</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <executable>java</executable>
+              <arguments>
+                <argument>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</argument>
+                <argument>-Dorg.hawkular.wildfly.agent.installer.throw-exception-on-error=true</argument>
+                <argument>-classpath</argument>
+                <classpath />
+                <argument>org.hawkular.wildfly.agent.installer.AgentInstaller</argument>
+                <argument>--target-location=${org.hawkular.wildfly.home}</argument>
+                <argument>--module-dist=${project.basedir}/../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</argument>
+                <argument>--server-url=http://127.0.0.1:8080</argument>
+                <argument>--enabled=true</argument>
+                <!--
+                <argument>-target-config=domain/configuration/domain.xml</argument>
+                <argument>-target-config=domain/configuration/host.xml</argument>
+                -->
+              </arguments>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

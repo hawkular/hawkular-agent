@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,6 +56,9 @@ public class SubsystemExtension implements Extension {
     public void initialize(ExtensionContext context) {
         final SubsystemRegistration subsystem = context.registerSubsystem(SUBSYSTEM_NAME,
                 MAJOR_VERSION, MINOR_VERSION, MICRO_VERSION);
+
+        // This subsystem should be runnable on a host
+        subsystem.setHostCapable();
 
         final ManagementResourceRegistration registration = subsystem
                 .registerSubsystemModel(SubsystemDefinition.INSTANCE);

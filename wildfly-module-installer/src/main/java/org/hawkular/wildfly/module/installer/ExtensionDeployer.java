@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,6 +61,9 @@ public class ExtensionDeployer {
                 options.withExtension(module.getModuleId());
             }
 
+            if (configuration.getConfigType() != null) {
+                options.configType(configuration.getConfigType());
+            }
             options
                 .targetServerConfig(targetServerConfigAbsolute)
                 .sourceServerConfig(sourceServerConfigBackupAbsolute)
@@ -68,7 +71,6 @@ public class ExtensionDeployer {
                 .socketBinding(configuration.getSocketBinding())
                 .socketBindingGroups(configuration.getSocketBindingGroups())
                 .xmlEdits(configuration.getEdit())
-                .domain(configuration.isDomain())
                 .profiles(configuration.getProfiles())
                 .failNoMatch(configuration.isFailNoMatch());
 

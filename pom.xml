@@ -221,6 +221,12 @@
       </dependency>
 
       <dependency>
+        <groupId>org.wildfly.core</groupId>
+        <artifactId>wildfly-host-controller</artifactId>
+        <version>${version.org.wildfly.core}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.wildfly</groupId>
         <artifactId>wildfly-naming</artifactId>
         <version>${version.org.wildfly}</version>

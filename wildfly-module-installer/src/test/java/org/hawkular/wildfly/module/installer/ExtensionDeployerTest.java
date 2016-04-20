@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.ls.DOMImplementationLS;
 
 public class ExtensionDeployerTest {
 
@@ -47,6 +48,9 @@ public class ExtensionDeployerTest {
 
     static final File domainXml = Paths.get(widlflyHome.getAbsolutePath(),"domain",
             "configuration","domain.xml").toFile();
+
+    static final File hostXml = Paths.get(widlflyHome.getAbsolutePath(), "domain",
+            "configuration", "host.xml").toFile();
 
     static final File modulesHome = Paths.get(widlflyHome.getAbsolutePath(), "modules",
             "system", "layers","base").toFile();
@@ -84,11 +88,23 @@ public class ExtensionDeployerTest {
 
     }
 
+    // to help debugging the tests themselves
+    private void printDocument(String str, Document doc) {
+        try {
+            DOMImplementationLS domImplementation = (DOMImplementationLS) doc.getImplementation();
+            System.out.println(
+                    "XML DOCUMENT for [" + str + "]:\n" + domImplementation.createLSSerializer().writeToString(doc));
+        } catch (Throwable t) {
+            System.out.println("Can't print doc: " + t);
+        }
+    }
+
     @BeforeClass
     public static void prepareTargetWildfly() throws Exception {
         modulesHome.mkdirs();
         standaloneXml.getParentFile().mkdirs();
         domainXml.getParentFile().mkdirs();
+        hostXml.getParentFile().mkdirs();
     }
 
     @Before
@@ -101,6 +117,7 @@ public class ExtensionDeployerTest {
         // copy minimal configs
         FileUtils.copyFile(getResourceFile("standalone-minimal.xml"), standaloneXml);
         FileUtils.copyFile(getResourceFile("domain-minimal.xml"), domainXml);
+        FileUtils.copyFile(getResourceFile("host-minimal.xml"), hostXml);
     }
 
     @Test
@@ -128,6 +145,8 @@ public class ExtensionDeployerTest {
         Document doc = dBuilder.parse(standaloneXml);
         String xmlns = doc.getDocumentElement().getAttribute("xmlns");
         xpath.setNamespaceContext(new NamespaceContextImpl().mapping("x", xmlns).mapping("foo", "foo"));
+
+        printDocument("Standalone", doc);
 
         // verify extension was installed
         assertXpath("/x:server/x:extensions/x:extension[@module='org.hawkular.agent.monitor']", doc, 1);
@@ -167,8 +186,8 @@ public class ExtensionDeployerTest {
         DeploymentConfiguration configuration = DeploymentConfiguration.builder()
                 .jbossHome(widlflyHome)
                 .module(moduleZip.toURI().toURL())
-                .domain(true)
                 .serverConfig("domain/configuration/domain.xml")
+                .socketBinding(getClass().getResource("/module/socket-binding-snippet.xml"))
                 .build();
         new ExtensionDeployer().install(configuration);
         File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(),"fake-module","main","module.xml").toFile();
@@ -178,12 +197,18 @@ public class ExtensionDeployerTest {
         String xmlns = doc.getDocumentElement().getAttribute("xmlns");
         xpath.setNamespaceContext(new NamespaceContextImpl().mapping("x", xmlns).mapping("foo", "foo"));
 
+        printDocument("Domain (default)", doc);
+
         // verify extension was installed
         assertXpath("/x:domain/x:extensions/x:extension[@module='org.hawkular.agent.monitor']", doc, 1);
 
         // verify subsystem was setup in default profile only
         assertXpath("/x:domain/x:profiles/x:profile[@name='default']/foo:subsystem", doc, 1);
         assertXpath("/x:domain/x:profiles/x:profile[@name!='default']/foo:subsystem", doc, 0);
+
+        // verify socket binding was installed
+        assertXpath("/x:domain/x:socket-binding-groups/x:socket-binding-group[@name='standard-sockets']"
+                + "/x:outbound-socket-binding[@name='hawkular']", doc, 1);
     }
 
     @Test
@@ -192,7 +217,8 @@ public class ExtensionDeployerTest {
         DeploymentConfiguration configuration = DeploymentConfiguration.builder()
                 .jbossHome(widlflyHome)
                 .module(moduleZip.toURI().toURL())
-                .domain(true)
+                .configType(ConfigType.DOMAIN)
+                .socketBinding(getClass().getResource("/module/socket-binding-snippet.xml"))
                 .addProfile("ha")
                 .addProfile("full-ha")
                 .serverConfig("domain/configuration/domain.xml")
@@ -205,6 +231,8 @@ public class ExtensionDeployerTest {
         String xmlns = doc.getDocumentElement().getAttribute("xmlns");
         xpath.setNamespaceContext(new NamespaceContextImpl().mapping("x", xmlns).mapping("foo", "foo"));
 
+        printDocument("Domain", doc);
+
         // verify extension was installed
         assertXpath("/x:domain/x:extensions/x:extension[@module='org.hawkular.agent.monitor']", doc, 1);
 
@@ -212,6 +240,37 @@ public class ExtensionDeployerTest {
         assertXpath("/x:domain/x:profiles/x:profile[@name='ha']/foo:subsystem", doc, 1);
         assertXpath("/x:domain/x:profiles/x:profile[@name='full-ha']/foo:subsystem", doc, 1);
         assertXpath("/x:domain/x:profiles/x:profile[@name!='full-ha' and @name!='ha']/foo:subsystem", doc, 0);
+
+        // verify socket binding was installed
+        assertXpath("/x:domain/x:socket-binding-groups/x:socket-binding-group[@name='standard-sockets']"
+                + "/x:outbound-socket-binding[@name='hawkular']", doc, 1);
+    }
+
+    @Test
+    public void deployToHost() throws Exception {
+        createModuleZip("module.xml", "subsystem-snippet.xml", "socket-binding-snippet.xml");
+        DeploymentConfiguration configuration = DeploymentConfiguration.builder()
+                .jbossHome(widlflyHome)
+                .serverConfig("domain/configuration/host.xml") // should set configType for us, too
+                .module(moduleZip.toURI().toURL())
+                .build();
+        new ExtensionDeployer().install(configuration);
+        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(), "fake-module", "main", "module.xml")
+                .toFile();
+        Assert.assertTrue("Deployed module.xml exists", deployedModuleXml.exists());
+        Document doc = dBuilder.parse(hostXml);
+        String xmlns = doc.getDocumentElement().getAttribute("xmlns");
+        xpath.setNamespaceContext(new NamespaceContextImpl().mapping("x", xmlns).mapping("foo", "foo"));
+
+        printDocument("Host", doc);
+
+        // verify extension was installed
+        assertXpath("/x:host/x:extensions/x:extension[@module='org.hawkular.agent.monitor']", doc, 1);
+        // verify subsystem is defined, in module.xml we have "org.hawkular.agent.monitor"
+        assertXpath("/x:host/x:profile/foo:subsystem", doc, 1);
+        // verify socket binding was installed
+        assertXpath("/x:host/x:socket-binding-group[@name='standard-sockets']"
+                + "/x:outbound-socket-binding[@name='hawkular']", doc, 1);
     }
 
     private void assertXpath(String expression, Document doc, int expectedCount) throws Exception {

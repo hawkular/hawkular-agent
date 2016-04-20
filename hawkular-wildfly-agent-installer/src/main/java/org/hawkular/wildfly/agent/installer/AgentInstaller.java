@@ -195,7 +195,6 @@ public class AgentInstaller {
 
             // deploy given module into given app server home directory and
             // set it up the way it talks to hawkular server on hawkularServerUrl
-            // TODO support domain mode
             File socketBindingSnippetFile = createSocketBindingSnippet(hawkularServerHost, hawkularServerPort);
             filesToDelete.add(socketBindingSnippetFile);
             Builder configurationBldr = DeploymentConfiguration.builder()
@@ -225,6 +224,19 @@ public class AgentInstaller {
             } else {
                 targetConfig = DeploymentConfiguration.DEFAULT_SERVER_CONFIG;
                 // we'll use this in case of https to resolve server configuration directory
+            }
+
+            // some xpaths are different depending on which config we are installing in (standalone, domain, host)
+            TargetConfigInfo targetConfigInfo;
+            if (targetConfig.matches(".*standalone[^/]*.xml")) {
+                targetConfigInfo = new StandaloneTargetConfigInfo();
+            } else if (targetConfig.matches(".*host[^/]*.xml")) {
+                targetConfigInfo = new HostTargetConfigInfo();
+            } else if (targetConfig.matches(".*domain[^/]*.xml")) {
+                targetConfigInfo = new DomainTargetConfigInfo();
+            } else {
+                log.warnf("Don't know the kind of config this is, will assume standalone: [%s]", targetConfig);
+                targetConfigInfo = new StandaloneTargetConfigInfo();
             }
 
             // If we are to talk to the Hawkular Server over HTTPS, we need to set up some additional things
@@ -277,16 +289,16 @@ public class AgentInstaller {
 
                 // setup security-realm and storage-adapter (within hawkular-wildfly-agent subsystem)
                 String securityRealm = createSecurityRealm(keystoreSrcFile.getName(), keystorePass, keyPass, keyAlias);
-                configurationBldr.addXmlEdit(new XmlEdit("/server/management/security-realms", securityRealm));
-                configurationBldr.addXmlEdit(createStorageAdapter(true, installerConfig));
+                configurationBldr.addXmlEdit(new XmlEdit(targetConfigInfo.getSecurityRealmsXPath(), securityRealm));
+                configurationBldr.addXmlEdit(createStorageAdapter(targetConfigInfo, true, installerConfig));
             }
             else {
                 // just going over non-secure HTTP
-                configurationBldr.addXmlEdit(createStorageAdapter(false, installerConfig));
+                configurationBldr.addXmlEdit(createStorageAdapter(targetConfigInfo, false, installerConfig));
             }
 
-            configurationBldr.addXmlEdit(createManagedServers(installerConfig));
-            configurationBldr.addXmlEdit(setEnableFlag(installerConfig));
+            configurationBldr.addXmlEdit(createManagedServers(targetConfigInfo, installerConfig));
+            configurationBldr.addXmlEdit(setEnableFlag(targetConfigInfo, installerConfig));
             configurationBldr.modulesHome("modules");
 
             new ExtensionDeployer().install(configurationBldr.build());
@@ -352,11 +364,13 @@ public class AgentInstaller {
      * Creates XML edit which sets up storage-adapter configuration, creates a reference
      * to the security-realm and enables SSL, if appropriate.
      *
+     * @param targetConfigInfo info on the xml config file being edited
      * @param withHttps if the storage adapter will be accessed via HTTPS
      * @return object that can be used to edit some xml content
      */
-    private static XmlEdit createStorageAdapter(boolean withHttps, InstallerConfiguration installerConfig) {
-        String select = "/server/profile/*[namespace-uri()='urn:org.hawkular.agent:agent:1.0']/";
+    private static XmlEdit createStorageAdapter(TargetConfigInfo targetConfigInfo, boolean withHttps,
+            InstallerConfiguration installerConfig) {
+        String select = targetConfigInfo.getProfileXPath() + "/*[namespace-uri()='urn:org.hawkular.agent:agent:1.0']/";
         StringBuilder xml = new StringBuilder("<storage-adapter");
 
         String tenantId = installerConfig.getTenantId();
@@ -422,9 +436,9 @@ public class AgentInstaller {
     }
 
 
-    private static XmlEdit createManagedServers(InstallerConfiguration config) {
-        String select = "/server/profile/"
-                + "*[namespace-uri()='urn:org.hawkular.agent:agent:1.0']/";
+    private static XmlEdit createManagedServers(TargetConfigInfo targetConfigInfo, InstallerConfiguration config) {
+        String select = targetConfigInfo.getProfileXPath()
+                + "/*[namespace-uri()='urn:org.hawkular.agent:agent:1.0']/";
         String managedServerName = config.getManagedServerName();
         if (managedServerName == null || managedServerName.trim().isEmpty()) {
             managedServerName = "Local"; // just make sure its something
@@ -439,8 +453,9 @@ public class AgentInstaller {
         return new XmlEdit(select, xml.toString());
     }
 
-    private static XmlEdit setEnableFlag(InstallerConfiguration config) {
-        String select = "/server/profile/*[namespace-uri()='urn:org.hawkular.agent:agent:1.0'][@enabled]";
+    private static XmlEdit setEnableFlag(TargetConfigInfo targetConfigInfo, InstallerConfiguration config) {
+        String select = targetConfigInfo.getProfileXPath()
+                + "/*[namespace-uri()='urn:org.hawkular.agent:agent:1.0'][@enabled]";
         String isEnabled = String.valueOf(config.isEnabled());
         return new XmlEdit(select, isEnabled).withIsAttributeContent(true).withAttribute("enabled");
     }
