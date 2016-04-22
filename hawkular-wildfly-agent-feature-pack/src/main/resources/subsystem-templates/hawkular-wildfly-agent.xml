@@ -603,7 +603,9 @@
 
         <operation-dmr name="JDR"      operationName="generate-jdr-report" path="/subsystem=jdr" />
         <operation-dmr name="Reload"   operationName="reload" />
-        <operation-dmr name="Shutdown" operationName="shutdown" />
+        <operation-dmr name="Resume"   operationName="resume" />
+        <operation-dmr name="Shutdown" operationName="shutdown" /> <!-- shutdown and restart -->
+        <operation-dmr name="Suspend"  operationName="suspend" />
         <operation-dmr name="Deploy"   operationName="deploy"   />
 
       </resource-type-dmr>
