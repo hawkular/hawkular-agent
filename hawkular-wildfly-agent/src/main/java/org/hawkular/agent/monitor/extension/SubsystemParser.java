@@ -120,6 +120,15 @@ public class SubsystemParser implements XMLStreamConstants, XMLElementReader<Lis
                                     )
                             )
 
+                            .addChild(builder(PrometheusMetricSetDefinition.INSTANCE)
+                                    .setXmlElementName(PrometheusMetricSetDefinition.METRIC_SET)
+                                    .addAttributes(PrometheusMetricSetAttributes.ATTRIBUTES)
+                                    .addChild(builder(PrometheusMetricDefinition.INSTANCE)
+                                            .setXmlElementName(PrometheusMetricDefinition.METRIC)
+                                            .addAttributes(PrometheusMetricAttributes.ATTRIBUTES)
+                                    )
+                            )
+
                             .addChild(builder(ManagedServersDefinition.INSTANCE)
                                     .setXmlElementName(ManagedServersDefinition.MANAGED_SERVERS)
                                     .addAttributes(ManagedServersAttributes.ATTRIBUTES)

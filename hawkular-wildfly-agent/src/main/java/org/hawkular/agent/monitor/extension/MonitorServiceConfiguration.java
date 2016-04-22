@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.NameSet;
 import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -311,6 +312,7 @@ public class MonitorServiceConfiguration {
         }
 
         public static class Builder {
+            private Map<Name, NameSet> metricSets;
             private Map<String, DynamicEndpointConfiguration> endpoints = new LinkedHashMap<>();
 
             public Builder endpoint(DynamicEndpointConfiguration endpoint) {
@@ -318,15 +320,39 @@ public class MonitorServiceConfiguration {
                 return this;
             }
 
+            public Builder metricSets(Map<Name, NameSet> metricSets) {
+                this.metricSets = metricSets;
+                return this;
+            }
+
             public DynamicProtocolConfiguration build() {
-                return new DynamicProtocolConfiguration(endpoints);
+                for (DynamicEndpointConfiguration server : endpoints.values()) {
+                    if (server.getMetricSets() != null) {
+                        for (Name metricSetName : server.getMetricSets()) {
+                            if (!metricSets.containsKey(metricSetName)) {
+                                log.warnf("The managed server [%s] wants to use an unknown metric set [%s]",
+                                        server.getName().toString(),
+                                        metricSetName.toString());
+                            }
+                        }
+                    }
+                }
+
+                return new DynamicProtocolConfiguration(metricSets, endpoints);
             }
         }
 
+        private final Map<Name, NameSet> metricSets;
         private final Map<String, DynamicEndpointConfiguration> endpoints;
 
-        public DynamicProtocolConfiguration(Map<String, DynamicEndpointConfiguration> managedServers) {
+        public DynamicProtocolConfiguration(Map<Name, NameSet> metricSets,
+                Map<String, DynamicEndpointConfiguration> managedServers) {
+            this.metricSets = metricSets;
             this.endpoints = managedServers;
+        }
+
+        public Map<Name, NameSet> getMetrics() {
+            return metricSets;
         }
 
         public Map<String, DynamicEndpointConfiguration> getEndpoints() {
@@ -394,25 +420,36 @@ public class MonitorServiceConfiguration {
     }
 
     /**
-     * Dynamic endpoints do not have explicit concepts of inventory or metric metadata.
+     * Dynamic endpoints do not have explicit concepts of inventory or metric metadata except
+     * for a list of metric names that might have semantics for the dynamic endpoint (e.g. Prometheus
+     * endpoints will take the list of metrics and will only collect them ignoring other metrics that
+     * are not in the list). But notice there is no concept of "metric types" here regardless.
+     *
      * It is up to the implementation of the dynamic protocol handler to deal with inventory (if it wants)
      * or ignore it entirely. The same with metric metadata as well.
      */
     public static class DynamicEndpointConfiguration extends AbstractEndpointConfiguration {
         private final Map<String, String> labels;
+        private final Collection<Name> metricSets;
         private final int interval;
         private final TimeUnit timeUnits;
 
         public DynamicEndpointConfiguration(String name, boolean enabled, Map<String, String> labels,
-                ConnectionData connectionData, String securityRealm, int interval, TimeUnit timeUnits) {
+                Collection<Name> metricSets, ConnectionData connectionData, String securityRealm, int interval,
+                TimeUnit timeUnits) {
             super(name, enabled, connectionData, securityRealm);
             this.labels = labels;
+            this.metricSets = metricSets;
             this.interval = interval;
             this.timeUnits = timeUnits;
         }
 
         public Map<String, String> getLabels() {
             return labels;
+        }
+
+        public Collection<Name> getMetricSets() {
+            return metricSets;
         }
 
         public int getInterval() {

@@ -16,9 +16,12 @@
  */
 package org.hawkular.agent.monitor.dynamicprotocol;
 
+import java.util.Collection;
+
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.ServiceStatus;
@@ -33,16 +36,17 @@ public abstract class DynamicEndpointService implements Runnable {
     private final MonitoredEndpoint<DynamicEndpointConfiguration> endpoint;
     private final String feedId;
     private final HawkularWildFlyAgentContext hawkularStorage;
+    private final Collection<Name> metrics; // if not empty, these name the metrics this service should monitor
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
-
     public DynamicEndpointService(String feedId, MonitoredEndpoint<DynamicEndpointConfiguration> endpoint,
-            HawkularWildFlyAgentContext hawkularStorage) {
+            HawkularWildFlyAgentContext hawkularStorage, Collection<Name> metrics) {
         super();
         this.feedId = feedId;
         this.endpoint = endpoint;
         this.hawkularStorage = hawkularStorage;
+        this.metrics = metrics;
     }
 
     public String getFeedId() {
@@ -55,6 +59,18 @@ public abstract class DynamicEndpointService implements Runnable {
 
     public HawkularWildFlyAgentContext getHawkularStorage() {
         return hawkularStorage;
+    }
+
+    /**
+     * This returns a collection of metric names. The semantics depend on the actual service, but usually
+     * these list of metrics means these are the metrics that are to be collected and stores with any others
+     * to be ignored. An empty list of metrics may mean to collect and store all metrics, or it may mean
+     * to collect nothing - see the actual subclass services for their actual semantics.
+     *
+     * @return collection of metric names (may be empty)
+     */
+    public Collection<Name> getMetrics() {
+        return metrics;
     }
 
     public void start() {

@@ -49,6 +49,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolServices;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AvailType;
@@ -369,7 +370,7 @@ public class MonitorService implements Service<MonitorService> {
                     trustStoreOnly);
         }
 
-        // get the security realms for any configured remote DMR and JMX servers that require ssl
+        // get the security realms for any configured remote DMR and JMX and Prometheus servers that require ssl
         for (EndpointConfiguration endpoint : this.bootConfiguration.getDmrConfiguration().getEndpoints()
                 .values()) {
             String securityRealm = endpoint.getSecurityRealm();
@@ -378,6 +379,13 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
         for (EndpointConfiguration endpoint : this.bootConfiguration.getJmxConfiguration().getEndpoints()
+                .values()) {
+            String securityRealm = endpoint.getSecurityRealm();
+            if (securityRealm != null) {
+                addSslContext(securityRealm, bldr);
+            }
+        }
+        for (DynamicEndpointConfiguration endpoint : this.bootConfiguration.getPrometheusConfiguration().getEndpoints()
                 .values()) {
             String securityRealm = endpoint.getSecurityRealm();
             if (securityRealm != null) {

@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.dynamicprotocol.prometheus;
 
 import java.net.MalformedURLException;
+import java.util.Collection;
 
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
@@ -24,6 +25,7 @@ import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.dynamicprotocol.DynamicEndpointService;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.EndpointService;
@@ -44,14 +46,18 @@ import org.hawkular.metrics.client.common.MetricType;
  * Prometheus has no concept of inventory (resources, resource types) so nothing is done with
  * Hawkular Inventory here.
  *
+ * Note that if {@link DynamicEndpointService#getMetrics()} returns an empty collection, that means this
+ * service will collect every metric that is scraped from the Prometheus endpoints. If it is not empty,
+ * only those metrics named in that collection will be stored and all others will be ignored.
+ *
  * @see EndpointService
  */
 public class PrometheusDynamicEndpointService extends DynamicEndpointService {
     private static final MsgLogger log = AgentLoggers.getLogger(PrometheusDynamicEndpointService.class);
 
     public PrometheusDynamicEndpointService(String feedId, MonitoredEndpoint<DynamicEndpointConfiguration> endpoint,
-            HawkularWildFlyAgentContext hawkularStorage) {
-        super(feedId, endpoint, hawkularStorage);
+            HawkularWildFlyAgentContext hawkularStorage, Collection<Name> metrics) {
+        super(feedId, endpoint, hawkularStorage, metrics);
     }
 
     @Override
@@ -98,7 +104,10 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
 
         @Override
         public void walkMetricFamily(MetricFamily family, int index) {
-            log.fatalf("Processing Prometheus Metric Family [%d]: [%s] (%s) (%d total metrics)",
+            if (shouldMetricBeIgnored(family.getName())) {
+                return;
+            }
+            log.debugf("Processing Prometheus Metric Family [%d]: [%s] (%s) (%d total metrics)",
                     index + 1,
                     family.getName(),
                     family.getType(),
@@ -107,33 +116,42 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
 
         @Override
         public void walkCounterMetric(MetricFamily family, Counter metric, int index) {
-            log.fatalf("Processing Prometheus Counter Metric [%s|%s]: value=%f",
+            if (shouldMetricBeIgnored(metric.getName())) {
+                return;
+            }
+            log.debugf("Processing Prometheus Counter Metric [%s|%s]: value=%f",
                     family.getName(),
                     buildLabelListString(metric.getLabels(), null, null),
                     metric.getValue());
 
             String key = generateKey(metric);
-            log.fatalf("Storing counter in Hawkular Metrics with key: %s", key);
+            log.debugf("Storing counter in Hawkular Metrics with key: %s", key);
             MetricDataPayloadBuilder bldr = metricStorage.createMetricDataPayloadBuilder();
             bldr.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.COUNTER);
         }
 
         @Override
         public void walkGaugeMetric(MetricFamily family, Gauge metric, int index) {
-            log.fatalf("Processing Prometheus Gauge Metric [%s|%s]: value=%f",
+            if (shouldMetricBeIgnored(metric.getName())) {
+                return;
+            }
+            log.debugf("Processing Prometheus Gauge Metric [%s|%s]: value=%f",
                     family.getName(),
                     buildLabelListString(metric.getLabels(), null, null),
                     metric.getValue());
 
             String key = generateKey(metric);
-            log.fatalf("Storing gauge in Hawkular Metrics with key: %s", key);
+            log.debugf("Storing gauge in Hawkular Metrics with key: %s", key);
             MetricDataPayloadBuilder bldr = metricStorage.createMetricDataPayloadBuilder();
             bldr.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.GAUGE);
         }
 
         @Override
         public void walkSummaryMetric(MetricFamily family, Summary metric, int index) {
-            log.fatalf("Prometheus SUMMARY metrics not yet supported - skipping [%s|%s|%s]",
+            if (shouldMetricBeIgnored(metric.getName())) {
+                return;
+            }
+            log.debugf("Prometheus SUMMARY metrics not yet supported - skipping [%s|%s|%s]",
                     family.getName(),
                     buildLabelListString(metric.getLabels(), null, null),
                     metric.getQuantiles());
@@ -141,10 +159,21 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
 
         @Override
         public void walkHistogramMetric(MetricFamily family, Histogram metric, int index) {
-            log.fatalf("Prometheus HISTOGRAM metrics not yet supported - skipping [%s|%s|%s]",
+            if (shouldMetricBeIgnored(metric.getName())) {
+                return;
+            }
+            log.debugf("Prometheus HISTOGRAM metrics not yet supported - skipping [%s|%s|%s]",
                     family.getName(),
                     buildLabelListString(metric.getLabels(), null, null),
                     metric.getBuckets());
+        }
+
+        private boolean shouldMetricBeIgnored(String metricName) {
+            Collection<Name> metricsToProcess = getMetrics();
+            if (metricsToProcess.isEmpty()) {
+                return false; // empty list of metrics means we are to process every metric that is scraped
+            }
+            return !metricsToProcess.contains(new Name(metricName));
         }
 
         private String generateKey(Metric metric) {

@@ -47,6 +47,8 @@ import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Interval;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.NameSet;
+import org.hawkular.agent.monitor.inventory.NameSet.NameSetBuilder;
 import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceType;
@@ -100,12 +102,15 @@ public class MonitorServiceConfigurationBuilder {
 
         TypeSets.Builder<DMRNodeLocation> dmrTypeSetsBuilder = TypeSets.builder();
         TypeSets.Builder<JMXNodeLocation> jmxTypeSetsBuilder = TypeSets.builder();
+        Map<Name, NameSet> prometheusMetricSets = new HashMap<>();
 
         determineMetricSetDmr(config, context, dmrTypeSetsBuilder);
         determineAvailSetDmr(config, context, dmrTypeSetsBuilder);
 
         determineMetricSetJmx(config, context, jmxTypeSetsBuilder);
         determineAvailSetJmx(config, context, jmxTypeSetsBuilder);
+
+        determineMetricSetPrometheus(config, context, prometheusMetricSets);
 
         // make sure to call this AFTER the metric sets and avail sets have been determined
         determineResourceTypeSetDmr(config, context, dmrTypeSetsBuilder);
@@ -114,6 +119,7 @@ public class MonitorServiceConfigurationBuilder {
 
         dmrConfigBuilder.typeSets(dmrTypeSetsBuilder.build());
         jmxConfigBuilder.typeSets(jmxTypeSetsBuilder.build());
+        prometheusConfigBuilder.metricSets(prometheusMetricSets);
 
         TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context);
         platformConfigBuilder.typeSets(platformTypeSets);
@@ -366,6 +372,53 @@ public class MonitorServiceConfigurationBuilder {
         if (!enabled) {
             log.infoNoEnabledAvailsConfigured("JMX");
         }
+    }
+
+    private static void determineMetricSetPrometheus(ModelNode config,
+            OperationContext context,
+            Map<Name, NameSet> namedMetricSets)
+                    throws OperationFailedException {
+
+        boolean enabled = false;
+
+        if (config.hasDefined(PrometheusMetricSetDefinition.METRIC_SET)) {
+            List<Property> metricSetsList = config.get(PrometheusMetricSetDefinition.METRIC_SET).asPropertyList();
+            for (Property metricSetProperty : metricSetsList) {
+                NameSetBuilder nameSetBuilder = NameSet.builder();
+
+                String metricSetName = metricSetProperty.getName();
+                if (metricSetName.indexOf(',') > -1) {
+                    log.warnCommaInName(metricSetName);
+                }
+                nameSetBuilder.nameOfSet(new Name(metricSetName));
+
+                ModelNode metricSetValueNode = metricSetProperty.getValue();
+
+                enabled = getBoolean(metricSetValueNode, context, PrometheusMetricSetAttributes.ENABLED);
+                nameSetBuilder.enabled(enabled);
+
+                if (metricSetValueNode.hasDefined(PrometheusMetricDefinition.METRIC)) {
+                    List<Property> metricsList = metricSetValueNode.get(PrometheusMetricDefinition.METRIC)
+                            .asPropertyList();
+                    for (Property metricProperty : metricsList) {
+                        String metricName = metricProperty.getName();
+                        nameSetBuilder.name(new Name(metricName));
+
+                        // there are no attributes (other than 'name')to process
+                        //ModelNode metricValueNode = metricProperty.getValue();
+                    }
+
+                    NameSet nameSet = nameSetBuilder.build();
+                    namedMetricSets.put(nameSet.getName(), nameSet);
+
+                    enabled = enabled || !nameSet.isDisabledOrEmpty();
+                }
+            }
+        }
+        if (!enabled) {
+            log.infoNoEnabledMetricsConfigured("Prometheus");
+        }
+
     }
 
     private static TypeSets<PlatformNodeLocation> buildPlatformTypeSets(ModelNode config, OperationContext context)
@@ -1105,6 +1158,7 @@ public class MonitorServiceConfigurationBuilder {
             }
 
             // PROMETHEUS
+
             if (managedServersValueNode.hasDefined(RemotePrometheusDefinition.REMOTE_PROMETHEUS)) {
                 List<Property> remotePromsList = managedServersValueNode
                         .get(RemotePrometheusDefinition.REMOTE_PROMETHEUS)
@@ -1120,6 +1174,8 @@ public class MonitorServiceConfigurationBuilder {
                             RemotePrometheusAttributes.SECURITY_REALM);
                     Map<String, String> labels = getMapFromString(remotePromValueNode, context,
                             RemotePrometheusAttributes.LABELS);
+                    List<Name> metricSets = getNameListFromString(remotePromValueNode, context,
+                            RemotePrometheusAttributes.METRIC_SETS);
                     int interval = getInt(remotePromValueNode, context, RemotePrometheusAttributes.INTERVAL);
                     String timeUnitsStr = getString(remotePromValueNode, context,
                             RemotePrometheusAttributes.TIME_UNITS);
@@ -1139,7 +1195,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     DynamicEndpointConfiguration endpoint = new DynamicEndpointConfiguration(name, enabled, labels,
-                            connectionData, securityRealm, interval, timeUnits);
+                            metricSets, connectionData, securityRealm, interval, timeUnits);
 
                     prometheusConfigBuilder.endpoint(endpoint);
                 }
