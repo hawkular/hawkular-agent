@@ -402,7 +402,12 @@ public class MonitorServiceConfigurationBuilder {
                             .asPropertyList();
                     for (Property metricProperty : metricsList) {
                         String metricName = metricProperty.getName();
-                        nameSetBuilder.name(new Name(metricName));
+                        try {
+                            Pattern.compile(metricName); // metric name can be a regex, make sure it can compile
+                            nameSetBuilder.name(new Name(metricName));
+                        } catch (Exception e) {
+                            throw new OperationFailedException("Metric name is an invalid regex: " + metricName);
+                        }
 
                         // there are no attributes (other than 'name')to process
                         //ModelNode metricValueNode = metricProperty.getValue();

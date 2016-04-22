@@ -18,6 +18,9 @@ package org.hawkular.agent.monitor.dynamicprotocol.prometheus;
 
 import java.net.MalformedURLException;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
@@ -55,9 +58,37 @@ import org.hawkular.metrics.client.common.MetricType;
 public class PrometheusDynamicEndpointService extends DynamicEndpointService {
     private static final MsgLogger log = AgentLoggers.getLogger(PrometheusDynamicEndpointService.class);
 
+    private final Set<String> metricExactNames;
+    private final Set<Pattern> metricRegexNames;
+
     public PrometheusDynamicEndpointService(String feedId, MonitoredEndpoint<DynamicEndpointConfiguration> endpoint,
             HawkularWildFlyAgentContext hawkularStorage, Collection<Name> metrics) {
         super(feedId, endpoint, hawkularStorage, metrics);
+
+        // if no metric sets were assigned to us, that means we are to collect every metric.
+        if (metrics.isEmpty()) {
+            metricExactNames = null;
+            metricRegexNames = null;
+        } else {
+            // Because processing regex patterns can be expensive (compared to just looking up exact names in a hashed
+            // set) we will only process a metric name as a regex if it really is a regex. By definition, Prometheus
+            // metric names contain only ASCII letters, digits (except for the first character), underscores, and
+            // colons (that is, metric names must match the regex "[a-zA-Z_:][a-zA-Z0-9_:]*"). If a metric name has
+            // only those characters, we know it is not a regex so we store them for exact name checking. Anything
+            // else and we assume the metric name is really a regex, so we'll precompile its Pattern and store it so
+            // we can match against it when we start collecting metrics
+            metricExactNames = new HashSet<>();
+            metricRegexNames = new HashSet<>();
+            for (Name name : metrics) {
+                String nameString = name.getNameString();
+                if (nameString.matches("[a-zA-Z_:][a-zA-Z0-9_:]*")) {
+                    metricExactNames.add(nameString);
+                } else {
+                    metricRegexNames.add(Pattern.compile(nameString));
+                }
+            }
+        }
+
     }
 
     @Override
@@ -169,11 +200,23 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
         }
 
         private boolean shouldMetricBeIgnored(String metricName) {
-            Collection<Name> metricsToProcess = getMetrics();
-            if (metricsToProcess.isEmpty()) {
-                return false; // empty list of metrics means we are to process every metric that is scraped
+            if (metricExactNames == null) {
+                return false; // we are to process every metric that is scraped - do not ignore anything
             }
-            return !metricsToProcess.contains(new Name(metricName));
+
+            if (metricExactNames.contains(metricName)) {
+                return false; // the metric name matched exactly one that we are looking for - do not ignore it
+            }
+
+            // see if the metric name matches one of the regex patterns we were given
+            for (Pattern pattern : metricRegexNames) {
+                if (pattern.matcher(metricName).matches()) {
+                    return false; // the metric name matches one of our regex patterns - do not ignore it
+                }
+            }
+
+            // this metric name didn't match anything - we are to ignore it
+            return true;
         }
 
         private String generateKey(Metric metric) {
