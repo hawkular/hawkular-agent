@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A named, disbaleable collection of types.
+ * A named, disableable collection of types.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
@@ -65,17 +65,15 @@ public class TypeSet<T extends NamedObject> extends NamedObject {
         }
     }
 
-    private static final TypeSet<NodeLocationProvider<?>> EMPTY = new TypeSet<NodeLocationProvider<?>>(
-            ID.NULL_ID,
+    private static final TypeSet<?> EMPTY = new TypeSet<>(ID.NULL_ID,
             new Name(TypeSet.class.getSimpleName() + ".EMPTY"), false, Collections.emptyMap());
 
     public static <T extends NamedObject> TypeSetBuilder<T> builder() {
         return new TypeSetBuilder<>();
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T extends NodeLocationProvider<?>> TypeSet<T> empty() {
-        return (TypeSet<T>) EMPTY;
+    public static TypeSet<?> empty() {
+        return (TypeSet<?>) EMPTY;
     }
 
     private final boolean enabled;

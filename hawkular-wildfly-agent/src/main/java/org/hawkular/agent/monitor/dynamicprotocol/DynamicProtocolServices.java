@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.dynamicprotocol;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +29,8 @@ import org.hawkular.agent.monitor.dynamicprotocol.prometheus.PrometheusDynamicEn
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicProtocolConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.NameSet;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.jboss.msc.value.InjectedValue;
@@ -61,11 +64,11 @@ public class DynamicProtocolServices {
 
             DynamicProtocolService.Builder builder = DynamicProtocolService.builder();
 
-            for (DynamicEndpointConfiguration server : protocolConfig.getEndpoints().values()) {
-                if (!server.isEnabled()) {
-                    log.infoManagedServerDisabled(server.getName().toString());
+            for (DynamicEndpointConfiguration endpointConfig : protocolConfig.getEndpoints().values()) {
+                if (!endpointConfig.isEnabled()) {
+                    log.infoManagedServerDisabled(endpointConfig.getName().toString());
                 } else {
-                    final String securityRealm = server.getSecurityRealm();
+                    final String securityRealm = endpointConfig.getSecurityRealm();
                     SSLContext sslContext = null;
                     if (securityRealm != null) {
                         InjectedValue<SSLContext> injectedValue = sslContexts.get(securityRealm);
@@ -74,11 +77,21 @@ public class DynamicProtocolServices {
                         }
                         sslContext = injectedValue.getOptionalValue();
                     }
-                    final MonitoredEndpoint<DynamicEndpointConfiguration> endpoint = MonitoredEndpoint
-                            .<DynamicEndpointConfiguration> of(server, sslContext);
 
-                    PrometheusDynamicEndpointService endpointService;
-                    endpointService = new PrometheusDynamicEndpointService(this.feedId, endpoint, hawkularStorage);
+                    final MonitoredEndpoint<DynamicEndpointConfiguration> endpoint = MonitoredEndpoint
+                            .<DynamicEndpointConfiguration> of(endpointConfig, sslContext);
+
+                    // get all the metric names that are to be collected, if any are specified
+                    List<Name> metrics = new ArrayList<>();
+                    for (Name metricSetName : endpointConfig.getMetricSets()) {
+                        NameSet metricSet = protocolConfig.getMetrics().get(metricSetName);
+                        if (metricSet != null && metricSet.isEnabled()) {
+                            metrics.addAll(metricSet.getNameSet());
+                        }
+                    }
+
+                    PrometheusDynamicEndpointService endpointService = new PrometheusDynamicEndpointService(
+                            this.feedId, endpoint, hawkularStorage, metrics);
                     builder.endpointService(endpointService);
 
                     log.debugf("[%s] created", endpointService);
@@ -105,7 +118,6 @@ public class DynamicProtocolServices {
         this.services = Collections.unmodifiableList(Arrays.asList(prometheusProtocolService));
     }
 
-    @SuppressWarnings("unchecked")
     public DynamicEndpointService getDynamicEndpointService(String endpointName) {
         for (DynamicProtocolService service : services) {
             DynamicEndpointService result = service.getDynamicEndpointServices().get(endpointName);
