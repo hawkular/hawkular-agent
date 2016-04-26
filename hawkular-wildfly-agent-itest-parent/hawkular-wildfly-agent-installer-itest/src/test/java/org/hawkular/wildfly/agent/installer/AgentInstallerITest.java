@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
 import org.hawkular.dmr.api.OperationBuilder;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;

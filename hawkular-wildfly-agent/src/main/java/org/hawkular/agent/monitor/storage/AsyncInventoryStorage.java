@@ -53,11 +53,8 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.Relationships.Direction;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.AbstractElement.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Metric;
@@ -66,6 +63,8 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -348,8 +347,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
                 }
 
-                DataEntity.Blueprint<Resources.DataRole> dataEntity = new DataEntity.Blueprint<>(
-                        Resources.DataRole.configuration, structDataBuilder.build(), null);
+                DataEntity.Blueprint<DataRole.Resource> dataEntity = new DataEntity.Blueprint<>(
+                        DataRole.Resource.configuration, structDataBuilder.build(), null);
 
                 relationshipOrEntity(resourceCanonicalPath.toString(), DataEntity.class, dataEntity);
             }
@@ -435,8 +434,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     structDataBuilder.putString(rcpt.getID().getIDString(), rcpt.getName().getNameString());
                 }
 
-                DataEntity.Blueprint<ResourceTypes.DataRole> dataEntity = new DataEntity.Blueprint<>(
-                        ResourceTypes.DataRole.configurationSchema, structDataBuilder.build(), null);
+                DataEntity.Blueprint<DataRole.ResourceType> dataEntity = new DataEntity.Blueprint<>(
+                        DataRole.ResourceType.configurationSchema, structDataBuilder.build(), null);
 
                 relationshipOrEntity(parentPath.toString(), DataEntity.class, dataEntity);
             }

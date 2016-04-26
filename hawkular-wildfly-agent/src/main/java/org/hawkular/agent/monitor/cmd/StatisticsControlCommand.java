@@ -42,7 +42,7 @@ import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.CompositeOperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.hawkular.dmrclient.JBossASClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;

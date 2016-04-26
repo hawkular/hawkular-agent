@@ -21,7 +21,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;

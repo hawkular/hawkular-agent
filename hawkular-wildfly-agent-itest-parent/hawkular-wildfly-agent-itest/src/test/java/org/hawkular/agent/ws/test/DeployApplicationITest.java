@@ -19,7 +19,7 @@ package org.hawkular.agent.ws.test;
 import java.io.File;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
 import org.junit.Assert;
 import org.testng.annotations.Test;

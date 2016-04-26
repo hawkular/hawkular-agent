@@ -24,7 +24,7 @@
     <artifact name="${org.hawkular.agent:hawkular-wildfly-agent}"/>
     <artifact name="${org.hawkular.agent:prometheus-scraper}"/>
     <artifact name="${org.hawkular.cmdgw:hawkular-command-gateway-api}"/>
-    <artifact name="${org.hawkular.inventory:hawkular-inventory-json-helper}"/>
+    <artifact name="${org.hawkular.commons:hawkular-inventory-paths}"/>
     <artifact name="${org.hawkular.inventory:hawkular-inventory-api}"/>
     <artifact name="${org.jgrapht:jgrapht-core}"/>
     <artifact name="${io.dropwizard.metrics:metrics-core}"/>
