@@ -225,6 +225,9 @@ public class MonitorService implements Service<MonitorService> {
 
                         log.debugf("Tenant ID [%s]", useTenantId);
                         retriesRemaining = 0; // we got our tenant ID, no need to keep retrying
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(ie);
                     } catch (Throwable t) {
                         log.errorRetryTenantId(t.toString());
                         try {
@@ -420,13 +423,27 @@ public class MonitorService implements Service<MonitorService> {
 
     @Override
     public void start(final StartContext startContext) throws StartException {
+        // see HWKAGENT-74 for why we need to do this in a separate thread
+        final Thread startThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    startMonitorService();
+                } catch (Throwable t) {
+                }
+            }
+        }, "Hawkular WildFly Agent Startup Thread");
+        startThread.setDaemon(true);
+
         // deferred startup: must wait for server to be running before we can monitor the subsystems
         ControlledProcessStateService stateService = processStateValue.getValue();
         serverStateListener = new PropertyChangeListener() {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
                 if (ControlledProcessState.State.RUNNING.equals(evt.getNewValue())) {
-                    startMonitorService();
+                    startThread.start();
+                } else if (ControlledProcessState.State.STOPPING.equals(evt.getNewValue())) {
+                    startThread.interrupt();
                 }
             }
         };
@@ -498,6 +515,9 @@ public class MonitorService implements Service<MonitorService> {
                 try {
                     connectToCommandGatewayCommChannel();
                 } catch (Exception e) {
+                    if (e instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
                     log.errorCannotEstablishFeedComm(e);
                 }
 
@@ -544,6 +564,10 @@ public class MonitorService implements Service<MonitorService> {
             started = true;
 
         } catch (Throwable t) {
+            if (t instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+
             log.errorFailedToStartAgent(t);
 
             // artifically shutdown the agent - agent will be disabled now
