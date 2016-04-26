@@ -423,17 +423,7 @@ public class MonitorService implements Service<MonitorService> {
 
     @Override
     public void start(final StartContext startContext) throws StartException {
-        // see HWKAGENT-74 for why we need to do this in a separate thread
-        final Thread startThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    startMonitorService();
-                } catch (Throwable t) {
-                }
-            }
-        }, "Hawkular WildFly Agent Startup Thread");
-        startThread.setDaemon(true);
+        final AtomicReference<Thread> startThread = new AtomicReference<Thread>();
 
         // deferred startup: must wait for server to be running before we can monitor the subsystems
         ControlledProcessStateService stateService = processStateValue.getValue();
@@ -441,9 +431,29 @@ public class MonitorService implements Service<MonitorService> {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
                 if (ControlledProcessState.State.RUNNING.equals(evt.getNewValue())) {
-                    startThread.start();
+                    // see HWKAGENT-74 for why we need to do this in a separate thread
+                    Thread newThread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                startMonitorService();
+                            } catch (Throwable t) {
+                            }
+                        }
+                    }, "Hawkular WildFly Agent Startup Thread");
+                    newThread.setDaemon(true);
+
+                    Thread oldThread = startThread.getAndSet(newThread);
+                    if (oldThread != null) {
+                        oldThread.interrupt();
+                    }
+
+                    newThread.start();
                 } else if (ControlledProcessState.State.STOPPING.equals(evt.getNewValue())) {
-                    startThread.interrupt();
+                    Thread oldThread = startThread.get();
+                    if (oldThread != null) {
+                        oldThread.interrupt();
+                    }
                 }
             }
         };
