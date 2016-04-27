@@ -608,7 +608,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     // HTTP status of 201 means success, 409 means it already exists; anything else is an error
                     final int bulkResponseCode = response.code();
-                    log.tracef("Bulk insert response code: [%d]", bulkResponseCode);
+                    log.tracef("Bulk insert response code: [%d] for bulk insert request [%d]", bulkResponseCode,
+                            jsonPayload.hashCode());
                     if (bulkResponseCode != 201 && bulkResponseCode != 409) {
                         throw new Exception("status-code=[" + response.code() + "], reason=["
                                 + response.message() + "], url=[" + request.urlString() + "]");
