@@ -591,12 +591,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
             Map<String, Map<String, List<AbstractElement.Blueprint>>> payload = builder.build();
 
             if (!payload.isEmpty()) {
+                String jsonPayload = Util.toJson(payload);
                 try {
                     StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
                             AsyncInventoryStorage.this.config.getInventoryContext());
                     url.append("bulk");
-                    String jsonPayload = Util.toJson(payload);
-                    log.tracef("About to send a bulk insert request to inventory: [%s]", jsonPayload);
+                    log.tracef("About to send a bulk insert request [%d] to inventory", jsonPayload.hashCode());
 
                     // now send the REST request
                     Request request = AsyncInventoryStorage.this.httpClientBuilder
@@ -607,7 +607,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     final long durationNanos = timer.stop();
 
                     // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-                    if (response.code() != 201 && response.code() != 409) {
+                    final int bulkResponseCode = response.code();
+                    log.tracef("Bulk insert response code: [%d]", bulkResponseCode);
+                    if (bulkResponseCode != 201 && bulkResponseCode != 409) {
                         throw new Exception("status-code=[" + response.code() + "], reason=["
                                 + response.message() + "], url=[" + request.urlString() + "]");
                     }
@@ -620,7 +622,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         log.debugf("Took [%d]ms to store [%d] resources", durationMs, addQueueElements.size());
                         String body = response.body().string();
                         responseBodyReader = new StringReader(body);
-                        log.tracef("Body of bulk insert request response: %s", body);
+                        log.tracef("Body of bulk insert request [%d] response: %s", jsonPayload.hashCode(), body);
                     } else {
                         responseBodyReader = response.body().charStream();
                     }
@@ -655,9 +657,11 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     }
 
                 } catch (InterruptedException ie) {
+                    log.tracef("Bulk insert request [%d] interrupted", jsonPayload.hashCode());
                     throw ie;
                 } catch (Exception e) {
                     diagnostics.getStorageErrorRate().mark(1);
+                    log.tracef(e, "Bulk insert request [%d] failed", jsonPayload.hashCode());
                     log.errorFailedToStoreInventoryData(e);
                     throw new Exception("Cannot create resources or their resourceTypes", e);
                 }

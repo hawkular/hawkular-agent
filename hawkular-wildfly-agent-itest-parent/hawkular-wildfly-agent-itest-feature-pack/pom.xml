@@ -168,6 +168,21 @@
                   </fileMappers>
                 </transformationSet>
 
+                <transformationSet>
+                  <dir>${project.build.directory}/feature-pack-resources</dir>
+                  <stylesheet>${basedir}/src/main/xsl/subsystem-templates/hawkular-wildfly-agent-itest-logging.xsl</stylesheet>
+                  <includes>
+                    <include>subsystem-templates/hawkular-nest-logging.xml</include>
+                  </includes>
+                  <outputDir>${project.build.directory}/feature-pack-resources</outputDir>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                      <pattern>^subsystem-templates/hawkular-nest-(.*)\.xml$</pattern>
+                      <replacement>subsystem-templates/hawkular-wildfly-agent-itest-$1.xml</replacement>
+                    </fileMapper>
+                  </fileMappers>
+                </transformationSet>
+
               </transformationSets>
             </configuration>
           </execution>

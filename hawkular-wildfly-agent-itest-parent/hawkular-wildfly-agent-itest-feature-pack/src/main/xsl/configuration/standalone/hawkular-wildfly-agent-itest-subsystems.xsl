@@ -42,6 +42,11 @@
     <subsystem>hawkular-wildfly-agent-itest-messaging-activemq.xml</subsystem>
   </xsl:template>
 
+  <!-- Replace hawkular-nest-logging.xml with hawkular-wildfly-agent-itest-logging.xml -->
+  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-nest-logging.xml']">
+    <subsystem>hawkular-wildfly-agent-itest-logging.xml</subsystem>
+  </xsl:template>
+
   <!-- copy everything else as-is -->
   <xsl:template match="node()|@*">
     <xsl:copy>

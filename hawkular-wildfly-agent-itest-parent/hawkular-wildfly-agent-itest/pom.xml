@@ -184,13 +184,14 @@
 
         <hawkular.log>INFO</hawkular.log>
         <hawkular.log.accounts>INFO</hawkular.log.accounts>
-        <hawkular.log.agent>INFO</hawkular.log.agent>
+        <hawkular.log.agent>TRACE</hawkular.log.agent>
         <hawkular.log.alerts>INFO</hawkular.log.alerts>
         <hawkular.log.bus>INFO</hawkular.log.bus>
         <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
         <hawkular.log.availcreator>INFO</hawkular.log.availcreator>
         <hawkular.log.pinger>INFO</hawkular.log.pinger>
         <hawkular.log.inventory>INFO</hawkular.log.inventory>
+        <org.hawkular.inventory.rest.requests>TRACE</org.hawkular.inventory.rest.requests>
         <hawkular.log.metrics>INFO</hawkular.log.metrics>
         <hawkular.log.nest>INFO</hawkular.log.nest>
         <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
@@ -344,6 +345,7 @@
                 <javaOpt>-Dhawkular.log.availcreator=${hawkular.log.availcreator}</javaOpt>
                 <javaOpt>-Dhawkular.log.pinger=${hawkular.log.pinger}</javaOpt>
                 <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>
+                <javaOpt>-Dorg.hawkular.inventory.rest.requests=${org.hawkular.inventory.rest.requests}</javaOpt>
                 <javaOpt>-Dhawkular.log.metrics=${hawkular.log.metrics}</javaOpt>
                 <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
                 <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
