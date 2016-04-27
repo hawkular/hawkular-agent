@@ -101,6 +101,16 @@
                   <mainClass>org.hawkular.wildfly.agent.installer.AgentInstaller</mainClass>
                 </transformer>
               </transformers>
+              <filters>
+                <filter>
+                  <artifact>org.jboss.aesh:aesh</artifact>
+                  <excludes>
+                    <exclude>*Example*</exclude>
+                    <exclude>Main.class</exclude>
+                    <exclude>ManCommand.txt</exclude>
+                  </excludes>
+                </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>
