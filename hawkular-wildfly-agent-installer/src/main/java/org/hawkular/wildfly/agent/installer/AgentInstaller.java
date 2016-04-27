@@ -461,7 +461,7 @@ public class AgentInstaller {
     }
 
     private static URL getHawkularServerAgentDownloadUrl(InstallerConfiguration config) throws MalformedURLException {
-        String serverUrl = String.format("%s/hawkular-wildfly-agent/download", config.getServerUrl());
+        String serverUrl = String.format("%s/hawkular/wildfly-agent/download", config.getServerUrl());
         return new URL(serverUrl);
     }
 
