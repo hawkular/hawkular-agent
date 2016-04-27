@@ -242,6 +242,18 @@ class XmlConfigBuilder {
         transformer.transform(source, result);
     }
 
+    // to help debugging
+    /*
+    private void printDocument(Document doc) {
+        try {
+            DOMImplementationLS domImplementation = (DOMImplementationLS) doc.getImplementation();
+            log.fatal("XML DOCUMENT:\n" + domImplementation.createLSSerializer().writeToString(doc));
+        } catch (Throwable t) {
+            log.warn("Can't print doc: " + t);
+        }
+    }
+    */
+
     public static String xpath2Namespaced(String expression, String prefix) {
         String[] components = expression.split("/");
         StringBuilder sb = new StringBuilder();

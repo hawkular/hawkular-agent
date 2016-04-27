@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,10 +34,18 @@ class RegisterExtension {
      * @throws Exception
      */
     public void register(RegisterModuleConfiguration options) throws Exception {
-        if (options.isDomain()) {
-            registerToDomain(options);
-        } else {
-            registerToStandalone(options);
+        switch (options.getConfigType()) {
+            case DOMAIN:
+                registerToDomain(options);
+                break;
+            case HOST:
+                registerToHost(options);
+                break;
+            case STANDALONE:
+                registerToStandalone(options);
+                break;
+            default:
+                throw new IllegalArgumentException("unknown configuration type: " + options.getConfigType());
         }
 
         log.info("New serverConfig file written to [" + options.getTargetServerConfig().getAbsolutePath() + "]");
@@ -47,7 +55,7 @@ class RegisterExtension {
         List<XmlEdit> inserts = new ArrayList<XmlEdit>();
         inserts.addAll(options.getXmlEdits());
         if (options.getModuleId() != null) {
-            log.info("Register extension module=" + options.getModuleId());
+            log.info("Register STANDALONE extension module=" + options.getModuleId());
             inserts.add(new XmlEdit("/server/extensions", "<extension module=\"" + options.getModuleId() + "\"/>"));
         }
 
@@ -65,11 +73,35 @@ class RegisterExtension {
                 .failNoMatch(options.isFailNoMatch()).build();
     }
 
+    private void registerToHost(RegisterModuleConfiguration options) throws Exception {
+        List<XmlEdit> inserts = new ArrayList<XmlEdit>();
+        inserts.addAll(options.getXmlEdits());
+        if (options.getModuleId() != null) {
+            log.info("Register HOST extension module=" + options.getModuleId());
+            inserts.add(new XmlEdit("/host/extensions", "<extension module=\"" + options.getModuleId() + "\"/>"));
+        }
+
+        if (options.getSubsystem() != null) {
+            inserts.add(new XmlEdit("/host/profile", options.getSubsystem()));
+        }
+        if (options.getSocketBindingGroups() != null && options.getSocketBinding() != null) {
+            for (String group : options.getSocketBindingGroups()) {
+                inserts.add(new XmlEdit("/host",
+                        "<socket-binding-group default-interface=\"public\" name=\"" + group + "\"/>"));
+                inserts.add(new XmlEdit("/host/socket-binding-group[@name='" + group + "']", options
+                        .getSocketBinding()).withAttribute("name"));
+            }
+        }
+        new XmlConfigBuilder(options.getSourceServerConfig(), options.getTargetServerConfig())
+                .edits(inserts)
+                .failNoMatch(options.isFailNoMatch()).build();
+    }
+
     private void registerToDomain(RegisterModuleConfiguration options) throws Exception {
         List<XmlEdit> inserts = new ArrayList<XmlEdit>();
         inserts.addAll(options.getXmlEdits());
         if (options.getModuleId() != null) {
-            log.info("Register extension module=" + options.getModuleId());
+            log.info("Register DOMAIN extension module=" + options.getModuleId());
             inserts.add(new XmlEdit("/domain/extensions", "<extension module=\"" + options.getModuleId() + "\"/>"));
         }
 
@@ -80,8 +112,8 @@ class RegisterExtension {
         }
         if (options.getSocketBindingGroups() != null && options.getSocketBinding() != null) {
             for (String group : options.getSocketBindingGroups()) {
-                inserts.add(new XmlEdit("/domain/socket-binding-group[@name='" + group + "']", options
-                        .getSocketBinding()).withAttribute("name"));
+                inserts.add(new XmlEdit("/domain/socket-binding-groups/socket-binding-group[@name='" + group + "']",
+                        options.getSocketBinding()).withAttribute("name"));
             }
         }
         new XmlConfigBuilder(options.getSourceServerConfig(), options.getTargetServerConfig())

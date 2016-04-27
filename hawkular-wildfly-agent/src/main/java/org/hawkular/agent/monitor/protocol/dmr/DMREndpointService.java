@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,9 @@
 package org.hawkular.agent.monitor.protocol.dmr;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
@@ -27,7 +27,6 @@ import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
-import org.jboss.dmr.Property;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
@@ -39,25 +38,25 @@ public class DMREndpointService
     public static String lookupServerIdentifier(ModelControllerClient client) throws IOException {
         ModelNode rootNode = OperationBuilder.readResource().includeRuntime().execute(client).assertSuccess()
                 .getResultNode();
-        String lauchType = rootNode.get("launch-type").asString();
-        boolean isDomainMode = "domain".equalsIgnoreCase(lauchType);
-        String hostName = (isDomainMode) ? rootNode.get("host").asString() : null;
-        String serverName = rootNode.get("name").asString();
-        // this is a new attribute that only exists in Wildfly 10 and up. If we can't get it, just use null.
-        String uuid = rootNode.has("uuid") ? rootNode.get("uuid").asString() : null;
 
-        List<Property> sysprops = OperationBuilder.readAttribute() //
-                .address().segment("core-service", "platform-mbean").segment("type", "runtime").parentBuilder() //
-                .name("system-properties")
-                .execute(client).assertSuccess().getResultNode().asPropertyList();
+        // Remember we might be running in standalone mode, domain mode, or in a host controller.
 
-        String nodeName = null;
-        for (Property prop : sysprops) {
-            if ("jboss.node.name".equals(prop.getName())) {
-                nodeName = prop.getValue().asString();
-                break;
-            }
+        String hostName = null;
+        if (rootNode.hasDefined("local-host-name")) {
+            hostName = rootNode.get("local-host-name").asString();
+        } else if (rootNode.hasDefined("host")) {
+            hostName = rootNode.get("host").asString();
         }
+
+        String serverName = null;
+        if (rootNode.hasDefined("name")) {
+            serverName = rootNode.get("name").asString();
+        }
+
+        // this is a new attribute that only exists in Wildfly 10 and up. If we can't get it, just use null.
+        String uuid = rootNode.hasDefined("uuid") ? rootNode.get("uuid").asString() : null;
+
+        String nodeName = System.getProperty("jboss.node.name");
 
         return getServerIdentifier(hostName, serverName, nodeName, uuid);
     }
@@ -89,7 +88,8 @@ public class DMREndpointService
         }
     }
     private final ModelControllerClientFactory modelControllerClientFactory;
-    public DMREndpointService(String feedId, MonitoredEndpoint endpoint,
+
+    public DMREndpointService(String feedId, MonitoredEndpoint<EndpointConfiguration> endpoint,
             ResourceTypeManager<DMRNodeLocation> resourceTypeManager,
             ModelControllerClientFactory modelControllerClientFactory, ProtocolDiagnostics diagnostics) {
         super(feedId, endpoint, resourceTypeManager, new DMRLocationResolver(), diagnostics);

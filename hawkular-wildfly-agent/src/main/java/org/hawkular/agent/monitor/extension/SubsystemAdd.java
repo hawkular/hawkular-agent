@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,7 @@ import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.naming.ImmediateManagedReferenceFactory;
 import org.jboss.as.naming.ManagedReferenceFactory;
@@ -58,13 +59,14 @@ public class SubsystemAdd extends AbstractAddStepHandler {
             return;
         }
 
-        createService(context.getServiceTarget(), configuration);
+        createService(context.getServiceTarget(), configuration, context.getProcessType());
     }
 
-    private void createService(final ServiceTarget target, final MonitorServiceConfiguration configuration) {
+    private void createService(final ServiceTarget target, final MonitorServiceConfiguration configuration,
+            ProcessType processType) {
 
         // create and configure the service itself
-        MonitorService service = new MonitorService(configuration);
+        MonitorService service = new MonitorService(configuration, processType);
 
         // create the builder that will be responsible for preparing the service deployment
         ServiceBuilder<MonitorService> svcBuilder;
@@ -73,8 +75,9 @@ public class SubsystemAdd extends AbstractAddStepHandler {
         service.addDependencies(svcBuilder);
 
         // bind the API to JNDI so other apps can use it, and prepare to build the binder service
+        // Note that if we are running in host controller or similiar, JNDI binding is not available.
         String jndiName = configuration.getApiJndi();
-        boolean bindJndi = (jndiName == null || jndiName.isEmpty()) ? false : true;
+        boolean bindJndi = (jndiName == null || jndiName.isEmpty() || processType.isManagedDomain()) ? false : true;
         if (bindJndi) {
             Object jndiObject = service.getHawkularMonitorContext();
             ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(jndiName);
