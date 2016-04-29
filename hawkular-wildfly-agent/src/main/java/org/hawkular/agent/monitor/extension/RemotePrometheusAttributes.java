@@ -33,7 +33,7 @@ public interface RemotePrometheusAttributes {
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(true))
                     .setAllowExpression(true)
-                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .addFlag(AttributeAccess.Flag.RESTART_NONE)
                     .build();
 
     SimpleAttributeDefinition URL = new SimpleAttributeDefinitionBuilder("url",

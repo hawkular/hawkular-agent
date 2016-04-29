@@ -16,12 +16,38 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.jboss.as.controller.AbstractRemoveStepHandler;
+import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolService;
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.service.MonitorService;
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.dmr.ModelNode;
 
-public class RemotePrometheusRemove extends AbstractRemoveStepHandler {
+public class RemotePrometheusRemove extends MonitorServiceRemoveStepHandler {
+    private static final MsgLogger log = AgentLoggers.getLogger(RemotePrometheusRemove.class);
 
     public static final RemotePrometheusRemove INSTANCE = new RemotePrometheusRemove();
 
     private RemotePrometheusRemove() {
+    }
+
+    @Override
+    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
+            throws OperationFailedException {
+
+        if (context.isBooting()) {
+            return;
+        }
+
+        MonitorService monitorService = getMonitorService(context);
+        if (monitorService == null) {
+            return; // the agent wasn't enabled, nothing to do
+        }
+
+        DynamicProtocolService prometheusService = monitorService.getDynamicProtocolServices()
+                .getPrometheusProtocolService();
+        String doomedEndpointName = context.getCurrentAddressValue();
+        prometheusService.remove(doomedEndpointName);
     }
 }

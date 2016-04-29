@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.scheduler;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
@@ -120,8 +121,11 @@ public class SchedulerService implements InventoryListener {
         log.debugf("Unscheduling jobs for [%d] obsolete resources for endpoint [%s]",
                 resources.size(), service.getMonitoredEndpoint());
 
+        unschedule(service, resources);
+    }
+
+    public <L> void unschedule(SamplingService<L> service, Collection<Resource<L>> resources) {
         ((MeasurementScheduler) metricScheduler).unschedule(service, resources);
         ((MeasurementScheduler) availScheduler).unschedule(service, resources);
     }
-
 }

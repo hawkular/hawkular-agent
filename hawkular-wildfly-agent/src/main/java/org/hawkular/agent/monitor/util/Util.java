@@ -30,9 +30,24 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfigurationBuilder;
+import org.hawkular.agent.monitor.extension.SubsystemExtension;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
+import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.PathElement;
+import org.jboss.as.controller.ReloadRequiredWriteAttributeHandler;
+import org.jboss.as.controller.registry.AttributeAccess;
+import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.Resource;
+import org.jboss.dmr.ModelNode;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -241,5 +256,49 @@ public class Util {
     public static String base64Encode(String plainTextString) {
         String encoded = new String(Base64.getEncoder().encode(plainTextString.getBytes()));
         return encoded;
+    }
+
+    /**
+     * This will register only those given attributes that require a restart.
+     * Other attributes are left unregistered. It is the caller's responsibility to register those
+     * other attributes. Typically those other attributes support changing the service at runtime
+     * immediately when the attribute is changed (rather than requiring to restart the server to
+     * pick up the change).
+     *
+     * @param resourceRegistration there the restart attributes will be registered
+     * @param allAttributes a collection of attributes where some, all, or none will require a restart upon change.
+     */
+    public static void registerOnlyRestartAttributes(
+            ManagementResourceRegistration resourceRegistration,
+            Collection<AttributeDefinition> allAttributes) {
+        Collection<AttributeDefinition> restartResourceServicesAttributes = new ArrayList<>();
+        for (AttributeDefinition attribDef : allAttributes) {
+            if (attribDef.getFlags().contains(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    || attribDef.getFlags().contains(AttributeAccess.Flag.RESTART_JVM)
+                    || attribDef.getFlags().contains(AttributeAccess.Flag.RESTART_ALL_SERVICES)) {
+                restartResourceServicesAttributes.add(attribDef);
+            }
+        }
+        ReloadRequiredWriteAttributeHandler handler = new ReloadRequiredWriteAttributeHandler(
+                restartResourceServicesAttributes);
+        for (AttributeDefinition attribDef : restartResourceServicesAttributes) {
+            resourceRegistration.registerReadWriteAttribute(attribDef, null, handler);
+        }
+    }
+
+    /**
+     * Used by extension classes that need to get the subsystem's configuration.
+     *
+     * @param context context used to obtain the config
+     * @return the subsystem config
+     * @throws OperationFailedException
+     */
+    public static MonitorServiceConfiguration getMonitorServiceConfiguration(OperationContext context)
+            throws OperationFailedException {
+        PathAddress subsystemAddress = PathAddress
+                .pathAddress(PathElement.pathElement("subsystem", SubsystemExtension.SUBSYSTEM_NAME));
+        ModelNode subsystemConfig = Resource.Tools.readModel(context.readResourceFromRoot(subsystemAddress));
+        MonitorServiceConfiguration config = new MonitorServiceConfigurationBuilder(subsystemConfig, context).build();
+        return config;
     }
 }

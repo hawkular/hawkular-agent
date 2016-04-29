@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.MonitorService;
@@ -26,16 +25,9 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.naming.ImmediateManagedReferenceFactory;
-import org.jboss.as.naming.ManagedReferenceFactory;
-import org.jboss.as.naming.ServiceBasedNamingStore;
-import org.jboss.as.naming.deployment.ContextNames;
-import org.jboss.as.naming.service.BinderService;
 import org.jboss.dmr.ModelNode;
-import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 
 public class SubsystemAdd extends AbstractAddStepHandler {
@@ -51,15 +43,14 @@ public class SubsystemAdd extends AbstractAddStepHandler {
             throws OperationFailedException {
 
         ModelNode subsystemConfig = Resource.Tools.readModel(context.readResource(PathAddress.EMPTY_ADDRESS));
-        MonitorServiceConfiguration configuration = new MonitorServiceConfigurationBuilder(subsystemConfig, context)
-                .build();
+        MonitorServiceConfiguration config = new MonitorServiceConfigurationBuilder(subsystemConfig, context).build();
 
-        if (!configuration.isSubsystemEnabled()) {
+        if (!config.isSubsystemEnabled()) {
             log.infoSubsystemDisabled();
             return;
         }
 
-        createService(context.getServiceTarget(), configuration, context.getProcessType());
+        createService(context.getServiceTarget(), config, context.getProcessType());
     }
 
     private void createService(final ServiceTarget target, final MonitorServiceConfiguration configuration,
@@ -72,68 +63,11 @@ public class SubsystemAdd extends AbstractAddStepHandler {
         ServiceBuilder<MonitorService> svcBuilder;
         svcBuilder = target.addService(SubsystemExtension.SERVICE_NAME, service);
         svcBuilder.setInitialMode(ServiceController.Mode.ACTIVE);
-        service.addDependencies(svcBuilder);
-
-        // bind the API to JNDI so other apps can use it, and prepare to build the binder service
-        // Note that if we are running in host controller or similiar, JNDI binding is not available.
-        String jndiName = configuration.getApiJndi();
-        boolean bindJndi = (jndiName == null || jndiName.isEmpty() || processType.isManagedDomain()) ? false : true;
-        if (bindJndi) {
-            Object jndiObject = service.getHawkularMonitorContext();
-            ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(jndiName);
-            BinderService binderService = new BinderService(bindInfo.getBindName());
-            ManagedReferenceFactory valueMRF = new ImmediateManagedReferenceFactory(jndiObject);
-            String jndiObjectClassName = HawkularWildFlyAgentContext.class.getName();
-            ServiceName binderServiceName = bindInfo.getBinderServiceName();
-            ServiceBuilder<?> binderBuilder = target
-                    .addService(binderServiceName, binderService)
-                    .addInjection(binderService.getManagedObjectInjector(), valueMRF)
-                    .setInitialMode(ServiceController.Mode.ACTIVE)
-                    .addDependency(bindInfo.getParentContextServiceName(),
-                            ServiceBasedNamingStore.class,
-                            binderService.getNamingStoreInjector())
-                    .addListener(new JndiBindListener(jndiName, jndiObjectClassName));
-
-            // our monitor service will depend on the binder service
-            svcBuilder.addDependency(binderServiceName);
-
-            // install the binder service
-            binderBuilder.install();
-        }
+        service.addDependencies(target, svcBuilder);
 
         // install the monitor service
         svcBuilder.install();
 
         return;
-    }
-
-    private final class JndiBindListener extends AbstractServiceListener<Object> {
-        private final String jndiName;
-        private final String jndiObjectClassName;
-
-        public JndiBindListener(String jndiName, String jndiObjectClassName) {
-            this.jndiName = jndiName;
-            this.jndiObjectClassName = jndiObjectClassName;
-        }
-
-        public void transition(final ServiceController<? extends Object> controller,
-                final ServiceController.Transition transition) {
-            switch (transition) {
-                case STARTING_to_UP: {
-                    log.infoBindJndiResource(jndiName, jndiObjectClassName);
-                    break;
-                }
-                case START_REQUESTED_to_DOWN: {
-                    log.infoUnbindJndiResource(jndiName);
-                    break;
-                }
-                case REMOVING_to_REMOVED: {
-                    log.infoUnbindJndiResource(jndiName);
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
     }
 }
