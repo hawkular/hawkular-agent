@@ -161,7 +161,7 @@ public class MonitorService implements Service<MonitorService> {
                         } else {
                             socketBinding = httpSocketBindingValue.getValue();
                         }
-                        address = socketBinding.getAddress().getHostAddress();
+                        address = socketBinding.getAddress().getCanonicalHostName();
                         if (address.equals("0.0.0.0") || address.equals("::/128")) {
                             address = InetAddress.getLocalHost().getCanonicalHostName();
                         }
@@ -169,7 +169,7 @@ public class MonitorService implements Service<MonitorService> {
                     } else {
                         OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue
                                 .getValue();
-                        address = serverBinding.getResolvedDestinationAddress().getHostAddress();
+                        address = serverBinding.getResolvedDestinationAddress().getCanonicalHostName();
                         port = serverBinding.getDestinationPort();
                     }
                     String protocol = (bootStorageAdapter.isUseSSL()) ? "https" : "http";
