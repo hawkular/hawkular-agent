@@ -1,0 +1,84 @@
+<!--
+
+    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+    and other contributors as indicated by the @author tags.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<subsystem xmlns="urn:org.hawkular.agent:agent:1.0">
+
+  <storage-adapter username="jdoe"
+                   password="password"/>
+
+  <metric-set-dmr name="WildFly Memory Metrics">
+    <metric-dmr name="Heap Used"
+                path="/core-service=platform-mbean/type=memory"
+                attribute="heap-memory-usage#used" />
+  </metric-set-dmr>
+
+  <avail-set-dmr name="Server Availability">
+    <avail-dmr name="App Server"
+               path="/"
+               attribute="server-state"/>
+  </avail-set-dmr>
+
+  <resource-type-set-dmr name="Main" enabled="true">
+    <resource-type-dmr name="WildFly Server"
+                       resourceNameTemplate="WildFly Server"
+                       path="/">
+      <resource-config-dmr name="Hostname"
+                           path="/core-service=server-environment"
+                           attribute="qualified-host-name" />
+      <operation-dmr name="Reload Server"/>
+    </resource-type-dmr>
+  </resource-type-set-dmr>
+
+  <metric-set-jmx name="M Metric Set">
+    <metric-jmx name="M Metric"
+                objectName="domain:foo=bar"
+                attribute="yAttribute" />
+  </metric-set-jmx>
+
+  <avail-set-jmx name="A Avail Set">
+    <avail-jmx name="A Avail"
+               objectName="domain:foo=bar"
+               attribute="yAttribute"/>
+  </avail-set-jmx>
+
+  <resource-type-set-jmx name="R Resource Type Set">
+    <resource-type-jmx name="R Resource Type"
+                       resourceNameTemplate="R Resource Name"
+                       objectName="domain:foo=bar">
+      <resource-config-jmx name="Config Name"
+                           objectName="domain:foo=bar"
+                           attribute="configAttribute" />
+      <operation-jmx name="O Operation"/>
+    </resource-type-jmx>
+  </resource-type-set-jmx>
+
+  <managed-servers>
+    <remote-dmr name="Local Host"
+                host="localhost"
+                port="9990"/>
+
+    <local-dmr name="Self"/>
+
+    <remote-jmx name="Remote JMX"
+                url="https://localhost:8080/jolokia"/>
+
+    <remote-prometheus name="Remote Prometheus"
+                       url="http://localhost:9090/metrics"/>
+  </managed-servers>
+
+</subsystem>

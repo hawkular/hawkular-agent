@@ -17,44 +17,49 @@
 
 -->
 <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
-           enabled="false"
+           enabled="true"
+           apiJndiName="jndi:name"
+           numDmrSchedulerThreads="1"
            autoDiscoveryScanPeriodSecs="3601"
            metricDispatcherBufferSize="201"
            metricDispatcherMaxBatchSize="51"
            availDispatcherBufferSize="101"
            availDispatcherMaxBatchSize="26">
 
-  <diagnostics enabled="false"
+  <diagnostics enabled="true"
                interval="1"
-               timeUnits="minutes"/>
+               timeUnits="minutes"
+               reportTo="LOG"/>
 
-  <storage-adapter username="jdoe"
+  <storage-adapter type="METRICS"
+                   username="jdoe"
                    password="password"
+                   securityKey="securityKey"
+                   securitySecret="securitySecret"
+                   tenantId="tenandId"
+                   feedId="feedId"
                    url="http://localhost:8080"
-                   securityRealm="HawkularSecurityRealm"/>
+                   useSSL="false"
+                   securityRealm="HawkularSecurityRealm"
+                   keystorePath="keystorePath"
+                   keystorePassword="keystorePassword"
+                   serverOutboundSocketBindingRef="serverOutboundSocketBindingRef"
+                   accountsContext="accountsContext"
+                   inventoryContext="inventoryContext"
+                   metricsContext="metricsContext"
+                   feedcommContext="feedcommContext"/>
 
-  <metric-set-dmr name="WildFly Memory Metrics">
+  <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
     <metric-dmr name="Heap Used"
                 interval="30"
                 timeUnits="seconds"
+                metricType="gauge"
                 metricUnits="bytes"
                 path="/core-service=platform-mbean/type=memory"
                 attribute="heap-memory-usage#used" />
-    <metric-dmr name="Counter Test"
-                metricType="counter"
-                interval="30"
-                timeUnits="seconds"
-                path="/"
-                attribute="foobar" />
-    <metric-dmr name="Gauge Test"
-                metricType="gauge"
-                interval="30"
-                timeUnits="seconds"
-                path="/"
-                attribute="foobar" />
   </metric-set-dmr>
 
-  <avail-set-dmr name="Server Availability" enabled="false">
+  <avail-set-dmr name="Server Availability" enabled="true">
     <avail-dmr name="App Server"
                interval="30"
                timeUnits="seconds"
@@ -63,18 +68,16 @@
                upRegex="run.*" />
   </avail-set-dmr>
 
-  <resource-type-set-dmr name="Main" enabled="false">
+  <resource-type-set-dmr name="Main" enabled="true">
     <resource-type-dmr name="WildFly Server"
                        resourceNameTemplate="WildFly Server"
                        path="/"
+                       parents="parents"
                        metricSets="WildFly Memory Metrics"
                        availSets="Server Availability">
       <resource-config-dmr name="Hostname"
                            path="/core-service=server-environment"
                            attribute="qualified-host-name" />
-      <resource-config-dmr name="Max Heap"
-                           path="/core-service=platform-mbean/type=memory"
-                           attribute="heap-memory-usage#max" />
       <operation-dmr name="Reload Server" operationName="reload" path="/some=other/path=here"/>
     </resource-type-dmr>
   </resource-type-set-dmr>
@@ -83,12 +86,13 @@
     <metric-jmx name="M Metric"
                 interval="30"
                 timeUnits="seconds"
+                metricType="counter"
                 metricUnits="bytes"
                 objectName="domain:foo=bar"
                 attribute="yAttribute" />
   </metric-set-jmx>
 
-  <avail-set-jmx name="A Avail Set" enabled="false">
+  <avail-set-jmx name="A Avail Set" enabled="true">
     <avail-jmx name="A Avail"
                interval="30"
                timeUnits="seconds"
@@ -97,7 +101,7 @@
                upRegex="run.*" />
   </avail-set-jmx>
 
-  <resource-type-set-jmx name="R Resource Type Set" enabled="false">
+  <resource-type-set-jmx name="R Resource Type Set" enabled="true">
     <resource-type-jmx name="R Resource Type"
                        resourceNameTemplate="R Resource Name"
                        objectName="domain:foo=bar"
@@ -112,36 +116,46 @@
 
   <managed-servers>
     <remote-dmr name="Local Host"
-                enabled="false"
+                enabled="true"
                 host="localhost"
                 port="9990"
+                username="jdoe"
+                password="password"
                 useSSL="false"
                 securityRealm="HawkularRealm"
+                setAvailOnShutdown="UP"
                 resourceTypeSets="Main" />
 
     <local-dmr name="Self"
+               enabled="true"
+               setAvailOnShutdown="UP"
                resourceTypeSets="Main" />
 
     <remote-jmx name="Remote JMX"
-                enabled="false"
+                enabled="true"
                 url="https://localhost:8080/jolokia"
+                username="jdoe"
+                password="password"
                 securityRealm="HawkularRealm"
+                setAvailOnShutdown="UP"
                 resourceTypeSets="R Resource Type Set" />
 
     <remote-prometheus name="Remote Prometheus"
-                       enabled="false"
+                       enabled="true"
                        url="http://localhost:9090/metrics"
+                       username="jdoe"
+                       password="password"
                        securityRealm="HawkularRealm"
                        labels="region=east,group=staging"
                        interval="30"
                        timeUnits="seconds" />
   </managed-servers>
 
-  <platform enabled="false">
-    <file-stores   enabled="false" interval="30" timeUnits="seconds" />
-    <memory        enabled="false" interval="60"  timeUnits="seconds" />
-    <processors    enabled="false" interval="1"  timeUnits="minutes" />
-    <power-sources enabled="false" interval="10" timeUnits="minutes" />
+  <platform enabled="true">
+    <file-stores   enabled="true" interval="30000" timeUnits="milliseconds" />
+    <memory        enabled="true" interval="60"  timeUnits="seconds" />
+    <processors    enabled="true" interval="1"  timeUnits="minutes" />
+    <power-sources enabled="true" interval="10" timeUnits="minutes" />
   </platform>
 
 </subsystem>
