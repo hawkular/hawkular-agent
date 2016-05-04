@@ -320,4 +320,20 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10069, value = "Cannot get tenant ID. Will retry in 60 seconds. Error=[%s]")
     void errorRetryTenantId(String errorMsg);
 
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10070, value = "No longer monitoring the endpoint [%s]")
+    void infoRemovedDynamicEndpointService(String id);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10071, value = "No longer monitoring the endpoint [%s]")
+    void infoRemovedEndpointService(String id);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10072, value = "Now monitoring the new endpoint [%s]")
+    void infoAddedDynamicEndpointService(String string);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10073, value = "Now monitoring the new endpoint [%s]")
+    void infoAddedEndpointService(String string);
+
 }

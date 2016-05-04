@@ -118,16 +118,6 @@ public class DynamicProtocolServices {
         this.services = Collections.unmodifiableList(Arrays.asList(prometheusProtocolService));
     }
 
-    public DynamicEndpointService getDynamicEndpointService(String endpointName) {
-        for (DynamicProtocolService service : services) {
-            DynamicEndpointService result = service.getDynamicEndpointServices().get(endpointName);
-            if (result != null) {
-                return (DynamicEndpointService) result;
-            }
-        }
-        return null;
-    }
-
     public void start() {
         for (DynamicProtocolService service : services) {
             service.start();

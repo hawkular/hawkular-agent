@@ -22,21 +22,25 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 
 /**
  * A collection of {@link DynamicEndpointService}s that all handle a single protocol.
  */
 public class DynamicProtocolService {
+    private static final MsgLogger log = AgentLoggers.getLogger(DynamicProtocolService.class);
 
     public static class Builder {
         private Map<String, DynamicEndpointService> endpointServices = new HashMap<>();
 
         public DynamicProtocolService build() {
-            return new DynamicProtocolService(Collections.unmodifiableMap(endpointServices));
+            return new DynamicProtocolService(Collections.synchronizedMap(endpointServices));
         }
 
         public Builder endpointService(DynamicEndpointService endpointService) {
@@ -51,13 +55,20 @@ public class DynamicProtocolService {
 
     private final Map<String, DynamicEndpointService> endpointServices;
     private ScheduledExecutorService threadPool;
+    private final Map<String, ScheduledFuture<?>> jobs;
 
     public DynamicProtocolService(Map<String, DynamicEndpointService> endpointServices) {
         this.endpointServices = endpointServices;
+        this.jobs = new HashMap<>();
     }
 
+    /**
+     * @return a shallow copy of all endpoint services
+     */
     public Map<String, DynamicEndpointService> getDynamicEndpointServices() {
-        return endpointServices;
+        synchronized (endpointServices) {
+            return new HashMap<>(endpointServices);
+        }
     }
 
     public void start() {
@@ -65,15 +76,8 @@ public class DynamicProtocolService {
                 "Hawkular WildFly Agent Dynamic Protocol Service Thread Pool");
         threadPool = Executors.newScheduledThreadPool(1, threadFactory);
 
-        for (DynamicEndpointService service : endpointServices.values()) {
-            service.start();
-
-            // schedule the service to do its work periodically
-            int interval = service.getMonitoredEndpoint().getEndpointConfiguration().getInterval();
-            TimeUnit timeUnits = service.getMonitoredEndpoint().getEndpointConfiguration().getTimeUnits();
-            long startDelay = new Random().nextInt(60); // spread out the initial start times of the jobs
-            long intervalSecs = timeUnits.convert(interval, timeUnits);
-            threadPool.scheduleWithFixedDelay(service, startDelay, intervalSecs, TimeUnit.SECONDS);
+        for (DynamicEndpointService service : getDynamicEndpointServices().values()) {
+            startServiceAndItsJob(service);
         }
     }
 
@@ -84,11 +88,59 @@ public class DynamicProtocolService {
             threadPool.awaitTermination(30, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // reset flag
+        } finally {
+            jobs.clear();
         }
 
         // now stop all the services
-        for (DynamicEndpointService service : endpointServices.values()) {
+        for (DynamicEndpointService service : getDynamicEndpointServices().values()) {
             service.stop();
+        }
+    }
+
+    private void startServiceAndItsJob(DynamicEndpointService service) {
+        service.start();
+
+        // schedule the service to do its work periodically
+        int interval = service.getMonitoredEndpoint().getEndpointConfiguration().getInterval();
+        TimeUnit timeUnits = service.getMonitoredEndpoint().getEndpointConfiguration().getTimeUnits();
+        long startDelay = new Random().nextInt(60); // spread out the initial start times of the jobs
+        long intervalSecs = TimeUnit.SECONDS.convert(interval, timeUnits);
+        ScheduledFuture<?> job = threadPool.scheduleWithFixedDelay(service, startDelay, intervalSecs,
+                TimeUnit.SECONDS);
+        jobs.put(service.getMonitoredEndpoint().getName(), job);
+    }
+
+    /**
+     * This will add a new endpoint service to the list. Once added, the new service
+     * will immediately be started.
+     *
+     * @param newEndpointService the new service to add and start
+     */
+    public void add(DynamicEndpointService newEndpointService) {
+        if (newEndpointService == null) {
+            throw new IllegalArgumentException("New endpoint service must not be null");
+        }
+
+        endpointServices.put(newEndpointService.getMonitoredEndpoint().getName(), newEndpointService);
+        startServiceAndItsJob(newEndpointService);
+        log.infoAddedDynamicEndpointService(newEndpointService.toString());
+    }
+
+    /**
+     * This will stop the given endpoint service and remove it from the list of endpoint services.
+     *
+     * @param name identifies the endpoint service to remove
+     */
+    public void remove(String name) {
+        DynamicEndpointService des = endpointServices.remove(name);
+        if (des != null) {
+            log.infoRemovedDynamicEndpointService(des.toString());
+        }
+
+        ScheduledFuture<?> doomedJob = jobs.get(name);
+        if (doomedJob != null) {
+            doomedJob.cancel(true);
         }
     }
 }

@@ -16,13 +16,52 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.jboss.as.controller.AbstractAddStepHandler;
+import org.hawkular.agent.monitor.dynamicprotocol.DynamicEndpointService;
+import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolService;
+import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolServices;
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.util.Util;
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.dmr.ModelNode;
 
-public class RemotePrometheusAdd extends AbstractAddStepHandler {
+public class RemotePrometheusAdd extends MonitorServiceAddStepHandler {
+    private static final MsgLogger log = AgentLoggers.getLogger(RemotePrometheusAdd.class);
 
     public static final RemotePrometheusAdd INSTANCE = new RemotePrometheusAdd();
 
     private RemotePrometheusAdd() {
         super(RemotePrometheusAttributes.ATTRIBUTES);
+    }
+
+    @Override
+    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
+            throws OperationFailedException {
+
+        if (context.isBooting()) {
+            return;
+        }
+
+        MonitorService monitorService = getMonitorService(context);
+        if (monitorService == null) {
+            return; // the agent wasn't enabled, nothing to do
+        }
+
+        MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
+
+        // create a new endpoint service
+        DynamicProtocolServices newServices = monitorService.createDynamicProtocolServicesBuilder()
+                .prometheusDynamicProtocolService(config.getPrometheusConfiguration(),
+                        monitorService.getHawkularMonitorContext())
+                .build();
+        DynamicEndpointService endpointService = newServices.getPrometheusProtocolService()
+                .getDynamicEndpointServices().get(context.getCurrentAddressValue());
+
+        // put the new endpoint service in the original protocol services container
+        DynamicProtocolService promService = monitorService.getDynamicProtocolServices()
+                .getPrometheusProtocolService();
+        promService.add(endpointService);
     }
 }

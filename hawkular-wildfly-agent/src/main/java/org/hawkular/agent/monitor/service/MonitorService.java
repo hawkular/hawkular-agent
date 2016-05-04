@@ -84,14 +84,23 @@ import org.jboss.as.domain.management.SecurityRealm;
 import org.jboss.as.domain.management.security.SSLContextService;
 import org.jboss.as.host.controller.DomainModelControllerService;
 import org.jboss.as.host.controller.HostControllerEnvironment;
+import org.jboss.as.naming.ImmediateManagedReferenceFactory;
+import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.ServiceBasedNamingStore;
+import org.jboss.as.naming.deployment.ContextNames;
+import org.jboss.as.naming.service.BinderService;
 import org.jboss.as.network.OutboundSocketBinding;
 import org.jboss.as.network.SocketBinding;
 import org.jboss.as.server.ServerEnvironment;
 import org.jboss.as.server.ServerEnvironmentService;
 import org.jboss.as.server.Services;
 import org.jboss.logging.Logger;
+import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -322,9 +331,11 @@ public class MonitorService implements Service<MonitorService> {
     private final AvailStorageProxy availStorageProxy = new AvailStorageProxy();
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
 
+    // contains endpoint services for all the different protocols that are supported (dmr, jmx, prometheus, platform)
     private ProtocolServices protocolServices;
     private DynamicProtocolServices dynamicProtocolServices;
 
+    // used to talk to the management interface of the WildFly server the agent is deployed in
     private ModelControllerClientFactory localModelControllerClientFactory;
 
     public MonitorService(MonitorServiceConfiguration bootConfiguration, ProcessType processType) {
@@ -349,10 +360,11 @@ public class MonitorService implements Service<MonitorService> {
      * When this service is being built, this method is called to allow this service
      * to add whatever dependencies it needs.
      *
+     * @param target the service target
      * @param bldr the service builder used to add dependencies
      */
-    public void addDependencies(ServiceBuilder<MonitorService> bldr) {
-        if (this.processType.isManagedDomain()) {
+    public void addDependencies(ServiceTarget target, ServiceBuilder<MonitorService> bldr) {
+        if (processType.isManagedDomain()) {
             // we are in the host controller
             // NOTE: host controller does not yet have an equivalent for ServerEnvironment, we workaround this later
             bldr.addDependency(DomainModelControllerService.SERVICE_NAME, ModelController.class, modelControllerValue);
@@ -373,7 +385,7 @@ public class MonitorService implements Service<MonitorService> {
                 // The outbound binding isn't given, so we'll assume we are co-located with the server.
                 // In this case, we need our own http/https binding so we know what our local server is bound to.
                 // Note that this is an invalid configuration if we are in host controller, so error out in that case
-                if (this.processType.isManagedDomain()) {
+                if (processType.isManagedDomain()) {
                     throw new IllegalStateException("Do not know where the external Hawkular server is. Aborting.");
                 }
                 bldr.addDependency(SocketBinding.JBOSS_BINDING_NAME.append("http"), SocketBinding.class,
@@ -383,7 +395,7 @@ public class MonitorService implements Service<MonitorService> {
             } else {
                 // TODO: broken when deployed in host controller. see https://issues.jboss.org/browse/WFCORE-1505
                 // When that is fixed, remove this if-statement entirely.
-                if (this.processType.isManagedDomain()) {
+                if (processType.isManagedDomain()) {
                     throw new IllegalStateException("When deployed in host controller, you must use the URL attribute"
                             + " and not the outbound socket binding. "
                             + "See bug https://issues.jboss.org/browse/WFCORE-1505 for more.");
@@ -397,7 +409,7 @@ public class MonitorService implements Service<MonitorService> {
         // get the security realm ssl context for the storage adapter
         if (storageAdapterConfig.getSecurityRealm() != null) {
             InjectedValue<SSLContext> iv = new InjectedValue<>();
-            this.trustOnlySSLContextValues.put(storageAdapterConfig.getSecurityRealm(), iv);
+            trustOnlySSLContextValues.put(storageAdapterConfig.getSecurityRealm(), iv);
 
             // if we ever need our own private key, we can add another dependency with trustStoreOnly=false
             boolean trustStoreOnly = true;
@@ -409,19 +421,19 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         // get the security realms for any configured remote DMR and JMX and Prometheus servers that require ssl
-        for (EndpointConfiguration endpoint : this.bootConfiguration.getDmrConfiguration().getEndpoints().values()) {
+        for (EndpointConfiguration endpoint : bootConfiguration.getDmrConfiguration().getEndpoints().values()) {
             String securityRealm = endpoint.getSecurityRealm();
             if (securityRealm != null) {
                 addSslContext(securityRealm, bldr);
             }
         }
-        for (EndpointConfiguration endpoint : this.bootConfiguration.getJmxConfiguration().getEndpoints().values()) {
+        for (EndpointConfiguration endpoint : bootConfiguration.getJmxConfiguration().getEndpoints().values()) {
             String securityRealm = endpoint.getSecurityRealm();
             if (securityRealm != null) {
                 addSslContext(securityRealm, bldr);
             }
         }
-        for (DynamicEndpointConfiguration endpoint : this.bootConfiguration.getPrometheusConfiguration().getEndpoints()
+        for (DynamicEndpointConfiguration endpoint : bootConfiguration.getPrometheusConfiguration().getEndpoints()
                 .values()) {
             String securityRealm = endpoint.getSecurityRealm();
             if (securityRealm != null) {
@@ -429,6 +441,63 @@ public class MonitorService implements Service<MonitorService> {
             }
         }
 
+        // bind the API to JNDI so other apps can use it, and prepare to build the binder service
+        // Note that if we are running in host controller or similiar, JNDI binding is not available.
+        String jndiName = bootConfiguration.getApiJndi();
+        boolean bindJndi = (jndiName == null || jndiName.isEmpty() || processType.isManagedDomain()) ? false : true;
+        if (bindJndi) {
+            class JndiBindListener extends AbstractServiceListener<Object> {
+                private final String jndiName;
+                private final String jndiObjectClassName;
+
+                public JndiBindListener(String jndiName, String jndiObjectClassName) {
+                    this.jndiName = jndiName;
+                    this.jndiObjectClassName = jndiObjectClassName;
+                }
+
+                public void transition(final ServiceController<? extends Object> controller,
+                        final ServiceController.Transition transition) {
+                    switch (transition) {
+                        case STARTING_to_UP: {
+                            log.infoBindJndiResource(jndiName, jndiObjectClassName);
+                            break;
+                        }
+                        case START_REQUESTED_to_DOWN: {
+                            log.infoUnbindJndiResource(jndiName);
+                            break;
+                        }
+                        case REMOVING_to_REMOVED: {
+                            log.infoUnbindJndiResource(jndiName);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
+            }
+            Object jndiObject = getHawkularMonitorContext();
+            ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(jndiName);
+            BinderService binderService = new BinderService(bindInfo.getBindName());
+            ManagedReferenceFactory valueMRF = new ImmediateManagedReferenceFactory(jndiObject);
+            String jndiObjectClassName = HawkularWildFlyAgentContext.class.getName();
+            ServiceName binderServiceName = bindInfo.getBinderServiceName();
+            ServiceBuilder<?> binderBuilder = target
+                    .addService(binderServiceName, binderService)
+                    .addInjection(binderService.getManagedObjectInjector(), valueMRF)
+                    .setInitialMode(ServiceController.Mode.ACTIVE)
+                    .addDependency(bindInfo.getParentContextServiceName(),
+                            ServiceBasedNamingStore.class,
+                            binderService.getNamingStoreInjector())
+                    .addListener(new JndiBindListener(jndiName, jndiObjectClassName));
+
+            // our monitor service will depend on the binder service
+            bldr.addDependency(binderServiceName);
+
+            // install the binder service
+            binderBuilder.install();
+        }
+
+        return; // deps added
     }
 
     private void addSslContext(String securityRealm, ServiceBuilder<MonitorService> bldr) {
@@ -526,7 +595,7 @@ public class MonitorService implements Service<MonitorService> {
             if (this.configuration.getStorageAdapter().getFeedId() != null) {
                 this.feedId = this.configuration.getStorageAdapter().getFeedId();
             } else {
-                try (ModelControllerClient c = localModelControllerClientFactory.createClient()) {
+                try (ModelControllerClient c = this.localModelControllerClientFactory.createClient()) {
                     this.feedId = DMREndpointService.lookupServerIdentifier(c);
                 } catch (Exception e) {
                     throw new Exception("Could not obtain local feed ID", e);
@@ -537,38 +606,44 @@ public class MonitorService implements Service<MonitorService> {
             final MetricRegistry metricRegistry = new MetricRegistry();
             this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
 
-            // if we are participating in a full Hawkular environment, we need to do some additional things:
-            // 1. determine our tenant ID dynamically
-            // 2. register our feed ID
-            // 3. connect to the server's feed comm channel
-            // 4. prepare the thread pool that will store discovered resources into inventory
-            if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
-                if (this.configuration.getStorageAdapter().getTenantId() == null) {
-                    log.errorNoTenantIdFromAccounts();
-                    throw new Exception("Failed to get tenant ID");
-                }
-                try {
-                    registerFeed();
-                } catch (Exception e) {
-                    log.errorCannotDoAnythingWithoutFeed(e);
-                    throw new Exception("Agent needs a feed to run");
-                }
-
-                // try to connect to the server via command-gateway channel; keep going on error
-                try {
-                    connectToCommandGatewayCommChannel();
-                } catch (Exception e) {
-                    if (e instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
+            // perform some things that are dependent upon what mode the agent is in
+            switch (this.configuration.getStorageAdapter().getType()) {
+                case HAWKULAR:
+                    // if we are participating in a full Hawkular environment, we need to do some additional things:
+                    // 1. determine our tenant ID dynamically
+                    // 2. register our feed ID
+                    // 3. connect to the server's feed comm channel
+                    if (this.configuration.getStorageAdapter().getTenantId() == null) {
+                        log.errorNoTenantIdFromAccounts();
+                        throw new Exception("Failed to get tenant ID");
                     }
-                    log.errorCannotEstablishFeedComm(e);
-                }
+                    try {
+                        registerFeed();
+                    } catch (Exception e) {
+                        log.errorCannotDoAnythingWithoutFeed(e);
+                        throw new Exception("Agent needs a feed to run");
+                    }
 
-            } else {
-                if (this.configuration.getStorageAdapter().getTenantId() == null) {
-                    log.errorMustHaveTenantIdConfigured();
-                    throw new Exception("Agent needs a tenant ID to run");
-                }
+                    // try to connect to the server via command-gateway channel; keep going on error
+                    try {
+                        connectToCommandGatewayCommChannel();
+                    } catch (Exception e) {
+                        if (e instanceof InterruptedException) {
+                            Thread.currentThread().interrupt();
+                        }
+                        log.errorCannotEstablishFeedComm(e);
+                    }
+                    break;
+
+                case METRICS:
+                    if (this.configuration.getStorageAdapter().getTenantId() == null) {
+                        log.errorMustHaveTenantIdConfigured();
+                        throw new Exception("Agent needs a tenant ID to run");
+                    }
+                    break;
+                default:
+                    throw new IllegalStateException(
+                            "Unknown storage adapter type: " + this.configuration.getStorageAdapter().getType());
             }
 
             // start the storage adapter
@@ -586,8 +661,8 @@ public class MonitorService implements Service<MonitorService> {
                 throw new Exception("Agent cannot initialize scheduler");
             }
 
-            ProtocolServices ps = ProtocolServices.builder(feedId, diagnostics, trustOnlySSLContextValues)
-                    .dmrProtocolService(localModelControllerClientFactory, configuration.getDmrConfiguration())
+            ProtocolServices ps = createProtocolServicesBuilder()
+                    .dmrProtocolService(this.localModelControllerClientFactory, configuration.getDmrConfiguration())
                     .jmxProtocolService(configuration.getJmxConfiguration())
                     .platformProtocolService(configuration.getPlatformConfiguration())
                     .autoDiscoveryScanPeriodSecs(configuration.getAutoDiscoveryScanPeriodSecs())
@@ -597,7 +672,7 @@ public class MonitorService implements Service<MonitorService> {
             protocolServices = ps;
             protocolServices.start();
 
-            DynamicProtocolServices dps = DynamicProtocolServices.builder(feedId, trustOnlySSLContextValues)
+            DynamicProtocolServices dps = createDynamicProtocolServicesBuilder()
                     .prometheusDynamicProtocolService(configuration.getPrometheusConfiguration(),
                             getHawkularMonitorContext())
                     .build();
@@ -837,8 +912,6 @@ public class MonitorService implements Service<MonitorService> {
 
     /**
      * Builds the scheduler's configuraton and starts the scheduler.
-     * Do NOT call this until you know all resources have been discovered
-     * and the inventories have been built.
      *
      * @throws Exception on error
      */
@@ -940,7 +1013,43 @@ public class MonitorService implements Service<MonitorService> {
         feedComm.connect();
     }
 
+    public SchedulerService getSchedulerService() {
+        return schedulerService;
+    }
+
+    /**
+     * @return a factory that can create clients which can talk to the local management interface
+     *         of the app server we are running in
+     */
+    public ModelControllerClientFactory getLocalModelControllerClientFactory() {
+        return localModelControllerClientFactory;
+    }
+
+    /**
+     * @return builder that let's you create protocol services and their endpoints
+     */
+    public ProtocolServices.Builder createProtocolServicesBuilder() {
+        return ProtocolServices.builder(feedId, diagnostics, trustOnlySSLContextValues);
+    }
+
+    /**
+     * @return builder that let's you create dynamic protocol services and their endpoints
+     */
+    public DynamicProtocolServices.Builder createDynamicProtocolServicesBuilder() {
+        return DynamicProtocolServices.builder(feedId, trustOnlySSLContextValues);
+    }
+
+    /**
+     * @return the current set of protocol services
+     */
     public ProtocolServices getProtocolServices() {
         return protocolServices;
+    }
+
+    /**
+     * @return the current set of dynamic protocol services
+     */
+    public DynamicProtocolServices getDynamicProtocolServices() {
+        return dynamicProtocolServices;
     }
 }

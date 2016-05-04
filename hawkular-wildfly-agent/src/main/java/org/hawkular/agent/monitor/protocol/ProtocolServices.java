@@ -88,7 +88,7 @@ public class ProtocolServices {
         }
 
         public Builder dmrProtocolService(
-                ModelControllerClientFactory localModelControllerClientFactory,
+                ModelControllerClientFactory localModelControllerClientFactory, // may be null; only needed for local
                 ProtocolConfiguration<DMRNodeLocation> protocolConfig) {
 
             ProtocolService.Builder<DMRNodeLocation, DMRSession> builder = ProtocolService.builder();
@@ -163,8 +163,7 @@ public class ProtocolServices {
             return this;
         }
 
-        public Builder platformProtocolService(
-                ProtocolConfiguration<PlatformNodeLocation> protocolConfig) {
+        public Builder platformProtocolService(ProtocolConfiguration<PlatformNodeLocation> protocolConfig) {
 
             ProtocolService.Builder<PlatformNodeLocation, PlatformSession> builder = ProtocolService
                     .builder();
@@ -225,17 +224,6 @@ public class ProtocolServices {
         this.services = Collections.unmodifiableList(Arrays.asList(dmrProtocolService, jmxProtocolService,
                 platformProtocolService));
         this.autoDiscoveryScanPeriodSecs = autoDiscoveryScanPeriodSecs;
-    }
-
-    @SuppressWarnings("unchecked")
-    public <L, S extends Session<L>> EndpointService<L, S> getEndpointService(String endpointName) {
-        for (ProtocolService<?, ?> service : services) {
-            EndpointService<?, ?> result = service.getEndpointServices().get(endpointName);
-            if (result != null) {
-                return (EndpointService<L, S>) result;
-            }
-        }
-        return null;
     }
 
     public void start() {

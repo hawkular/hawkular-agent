@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +16,52 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.jboss.as.controller.AbstractAddStepHandler;
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.agent.monitor.protocol.ProtocolService;
+import org.hawkular.agent.monitor.protocol.ProtocolServices;
+import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
+import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
+import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.util.Util;
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.dmr.ModelNode;
 
-public class RemoteJMXAdd extends AbstractAddStepHandler {
+public class RemoteJMXAdd extends MonitorServiceAddStepHandler {
+    private static final MsgLogger log = AgentLoggers.getLogger(RemoteJMXAdd.class);
 
     public static final RemoteJMXAdd INSTANCE = new RemoteJMXAdd();
 
     private RemoteJMXAdd() {
         super(RemoteJMXAttributes.ATTRIBUTES);
+    }
+
+    @Override
+    protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
+            throws OperationFailedException {
+
+        if (context.isBooting()) {
+            return;
+        }
+
+        MonitorService monitorService = getMonitorService(context);
+        if (monitorService == null) {
+            return; // the agent wasn't enabled, nothing to do
+        }
+
+        MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
+
+        // create a new endpoint service
+        ProtocolServices newServices = monitorService.createProtocolServicesBuilder()
+                .jmxProtocolService(config.getJmxConfiguration()).build();
+        EndpointService<JMXNodeLocation, JMXSession> endpointService = newServices.getJmxProtocolService()
+                .getEndpointServices().get(context.getCurrentAddressValue());
+
+        // put the new endpoint service in the original protocol services container
+        ProtocolService<JMXNodeLocation, JMXSession> jmxService = monitorService.getProtocolServices()
+                .getJmxProtocolService();
+        jmxService.add(endpointService);
     }
 }

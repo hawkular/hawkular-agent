@@ -32,7 +32,7 @@ public interface LocalDMRAttributes {
             .setAllowNull(true)
             .setDefaultValue(new ModelNode(true))
             .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+            .addFlag(AttributeAccess.Flag.RESTART_NONE)
             .build();
 
     SimpleAttributeDefinition SET_AVAIL_ON_SHUTDOWN = new SimpleAttributeDefinitionBuilder("setAvailOnShutdown",

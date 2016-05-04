@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,10 +20,23 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.agent.monitor.protocol.ProtocolService;
+import org.hawkular.agent.monitor.protocol.ProtocolServices;
+import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
+import org.hawkular.agent.monitor.protocol.platform.PlatformSession;
+import org.hawkular.agent.monitor.scheduler.SchedulerService;
+import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.util.Util;
+import org.jboss.as.controller.AbstractWriteAttributeHandler;
 import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
+import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
+import org.jboss.dmr.ModelNode;
 
 public class PlatformDefinition extends PersistentResourceDefinition {
 
@@ -36,8 +49,8 @@ public class PlatformDefinition extends PersistentResourceDefinition {
                 SubsystemExtension.getResourceDescriptionResolver(PLATFORM),
                 PlatformAdd.INSTANCE,
                 PlatformRemove.INSTANCE,
-                Flag.RESTART_RESOURCE_SERVICES,
-                Flag.RESTART_RESOURCE_SERVICES);
+                Flag.RESTART_NONE,
+                Flag.RESTART_NONE);
     }
 
     @Override
@@ -50,4 +63,74 @@ public class PlatformDefinition extends PersistentResourceDefinition {
         return Arrays.asList(FileStoresDefinition.INSTANCE, MemoryDefinition.INSTANCE, ProcessorsDefinition.INSTANCE,
                 PowerSourcesDefinition.INSTANCE);
     }
+
+    @Override
+    public void registerAttributes(ManagementResourceRegistration resourceRegistration) {
+        Util.registerOnlyRestartAttributes(resourceRegistration, getAttributes());
+
+        resourceRegistration.registerReadWriteAttribute(PlatformAttributes.ENABLED, null,
+                new MonitorServiceWriteAttributeHandler<Void>() {
+                    @Override
+                    protected boolean applyUpdateToRuntime(
+                            OperationContext context,
+                            ModelNode operation,
+                            String attributeName,
+                            ModelNode newValue,
+                            ModelNode currentValue,
+                            AbstractWriteAttributeHandler.HandbackHolder<Void> handbackHolder)
+                                    throws OperationFailedException {
+
+                        if (context.isBooting()) {
+                            return false;
+                        }
+
+                        boolean currBool = PlatformAttributes.ENABLED.resolveValue(context, currentValue).asBoolean();
+                        boolean newBool = PlatformAttributes.ENABLED.resolveValue(context, newValue).asBoolean();
+                        if (currBool == newBool) {
+                            return false; // don't know if this would ever happen, but if it does, nothing changed
+                        }
+
+                        MonitorService monitorService = getMonitorService(context);
+                        ProtocolService<PlatformNodeLocation, PlatformSession> platformService = monitorService
+                                .getProtocolServices().getPlatformProtocolService();
+                        String thisEndpointName = context.getCurrentAddressValue();
+
+                        if (newBool) {
+                            // add the endpoint so it begins to be monitored
+
+                            // first get our subsystem config
+                            MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
+
+                            // create a new endpoint service
+                            ProtocolServices newServices = monitorService.createProtocolServicesBuilder()
+                                    .platformProtocolService(config.getPlatformConfiguration())
+                                    .build();
+                            EndpointService<PlatformNodeLocation, PlatformSession> endpointService = newServices
+                                    .getPlatformProtocolService().getEndpointServices().get(thisEndpointName);
+
+                            // put the new endpoint service in the original protocol services container
+                            platformService.add(endpointService);
+                        } else {
+                            // remove the endpoint so it is no longer monitored
+                            SchedulerService schedulerService = monitorService.getSchedulerService();
+                            platformService.remove(thisEndpointName, schedulerService);
+                        }
+
+                        return false;
+                    }
+
+                    @Override
+                    protected void revertUpdateToRuntime(
+                            OperationContext context,
+                            ModelNode operation,
+                            String attributeName,
+                            ModelNode originalValue,
+                            ModelNode newBadValue,
+                            Void handback)
+                                    throws OperationFailedException {
+                        // nothing to revert?
+                    }
+                });
+    }
+
 }

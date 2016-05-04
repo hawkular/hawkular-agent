@@ -152,7 +152,7 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
      * @param endpointService defines where the resources are
      * @param resources the resources whose metric collections/avail checks are to be added to the scheduler
      */
-    public void schedule(SamplingService<L> endpointService, List<Resource<L>> resources) {
+    public void schedule(SamplingService<L> endpointService, Collection<Resource<L>> resources) {
         status.assertRunning(getClass(), "schedule()");
 
         List<ScheduledMeasurementInstance<L, T>> schedules = new ArrayList<>();
@@ -172,7 +172,7 @@ public abstract class MeasurementScheduler<L, T extends MeasurementType<L>, D ex
      * @param endpointService defines where the resources are
      * @param resources the resources whose metric collections/avail checks are to be removed from the scheduler
      */
-    public void unschedule(SamplingService<L> endpointService, List<Resource<L>> resources) {
+    public void unschedule(SamplingService<L> endpointService, Collection<Resource<L>> resources) {
         status.assertRunning(getClass(), "unschedule()");
 
         ScheduledCollectionsQueue<L, T> queue = getScheduledCollectionsQueue(endpointService);
