@@ -124,7 +124,8 @@ public class MonitorServiceConfigurationBuilder {
         TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context);
         platformConfigBuilder.typeSets(platformTypeSets);
         if (!platformTypeSets.isDisabledOrEmpty()) {
-            EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null, Avail.DOWN);
+            EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null, Avail.DOWN,
+                    null);
             platformConfigBuilder.endpoint(endpoint);
         }
 
@@ -1085,6 +1086,7 @@ public class MonitorServiceConfigurationBuilder {
                     String securityRealm = getString(remoteDMRValueNode, context, RemoteDMRAttributes.SECURITY_REALM);
                     List<Name> resourceTypeSets = getNameListFromString(remoteDMRValueNode, context,
                             RemoteDMRAttributes.RESOURCE_TYPE_SETS);
+                    String tenantId = getString(remoteDMRValueNode, context, RemoteDMRAttributes.TENANT_ID);
 
                     if (useSsl && securityRealm == null) {
                         throw new OperationFailedException("If using SSL, you must define a security realm: " + name);
@@ -1093,7 +1095,7 @@ public class MonitorServiceConfigurationBuilder {
                     String protocol = useSsl ? "https-remoting" : "http-remoting";
                     ConnectionData connectionData = new ConnectionData(protocol, host, port, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
-                            connectionData, securityRealm, setAvailOnShutdown);
+                            connectionData, securityRealm, setAvailOnShutdown, tenantId);
 
                     dmrConfigBuilder.endpoint(endpoint);
                 }
@@ -1116,9 +1118,10 @@ public class MonitorServiceConfigurationBuilder {
                         : Avail.valueOf(setAvailOnShutdownStr);
                 List<Name> resourceTypeSets = getNameListFromString(localDMRValueNode, context,
                         LocalDMRAttributes.RESOURCE_TYPE_SETS);
+                String tenantId = getString(localDMRValueNode, context, LocalDMRAttributes.TENANT_ID);
 
                 EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets, null, null,
-                        setAvailOnShutdown);
+                        setAvailOnShutdown, tenantId);
                 dmrConfigBuilder.endpoint(endpoint);
             }
 
@@ -1141,6 +1144,7 @@ public class MonitorServiceConfigurationBuilder {
                     String securityRealm = getString(remoteJMXValueNode, context, RemoteJMXAttributes.SECURITY_REALM);
                     List<Name> resourceTypeSets = getNameListFromString(remoteJMXValueNode, context,
                             RemoteJMXAttributes.RESOURCE_TYPE_SETS);
+                    String tenantId = getString(remoteJMXValueNode, context, RemoteJMXAttributes.TENANT_ID);
 
                     // make sure the URL is at least syntactically valid
                     URI url;
@@ -1156,7 +1160,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
-                            connectionData, securityRealm, setAvailOnShutdown);
+                            connectionData, securityRealm, setAvailOnShutdown, tenantId);
 
                     jmxConfigBuilder.endpoint(endpoint);
                 }
@@ -1185,6 +1189,7 @@ public class MonitorServiceConfigurationBuilder {
                     String timeUnitsStr = getString(remotePromValueNode, context,
                             RemotePrometheusAttributes.TIME_UNITS);
                     TimeUnit timeUnits = TimeUnit.valueOf(timeUnitsStr.toUpperCase());
+                    String tenandId = getString(remotePromValueNode, context, RemotePrometheusAttributes.TENANT_ID);
 
                     // make sure the URL is at least syntactically valid
                     URI url;
@@ -1200,7 +1205,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     DynamicEndpointConfiguration endpoint = new DynamicEndpointConfiguration(name, enabled, labels,
-                            metricSets, connectionData, securityRealm, interval, timeUnits);
+                            metricSets, connectionData, securityRealm, interval, timeUnits, tenandId);
 
                     prometheusConfigBuilder.endpoint(endpoint);
                 }
