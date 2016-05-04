@@ -124,12 +124,14 @@
                 useSSL="false"
                 securityRealm="HawkularRealm"
                 setAvailOnShutdown="UP"
-                resourceTypeSets="Main" />
+                resourceTypeSets="Main"
+                tenantId="" />
 
     <local-dmr name="Self"
                enabled="true"
                setAvailOnShutdown="UP"
-               resourceTypeSets="Main" />
+               resourceTypeSets="Main"
+               tenantId="tenantOverride" />
 
     <remote-jmx name="Remote JMX"
                 enabled="true"
@@ -138,7 +140,8 @@
                 password="password"
                 securityRealm="HawkularRealm"
                 setAvailOnShutdown="UP"
-                resourceTypeSets="R Resource Type Set" />
+                resourceTypeSets="R Resource Type Set"
+                tenantId="tenantOverride" />
 
     <remote-prometheus name="Remote Prometheus"
                        enabled="true"
@@ -148,7 +151,9 @@
                        securityRealm="HawkularRealm"
                        labels="region=east,group=staging"
                        interval="30"
-                       timeUnits="seconds" />
+                       timeUnits="seconds"
+                       tenantId="tenantOverride" />
+
   </managed-servers>
 
   <platform enabled="true">
