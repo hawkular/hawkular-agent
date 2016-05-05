@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.protocol.jmx;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
@@ -31,7 +32,8 @@ public class JMXEndpointService
         extends EndpointService<JMXNodeLocation, JMXSession> {
 
     private final JmxClientFactory clientFactory;
-    public JMXEndpointService(String feedId, MonitoredEndpoint endpoint,
+
+    public JMXEndpointService(String feedId, MonitoredEndpoint<EndpointConfiguration> endpoint,
             ResourceTypeManager<JMXNodeLocation> resourceTypeManager, ProtocolDiagnostics diagnostics) {
         super(feedId, endpoint, resourceTypeManager, new JMXLocationResolver(), diagnostics);
         this.clientFactory = new JmxClientFactory(endpoint);

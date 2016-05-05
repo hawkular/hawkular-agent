@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,25 +16,14 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.security.KeyStore;
-import java.security.SecureRandom;
 import java.util.Map;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManagerFactory;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
-import org.hawkular.agent.monitor.log.AgentLoggers;
-import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.agent.monitor.util.BaseHttpClientGenerator;
 
 import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Request.Builder;
 import com.squareup.okhttp.RequestBody;
@@ -42,23 +31,11 @@ import com.squareup.okhttp.ws.WebSocketCall;
 
 /**
  * Builds an HTTP client that can be used to talk to the Hawkular server-side.
- * This builder can also be used to cache a HTTP client - it will cache the last built client.
- * This builder also has methods that you can use to build requests.
+ * This builder has methods that you can use to build requests.
  */
-public class HttpClientBuilder {
-    private static final MsgLogger log = AgentLoggers.getLogger(HttpClientBuilder.class);
-    private final String password;
-    private final String username;
-    private final boolean useSSL;
-    private final String keystorePath;
-    private final String keystorePassword;
-    private final SSLContext sslContext;
-
-    /** The configured client singleton */
-    private final OkHttpClient httpClient;
-
+public class HttpClientBuilder extends BaseHttpClientGenerator {
     /**
-     * Creates the object that can be used to build HTTP clients.
+     * Creates the object that can be used to create a fully configured HTTP client.
      * Note that if sslContext is null, this object will use the configured keystorePath
      * and keystorePassword to build one itself. If sslContext is provided (not-null)
      * then the configuration's keystorePath and keystorePassword are ignored.
@@ -73,44 +50,19 @@ public class HttpClientBuilder {
      *                   be the SSL context to use.
      */
     public HttpClientBuilder(StorageAdapterConfiguration storageAdapter, SSLContext sslContext) {
-        if (storageAdapter.getSecurityKey() != null) {
-            // rather than use an actual username and password, we will use the offline token identified by key/secret
-            this.username = storageAdapter.getSecurityKey();
-            this.password = storageAdapter.getSecuritySecret();
-        } else {
-            this.username = storageAdapter.getUsername();
-            this.password = storageAdapter.getPassword();
-        }
-        this.useSSL = storageAdapter.isUseSSL();
-        this.keystorePath = storageAdapter.getKeystorePath();
-        this.keystorePassword = storageAdapter.getKeystorePassword();
-        OkHttpClient httpClient = new OkHttpClient();
-        if (this.useSSL) {
-            this.sslContext = (sslContext == null) ? buildSSLContext() : sslContext;
-            httpClient.setSslSocketFactory(this.sslContext.getSocketFactory());
-
-            // does not perform any hostname verification when looking at the remote end's cert
-            httpClient.setHostnameVerifier(new NullHostNameVerifier());
-        } else {
-            this.sslContext = null;
-        }
-
-        this.httpClient = httpClient;
-
-    }
-
-    /**
-     * Returns the last built HTTP client. This will build one if one has yet to be built.
-     *
-     * @return an HTTP client
-     * @throws Exception
-     */
-    public OkHttpClient getHttpClient() throws Exception {
-        return httpClient;
+        super(new BaseHttpClientGenerator.Configuration.Builder()
+                .username(storageAdapter.getSecurityKey() != null
+                        ? storageAdapter.getSecurityKey() : storageAdapter.getUsername())
+                .password(storageAdapter.getSecurityKey() != null
+                        ? storageAdapter.getSecuritySecret() : storageAdapter.getPassword())
+                .useSsl(storageAdapter.isUseSSL())
+                .keystorePath(storageAdapter.getKeystorePath())
+                .keystorePassword(storageAdapter.getKeystorePassword())
+                .build());
     }
 
     public Request buildJsonGetRequest(String url, Map<String, String> headers) {
-        String base64Credentials = Util.base64Encode(username + ":" + password);
+        String base64Credentials = buildBase64Credentials();
 
         Builder requestBuilder = new Request.Builder()
                 .url(url)
@@ -127,7 +79,7 @@ public class HttpClientBuilder {
     }
 
     public Request buildJsonDeleteRequest(String url, Map<String, String> headers) {
-        String base64Credentials = Util.base64Encode(username + ":" + password);
+        String base64Credentials = buildBase64Credentials();
 
         Builder requestBuilder = new Request.Builder()
                 .url(url)
@@ -145,7 +97,7 @@ public class HttpClientBuilder {
 
     public Request buildJsonPostRequest(String url, Map<String, String> headers, String jsonPayload) {
         // make sure we are authenticated. see http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-        String base64Credentials = Util.base64Encode(username + ":" + password);
+        String base64Credentials = buildBase64Credentials();
 
         Builder requestBuilder = new Request.Builder()
                 .url(url)
@@ -164,8 +116,7 @@ public class HttpClientBuilder {
     }
 
     public Request buildJsonPutRequest(String url, Map<String, String> headers, String jsonPayload) {
-        // make sure we are authenticated. see http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side
-        String base64Credentials = Util.base64Encode(username + ":" + password);
+        String base64Credentials = buildBase64Credentials();
 
         Builder requestBuilder = new Request.Builder()
                 .url(url)
@@ -184,7 +135,7 @@ public class HttpClientBuilder {
     }
 
     public WebSocketCall createWebSocketCall(String url, Map<String, String> headers) {
-        String base64Credentials = Util.base64Encode(username + ":" + password);
+        String base64Credentials = buildBase64Credentials();
 
         Builder requestBuilder = new Request.Builder()
                 .url(url)
@@ -198,49 +149,7 @@ public class HttpClientBuilder {
         }
 
         Request request = requestBuilder.build();
-        WebSocketCall wsc = WebSocketCall.create(httpClient, request);
+        WebSocketCall wsc = WebSocketCall.create(getHttpClient(), request);
         return wsc;
-    }
-
-    private SSLContext buildSSLContext() {
-        try {
-            KeyStore keyStore = readKeyStore();
-            SSLContext sslContext = SSLContext.getInstance("SSL");
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
-                    TrustManagerFactory.getDefaultAlgorithm());
-            trustManagerFactory.init(keyStore);
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory
-                    .getDefaultAlgorithm());
-            keyManagerFactory.init(keyStore, this.keystorePassword.toCharArray());
-            sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(),
-                    new SecureRandom());
-            return sslContext;
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    String.format("Cannot create SSL context from keystore [%s]", this.keystorePath), e);
-        }
-    }
-
-    private KeyStore readKeyStore() throws Exception {
-        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-
-        // get user password and file input stream
-        char[] password = this.keystorePassword.toCharArray();
-        File file = new File(this.keystorePath);
-
-        log.infoUseKeystore(file.getAbsolutePath());
-
-        try (FileInputStream fis = new FileInputStream(file)) {
-            ks.load(fis, password);
-        }
-        return ks;
-    }
-
-    private class NullHostNameVerifier implements HostnameVerifier {
-        @Override
-        public boolean verify(String hostname, SSLSession session) {
-            log.debugf("HTTP client is blindly approving cert for [%s]", hostname);
-            return true;
-        }
     }
 }

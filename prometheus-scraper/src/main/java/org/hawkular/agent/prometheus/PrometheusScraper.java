@@ -42,6 +42,17 @@ public class PrometheusScraper {
     private final URL url;
     private final PrometheusDataFormat knownDataFormat;
 
+    // see openConnection() for where this is used
+    protected class OpenConnectionDetails {
+        public final InputStream inputStream;
+        public final String contentType;
+
+        public OpenConnectionDetails(InputStream is, String contentType) {
+            this.inputStream = is;
+            this.contentType = contentType;
+        }
+    }
+
     public PrometheusScraper(String host, int port, String context) throws MalformedURLException {
         if (host == null) {
             host = "127.0.0.1";
@@ -124,11 +135,13 @@ public class PrometheusScraper {
     }
 
     public void scrape(PrometheusMetricsWalker walker) throws IOException {
-        URLConnection conn = url.openConnection();
-        conn.setRequestProperty("Accept",
-                "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited");
-        try (InputStream inputStream = conn.getInputStream()) {
-            String contentType = conn.getContentType();
+        OpenConnectionDetails connectionDetails = openConnection(this.url);
+        if (connectionDetails == null || connectionDetails.inputStream == null) {
+            throw new IOException("Failed to open the connection to the Prometheus endpoint");
+        }
+
+        try (InputStream inputStream = connectionDetails.inputStream) {
+            String contentType = connectionDetails.contentType;
 
             // if we were given a content type - we use it always. If we were not given a content type,
             // then use the one given to the constructor (if one was given).
@@ -150,5 +163,51 @@ public class PrometheusScraper {
 
             processor.walk();
         }
+    }
+
+    /**
+     * This is the content type of the supported Prometheus binary format.
+     * This can be used in the Accept header when making the HTTP request to the Prometheus endpoint.
+     *
+     * @return binary format content type
+     */
+    protected String getBinaryFormatContentType() {
+        return "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited";
+    }
+
+    /**
+     * This is the content type of the supported Prometheus text format.
+     * This can be used in the Accept header when making the HTTP request to the Prometheus endpoint.
+     *
+     * @return text format content type
+     */
+    protected String getTextFormatContentType() {
+        return "text/plain; version 0.0.4";
+    }
+
+    /**
+     * This provides a hook for subclasses to be able to connect to the Prometheus endpoint
+     * and tell us what the content type is and to give us the actual stream to the data.
+     *
+     * This is useful in case callers need to connect securely to the Prometheus endpoint.
+     * Subclasses need to open the secure connection with their specific secure credentials
+     * and other security details and return the input stream to the data (as well as its content type).
+     *
+     * If subclasses return a null content type in the returned object the data format passed to this
+     * object's constructor will be assumed as the data format in the input stream.
+     *
+     * The default implementation is to simply open an unsecured connection to the URL.
+     *
+     * @param url the Prometheus endpoint
+     * @return connection details for the Prometheus endpoint
+     *
+     * @throws IOException if the connection could not be opened
+     */
+    protected OpenConnectionDetails openConnection(URL endpointUrl) throws IOException {
+        URLConnection conn = endpointUrl.openConnection();
+        conn.setRequestProperty("Accept", getBinaryFormatContentType());
+        InputStream stream = conn.getInputStream();
+        String contentType = conn.getContentType();
+        return new OpenConnectionDetails(stream, contentType);
     }
 }
