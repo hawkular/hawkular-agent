@@ -90,7 +90,8 @@ public class StorageReporter extends ScheduledReporter {
                         key,
                         System.currentTimeMillis(),
                         gauge.getValue(),
-                        MetricType.GAUGE));
+                        MetricType.GAUGE,
+                        null));
             }
             storageAdapter.storeMetrics(samples, 0);
         }
@@ -103,7 +104,8 @@ public class StorageReporter extends ScheduledReporter {
                         key,
                         System.currentTimeMillis(),
                         entry.getValue().getCount(),
-                        MetricType.COUNTER));
+                        MetricType.COUNTER,
+                        null));
             }
             storageAdapter.storeMetrics(samples, 0);
 
@@ -118,7 +120,8 @@ public class StorageReporter extends ScheduledReporter {
                         key,
                         System.currentTimeMillis(),
                         meter.getOneMinuteRate(),
-                        MetricType.GAUGE));
+                        MetricType.GAUGE,
+                        null));
             }
             storageAdapter.storeMetrics(samples, 0);
         }
@@ -132,7 +135,8 @@ public class StorageReporter extends ScheduledReporter {
                         key,
                         System.currentTimeMillis(),
                         timer.getSnapshot().get75thPercentile(),
-                        MetricType.GAUGE));
+                        MetricType.GAUGE,
+                        null));
             }
             storageAdapter.storeMetrics(samples, 0);
         }

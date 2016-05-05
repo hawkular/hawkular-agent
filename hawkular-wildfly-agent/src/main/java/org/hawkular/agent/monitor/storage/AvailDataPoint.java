@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,8 +24,8 @@ import org.hawkular.agent.monitor.api.Avail;
 public class AvailDataPoint extends DataPoint {
     private Avail value;
 
-    public AvailDataPoint(String key, long timestamp, Avail value) {
-        super(key, timestamp);
+    public AvailDataPoint(String key, long timestamp, Avail value, String tenantId) {
+        super(key, timestamp, tenantId);
         this.value = value;
     }
 

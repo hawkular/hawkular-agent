@@ -283,6 +283,7 @@
     <xs:attribute name="enabled"            type="xs:boolean"/>
     <xs:attribute name="resourceTypeSets"   type="xs:string"/>
     <xs:attribute name="setAvailOnShutdown" type="xs:string"/>
+    <xs:attribute name="tenantId"           type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remoteDmrType">
@@ -296,6 +297,7 @@
     <xs:attribute name="securityRealm"      type="xs:string"/>
     <xs:attribute name="setAvailOnShutdown" type="xs:string"/>
     <xs:attribute name="resourceTypeSets"   type="xs:string"/>
+    <xs:attribute name="tenantId"           type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remoteJmxType">
@@ -307,6 +309,7 @@
     <xs:attribute name="securityRealm"      type="xs:string"/>
     <xs:attribute name="setAvailOnShutdown" type="xs:string"/>
     <xs:attribute name="resourceTypeSets"   type="xs:string"/>
+    <xs:attribute name="tenantId"           type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remotePrometheusType">
@@ -319,6 +322,7 @@
     <xs:attribute name="labels"        type="xs:string"/>
     <xs:attribute name="interval"      type="xs:int"/>
     <xs:attribute name="timeUnits"     type="timeUnitsType"/>
+    <xs:attribute name="tenantId"      type="xs:string"/>
   </xs:complexType>
 
   <!-- [agent] platform configuration -->

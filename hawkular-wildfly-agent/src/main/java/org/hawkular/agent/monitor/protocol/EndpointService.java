@@ -309,7 +309,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 }
                 long ts = System.currentTimeMillis();
                 String key = generateMeasurementKey(instance);
-                AvailDataPoint dataPoint = new AvailDataPoint(key, ts, avail);
+                AvailDataPoint dataPoint = new AvailDataPoint(key, ts, avail,
+                        getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
@@ -343,7 +344,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 }
                 long ts = System.currentTimeMillis();
                 String key = generateMeasurementKey(instance);
-                MetricDataPoint dataPoint = new MetricDataPoint(key, ts, value, instance.getType().getMetricType());
+                MetricDataPoint dataPoint = new MetricDataPoint(key, ts, value, instance.getType().getMetricType(),
+                        getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {

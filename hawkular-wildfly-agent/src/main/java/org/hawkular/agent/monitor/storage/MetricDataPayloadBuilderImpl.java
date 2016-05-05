@@ -39,6 +39,9 @@ public class MetricDataPayloadBuilderImpl implements MetricDataPayloadBuilder {
     // a running count of the number of data points that have been added
     private int count = 0;
 
+    // if not null, this is the tenant ID to associate all the data with (null means used the agent tenant ID)
+    private String tenantId = null;
+
     @Override
     public void addDataPoint(String key, long timestamp, double value, MetricType metricType) {
         Map<String, List<Map<String, Number>>> map;
@@ -109,5 +112,15 @@ public class MetricDataPayloadBuilderImpl implements MetricDataPayloadBuilder {
     @Override
     public int getNumberDataPoints() {
         return count;
+    }
+
+    @Override
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    @Override
+    public String getTenantId() {
+        return this.tenantId;
     }
 }

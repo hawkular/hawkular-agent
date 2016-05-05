@@ -46,7 +46,7 @@ public class MyAppSamplingService implements SamplingService<MyAppNodeLocation> 
             // this is our endpoint that Hawkular uses to collect metrics and availabilities for our managed resources
             ConnectionData connectionData = new ConnectionData(new URI("myapp:local-uri"), null, null);
             EndpointConfiguration config = new EndpointConfiguration("My App Endpoint", true, Collections.emptyList(),
-                    connectionData, null, null);
+                    connectionData, null, null, null);
             this.endpoint = MonitoredEndpoint.of(config, null);
         } catch (Exception e) {
             throw new IllegalStateException("Cannot create sampling service", e);

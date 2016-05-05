@@ -365,14 +365,16 @@ public class MonitorServiceConfiguration {
         private final boolean enabled;
         private final ConnectionData connectionData;
         private final String securityRealm;
+        private final String tenantId;
 
         public AbstractEndpointConfiguration(String name, boolean enabled, ConnectionData connectionData,
-                String securityRealm) {
+                String securityRealm, String tenantId) {
             super();
             this.name = name;
             this.enabled = enabled;
             this.connectionData = connectionData;
             this.securityRealm = securityRealm;
+            this.tenantId = tenantId;
         }
 
         public boolean isEnabled() {
@@ -391,6 +393,14 @@ public class MonitorServiceConfiguration {
             return securityRealm;
         }
 
+        /**
+         * @return if not null this is the tenant ID all metrics from this endpoint will be associated with. If null,
+         *         the agent's tenant ID is used.
+         */
+        public String getTenantId() {
+            return tenantId;
+        }
+
         public boolean isLocal() {
             return connectionData == null;
         }
@@ -401,8 +411,8 @@ public class MonitorServiceConfiguration {
         private final Avail setAvailOnShutdown;
 
         public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
-                ConnectionData connectionData, String securityRealm, Avail setAvailOnShutdown) {
-            super(name, enabled, connectionData, securityRealm);
+                ConnectionData connectionData, String securityRealm, Avail setAvailOnShutdown, String tenantId) {
+            super(name, enabled, connectionData, securityRealm, tenantId);
             this.resourceTypeSets = resourceTypeSets;
             this.setAvailOnShutdown = setAvailOnShutdown;
         }
@@ -417,6 +427,7 @@ public class MonitorServiceConfiguration {
         public Avail getSetAvailOnShutdown() {
             return setAvailOnShutdown;
         }
+
     }
 
     /**
@@ -436,8 +447,8 @@ public class MonitorServiceConfiguration {
 
         public DynamicEndpointConfiguration(String name, boolean enabled, Map<String, String> labels,
                 Collection<Name> metricSets, ConnectionData connectionData, String securityRealm, int interval,
-                TimeUnit timeUnits) {
-            super(name, enabled, connectionData, securityRealm);
+                TimeUnit timeUnits, String tenantId) {
+            super(name, enabled, connectionData, securityRealm, tenantId);
             this.labels = labels;
             this.metricSets = metricSets;
             this.interval = interval;

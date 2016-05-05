@@ -79,6 +79,13 @@ public interface RemoteJMXAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenantId",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
             URL,
@@ -86,6 +93,7 @@ public interface RemoteJMXAttributes {
             PASSWORD,
             SECURITY_REALM,
             SET_AVAIL_ON_SHUTDOWN,
-            RESOURCE_TYPE_SETS
+            RESOURCE_TYPE_SETS,
+            TENANT_ID
     };
 }

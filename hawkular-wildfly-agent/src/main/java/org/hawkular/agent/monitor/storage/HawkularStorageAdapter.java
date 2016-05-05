@@ -18,6 +18,8 @@ package org.hawkular.agent.monitor.storage;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -45,7 +47,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     private Diagnostics diagnostics;
     private HttpClientBuilder httpClientBuilder;
     private AsyncInventoryStorage inventoryStorage;
-    private Map<String, String> tenantIdHeader;
+    private Map<String, String> agentTenantIdHeader;
 
     public HawkularStorageAdapter() {
     }
@@ -65,14 +67,14 @@ public class HawkularStorageAdapter implements StorageAdapter {
             case HAWKULAR:
                 // We are in a full hawkular environment - so we will integrate with inventory.
                 this.inventoryStorage = new AsyncInventoryStorage(feedId, config, httpClientBuilder, diagnostics);
-                this.tenantIdHeader = null;
+                this.agentTenantIdHeader = null;
                 break;
 
             case METRICS:
                 // We are only integrating with standalone Hawkular Metrics which does not support inventory.
                 // In addition, we have to tell metrics what our tenant ID is via HTTP header.
                 this.inventoryStorage = null;
-                this.tenantIdHeader = Collections.singletonMap("Hawkular-Tenant", config.getTenantId());
+                this.agentTenantIdHeader = getTenantHeader(config.getTenantId());
                 break;
 
             default:
@@ -101,14 +103,22 @@ public class HawkularStorageAdapter implements StorageAdapter {
             return; // nothing to do
         }
 
-        MetricDataPayloadBuilder payloadBuilder = createMetricDataPayloadBuilder();
-        for (MetricDataPoint datapoint : datapoints) {
-            long timestamp = datapoint.getTimestamp();
-            double value = datapoint.getValue();
-            payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value, datapoint.getMetricType());
-        }
+        Map<String, Set<MetricDataPoint>> byTenantId = separateByTenantId(datapoints);
+        for (Map.Entry<String, Set<MetricDataPoint>> entry : byTenantId.entrySet()) {
+            String tenantId = entry.getKey();
+            Set<MetricDataPoint> tenantDataPoints = entry.getValue();
 
-        store(payloadBuilder, waitMillis);
+            MetricDataPayloadBuilder payloadBuilder = createMetricDataPayloadBuilder();
+            payloadBuilder.setTenantId(tenantId);
+
+            for (MetricDataPoint datapoint : tenantDataPoints) {
+                long timestamp = datapoint.getTimestamp();
+                double value = datapoint.getValue();
+                payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value, datapoint.getMetricType());
+            }
+
+            store(payloadBuilder, waitMillis);
+        }
 
         return;
     }
@@ -118,6 +128,16 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String jsonPayload = "?";
 
         try {
+            // Determine what tenant header to use.
+            // If no tenant override is specified in the payload, use the agent's tenant ID.
+            Map<String, String> tenantIdHeader;
+            String metricTenantId = payloadBuilder.getTenantId();
+            if (metricTenantId == null) {
+                tenantIdHeader = agentTenantIdHeader;
+            } else {
+                tenantIdHeader = getTenantHeader(metricTenantId);
+            }
+
             // get the payload in JSON format
             jsonPayload = payloadBuilder.toPayload().toString();
 
@@ -180,14 +200,22 @@ public class HawkularStorageAdapter implements StorageAdapter {
             return; // nothing to do
         }
 
-        AvailDataPayloadBuilder payloadBuilder = createAvailDataPayloadBuilder();
-        for (AvailDataPoint datapoint : datapoints) {
-            long timestamp = datapoint.getTimestamp();
-            Avail value = datapoint.getValue();
-            payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value);
-        }
+        Map<String, Set<AvailDataPoint>> byTenantId = separateByTenantId(datapoints);
+        for (Map.Entry<String, Set<AvailDataPoint>> entry : byTenantId.entrySet()) {
+            String tenantId = entry.getKey();
+            Set<AvailDataPoint> tenantDataPoints = entry.getValue();
 
-        store(payloadBuilder, waitMillis);
+            AvailDataPayloadBuilder payloadBuilder = createAvailDataPayloadBuilder();
+            payloadBuilder.setTenantId(tenantId);
+
+            for (AvailDataPoint datapoint : tenantDataPoints) {
+                long timestamp = datapoint.getTimestamp();
+                Avail value = datapoint.getValue();
+                payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value);
+            }
+
+            store(payloadBuilder, waitMillis);
+        }
 
         return;
     }
@@ -197,6 +225,16 @@ public class HawkularStorageAdapter implements StorageAdapter {
         String jsonPayload = "?";
 
         try {
+            // Determine what tenant header to use.
+            // If no tenant override is specified in the payload, use the agent's tenant ID.
+            Map<String, String> tenantIdHeader;
+            String metricTenantId = payloadBuilder.getTenantId();
+            if (metricTenantId == null) {
+                tenantIdHeader = agentTenantIdHeader;
+            } else {
+                tenantIdHeader = getTenantHeader(metricTenantId);
+            }
+
             // get the payload in JSON format
             jsonPayload = payloadBuilder.toPayload().toString();
 
@@ -272,5 +310,28 @@ public class HawkularStorageAdapter implements StorageAdapter {
         if (inventoryStorage != null) {
             inventoryStorage.shutdown();
         }
+    }
+
+    /**
+     * Builds the header necessary for the tenant ID.
+     *
+     * @param tenantId the tenant ID string - this is the value of the returned map
+     * @return the tenant header consisting of the header key and the value
+     */
+    private Map<String, String> getTenantHeader(String tenantId) {
+        return Collections.singletonMap("Hawkular-Tenant", tenantId);
+    }
+
+    private <T extends DataPoint> Map<String, Set<T>> separateByTenantId(Set<T> dataPoints) {
+        Map<String, Set<T>> byTenant = new HashMap<>();
+        for (T dp : dataPoints) {
+            Set<T> tenantDataPoints = byTenant.get(dp.getTenantId());
+            if (tenantDataPoints == null) {
+                tenantDataPoints = new HashSet<>();
+                byTenant.put(dp.getTenantId(), tenantDataPoints);
+            }
+            tenantDataPoints.add(dp);
+        }
+        return byTenant;
     }
 }
