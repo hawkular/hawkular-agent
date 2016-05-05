@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,4 +41,17 @@ public interface MetricDataPayloadBuilder {
      * @return the number of data points that were {@link #addDataPoint(String, long, double) added} to the payload
      */
     int getNumberDataPoints();
+
+    /**
+     * If the metric data is to be stored with a special tenant ID, this sets that tenant ID.
+     * If null is passed in, or if this method is not called, the agent's tenant ID is used.
+     *
+     * @param tenantId the tenant ID to associate the metric data with. May be null.
+     */
+    void setTenantId(String tenantId);
+
+    /**
+     * @return the tenant ID to be associated with the metric data. If null, the agent's tenant ID is used.
+     */
+    String getTenantId();
 }

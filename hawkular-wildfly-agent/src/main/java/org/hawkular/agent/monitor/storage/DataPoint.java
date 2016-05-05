@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,11 +23,19 @@ public abstract class DataPoint {
 
     protected final String key;
     protected final long timestamp;
+    protected final String tenantId;
 
-    public DataPoint(String key, long timestamp) {
+    /**
+     * @param key the key to identify the data point
+     * @param timestamp the time when the data point was collected
+     * @param tenantId if not null, the tenant ID to be associated with this data point. If this is null,
+     *                 the agent's tenant ID will be associated with the data point.
+     */
+    public DataPoint(String key, long timestamp, String tenantId) {
         super();
         this.key = key;
         this.timestamp = timestamp;
+        this.tenantId = tenantId;
     }
 
     /**
@@ -39,6 +47,13 @@ public abstract class DataPoint {
 
     public String getKey() {
         return key;
+    }
+
+    /**
+     * @return if not null, this is the tenant ID the data point should be associated with
+     */
+    public String getTenantId() {
+        return tenantId;
     }
 
 }

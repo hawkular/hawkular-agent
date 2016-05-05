@@ -60,10 +60,14 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
 
     private final Set<String> metricExactNames;
     private final Set<Pattern> metricRegexNames;
+    private final String tenantId;
 
     public PrometheusDynamicEndpointService(String feedId, MonitoredEndpoint<DynamicEndpointConfiguration> endpoint,
             HawkularWildFlyAgentContext hawkularStorage, Collection<Name> metrics) {
         super(feedId, endpoint, hawkularStorage, metrics);
+
+        // set the tenant ID in case our endpoint wants to associate its data with a special tenant
+        tenantId = endpoint.getEndpointConfiguration().getTenantId();
 
         // if no metric sets were assigned to us, that means we are to collect every metric.
         if (metrics.isEmpty()) {
@@ -118,6 +122,7 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
     class Walker implements PrometheusMetricsWalker {
 
         private MetricStorage metricStorage;
+        private MetricDataPayloadBuilder payloadBuilder;
 
         public Walker() {
         }
@@ -126,11 +131,16 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
         public void walkStart() {
             HawkularWildFlyAgentContext storage = getHawkularStorage();
             metricStorage = storage.getMetricStorage();
+
+            payloadBuilder = metricStorage.createMetricDataPayloadBuilder();
+            payloadBuilder.setTenantId(tenantId);
         }
 
         @Override
         public void walkFinish(int familiesProcessed, int metricsProcessed) {
-            return; // no-op
+            log.debugf("Storing [%d] of [%d] Prometheus metrics from endpoint [%s]",
+                    payloadBuilder.getNumberDataPoints(), metricsProcessed, getMonitoredEndpoint());
+            metricStorage.store(payloadBuilder, 0);
         }
 
         @Override
@@ -156,9 +166,8 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
                     metric.getValue());
 
             String key = generateKey(metric);
-            log.debugf("Storing counter in Hawkular Metrics with key: %s", key);
-            MetricDataPayloadBuilder bldr = metricStorage.createMetricDataPayloadBuilder();
-            bldr.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.COUNTER);
+            log.debugf("Will store counter in Hawkular Metrics with key: %s", key);
+            payloadBuilder.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.COUNTER);
         }
 
         @Override
@@ -172,9 +181,8 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
                     metric.getValue());
 
             String key = generateKey(metric);
-            log.debugf("Storing gauge in Hawkular Metrics with key: %s", key);
-            MetricDataPayloadBuilder bldr = metricStorage.createMetricDataPayloadBuilder();
-            bldr.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.GAUGE);
+            log.debugf("Will store gauge in Hawkular Metrics with key: %s", key);
+            payloadBuilder.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.GAUGE);
         }
 
         @Override

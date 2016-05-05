@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,8 +26,8 @@ public class MetricDataPoint extends DataPoint {
     private final double value;
     private final MetricType metricType;
 
-    public MetricDataPoint(String key, long timestamp, double value, MetricType metricType) {
-        super(key, timestamp);
+    public MetricDataPoint(String key, long timestamp, double value, MetricType metricType, String tenantId) {
+        super(key, timestamp, tenantId);
         this.value = value;
         this.metricType = metricType;
     }

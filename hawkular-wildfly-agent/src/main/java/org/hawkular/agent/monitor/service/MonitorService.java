@@ -811,7 +811,10 @@ public class MonitorService implements Service<MonitorService> {
                     List<MeasurementInstance<?, AvailType<?>>> avails = availsToChange.get(endpointService);
                     for (MeasurementInstance avail : avails) {
                         AvailDataPoint availDataPoint = new AvailDataPoint(
-                                endpointService.generateMeasurementKey(avail), now, setAvailOnShutdown);
+                                endpointService.generateMeasurementKey(avail),
+                                now,
+                                setAvailOnShutdown,
+                                config.getTenantId());
                         datapoints.add(availDataPoint);
                     }
                 }
