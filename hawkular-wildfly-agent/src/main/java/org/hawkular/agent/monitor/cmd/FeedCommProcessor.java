@@ -40,14 +40,16 @@ import org.hawkular.cmdgw.api.Authentication;
 import org.hawkular.cmdgw.api.GenericErrorResponse;
 import org.hawkular.cmdgw.api.GenericErrorResponseBuilder;
 
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
+import com.squareup.okhttp.ResponseBody;
 import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
 
 import okio.Buffer;
 import okio.BufferedSink;
-import okio.BufferedSource;
 
 public class FeedCommProcessor implements WebSocketListener {
     private static final MsgLogger log = AgentLoggers.getLogger(FeedCommProcessor.class);
@@ -167,7 +169,7 @@ public class FeedCommProcessor implements WebSocketListener {
      * Sends a message to the server asynchronously. This method returns immediately; the message may not go out until
      * some time in the future.
      *
-     * @param message the message to send
+     * @param messageWithData the message to send
      */
     public void sendAsync(BasicMessageWithExtraData<? extends BasicMessage> messageWithData) {
         if (webSocket == null) {
@@ -185,17 +187,25 @@ public class FeedCommProcessor implements WebSocketListener {
                         String messageString = ApiDeserializer.toHawkularFormat(message);
                         Buffer buffer = new Buffer();
                         buffer.writeUtf8(messageString);
-                        FeedCommProcessor.this.webSocket.sendMessage(WebSocket.PayloadType.TEXT, buffer);
+                        RequestBody requestBody = RequestBody.create(WebSocket.TEXT, buffer.readByteArray());
+                        FeedCommProcessor.this.webSocket.sendMessage(requestBody);
                     } else {
                         BinaryData messageData = ApiDeserializer.toHawkularFormat(message,
                                 messageWithData.getBinaryData());
-                        BufferedSink sink = FeedCommProcessor.this.webSocket
-                                .newMessageSink(WebSocket.PayloadType.BINARY);
-                        try {
-                            emitToSink(messageData, sink);
-                        } finally {
-                            sink.close();
-                        }
+
+                        RequestBody requestBody = new RequestBody() {
+                            @Override
+                            public MediaType contentType() {
+                                return WebSocket.BINARY;
+                            }
+
+                            @Override
+                            public void writeTo(BufferedSink bufferedSink) throws IOException {
+                                emitToSink(messageData, bufferedSink);
+                            }
+                        };
+
+                        FeedCommProcessor.this.webSocket.sendMessage(requestBody);
                     }
                 } catch (Throwable t) {
                     log.errorFailedToSendOverFeedComm(message.getClass().getName(), t);
@@ -207,7 +217,7 @@ public class FeedCommProcessor implements WebSocketListener {
     /**
      * Sends a message to the server synchronously. This will return only when the message has been sent.
      *
-     * @param message the message to send
+     * @param messageWithData the message to send
      * @throws IOException if the message failed to be sent
      */
     public void sendSync(BasicMessageWithExtraData<? extends BasicMessage> messageWithData) throws Exception {
@@ -222,15 +232,25 @@ public class FeedCommProcessor implements WebSocketListener {
             String messageString = ApiDeserializer.toHawkularFormat(message);
             Buffer buffer = new Buffer();
             buffer.writeUtf8(messageString);
-            FeedCommProcessor.this.webSocket.sendMessage(WebSocket.PayloadType.TEXT, buffer);
+            RequestBody requestBody = RequestBody.create(WebSocket.TEXT, buffer.readByteArray());
+            FeedCommProcessor.this.webSocket.sendMessage(requestBody);
         } else {
             BinaryData messageData = ApiDeserializer.toHawkularFormat(message, messageWithData.getBinaryData());
-            BufferedSink sink = FeedCommProcessor.this.webSocket.newMessageSink(WebSocket.PayloadType.BINARY);
-            try {
-                emitToSink(messageData, sink);
-            } finally {
-                sink.close();
-            }
+
+            RequestBody requestBody = new RequestBody() {
+                @Override
+                public MediaType contentType() {
+                    return WebSocket.BINARY;
+                }
+
+                @Override
+                public void writeTo(BufferedSink bufferedSink) throws IOException {
+                    emitToSink(messageData, bufferedSink);
+                }
+            };
+
+            FeedCommProcessor.this.webSocket.sendMessage(requestBody);
+
         }
     }
 
@@ -291,7 +311,7 @@ public class FeedCommProcessor implements WebSocketListener {
 
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void onMessage(BufferedSource payload, WebSocket.PayloadType payloadType) throws IOException {
+    public void onMessage(ResponseBody responseBody) throws IOException {
 
         BasicMessageWithExtraData<? extends BasicMessage> response;
         String requestClassName = "?";
@@ -300,21 +320,15 @@ public class FeedCommProcessor implements WebSocketListener {
             try {
                 BasicMessageWithExtraData<? extends BasicMessage> msgWithData;
 
-                switch (payloadType) {
-                    case TEXT: {
-                        String nameAndJsonStr = payload.readUtf8();
-                        msgWithData = new ApiDeserializer().deserialize(nameAndJsonStr);
-                        break;
-                    }
-                    case BINARY: {
-                        InputStream input = payload.inputStream();
-                        msgWithData = new ApiDeserializer().deserialize(input);
-                        break;
-                    }
-                    default: {
-                        throw new IllegalArgumentException(
-                                "Unknown payload type, please report this bug: " + payloadType);
-                    }
+                if (responseBody.contentType().equals(WebSocket.TEXT)) {
+                    String nameAndJsonStr = responseBody.string();
+                    msgWithData = new ApiDeserializer().deserialize(nameAndJsonStr);
+                } else if (responseBody.contentType().equals(WebSocket.BINARY)) {
+                    InputStream input = responseBody.byteStream();
+                    msgWithData = new ApiDeserializer().deserialize(input);
+                } else {
+                    throw new IllegalArgumentException(
+                            "Unknown mediatype type, please report this bug: " + responseBody.contentType());
                 }
 
                 log.debug("Received message from server");
@@ -335,8 +349,8 @@ public class FeedCommProcessor implements WebSocketListener {
                     response = command.execute(msgWithData, context);
                 }
             } finally {
-                // must ensure payload is closed; this assumes if it was a stream that the command is finished with it
-                payload.close();
+                // must ensure response is closed; this assumes if it was a stream that the command is finished with it
+                responseBody.close();
             }
         } catch (Throwable t) {
             log.errorCommandExecutionFailureFeed(requestClassName, t);
