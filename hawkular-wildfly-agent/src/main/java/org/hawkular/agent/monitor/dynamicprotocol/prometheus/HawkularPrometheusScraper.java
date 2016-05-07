@@ -55,7 +55,7 @@ public class HawkularPrometheusScraper extends PrometheusScraper {
                 .useSsl(endpointUrl.getProtocol().equals("https"))
                 .sslContext(sslContext)
                 .username(endpointConfig.getConnectionData().getUsername())
-                .password(endpointConfig.getConnectionData().getUsername());
+                .password(endpointConfig.getConnectionData().getPassword());
 
         BaseHttpClientGenerator httpClientGen = new BaseHttpClientGenerator(bldr.build());
         OkHttpClient httpClient = httpClientGen.getHttpClient();
