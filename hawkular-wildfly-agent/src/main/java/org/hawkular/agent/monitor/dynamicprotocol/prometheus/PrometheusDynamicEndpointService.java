@@ -103,8 +103,7 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
         PrometheusScraper scraper;
 
         try {
-            // TODO right now we do nothing with https, credentials, or security realm - assume its all unencrypted http
-            scraper = new PrometheusScraper(endpointConfig.getConnectionData().getUri().toURL());
+            scraper = new HawkularPrometheusScraper(endpointConfig, getMonitoredEndpoint().getSSLContext());
         } catch (MalformedURLException e) {
             log.errorf(e, "Error with Prometheus endpoint [%s], stopping this endpoint service", endpointConfig);
             // Throwing exception stops our job - which we want to do because no sense continuing with a bad URL.

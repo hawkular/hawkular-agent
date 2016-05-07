@@ -1089,7 +1089,7 @@ public class MonitorServiceConfigurationBuilder {
                     String tenantId = getString(remoteDMRValueNode, context, RemoteDMRAttributes.TENANT_ID);
 
                     if (useSsl && securityRealm == null) {
-                        throw new OperationFailedException("If using SSL, you must define a security realm: " + name);
+                        log.debugf("Using SSL with no security realm - will rely on the JVM truststore: " + name);
                     }
 
                     String protocol = useSsl ? "https-remoting" : "http-remoting";
@@ -1155,7 +1155,7 @@ public class MonitorServiceConfigurationBuilder {
                     }
 
                     if (url.getScheme().equalsIgnoreCase("https") && securityRealm == null) {
-                        throw new OperationFailedException("If using SSL, you must define a security realm: " + name);
+                        log.debugf("Using SSL with no security realm - will rely on the JVM truststore: " + name);
                     }
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
@@ -1200,7 +1200,7 @@ public class MonitorServiceConfigurationBuilder {
                     }
 
                     if (url.getScheme().equalsIgnoreCase("https") && securityRealm == null) {
-                        throw new OperationFailedException("If using SSL, you must define a security realm: " + name);
+                        log.debugf("Using SSL with no security realm - will rely on the JVM truststore: " + name);
                     }
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
