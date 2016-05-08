@@ -231,9 +231,6 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
             StringBuilder key = new StringBuilder();
 
             key.append(getFeedId()).append("_");
-            if (!getMonitoredEndpoint().getEndpointConfiguration().getLabels().isEmpty()) {
-                key.append(getMonitoredEndpoint().getEndpointConfiguration().getLabels().toString()).append("_");
-            }
             key.append(metric.getName()).append("_");
             if (!metric.getLabels().isEmpty()) {
                 key.append(buildLabelListString(metric.getLabels(), null, null)).append("_");

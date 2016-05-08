@@ -1181,8 +1181,6 @@ public class MonitorServiceConfigurationBuilder {
                     String password = getString(remotePromValueNode, context, RemotePrometheusAttributes.PASSWORD);
                     String securityRealm = getString(remotePromValueNode, context,
                             RemotePrometheusAttributes.SECURITY_REALM);
-                    Map<String, String> labels = getMapFromString(remotePromValueNode, context,
-                            RemotePrometheusAttributes.LABELS);
                     List<Name> metricSets = getNameListFromString(remotePromValueNode, context,
                             RemotePrometheusAttributes.METRIC_SETS);
                     int interval = getInt(remotePromValueNode, context, RemotePrometheusAttributes.INTERVAL);
@@ -1204,7 +1202,7 @@ public class MonitorServiceConfigurationBuilder {
                     }
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
-                    DynamicEndpointConfiguration endpoint = new DynamicEndpointConfiguration(name, enabled, labels,
+                    DynamicEndpointConfiguration endpoint = new DynamicEndpointConfiguration(name, enabled,
                             metricSets, connectionData, securityRealm, interval, timeUnits, tenandId);
 
                     prometheusConfigBuilder.endpoint(endpoint);

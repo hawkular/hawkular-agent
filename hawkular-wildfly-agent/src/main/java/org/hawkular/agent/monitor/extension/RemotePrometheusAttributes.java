@@ -64,13 +64,6 @@ public interface RemotePrometheusAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition LABELS = new SimpleAttributeDefinitionBuilder("labels",
-            ModelType.STRING)
-                    .setAllowNull(true)
-                    .setAllowExpression(true)
-                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                    .build();
-
     SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder(
             "metricSets",
             ModelType.STRING)
@@ -110,7 +103,6 @@ public interface RemotePrometheusAttributes {
             USERNAME,
             PASSWORD,
             SECURITY_REALM,
-            LABELS,
             METRIC_SETS,
             INTERVAL,
             TIME_UNITS,

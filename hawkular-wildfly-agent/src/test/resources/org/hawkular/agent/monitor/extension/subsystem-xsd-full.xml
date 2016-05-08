@@ -149,7 +149,6 @@
                        username="jdoe"
                        password="password"
                        securityRealm="HawkularRealm"
-                       labels="region=east,group=staging"
                        interval="30"
                        timeUnits="seconds"
                        tenantId="tenantOverride" />

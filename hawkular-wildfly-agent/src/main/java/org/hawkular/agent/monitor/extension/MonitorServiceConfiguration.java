@@ -440,23 +440,17 @@ public class MonitorServiceConfiguration {
      * or ignore it entirely. The same with metric metadata as well.
      */
     public static class DynamicEndpointConfiguration extends AbstractEndpointConfiguration {
-        private final Map<String, String> labels;
         private final Collection<Name> metricSets;
         private final int interval;
         private final TimeUnit timeUnits;
 
-        public DynamicEndpointConfiguration(String name, boolean enabled, Map<String, String> labels,
+        public DynamicEndpointConfiguration(String name, boolean enabled,
                 Collection<Name> metricSets, ConnectionData connectionData, String securityRealm, int interval,
                 TimeUnit timeUnits, String tenantId) {
             super(name, enabled, connectionData, securityRealm, tenantId);
-            this.labels = labels;
             this.metricSets = metricSets;
             this.interval = interval;
             this.timeUnits = timeUnits;
-        }
-
-        public Map<String, String> getLabels() {
-            return labels;
         }
 
         public Collection<Name> getMetricSets() {
