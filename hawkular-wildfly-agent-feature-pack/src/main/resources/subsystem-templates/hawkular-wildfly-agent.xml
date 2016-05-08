@@ -843,7 +843,6 @@
       <remote-prometheus name="Remote Prometheus"
                          enabled="false"
                          url="http://localhost:9090/metrics"
-                         labels="region=east,group=staging"
                          interval="30"
                          timeUnits="seconds" />
     </managed-servers>
