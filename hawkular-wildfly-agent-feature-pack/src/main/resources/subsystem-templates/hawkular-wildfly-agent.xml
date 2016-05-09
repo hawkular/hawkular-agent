@@ -606,7 +606,6 @@
         <operation-dmr name="Resume"   operationName="resume" />
         <operation-dmr name="Shutdown" operationName="shutdown" /> <!-- shutdown and restart -->
         <operation-dmr name="Suspend"  operationName="suspend" />
-        <operation-dmr name="Deploy"   operationName="deploy"   />
 
       </resource-type-dmr>
     </resource-type-set-dmr>
