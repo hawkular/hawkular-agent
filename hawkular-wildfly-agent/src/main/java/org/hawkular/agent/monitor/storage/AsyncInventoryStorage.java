@@ -548,7 +548,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     AsyncInventoryStorage.this.config.getInventoryContext());
             for (QueueElement resourceElement : removeQueueElements) {
                 StringBuilder deleteUrl = new StringBuilder(url.toString());
-                deleteUrl.append("tenants/").append(resourceElement.getTenantId());
                 deleteUrl.append("feeds/").append(resourceElement.getFeedId()).append("/resources");
                 for (Resource<?> resource : getAncestry(resourceElement.getResource())) {
                     deleteUrl.append('/');
