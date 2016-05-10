@@ -67,8 +67,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         switch (config.getType()) {
             case HAWKULAR:
                 // We are in a full hawkular environment - so we will integrate with inventory.
-                this.inventoryStorage = new AsyncInventoryStorage(feedId, config, httpClientBuilder,
-                        agentTenantIdHeader, diagnostics);
+                this.inventoryStorage = new AsyncInventoryStorage(feedId, config, httpClientBuilder, diagnostics);
                 break;
 
             case METRICS:
