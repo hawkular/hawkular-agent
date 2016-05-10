@@ -62,19 +62,18 @@ public class HawkularStorageAdapter implements StorageAdapter {
         this.config = config;
         this.diagnostics = diag;
         this.httpClientBuilder = httpClientBuilder;
+        this.agentTenantIdHeader = getTenantHeader(config.getTenantId());
 
         switch (config.getType()) {
             case HAWKULAR:
                 // We are in a full hawkular environment - so we will integrate with inventory.
-                this.inventoryStorage = new AsyncInventoryStorage(feedId, config, httpClientBuilder, diagnostics);
-                this.agentTenantIdHeader = null;
+                this.inventoryStorage = new AsyncInventoryStorage(feedId, config, httpClientBuilder,
+                        agentTenantIdHeader, diagnostics);
                 break;
 
             case METRICS:
                 // We are only integrating with standalone Hawkular Metrics which does not support inventory.
-                // In addition, we have to tell metrics what our tenant ID is via HTTP header.
                 this.inventoryStorage = null;
-                this.agentTenantIdHeader = getTenantHeader(config.getTenantId());
                 break;
 
             default:

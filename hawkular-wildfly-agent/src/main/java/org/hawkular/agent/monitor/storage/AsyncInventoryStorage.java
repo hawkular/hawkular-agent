@@ -544,7 +544,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 }
 
                 Request request = AsyncInventoryStorage.this.httpClientBuilder
-                        .buildJsonDeleteRequest(deleteUrl.toString(), null);
+                        .buildJsonDeleteRequest(deleteUrl.toString(), agentTenantIdHeader);
 
                 long start = System.currentTimeMillis(); // we don't store this time in our diagnostics
                 Response response = AsyncInventoryStorage.this.httpClientBuilder
@@ -601,7 +601,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     // now send the REST request
                     Request request = AsyncInventoryStorage.this.httpClientBuilder
-                            .buildJsonPostRequest(url.toString(), null, jsonPayload);
+                            .buildJsonPostRequest(url.toString(), agentTenantIdHeader, jsonPayload);
                     Call call = AsyncInventoryStorage.this.httpClientBuilder.getHttpClient().newCall(request);
                     final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
                     Response response = call.execute();
@@ -704,16 +704,19 @@ public class AsyncInventoryStorage implements InventoryStorage {
     private final Diagnostics diagnostics;
     private final ArrayBlockingQueue<QueueElement> queue;
     private final Worker worker;
+    private final Map<String, String> agentTenantIdHeader;
 
     public AsyncInventoryStorage(
             String feedId,
             StorageAdapterConfiguration config,
             HttpClientBuilder httpClientBuilder,
+            Map<String, String> agentTenantIdHeader,
             Diagnostics diagnostics) {
         super();
         this.feedId = feedId;
         this.config = config;
         this.httpClientBuilder = httpClientBuilder;
+        this.agentTenantIdHeader = agentTenantIdHeader;
         this.diagnostics = diagnostics;
         this.queue = new ArrayBlockingQueue<>(10_000); // TODO make bufferSize configurable
         this.worker = new Worker(queue);
