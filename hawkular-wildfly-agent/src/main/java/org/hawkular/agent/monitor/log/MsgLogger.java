@@ -147,8 +147,8 @@ public interface MsgLogger extends BasicLogger {
     void errorCannotDoAnythingWithoutFeed(@Cause Throwable t);
 
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10027, value = "To use standalone Hawkular Metrics, you must configure a tenant ID")
-    void errorMustHaveTenantIdConfigured();
+    @Message(id = 10027, value = "unused")
+    void error10027();
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10028, value = "Cannot start storage adapter; aborting startup")
@@ -239,14 +239,13 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10049, value = "Could not access resources of endpoint [%s]")
     void errorCouldNotAccess(EndpointService<?, ?> endpoint, @Cause Throwable e);
 
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10050, value = "The tenant ID [%s] set in the agent configuration does not match the"
-            + " tenant ID [%s] retrieved from Hawkular Accounts.")
-    void errorWrongTenantId(String tenantIdXml, String tenantIdAccounts);
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10050, value = "Tenant ID [%s]")
+    void infoTenantId(String tenantId);
 
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10051, value = "The tenant ID could not be retrieved from Hawkular Accounts")
-    void errorNoTenantIdFromAccounts();
+    @Message(id = 10051, value = "Missing tenant ID")
+    void errorNoTenantIdSpecified();
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10052, value = "Could not store metrics for monitored endpoint [%s]")

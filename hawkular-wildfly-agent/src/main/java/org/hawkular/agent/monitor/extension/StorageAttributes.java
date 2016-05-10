@@ -67,6 +67,7 @@ public interface StorageAttributes {
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode("hawkular"))
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
