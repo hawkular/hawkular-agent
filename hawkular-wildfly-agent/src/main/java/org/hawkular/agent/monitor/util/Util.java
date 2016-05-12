@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.util;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -33,6 +34,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfigurationBuilder;
@@ -63,6 +65,8 @@ public class Util {
     private static final String ENCODING_UTF_8 = "utf-8";
     private static final int BUFFER_SIZE = 128;
     private static ObjectMapper mapper;
+    private static String systemId;
+
     static {
         try {
             mapper = new ObjectMapper();
@@ -300,5 +304,24 @@ public class Util {
         ModelNode subsystemConfig = Resource.Tools.readModel(context.readResourceFromRoot(subsystemAddress));
         MonitorServiceConfiguration config = new MonitorServiceConfigurationBuilder(subsystemConfig, context).build();
         return config;
+    }
+
+    public static String getSystemId() {
+        // we are running on a VM/metal/
+        File machineIdFile = new File("/etc/machine-id");
+        if (machineIdFile.exists() && machineIdFile.canRead()) {
+            try (Reader reader = new InputStreamReader(new FileInputStream(machineIdFile))) {
+                return new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+            } catch (IOException e) {
+                e.printStackTrace();
+                // apparently, the file did exist and we were allowed to read, but we still got an IOException...
+                // strange, we should log this somewhere
+                return null;
+            }
+        } else {
+            // the file doesn't exist, or we can't read it... return null on this initial implementation
+            // for the future, we might want to check additional places and try different things
+            return null;
+        }
     }
 }

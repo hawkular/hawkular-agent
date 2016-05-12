@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,51 +56,37 @@ public class OshiPlatformCacheTest {
         final CountDownLatch doneLatch1 = new CountDownLatch(1);
         final CountDownLatch doneLatch2 = new CountDownLatch(1);
 
-        Thread t1 = new Thread(new Runnable() {
-            public void run() {
-                try {
-                    // should never take this long, but just a precaution
-                    goLatch.await(10, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    print("thread 1 interrupted");
-                    return;
-                }
-
-                for (int i = 0; i < maxLoops; i++) {
-                    oshi.getOperatingSystem();
-                    oshi.getFileStores();
-                    oshi.getMemory();
-                    oshi.getProcessors();
-                    oshi.getPowerSources();
-                    oshi.refresh();
-                    t1Attempts.incrementAndGet();
-                }
-
-                doneLatch1.countDown();
+        Thread t1 = new Thread(() -> {
+            try {
+                // should never take this long, but just a precaution
+                goLatch.await(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                print("thread 1 interrupted");
+                return;
             }
+
+            for (int i = 0; i < maxLoops; i++) {
+                getOshiData(oshi);
+                t1Attempts.incrementAndGet();
+            }
+
+            doneLatch1.countDown();
         });
 
-        Thread t2 = new Thread(new Runnable() {
-            public void run() {
-                try {
-                    // should never take this long, but just a precaution
-                    goLatch.await(10, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    print("thread 2 interrupted");
-                    return;
-                }
-                for (int i = 0; i < maxLoops; i++) {
-                    oshi.getOperatingSystem();
-                    oshi.getFileStores();
-                    oshi.getMemory();
-                    oshi.getProcessors();
-                    oshi.getPowerSources();
-                    oshi.refresh();
-                    t2Attempts.incrementAndGet();
-                }
-
-                doneLatch2.countDown();
+        Thread t2 = new Thread(() -> {
+            try {
+                // should never take this long, but just a precaution
+                goLatch.await(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                print("thread 2 interrupted");
+                return;
             }
+            for (int i = 0; i < maxLoops; i++) {
+                getOshiData(oshi);
+                t2Attempts.incrementAndGet();
+            }
+
+            doneLatch2.countDown();
         });
 
         t1.start();
@@ -116,6 +102,15 @@ public class OshiPlatformCacheTest {
         // make sure we executed everything we expected - if not, we must have blocked somewhere
         Assert.assertEquals(maxLoops, t1Attempts.get());
         Assert.assertEquals(maxLoops, t2Attempts.get());
+    }
+
+    private void getOshiData(OshiPlatformCache oshi) {
+        oshi.getOperatingSystem();
+        oshi.getFileStores();
+        oshi.getMemory();
+        oshi.getProcessors();
+        oshi.getPowerSources();
+        oshi.refresh();
     }
 
     @Test

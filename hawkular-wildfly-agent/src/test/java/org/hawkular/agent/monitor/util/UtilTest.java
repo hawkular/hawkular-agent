@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,5 +45,10 @@ public class UtilTest {
 
         HashMap<?, ?> mapDup = Util.fromJson(json, HashMap.class);
         Assert.assertEquals(map, mapDup);
+    }
+
+    @Test
+    public void getSystemId() {
+        Assert.assertEquals("baa3fbae7f5f451585b5dd82c9853842", Util.getSystemId());
     }
 }

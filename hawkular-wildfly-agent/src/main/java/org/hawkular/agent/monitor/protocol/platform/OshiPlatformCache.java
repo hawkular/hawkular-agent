@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.agent.monitor.protocol.platform;
 
 import java.util.HashMap;
@@ -25,6 +24,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
+import org.hawkular.agent.monitor.util.Util;
 
 import oshi.SystemInfo;
 import oshi.hardware.Memory;
@@ -47,11 +47,35 @@ public class OshiPlatformCache {
     private final ReadLock rLock = rwLock.readLock();
     private final WriteLock wLock = rwLock.writeLock();
     private final String feedId;
+    private final String machineId;
 
+    /**
+     * Constructs a new instance for a given feed ID. Note that a machine-id will be acquired using the default
+     * algorithm. If this is not the intention, use the constructor with an explicit machine-id.
+     *
+     * @param feedId    the feed ID
+     */
     public OshiPlatformCache(String feedId) {
         sysInfo = new SystemInfo();
         sysInfoCache = new HashMap<>(5);
         this.feedId = feedId;
+        this.machineId = Util.getSystemId();
+    }
+
+    /**
+     * If a machine-id is known, this constructor should be used. Note that "null" is considered a "known" value, so,
+     * null will be assumed if given. If the machine-id is not known, use constructors without a machine-id parameter.
+     *
+     * @param feedId       the feed ID
+     * @param machineId    the machine ID, if the default algorithm for determining it should be bypassed. Null
+     *                     values are acceptable and result in a "null" machine-id.
+     * @see Util#getSystemId()
+     */
+    public OshiPlatformCache(String feedId, String machineId) {
+        sysInfo = new SystemInfo();
+        sysInfoCache = new HashMap<>(5);
+        this.feedId = feedId;
+        this.machineId = machineId;
     }
 
     /**
@@ -311,9 +335,9 @@ public class OshiPlatformCache {
         Memory mem = getMemory();
 
         if (Constants.MEMORY_AVAILABLE.equals(metricToCollect)) {
-            return Double.valueOf(mem.getAvailable());
+            return (double) mem.getAvailable();
         } else if (Constants.MEMORY_TOTAL.equals(metricToCollect)) {
-            return Double.valueOf(mem.getTotal());
+            return (double) mem.getTotal();
         } else {
             throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
         }
@@ -327,8 +351,11 @@ public class OshiPlatformCache {
      * @param metricToCollect the metric to collect
      * @return the value of the metric, or null if there is no resource identified by the node
      */
-    public Double getMetric(PlatformResourceNode node, Name metricToCollect) {
+    public Object getMetric(PlatformResourceNode node, Name metricToCollect) {
         switch (node.getType()) {
+            case OPERATING_SYSTEM: {
+                return getOperatingSystemMetric(metricToCollect);
+            }
             case MEMORY: {
                 return getMemoryMetric(metricToCollect);
             }
@@ -344,6 +371,14 @@ public class OshiPlatformCache {
             default: {
                 throw new IllegalArgumentException("Platform resource node [" + node + "] does not have metrics");
             }
+        }
+    }
+
+    private Object getOperatingSystemMetric(Name metricToCollect) {
+        if (Constants.MACHINE_ID.equals(metricToCollect)) {
+            return machineId;
+        } else {
+            throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
         }
     }
 
@@ -451,5 +486,9 @@ public class OshiPlatformCache {
         }
 
         return results;
+    }
+
+    public String getMachineId() {
+        return machineId;
     }
 }
