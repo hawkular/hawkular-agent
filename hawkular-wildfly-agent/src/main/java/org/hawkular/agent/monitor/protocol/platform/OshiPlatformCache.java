@@ -50,32 +50,18 @@ public class OshiPlatformCache {
     private final String machineId;
 
     /**
-     * Constructs a new instance for a given feed ID. Note that a machine-id will be acquired using the default
-     * algorithm. If this is not the intention, use the constructor with an explicit machine-id.
+     * Creates the cache of OSHi platform data.
      *
-     * @param feedId    the feed ID
-     */
-    public OshiPlatformCache(String feedId) {
-        sysInfo = new SystemInfo();
-        sysInfoCache = new HashMap<>(5);
-        this.feedId = feedId;
-        this.machineId = Util.getSystemId();
-    }
-
-    /**
-     * If a machine-id is known, this constructor should be used. Note that "null" is considered a "known" value, so,
-     * null will be assumed if given. If the machine-id is not known, use constructors without a machine-id parameter.
+     * @param feedId       he feed ID
+     * @param machineId    the machine ID - if null, one will be attempted to be discovered
      *
-     * @param feedId       the feed ID
-     * @param machineId    the machine ID, if the default algorithm for determining it should be bypassed. Null
-     *                     values are acceptable and result in a "null" machine-id.
      * @see Util#getSystemId()
      */
     public OshiPlatformCache(String feedId, String machineId) {
         sysInfo = new SystemInfo();
         sysInfoCache = new HashMap<>(5);
         this.feedId = feedId;
-        this.machineId = machineId;
+        this.machineId = (machineId != null) ? machineId : Util.getSystemId();
     }
 
     /**
@@ -335,9 +321,9 @@ public class OshiPlatformCache {
         Memory mem = getMemory();
 
         if (Constants.MEMORY_AVAILABLE.equals(metricToCollect)) {
-            return (double) mem.getAvailable();
+            return Double.valueOf(mem.getAvailable());
         } else if (Constants.MEMORY_TOTAL.equals(metricToCollect)) {
-            return (double) mem.getTotal();
+            return Double.valueOf(mem.getTotal());
         } else {
             throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
         }
@@ -351,7 +337,7 @@ public class OshiPlatformCache {
      * @param metricToCollect the metric to collect
      * @return the value of the metric, or null if there is no resource identified by the node
      */
-    public Object getMetric(PlatformResourceNode node, Name metricToCollect) {
+    public Double getMetric(PlatformResourceNode node, Name metricToCollect) {
         switch (node.getType()) {
             case OPERATING_SYSTEM: {
                 return getOperatingSystemMetric(metricToCollect);
@@ -374,12 +360,9 @@ public class OshiPlatformCache {
         }
     }
 
-    private Object getOperatingSystemMetric(Name metricToCollect) {
-        if (Constants.MACHINE_ID.equals(metricToCollect)) {
-            return machineId;
-        } else {
-            throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
-        }
+    private Double getOperatingSystemMetric(Name metricToCollect) {
+        // there are none yet - just a placeholder in case we add some in the future
+        throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
     }
 
     /**
@@ -488,6 +471,9 @@ public class OshiPlatformCache {
         return results;
     }
 
+    /**
+     * @return the unique machine ID for this platform if it is known. Otherwise, null is returned.
+     */
     public String getMachineId() {
         return machineId;
     }

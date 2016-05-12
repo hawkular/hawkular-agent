@@ -495,7 +495,7 @@ public class OshiPlatformCacheTest {
     }
 
     private OshiPlatformCache newOshiPlatformCache() {
-        return new OshiPlatformCache("testFeedId");
+        return new OshiPlatformCache("testFeedId", null);
     }
 
     private void print(String msg, Object... args) {

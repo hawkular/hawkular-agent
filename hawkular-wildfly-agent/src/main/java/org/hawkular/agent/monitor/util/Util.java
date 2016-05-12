@@ -39,6 +39,8 @@ import java.util.stream.Collectors;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfigurationBuilder;
 import org.hawkular.agent.monitor.extension.SubsystemExtension;
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
@@ -62,6 +64,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author John Mazzitelli
  */
 public class Util {
+    private static final MsgLogger log = AgentLoggers.getLogger(Util.class);
+
     private static final String ENCODING_UTF_8 = "utf-8";
     private static final int BUFFER_SIZE = 128;
     private static ObjectMapper mapper;
@@ -306,22 +310,28 @@ public class Util {
         return config;
     }
 
+    /**
+     * Tries to determine the system ID for the machine where this JVM is located.
+     *
+     * @return system ID or null if cannot determine
+     */
     public static String getSystemId() {
-        // we are running on a VM/metal/
-        File machineIdFile = new File("/etc/machine-id");
-        if (machineIdFile.exists() && machineIdFile.canRead()) {
-            try (Reader reader = new InputStreamReader(new FileInputStream(machineIdFile))) {
-                return new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
-            } catch (IOException e) {
-                e.printStackTrace();
-                // apparently, the file did exist and we were allowed to read, but we still got an IOException...
-                // strange, we should log this somewhere
-                return null;
+        if (systemId == null) {
+            File machineIdFile = new File("/etc/machine-id");
+            if (machineIdFile.exists() && machineIdFile.canRead()) {
+                try (Reader reader = new InputStreamReader(new FileInputStream(machineIdFile))) {
+                    systemId = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+                } catch (IOException e) {
+                    log.errorf(e, "/etc/machine-id exists and is readable, but exception was raised when reading it");
+                    systemId = "";
+                }
+            } else {
+                log.errorf("/etc/machine-id does not exist or is unreadable");
+                // for the future, we might want to check additional places and try different things
+                    systemId = "";
             }
-        } else {
-            // the file doesn't exist, or we can't read it... return null on this initial implementation
-            // for the future, we might want to check additional places and try different things
-            return null;
         }
+
+        return (systemId.isEmpty()) ? null : systemId;
     }
 }
