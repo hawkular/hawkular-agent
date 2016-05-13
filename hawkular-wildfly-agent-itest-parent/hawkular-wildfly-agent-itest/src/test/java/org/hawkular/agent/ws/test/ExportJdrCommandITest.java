@@ -17,7 +17,8 @@
 package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.annotations.Test;
 
@@ -27,6 +28,7 @@ import org.testng.annotations.Test;
 public class ExportJdrCommandITest extends AbstractCommandITest {
     public static final String GROUP = "ExportJdrCommandITest";
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { DeployApplicationITest.GROUP })
     public void exportJdrCommand() throws Throwable {
         waitForAccountsAndInventory();

@@ -30,8 +30,9 @@
                  timeUnits="minutes"/>
 
     <storage-adapter type="HAWKULAR"
-                     username="jdoe"
-                     password="password" />
+                     tenantId="${hawkular.rest.tenantId}"
+                     username="${hawkular.rest.user}"
+                     password="${hawkular.rest.password}" />
 
     <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
       <metric-dmr name="Heap Used"

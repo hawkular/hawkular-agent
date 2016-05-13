@@ -21,7 +21,9 @@ import java.net.URL;
 import java.net.URLEncoder;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -40,6 +42,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
         return new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources").add("jdbc-driver", driverName);
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { ExportJdrCommandITest.GROUP })
     public void testAddJdbcDriver() throws Throwable {
         waitForAccountsAndInventory();
@@ -74,7 +77,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     + "}";
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
-                    .expectWelcome(req, driverJarUrl)
+                    .expectWelcome(new MessageAnswer(req, driverJarUrl, 0))
                     .expectGenericSuccess(wfPath.ids().getFeedId())
                     .expectText(response)
                     .build()) {
@@ -85,6 +88,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testAddJdbcDriver" })
     public void testRemoveJdbcDriver() throws Throwable {
         waitForAccountsAndInventory();

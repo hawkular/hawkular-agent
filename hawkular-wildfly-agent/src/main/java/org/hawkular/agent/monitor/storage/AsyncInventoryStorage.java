@@ -53,11 +53,8 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.Relationships.Direction;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.AbstractElement.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Metric;
@@ -66,6 +63,8 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -354,8 +353,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
                 }
 
-                DataEntity.Blueprint<Resources.DataRole> dataEntity = new DataEntity.Blueprint<>(
-                        Resources.DataRole.configuration, structDataBuilder.build(), null);
+                DataEntity.Blueprint<DataRole.Resource> dataEntity = new DataEntity.Blueprint<>(
+                        DataRole.Resource.configuration, structDataBuilder.build(), null);
 
                 relationshipOrEntity(resourceCanonicalPath.toString(), DataEntity.class, dataEntity);
             }
@@ -441,8 +440,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     structDataBuilder.putString(rcpt.getID().getIDString(), rcpt.getName().getNameString());
                 }
 
-                DataEntity.Blueprint<ResourceTypes.DataRole> dataEntity = new DataEntity.Blueprint<>(
-                        ResourceTypes.DataRole.configurationSchema, structDataBuilder.build(), null);
+                DataEntity.Blueprint<DataRole.ResourceType> dataEntity = new DataEntity.Blueprint<>(
+                        DataRole.ResourceType.configurationSchema, structDataBuilder.build(), null);
 
                 relationshipOrEntity(parentPath.toString(), DataEntity.class, dataEntity);
             }
@@ -609,15 +608,18 @@ public class AsyncInventoryStorage implements InventoryStorage {
                             AsyncInventoryStorage.this.config.getInventoryContext());
                     url.append("bulk");
                     String jsonPayload = Util.toJson(payload);
-                    log.tracef("About to send a bulk insert request to inventory: [%s]", jsonPayload);
+
+                    Map<String, String> headers = getTenantHeader(tenantIdToUse);
+                    log.tracef("About to send a bulk insert request to inventory: headers=[%s] body=[%s]", headers, jsonPayload);
 
                     // now send the REST request
-                    Request request = AsyncInventoryStorage.this.httpClientBuilder
-                            .buildJsonPostRequest(url.toString(), getTenantHeader(tenantIdToUse), jsonPayload);
+                    Request request = AsyncInventoryStorage.this.httpClientBuilder.buildJsonPostRequest(url.toString(),
+                            headers, jsonPayload);
                     Call call = AsyncInventoryStorage.this.httpClientBuilder.getHttpClient().newCall(request);
                     final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
                     Response response = call.execute();
                     final long durationNanos = timer.stop();
+                    log.tracef("Received bulk insert response from inventory: code [%d]", response.code());
 
                     // HTTP status of 201 means success, 409 means it already exists; anything else is an error
                     if (response.code() != 201 && response.code() != 409) {

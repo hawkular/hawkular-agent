@@ -19,6 +19,7 @@ package org.hawkular.agent.test;
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.agent.ws.test.AbstractCommandITest;
 import org.hawkular.agent.ws.test.DatasourceCommandITest;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.testng.annotations.Test;
 
 /**
@@ -28,18 +29,19 @@ import org.testng.annotations.Test;
 public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
     public static final String GROUP = "HawkularWildFlyAgentContextITest";
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { DatasourceCommandITest.GROUP })
     public void testAgentFromJNDI() throws Throwable {
         waitForAccountsAndInventory();
 
         // this should not exist yet
-        assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/MyAppResourceType/resources",
+        assertResourceNotInInventory("/feeds/" + getFeedId() + "/resourceTypes/MyAppResourceType/resources",
                 (r -> r.getId().contains("ITest Resource ID")), 5, 5000);
 
         String createResource = getWithRetries(getExampleJndiWarCreateResourceUrl("ITest Resource ID"), 1, 1);
 
         // see that the new resource has been persisted to hawkular-inventory
-        getResource("/feeds/" + feedId + "/resourceTypes/MyAppResourceType/resources",
+        getResource("/feeds/" + getFeedId() + "/resourceTypes/MyAppResourceType/resources",
                 (r -> r.getId().contains("ITest Resource ID")));
 
         String metric = getWithRetries(getExampleJndiWarSendMetricUrl("ITest Metric Key", 123.0), 1, 1);
@@ -47,7 +49,7 @@ public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
         String removeResource = getWithRetries(getExampleJndiWarRemoveResourceUrl("ITest Resource ID"), 1, 1);
 
         // this should not exist anymore
-        assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/MyAppResourceType/resources",
+        assertResourceNotInInventory("/feeds/" + getFeedId() + "/resourceTypes/MyAppResourceType/resources",
                 (r -> r.getId().contains("ITest Resource ID")), 5, 5000);
 
     }

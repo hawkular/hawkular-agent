@@ -19,7 +19,8 @@ package org.hawkular.agent.ws.test;
 import java.net.URLEncoder;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -60,6 +61,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                 .add(isXaDatasource ? "xa-data-source" : "data-source", dsName);
     }
 
+
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { JdbcDriverCommandITest.GROUP })
     public void testAddDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -107,6 +110,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { JdbcDriverCommandITest.GROUP })
     public void testAddXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -149,6 +153,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testAddDatasource" })
     public void testUpdateDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -200,6 +205,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testAddXaDatasource" })
     public void testUpdateXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -252,6 +258,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateDatasource" })
     public void testRemoveDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -266,7 +273,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
+            getResource("/feeds/" + getFeedId() + "/resourceTypes/Datasource/resources",
                     (r -> r.getId().contains(datasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
@@ -292,12 +299,13 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/Datasource/resources",
+            assertResourceNotInInventory("/feeds/" + getFeedId() + "/resourceTypes/Datasource/resources",
                     (r -> r.getId().contains(datasourceName)), 10, 5000);
 
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateXaDatasource" })
     public void testRemoveXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -312,7 +320,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/feeds/" + feedId + "/resourceTypes/XA%20Datasource/resources",
+            getResource("/feeds/" + getFeedId() + "/resourceTypes/XA%20Datasource/resources",
                     (r -> r.getId().contains(xaDatasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
@@ -338,7 +346,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/feeds/" + feedId + "/resourceTypes/XA%20Datasource/resources",
+            assertResourceNotInInventory("/feeds/" + getFeedId() + "/resourceTypes/XA%20Datasource/resources",
                     (r -> r.getId().contains(xaDatasourceName)), 10, 5000);
         }
     }

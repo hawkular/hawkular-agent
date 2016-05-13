@@ -19,18 +19,17 @@
 -->
 <build xmlns="urn:wildfly:feature-pack-build:1.1">
   <dependencies>
-    <artifact name="org.hawkular.accounts:hawkular-accounts-feature-pack" />
+    <artifact name="org.hawkular.commons:hawkular-nest-feature-pack" />
     <artifact name="org.hawkular.agent:hawkular-wildfly-agent-feature-pack" />
   </dependencies>
 
   <config>
-    <standalone template="configuration/standalone/hawkular-accounts-template.xml" subsystems="configuration/standalone/hawkular-wildfly-agent-itest-subsystems.xml" output-file="standalone/configuration/standalone.xml" />
+    <standalone template="configuration/standalone/hawkular-nest-template.xml" subsystems="configuration/standalone/hawkular-wildfly-agent-itest-subsystems.xml" output-file="standalone/configuration/standalone.xml" />
   </config>
 
   <copy-artifacts>
     <copy-artifact artifact="org.hawkular.inventory:hawkular-inventory-dist" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-inventory-dist.war" />
     <copy-artifact artifact="org.hawkular.metrics:hawkular-metrics-component" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-metrics-component.war" />
-    <copy-artifact artifact="org.hawkular.cmdgw:hawkular-command-gateway-war" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-command-gateway-war.war" />
     <copy-artifact artifact="org.hawkular.agent:hawkular-wildfly-agent-example-jndi" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-wildfly-agent-example-jndi.war" />
   </copy-artifacts>
 

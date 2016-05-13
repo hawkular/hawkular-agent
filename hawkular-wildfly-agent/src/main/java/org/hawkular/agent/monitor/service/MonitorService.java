@@ -26,6 +26,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -551,7 +552,7 @@ public class MonitorService implements Service<MonitorService> {
                     // 2. register our feed ID
                     // 3. connect to the server's feed comm channel
                     try {
-                        registerFeed();
+                        registerFeed(this.configuration.getStorageAdapter().getTenantId());
                     } catch (Exception e) {
                         log.errorCannotDoAnythingWithoutFeed(e);
                         throw new Exception("Agent needs a feed to run");
@@ -869,7 +870,7 @@ public class MonitorService implements Service<MonitorService> {
      *
      * @throws Exception if failed to register feed
      */
-    private void registerFeed() throws Exception {
+    private void registerFeed(String tenantId) throws Exception {
         String desiredFeedId = this.feedId;
 
         try {
@@ -902,7 +903,8 @@ public class MonitorService implements Service<MonitorService> {
 
             // now send the REST request
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), null, jsonPayload);
+            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(),
+                    Collections.singletonMap("Hawkular-Tenant", tenantId), jsonPayload);
             Response httpResponse = httpclient.newCall(request).execute();
 
             // HTTP status of 201 means success; 409 means it already exists, anything else is an error

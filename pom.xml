@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular</groupId>
     <artifactId>hawkular-parent</artifactId>
-    <version>36</version>
+    <version>43</version>
   </parent>
 
   <groupId>org.hawkular.agent</groupId>
@@ -62,16 +62,17 @@
     <version.io.prometheus.client>0.0.2</version.io.prometheus.client>
     <version.org.hamcrest>1.3</version.org.hamcrest>
 
-    <version.org.hawkular.accounts>2.0.22.Final</version.org.hawkular.accounts>
-    <version.org.hawkular.cmdgw>0.11.0.Final</version.org.hawkular.cmdgw>
-    <version.org.hawkular.commons>0.4.0.Final</version.org.hawkular.commons>
-    <version.org.hawkular.inventory>0.13.0.Final</version.org.hawkular.inventory>
-    <version.org.hawkular.metrics>0.13.0.Final</version.org.hawkular.metrics>
+    <version.org.hawkular.commons>0.7.1.Final</version.org.hawkular.commons>
+    <version.org.hawkular.inventory>0.16.0.Final-SRC-revision-95d9738893fd0a536ca08919ff0a512dad2a90db</version.org.hawkular.inventory>
+    <version.org.hawkular.metrics>0.16.0.Final-SRC-revision-527e82f1107c41042e5d7bc01cab6f56e49ed590</version.org.hawkular.metrics>
 
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.2</version.org.jolokia>
     <version.org.keycloak>1.8.1.Final</version.org.keycloak>
+
+    <version.org.jboss.arquillian>1.1.11.Final</version.org.jboss.arquillian>
+    <version.org.wildfly.arquillian>2.0.0.Alpha1</version.org.wildfly.arquillian>
   </properties>
 
   <dependencyManagement>
@@ -132,9 +133,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.hawkular.accounts</groupId>
-        <artifactId>hawkular-accounts-feature-pack</artifactId>
-        <version>${version.org.hawkular.accounts}</version>
+        <groupId>org.hawkular.commons</groupId>
+        <artifactId>hawkular-nest-feature-pack</artifactId>
+        <version>${version.org.hawkular.commons}</version>
         <type>zip</type>
       </dependency>
 
@@ -146,15 +147,27 @@
       </dependency>
 
       <dependency>
-        <groupId>org.hawkular.cmdgw</groupId>
+        <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-command-gateway-api</artifactId>
-        <version>${version.org.hawkular.cmdgw}</version>
+        <version>${version.org.hawkular.commons}</version>
       </dependency>
 
       <dependency>
         <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-bus-common</artifactId>
         <version>${version.org.hawkular.commons}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.commons</groupId>
+        <artifactId>hawkular-inventory-paths</artifactId>
+        <version>${version.org.hawkular.commons}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hawkular.inventory</groupId>
+        <artifactId>hawkular-inventory-api</artifactId>
+        <version>${version.org.hawkular.inventory}</version>
       </dependency>
 
       <dependency>
