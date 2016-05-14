@@ -107,6 +107,8 @@
     <xs:attribute name="name"        type="xs:string" use="required"/>
     <xs:attribute name="path"        type="xs:string" use="required"/>
     <xs:attribute name="attribute"   type="xs:string" use="required"/>
+    <xs:attribute name="resolveExpressions" type="xs:boolean"/>
+    <xs:attribute name="includeDefaults"    type="xs:boolean"/>
     <xs:attribute name="metricType"  type="metricTypeType"/>
     <xs:attribute name="metricUnits" type="metricUnitsType"/>
     <xs:attribute name="interval"    type="xs:int"/>
@@ -156,6 +158,8 @@
     <xs:attribute name="name"      type="xs:string" use="required"/>
     <xs:attribute name="path"      type="xs:string" use="required"/>
     <xs:attribute name="attribute" type="xs:string" use="optional"/> <!-- if not specified, existence of resource at path is used for availability status -->
+    <xs:attribute name="resolveExpressions" type="xs:boolean"/>
+    <xs:attribute name="includeDefaults"    type="xs:boolean"/>
     <xs:attribute name="interval"  type="xs:int"/>
     <xs:attribute name="timeUnits" type="timeUnitsType"/>
     <xs:attribute name="upRegex"   type="xs:string"/>
@@ -187,6 +191,8 @@
     <xs:attribute name="name"      type="xs:string" use="required"/>
     <xs:attribute name="path"      type="xs:string" use="required"/>
     <xs:attribute name="attribute" type="xs:string" use="required"/>
+    <xs:attribute name="resolveExpressions" type="xs:boolean"/>
+    <xs:attribute name="includeDefaults"    type="xs:boolean"/>
   </xs:complexType>
 
   <xs:complexType name="operationDmrType">

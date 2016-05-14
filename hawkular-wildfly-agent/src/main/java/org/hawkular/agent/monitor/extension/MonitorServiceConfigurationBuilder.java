@@ -168,9 +168,13 @@ public class MonitorServiceConfigurationBuilder {
                     for (Property metricProperty : metricsList) {
                         String metricName = metricSetName + "~" + metricProperty.getName();
                         ModelNode metricValueNode = metricProperty.getValue();
+                        String attributeString = getString(metricValueNode, context, DMRMetricAttributes.ATTRIBUTE);
+                        PathAddress pathAddress = getPath(metricValueNode, context, DMRMetricAttributes.PATH);
+                        boolean re = getBoolean(metricValueNode, context, DMRMetricAttributes.RESOLVE_EXPRESSIONS);
+                        boolean id = getBoolean(metricValueNode, context, DMRMetricAttributes.INCLUDE_DEFAULTS);
                         AttributeLocation<DMRNodeLocation> location = new AttributeLocation<>(
-                                new DMRNodeLocation(getPath(metricValueNode, context, DMRMetricAttributes.PATH)),
-                                getString(metricValueNode, context, DMRMetricAttributes.ATTRIBUTE));
+                                new DMRNodeLocation(pathAddress, re, id),
+                                attributeString);
                         MetricType<DMRNodeLocation> metric = new MetricType<>(
                                 ID.NULL_ID,
                                 new Name(metricName),
@@ -244,9 +248,13 @@ public class MonitorServiceConfigurationBuilder {
                     for (Property availProperty : availsList) {
                         String availName = availSetName + "~" + availProperty.getName();
                         ModelNode availValueNode = availProperty.getValue();
+                        String attributeString = getString(availValueNode, context, DMRAvailAttributes.ATTRIBUTE);
+                        PathAddress pathAddress = getPath(availValueNode, context, DMRAvailAttributes.PATH);
+                        boolean re = getBoolean(availValueNode, context, DMRAvailAttributes.RESOLVE_EXPRESSIONS);
+                        boolean id = getBoolean(availValueNode, context, DMRAvailAttributes.INCLUDE_DEFAULTS);
                         AttributeLocation<DMRNodeLocation> location = new AttributeLocation<>(
-                                new DMRNodeLocation(getPath(availValueNode, context, DMRAvailAttributes.PATH)),
-                                getString(availValueNode, context, DMRAvailAttributes.ATTRIBUTE));
+                                new DMRNodeLocation(pathAddress, re, id),
+                                attributeString);
 
                         AvailType<DMRNodeLocation> avail = new AvailType<DMRNodeLocation>(ID.NULL_ID,
                                 new Name(availName),
@@ -864,16 +872,15 @@ public class MonitorServiceConfigurationBuilder {
 
                         String resourceTypeName = resourceTypeProperty.getName();
 
-                        Builder<?, DMRNodeLocation> resourceTypeBuilder =
-                                ResourceType.<DMRNodeLocation> builder()
-                                        .id(ID.NULL_ID)
-                                        .name(new Name(resourceTypeName))
-                                        .location(new DMRNodeLocation(getPath(resourceTypeValueNode, context,
-                                                DMRResourceTypeAttributes.PATH)))
-                                        .resourceNameTemplate(getString(resourceTypeValueNode, context,
-                                                DMRResourceTypeAttributes.RESOURCE_NAME_TEMPLATE))
-                                        .parents(getNameListFromString(resourceTypeValueNode, context,
-                                                DMRResourceTypeAttributes.PARENTS));
+                        Builder<?, DMRNodeLocation> resourceTypeBuilder = ResourceType.<DMRNodeLocation> builder()
+                                .id(ID.NULL_ID)
+                                .name(new Name(resourceTypeName))
+                                .location(new DMRNodeLocation(
+                                        getPath(resourceTypeValueNode, context, DMRResourceTypeAttributes.PATH)))
+                                .resourceNameTemplate(getString(resourceTypeValueNode, context,
+                                        DMRResourceTypeAttributes.RESOURCE_NAME_TEMPLATE))
+                                .parents(getNameListFromString(resourceTypeValueNode, context,
+                                        DMRResourceTypeAttributes.PARENTS));
 
                         List<Name> metricSets = getNameListFromString(resourceTypeValueNode, context,
                                 DMRResourceTypeAttributes.METRIC_SETS);
@@ -894,8 +901,8 @@ public class MonitorServiceConfigurationBuilder {
                                 PathAddress pathAddress = getPath(operationValueNode, context,
                                         DMROperationAttributes.PATH);
                                 Operation<DMRNodeLocation> op = new Operation<>(ID.NULL_ID, new Name(operationName),
-                                        new DMRNodeLocation(pathAddress), getString(operationValueNode, context,
-                                                DMROperationAttributes.OPERATION_NAME));
+                                        new DMRNodeLocation(pathAddress),
+                                        getString(operationValueNode, context, DMROperationAttributes.OPERATION_NAME));
                                 resourceTypeBuilder.operation(op);
                             }
                         }
@@ -908,14 +915,21 @@ public class MonitorServiceConfigurationBuilder {
                             for (Property configProperty : configList) {
                                 ModelNode configValueNode = configProperty.getValue();
                                 String configName = configProperty.getName();
-                                ResourceConfigurationPropertyType<DMRNodeLocation> configType = //
-                                        new ResourceConfigurationPropertyType<>(
-                                                ID.NULL_ID, new Name(configName),
-                                                new AttributeLocation<DMRNodeLocation>(
-                                                        new DMRNodeLocation(getPath(configValueNode, context,
-                                                                DMRResourceConfigAttributes.PATH)),
-                                                        getString(configValueNode, context,
-                                                                DMRResourceConfigAttributes.ATTRIBUTE)));
+                                String attributeString = getString(configValueNode, context,
+                                        DMRResourceConfigAttributes.ATTRIBUTE);
+                                PathAddress pathAddress = getPath(configValueNode, context,
+                                        DMRResourceConfigAttributes.PATH);
+                                boolean re = getBoolean(configValueNode, context,
+                                        DMRResourceConfigAttributes.RESOLVE_EXPRESSIONS);
+                                boolean id = getBoolean(configValueNode, context,
+                                        DMRResourceConfigAttributes.INCLUDE_DEFAULTS);
+
+                                ResourceConfigurationPropertyType<DMRNodeLocation> configType =
+                                new ResourceConfigurationPropertyType<>(
+                                        ID.NULL_ID, new Name(configName),
+                                        new AttributeLocation<DMRNodeLocation>(
+                                                new DMRNodeLocation(pathAddress, re, id),
+                                                attributeString));
                                 resourceTypeBuilder.resourceConfigurationPropertyType(configType);
                             }
                         }
