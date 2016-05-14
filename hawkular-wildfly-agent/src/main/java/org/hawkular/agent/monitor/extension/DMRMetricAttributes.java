@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,6 +42,22 @@ public interface DMRMetricAttributes {
             .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();
 
+    SimpleAttributeDefinition RESOLVE_EXPRESSIONS = new SimpleAttributeDefinitionBuilder("resolveExpressions",
+            ModelType.BOOLEAN)
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(true))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
+    SimpleAttributeDefinition INCLUDE_DEFAULTS = new SimpleAttributeDefinitionBuilder("includeDefaults",
+            ModelType.BOOLEAN)
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(true))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     SimpleAttributeDefinition INTERVAL = new SimpleAttributeDefinitionBuilder("interval",
             ModelType.INT)
             .setAllowNull(true)
@@ -78,6 +94,8 @@ public interface DMRMetricAttributes {
     AttributeDefinition[] ATTRIBUTES = {
             PATH,
             ATTRIBUTE,
+            RESOLVE_EXPRESSIONS,
+            INCLUDE_DEFAULTS,
             METRIC_TYPE,
             INTERVAL,
             TIME_UNITS,

@@ -133,7 +133,8 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
         ReadAttributeOperationBuilder<?> opBuilder = OperationBuilder
                 .readAttribute()
                 .address(location.getLocation().getPathAddress())
-                .resolveExpressions()
+                .resolveExpressions(location.getLocation().getResolveExpressions())
+                .includeDefaults(location.getLocation().getIncludeDefaults())
                 .name(useAttribute);
 
         // time the execute separately - we want to time ONLY the execute call
@@ -229,7 +230,7 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
                 List<ModelNode> list = n.asList();
                 for (ModelNode item : list) {
                     ModelNode pathAddress = item.get("address");
-                    result.put(DMRNodeLocation.of(pathAddress),
+                    result.put(DMRNodeLocation.of(pathAddress, true, true),
                             item.hasDefined("result") ? item.get("result") : new ModelNode());
                 }
                 return Collections.unmodifiableMap(result);

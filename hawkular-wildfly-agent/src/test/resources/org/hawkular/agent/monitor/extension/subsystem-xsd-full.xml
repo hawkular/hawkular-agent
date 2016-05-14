@@ -56,7 +56,9 @@
                 metricType="gauge"
                 metricUnits="bytes"
                 path="/core-service=platform-mbean/type=memory"
-                attribute="heap-memory-usage#used" />
+                attribute="heap-memory-usage#used"
+                resolveExpressions="true"
+                includeDefaults="true"/>
   </metric-set-dmr>
 
   <avail-set-dmr name="Server Availability" enabled="true">
@@ -65,6 +67,8 @@
                timeUnits="seconds"
                path="/"
                attribute="server-state"
+               resolveExpressions="true"
+               includeDefaults="true"
                upRegex="run.*" />
   </avail-set-dmr>
 
@@ -77,7 +81,9 @@
                        availSets="Server Availability">
       <resource-config-dmr name="Hostname"
                            path="/core-service=server-environment"
-                           attribute="qualified-host-name" />
+                           attribute="qualified-host-name"
+                           resolveExpressions="true"
+                           includeDefaults="true"/>
       <operation-dmr name="Reload Server" operationName="reload" path="/some=other/path=here"/>
     </resource-type-dmr>
   </resource-type-set-dmr>

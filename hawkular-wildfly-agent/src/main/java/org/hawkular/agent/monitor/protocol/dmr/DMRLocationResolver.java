@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -104,7 +104,7 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
                     segments.add(segment);
                 }
                 PathAddress absPath = PathAddress.pathAddress(segments);
-                return new DMRNodeLocation(absPath);
+                return new DMRNodeLocation(absPath, location.getResolveExpressions(), location.getIncludeDefaults());
             }
         }
     }

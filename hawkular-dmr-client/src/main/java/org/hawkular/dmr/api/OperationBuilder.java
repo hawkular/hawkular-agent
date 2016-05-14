@@ -528,8 +528,8 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         }
 
         @SuppressWarnings("unchecked")
-        public T resolveExpressions(boolean includeDefaults) {
-            baseNode.get(ModelDescriptionConstants.RESOLVE_EXPRESSIONS).set(includeDefaults);
+        public T resolveExpressions(boolean resolveExpressions) {
+            baseNode.get(ModelDescriptionConstants.RESOLVE_EXPRESSIONS).set(resolveExpressions);
             return (T) this;
         }
 
