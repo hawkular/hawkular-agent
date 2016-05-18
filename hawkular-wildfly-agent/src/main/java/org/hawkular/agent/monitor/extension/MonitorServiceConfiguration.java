@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.extension;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -366,15 +367,17 @@ public class MonitorServiceConfiguration {
         private final ConnectionData connectionData;
         private final String securityRealm;
         private final String tenantId;
+        private final Map<String, ? extends Object> customData;
 
         public AbstractEndpointConfiguration(String name, boolean enabled, ConnectionData connectionData,
-                String securityRealm, String tenantId) {
+                String securityRealm, String tenantId, Map<String, ? extends Object> customData) {
             super();
             this.name = name;
             this.enabled = enabled;
             this.connectionData = connectionData;
             this.securityRealm = securityRealm;
             this.tenantId = tenantId;
+            this.customData = (customData != null) ? Collections.unmodifiableMap(customData) : Collections.emptyMap();
         }
 
         public boolean isEnabled() {
@@ -401,6 +404,13 @@ public class MonitorServiceConfiguration {
             return tenantId;
         }
 
+        /**
+         * @return custom information related to an endpoint. The endpoint service should know the value types.
+         */
+        public Map<String, ? extends Object> getCustomData() {
+            return customData;
+        }
+
         public boolean isLocal() {
             return connectionData == null;
         }
@@ -411,8 +421,9 @@ public class MonitorServiceConfiguration {
         private final Avail setAvailOnShutdown;
 
         public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
-                ConnectionData connectionData, String securityRealm, Avail setAvailOnShutdown, String tenantId) {
-            super(name, enabled, connectionData, securityRealm, tenantId);
+                ConnectionData connectionData, String securityRealm, Avail setAvailOnShutdown, String tenantId,
+                Map<String, ? extends Object> customData) {
+            super(name, enabled, connectionData, securityRealm, tenantId, customData);
             this.resourceTypeSets = resourceTypeSets;
             this.setAvailOnShutdown = setAvailOnShutdown;
         }
@@ -446,8 +457,8 @@ public class MonitorServiceConfiguration {
 
         public DynamicEndpointConfiguration(String name, boolean enabled,
                 Collection<Name> metricSets, ConnectionData connectionData, String securityRealm, int interval,
-                TimeUnit timeUnits, String tenantId) {
-            super(name, enabled, connectionData, securityRealm, tenantId);
+                TimeUnit timeUnits, String tenantId, Map<String, Object> customData) {
+            super(name, enabled, connectionData, securityRealm, tenantId, customData);
             this.metricSets = metricSets;
             this.interval = interval;
             this.timeUnits = timeUnits;

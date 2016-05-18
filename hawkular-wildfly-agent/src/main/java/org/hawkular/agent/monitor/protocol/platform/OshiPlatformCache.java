@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.hawkular.agent.monitor.protocol.platform;
 
 import java.util.HashMap;
@@ -25,6 +24,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
+import org.hawkular.agent.monitor.util.Util;
 
 import oshi.SystemInfo;
 import oshi.hardware.Memory;
@@ -47,11 +47,21 @@ public class OshiPlatformCache {
     private final ReadLock rLock = rwLock.readLock();
     private final WriteLock wLock = rwLock.writeLock();
     private final String feedId;
+    private final String machineId;
 
-    public OshiPlatformCache(String feedId) {
+    /**
+     * Creates the cache of OSHi platform data.
+     *
+     * @param feedId       he feed ID
+     * @param machineId    the machine ID - if null, one will be attempted to be discovered
+     *
+     * @see Util#getSystemId()
+     */
+    public OshiPlatformCache(String feedId, String machineId) {
         sysInfo = new SystemInfo();
         sysInfoCache = new HashMap<>(5);
         this.feedId = feedId;
+        this.machineId = (machineId != null) ? machineId : Util.getSystemId();
     }
 
     /**
@@ -329,6 +339,9 @@ public class OshiPlatformCache {
      */
     public Double getMetric(PlatformResourceNode node, Name metricToCollect) {
         switch (node.getType()) {
+            case OPERATING_SYSTEM: {
+                return getOperatingSystemMetric(metricToCollect);
+            }
             case MEMORY: {
                 return getMemoryMetric(metricToCollect);
             }
@@ -345,6 +358,11 @@ public class OshiPlatformCache {
                 throw new IllegalArgumentException("Platform resource node [" + node + "] does not have metrics");
             }
         }
+    }
+
+    private Double getOperatingSystemMetric(Name metricToCollect) {
+        // there are none yet - just a placeholder in case we add some in the future
+        throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
     }
 
     /**
@@ -451,5 +469,12 @@ public class OshiPlatformCache {
         }
 
         return results;
+    }
+
+    /**
+     * @return the unique machine ID for this platform if it is known. Otherwise, null is returned.
+     */
+    public String getMachineId() {
+        return machineId;
     }
 }

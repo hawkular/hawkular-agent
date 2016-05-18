@@ -42,7 +42,6 @@ import com.squareup.okhttp.Response;
 public class HawkularStorageAdapter implements StorageAdapter {
     private static final MsgLogger log = AgentLoggers.getLogger(HawkularStorageAdapter.class);
 
-    private String feedId;
     private MonitorServiceConfiguration.StorageAdapterConfiguration config;
     private Diagnostics diagnostics;
     private HttpClientBuilder httpClientBuilder;
@@ -58,7 +57,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
             MonitorServiceConfiguration.StorageAdapterConfiguration config,
             Diagnostics diag,
             HttpClientBuilder httpClientBuilder) {
-        this.feedId = feedId;
         this.config = config;
         this.diagnostics = diag;
         this.httpClientBuilder = httpClientBuilder;

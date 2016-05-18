@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,7 @@ import java.net.MalformedURLException;
 import java.util.HashMap;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class UtilTest {
@@ -45,5 +46,10 @@ public class UtilTest {
 
         HashMap<?, ?> mapDup = Util.fromJson(json, HashMap.class);
         Assert.assertEquals(map, mapDup);
+    }
+
+    @Test @Ignore("CI system has no /etc/machine-id . But this should work on Fedora/RHEL/CentOS boxes.")
+    public void getSystemId() {
+        Assert.assertNotNull(Util.getSystemId());
     }
 }

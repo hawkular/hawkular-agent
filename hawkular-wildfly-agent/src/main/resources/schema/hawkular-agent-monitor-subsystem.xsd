@@ -340,6 +340,7 @@
       <xs:element name="power-sources"         type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
     </xs:all>
     <xs:attribute name="enabled"               type="xs:boolean"/>
+    <xs:attribute name="machineId"             type="xs:string"/>
   </xs:complexType>
 
   <!-- various platform metrics configuration -->

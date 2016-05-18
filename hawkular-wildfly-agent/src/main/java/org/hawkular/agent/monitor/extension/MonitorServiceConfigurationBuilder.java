@@ -124,8 +124,9 @@ public class MonitorServiceConfigurationBuilder {
         TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context);
         platformConfigBuilder.typeSets(platformTypeSets);
         if (!platformTypeSets.isDisabledOrEmpty()) {
+            String machineId = determinePlatformMachineId(config, context);
             EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null, Avail.DOWN,
-                    null);
+                    null, Collections.singletonMap(Constants.MACHINE_ID.getNameString(), machineId));
             platformConfigBuilder.endpoint(endpoint);
         }
 
@@ -435,6 +436,25 @@ public class MonitorServiceConfigurationBuilder {
 
     }
 
+    private static String determinePlatformMachineId(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+
+        if (!config.hasDefined(PlatformDefinition.PLATFORM)) {
+            return null; // not monitoring platform, so we don't collect machine ID
+        }
+
+        List<Property> asPropertyList = config.get(PlatformDefinition.PLATFORM).asPropertyList();
+        if (asPropertyList.size() == 0) {
+            return null; // not monitoring platform, so we don't collect machine ID
+        } else if (asPropertyList.size() > 1) {
+            throw new IllegalArgumentException("Only one platform config allowed: " + config.toJSONString(true));
+        }
+
+        ModelNode platformValueNode = asPropertyList.get(0).getValue();
+        String machineId = getString(platformValueNode, context, PlatformAttributes.MACHINE_ID);
+        return machineId;
+    }
+
     private static TypeSets<PlatformNodeLocation> buildPlatformTypeSets(ModelNode config, OperationContext context)
                     throws OperationFailedException {
 
@@ -455,12 +475,13 @@ public class MonitorServiceConfigurationBuilder {
 
         ModelNode platformValueNode = asPropertyList.get(0).getValue();
         boolean typeSetsEnabled = getBoolean(platformValueNode, context, PlatformAttributes.ENABLED);
-        if (typeSetsEnabled == false) {
+        if (!typeSetsEnabled) {
             log.debugf("Platform monitoring is disabled");
             return TypeSets.empty();
         }
 
         TypeSets.Builder<PlatformNodeLocation> typeSetsBuilder = TypeSets.builder();
+
         // all the type metadata is dependent upon the capabilities of the oshi SystemInfo API
 
         // since platform monitoring is enabled, we will always have at least the root OS type
@@ -471,6 +492,17 @@ public class MonitorServiceConfigurationBuilder {
                 .location(new PlatformNodeLocation(
                         PlatformPath.builder().any(PlatformResourceType.OPERATING_SYSTEM).build()))
                 .resourceNameTemplate("%s");
+
+        ResourceConfigurationPropertyType<PlatformNodeLocation> machineIdConfigType =
+                new ResourceConfigurationPropertyType<> (
+                        ID.NULL_ID,
+                        Constants.MACHINE_ID,
+                        new AttributeLocation<>(
+                                new PlatformNodeLocation(PlatformPath.empty()), Constants.MACHINE_ID.getNameString()
+                        )
+                );
+        rootTypeBldr.resourceConfigurationPropertyType(machineIdConfigType);
+
         populateMetricAndAvailTypesForResourceType(rootTypeBldr, typeSetsBuilder);
         ResourceType<PlatformNodeLocation> rootType = rootTypeBldr.build();
 
@@ -496,7 +528,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     MetricType<PlatformNodeLocation> usableSpace = new MetricType<PlatformNodeLocation>(null,
                             Constants.FILE_STORE_USABLE_SPACE,
-                            new AttributeLocation<PlatformNodeLocation>(
+                            new AttributeLocation<>(
                                     new PlatformNodeLocation(PlatformPath.empty()),
                                     Constants.FILE_STORE_USABLE_SPACE.getNameString()),
                             interval,
@@ -505,7 +537,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     MetricType<PlatformNodeLocation> totalSpace = new MetricType<PlatformNodeLocation>(null,
                             Constants.FILE_STORE_TOTAL_SPACE,
-                            new AttributeLocation<PlatformNodeLocation>(
+                            new AttributeLocation<>(
                                     new PlatformNodeLocation(PlatformPath.empty()),
                                     Constants.FILE_STORE_TOTAL_SPACE.getNameString()),
                             interval,
@@ -1109,7 +1141,7 @@ public class MonitorServiceConfigurationBuilder {
                     String protocol = useSsl ? "https-remoting" : "http-remoting";
                     ConnectionData connectionData = new ConnectionData(protocol, host, port, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
-                            connectionData, securityRealm, setAvailOnShutdown, tenantId);
+                            connectionData, securityRealm, setAvailOnShutdown, tenantId, null);
 
                     dmrConfigBuilder.endpoint(endpoint);
                 }
@@ -1135,7 +1167,7 @@ public class MonitorServiceConfigurationBuilder {
                 String tenantId = getString(localDMRValueNode, context, LocalDMRAttributes.TENANT_ID);
 
                 EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets, null, null,
-                        setAvailOnShutdown, tenantId);
+                        setAvailOnShutdown, tenantId, null);
                 dmrConfigBuilder.endpoint(endpoint);
             }
 
@@ -1174,7 +1206,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
-                            connectionData, securityRealm, setAvailOnShutdown, tenantId);
+                            connectionData, securityRealm, setAvailOnShutdown, tenantId, null);
 
                     jmxConfigBuilder.endpoint(endpoint);
                 }
@@ -1217,7 +1249,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     DynamicEndpointConfiguration endpoint = new DynamicEndpointConfiguration(name, enabled,
-                            metricSets, connectionData, securityRealm, interval, timeUnits, tenandId);
+                            metricSets, connectionData, securityRealm, interval, timeUnits, tenandId, null);
 
                     prometheusConfigBuilder.endpoint(endpoint);
                 }

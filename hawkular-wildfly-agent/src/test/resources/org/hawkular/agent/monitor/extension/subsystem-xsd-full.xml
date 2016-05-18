@@ -161,7 +161,7 @@
 
   </managed-servers>
 
-  <platform enabled="true">
+  <platform enabled="true" machineId="1234567890abcdef">
     <file-stores   enabled="true" interval="30000" timeUnits="milliseconds" />
     <memory        enabled="true" interval="60"  timeUnits="seconds" />
     <processors    enabled="true" interval="1"  timeUnits="minutes" />

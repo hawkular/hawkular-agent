@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.protocol.platform;
 
+import java.util.Map;
+
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
@@ -36,10 +38,15 @@ public class PlatformEndpointService extends EndpointService<PlatformNodeLocatio
     /** @see org.hawkular.agent.monitor.protocol.EndpointService#openSession() */
     @Override
     public PlatformSession openSession() {
-        OshiPlatformCache oshi = new OshiPlatformCache(getFeedId());
+        OshiPlatformCache oshi = new OshiPlatformCache(getFeedId(), getMachineId());
         PlatformDriver driver = new PlatformDriver(oshi, getDiagnostics());
         return new PlatformSession(getFeedId(), getMonitoredEndpoint(), getResourceTypeManager(), driver,
                 getLocationResolver());
+    }
+
+    private String getMachineId() {
+        Map<String, ? extends Object> customData = getMonitoredEndpoint().getEndpointConfiguration().getCustomData();
+        return (String) customData.get(Constants.MACHINE_ID.getNameString());
     }
 
 }

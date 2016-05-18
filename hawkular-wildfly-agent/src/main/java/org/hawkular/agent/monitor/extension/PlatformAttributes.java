@@ -33,7 +33,15 @@ public interface PlatformAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_NONE)
                     .build();
 
+    SimpleAttributeDefinition MACHINE_ID = new SimpleAttributeDefinitionBuilder("machineId",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     AttributeDefinition[] ATTRIBUTES = {
-            ENABLED
+            ENABLED,
+            MACHINE_ID
     };
 }
