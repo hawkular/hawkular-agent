@@ -48,6 +48,7 @@ import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
 import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolServices;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
@@ -554,7 +555,7 @@ public class MonitorService implements Service<MonitorService> {
                     // 2. register our feed ID
                     // 3. connect to the server's feed comm channel
                     try {
-                        registerFeed(this.configuration.getStorageAdapter().getTenantId());
+                        registerFeed();
                     } catch (Exception e) {
                         log.errorCannotDoAnythingWithoutFeed(e);
                         throw new Exception("Agent needs a feed to run");
@@ -872,7 +873,7 @@ public class MonitorService implements Service<MonitorService> {
      *
      * @throws Exception if failed to register feed
      */
-    private void registerFeed(String tenantId) throws Exception {
+    private void registerFeed() throws Exception {
         String desiredFeedId = this.feedId;
 
         try {
@@ -903,40 +904,63 @@ public class MonitorService implements Service<MonitorService> {
             // rest of the URL says we want the feeds API
             url.append("feeds");
 
-            // now send the REST request
-            OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-            Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(),
-                    Collections.singletonMap("Hawkular-Tenant", tenantId), jsonPayload);
-            Response httpResponse = httpclient.newCall(request).execute();
+            // because we can support multiple tenants, we need to register our feed under all tenants
+            List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
+            endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
+            endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
+            endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
+            endpoints.addAll(configuration.getPrometheusConfiguration().getEndpoints().values());
 
-            // HTTP status of 201 means success; 409 means it already exists, anything else is an error
-            if (httpResponse.code() == 201) {
-
-                // success - store our feed ID so we remember it the next time
-                final String feedObjectFromServer = httpResponse.body().string();
-                final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
-                if (desiredFeedId.equals(feed.getId())) {
-                    log.infoUsingFeedId(feed.getId());
-                } else {
-                    log.errorUnwantedFeedId(feed.getId(), desiredFeedId);
-                    // should we throw an error here or just use the feed ID we were given?
-                    log.debugf("Using feed ID [%s]; make sure the agent doesn't lose its data file", feed.getId());
+            List<String> tenantIds = new ArrayList<String>();
+            tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
+            for (AbstractEndpointConfiguration endpoint : endpoints) {
+                String tenantId = endpoint.getTenantId();
+                if (tenantId != null) {
+                    tenantIds.add(tenantId);
                 }
+            }
 
-                this.feedId = feed.getId();
+            // now send the REST requests - one for each tenant to register
+            OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
 
-            } else if (httpResponse.code() == 409) {
-                log.infoFeedIdAlreadyRegistered(this.feedId);
-            } else {
-                throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
-                        + httpResponse.message() + "], url=[" + request.urlString() + "]");
+            for (String tenantId : tenantIds) {
+                Map<String, String> header = Collections.singletonMap("Hawkular-Tenant", tenantId);
+                Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), header, jsonPayload);
+                Response httpResponse = httpclient.newCall(request).execute();
+
+                // HTTP status of 201 means success; 409 means it already exists, anything else is an error
+                if (httpResponse.code() == 201) {
+                    final String feedObjectFromServer = httpResponse.body().string();
+                    final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
+                    if (desiredFeedId.equals(feed.getId())) {
+                        log.infoUsingFeedId(feed.getId(), tenantId);
+                    } else {
+                        log.errorUnwantedFeedId(feed.getId(), desiredFeedId, tenantId);
+                        // should we throw an error here or just use the feed ID we were given?
+                        log.debugf("Using feed ID [%s] with tenant ID [%s];"
+                                + "make sure the agent doesn't lose its data file", feed.getId(), tenantId);
+                    }
+
+                    this.feedId = feed.getId();
+
+                } else if (httpResponse.code() == 409) {
+                    log.infoFeedIdAlreadyRegistered(this.feedId, tenantId);
+                } else {
+                    throw new Exception(String.format("Cannot register feed ID [%s] under tenant ID [%s]. "
+                            + "status-code=[%d], reason=[%s], url=[%s]",
+                            desiredFeedId,
+                            tenantId,
+                            httpResponse.code(),
+                            httpResponse.message(),
+                            request.urlString()));
+                }
             }
 
             // persist our feed ID so we can remember it the next time we start up
             Util.write(feedId, feedFile);
 
         } catch (Throwable t) {
-            throw new Exception(String.format("Cannot create feed [%s]", desiredFeedId), t);
+            throw new Exception(String.format("Cannot create feed ID [%s]", desiredFeedId), t);
         }
     }
 
