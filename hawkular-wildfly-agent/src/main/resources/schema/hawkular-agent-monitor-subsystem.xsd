@@ -68,6 +68,8 @@
     <xs:attribute name="inventoryContext" type="xs:string"/>
     <xs:attribute name="metricsContext"   type="xs:string"/>
     <xs:attribute name="feedcommContext"  type="xs:string"/>
+    <xs:attribute name="connectTimeoutSeconds"  type="xs:int"/>
+    <xs:attribute name="readTimeoutSeconds"  type="xs:int"/>
   </xs:complexType>
 
   <xs:simpleType name="adapterType">

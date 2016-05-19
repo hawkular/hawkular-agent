@@ -58,6 +58,8 @@ public class HttpClientBuilder extends BaseHttpClientGenerator {
                 .useSsl(storageAdapter.isUseSSL())
                 .keystorePath(storageAdapter.getKeystorePath())
                 .keystorePassword(storageAdapter.getKeystorePassword())
+                .connectTimeout(storageAdapter.getConnectTimeoutSeconds())
+                .readTimeout(storageAdapter.getReadTimeoutSeconds())
                 .build());
     }
 

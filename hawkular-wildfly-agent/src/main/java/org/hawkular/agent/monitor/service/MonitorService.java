@@ -204,7 +204,9 @@ public class MonitorService implements Service<MonitorService> {
                     bootStorageAdapter.getFeedcommContext(),
                     bootStorageAdapter.getKeystorePath(),
                     bootStorageAdapter.getKeystorePassword(),
-                    bootStorageAdapter.getSecurityRealm());
+                    bootStorageAdapter.getSecurityRealm(),
+                    bootStorageAdapter.getConnectTimeoutSeconds(),
+                    bootStorageAdapter.getReadTimeoutSeconds());
 
             return bootConfiguration.cloneWith(runtimeStorageAdapter);
         }
