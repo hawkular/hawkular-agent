@@ -589,9 +589,12 @@
                          path="/"
                          metricSets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
                          availSets="Server Availability">
-        <resource-config-dmr name="Product Name" attribute="product-name" />
-        <resource-config-dmr name="Version"      attribute="product-version" />
-        <resource-config-dmr name="Server State" attribute="server-state" />
+        <resource-config-dmr name="Product Name"  attribute="product-name" />
+        <resource-config-dmr name="Version"       attribute="product-version" />
+        <resource-config-dmr name="Running Mode"  attribute="running-mode" />
+        <resource-config-dmr name="Server State"  attribute="server-state" />
+        <resource-config-dmr name="Suspend State" attribute="suspend-state" />
+        <resource-config-dmr name="UUID"          attribute="uuid" />
         <resource-config-dmr name="Qualified Host Name"
                              path="/core-service=server-environment"
                              attribute="qualified-host-name" />
