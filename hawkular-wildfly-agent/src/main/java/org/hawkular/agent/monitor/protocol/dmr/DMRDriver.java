@@ -205,7 +205,7 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
     @SuppressWarnings("unchecked")
     @Override
     public Map<DMRNodeLocation, ModelNode> fetchNodes(DMRNodeLocation query) throws ProtocolException {
-
+        log.tracef("About to fetch DMR nodes [%s]", query);
         ReadResourceOperationBuilder<?> opBuilder = OperationBuilder
                 .readResource()//
                 .address(query.getPathAddress()) //

@@ -53,11 +53,8 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.Relationships.Direction;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.AbstractElement.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Metric;
@@ -66,6 +63,8 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -348,8 +347,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
                 }
 
-                DataEntity.Blueprint<Resources.DataRole> dataEntity = new DataEntity.Blueprint<>(
-                        Resources.DataRole.configuration, structDataBuilder.build(), null);
+                DataEntity.Blueprint<DataRole.Resource> dataEntity = new DataEntity.Blueprint<>(
+                        DataRole.Resource.configuration, structDataBuilder.build(), null);
 
                 relationshipOrEntity(resourceCanonicalPath.toString(), DataEntity.class, dataEntity);
             }
@@ -435,8 +434,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     structDataBuilder.putString(rcpt.getID().getIDString(), rcpt.getName().getNameString());
                 }
 
-                DataEntity.Blueprint<ResourceTypes.DataRole> dataEntity = new DataEntity.Blueprint<>(
-                        ResourceTypes.DataRole.configurationSchema, structDataBuilder.build(), null);
+                DataEntity.Blueprint<DataRole.ResourceType> dataEntity = new DataEntity.Blueprint<>(
+                        DataRole.ResourceType.configurationSchema, structDataBuilder.build(), null);
 
                 relationshipOrEntity(parentPath.toString(), DataEntity.class, dataEntity);
             }
@@ -592,12 +591,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
             Map<String, Map<String, List<AbstractElement.Blueprint>>> payload = builder.build();
 
             if (!payload.isEmpty()) {
+                String jsonPayload = Util.toJson(payload);
                 try {
                     StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
                             AsyncInventoryStorage.this.config.getInventoryContext());
                     url.append("bulk");
-                    String jsonPayload = Util.toJson(payload);
-                    log.tracef("About to send a bulk insert request to inventory: [%s]", jsonPayload);
+                    log.tracef("About to send a bulk insert request [%d] to inventory", jsonPayload.hashCode());
 
                     // now send the REST request
                     Request request = AsyncInventoryStorage.this.httpClientBuilder
@@ -608,7 +607,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     final long durationNanos = timer.stop();
 
                     // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-                    if (response.code() != 201 && response.code() != 409) {
+                    final int bulkResponseCode = response.code();
+                    log.tracef("Bulk insert response code: [%d] for bulk insert request [%d]", bulkResponseCode,
+                            jsonPayload.hashCode());
+                    if (bulkResponseCode != 201 && bulkResponseCode != 409) {
                         throw new Exception("status-code=[" + response.code() + "], reason=["
                                 + response.message() + "], url=[" + request.urlString() + "]");
                     }
@@ -621,7 +623,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         log.debugf("Took [%d]ms to store [%d] resources", durationMs, addQueueElements.size());
                         String body = response.body().string();
                         responseBodyReader = new StringReader(body);
-                        log.tracef("Body of bulk insert request response: %s", body);
+                        log.tracef("Body of bulk insert request [%d] response: %s", jsonPayload.hashCode(), body);
                     } else {
                         responseBodyReader = response.body().charStream();
                     }
@@ -656,9 +658,11 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     }
 
                 } catch (InterruptedException ie) {
+                    log.tracef("Bulk insert request [%d] interrupted", jsonPayload.hashCode());
                     throw ie;
                 } catch (Exception e) {
                     diagnostics.getStorageErrorRate().mark(1);
+                    log.tracef(e, "Bulk insert request [%d] failed", jsonPayload.hashCode());
                     log.errorFailedToStoreInventoryData(e);
                     throw new Exception("Cannot create resources or their resourceTypes", e);
                 }
