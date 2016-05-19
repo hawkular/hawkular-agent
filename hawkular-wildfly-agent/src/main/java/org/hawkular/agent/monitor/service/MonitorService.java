@@ -911,7 +911,7 @@ public class MonitorService implements Service<MonitorService> {
             endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
             endpoints.addAll(configuration.getPrometheusConfiguration().getEndpoints().values());
 
-            List<String> tenantIds = new ArrayList<String>();
+            Set<String> tenantIds = new HashSet<String>();
             tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
             for (AbstractEndpointConfiguration endpoint : endpoints) {
                 String tenantId = endpoint.getTenantId();
