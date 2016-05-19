@@ -445,8 +445,9 @@ public class AgentInstaller {
         }
         StringBuilder xml = new StringBuilder("<managed-servers>")
                 .append("<local-dmr name=\"" + managedServerName + "\" enabled=\"true\" "
-                        + "resourceTypeSets=\"Main,Deployment,Web Component,EJB,Datasource,"
-                        + "XA Datasource,JDBC Driver,Transaction Manager,Messaging,Hawkular\" />")
+                        + "resourceTypeSets=\""
+                        + targetConfigInfo.getManagedServerResourceTypeSets()
+                        + "\" />")
                 .append("</managed-servers>");
 
         // replaces <managed-servers> under urn:org.hawkular.agent:agent:1.0 subsystem with above content

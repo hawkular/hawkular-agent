@@ -45,7 +45,7 @@ public interface DMRMetricAttributes {
     SimpleAttributeDefinition RESOLVE_EXPRESSIONS = new SimpleAttributeDefinitionBuilder("resolveExpressions",
             ModelType.BOOLEAN)
                     .setAllowNull(true)
-                    .setDefaultValue(new ModelNode(true))
+                    .setDefaultValue(new ModelNode(false))
                     .setAllowExpression(true)
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();

@@ -566,7 +566,7 @@
     </metric-set-dmr>
 
     <avail-set-dmr name="Server Availability" enabled="true">
-      <avail-dmr name="App Server"
+      <avail-dmr name="Server Availability"
                  interval="30"
                  timeUnits="seconds"
                  path="/"
@@ -583,24 +583,21 @@
                  upRegex="OK" />
     </avail-set-dmr>
 
-    <resource-type-set-dmr name="Main" enabled="true">
+    <resource-type-set-dmr name="Standalone Environment" enabled="true">
       <resource-type-dmr name="WildFly Server"
-                         resourceNameTemplate="${jboss.node.name:localhost}/%ManagedServerName"
+                         resourceNameTemplate="WildFly Server [%ManagedServerName]"
                          path="/"
                          metricSets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
                          availSets="Server Availability">
-        <resource-config-dmr name="Hostname"
+        <resource-config-dmr name="Product Name" attribute="product-name" />
+        <resource-config-dmr name="Version"      attribute="product-version" />
+        <resource-config-dmr name="Server State" attribute="server-state" />
+        <resource-config-dmr name="Qualified Host Name"
                              path="/core-service=server-environment"
                              attribute="qualified-host-name" />
-        <resource-config-dmr name="Version"
-                             attribute="product-version" />
-        <resource-config-dmr name="Product Name"
-                             attribute="product-name" />
         <resource-config-dmr name="Bound Address"
                              path="/socket-binding-group=standard-sockets/socket-binding=http"
                              attribute="bound-address" />
-        <resource-config-dmr name="Server State"
-                             attribute="server-state" />
 
         <operation-dmr name="JDR"      operationName="generate-jdr-report" path="/subsystem=jdr" />
         <operation-dmr name="Reload"   operationName="reload" />
@@ -612,11 +609,76 @@
       </resource-type-dmr>
     </resource-type-set-dmr>
 
+    <resource-type-set-dmr name="Domain Environment" enabled="true">
+      <resource-type-dmr name="Host Controller"
+                         resourceNameTemplate="Host Controller [%ManagedServerName]"
+                         path="/">
+        <resource-config-dmr name="Product Name"    attribute="product-name" />
+        <resource-config-dmr name="Version"         attribute="product-version" />
+        <resource-config-dmr name="Process Type"    attribute="process-type" /> <!-- (Host|Domain) Controller -->
+        <resource-config-dmr name="Local Host Name" attribute="local-host-name" />
+      </resource-type-dmr>
+
+      <resource-type-dmr name="Domain Profile"
+                         resourceNameTemplate="Domain Profile [%-]"
+                         path="/profile=*"
+                         parents="Host Controller">
+      </resource-type-dmr>
+
+      <resource-type-dmr name="Domain Server Group"
+                         resourceNameTemplate="Domain Server Group [%-]"
+                         path="/server-group=*"
+                         parents="Host Controller">
+      </resource-type-dmr>
+
+      <resource-type-dmr name="Domain Host"
+                         resourceNameTemplate="Domain Host [%-]"
+                         path="/host=*"
+                         parents="Host Controller"
+                         metricSets="WildFly Memory Metrics,WildFly Threading Metrics">
+        <resource-config-dmr name="Product Name"         attribute="product-name" />
+        <resource-config-dmr name="Version"              attribute="product-version" />
+        <resource-config-dmr name="Is Domain Controller" attribute="master" />
+        <resource-config-dmr name="Host State"           attribute="host-state" />
+        <resource-config-dmr name="Running Mode"         attribute="running-mode" />
+        <resource-config-dmr name="UUID"                 attribute="uuid" />
+      </resource-type-dmr>
+
+      <resource-type-dmr name="Domain WildFly Server"
+                         resourceNameTemplate="Domain WildFly Server [%-]"
+                         path="/server=*"
+                         parents="Domain Host"
+                         metricSets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
+                         availSets="Server Availability">
+        <resource-config-dmr name="Product Name"         attribute="product-name" />
+        <resource-config-dmr name="Version"              attribute="product-version" />
+        <resource-config-dmr name="Profile Name"         attribute="profile-name" />
+        <resource-config-dmr name="Server Group"         attribute="server-group" />
+        <resource-config-dmr name="Running Mode"         attribute="running-mode" />
+        <resource-config-dmr name="Server State"         attribute="server-state" />
+        <resource-config-dmr name="Suspend State"        attribute="suspend-state" />
+        <resource-config-dmr name="UUID"                 attribute="uuid" />
+        <resource-config-dmr name="Qualified Host Name"
+                             path="/core-service=server-environment"
+                             attribute="qualified-host-name"/>
+        <resource-config-dmr name="Node Name"
+                             path="/core-service=server-environment"
+                             attribute="node-name"/>
+        <resource-config-dmr name="Initial Running Mode"
+                             path="/core-service=server-environment"
+                             attribute="initial-running-mode"/>
+        <resource-config-dmr name="Base Directory"
+                             path="/core-service=server-environment"
+                             attribute="base-dir"/>
+      </resource-type-dmr>
+
+    </resource-type-set-dmr>
+
     <resource-type-set-dmr name="Hawkular" enabled="true">
       <resource-type-dmr name="Hawkular WildFly Agent"
                          resourceNameTemplate="Hawkular WildFly Agent"
                          path="/subsystem=hawkular-wildfly-agent"
-                         parents="WildFly Server">
+                         parents="WildFly Server,Domain WildFly Server">
         <operation-dmr name="Status"                   operationName="status" />
         <operation-dmr name="Inventory Discovery Scan" operationName="fullDiscoveryScan" />
       </resource-type-dmr>
@@ -626,7 +688,7 @@
       <resource-type-dmr name="Deployment"
                          resourceNameTemplate="%2"
                          path="/deployment=*"
-                         parents="WildFly Server"
+                         parents="WildFly Server,Domain WildFly Server"
                          metricSets="Undertow Metrics"
                          availSets="Deployment Status">
         <operation-dmr name="Redeploy" operationName="redeploy" />
@@ -675,7 +737,7 @@
       <resource-type-dmr name="Datasource"
                          resourceNameTemplate="%-"
                          path="/subsystem=datasources/data-source=*"
-                         parents="WildFly Server"
+                         parents="WildFly Server,Domain WildFly Server"
                          metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
         <resource-config-dmr name="Connection URL"   attribute="connection-url" />
         <resource-config-dmr name="Driver Name"      attribute="driver-name" />
@@ -696,7 +758,7 @@
       <resource-type-dmr name="XA Datasource"
                          resourceNameTemplate="%-"
                          path="/subsystem=datasources/xa-data-source=*"
-                         parents="WildFly Server"
+                         parents="WildFly Server,Domain WildFly Server"
                          metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
         <resource-config-dmr name="Driver Name"         attribute="driver-name" />
         <resource-config-dmr name="XA Datasource Class" attribute="xa-datasource-class" />
@@ -715,14 +777,14 @@
       <resource-type-dmr name="JDBC Driver"
                          resourceNameTemplate="%-"
                          path="/subsystem=datasources/jdbc-driver=*"
-                         parents="WildFly Server" />
+                         parents="WildFly Server,Domain WildFly Server" />
     </resource-type-set-dmr>
 
     <resource-type-set-dmr name="Transaction Manager" enabled="true">
       <resource-type-dmr name="Transaction Manager"
                          resourceNameTemplate="Transaction Manager"
                          path="/subsystem=transactions"
-                         parents="WildFly Server"
+                         parents="WildFly Server,Domain WildFly Server"
                          metricSets="Transactions Metrics" />
     </resource-type-set-dmr>
 
@@ -730,7 +792,7 @@
       <resource-type-dmr name="Messaging Server"
                          resourceNameTemplate="Messaging Server [%-]"
                          path="/subsystem=messaging-activemq/server=*"
-                         parents="WildFly Server" />
+                         parents="WildFly Server,Domain WildFly Server" />
       <resource-type-dmr name="JMS Queue"
                          resourceNameTemplate="JMS Queue [%-]"
                          path="/jms-queue=*"
@@ -833,11 +895,11 @@
                   port="9990"
                   username="adminUser"
                   password="adminPass"
-                  resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging" />
+                  resourceTypeSets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging" />
 
       <local-dmr name="Local"
                  enabled="true"
-                 resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Hawkular" />
+                 resourceTypeSets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Hawkular" />
 
       <remote-jmx name="Remote JMX" enabled="false" resourceTypeSets="MainJMX,MemoryPoolJMX" url="http://localhost:8080/jolokia-war"/>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -167,10 +167,10 @@ public final class ResourceTypeManager<L> {
                 for (Name parent : rType.getParents()) {
                     ResourceType<L> parentResourceType = allResourceTypes.get(parent);
                     if (parentResourceType == null) {
-                        throw new IllegalStateException("Resource type [" + rType.getName()
-                                + "] has an unknown parent [" + parent + "]");
+                        log.debugf("Resource type [%s] will ignore unknown parent [%s]", rType.getName(), parent);
+                    } else {
+                        resourceTypesGraph.addEdge(parentResourceType, rType);
                     }
-                    resourceTypesGraph.addEdge(parentResourceType, rType);
                 }
             }
         }

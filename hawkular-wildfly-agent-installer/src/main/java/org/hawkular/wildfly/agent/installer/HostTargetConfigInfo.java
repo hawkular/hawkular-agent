@@ -32,4 +32,20 @@ public class HostTargetConfigInfo implements TargetConfigInfo {
     public String getProfileXPath() {
         return getRootXPath() + "/profile";
     }
+
+    @Override
+    public String getManagedServerResourceTypeSets() {
+        return new StringBuilder()
+                .append("Domain Environment,")
+                .append("Deployment,")
+                .append("Web Component,")
+                .append("EJB,")
+                .append("Datasource,")
+                .append("XA Datasource,")
+                .append("JDBC Driver,")
+                .append("Transaction Manager,")
+                .append("Messaging,")
+                .append("Hawkular")
+                .toString();
+    }
 }

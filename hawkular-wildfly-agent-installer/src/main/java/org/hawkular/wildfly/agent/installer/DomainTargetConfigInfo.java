@@ -16,6 +16,10 @@
  */
 package org.hawkular.wildfly.agent.installer;
 
+/**
+ * This provides information when installing into the domain.xml file which is
+ * the file that defines the central management policy of the domain.
+ */
 public class DomainTargetConfigInfo implements TargetConfigInfo {
 
     @Override
@@ -34,4 +38,19 @@ public class DomainTargetConfigInfo implements TargetConfigInfo {
         return getRootXPath() + "/profiles/profile[@name='default']";
     }
 
+    @Override
+    public String getManagedServerResourceTypeSets() {
+        return new StringBuilder()
+                .append("Domain Environment,")
+                .append("Deployment,")
+                .append("Web Component,")
+                .append("EJB,")
+                .append("Datasource,")
+                .append("XA Datasource,")
+                .append("JDBC Driver,")
+                .append("Transaction Manager,")
+                .append("Messaging,")
+                .append("Hawkular")
+                .toString();
+    }
 }
