@@ -20,6 +20,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -52,12 +54,14 @@ public class BaseHttpClientGenerator {
             private String keystorePath;
             private String keystorePassword;
             private SSLContext sslContext;
-
+            private Optional<Integer> connectTimeoutSeconds = Optional.empty();
+            private Optional<Integer> readTimeoutSeconds = Optional.empty();
             public Builder() {
             }
 
             public Configuration build() {
-                return new Configuration(username, password, useSSL, keystorePath, keystorePassword, sslContext);
+                return new Configuration(username, password, useSSL, keystorePath, keystorePassword, sslContext,
+                        connectTimeoutSeconds, readTimeoutSeconds);
             }
 
             public Builder username(String s) {
@@ -89,6 +93,14 @@ public class BaseHttpClientGenerator {
                 this.sslContext = s;
                 return this;
             }
+            public Builder connectTimeout(int connectTimeoutSeconds) {
+                this.connectTimeoutSeconds = Optional.of(connectTimeoutSeconds);
+                return this;
+            }
+            public Builder readTimeout(int readTimeoutSeconds) {
+                this.readTimeoutSeconds = Optional.of(readTimeoutSeconds);
+                return this;
+            }
         }
 
         private final String username;
@@ -97,15 +109,20 @@ public class BaseHttpClientGenerator {
         private final String keystorePath;
         private final String keystorePassword;
         private final SSLContext sslContext;
+        private final Optional<Integer> connectTimeoutSeconds;
+        private final Optional<Integer> readTimeoutSeconds;
 
         private Configuration(String username, String password, boolean useSSL, String keystorePath,
-                String keystorePassword, SSLContext sslContext) {
+                String keystorePassword, SSLContext sslContext, Optional<Integer> connectTimeoutSeconds,
+                Optional<Integer> readTimeoutSeconds) {
             this.username = username;
             this.password = password;
             this.useSSL = useSSL;
             this.keystorePath = keystorePath;
             this.keystorePassword = keystorePassword;
             this.sslContext = sslContext;
+            this.connectTimeoutSeconds = connectTimeoutSeconds;
+            this.readTimeoutSeconds = readTimeoutSeconds;
         }
 
         public String getUsername() {
@@ -131,6 +148,14 @@ public class BaseHttpClientGenerator {
         public SSLContext getSslContext() {
             return sslContext;
         }
+
+        public Optional<Integer> getConnectTimeoutSeconds() {
+            return connectTimeoutSeconds;
+        }
+
+        public Optional<Integer> getReadTimeoutSeconds() {
+            return readTimeoutSeconds;
+        }
     }
 
     /** the configuration for our httpclient generator */
@@ -143,6 +168,10 @@ public class BaseHttpClientGenerator {
         this.configuration = configuration;
 
         OkHttpClient httpClient = new OkHttpClient();
+
+        /* set the timeouts explicitly only if they were set through the config */
+        configuration.getConnectTimeoutSeconds().ifPresent(timeout -> httpClient.setConnectTimeout(timeout.intValue(), TimeUnit.SECONDS));
+        configuration.getReadTimeoutSeconds().ifPresent(timeout -> httpClient.setReadTimeout(timeout.intValue(), TimeUnit.SECONDS));
 
         if (this.configuration.isUseSSL()) {
             SSLContext theSslContextToUse;

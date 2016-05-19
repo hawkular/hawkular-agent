@@ -28,7 +28,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -63,6 +62,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.squareup.okhttp.Credentials;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -79,7 +79,6 @@ public abstract class AbstractITest {
     protected static final long ATTEMPT_DELAY = 5000;
 
     protected static final String authentication;
-    protected static final String baseAccountsUri;
     protected static final String baseMetricsUri;
     protected static final String baseGwUri;
     protected static final String baseInvUri;
@@ -90,8 +89,10 @@ public abstract class AbstractITest {
     protected static final String managementPasword = System.getProperty("hawkular.agent.itest.mgmt.password");
     protected static final int hawkularManagementPort;
     protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
-    protected static final String testPasword = "password";
-    protected static final String testUser = "jdoe";
+    protected static final String testPasword = System.getProperty("hawkular.itest.rest.password");
+    protected static final String testUser = System.getProperty("hawkular.itest.rest.user");
+    protected static final String tenantId = System.getProperty("hawkular.itest.rest.tenantId");
+    protected static final String authHeader;
     protected static final String hawkularFeedId;
     protected static final File wfHome;
 
@@ -107,11 +108,12 @@ public abstract class AbstractITest {
         int hawkularPortOffset = Integer.parseInt(System.getProperty("hawkular.port.offset", "0"));
         hawkularHttpPort = hawkularPortOffset + 8080;
         hawkularManagementPort = hawkularPortOffset + 9990;
-        baseAccountsUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/accounts";
         baseInvUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/inventory";
         baseMetricsUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/metrics";
         baseGwUri = "ws://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/command-gateway";
         authentication = "{\"username\":\"" + testUser + "\",\"password\":\"" + testPasword + "\"}";
+        System.out.println("using REST user ["+ testUser +"] with password ["+ testPasword +"]");
+        authHeader = Credentials.basic(testUser, testPasword);
 
         try (ModelControllerClient mcc = newModelControllerClient(hawkularHost, hawkularManagementPort)) {
             hawkularFeedId = DMREndpointService.lookupServerIdentifier(mcc);
@@ -347,6 +349,8 @@ public abstract class AbstractITest {
             try {
                 Request request = newAuthRequest().url(url).build();
                 Response response = client.newCall(request).execute();
+                System.out.println(
+                        "Got code " + response.code() + " and message [" + response.message() + "] retries: " + url);
                 AssertJUnit.assertEquals(200, response.code());
                 System.out.println("Got after " + (i + 1) + " retries: " + url);
                 return response.body().string();
@@ -379,21 +383,10 @@ public abstract class AbstractITest {
     }
 
     protected Request.Builder newAuthRequest() {
-        /*
-         * http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side : The Authorization header is
-         * constructed as follows: * Username and password are combined into a string "username:password" * The
-         * resulting string is then encoded using the RFC2045-MIME variant of Base64, except not limited to 76
-         * char/line[9] * The authorization method and a space i.e. "Basic " is then put before the encoded string.
-         */
-        try {
-            String encodedCredentials = Base64.getMimeEncoder()
-                    .encodeToString((testUser + ":" + testPasword).getBytes("utf-8"));
-            return new Request.Builder()//
-                    .addHeader("Authorization", "Basic " + encodedCredentials)//
-                    .addHeader("Accept", "application/json");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return new Request.Builder()//
+                .addHeader("Authorization", authHeader)//
+                .addHeader("Accept", "application/json")//
+                .addHeader("Hawkular-Tenant", tenantId);
     }
 
     protected static ModelControllerClient newModelControllerClient(final String host, final int managementPort) {
@@ -433,12 +426,6 @@ public abstract class AbstractITest {
         synchronized (waitForAccountsLock) {
             if (!accountsAndInventoryReady) {
                 Thread.sleep(10000);
-                /*
-                 * Make sure we can access the tenant first. We will do several attempts because race conditions may
-                 * happen between this script and WildFly Agent who may have triggered the same initial tasks in
-                 * Accounts
-                 */
-                getWithRetries(baseAccountsUri + "/personas/current");
 
                 /*
                  * Ensure inventory is running by trying to read our tenant - this is what we authenticate with against

@@ -19,7 +19,8 @@ package org.hawkular.agent.ws.test;
 import org.hawkular.agent.test.HawkularWildFlyAgentContextITest;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.junit.AfterClass;
 import org.testng.annotations.Test;
@@ -33,6 +34,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
         // reload();
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { HawkularWildFlyAgentContextITest.GROUP })
     public void testEnableStatistics() throws Throwable {
         waitForAccountsAndInventory();
@@ -73,7 +75,8 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
                     .expectGenericSuccess(wfPath.ids().getFeedId())
-                    .expectText(response)
+                    .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                    .expectClose()
                     .build()) {
                 testClient.validate(10000);
             }
@@ -105,6 +108,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
         testReadOnlyStatistics(true);
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testEnableStatistics" })
     public void testDisableStatistics() throws Throwable {
         waitForAccountsAndInventory();
@@ -144,7 +148,8 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
                     .expectGenericSuccess(wfPath.ids().getFeedId())
-                    .expectText(response)
+                    .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                    .expectClose()
                     .build()) {
                 testClient.validate(10000);
             }
@@ -223,13 +228,15 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
                     .expectGenericSuccess(wfPath.ids().getFeedId())
-                    .expectText(response)
+                    .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                    .expectClose()
                     .build()) {
                 testClient.validate(10000);
             }
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testDisableStatistics" })
     public void testEnableStatisticsSubset() throws Throwable {
         waitForAccountsAndInventory();
@@ -278,7 +285,8 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
                     .expectGenericSuccess(wfPath.ids().getFeedId())
-                    .expectText(response)
+                    .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                    .expectClose()
                     .build()) {
                 testClient.validate(10000);
             }

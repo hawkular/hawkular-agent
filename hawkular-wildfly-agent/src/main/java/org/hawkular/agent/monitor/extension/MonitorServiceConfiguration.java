@@ -73,6 +73,8 @@ public class MonitorServiceConfiguration {
         private final String keystorePath;
         private final String keystorePassword;
         private final String securityRealm;
+        private final int connectTimeoutSeconds;
+        private final int readTimeoutSeconds;
 
         public StorageAdapterConfiguration(
                 StorageReportTo type,
@@ -91,7 +93,9 @@ public class MonitorServiceConfiguration {
                 String feedcommContext,
                 String keystorePath,
                 String keystorePassword,
-                String securityRealm) {
+                String securityRealm,
+                int connectTimeoutSeconds,
+                int readTimeoutSeconds) {
             super();
             this.type = type;
             this.username = username;
@@ -110,6 +114,8 @@ public class MonitorServiceConfiguration {
             this.keystorePath = keystorePath;
             this.keystorePassword = keystorePassword;
             this.securityRealm = securityRealm;
+            this.connectTimeoutSeconds = connectTimeoutSeconds;
+            this.readTimeoutSeconds = readTimeoutSeconds;
         }
 
         public StorageReportTo getType() {
@@ -186,6 +192,14 @@ public class MonitorServiceConfiguration {
 
         public String getSecurityRealm() {
             return securityRealm;
+        }
+
+        public int getConnectTimeoutSeconds() {
+            return connectTimeoutSeconds;
+        }
+
+        public int getReadTimeoutSeconds() {
+            return readTimeoutSeconds;
         }
 
     }

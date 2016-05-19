@@ -19,14 +19,17 @@ package org.hawkular.agent.ws.test;
 import java.io.File;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.junit.Assert;
 import org.testng.annotations.Test;
 
 public class DeployApplicationITest extends AbstractCommandITest {
     public static final String GROUP = "DeployApplicationITest";
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { ExecuteOperationCommandITest.GROUP })
     public void testAddDeployment() throws Throwable {
         waitForAccountsAndInventory();
@@ -49,21 +52,23 @@ public class DeployApplicationITest extends AbstractCommandITest {
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
-                .expectWelcome(req, applicationFile.toURI().toURL())
+                .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testAddDeployment" })
     public void testReloadDeployment() throws Throwable {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
         final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/feeds/" + feedId + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/feeds/" + getFeedId() + "/resourceTypes/Deployment/resources",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
@@ -82,19 +87,21 @@ public class DeployApplicationITest extends AbstractCommandITest {
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testReloadDeployment" })
     public void testUndeployDeployment() throws Throwable {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
         final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/feeds/" + feedId + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/feeds/" + getFeedId() + "/resourceTypes/Deployment/resources",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
@@ -113,19 +120,21 @@ public class DeployApplicationITest extends AbstractCommandITest {
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }
     }
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testUndeployDeployment" })
     public void testRemoveDeployment() throws Throwable {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
         final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/feeds/" + feedId + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/feeds/" + getFeedId() + "/resourceTypes/Deployment/resources",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
@@ -144,7 +153,8 @@ public class DeployApplicationITest extends AbstractCommandITest {
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }

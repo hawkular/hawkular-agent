@@ -47,7 +47,9 @@
                    accountsContext="accountsContext"
                    inventoryContext="inventoryContext"
                    metricsContext="metricsContext"
-                   feedcommContext="feedcommContext"/>
+                   feedcommContext="feedcommContext"
+                   connectTimeoutSeconds="16"
+                   readTimeoutSeconds="256"/>
 
   <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
     <metric-dmr name="Heap Used"

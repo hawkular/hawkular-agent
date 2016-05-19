@@ -67,6 +67,7 @@ public interface StorageAttributes {
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode("hawkular"))
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
@@ -153,6 +154,20 @@ public interface StorageAttributes {
                     .setDefaultValue(new ModelNode("/hawkular/command-gateway/"))
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
+    SimpleAttributeDefinition CONNECT_TIMEOUT_SECONDS = new SimpleAttributeDefinitionBuilder("connectTimeoutSeconds",
+            ModelType.INT)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(10))
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+    SimpleAttributeDefinition READ_TIMEOUT_SECONDS = new SimpleAttributeDefinitionBuilder("readTimeoutSeconds",
+            ModelType.INT)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(120)) /* e.g. bulk inserts may take long */
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             TYPE,
@@ -170,6 +185,9 @@ public interface StorageAttributes {
             SERVER_OUTBOUND_SOCKET_BINDING_REF,
             INVENTORY_CONTEXT,
             METRICS_CONTEXT,
-            FEEDCOMM_CONTEXT
+            FEEDCOMM_CONTEXT,
+            CONNECT_TIMEOUT_SECONDS,
+            READ_TIMEOUT_SECONDS
     };
+
 }

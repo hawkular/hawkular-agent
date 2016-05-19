@@ -53,11 +53,8 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.Relationships.Direction;
-import org.hawkular.inventory.api.ResourceTypes;
-import org.hawkular.inventory.api.Resources;
 import org.hawkular.inventory.api.model.AbstractElement;
 import org.hawkular.inventory.api.model.AbstractElement.Blueprint;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.Metric;
@@ -66,6 +63,8 @@ import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.DataRole;
 
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -82,13 +81,19 @@ import com.squareup.okhttp.Response;
 public class AsyncInventoryStorage implements InventoryStorage {
 
     private abstract static class QueueElement {
+        private final String tenantId;
         private final String feedId;
         private final Resource<?> resource;
 
-        public QueueElement(String feedId, Resource<?> resource) {
+        public QueueElement(String tenantId, String feedId, Resource<?> resource) {
             super();
+            this.tenantId = tenantId;
             this.feedId = feedId;
             this.resource = resource;
+        }
+
+        public String getTenantId() {
+            return tenantId;
         }
 
         public String getFeedId() {
@@ -106,14 +111,14 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     private static class AddResourceQueueElement extends QueueElement {
-        public AddResourceQueueElement(String feedId, Resource<?> resource) {
-            super(feedId, resource);
+        public AddResourceQueueElement(String tenantId, String feedId, Resource<?> resource) {
+            super(tenantId, feedId, resource);
         }
     }
 
     private static class RemoveResourceQueueElement extends QueueElement {
-        public RemoveResourceQueueElement(String feedId, Resource<?> resource) {
-            super(feedId, resource);
+        public RemoveResourceQueueElement(String tenantId, String feedId, Resource<?> resource) {
+            super(tenantId, feedId, resource);
         }
     }
 
@@ -348,8 +353,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
                 }
 
-                DataEntity.Blueprint<Resources.DataRole> dataEntity = new DataEntity.Blueprint<>(
-                        Resources.DataRole.configuration, structDataBuilder.build(), null);
+                DataEntity.Blueprint<DataRole.Resource> dataEntity = new DataEntity.Blueprint<>(
+                        DataRole.Resource.configuration, structDataBuilder.build(), null);
 
                 relationshipOrEntity(resourceCanonicalPath.toString(), DataEntity.class, dataEntity);
             }
@@ -435,8 +440,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     structDataBuilder.putString(rcpt.getID().getIDString(), rcpt.getName().getNameString());
                 }
 
-                DataEntity.Blueprint<ResourceTypes.DataRole> dataEntity = new DataEntity.Blueprint<>(
-                        ResourceTypes.DataRole.configurationSchema, structDataBuilder.build(), null);
+                DataEntity.Blueprint<DataRole.ResourceType> dataEntity = new DataEntity.Blueprint<>(
+                        DataRole.ResourceType.configurationSchema, structDataBuilder.build(), null);
 
                 relationshipOrEntity(parentPath.toString(), DataEntity.class, dataEntity);
             }
@@ -494,11 +499,15 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         // contiguousGroups has 4 lists with list #1 being "add resource A, add resource B",
                         // list #2 being "remove resource C, remove resource D", list item #3 being "add resource E"
                         // and list item #4 being "remove resource F".
+                        // Note also that because we could be performing inventory tasks with resources across different
+                        // tenant IDs, we have to split into different groups when different tenant IDs are encountered.
                         List<List<QueueElement>> contiguousGroups = new ArrayList<>();
                         List<QueueElement> nextGroup = new ArrayList<>();
                         contiguousGroups.add(nextGroup); // seed it with an empty list
                         for (QueueElement qElement : qElements) {
-                            if (!nextGroup.isEmpty() && (!nextGroup.get(0).getClass().isInstance(qElement))) {
+                            if (!nextGroup.isEmpty()
+                                    && ((!nextGroup.get(0).getClass().isInstance(qElement))
+                                            || (!nextGroup.get(0).getTenantId().equals(qElement.getTenantId())))) {
                                 nextGroup = new ArrayList<>();
                                 contiguousGroups.add(nextGroup);
                             }
@@ -533,6 +542,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
         private void removeResources(List<QueueElement> removeQueueElements) throws Exception {
             log.debugf("Removing [%d] resources that were found in inventory work queue", removeQueueElements.size());
+
             StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
                     AsyncInventoryStorage.this.config.getInventoryContext());
             for (QueueElement resourceElement : removeQueueElements) {
@@ -544,7 +554,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 }
 
                 Request request = AsyncInventoryStorage.this.httpClientBuilder
-                        .buildJsonDeleteRequest(deleteUrl.toString(), null);
+                        .buildJsonDeleteRequest(deleteUrl.toString(), getTenantHeader(resourceElement.getTenantId()));
 
                 long start = System.currentTimeMillis(); // we don't store this time in our diagnostics
                 Response response = AsyncInventoryStorage.this.httpClientBuilder
@@ -569,9 +579,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
         private void addResources(List<QueueElement> addQueueElements) throws Exception {
             log.debugf("Adding [%d] resources that were found in inventory work queue", addQueueElements.size());
 
+            String tenantIdToUse = addQueueElements.get(0).getTenantId(); // all elements have same tenant id
+
             // build one big bulk request that will be used to add everything
-            BulkPayloadBuilder builder = new BulkPayloadBuilder(config.getTenantId(),
-                    AsyncInventoryStorage.this.feedId);
+            BulkPayloadBuilder builder = new BulkPayloadBuilder(tenantIdToUse, AsyncInventoryStorage.this.feedId);
             for (QueueElement elem : addQueueElements) {
                 Resource<?> resource = elem.getResource();
                 ResourceType<?> resourceType = resource.getResourceType();
@@ -597,15 +608,18 @@ public class AsyncInventoryStorage implements InventoryStorage {
                             AsyncInventoryStorage.this.config.getInventoryContext());
                     url.append("bulk");
                     String jsonPayload = Util.toJson(payload);
-                    log.tracef("About to send a bulk insert request to inventory: [%s]", jsonPayload);
+
+                    Map<String, String> headers = getTenantHeader(tenantIdToUse);
+                    log.tracef("About to send a bulk insert request to inventory: headers=[%s] body=[%s]", headers, jsonPayload);
 
                     // now send the REST request
-                    Request request = AsyncInventoryStorage.this.httpClientBuilder
-                            .buildJsonPostRequest(url.toString(), null, jsonPayload);
+                    Request request = AsyncInventoryStorage.this.httpClientBuilder.buildJsonPostRequest(url.toString(),
+                            headers, jsonPayload);
                     Call call = AsyncInventoryStorage.this.httpClientBuilder.getHttpClient().newCall(request);
                     final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
                     Response response = call.execute();
                     final long durationNanos = timer.stop();
+                    log.tracef("Received bulk insert response from inventory: code [%d]", response.code());
 
                     // HTTP status of 201 means success, 409 means it already exists; anything else is an error
                     if (response.code() != 201 && response.code() != 409) {
@@ -734,18 +748,40 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
     @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
+        String tenantId = event.getSamplingService().getMonitoredEndpoint().getEndpointConfiguration().getTenantId();
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
-            queue.add(new AddResourceQueueElement(feedId, resource));
+            queue.add(new AddResourceQueueElement(getTenantIdToUse(tenantId), feedId, resource));
         }
     }
 
     @Override
     public <L> void resourcesRemoved(InventoryEvent<L> event) {
+        String tenantId = event.getSamplingService().getMonitoredEndpoint().getEndpointConfiguration().getTenantId();
         for (Resource<?> resource : event.getPayload()) {
             diagnostics.getInventoryStorageBufferSize().inc();
-            queue.add(new RemoveResourceQueueElement(feedId, resource));
+            queue.add(new RemoveResourceQueueElement(getTenantIdToUse(tenantId), feedId, resource));
         }
     }
 
+    /**
+     * Determines what tenant ID to use. If the given tenant ID is not null, it is returned.
+     * If it is null, then the agent's tenant ID is returned.
+     *
+     * @param tenantId the tenant ID to use, or null which means use the agent tenant ID
+     * @return the tenant ID to use
+     */
+    private String getTenantIdToUse(String tenantId) {
+        return (tenantId != null) ? tenantId : config.getTenantId();
+    }
+
+    /**
+     * Builds the header necessary for the tenant ID.
+     *
+     * @param tenantId the tenant ID string - this is the value of the returned map
+     * @return the tenant header consisting of the header key and the value
+     */
+    private Map<String, String> getTenantHeader(String tenantId) {
+        return Collections.singletonMap("Hawkular-Tenant", getTenantIdToUse(tenantId));
+    }
 }

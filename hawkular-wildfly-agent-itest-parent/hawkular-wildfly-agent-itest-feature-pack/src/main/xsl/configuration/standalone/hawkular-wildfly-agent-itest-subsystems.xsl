@@ -21,7 +21,6 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xalan="http://xml.apache.org/xalan" version="2.0" exclude-result-prefixes="xalan">
 
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" xalan:indent-amount="4" standalone="no" />
-  <xsl:strip-space elements="*" />
 
   <!-- Add hawkular-wildfly-agent.xml -->
   <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']">
@@ -32,20 +31,20 @@
     </xsl:copy>
   </xsl:template>
 
-  <!-- Replace hawkular-accounts-keycloak-adapter.xml with hawkular-wildfly-agent-itest-keycloak-adapter.xml -->
-  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-accounts-keycloak-adapter.xml']">
-    <subsystem>hawkular-wildfly-agent-itest-keycloak-adapter.xml</subsystem>
-  </xsl:template>
-
-  <!-- Replace hawkular-accounts-messaging-activemq.xml with hawkular-wildfly-agent-itest-messaging-activemq.xml -->
-  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-accounts-messaging-activemq.xml']">
+  <!-- Replace hawkular-nest-messaging-activemq.xml with hawkular-wildfly-agent-itest-messaging-activemq.xml -->
+  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-nest-messaging-activemq.xml']">
     <subsystem>hawkular-wildfly-agent-itest-messaging-activemq.xml</subsystem>
   </xsl:template>
 
+  <!-- Replace hawkular-nest-logging.xml with hawkular-wildfly-agent-itest-logging.xml -->
+  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-nest-logging.xml']">
+    <subsystem>hawkular-wildfly-agent-itest-logging.xml</subsystem>
+  </xsl:template>
+
   <!-- copy everything else as-is -->
-  <xsl:template match="node()|@*">
+  <xsl:template match="node()|comment()|@*">
     <xsl:copy>
-      <xsl:apply-templates select="node()|@*" />
+      <xsl:apply-templates select="node()|comment()|@*" />
     </xsl:copy>
   </xsl:template>
 

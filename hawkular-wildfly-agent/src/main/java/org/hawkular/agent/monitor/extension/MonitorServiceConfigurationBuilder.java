@@ -834,6 +834,8 @@ public class MonitorServiceConfigurationBuilder {
         String secret = getString(storageAdapterConfig, context, StorageAttributes.SECURITY_SECRET);
         String typeStr = getString(storageAdapterConfig, context, StorageAttributes.TYPE);
         StorageReportTo type = MonitorServiceConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
+        int connectTimeoutSeconds = getInt(storageAdapterConfig, context, StorageAttributes.CONNECT_TIMEOUT_SECONDS);
+        int readTimeoutSeconds = getInt(storageAdapterConfig, context, StorageAttributes.READ_TIMEOUT_SECONDS);
 
         if (useSSL) {
             if (securityRealm == null) {
@@ -854,7 +856,7 @@ public class MonitorServiceConfigurationBuilder {
 
         return new StorageAdapterConfiguration(type, username, password, key, secret, tenantId, feedId, url, useSSL,
                 serverOutboundSocketBindingRef, accountsContext, inventoryContext, metricsContext, feedcommContext,
-                keystorePath, keystorePassword, securityRealm);
+                keystorePath, keystorePassword, securityRealm, connectTimeoutSeconds, readTimeoutSeconds);
     }
 
     private static GlobalConfiguration determineGlobalConfig(ModelNode config, OperationContext context)

@@ -28,7 +28,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -49,9 +48,10 @@ import org.hawkular.cmdgw.api.ApiDeserializer;
 import org.hawkular.cmdgw.api.WelcomeResponse;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.SubsystemLoggingConstants;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.jboss.arquillian.testng.Arquillian;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
@@ -68,14 +68,16 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.squareup.okhttp.Credentials;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+import com.squareup.okhttp.ResponseBody;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public abstract class AbstractCommandITest {
+public abstract class AbstractCommandITest extends Arquillian {
 
     private static volatile boolean accountsAndInventoryReady = false;
 
@@ -94,9 +96,11 @@ public abstract class AbstractCommandITest {
     protected static final String managementPasword = System.getProperty("hawkular.agent.itest.mgmt.password");
     protected static final int managementPort;
     protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
-    protected static final String testPasword = "password";
-    protected static final String testUser = "jdoe";
-    protected static final String feedId;
+    protected static final String testPasword = System.getProperty("hawkular.itest.rest.password");
+    protected static final String testUser = System.getProperty("hawkular.itest.rest.user");
+    protected static final String tenantId = System.getProperty("hawkular.itest.rest.tenantId");
+    private volatile String feedId;
+    protected static final String authHeader;
 
     private static final Object waitForAccountsLock = new Object();
 
@@ -113,12 +117,7 @@ public abstract class AbstractCommandITest {
         baseInvUri = "http://" + host + ":" + httpPort + "/hawkular/inventory";
         baseGwUri = "ws://" + host + ":" + httpPort + "/hawkular/command-gateway";
         authentication = "{\"username\":\"" + testUser + "\",\"password\":\"" + testPasword + "\"}";
-
-        try (ModelControllerClient mcc = newModelControllerClient()) {
-            feedId = DMREndpointService.lookupServerIdentifier(mcc);
-        } catch (IOException e) {
-            throw new RuntimeException("Could not get feedId", e);
-        }
+        authHeader = Credentials.basic(testUser, testPasword);
 
     }
 
@@ -269,7 +268,7 @@ public abstract class AbstractCommandITest {
      * @throws Throwable
      */
     protected CanonicalPath getCurrentASPath() throws Throwable {
-        List<Resource> servers = getResources("/feeds/"+ feedId +"/resources", 2);
+        List<Resource> servers = getResources("/feeds/"+ getFeedId() +"/resources", 2);
         List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
                 .collect(Collectors.toList());
         AssertJUnit.assertEquals(1, wfs.size());
@@ -361,7 +360,9 @@ public abstract class AbstractCommandITest {
                 Response response = client.newCall(request).execute();
                 AssertJUnit.assertEquals(200, response.code());
                 System.out.println("Got after " + (i + 1) + " retries: " + url);
-                return response.body().string();
+                try (ResponseBody body = response.body()) {
+                    return body.string();
+                }
             } catch (Throwable t) {
                 /* some initial attempts may fail */
                 e = t;
@@ -391,21 +392,10 @@ public abstract class AbstractCommandITest {
     }
 
     protected Request.Builder newAuthRequest() {
-        /*
-         * http://en.wikipedia.org/wiki/Basic_access_authentication#Client_side : The Authorization header is
-         * constructed as follows: * Username and password are combined into a string "username:password" * The
-         * resulting string is then encoded using the RFC2045-MIME variant of Base64, except not limited to 76
-         * char/line[9] * The authorization method and a space i.e. "Basic " is then put before the encoded string.
-         */
-        try {
-            String encodedCredentials = Base64.getMimeEncoder()
-                    .encodeToString((testUser + ":" + testPasword).getBytes("utf-8"));
-            return new Request.Builder() //
-                    .addHeader("Authorization", "Basic " + encodedCredentials) //
-                    .addHeader("Accept", "application/json");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return new Request.Builder() //
+                .addHeader("Authorization", authHeader) //
+                .addHeader("Accept", "application/json")//
+                .addHeader("Hawkular-Tenant", tenantId);
     }
 
     protected static ModelControllerClient newModelControllerClient() {
@@ -523,14 +513,12 @@ public abstract class AbstractCommandITest {
 
         synchronized (waitForAccountsLock) {
             if (!accountsAndInventoryReady) {
-                Thread.sleep(10000);
-                /*
-                 * Make sure we can access the tenant first. We will do several attempts because race conditions may
-                 * happen between this script and WildFly Agent who may have triggered the same initial tasks in
-                 * Accounts
-                 */
-                getWithRetries(baseAccountsUri + "/personas/current");
-
+                log.fine("REST user=[" + testUser + "] password=[" + testPasword + "] tenantId=[" + tenantId
+                        + "] feedId=[" + getFeedId() + "]");
+                Assert.assertNotNull(tenantId);
+                Assert.assertNotNull(testUser);
+                Assert.assertNotNull(testPasword);
+                Assert.assertNotNull(getFeedId());
                 /*
                  * Ensure inventory is running by trying to read our tenant - this is what we authenticate with against
                  * inventory.
@@ -539,5 +527,24 @@ public abstract class AbstractCommandITest {
                 accountsAndInventoryReady = true;
             }
         }
+    }
+
+    /**
+     * Returns a lazily initialized {@link #feedId}.
+     *
+     * @return {@link #feedId}
+     */
+    public String getFeedId() {
+        if (feedId == null) {
+            /* we ignore the possible race conditions here as the feedId returned from
+             * DMREndpointService.lookupServerIdentifier() should be the same for all threads
+             * and it does not matter if feedId gets set several times */
+            try (ModelControllerClient mcc = newModelControllerClient()) {
+                feedId = DMREndpointService.lookupServerIdentifier(mcc);
+            } catch (IOException e) {
+                throw new RuntimeException("Could not get feedId", e);
+            }
+        }
+        return feedId;
     }
 }

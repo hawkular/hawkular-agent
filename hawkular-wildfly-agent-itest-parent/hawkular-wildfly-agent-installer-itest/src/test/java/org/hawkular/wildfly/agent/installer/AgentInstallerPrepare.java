@@ -64,6 +64,9 @@ public class AgentInstallerPrepare extends AbstractITest {
                 "--target-location=" + wfHome.getAbsolutePath(),
                 "--module-dist=" + agentExtensionZipPath,
                 "--server-url=http://" + hawkularHost + ":" + hawkularHttpPort,
+                "--username=" + testUser,
+                "--password=" + testPasword,
+                "--tenant-id="+ tenantId,
                 "--enabled=true"
         });
 

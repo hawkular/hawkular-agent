@@ -36,7 +36,7 @@ import org.hawkular.cmdgw.api.ExecuteOperationRequest;
 import org.hawkular.cmdgw.api.ExecuteOperationResponse;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.OperationResult;
-import org.hawkular.inventory.api.model.CanonicalPath;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
 /**

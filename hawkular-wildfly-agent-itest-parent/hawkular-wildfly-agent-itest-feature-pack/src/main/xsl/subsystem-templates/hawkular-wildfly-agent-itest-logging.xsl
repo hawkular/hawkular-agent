@@ -22,13 +22,19 @@
 
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" xalan:indent-amount="4" standalone="no" />
 
-  <!-- Add hawkular-wildfly-agent.xml after the last available <subsystem> -->
-  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem'][last()]">
+  <xsl:template match="//*[local-name()='config']/*[local-name()='supplement' and @name='default']/*[local-name()='replacement' and @placeholder='LOGGERS']">
     <xsl:copy>
       <xsl:apply-templates select="node()|comment()|@*" />
+      <logger category="org.hawkular.metrics">
+        <level name="${{hawkular.log.metrics:INFO}}" />
+      </logger>
+      <logger category="org.hawkular.inventory">
+        <level name="${{hawkular.log.inventory:INFO}}" />
+      </logger>
+      <logger category="org.hawkular.inventory.rest.requests">
+        <level name="${{hawkular.log.inventory.rest.requests:INFO}}" />
+      </logger>
     </xsl:copy>
-    <xsl:comment> Required by Hawkular WildFly Agent: </xsl:comment>
-    <subsystem>hawkular-wildfly-agent.xml</subsystem>
   </xsl:template>
 
   <!-- copy everything else as-is -->

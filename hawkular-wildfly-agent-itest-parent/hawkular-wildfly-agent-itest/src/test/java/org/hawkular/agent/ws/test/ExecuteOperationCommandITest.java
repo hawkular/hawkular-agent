@@ -18,8 +18,9 @@ package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.EchoCommandITest;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.CanonicalPath;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.testng.annotations.Test;
 
 /**
@@ -28,12 +29,13 @@ import org.testng.annotations.Test;
 public class ExecuteOperationCommandITest extends AbstractCommandITest {
     public static final String GROUP = "ExecuteOperationCommandITest";
 
+    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { EchoCommandITest.GROUP })
     public void testExecuteAgentDiscoveryScan() throws Throwable {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getCurrentASPath();
-        Resource agent = getResource("/feeds/" + feedId + "/resourceTypes/Hawkular%20WildFly%20Agent/resources",
+        Resource agent = getResource("/feeds/" + getFeedId() + "/resourceTypes/Hawkular%20WildFly%20Agent/resources",
                 (r -> r.getId() != null));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
@@ -52,7 +54,8 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }
