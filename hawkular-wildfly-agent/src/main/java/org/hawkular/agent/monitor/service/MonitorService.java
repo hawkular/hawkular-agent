@@ -33,8 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLContext;
 
@@ -52,7 +50,6 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.Resource;
@@ -125,28 +122,27 @@ public class MonitorService implements Service<MonitorService> {
      * Builds the runtime configuration, typically out of the boot configuration. It is static so that always stays
      * clear what data it relies on.
      *
-     * On cetrain circumstances, this method may return the {@code bootConfiguration} instance without any modification.
+     * On certain circumstances, this method may return the {@code bootConfiguration} instance without any modification.
      *
      * @param bootConfiguration the boot configuration
      * @param httpSocketBindingValue the httpSocketBindingValue (not available if agent is inside host controller)
      * @param httpsSocketBindingValue the httpsSocketBindingValue (not available if agent is inside host controller)
      * @param serverOutboundSocketBindingValue the serverOutboundSocketBindingValue
-     * @param trustOnlySSLContextValues the serverOutboundSocketBindingValue
      * @return the runtime configuration
      */
     private static MonitorServiceConfiguration buildRuntimeConfiguration(
             MonitorServiceConfiguration bootConfiguration,
             InjectedValue<SocketBinding> httpSocketBindingValue,
             InjectedValue<SocketBinding> httpsSocketBindingValue,
-            InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue,
-            Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues) {
+            InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue) {
 
         final MonitorServiceConfiguration.StorageAdapterConfiguration bootStorageAdapter = bootConfiguration
                 .getStorageAdapter();
 
         log.infoStorageAdapterMode(bootStorageAdapter.getType());
+        log.infoTenantId(bootStorageAdapter.getTenantId());
 
-        if (bootStorageAdapter.getTenantId() != null && bootStorageAdapter.getUrl() != null) {
+        if (bootStorageAdapter.getUrl() != null) {
             return bootConfiguration;
         } else {
 
@@ -176,8 +172,7 @@ public class MonitorService implements Service<MonitorService> {
                         }
                         port = socketBinding.getAbsolutePort();
                     } else {
-                        OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue
-                                .getValue();
+                        OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue.getValue();
                         address = serverBinding.getResolvedDestinationAddress().getHostName();
                         port = serverBinding.getDestinationPort();
                     }
@@ -190,68 +185,6 @@ public class MonitorService implements Service<MonitorService> {
 
             log.infoUsingServerSideUrl(useUrl);
 
-            String useTenantId = bootStorageAdapter.getTenantId();
-
-            if (bootStorageAdapter.getType() == StorageReportTo.HAWKULAR) {
-                long retryWait = 60_000; // we retry every minute
-                int retriesRemaining = 60; // we will retry once a minute for up to an hour (60 minutes)
-                while (retriesRemaining-- > 0) {
-                    try {
-                        StringBuilder url = Util.getContextUrlString(useUrl, bootStorageAdapter.getAccountsContext());
-                        url.append("personas/current");
-
-                        SSLContext sslContext = getSslContext(bootConfiguration, trustOnlySSLContextValues);
-
-                        HttpClientBuilder httpClientBuilder = new HttpClientBuilder(
-                                bootConfiguration.getStorageAdapter(),
-                                sslContext);
-
-                        OkHttpClient httpclient = httpClientBuilder.getHttpClient();
-
-                        Request request = httpClientBuilder.buildJsonGetRequest(url.toString(), null);
-                        Response httpResponse = httpclient.newCall(request).execute();
-
-                        if (!httpResponse.isSuccessful()) {
-                            throw new Exception("status-code=[" + httpResponse.code() + "], reason=["
-                                    + httpResponse.message() + "], url=[" + url + "]");
-                        }
-
-                        final String fromServer = httpResponse.body().string();
-                        // depending on accounts is probably overkill because of 1 REST call, so let's process the
-                        // JSON via regex
-                        Matcher matcher = Pattern.compile("\"id\":\"(.*?)\"").matcher(fromServer);
-                        if (matcher.find()) {
-                            String tenantIdFromAccounts = matcher.group(1);
-                            if (useTenantId != null && !tenantIdFromAccounts.equals(useTenantId)) {
-                                log.errorWrongTenantId(useTenantId, tenantIdFromAccounts);
-                                throw new Exception(
-                                        "Aborting agent startup because the desired tenant ID [" + useTenantId
-                                                + "] does not match the actual tenant ID [" + tenantIdFromAccounts
-                                                + "]");
-                            }
-                            useTenantId = tenantIdFromAccounts;
-                        }
-
-                        if (useTenantId == null) {
-                            throw new Exception("Got a null tenantId which is invalid");
-                        }
-
-                        log.debugf("Tenant ID [%s]", useTenantId);
-                        retriesRemaining = 0; // we got our tenant ID, no need to keep retrying
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException(ie);
-                    } catch (Throwable t) {
-                        log.errorRetryTenantId(t.toString());
-                        try {
-                            Thread.sleep(retryWait);
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                            throw new RuntimeException(ie);
-                        }
-                    }
-                }
-            }
             MonitorServiceConfiguration.StorageAdapterConfiguration runtimeStorageAdapter = //
             new MonitorServiceConfiguration.StorageAdapterConfiguration(
                     bootStorageAdapter.getType(),
@@ -259,7 +192,7 @@ public class MonitorService implements Service<MonitorService> {
                     bootStorageAdapter.getPassword(),
                     bootStorageAdapter.getSecurityKey(),
                     bootStorageAdapter.getSecuritySecret(),
-                    useTenantId,
+                    bootStorageAdapter.getTenantId(),
                     bootStorageAdapter.getFeedId(),
                     useUrl,
                     bootStorageAdapter.isUseSSL(),
@@ -578,11 +511,16 @@ public class MonitorService implements Service<MonitorService> {
         try {
             log.infoStarting();
 
-            this.configuration = buildRuntimeConfiguration(this.bootConfiguration,
+            this.configuration = buildRuntimeConfiguration(
+                    this.bootConfiguration,
                     this.httpSocketBindingValue,
                     this.httpsSocketBindingValue,
-                    this.serverOutboundSocketBindingValue,
-                    this.trustOnlySSLContextValues);
+                    this.serverOutboundSocketBindingValue);
+
+            if (this.configuration.getStorageAdapter().getTenantId() == null) {
+                log.errorNoTenantIdSpecified();
+                throw new Exception("Missing tenant ID");
+            }
 
             // prepare the builder that will create our HTTP/REST clients to the hawkular server infrastructure
             SSLContext ssl = getSslContext(this.configuration, this.trustOnlySSLContextValues);
@@ -610,13 +548,8 @@ public class MonitorService implements Service<MonitorService> {
             switch (this.configuration.getStorageAdapter().getType()) {
                 case HAWKULAR:
                     // if we are participating in a full Hawkular environment, we need to do some additional things:
-                    // 1. determine our tenant ID dynamically
                     // 2. register our feed ID
                     // 3. connect to the server's feed comm channel
-                    if (this.configuration.getStorageAdapter().getTenantId() == null) {
-                        log.errorNoTenantIdFromAccounts();
-                        throw new Exception("Failed to get tenant ID");
-                    }
                     try {
                         registerFeed();
                     } catch (Exception e) {
@@ -636,10 +569,7 @@ public class MonitorService implements Service<MonitorService> {
                     break;
 
                 case METRICS:
-                    if (this.configuration.getStorageAdapter().getTenantId() == null) {
-                        log.errorMustHaveTenantIdConfigured();
-                        throw new Exception("Agent needs a tenant ID to run");
-                    }
+                    // nothing special needs to be done
                     break;
                 default:
                     throw new IllegalStateException(
