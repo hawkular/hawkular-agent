@@ -292,12 +292,12 @@ public interface MsgLogger extends BasicLogger {
     void errorInvalidQueueElement(Class<?> Element);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10063, value = "Feed ID has been registered [%s]")
-    void infoUsingFeedId(String id);
+    @Message(id = 10063, value = "Feed ID [%s] has been registered under tenant ID [%s]")
+    void infoUsingFeedId(String id, String tenantId);
 
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10064, value = "Server gave us a feed ID [%s] but we wanted [%s]")
-    void errorUnwantedFeedId(String acquiredFeedId, String desiredFeedId);
+    @Message(id = 10064, value = "Server gave us a feed ID [%s] but we wanted [%s] under tenant ID [%s]")
+    void errorUnwantedFeedId(String acquiredFeedId, String desiredFeedId, String tenantId);
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10065, value = "Received request to perform [%s] on a [%s] given by inventory path [%s]")
@@ -308,8 +308,8 @@ public interface MsgLogger extends BasicLogger {
     void infoDiscoveryRequested(MonitoredEndpoint<?> monitoredEndpoint);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10067, value = "Feed ID [%s] was already registered; it will be reused")
-    void infoFeedIdAlreadyRegistered(String feedId);
+    @Message(id = 10067, value = "Feed ID [%s] was already registered under tenant ID [%s]; it will be reused")
+    void infoFeedIdAlreadyRegistered(String feedId, String tenantId);
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10068, value = "Agent is already stopped.")
