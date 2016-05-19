@@ -61,9 +61,9 @@
     <version.io.prometheus.client>0.0.2</version.io.prometheus.client>
     <version.org.hamcrest>1.3</version.org.hamcrest>
 
-    <version.org.hawkular.commons>0.7.2.Final-SRC-revision-50b367fc6baf9bdcf489be3d49c37bd5575c463c</version.org.hawkular.commons>
+    <version.org.hawkular.commons>0.7.2.Final</version.org.hawkular.commons>
     <version.org.hawkular.inventory>0.16.0.Final-SRC-revision-95d9738893fd0a536ca08919ff0a512dad2a90db</version.org.hawkular.inventory>
-    <version.org.hawkular.metrics>0.16.0.Final-SRC-revision-527e82f1107c41042e5d7bc01cab6f56e49ed590</version.org.hawkular.metrics>
+    <version.org.hawkular.metrics>0.16.0.Final-SRC-revision-1b96d5e7e28863a61cae267e66c53659726191af</version.org.hawkular.metrics>
 
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
