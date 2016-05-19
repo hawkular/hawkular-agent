@@ -79,7 +79,8 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(new MessageAnswer(req, driverJarUrl, 0))
                     .expectGenericSuccess(wfPath.ids().getFeedId())
-                    .expectText(response)
+                    .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                    .expectClose()
                     .build()) {
                 testClient.validate(10000);
             }
@@ -118,7 +119,8 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
                     .expectGenericSuccess(wfPath.ids().getFeedId())
-                    .expectText(response)
+                    .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                    .expectClose()
                     .build()) {
                 testClient.validate(10000);
             }

@@ -54,7 +54,8 @@ public class DeployApplicationITest extends AbstractCommandITest {
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }
@@ -86,7 +87,8 @@ public class DeployApplicationITest extends AbstractCommandITest {
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }
@@ -118,7 +120,8 @@ public class DeployApplicationITest extends AbstractCommandITest {
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }
@@ -150,7 +153,8 @@ public class DeployApplicationITest extends AbstractCommandITest {
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }

@@ -42,9 +42,11 @@ public class ExportJdrCommandITest extends AbstractCommandITest {
             String responsePattern = "\\QExportJdrResponse={\\E.*";
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
+                    .readTimeout(240)//seconds
                     .expectWelcome(req)
                     .expectGenericSuccess(wfPath.ids().getFeedId())
-                    .expectBinary(responsePattern, new TestWebSocketClient.ZipWithOneEntryMatcher())
+                    .expectBinary(responsePattern, new TestWebSocketClient.ZipWithOneEntryMatcher(), TestWebSocketClient.Answer.CLOSE)
+                    .expectClose()
                     .build()) {
                 /* 240 seconds, as JDR takes long to execute */
                 testClient.validate(240_000);

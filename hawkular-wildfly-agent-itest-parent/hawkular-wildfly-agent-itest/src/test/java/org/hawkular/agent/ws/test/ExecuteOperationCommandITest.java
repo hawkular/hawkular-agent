@@ -54,7 +54,8 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
                 .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response)
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
                 .build()) {
             testClient.validate(10000);
         }
