@@ -301,6 +301,11 @@ public class AgentInstaller {
             configurationBldr.addXmlEdit(setEnableFlag(targetConfigInfo, installerConfig));
             configurationBldr.modulesHome("modules");
 
+            // TODO remove if-stmt when WFCORE-1505 is fixed - domain mode can't use outbound bindings
+            if (!(targetConfigInfo instanceof StandaloneTargetConfigInfo)) {
+                configurationBldr.socketBinding(null);
+            }
+
             new ExtensionDeployer().install(configurationBldr.build());
 
         } catch (CommandLineParserException pe) {
@@ -410,7 +415,14 @@ public class AgentInstaller {
             xml.append(" securitySecret=\"" + installerConfig.getSecuritySecret() + "\"");
         }
 
-        xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");
+        // xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");
+        // TODO remove if-stmt and uncomment above when WFCORE-1505 is fixed - domain mode can't use outbound bindings
+        if (targetConfigInfo instanceof StandaloneTargetConfigInfo) {
+            xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");
+        } else {
+            xml.append(" url=\"").append(installerConfig.getServerUrl()).append("\"");
+        }
+
         xml.append("/>");
 
         // replaces <storage-adapter> under urn:org.hawkular.agent:agent:1.0 subsystem with above content
