@@ -63,6 +63,10 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
             "fullDiscoveryScan", SubsystemExtension.getResourceDescriptionResolver())
             .build();
 
+    static final SimpleOperationDefinition OP_INVENTORY_REPORT = new SimpleOperationDefinitionBuilder(
+            "inventoryReport", SubsystemExtension.getResourceDescriptionResolver())
+            .build();
+
     private SubsystemDefinition() {
         super(PathElement.pathElement(SUBSYSTEM, SubsystemExtension.SUBSYSTEM_NAME),
                 SubsystemExtension.getResourceDescriptionResolver(),
@@ -101,6 +105,7 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
         rr.registerOperationHandler(OP_STOP, new OperationSubsystemStop());
         rr.registerOperationHandler(OP_STATUS, new OperationSubsystemStatus());
         rr.registerOperationHandler(OP_FULL_DISCOVERY_SCAN, new OperationFullDiscoveryScan());
+        rr.registerOperationHandler(OP_INVENTORY_REPORT, new OperationInventoryReport());
     }
 
 }

@@ -974,6 +974,23 @@ public class MonitorService implements Service<MonitorService> {
         feedComm.connect();
     }
 
+    /**
+     * @return feed ID of the agent if the agent has started and the feed was registered; null otherwise
+     */
+    public String getFeedId() {
+        return this.feedId;
+    }
+
+    /**
+     * @return tenant ID of the agent - if the agent has not started, null is returned
+     */
+    public String getTenantId() {
+        if (this.storageAdapter == null) {
+            return null;
+        }
+        return this.storageAdapter.getStorageAdapterConfiguration().getTenantId();
+    }
+
     public SchedulerService getSchedulerService() {
         return schedulerService;
     }

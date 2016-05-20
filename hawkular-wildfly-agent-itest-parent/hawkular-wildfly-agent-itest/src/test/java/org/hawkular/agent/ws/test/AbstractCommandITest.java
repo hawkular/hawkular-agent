@@ -48,6 +48,8 @@ import org.hawkular.cmdgw.api.ApiDeserializer;
 import org.hawkular.cmdgw.api.WelcomeResponse;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.SubsystemLoggingConstants;
+import org.hawkular.dmrclient.Address;
+import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -546,5 +548,20 @@ public abstract class AbstractCommandITest extends Arquillian {
             }
         }
         return feedId;
+    }
+
+    protected ModelNode getAgentInventoryReport() {
+        try (ModelControllerClient mcc = newModelControllerClient()) {
+            Address agentAddress = Address.parse("/subsystem=hawkular-wildfly-agent");
+            ModelNode op = JBossASClient.createRequest("inventoryReport", agentAddress);
+            ModelNode inventoryReport = new JBossASClient(mcc).execute(op);
+            if (JBossASClient.isSuccess(inventoryReport)) {
+                return JBossASClient.getResults(inventoryReport);
+            } else {
+                throw new Exception(JBossASClient.getFailureDescription(inventoryReport));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Could not get inventory report", e);
+        }
     }
 }

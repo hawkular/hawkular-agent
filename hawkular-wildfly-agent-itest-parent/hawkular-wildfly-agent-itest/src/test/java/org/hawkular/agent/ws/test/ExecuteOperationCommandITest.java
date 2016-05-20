@@ -21,6 +21,8 @@ import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.arquillian.container.test.api.RunAsClient;
+import org.jboss.dmr.ModelNode;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -59,5 +61,21 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
                 .build()) {
             testClient.validate(10000);
         }
+
+        // this is my backdoor way of testing the inventoryReport DMR operation.
+        // This makes sure the agent itself is in inventory.
+        ModelNode inventoryReport = getAgentInventoryReport();
+        Assert.assertNotNull(inventoryReport);
+        ModelNode agentNode = inventoryReport
+                .get("Local") // the name of the managed-server - this is the local-dmr
+                .get("Resources")
+                .asList()
+                .get(0)
+                .get("Local~~") // the resource ID of the wildfly server in inventory
+                .get("Children")
+                .get("Local~/subsystem=hawkular-wildfly-agent"); // the resource ID of the agent itself
+        Assert.assertNotNull(agentNode);
+        Assert.assertEquals(agentNode.get("Name").asString(), "Hawkular WildFly Agent");
+        Assert.assertEquals(agentNode.get("Type ID").asString(), "Hawkular WildFly Agent");
     }
 }
