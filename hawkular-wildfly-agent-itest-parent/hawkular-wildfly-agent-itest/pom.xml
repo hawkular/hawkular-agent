@@ -378,6 +378,7 @@
                     -Dhawkular.log.nest=${hawkular.log.nest}
                     -Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}
                     -Dhawkular.log.cassandra=${hawkular.log.cassandra}
+                    ${debug.wildfly.argLine}
                 </jboss.options>
 
                 <hawkular.agent.itest.mgmt.user>${hawkular.agent.itest.mgmt.user}</hawkular.agent.itest.mgmt.user>
