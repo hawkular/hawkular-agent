@@ -50,6 +50,7 @@ public class OperationInventoryReport implements OperationStepHandler {
                 ModelNode result = opContext.getResult();
                 List<ProtocolService<?, ?>> protocolServices = service.getProtocolServices().getServices();
                 for (ProtocolService<?, ?> protocolService : protocolServices) {
+                    ModelNode protocolServiceNode = result.get(protocolService.getName());
                     for (EndpointService<?, ?> endpointService : protocolService.getEndpointServices().values()) {
                         MonitoredEndpoint<EndpointConfiguration> endpoint = endpointService.getMonitoredEndpoint();
                         EndpointConfiguration endpointConfig = endpoint.getEndpointConfiguration();
@@ -57,7 +58,7 @@ public class OperationInventoryReport implements OperationStepHandler {
                         Map<String, ? extends Object> endpointCustomData = endpointConfig.getCustomData();
                         String tenantId = endpointConfig.getTenantId();
 
-                        ModelNode endpointNode = result.get(endpoint.getName());
+                        ModelNode endpointNode = protocolServiceNode.get(endpoint.getName());
 
                         endpointNode.get("Feed ID").set(service.getFeedId());
                         endpointNode.get("Tenant ID").set(tenantId != null ? tenantId : service.getTenantId());

@@ -67,6 +67,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         ModelNode inventoryReport = getAgentInventoryReport();
         Assert.assertNotNull(inventoryReport);
         ModelNode agentNode = inventoryReport
+                .get("DMR") // the name of protocol service
                 .get("Local") // the name of the managed-server - this is the local-dmr
                 .get("Resources")
                 .asList()

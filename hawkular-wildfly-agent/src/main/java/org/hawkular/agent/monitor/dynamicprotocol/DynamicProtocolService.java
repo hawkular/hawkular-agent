@@ -37,10 +37,19 @@ public class DynamicProtocolService {
     private static final MsgLogger log = AgentLoggers.getLogger(DynamicProtocolService.class);
 
     public static class Builder {
+        private String name;
         private Map<String, DynamicEndpointService> endpointServices = new HashMap<>();
 
+        private Builder() {
+        }
+
         public DynamicProtocolService build() {
-            return new DynamicProtocolService(Collections.synchronizedMap(endpointServices));
+            return new DynamicProtocolService(name, Collections.synchronizedMap(endpointServices));
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
         }
 
         public Builder endpointService(DynamicEndpointService endpointService) {
@@ -49,17 +58,26 @@ public class DynamicProtocolService {
         }
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public static Builder builder(String name) {
+        return new Builder().name(name);
     }
 
+    private final String name;
     private final Map<String, DynamicEndpointService> endpointServices;
     private ScheduledExecutorService threadPool;
     private final Map<String, ScheduledFuture<?>> jobs;
 
-    public DynamicProtocolService(Map<String, DynamicEndpointService> endpointServices) {
+    public DynamicProtocolService(String name, Map<String, DynamicEndpointService> endpointServices) {
+        this.name = name;
         this.endpointServices = endpointServices;
         this.jobs = new HashMap<>();
+    }
+
+    /**
+     * @return the protocol name
+     */
+    public String getName() {
+        return name;
     }
 
     /**

@@ -62,7 +62,7 @@ public class DynamicProtocolServices {
         public Builder prometheusDynamicProtocolService(DynamicProtocolConfiguration protocolConfig,
                 HawkularWildFlyAgentContext hawkularStorage) {
 
-            DynamicProtocolService.Builder builder = DynamicProtocolService.builder();
+            DynamicProtocolService.Builder builder = DynamicProtocolService.builder("Prometheus");
 
             for (DynamicEndpointConfiguration endpointConfig : protocolConfig.getEndpoints().values()) {
                 if (!endpointConfig.isEnabled()) {

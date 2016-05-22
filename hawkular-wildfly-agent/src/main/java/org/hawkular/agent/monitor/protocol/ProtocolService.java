@@ -40,10 +40,19 @@ public class ProtocolService<L, S extends Session<L>> {
     private static final MsgLogger log = AgentLoggers.getLogger(ProtocolService.class);
 
     public static class Builder<L, S extends Session<L>> {
+        private String name;
         private Map<String, EndpointService<L, S>> endpointServices = new HashMap<>();
 
+        private Builder() {
+        }
+
         public ProtocolService<L, S> build() {
-            return new ProtocolService<L, S>(Collections.synchronizedMap(endpointServices));
+            return new ProtocolService<L, S>(name, Collections.synchronizedMap(endpointServices));
+        }
+
+        public Builder<L, S> name(String name) {
+            this.name = name;
+            return this;
         }
 
         public Builder<L, S> endpointService(EndpointService<L, S> endpointService) {
@@ -52,13 +61,23 @@ public class ProtocolService<L, S extends Session<L>> {
         }
     }
 
-    public static <L, S extends Session<L>> Builder<L, S> builder() {
-        return new Builder<L, S>();
+    public static <L, S extends Session<L>> Builder<L, S> builder(String name) {
+        return new Builder<L, S>().name(name);
     }
 
+    private final String name;
     private final Map<String, EndpointService<L, S>> endpointServices;
-    public ProtocolService(Map<String, EndpointService<L, S>> endpointServices) {
+
+    public ProtocolService(String name, Map<String, EndpointService<L, S>> endpointServices) {
+        this.name = name;
         this.endpointServices = endpointServices;
+    }
+
+    /**
+     * @return the protocol name
+     */
+    public String getName() {
+        return name;
     }
 
     /**
