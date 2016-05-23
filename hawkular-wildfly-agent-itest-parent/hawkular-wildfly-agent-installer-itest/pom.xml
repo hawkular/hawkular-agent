@@ -163,40 +163,6 @@
             </executions>
           </plugin>
 
-
-          <!-- Enhance various *.xml files taken from our dependencies using XSL transformations -->
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>xml-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>transform-xmls</id>
-                <phase>compile</phase>
-                <goals>
-                  <goal>transform</goal>
-                </goals>
-                <configuration>
-                  <transformationSets>
-                    <transformationSet>
-                      <dir>${project.build.directory}/hawkular</dir>
-                      <stylesheet>${basedir}/src/main/xsl/standalone.xsl</stylesheet>
-                      <includes>
-                        <include>standalone/configuration/standalone.xml</include>
-                      </includes>
-                      <outputDir>${project.build.directory}/hawkular</outputDir>
-                      <fileMappers>
-                        <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
-                          <pattern>^.*$</pattern>
-                          <replacement>standalone/configuration/standalone-agent-disabled.xml</replacement>
-                        </fileMapper>
-                      </fileMappers>
-                    </transformationSet>
-                  </transformationSets>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
           <!-- Generate random passwords -->
           <plugin>
             <groupId>org.codehaus.gmavenplus</groupId>
@@ -399,7 +365,6 @@
                 <configuration>
                   <jboss-home>${project.build.directory}/hawkular</jboss-home>
                   <port>${hawkular.management.port}</port>
-                  <serverConfig>standalone-agent-disabled.xml</serverConfig>
                   <javaOpts>
                     <javaOpt>-server</javaOpt>
                     <javaOpt>-Xms64m</javaOpt>
@@ -409,6 +374,7 @@
                     <javaOpt>-Djava.awt.headless=true</javaOpt>
                     <javaOpt>-Djboss.bind.address=${hawkular.bind.address}</javaOpt>
                     <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
+                    <javaOpt>-Dhawkular.agent.enabled=false</javaOpt><!-- disable Agent in Hawkular -->
                     <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
                     <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
                     <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
@@ -467,7 +433,6 @@
                 <configuration>
                   <jboss-home>${project.build.directory}/hawkular</jboss-home>
                   <port>${hawkular.management.port}</port>
-                  <serverConfig>standalone-agent-disabled.xml</serverConfig>
                 </configuration>
               </execution>
             </executions>
