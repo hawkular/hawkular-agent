@@ -30,7 +30,7 @@
                  timeUnits="minutes"/>
 
     <storage-adapter type="HAWKULAR"
-                     tenantId="${hawkular.rest.tenantId}"
+                     tenantId="${hawkular.rest.tenantId:hawkular}"
                      username="${hawkular.rest.user}"
                      password="${hawkular.rest.password}" />
 
