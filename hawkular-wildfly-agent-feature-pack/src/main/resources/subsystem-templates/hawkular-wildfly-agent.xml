@@ -21,7 +21,7 @@
   <extension-module>org.hawkular.agent</extension-module>
 
   <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
-             enabled="true"
+             enabled="${hawkular.agent.enabled:true}"
              autoDiscoveryScanPeriodSecs="600">
 
     <diagnostics enabled="true"
