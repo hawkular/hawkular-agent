@@ -91,7 +91,7 @@ public class ProtocolServices {
                 ModelControllerClientFactory localModelControllerClientFactory, // may be null; only needed for local
                 ProtocolConfiguration<DMRNodeLocation> protocolConfig) {
 
-            ProtocolService.Builder<DMRNodeLocation, DMRSession> builder = ProtocolService.builder();
+            ProtocolService.Builder<DMRNodeLocation, DMRSession> builder = ProtocolService.builder("DMR");
 
             for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (!server.isEnabled()) {
@@ -133,7 +133,7 @@ public class ProtocolServices {
 
         public Builder jmxProtocolService(ProtocolConfiguration<JMXNodeLocation> protocolConfig) {
 
-            ProtocolService.Builder<JMXNodeLocation, JMXSession> builder = ProtocolService.builder();
+            ProtocolService.Builder<JMXNodeLocation, JMXSession> builder = ProtocolService.builder("JMX");
 
             for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (server.isEnabled()) {
@@ -166,7 +166,7 @@ public class ProtocolServices {
         public Builder platformProtocolService(ProtocolConfiguration<PlatformNodeLocation> protocolConfig) {
 
             ProtocolService.Builder<PlatformNodeLocation, PlatformSession> builder = ProtocolService
-                    .builder();
+                    .builder("Platform");
 
             for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
                 if (server.isEnabled()) {
