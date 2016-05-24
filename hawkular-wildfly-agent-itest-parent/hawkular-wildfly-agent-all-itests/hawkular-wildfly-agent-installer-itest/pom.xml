@@ -30,41 +30,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-installer</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>com.squareup.okhttp</groupId>
       <artifactId>okhttp-ws</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testng</groupId>
-      <artifactId>testng</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- required by mockito-core, can probably be removed with an upgrade to mockito-core 2.* -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-itest-util</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -76,8 +43,27 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-installer</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-itest-util</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-inventory-paths</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -109,6 +95,8 @@
       <properties>
         <surefire.testng.verbose>3</surefire.testng.verbose>
 
+        <hawkular.test.staging.dir>${project.build.directory}/staging</hawkular.test.staging.dir>
+
         <hawkular.agent.itest.includes>**/*ITest.class</hawkular.agent.itest.includes>
         <hawkular.agent.itest.run.dir>${project.build.directory}/${project.artifactId}-${project.version}</hawkular.agent.itest.run.dir>
 
@@ -125,8 +113,8 @@
 
         <plain-wildfly.bind.address>127.0.0.1</plain-wildfly.bind.address>
         <plain-wildfly.port.offset>5</plain-wildfly.port.offset>
-        <!-- $plain-wildfly.management.port must be equal to $plain-wildfly.port.offset + 9990 -->
-        <plain-wildfly.management.port>9995</plain-wildfly.management.port>
+        <!-- $plain-wildfly.management.http.port must be equal to $plain-wildfly.port.offset + 9990 -->
+        <plain-wildfly.management.http.port>9995</plain-wildfly.management.http.port>
 
         <hawkular.log>INFO</hawkular.log>
         <hawkular.log.agent>INFO</hawkular.log.agent>
@@ -141,6 +129,7 @@
 
       <build>
         <plugins>
+          <!-- install the plain wildfly server and the hawkular server -->
           <plugin>
             <groupId>org.wildfly.build</groupId>
             <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
@@ -222,10 +211,8 @@
 
                 <plain-wildfly.home.dir>${project.build.directory}/plain-wildfly</plain-wildfly.home.dir>
                 <plain-wildfly.bind.address>${plain-wildfly.bind.address}</plain-wildfly.bind.address>
+                <plain-wildfly.management.http.port>${plain-wildfly.management.http.port}</plain-wildfly.management.http.port>
                 <plain-wildfly.port.offset>${plain-wildfly.port.offset}</plain-wildfly.port.offset>
-
-                <!-- we put application in here so our test can deploy it -->
-                <hawkular.test.staging.dir>${hawkular.test.staging.dir}</hawkular.test.staging.dir>
 
                 <!-- output over-the-wire traffic -->
                 <org.apache.commons.logging.Log>
@@ -278,6 +265,7 @@
               <startupTimeout>360</startupTimeout>
             </configuration>
             <executions>
+
               <execution>
                 <id>start-hawkular</id>
                 <phase>process-test-classes</phase>
@@ -308,7 +296,7 @@
                     <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
                     <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
                     <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
-                    <javaOpt>${debug.wildfly.argLine}</javaOpt>
+                    <javaOpt>${debug.hawkular.argLine}</javaOpt>
                   </javaOpts>
                   <add-user>
                     <users>
@@ -339,7 +327,7 @@
                 </goals>
                 <configuration>
                   <jboss-home>${project.build.directory}/plain-wildfly</jboss-home>
-                  <port>${plain-wildfly.management.port}</port>
+                  <port>${plain-wildfly.management.http.port}</port>
                   <javaOpts>
                     <javaOpt>-server</javaOpt>
                     <javaOpt>-Xms64m</javaOpt>
@@ -349,6 +337,7 @@
                     <javaOpt>-Djava.awt.headless=true</javaOpt>
                     <javaOpt>-Djboss.bind.address=${plain-wildfly.bind.address}</javaOpt>
                     <javaOpt>-Djboss.socket.binding.port-offset=${plain-wildfly.port.offset}</javaOpt>
+                    <javaOpt>${debug.plain-wildfly.argLine}</javaOpt>
                   </javaOpts>
                   <add-user>
                     <users>
@@ -370,7 +359,7 @@
                 </goals>
                 <configuration>
                   <jboss-home>${project.build.directory}/plain-wildfly</jboss-home>
-                  <port>${plain-wildfly.management.port}</port>
+                  <port>${plain-wildfly.management.http.port}</port>
                 </configuration>
               </execution>
 

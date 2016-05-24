@@ -37,9 +37,9 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     public void testEnableStatistics() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
             String req = "StatisticsControlRequest={\"authentication\":" + authentication + ", "
                     + "\"resourcePath\":\"" + wfPath.toString() + "\","
@@ -110,9 +110,9 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     public void testDisableStatistics() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
             String req = "StatisticsControlRequest={\"authentication\":" + authentication + ", "
                     + "\"resourcePath\":\"" + wfPath.toString() + "\","
@@ -180,9 +180,9 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     private void testReadOnlyStatistics(boolean expectedEnabledFlag) throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
             // sanity check - make sure they really are what we expect
             assertNodeAttributeEquals(mcc,
@@ -237,9 +237,9 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     public void testEnableStatisticsSubset() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
             // sanity check - make sure statistics are turned off (we'll turn on tx stats next)
             assertNodeAttributeEquals(mcc,

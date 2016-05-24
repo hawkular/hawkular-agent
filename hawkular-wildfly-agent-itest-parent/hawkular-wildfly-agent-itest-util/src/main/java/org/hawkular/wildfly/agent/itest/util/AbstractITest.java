@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -45,8 +46,11 @@ import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.ApiDeserializer;
 import org.hawkular.cmdgw.api.WelcomeResponse;
 import org.hawkular.dmr.api.OperationBuilder;
+import org.hawkular.dmrclient.Address;
+import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
@@ -121,9 +125,15 @@ public abstract class AbstractITest {
             throw new RuntimeException("Could not get wfFeedId", e);
         }
 
-        wfHome = new File(System.getProperty("plain-wildfly.home.dir"));
-        Assert.assertTrue(wfHome.exists(),
-                "${plain-wildfly.home.dir} [" + wfHome.getAbsolutePath() + "] does not exist");
+        // some tests might want to start another plain old WF server - if so, this property will be set
+        String wfHomeProperty = System.getProperty("plain-wildfly.home.dir");
+        if (wfHomeProperty != null) {
+            wfHome = new File(wfHomeProperty);
+            Assert.assertTrue(wfHome.exists(),
+                    "${plain-wildfly.home.dir} [" + wfHome.getAbsolutePath() + "] does not exist");
+        } else {
+            wfHome = null;
+        }
 
     }
 
@@ -389,6 +399,32 @@ public abstract class AbstractITest {
                 .addHeader("Hawkular-Tenant", tenantId);
     }
 
+    /**
+     * If a plain WildFly server was configured for the tests, this returns its data.
+     * This will throw a runtime exception if there is no plain wildfly server in the test framework.
+     *
+     * @return configuration info about the test plain wildfly server
+     */
+    protected static WildFlyClientConfig getPlainWildFlyClientConfig() {
+        return new WildFlyClientConfig();
+    }
+
+    /**
+     * @return Client to the Hawkular WildFly Server.
+     */
+    protected static ModelControllerClient newHawkularModelControllerClient() {
+        return newModelControllerClient(hawkularHost, hawkularManagementPort);
+    }
+
+    /**
+     * @return Client to the Hawkular WildFly Server.
+     *
+     * @see #getPlainWildFlyConfig()
+     */
+    protected static ModelControllerClient newPlainWildFlyModelControllerClient(WildFlyClientConfig config) {
+        return newModelControllerClient(config.getHost(), config.getManagementPort());
+    }
+
     protected static ModelControllerClient newModelControllerClient(final String host, final int managementPort) {
         final CallbackHandler callbackHandler = new CallbackHandler() {
             public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
@@ -433,6 +469,99 @@ public abstract class AbstractITest {
                  */
                 getWithRetries(baseInvUri + "/tenant");
                 accountsAndInventoryReady = true;
+            }
+        }
+    }
+
+    protected ModelNode getAgentInventoryReport(String host, int managementPort) {
+        try (ModelControllerClient mcc = newModelControllerClient(host, managementPort)) {
+            Address agentAddress = Address.parse("/subsystem=hawkular-wildfly-agent");
+            ModelNode op = JBossASClient.createRequest("inventoryReport", agentAddress);
+            ModelNode inventoryReport = new JBossASClient(mcc).execute(op);
+            if (JBossASClient.isSuccess(inventoryReport)) {
+                return JBossASClient.getResults(inventoryReport);
+            } else {
+                throw new Exception(JBossASClient.getFailureDescription(inventoryReport));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Could not get inventory report", e);
+        }
+    }
+
+    /**
+     * Return the {@link CanonicalPath} of the only WildFly server present in inventory under the hawkular feed.
+     * This is the Hawkular Server itself.
+     *
+     * @return path of hawkular wildfly server resource
+     * @throws Throwable
+     */
+    protected CanonicalPath getHawkularWildFlyServerResourcePath() throws Throwable {
+        List<Resource> servers = getResources("/feeds/" + hawkularFeedId + "/resources", 2);
+        List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
+                .collect(Collectors.toList());
+        AssertJUnit.assertEquals(1, wfs.size());
+        return wfs.get(0).getPath();
+    }
+
+    /**
+     * Return the {@link CanonicalPath} of the only WildFly Host Controller present in inventory under the feed
+     * found in the given client config.
+     *
+     * @return path of host controller
+     * @throws Throwable
+     */
+    protected CanonicalPath getHostController(WildFlyClientConfig hostControllerClientConfig) throws Throwable {
+        List<Resource> servers = getResources("/feeds/" + hostControllerClientConfig.getFeedId() + "/resources", 2);
+        List<Resource> hcs = servers.stream().filter(s -> "Host Controller".equals(s.getType().getId()))
+                .collect(Collectors.toList());
+        AssertJUnit.assertEquals(1, hcs.size());
+        return hcs.get(0).getPath();
+    }
+
+    protected File getTestApplicationFile() {
+        String dir = System.getProperty("hawkular.test.staging.dir"); // the maven build put our test app here
+        File app = new File(dir, "hawkular-wildfly-agent-helloworld-war.war");
+        Assert.assertTrue(app.isFile(), "Missing test application - build is bad: " + app.getAbsolutePath());
+        return app;
+    }
+
+    /**
+     * WARNING! For some reason, the server never comes back up clean after the reload.
+     * If you want to use this, you will have to fix it - because once you ask for the server
+     * to reload, it is broken thereafter.
+     */
+    private void reload(String host, int managementPort) {
+        // System.out.println("About to reload");
+        try (ModelControllerClient mcc = newModelControllerClient(host, managementPort)) {
+            OperationBuilder.reload().execute(mcc).assertSuccess();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        final long timeoutMillis = 10 * 60 * 1000;
+        final long start = System.currentTimeMillis();
+        // System.out.println("Waiting for the server to come up");
+        while (true) {
+            try (ModelControllerClient reconnectedMcc = newModelControllerClient(host, managementPort)) {
+                String status = OperationBuilder.readAttribute().address().parentBuilder().name("server-state")
+                        .execute(reconnectedMcc).assertSuccess().getResultNode().asString();
+                // System.out.println("Status = "+ status);
+                if ("RUNNING".equals(status)) {
+                    return;
+                }
+            } catch (Exception e) {
+                // System.out.println("Could not connect while reloading");
+                e.printStackTrace();
+            }
+
+            if (start + timeoutMillis < System.currentTimeMillis()) {
+                throw new RuntimeException(
+                        "Server reload timeouted after " + (System.currentTimeMillis() - start) + " ms");
+            }
+            try {
+                // System.out.println("Sleeping");
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
     }

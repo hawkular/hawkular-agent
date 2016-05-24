@@ -65,10 +65,10 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testAddDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, false);
 
             /* define the mock and its behavior */
@@ -113,9 +113,9 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testAddXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, false);
 
             String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", "
@@ -156,13 +156,13 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testUpdateDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
                 + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
 
             final String changedConnectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
@@ -208,13 +208,13 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testUpdateXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
 
         String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
                 + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
 
             final String changedXaDatasourceJndiName = xaDatasourceJndiName + "_changed";
@@ -261,17 +261,17 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testRemoveDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
                 + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/feeds/" + getFeedId() + "/resourceTypes/Datasource/resources",
+            getResource("/feeds/" + hawkularFeedId + "/resourceTypes/Datasource/resources",
                     (r -> r.getId().contains(datasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
@@ -298,7 +298,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/feeds/" + getFeedId() + "/resourceTypes/Datasource/resources",
+            assertResourceNotInInventory("/feeds/" + hawkularFeedId + "/resourceTypes/Datasource/resources",
                     (r -> r.getId().contains(datasourceName)), 10, 5000);
 
         }
@@ -308,17 +308,17 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testRemoveXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
                 + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/feeds/" + getFeedId() + "/resourceTypes/XA%20Datasource/resources",
+            getResource("/feeds/" + hawkularFeedId + "/resourceTypes/XA%20Datasource/resources",
                     (r -> r.getId().contains(xaDatasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
@@ -345,7 +345,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/feeds/" + getFeedId() + "/resourceTypes/XA%20Datasource/resources",
+            assertResourceNotInInventory("/feeds/" + hawkularFeedId + "/resourceTypes/XA%20Datasource/resources",
                     (r -> r.getId().contains(xaDatasourceName)), 10, 5000);
         }
     }

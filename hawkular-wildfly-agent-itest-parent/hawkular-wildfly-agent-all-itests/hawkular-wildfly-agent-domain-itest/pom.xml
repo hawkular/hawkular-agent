@@ -30,34 +30,14 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-installer</artifactId>
-      <version>${project.version}</version>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>com.squareup.okhttp</groupId>
       <artifactId>okhttp-ws</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testng</groupId>
-      <artifactId>testng</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-itest-util</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -69,8 +49,47 @@
     </dependency>
 
     <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-installer</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-itest-util</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-bus-common</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-command-gateway-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-command-gateway-itest</artifactId>
+      <scope>test</scope>
+      <type>test-jar</type>
+      <version>${version.org.hawkular.commons}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-inventory-paths</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -101,6 +120,8 @@
 
       <properties>
         <surefire.testng.verbose>3</surefire.testng.verbose>
+
+        <hawkular.test.staging.dir>${project.build.directory}/staging</hawkular.test.staging.dir>
 
         <hawkular.agent.itest.includes>**/*ITest.class</hawkular.agent.itest.includes>
         <hawkular.agent.itest.run.dir>${project.build.directory}/${project.artifactId}-${project.version}</hawkular.agent.itest.run.dir>
@@ -159,6 +180,33 @@
                 <configuration>
                   <config-file>server-provisioning-hawkular.xml</config-file>
                   <server-name>hawkular</server-name>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- put a deployment in a staging directory; used for deploy tests -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-deployments-to-staging</id>
+                <phase>test-compile</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <stripVersion>true</stripVersion>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.hawkular.agent</groupId>
+                      <artifactId>hawkular-wildfly-agent-helloworld-war</artifactId>
+                      <version>${project.version}</version>
+                      <type>war</type>
+                    </artifactItem>
+                  </artifactItems>
+                  <outputDirectory>${hawkular.test.staging.dir}</outputDirectory>
                 </configuration>
               </execution>
             </executions>
@@ -292,9 +340,9 @@
                     <javaOpt>-Djboss.bind.address=${hawkular.bind.address}</javaOpt>
                     <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
                     <javaOpt>-Dhawkular.agent.enabled=false</javaOpt>
-                    <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
                     <javaOpt>-Dhawkular.rest.user=dummy</javaOpt>
                     <javaOpt>-Dhawkular.rest.password=dummy</javaOpt>
+                    <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
                     <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
                     <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
                     <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>
@@ -347,7 +395,7 @@
                     <javaOpt>-Djboss.management.native.port=${plain-wildfly.management.native.port}</javaOpt>
                     <javaOpt>-Djboss.management.http.port=${plain-wildfly.management.http.port}</javaOpt>
                     <javaOpt>-Djboss.http.port=${plain-wildfly.http.port}</javaOpt>
-                    <javaOpt>${debug.host-controller.argLine}</javaOpt>
+                    <javaOpt>${debug.plain-wildfly.argLine}</javaOpt>
                   </javaOpts>
                   <add-user>
                     <users>

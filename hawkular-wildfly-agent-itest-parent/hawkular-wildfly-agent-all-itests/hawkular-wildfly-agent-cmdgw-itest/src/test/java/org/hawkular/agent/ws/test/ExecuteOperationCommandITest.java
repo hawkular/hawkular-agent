@@ -33,8 +33,9 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
     public void testExecuteAgentDiscoveryScan() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
-        Resource agent = getResource("/feeds/" + getFeedId() + "/resourceTypes/Hawkular%20WildFly%20Agent/resources",
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Resource agent = getResource(
+                "/feeds/" + hawkularFeedId + "/resourceTypes/Hawkular%20WildFly%20Agent/resources",
                 (r -> r.getId() != null));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
@@ -61,7 +62,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
 
         // this is my backdoor way of testing the inventoryReport DMR operation.
         // This makes sure the agent itself is in inventory.
-        ModelNode inventoryReport = getAgentInventoryReport();
+        ModelNode inventoryReport = getAgentInventoryReport(hawkularHost, hawkularManagementPort);
         Assert.assertNotNull(inventoryReport);
         ModelNode agentNode = inventoryReport
                 .get("DMR") // the name of protocol service

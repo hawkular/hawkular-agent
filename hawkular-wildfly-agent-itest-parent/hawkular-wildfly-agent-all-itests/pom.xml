@@ -33,8 +33,8 @@
 
   <properties>
     <debug.failsafe.argLine />
-    <debug.wildfly.argLine />
-    <debug.host-controller.argLine />
+    <debug.hawkular.argLine />
+    <debug.plain-wildfly.argLine />
   </properties>
 
   <modules>
@@ -54,9 +54,9 @@
       <properties>
         <debug.failsafe.argLine>-Xrunjdwp:transport=dt_socket,address=5007,server=y,suspend=y</debug.failsafe.argLine>
         <debug.hawkular.argLine>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n</debug.hawkular.argLine>
-        <!-- cannot get this to work - host controller gets errors
-        <debug.host-controller.argLine>-Xrunjdwp:transport=dt_socket,address=18787,server=y,suspend=n</debug.host-controller.argLine>
-        -->
+<!-- Host controller hits "Address already in use" when doing this - seems to spawn multiple JVMs with this arg
+        <debug.plain-wildfly.argLine>-Xrunjdwp:transport=dt_socket,address=18787,server=y,suspend=y</debug.plain-wildfly.argLine>
+-->
       </properties>
     </profile>
   </profiles>
