@@ -32,4 +32,8 @@ public interface TargetConfigInfo {
      */
     String getProfileXPath();
 
+    /**
+     * @return the resource type sets that should be associated with the managed server definition
+     */
+    String getManagedServerResourceTypeSets();
 }

@@ -39,7 +39,10 @@ import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.hawkular.dmr.api.OperationBuilder.ReadAttributeOperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.ReadResourceOperationBuilder;
+import org.hawkular.dmrclient.JBossASClient;
+import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
@@ -96,8 +99,8 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
         } else {
             ArrayList<Object> result = new ArrayList<>(nodeList.size());
             for (ModelNode node : nodeList) {
-                if (node.hasDefined("result")) {
-                    result.add(toObject(node.get("result")));
+                if (node.hasDefined(JBossASClient.RESULT)) {
+                    result.add(toObject(node.get(JBossASClient.RESULT)));
                 } else {
                     throw new IllegalStateException("No 'result' in a nodeList item [" + node + "]");
                 }
@@ -229,9 +232,9 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
                 Map<DMRNodeLocation, ModelNode> result = new HashMap<>();
                 List<ModelNode> list = n.asList();
                 for (ModelNode item : list) {
-                    ModelNode pathAddress = item.get("address");
-                    result.put(DMRNodeLocation.of(pathAddress, true, true),
-                            item.hasDefined("result") ? item.get("result") : new ModelNode());
+                    ModelNode pathAddress = item.get(JBossASClient.ADDRESS);
+                    pathAddress = makePathAddressFullyQualified_WFLY6628(query.getPathAddress(), pathAddress);
+                    result.put(DMRNodeLocation.of(pathAddress, true, true), JBossASClient.getResults(item));
                 }
                 return Collections.unmodifiableMap(result);
             } else {
@@ -241,6 +244,29 @@ public class DMRDriver implements Driver<DMRNodeLocation> {
 
         } else {
             return Collections.emptyMap();
+        }
+    }
+
+    private ModelNode makePathAddressFullyQualified_WFLY6628(
+            PathAddress queryPathAddress, ModelNode individualPathAddressNode) {
+        // PathAddress strips out any /host=X/server=X found at the start of the address. We want it back in.
+        if (queryPathAddress.size() > 2
+                && ModelDescriptionConstants.HOST.equals(queryPathAddress.getElement(0).getKey())
+                && ModelDescriptionConstants.SERVER.equals(queryPathAddress.getElement(1).getKey())) {
+
+            PathAddress partialPathAddress = PathAddress.pathAddress(individualPathAddressNode);
+
+            if (partialPathAddress.size() > 2
+                    && ModelDescriptionConstants.HOST.equals(partialPathAddress.getElement(0).getKey())
+                    && ModelDescriptionConstants.SERVER.equals(partialPathAddress.getElement(1).getKey())) {
+                return individualPathAddressNode; // looks like the address is already fully qualified
+            }
+
+            PathAddress hostServerAddress = queryPathAddress.subAddress(0, 2);
+            PathAddress fullPathAddress = hostServerAddress.append(partialPathAddress);
+            return fullPathAddress.toModelNode();
+        } else {
+            return individualPathAddressNode; // nothing needs to be fixed
         }
     }
 
