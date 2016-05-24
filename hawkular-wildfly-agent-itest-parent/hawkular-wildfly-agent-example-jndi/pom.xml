@@ -118,7 +118,7 @@
                   <mainClass>org.hawkular.wildfly.agent.installer.AgentInstaller</mainClass>
                   <arguments>
                     <argument>--target-location=${org.hawkular.wildfly.home}</argument>
-                    <argument>--module=${basedir}/../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</argument>
+                    <argument>--module=${basedir}/../../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</argument>
                     <argument>--server-url=http://localhost:8080</argument>
                     <argument>--username=jdoe</argument>
                     <argument>--password=password</argument>
