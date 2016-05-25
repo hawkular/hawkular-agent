@@ -51,10 +51,8 @@ public class HttpClientBuilder extends BaseHttpClientGenerator {
      */
     public HttpClientBuilder(StorageAdapterConfiguration storageAdapter, SSLContext sslContext) {
         super(new BaseHttpClientGenerator.Configuration.Builder()
-                .username(storageAdapter.getSecurityKey() != null
-                        ? storageAdapter.getSecurityKey() : storageAdapter.getUsername())
-                .password(storageAdapter.getSecurityKey() != null
-                        ? storageAdapter.getSecuritySecret() : storageAdapter.getPassword())
+                .username(storageAdapter.getUsername())
+                .password(storageAdapter.getPassword())
                 .useSsl(storageAdapter.isUseSSL())
                 .keystorePath(storageAdapter.getKeystorePath())
                 .keystorePassword(storageAdapter.getKeystorePassword())

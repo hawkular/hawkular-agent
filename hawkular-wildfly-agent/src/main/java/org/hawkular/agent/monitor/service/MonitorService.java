@@ -192,8 +192,6 @@ public class MonitorService implements Service<MonitorService> {
                     bootStorageAdapter.getType(),
                     bootStorageAdapter.getUsername(),
                     bootStorageAdapter.getPassword(),
-                    bootStorageAdapter.getSecurityKey(),
-                    bootStorageAdapter.getSecuritySecret(),
                     bootStorageAdapter.getTenantId(),
                     bootStorageAdapter.getFeedId(),
                     useUrl,

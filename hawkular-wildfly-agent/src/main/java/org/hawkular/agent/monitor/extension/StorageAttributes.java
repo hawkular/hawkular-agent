@@ -49,20 +49,6 @@ public interface StorageAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition SECURITY_KEY = new SimpleAttributeDefinitionBuilder("securityKey",
-            ModelType.STRING)
-                    .setAllowNull(true)
-                    .setAllowExpression(true)
-                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                    .build();
-
-    SimpleAttributeDefinition SECURITY_SECRET = new SimpleAttributeDefinitionBuilder("securitySecret",
-            ModelType.STRING)
-                    .setAllowNull(true)
-                    .setAllowExpression(true)
-                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                    .build();
-
     SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenantId",
             ModelType.STRING)
                     .setAllowNull(true)
@@ -173,8 +159,6 @@ public interface StorageAttributes {
             TYPE,
             USERNAME,
             PASSWORD,
-            SECURITY_KEY,
-            SECURITY_SECRET,
             TENANT_ID,
             FEED_ID,
             URL,

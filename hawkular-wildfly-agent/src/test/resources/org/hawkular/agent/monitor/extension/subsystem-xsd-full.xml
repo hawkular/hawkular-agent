@@ -34,8 +34,6 @@
   <storage-adapter type="METRICS"
                    username="jdoe"
                    password="password"
-                   securityKey="securityKey"
-                   securitySecret="securitySecret"
                    tenantId="tenandId"
                    feedId="feedId"
                    url="http://localhost:8080"

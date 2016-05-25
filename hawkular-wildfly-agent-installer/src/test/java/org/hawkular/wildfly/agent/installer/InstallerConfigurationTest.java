@@ -106,8 +106,6 @@ public class InstallerConfigurationTest {
                         "--key-alias", "OVERRIDE-alias",
                         "--username", "OVERRIDE-username",
                         "--password", "OVERRIDE-password",
-                        "--security-key", "OVERRIDE-key",
-                        "--security-secret", "OVERRIDE-secret",
                         "--module-dist", "/OVERRIDE/dist.zip"
                 ));
         InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
@@ -123,8 +121,6 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("OVERRIDE-alias", installerConfig.getKeyAlias());
         Assert.assertEquals("OVERRIDE-username", installerConfig.getUsername());
         Assert.assertEquals("OVERRIDE-password", installerConfig.getPassword());
-        Assert.assertEquals("OVERRIDE-key", installerConfig.getSecurityKey());
-        Assert.assertEquals("OVERRIDE-secret", installerConfig.getSecuritySecret());
         Assert.assertEquals("/OVERRIDE/dist.zip", installerConfig.getModuleDistribution());
         Assert.assertEquals("OVERRIDE-feed-id", installerConfig.getFeedId());
         Assert.assertEquals("OVERRIDE-tenant-id", installerConfig.getTenantId());
@@ -217,8 +213,6 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("test-alias", installerConfig.getKeyAlias());
         Assert.assertEquals("test-username", installerConfig.getUsername());
         Assert.assertEquals("test-password", installerConfig.getPassword());
-        Assert.assertEquals("test-key", installerConfig.getSecurityKey());
-        Assert.assertEquals("test-secret", installerConfig.getSecuritySecret());
         Assert.assertEquals("/test/dist.zip", installerConfig.getModuleDistribution());
         Assert.assertEquals("test-feed-id", installerConfig.getFeedId());
         Assert.assertEquals("test-tenant-id", installerConfig.getTenantId());
