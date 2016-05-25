@@ -1,0 +1,133 @@
+= Hawkular WildFly Swarm Agent
+:source-language: java
+
+== About
+
+Hawkular WildFly Swarm Agent is a standalone java agent delivered as a http://wildfly-swarm.io/[Wildfly Swarm] uber-jar.
+
+== Configuring the Swarm Agent
+
+The Swarm Agent is configured via the same XML as the standard agent.  But instead of a full standalone.xml, it requires only the snippets relevant to the agent. So, minimally the agent subsystem and optionally, the logging subsystem.  For example, here is a valid configuration file for monitoring a Prometheus endpoint wuth DEBUG logging. For default logging the logging subsystem could be removed.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<server xmlns="urn:jboss:domain:4.0">
+  <extensions>
+    <extension module="org.jboss.as.logging"/>
+    <extension module="org.hawkular.agent"/>
+  </extensions>
+  <profile>
+    <subsystem xmlns="urn:jboss:domain:logging:3.0">
+      <console-handler name="CONSOLE">
+        <level name="INFO"/>
+        <formatter>
+          <named-formatter name="COLOR-PATTERN"/>
+        </formatter>
+      </console-handler>
+      <periodic-rotating-file-handler name="FILE" autoflush="true">
+        <formatter>
+          <named-formatter name="PATTERN"/>
+        </formatter>
+        <file relative-to="jboss.server.log.dir" path="hawkular-swarm-agent.log"/>
+        <suffix value=".yyyy-MM-dd"/>
+        <append value="true"/>
+      </periodic-rotating-file-handler>
+      <logger category="org.hawkular.agent">
+        <level name="INFO"/>
+      </logger>
+      <logger category="sun.rmi">
+        <level name="WARN"/>
+      </logger>
+      <root-logger>
+        <level name="INFO"/>
+        <handlers>
+          <handler name="CONSOLE"/>
+          <handler name="FILE"/>
+        </handlers>
+      </root-logger>
+      <formatter name="PATTERN">
+        <pattern-formatter pattern="%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n"/>
+      </formatter>
+      <formatter name="COLOR-PATTERN">
+        <pattern-formatter pattern="%K{level}%d{HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n"/>
+      </formatter>
+    </subsystem>
+
+    <subsystem xmlns="urn:org.hawkular.agent:agent:1.0" autoDiscoveryScanPeriodSecs="600" enabled="true">
+      <diagnostics enabled="true" interval="1" reportTo="LOG" timeUnits="minutes"/>
+      <storage-adapter username="jdoe" password="password" serverOutboundSocketBindingRef="hawkular" type="HAWKULAR"/>
+      <managed-servers>
+        <remote-prometheus enabled="true" name="Prometheus" url="http://127.0.0.1:9090/metrics"/>
+      </managed-servers>
+
+      <platform enabled="true">
+        <file-stores enabled="true" interval="5" timeUnits="minutes"/>
+        <memory enabled="true" interval="1" timeUnits="minutes"/>
+        <processors enabled="true" interval="1" timeUnits="minutes"/>
+        <power-sources enabled="false" interval="5" timeUnits="minutes"/>
+      </platform>
+    </subsystem>
+  </profile>
+  <interfaces>
+    <interface name="public">
+      <inet-address value="${jboss.bind.address:127.0.0.1}"/>
+    </interface>
+  </interfaces>
+  <socket-binding-group default-interface="public" name="standard-sockets" port-offset="${jboss.socket.binding.port-offset:0}">
+    <outbound-socket-binding name="hawkular">
+      <remote-destination host="127.0.0.1" port="8080"/>
+    </outbound-socket-binding>
+  </socket-binding-group>
+</server>
+----
+
+=== Default Configuration
+
+For some standard monitoring scenarios the configuration file can be omitted in favor of using default configuration, with optional system property overrides.  By default the Swarm Agent will start and manage a remote-dmr managed server (Wildfly) on localhost and default ports. Here are the currently supported system properties to customize the default configuration.
+
+[width="80%",options="header"]
+|=========================================================
+|System Property |Default Value | Notes
+|hawkular.diagnostics.enabled            |true                   |reports to LOG at 1 minute intervals
+|hawkular.dmr.enabled                    |true                   |
+|hawkular.dmr.host                       |127.0.0.1              |
+|hawkular.dmr.password                   |admin                  |
+|hawkular.dmr.port                       |9990                   |WFly HTTP mgmt port
+|hawkular.dmr.username                   |admin                  |WFly ManagementRealm user
+|hawkular.log.agent                      |INFO                   |
+|hawkular.platform.enabled               |true                   |all monitoring on at default intervals
+|hawkular.prometheus.enabled             |false                  |
+|hawkular.prometheus.url                 |http://127.0.0.1:9090/metrics |
+|hawkular.storage-adapter.host           |127.0.0.1              |
+|hawkular.storage-adapter.password       |password               |
+|hawkular.storage-adapter.port           |8080                   |
+|hawkular.storage-adapter.username       |jdoe                   |
+|=========================================================
+
+== Starting the Swarm Agent
+
+=== Starting with a configuration file
+
+    The config file can be any filename you wish.
+
+    java -jar hawkular-swarm-agent-<version>-swarm.jar hawkular-swarm-agent-config.xml
+
+=== Starting using default configuration
+
+    java -jar hawkular-swarm-agent-<version>-swarm.jar
+
+=== Starting using default configuration with overrides
+
+    We'll turn off dmr monitoring and turn on default prometheus monitoring, with debug logging.
+
+    java -jar -Dhawkular.dmr.enabled=false -Dhawkular.prometheus.enabled=true -Dhawkular.log.agent=DEBUG hawkular-swarm-agent-<version>-swarm.jar
+
+== Tips
+
+* The logfile is named hawkular-swarm-agent.log and its placement is relative to org.jboss.logging.dir. By default it will be in the current working directory.
+
+* Remote monitoring of Wildfly/EAP uses the ManagementRealm and so needs a management user defined.  This can be added via:
+
+  <server-dir>/bin/add-user.sh
+
