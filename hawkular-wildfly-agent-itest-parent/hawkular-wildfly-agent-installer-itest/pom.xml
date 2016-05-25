@@ -385,7 +385,6 @@
                     <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
                     <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
                     <javaOpt>${debug.wildfly.argLine}</javaOpt>
-                    <javaOpt>${debug.wildfly.argLine}</javaOpt>
                   </javaOpts>
                 </configuration>
               </execution>
