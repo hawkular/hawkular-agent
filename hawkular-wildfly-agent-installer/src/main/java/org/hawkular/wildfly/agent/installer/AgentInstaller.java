@@ -115,10 +115,9 @@ public class AgentInstaller {
                 jbossHome = jbossHomeFile.getCanonicalPath();
             }
 
-            if ((installerConfig.getUsername() == null || installerConfig.getPassword() == null)
-                    && (installerConfig.getSecurityKey() == null || installerConfig.getSecuritySecret() == null)) {
+            if (installerConfig.getUsername() == null || installerConfig.getPassword() == null) {
                 throw new Exception(
-                        "You must provide credentials (username/password or key/secret) in installer configuration");
+                        "You must provide credentials (username/password) in installer configuration");
             }
 
             String hawkularServerProtocol;
@@ -406,13 +405,6 @@ public class AgentInstaller {
         }
         if (installerConfig.getPassword() != null && !installerConfig.getPassword().isEmpty()) {
             xml.append(" password=\"" + installerConfig.getPassword() + "\"");
-        }
-
-        if (installerConfig.getSecurityKey() != null && !installerConfig.getSecurityKey().isEmpty()) {
-            xml.append(" securityKey=\"" + installerConfig.getSecurityKey() + "\"");
-        }
-        if (installerConfig.getSecuritySecret() != null && !installerConfig.getSecuritySecret().isEmpty()) {
-            xml.append(" securitySecret=\"" + installerConfig.getSecuritySecret() + "\"");
         }
 
         // xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");

@@ -830,8 +830,6 @@ public class MonitorServiceConfigurationBuilder {
         String feedcommContext = getString(storageAdapterConfig, context, StorageAttributes.FEEDCOMM_CONTEXT);
         String username = getString(storageAdapterConfig, context, StorageAttributes.USERNAME);
         String password = getString(storageAdapterConfig, context, StorageAttributes.PASSWORD);
-        String key = getString(storageAdapterConfig, context, StorageAttributes.SECURITY_KEY);
-        String secret = getString(storageAdapterConfig, context, StorageAttributes.SECURITY_SECRET);
         String typeStr = getString(storageAdapterConfig, context, StorageAttributes.TYPE);
         StorageReportTo type = MonitorServiceConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
         int connectTimeoutSeconds = getInt(storageAdapterConfig, context, StorageAttributes.CONNECT_TIMEOUT_SECONDS);
@@ -850,11 +848,11 @@ public class MonitorServiceConfigurationBuilder {
             }
         }
 
-        if ((username == null || password == null) && (key == null || secret == null)) {
-            throw new IllegalArgumentException("Must have a username/password or security key/secret");
+        if (username == null || password == null) {
+            throw new IllegalArgumentException("Must have a username/password");
         }
 
-        return new StorageAdapterConfiguration(type, username, password, key, secret, tenantId, feedId, url, useSSL,
+        return new StorageAdapterConfiguration(type, username, password, tenantId, feedId, url, useSSL,
                 serverOutboundSocketBindingRef, accountsContext, inventoryContext, metricsContext, feedcommContext,
                 keystorePath, keystorePassword, securityRealm, connectTimeoutSeconds, readTimeoutSeconds);
     }

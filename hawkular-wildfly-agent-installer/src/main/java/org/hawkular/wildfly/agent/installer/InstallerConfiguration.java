@@ -57,8 +57,6 @@ public class InstallerConfiguration {
     static final String OPTION_KEY_ALIAS = "key-alias";
     static final String OPTION_USERNAME = "username";
     static final String OPTION_PASSWORD = "password";
-    static final String OPTION_SECURITY_KEY = "security-key";
-    static final String OPTION_SECURITY_SECRET = "security-secret";
     static final String OPTION_MANAGED_SERVER_NAME = "managed-server-name";
     static final String OPTION_FEED_ID = "feed-id";
     static final String OPTION_TENANT_ID = "tenant-id";
@@ -202,27 +200,13 @@ public class InstallerConfiguration {
                 .name(InstallerConfiguration.OPTION_USERNAME)
                 .optionType(OptionType.NORMAL)
                 .type(String.class)
-                .description("User the agent will use when connecting to Hawkular Server. Ignored if "
-                        + OPTION_SECURITY_KEY + " is provided.")
+                .description("User the agent will use when connecting to Hawkular Server.")
                 .create());
         cmd.addOption(new ProcessedOptionBuilder()
                 .name(InstallerConfiguration.OPTION_PASSWORD)
                 .optionType(OptionType.NORMAL)
                 .type(String.class)
-                .description("Credentials agent will use when connecting to Hawkular Server. Ignored if "
-                        + OPTION_SECURITY_KEY + " is provided.")
-                .create());
-        cmd.addOption(new ProcessedOptionBuilder()
-                .name(InstallerConfiguration.OPTION_SECURITY_KEY)
-                .optionType(OptionType.NORMAL)
-                .type(String.class)
-                .description("Security key that the agent will use when authenticating with Hawkular Server.")
-                .create());
-        cmd.addOption(new ProcessedOptionBuilder()
-                .name(InstallerConfiguration.OPTION_SECURITY_SECRET)
-                .optionType(OptionType.NORMAL)
-                .type(String.class)
-                .description("Security secret that the agent will use when authenticating with Hawkular Server.")
+                .description("Credentials agent will use when connecting to Hawkular Server.")
                 .create());
 
         return cmd.create();
@@ -284,8 +268,6 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_KEY_ALIAS);
         setProperty(properties, commandLine, OPTION_USERNAME);
         setProperty(properties, commandLine, OPTION_PASSWORD);
-        setProperty(properties, commandLine, OPTION_SECURITY_KEY);
-        setProperty(properties, commandLine, OPTION_SECURITY_SECRET);
     }
 
     private void setProperty(Properties props, CommandLine<?> commandLine, String option) {
@@ -299,7 +281,6 @@ public class InstallerConfiguration {
         decodeProperty(properties, OPTION_KEYSTORE_PASSWORD, encryptionKey, salt);
         decodeProperty(properties, OPTION_KEY_PASSWORD, encryptionKey, salt);
         decodeProperty(properties, OPTION_PASSWORD, encryptionKey, salt);
-        decodeProperty(properties, OPTION_SECURITY_SECRET, encryptionKey, salt);
     }
 
     private void decodeProperty(Properties prop, String option, String key, byte[] salt) throws Exception {
@@ -360,14 +341,6 @@ public class InstallerConfiguration {
 
     public String getPassword() {
         return properties.getProperty(OPTION_PASSWORD);
-    }
-
-    public String getSecurityKey() {
-        return properties.getProperty(OPTION_SECURITY_KEY);
-    }
-
-    public String getSecuritySecret() {
-        return properties.getProperty(OPTION_SECURITY_SECRET);
     }
 
     public String getManagedServerName() {

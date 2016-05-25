@@ -59,8 +59,6 @@ public class MonitorServiceConfiguration {
         private final StorageReportTo type;
         private final String username;
         private final String password;
-        private final String securityKey; // if !null, use key/secret rather than username/password to authenticate
-        private final String securitySecret;
         private final String tenantId;
         private final String feedId;
         private final String url;
@@ -80,8 +78,6 @@ public class MonitorServiceConfiguration {
                 StorageReportTo type,
                 String username,
                 String password,
-                String securityKey,
-                String securitySecret,
                 String tenantId,
                 String feedId,
                 String url,
@@ -100,8 +96,6 @@ public class MonitorServiceConfiguration {
             this.type = type;
             this.username = username;
             this.password = password;
-            this.securityKey = securityKey;
-            this.securitySecret = securitySecret;
             this.tenantId = tenantId;
             this.feedId = (FEED_ID_AUTOGENERATE.equalsIgnoreCase(feedId)) ? null : feedId;
             this.url = url;
@@ -128,14 +122,6 @@ public class MonitorServiceConfiguration {
 
         public String getPassword() {
             return password;
-        }
-
-        public String getSecurityKey() {
-            return securityKey;
-        }
-
-        public String getSecuritySecret() {
-            return securitySecret;
         }
 
         public String getTenantId() {
