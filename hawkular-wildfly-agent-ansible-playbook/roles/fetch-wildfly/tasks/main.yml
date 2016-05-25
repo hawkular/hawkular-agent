@@ -19,6 +19,7 @@
 ---
 - name: Create WildFly download tmp directory
   file: path="{{wildfly_download_tmpdir}}" state=directory
+  delegate_to: 127.0.0.1
 
 - name: Download WildFly app server distro
   get_url:
