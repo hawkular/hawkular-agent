@@ -18,8 +18,8 @@ package org.hawkular.agent.ws.test;
 
 import java.io.File;
 import java.net.URL;
-import java.net.URLEncoder;
 
+import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -95,7 +95,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
         final ModelNode driverAddress = driverAddress();
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
-                + URLEncoder.encode("~/subsystem=datasources/jdbc-driver=" + driverName, "UTF-8");
+                + Util.urlEncode("~/subsystem=datasources/jdbc-driver=" + driverName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");

@@ -17,10 +17,10 @@
 package org.hawkular.wildfly.agent.installer;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
@@ -94,8 +94,8 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
                     String id = "MI~R~[" + wfClientConfig.getFeedId() + "/Local~/subsystem=datasources/data-source="
                             + datasourceName
                             + "]~MT~Datasource Pool Metrics~Available Count";
-                    id = URLEncoder.encode(id, "UTF-8");
-                    String url = baseMetricsUri + "/gauges/data?buckets=1&metrics=" + id;
+                    id = Util.urlEncodeQuery(id);
+                    String url = baseMetricsUri + "/gauges/stats?buckets=1&metrics=" + id;
                     lastUrl = url;
                     //System.out.println("url = " + url);
                     Response gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
@@ -108,7 +108,38 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
             Thread.sleep(second);
         }
 
-        Assert.fail("Gauge still not available after ["+ timeOutSeconds +"] seconds: ["+ lastUrl +"]");
+        Assert.fail("Gauge still not gathered after [" + timeOutSeconds + "] seconds: [" + lastUrl + "]");
+    }
+
+    @Test(dependsOnMethods = { "datasourcesAddedToInventory" }, enabled = true)
+    public void serverAvailCollected() throws Throwable {
+        String lastUrl = "";
+        int second = 1000;
+        int timeOutSeconds = 60;
+
+        for (int i = 0; i < timeOutSeconds; i++) {
+            Request request = newAuthRequest().url(baseMetricsUri + "/availability").build();
+            Response availabilityResponse = client.newCall(request).execute();
+
+            if (availabilityResponse.code() == 200 && !availabilityResponse.body().string().isEmpty()) {
+                String id = "AI~R~[" + wfClientConfig.getFeedId()
+                        + "/Local~~]~AT~Server Availability~Server Availability";
+                id = Util.urlEncode(id);
+                String url = baseMetricsUri + "/availability/" + id + "/raw";
+                //System.out.println("url = " + url);
+                availabilityResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
+                if (availabilityResponse.code() == 200 && !availabilityResponse.body().string().isEmpty()) {
+                    /* this should be enough to prove that some metric was written successfully */
+                    return;
+                } else {
+                    System.out.println("code = " + availabilityResponse.code());
+                }
+            }
+            Thread.sleep(second);
+        }
+
+        Assert.fail("Availability still not gathered after [" + timeOutSeconds + "] seconds: [" + lastUrl + "]");
 
     }
+
 }

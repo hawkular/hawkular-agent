@@ -44,6 +44,7 @@ public interface SamplingService<L> {
 
     /**
      * Checks the availabilities defined by {@code instances} and reports them back to the given {@code consumer}.
+     * If the relevant Endpoint is unreachable all instances are reported as {@code Avail.DOWN}.
      *
      * @param instances the availabilities to check
      * @param consumer the consumer to send the results to

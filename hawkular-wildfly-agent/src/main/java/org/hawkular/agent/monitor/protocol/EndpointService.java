@@ -42,7 +42,6 @@ import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
-import org.hawkular.agent.monitor.inventory.NodeLocation;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceManager.AddResult;
@@ -286,26 +285,36 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         LOG.debugf("Checking [%d] avails for endpoint [%s]", instances.size(), getMonitoredEndpoint());
 
+        Driver<L> driver = null;
         try (S session = openSession()) {
-            Driver<L> driver = session.getDriver();
+            driver = session.getDriver();
+        } catch (Exception e) {
+            LOG.errorCouldNotAccess(this, e);
+        }
+
+        try {
             for (MeasurementInstance<L, AvailType<L>> instance : instances) {
-                AttributeLocation<L> location = instance.getAttributeLocation();
-                Object o = driver.fetchAttribute(location);
-                final Pattern pattern = instance.getType().getUpPattern();
                 Avail avail = null;
-                if (o instanceof List<?>) {
-                    /* aggregate */
-                    List<?> list = (List<?>) o;
-                    for (Object item : list) {
-                        Avail a = toAvail(pattern, item);
-                        if (avail == null) {
-                            avail = a;
-                        } else {
-                            avail = (a == Avail.DOWN) ? Avail.DOWN : avail;
+                if (driver != null) {
+                    AttributeLocation<L> location = instance.getAttributeLocation();
+                    Object o = driver.fetchAttribute(location);
+                    final Pattern pattern = instance.getType().getUpPattern();
+                    if (o instanceof List<?>) {
+                        /* aggregate */
+                        List<?> list = (List<?>) o;
+                        for (Object item : list) {
+                            Avail a = toAvail(pattern, item);
+                            if (avail == null) {
+                                avail = a;
+                            } else {
+                                avail = (a == Avail.DOWN) ? Avail.DOWN : avail;
+                            }
                         }
+                    } else {
+                        avail = toAvail(instance.getType().getUpPattern(), o);
                     }
                 } else {
-                    avail = toAvail(instance.getType().getUpPattern(), o);
+                    avail = Avail.DOWN;
                 }
                 long ts = System.currentTimeMillis();
                 String key = generateMeasurementKey(instance);
@@ -314,7 +323,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
-            LOG.errorCouldNotAccess(this, e);
+            LOG.errorAvailCheckFailed(e);
         }
     }
 
