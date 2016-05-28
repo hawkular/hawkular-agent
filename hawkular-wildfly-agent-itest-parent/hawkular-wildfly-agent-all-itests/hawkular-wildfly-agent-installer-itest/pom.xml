@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+    and other contributors as indicated by the @author tags.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.hawkular.agent</groupId>
+    <artifactId>hawkular-wildfly-agent-all-itests</artifactId>
+    <version>0.17.6.Final-SNAPSHOT</version>
+  </parent>
+  <artifactId>hawkular-wildfly-agent-installer-itest</artifactId>
+
+  <name>Hawkular Agent: Agent Installer Integration Tests</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-installer</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.squareup.okhttp</groupId>
+      <artifactId>okhttp-ws</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- required by mockito-core, can probably be removed with an upgrade to mockito-core 2.* -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-itest-util</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-dmr-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.commons</groupId>
+      <artifactId>hawkular-inventory-paths</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly.core</groupId>
+      <artifactId>wildfly-controller</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- because integration tests are run by maven-failsafe-plugin -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <!-- Integration tests -->
+      <id>itest</id>
+
+      <properties>
+        <surefire.testng.verbose>3</surefire.testng.verbose>
+
+        <hawkular.agent.itest.includes>**/*ITest.class</hawkular.agent.itest.includes>
+        <hawkular.agent.itest.run.dir>${project.build.directory}/${project.artifactId}-${project.version}</hawkular.agent.itest.run.dir>
+
+        <hawkular.agent.itest.mgmt.user>itest-admin</hawkular.agent.itest.mgmt.user>
+        <!-- <hawkular.agent.itest.mgmt.password> set to a random value using gmaven plugin </hawkular.agent.itest.mgmt.password> -->
+        <hawkular.itest.rest.tenantId>itest-rest-tenant</hawkular.itest.rest.tenantId>
+        <hawkular.itest.rest.user>itest-rest</hawkular.itest.rest.user>
+        <!-- <hawkular.itest.rest.password> set to a random value using gmaven plugin </hawkular.itest.rest.password> -->
+
+        <hawkular.bind.address>127.0.0.1</hawkular.bind.address>
+        <hawkular.port.offset>0</hawkular.port.offset>
+        <!-- $hawkular.management.port must be equal to $hawkular.port.offset + 9990 -->
+        <hawkular.management.port>9990</hawkular.management.port>
+
+        <plain-wildfly.bind.address>127.0.0.1</plain-wildfly.bind.address>
+        <plain-wildfly.port.offset>5</plain-wildfly.port.offset>
+        <!-- $plain-wildfly.management.port must be equal to $plain-wildfly.port.offset + 9990 -->
+        <plain-wildfly.management.port>9995</plain-wildfly.management.port>
+
+        <hawkular.log>INFO</hawkular.log>
+        <hawkular.log.agent>INFO</hawkular.log.agent>
+        <hawkular.log.bus>INFO</hawkular.log.bus>
+        <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
+        <hawkular.log.inventory>INFO</hawkular.log.inventory>
+        <hawkular.log.metrics>INFO</hawkular.log.metrics>
+        <hawkular.log.nest>INFO</hawkular.log.nest>
+        <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
+        <hawkular.log.cassandra>INFO</hawkular.log.cassandra>
+      </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.wildfly.build</groupId>
+            <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>server-provisioning-plain-wildfly</id>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+                <phase>compile</phase>
+                <configuration>
+                  <config-file>server-provisioning-plain-wildfly.xml</config-file>
+                  <server-name>plain-wildfly</server-name>
+                </configuration>
+              </execution>
+              <execution>
+                <id>server-provisioning-hawkular</id>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+                <phase>compile</phase>
+                <configuration>
+                  <config-file>server-provisioning-hawkular.xml</config-file>
+                  <server-name>hawkular</server-name>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Generate random passwords -->
+          <plugin>
+            <groupId>org.codehaus.gmavenplus</groupId>
+            <artifactId>gmavenplus-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>compile</phase>
+                <goals>
+                  <goal>execute</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <scripts>
+                <script><![CDATA[
+                  project.properties['hawkular.agent.itest.mgmt.password'] = UUID.randomUUID().toString()
+                  project.properties['hawkular.itest.rest.password'] = UUID.randomUUID().toString()
+                ]]></script>
+              </scripts>
+            </configuration>
+            <dependencies>
+              <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-all</artifactId>
+                <version>${version.org.codehaus.groovy}</version>
+                <scope>runtime</scope>
+              </dependency>
+            </dependencies>
+          </plugin>
+
+          <!-- To run a subset of tests, specify the test class paths explicitly. For example:
+               -Dhawkular.agent.itest.includes=**/MyITest.class,**/EchoCommandITest.class -Pitest
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+
+                <hawkular-wildfly-agent-wf-extension.zip.path>${project.basedir}/../../../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</hawkular-wildfly-agent-wf-extension.zip.path>
+                <hawkular.bind.address>${hawkular.bind.address}</hawkular.bind.address>
+                <hawkular.port.offset>${hawkular.port.offset}</hawkular.port.offset>
+
+                <hawkular.agent.itest.mgmt.user>${hawkular.agent.itest.mgmt.user}</hawkular.agent.itest.mgmt.user>
+                <hawkular.agent.itest.mgmt.password>${hawkular.agent.itest.mgmt.password}</hawkular.agent.itest.mgmt.password>
+
+                <hawkular.itest.rest.tenantId>${hawkular.itest.rest.tenantId}</hawkular.itest.rest.tenantId>
+                <hawkular.itest.rest.user>${hawkular.itest.rest.user}</hawkular.itest.rest.user>
+                <hawkular.itest.rest.password>${hawkular.itest.rest.password}</hawkular.itest.rest.password>
+
+                <plain-wildfly.home.dir>${project.build.directory}/plain-wildfly</plain-wildfly.home.dir>
+                <plain-wildfly.bind.address>${plain-wildfly.bind.address}</plain-wildfly.bind.address>
+                <plain-wildfly.port.offset>${plain-wildfly.port.offset}</plain-wildfly.port.offset>
+
+                <!-- we put application in here so our test can deploy it -->
+                <hawkular.test.staging.dir>${hawkular.test.staging.dir}</hawkular.test.staging.dir>
+
+                <!-- output over-the-wire traffic -->
+                <org.apache.commons.logging.Log>
+                  org.apache.commons.logging.impl.SimpleLog
+                </org.apache.commons.logging.Log>
+                <org.apache.commons.logging.simplelog.log.org.apache.http>
+                  ${http.log}
+                </org.apache.commons.logging.simplelog.log.org.apache.http>
+                <org.apache.commons.logging.simplelog.log.org.apache.http.wire>
+                  ${http.log.wire}
+                </org.apache.commons.logging.simplelog.log.org.apache.http.wire>
+                <java.util.logging.config.file>${project.build.testOutputDirectory}/logging.properties</java.util.logging.config.file>
+              </systemPropertyVariables>
+              <argLine>${debug.failsafe.argLine}</argLine>
+            </configuration>
+            <executions>
+              <execution>
+                <id>prepare-integration-test</id>
+                <phase>test</phase>
+                <goals>
+                  <goal>integration-test</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>**/*Prepare.class</include>
+                  </includes>
+                </configuration>
+              </execution>
+              <execution>
+                <id>integration-test</id>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>${hawkular.agent.itest.includes}</include>
+                  </includes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Start WildFly from the folder where the provisioning plugin has prepared it -->
+          <plugin>
+            <groupId>org.wildfly.plugins</groupId>
+            <artifactId>wildfly-maven-plugin</artifactId>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <startupTimeout>360</startupTimeout>
+            </configuration>
+            <executions>
+              <execution>
+                <id>start-hawkular</id>
+                <phase>process-test-classes</phase>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+                <configuration>
+                  <jboss-home>${project.build.directory}/hawkular</jboss-home>
+                  <port>${hawkular.management.port}</port>
+                  <javaOpts>
+                    <javaOpt>-server</javaOpt>
+                    <javaOpt>-Xms64m</javaOpt>
+                    <javaOpt>-Xmx512m</javaOpt>
+                    <javaOpt>-Djava.net.preferIPv4Stack=true</javaOpt>
+                    <javaOpt>-Djboss.modules.system.pkgs=org.jboss.byteman</javaOpt>
+                    <javaOpt>-Djava.awt.headless=true</javaOpt>
+                    <javaOpt>-Djboss.bind.address=${hawkular.bind.address}</javaOpt>
+                    <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
+                    <javaOpt>-Dhawkular.agent.enabled=false</javaOpt>
+                    <javaOpt>-Dhawkular.rest.user=dummy</javaOpt>
+                    <javaOpt>-Dhawkular.rest.password=dummy</javaOpt>
+                    <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
+                    <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
+                    <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
+                    <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>
+                    <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>
+                    <javaOpt>-Dhawkular.log.metrics=${hawkular.log.metrics}</javaOpt>
+                    <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
+                    <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
+                    <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
+                    <javaOpt>${debug.wildfly.argLine}</javaOpt>
+                  </javaOpts>
+                  <add-user>
+                    <users>
+                      <user>
+                        <username>${hawkular.agent.itest.mgmt.user}</username>
+                        <password>${hawkular.agent.itest.mgmt.password}</password>
+                        <application-user>false</application-user>
+                      </user>
+                      <user>
+                        <username>${hawkular.itest.rest.user}</username>
+                        <password>${hawkular.itest.rest.password}</password>
+                        <application-user>true</application-user>
+                        <groups>
+                          <group>read-write</group>
+                          <group>read-only</group>
+                        </groups>
+                      </user>
+                    </users>
+                  </add-user>
+                </configuration>
+              </execution>
+
+              <execution>
+                <id>start-plain-wildfly</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+                <configuration>
+                  <jboss-home>${project.build.directory}/plain-wildfly</jboss-home>
+                  <port>${plain-wildfly.management.port}</port>
+                  <javaOpts>
+                    <javaOpt>-server</javaOpt>
+                    <javaOpt>-Xms64m</javaOpt>
+                    <javaOpt>-Xmx512m</javaOpt>
+                    <javaOpt>-Djava.net.preferIPv4Stack=true</javaOpt>
+                    <javaOpt>-Djboss.modules.system.pkgs=org.jboss.byteman</javaOpt>
+                    <javaOpt>-Djava.awt.headless=true</javaOpt>
+                    <javaOpt>-Djboss.bind.address=${plain-wildfly.bind.address}</javaOpt>
+                    <javaOpt>-Djboss.socket.binding.port-offset=${plain-wildfly.port.offset}</javaOpt>
+                  </javaOpts>
+                  <add-user>
+                    <users>
+                      <user>
+                        <username>${hawkular.agent.itest.mgmt.user}</username>
+                        <password>${hawkular.agent.itest.mgmt.password}</password>
+                        <application-user>false</application-user>
+                      </user>
+                    </users>
+                  </add-user>
+                </configuration>
+              </execution>
+
+              <execution>
+                <id>stop-plain-wildfly</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>shutdown</goal>
+                </goals>
+                <configuration>
+                  <jboss-home>${project.build.directory}/plain-wildfly</jboss-home>
+                  <port>${plain-wildfly.management.port}</port>
+                </configuration>
+              </execution>
+
+              <execution>
+                <id>stop-hawkular</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>shutdown</goal>
+                </goals>
+                <configuration>
+                  <jboss-home>${project.build.directory}/hawkular</jboss-home>
+                  <port>${hawkular.management.port}</port>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+        </plugins>
+      </build>
+    </profile>
+
+  </profiles>
+
+</project>
