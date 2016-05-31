@@ -31,6 +31,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.w3c.dom.Document;
@@ -41,7 +42,7 @@ import org.xml.sax.SAXException;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
  */
-public class AgentInstallerPrepare extends AbstractITest {
+public class AgentInstallerDomainPrepare extends AbstractITest {
 
     @Test
     public void hawkularInitialized() throws Throwable {
@@ -51,7 +52,7 @@ public class AgentInstallerPrepare extends AbstractITest {
     @Test
     public void installAgent() throws Throwable {
 
-        assertAgentInStandalone(false);
+        assertAgentInHostController(false);
         File agentModuleXml =
                 new File(wfHome, "modules/system/add-ons/hawkular-agent/org/hawkular/agent/main/module.xml");
         Assert.assertFalse(agentModuleXml.exists(), "[" + agentModuleXml.getAbsolutePath() + "] should not exist");
@@ -61,6 +62,7 @@ public class AgentInstallerPrepare extends AbstractITest {
                 "${hawkular-wildfly-agent-wf-extension.zip.path} [" + agentExtensionZipPath + "] does not exist");
 
         AgentInstaller.main(new String[] {
+                "--target-config=domain/configuration/host.xml",
                 "--target-location=" + wfHome.getAbsolutePath(),
                 "--module-dist=" + agentExtensionZipPath,
                 "--server-url=http://" + hawkularHost + ":" + hawkularHttpPort,
@@ -71,38 +73,38 @@ public class AgentInstallerPrepare extends AbstractITest {
         });
 
         Assert.assertTrue(agentModuleXml.exists(), "[" + agentModuleXml.getAbsolutePath() + "] should exist");
-        assertAgentInStandalone(true);
+        assertAgentInHostController(true);
 
     }
 
-    private void assertAgentInStandalone(boolean agentAvailableExpected) throws UnsupportedEncodingException,
+    private void assertAgentInHostController(boolean agentAvailableExpected) throws UnsupportedEncodingException,
             FileNotFoundException, IOException, SAXException, ParserConfigurationException, XPathExpressionException {
         XPath xPath = XPathFactory.newInstance().newXPath();
-        File standaloneXml = new File(wfHome, "standalone/configuration/standalone.xml");
+        File hostXml = new File(wfHome, "domain/configuration/host.xml");
 
-        try (Reader r = new InputStreamReader(new FileInputStream(standaloneXml), "utf-8")) {
+        try (Reader r = new InputStreamReader(new FileInputStream(hostXml), "utf-8")) {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             dbf.setNamespaceAware(true);
-            Document standaloneDom = dbf.newDocumentBuilder().parse(new InputSource(r));
+            Document hostDom = dbf.newDocumentBuilder().parse(new InputSource(r));
 
             boolean foundExtensionModule = (boolean) xPath.evaluate(
-                    "/*[local-name()='server']/*[local-name()='extensions']" +
+                    "/*[local-name()='host']/*[local-name()='extensions']" +
                             "/*[local-name()='extension' and @module='org.hawkular.agent']",
-                    standaloneDom, XPathConstants.BOOLEAN);
+                    hostDom, XPathConstants.BOOLEAN);
 
             Assert.assertEquals(foundExtensionModule, agentAvailableExpected,
-                    "/server/extensions/extension[@module='org.hawkular.agent'] should "
-                            + (agentAvailableExpected ? "" : "not") + " exist in [" + standaloneXml.getAbsolutePath()
+                    "/host/extensions/extension[@module='org.hawkular.agent'] should "
+                            + (agentAvailableExpected ? "" : "not") + " exist in [" + hostXml.getAbsolutePath()
                             + "]");
 
             boolean foundSubsystem = (boolean) xPath.evaluate(
-                    "/*[local-name()='server']/*[local-name()='profile']" +
+                    "/*[local-name()='host']/*[local-name()='profile']" +
                             "/*[local-name()='subsystem' and namespace-uri()='urn:org.hawkular.agent:agent:1.0']",
-                    standaloneDom, XPathConstants.BOOLEAN);
+                    hostDom, XPathConstants.BOOLEAN);
 
             Assert.assertEquals(foundSubsystem, agentAvailableExpected,
-                    "/server/profile/subsystem[@xmlns='urn:org.hawkular.agent:agent:1.0'] should "
-                            + (agentAvailableExpected ? "" : "not ") + "exist in [" + standaloneXml.getAbsolutePath()
+                    "/host/profile/subsystem[@xmlns='urn:org.hawkular.agent:agent:1.0'] should "
+                            + (agentAvailableExpected ? "" : "not ") + "exist in [" + hostXml.getAbsolutePath()
                             + "]");
 
         }

@@ -21,7 +21,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.hawkular.agent</groupId>
-    <artifactId>hawkular-wildfly-agent-itest-parent</artifactId>
+    <artifactId>hawkular-wildfly-agent-all-itests</artifactId>
     <version>0.17.6.Final-SNAPSHOT</version>
   </parent>
   <artifactId>hawkular-wildfly-agent-installer-itest</artifactId>
@@ -59,6 +59,13 @@
       <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-itest-util</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -193,91 +200,6 @@
             </dependencies>
           </plugin>
 
-          <!-- Add various users to itest distros -->
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-
-              <execution>
-                <id>create-management-itest-user-plain-wildfly</id>
-                <phase>process-classes</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>java</executable>
-                  <environmentVariables>
-                    <JBOSS_HOME>${project.build.directory}/plain-wildfly</JBOSS_HOME>
-                  </environmentVariables>
-                  <arguments>
-                    <argument>-jar</argument>
-                    <argument>${project.build.directory}/plain-wildfly/jboss-modules.jar</argument>
-                    <argument>-mp</argument>
-                    <argument>${project.build.directory}/plain-wildfly/modules</argument>
-                    <argument>org.jboss.as.domain-add-user</argument>
-                    <argument>--user</argument>
-                    <argument>${hawkular.agent.itest.mgmt.user}</argument>
-                    <argument>--password</argument>
-                    <argument>${hawkular.agent.itest.mgmt.password}</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-
-              <execution>
-                <id>create-management-itest-user-hawkular</id>
-                <phase>process-classes</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>java</executable>
-                  <environmentVariables>
-                    <JBOSS_HOME>${project.build.directory}/hawkular</JBOSS_HOME>
-                  </environmentVariables>
-                  <arguments>
-                    <argument>-jar</argument>
-                    <argument>${project.build.directory}/hawkular/jboss-modules.jar</argument>
-                    <argument>-mp</argument>
-                    <argument>${project.build.directory}/hawkular/modules</argument>
-                    <argument>org.jboss.as.domain-add-user</argument>
-                    <argument>--user</argument>
-                    <argument>${hawkular.agent.itest.mgmt.user}</argument>
-                    <argument>--password</argument>
-                    <argument>${hawkular.agent.itest.mgmt.password}</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-              <execution>
-                <id>create-rest-itest-user-hawkular</id>
-                <phase>process-classes</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>java</executable>
-                  <environmentVariables>
-                    <JBOSS_HOME>${project.build.directory}/hawkular</JBOSS_HOME>
-                  </environmentVariables>
-                  <arguments>
-                    <argument>-jar</argument>
-                    <argument>${project.build.directory}/hawkular/jboss-modules.jar</argument>
-                    <argument>-mp</argument>
-                    <argument>${project.build.directory}/hawkular/modules</argument>
-                    <argument>org.jboss.as.domain-add-user</argument>
-                    <argument>-a</argument>
-                    <argument>--user</argument>
-                    <argument>${hawkular.itest.rest.user}</argument>
-                    <argument>--password</argument>
-                    <argument>${hawkular.itest.rest.password}</argument>
-                    <argument>--group</argument>
-                    <argument>read-write,read-only</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
           <!-- To run a subset of tests, specify the test class paths explicitly. For example:
                -Dhawkular.agent.itest.includes=**/MyITest.class,**/EchoCommandITest.class -Pitest
           -->
@@ -287,7 +209,7 @@
             <configuration>
               <systemPropertyVariables>
 
-                <hawkular-wildfly-agent-wf-extension.zip.path>${project.basedir}/../../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</hawkular-wildfly-agent-wf-extension.zip.path>
+                <hawkular-wildfly-agent-wf-extension.zip.path>${project.basedir}/../../../hawkular-wildfly-agent-wf-extension/target/hawkular-wildfly-agent-wf-extension-${project.version}.zip</hawkular-wildfly-agent-wf-extension.zip.path>
                 <hawkular.bind.address>${hawkular.bind.address}</hawkular.bind.address>
                 <hawkular.port.offset>${hawkular.port.offset}</hawkular.port.offset>
 
@@ -374,7 +296,9 @@
                     <javaOpt>-Djava.awt.headless=true</javaOpt>
                     <javaOpt>-Djboss.bind.address=${hawkular.bind.address}</javaOpt>
                     <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
-                    <javaOpt>-Dhawkular.agent.enabled=false</javaOpt><!-- disable Agent in Hawkular -->
+                    <javaOpt>-Dhawkular.agent.enabled=false</javaOpt>
+                    <javaOpt>-Dhawkular.rest.user=dummy</javaOpt>
+                    <javaOpt>-Dhawkular.rest.password=dummy</javaOpt>
                     <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
                     <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
                     <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
@@ -386,6 +310,24 @@
                     <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
                     <javaOpt>${debug.wildfly.argLine}</javaOpt>
                   </javaOpts>
+                  <add-user>
+                    <users>
+                      <user>
+                        <username>${hawkular.agent.itest.mgmt.user}</username>
+                        <password>${hawkular.agent.itest.mgmt.password}</password>
+                        <application-user>false</application-user>
+                      </user>
+                      <user>
+                        <username>${hawkular.itest.rest.user}</username>
+                        <password>${hawkular.itest.rest.password}</password>
+                        <application-user>true</application-user>
+                        <groups>
+                          <group>read-write</group>
+                          <group>read-only</group>
+                        </groups>
+                      </user>
+                    </users>
+                  </add-user>
                 </configuration>
               </execution>
 
@@ -408,6 +350,15 @@
                     <javaOpt>-Djboss.bind.address=${plain-wildfly.bind.address}</javaOpt>
                     <javaOpt>-Djboss.socket.binding.port-offset=${plain-wildfly.port.offset}</javaOpt>
                   </javaOpts>
+                  <add-user>
+                    <users>
+                      <user>
+                        <username>${hawkular.agent.itest.mgmt.user}</username>
+                        <password>${hawkular.agent.itest.mgmt.password}</password>
+                        <application-user>false</application-user>
+                      </user>
+                    </users>
+                  </add-user>
                 </configuration>
               </execution>
 
@@ -441,19 +392,6 @@
       </build>
     </profile>
 
-    <profile>
-      <id>itest.debug</id>
-      <activation>
-        <property>
-          <name>itest.debug</name>
-        </property>
-      </activation>
-      <properties>
-        <debug.failsafe.argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5007,server=y,suspend=y</debug.failsafe.argLine>
-        <!-- this can only be a single argument due to the way <javaOpt> works with wildfly maven plugin -->
-        <debug.wildfly.argLine>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n</debug.wildfly.argLine>
-      </properties>
-    </profile>
   </profiles>
 
 </project>

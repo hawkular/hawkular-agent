@@ -25,6 +25,7 @@
     <artifactId>hawkular-wildfly-agent-itest-parent</artifactId>
     <version>0.17.6.Final-SNAPSHOT</version>
   </parent>
+
   <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
   <packaging>pom</packaging>
 

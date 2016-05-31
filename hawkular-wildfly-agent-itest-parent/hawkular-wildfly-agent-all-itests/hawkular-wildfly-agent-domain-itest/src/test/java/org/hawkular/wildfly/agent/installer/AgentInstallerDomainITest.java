@@ -17,7 +17,6 @@
 package org.hawkular.wildfly.agent.installer;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +24,7 @@ import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
@@ -32,14 +32,11 @@ import org.junit.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
  */
-public class AgentInstallerITest extends AbstractITest {
+public class AgentInstallerDomainITest extends AbstractITest {
 
     protected static final String wfHost;
     protected static final int wfManagementPort;
@@ -52,8 +49,8 @@ public class AgentInstallerITest extends AbstractITest {
         }
         wfHost = wfH;
 
-        int wfPortOffset = Integer.parseInt(System.getProperty("plain-wildfly.port.offset", "0"));
-        wfManagementPort = wfPortOffset + 9990;
+        int wfPortOffset = Integer.parseInt(System.getProperty("plain-wildfly.management.http.port", "9990"));
+        wfManagementPort = wfPortOffset;
 
         try (ModelControllerClient mcc = newModelControllerClient(wfHost, wfManagementPort)) {
             wfFeedId = DMREndpointService.lookupServerIdentifier(mcc);
@@ -83,22 +80,22 @@ public class AgentInstallerITest extends AbstractITest {
     }
 
     @Test(dependsOnMethods = { "wfStarted" })
-    public void datasourcesAddedToInventory() throws Throwable {
+    public void serversInInventory() throws Throwable {
 
-        for (String datasourceName : getDatasourceNames()) {
-            Resource ds = getResource("/feeds/" + wfFeedId + "/resourceTypes/Datasource/resources",
-                    (r -> r.getId().contains(datasourceName)));
-            System.out.println("ds = " + ds);
+        for (String serverName : getServerNames()) {
+            Resource server = getResource("/feeds/" + wfFeedId + "/resourceTypes/Domain WildFly Server/resources",
+                    (r -> r.getId().contains(serverName)));
+            System.out.println("server = " + server);
         }
 
         Assert.assertNotNull("feedId should not be null", wfFeedId);
     }
 
-    private List<String> getDatasourceNames() {
+    private List<String> getServerNames() {
         try (ModelControllerClient mcc = newModelControllerClient(wfHost, wfManagementPort)) {
             ModelNode result = OperationBuilder.readChildrenNames()
-                    .address(PathAddress.parseCLIStyleAddress("/subsystem=datasources"))
-                    .childType("data-source")
+                    .address(PathAddress.parseCLIStyleAddress("/host=master"))
+                    .childType("server")
                     .execute(mcc)
                     .getResultNode();
 
@@ -107,36 +104,5 @@ public class AgentInstallerITest extends AbstractITest {
         } catch (IOException e) {
             throw new RuntimeException("Could not get wfFeedId", e);
         }
-    }
-
-    @Test(dependsOnMethods = { "datasourcesAddedToInventory" })
-    public void datasourceMetricsCollected() throws Throwable {
-        String lastUrl = "";
-        int second = 1000;
-        int timeOutSeconds = 60;
-        for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = newAuthRequest().url(baseMetricsUri + "/gauges").build();
-            Response gaugesResponse = client.newCall(request).execute();
-
-            if (gaugesResponse.code() == 200 && !gaugesResponse.body().string().isEmpty()) {
-                for (String datasourceName : getDatasourceNames()) {
-                    String id = "MI~R~[" + wfFeedId + "/Local~/subsystem=datasources/data-source=" + datasourceName
-                            + "]~MT~Datasource Pool Metrics~Available Count";
-                    id = URLEncoder.encode(id, "UTF-8");
-                    String url = baseMetricsUri + "/gauges/data?buckets=1&metrics=" + id;
-                    lastUrl = url;
-                    //System.out.println("url = " + url);
-                    Response gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
-                    if (gaugeResponse.code() == 200 && !gaugeResponse.body().string().isEmpty()) {
-                        /* this should be enough to prove that some metric was written successfully */
-                        return;
-                    }
-                }
-            }
-            Thread.sleep(second);
-        }
-
-        Assert.fail("Gauge still not available after ["+ timeOutSeconds +"] seconds: ["+ lastUrl +"]");
-
     }
 }

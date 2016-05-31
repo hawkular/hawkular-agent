@@ -22,18 +22,16 @@
 
   <parent>
     <groupId>org.hawkular.agent</groupId>
-    <artifactId>hawkular-wildfly-agent-itest-parent</artifactId>
+    <artifactId>hawkular-wildfly-agent-all-itests</artifactId>
     <version>0.17.6.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-wildfly-agent-itest</artifactId>
 
-  <name>Hawkular Agent: Integration Tests</name>
+  <name>Hawkular Agent: Command Gateway Integration Tests</name>
   <description>A module containing integration tests of Command Gateway and Agent</description>
 
   <properties>
-    <debug.failsafe.argLine />
-    <debug.wildfly.argLine />
     <hawkular.test.staging.dir>${project.build.directory}/staging</hawkular.test.staging.dir>
   </properties>
 
@@ -428,18 +426,5 @@
       </build>
     </profile>
 
-    <profile>
-      <id>itest.debug</id>
-      <activation>
-        <property>
-          <name>itest.debug</name>
-        </property>
-      </activation>
-      <properties>
-        <debug.failsafe.argLine>-Xdebug -Xrunjdwp:transport=dt_socket,address=5007,server=y,suspend=y</debug.failsafe.argLine>
-        <!-- this can only be a single argument due to the way <javaOpt> works with wildfly maven plugin -->
-        <debug.wildfly.argLine>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n</debug.wildfly.argLine>
-      </properties>
-    </profile>
   </profiles>
 </project>
