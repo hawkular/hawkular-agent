@@ -40,7 +40,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import javax.annotation.security.PermitAll;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -54,7 +53,6 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * Serves the Hawkular WildFly Agent download that is stored in the server's download area.
  */
-@PermitAll
 @WebServlet(urlPatterns = { "/download", "/installer" }, loadOnStartup = 1)
 public class WildFlyAgentServlet extends HttpServlet {
 

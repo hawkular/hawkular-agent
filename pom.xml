@@ -38,6 +38,7 @@
     <module>prometheus-scraper</module>
     <module>hawkular-dmr-client</module>
     <module>hawkular-wildfly-agent</module>
+    <module>hawkular-wildfly-agent-download</module>
     <module>hawkular-wildfly-agent-feature-pack</module>
     <module>hawkular-wildfly-agent-wf-extension</module>
     <module>hawkular-wildfly-agent-itest-parent</module>

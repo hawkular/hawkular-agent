@@ -21,15 +21,14 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.hawkular</groupId>
-    <artifactId>hawkular</artifactId>
-    <version>1.0.0.Alpha13-SNAPSHOT</version>
-    <relativePath>../../pom.xml</relativePath>
+    <groupId>org.hawkular.agent</groupId>
+    <artifactId>hawkular-wildfly-agent-parent</artifactId>
+    <version>0.17.6.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-wildfly-agent-download</artifactId>
   <packaging>war</packaging>
-  <name>Hawkular: WildFly Agent Download WAR</name>
+  <name>Hawkular Agent: WildFly Agent Download WAR</name>
   <description>Component that allows users to download the Hawkular WildFly Agent</description>
 
   <dependencies>
@@ -37,11 +36,6 @@
       <groupId>javax.inject</groupId>
       <artifactId>javax.inject</artifactId>
       <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.accounts</groupId>
-      <artifactId>hawkular-accounts-api</artifactId>
     </dependency>
 
     <dependency>
