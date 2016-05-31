@@ -26,7 +26,7 @@
     <version>0.17.6.Final-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-wildfly-agent-itest</artifactId>
+  <artifactId>hawkular-wildfly-agent-cmdgw-itest</artifactId>
 
   <name>Hawkular Agent: Command Gateway Integration Tests</name>
   <description>A module containing integration tests of Command Gateway and Agent</description>
