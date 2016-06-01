@@ -53,7 +53,6 @@ import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.paths.CanonicalPath;
-import org.jboss.arquillian.testng.Arquillian;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
@@ -79,7 +78,7 @@ import com.squareup.okhttp.ResponseBody;
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public abstract class AbstractCommandITest extends Arquillian {
+public abstract class AbstractCommandITest {
 
     private static volatile boolean accountsAndInventoryReady = false;
 

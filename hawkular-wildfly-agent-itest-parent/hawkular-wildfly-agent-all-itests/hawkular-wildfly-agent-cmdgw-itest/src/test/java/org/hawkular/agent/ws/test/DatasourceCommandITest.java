@@ -20,7 +20,6 @@ import java.net.URLEncoder;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.inventory.paths.CanonicalPath;
-import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -62,7 +61,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     }
 
 
-    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { JdbcDriverCommandITest.GROUP })
     public void testAddDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -111,7 +109,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @RunAsClient
     @Test(groups = { GROUP }, dependsOnGroups = { JdbcDriverCommandITest.GROUP })
     public void testAddXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -155,7 +152,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testAddDatasource" })
     public void testUpdateDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -208,7 +204,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testAddXaDatasource" })
     public void testUpdateXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -262,7 +257,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateDatasource" })
     public void testRemoveDatasource() throws Throwable {
         waitForAccountsAndInventory();
@@ -310,7 +304,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @RunAsClient
     @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateXaDatasource" })
     public void testRemoveXaDatasource() throws Throwable {
         waitForAccountsAndInventory();

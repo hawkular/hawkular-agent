@@ -16,11 +16,9 @@
  */
 package org.hawkular.agent.ws.test;
 
-import org.hawkular.cmdgw.ws.test.EchoCommandITest;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.paths.CanonicalPath;
-import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.dmr.ModelNode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -31,8 +29,7 @@ import org.testng.annotations.Test;
 public class ExecuteOperationCommandITest extends AbstractCommandITest {
     public static final String GROUP = "ExecuteOperationCommandITest";
 
-    @RunAsClient
-    @Test(groups = { GROUP }, dependsOnGroups = { EchoCommandITest.GROUP })
+    @Test(groups = { GROUP })
     public void testExecuteAgentDiscoveryScan() throws Throwable {
         waitForAccountsAndInventory();
 
