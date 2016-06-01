@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-wildfly-agent-all-itests</artifactId>
-    <version>0.18.0.Final</version>
+    <version>0.18.1.Final-SNAPSHOT</version>
   </parent>
   <artifactId>hawkular-wildfly-agent-domain-itest</artifactId>
 
