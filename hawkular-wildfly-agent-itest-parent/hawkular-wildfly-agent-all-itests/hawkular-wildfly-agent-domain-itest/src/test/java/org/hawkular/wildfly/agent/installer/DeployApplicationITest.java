@@ -62,7 +62,7 @@ public class DeployApplicationITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testAddDeployment" })
-    public void testReloadDeployment() throws Throwable {
+    public void testReloadDeploymentViaExecOp() throws Throwable {
         waitForAccountsAndInventory();
 
         WildFlyClientConfig clientConfig = getPlainWildFlyClientConfig();
@@ -94,8 +94,8 @@ public class DeployApplicationITest extends AbstractITest {
         }
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testReloadDeployment" })
-    public void testUndeployDeployment() throws Throwable {
+    @Test(groups = { GROUP }, dependsOnMethods = { "testReloadDeploymentViaExecOp" })
+    public void testUndeployDeploymentViaExecOp() throws Throwable {
         waitForAccountsAndInventory();
 
         WildFlyClientConfig clientConfig = getPlainWildFlyClientConfig();
@@ -127,8 +127,8 @@ public class DeployApplicationITest extends AbstractITest {
         }
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testUndeployDeployment" })
-    public void testRemoveDeployment() throws Throwable {
+    @Test(groups = { GROUP }, dependsOnMethods = { "testUndeployDeploymentViaExecOp" })
+    public void testRemoveDeploymentViaExecOp() throws Throwable {
         waitForAccountsAndInventory();
 
         WildFlyClientConfig clientConfig = getPlainWildFlyClientConfig();

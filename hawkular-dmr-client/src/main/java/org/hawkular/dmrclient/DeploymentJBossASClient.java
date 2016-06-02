@@ -215,4 +215,30 @@ public class DeploymentJBossASClient extends JBossASClient {
 
         return;
     }
+
+    /**
+     * Undeploys an app. If an empty set of server groups is passed in, this will assume we are operating on a
+     * standalone server.
+     *
+     * @param deploymentName name that the app is known as
+     * @param serverGroups the server groups where the application may already be deployed. If empty,
+     *                     this will assume the app server is in STANDALONE mode.
+     */
+    public void undeploy(String deploymentName, Collection<String> serverGroups) {
+        if (serverGroups == null) {
+            throw new IllegalArgumentException("server groups is null");
+        }
+
+        Deployment deployment = new Deployment(getModelControllerClient(), new HashSet<>(serverGroups), null,
+                deploymentName, deploymentName, Deployment.Type.UNDEPLOY_IGNORE_MISSING, true);
+
+        try {
+            deployment.execute();
+        } catch (Exception e) {
+            throw new FailureException(String.format("Failed to undeploy [%s] to [%s]", deploymentName, serverGroups),
+                    e);
+        }
+
+        return;
+    }
 }
