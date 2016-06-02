@@ -17,19 +17,17 @@
 package org.hawkular.wildfly.agent.installer;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
-import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
+import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
-import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 /**
@@ -37,72 +35,119 @@ import org.testng.annotations.Test;
  *
  */
 public class AgentInstallerDomainITest extends AbstractITest {
+    public static final String GROUP = "AgentInstallerDomainITest";
 
-    protected static final String wfHost;
-    protected static final int wfManagementPort;
-    protected static final String wfFeedId;
+    protected static final WildFlyClientConfig wfClientConfig;
 
     static {
-        String wfH = System.getProperty("plain-wildfly.bind.address", "localhost");
-        if ("0.0.0.0".equals(wfH)) {
-            wfH = "localhost";
-        }
-        wfHost = wfH;
-
-        int wfPortOffset = Integer.parseInt(System.getProperty("plain-wildfly.management.http.port", "9990"));
-        wfManagementPort = wfPortOffset;
-
-        try (ModelControllerClient mcc = newModelControllerClient(wfHost, wfManagementPort)) {
-            wfFeedId = DMREndpointService.lookupServerIdentifier(mcc);
-        } catch (IOException e) {
-            throw new RuntimeException("Could not get wfFeedId", e);
-        }
-
+        wfClientConfig = new WildFlyClientConfig();
     }
 
-    /**
-     * @return the {@link CanonicalPath} of the only AS server present in inventory
-     * @throws Throwable
-     */
-    protected CanonicalPath getCurrentASPath() throws Throwable {
-        List<Resource> servers = getResources("/feeds/" + wfFeedId + "/resources", 2);
-        List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
-                .collect(Collectors.toList());
-        AssertJUnit.assertEquals(1, wfs.size());
-        return wfs.get(0).getPath();
-    }
-
-    @Test
+    @Test(groups = { GROUP })
     public void wfStarted() throws Throwable {
         waitForAccountsAndInventory();
-        // System.out.println("wfFeedId = " + wfFeedId);
-        Assert.assertNotNull("wfFeedId should not be null", wfFeedId);
+        Assert.assertNotNull("wfFeedId should not be null", wfClientConfig.getFeedId());
+        System.out.println("wfFeedId = " + wfClientConfig.getFeedId());
     }
 
-    @Test(dependsOnMethods = { "wfStarted" })
-    public void serversInInventory() throws Throwable {
+    @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    public void hostsInInventory() throws Throwable {
 
-        for (String serverName : getServerNames()) {
-            Resource server = getResource("/feeds/" + wfFeedId + "/resourceTypes/Domain WildFly Server/resources",
-                    (r -> r.getId().contains(serverName)));
-            System.out.println("server = " + server);
+        Collection<String> dmrHostNames = getHostNames();
+        for (String hostName : dmrHostNames) {
+            Resource host = getResource(
+                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Domain Host/resources",
+                    (r -> r.getName().contains(hostName)));
+            System.out.println("domain host in inventory=" + host);
         }
 
-        Assert.assertNotNull("feedId should not be null", wfFeedId);
+        // make sure we are testing against what we were expecting
+        Assert.assertTrue(dmrHostNames.contains("master"));
+        Assert.assertEquals("Wrong number of domain hosts", 1, dmrHostNames.size());
     }
 
-    private List<String> getServerNames() {
-        try (ModelControllerClient mcc = newModelControllerClient(wfHost, wfManagementPort)) {
+    @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    public void serversInInventory() throws Throwable {
+
+        Collection<String> dmrServerNames = getServerNames();
+        for (String serverName : dmrServerNames) {
+            Resource server = getResource(
+                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Domain WildFly Server/resources",
+                    (r -> r.getName().contains(serverName)));
+            System.out.println("domain server in inventory=" + server);
+        }
+
+        // make sure we are testing against what we were expecting
+        Assert.assertTrue(dmrServerNames.contains("server-one"));
+        Assert.assertTrue(dmrServerNames.contains("server-two"));
+        Assert.assertTrue(dmrServerNames.contains("server-three"));
+        Assert.assertEquals("Wrong number of domain servers", 3, dmrServerNames.size());
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    public void serverGroupsInInventory() throws Throwable {
+
+        Collection<String> dmrServerGroupNames = getServerGroupNames();
+        for (String groupName : dmrServerGroupNames) {
+            Resource group = getResource(
+                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Domain Server Group/resources",
+                    (r -> r.getName().contains(groupName)));
+            System.out.println("domain server group in inventory=" + group);
+        }
+
+        // make sure we are testing against what we were expecting
+        Assert.assertTrue(dmrServerGroupNames.contains("main-server-group"));
+        Assert.assertTrue(dmrServerGroupNames.contains("other-server-group"));
+        Assert.assertEquals("Wrong number of domain server groups", 2, dmrServerGroupNames.size());
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    public void profilesInInventory() throws Throwable {
+
+        Collection<String> dmrProfileNames = getProfileNames();
+        for (String profileName : dmrProfileNames) {
+            Resource profile = getResource(
+                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Domain Profile/resources",
+                    (r -> r.getName().contains(profileName)));
+            System.out.println("domain profile in inventory=" + profile);
+        }
+
+        // make sure we are testing against what we were expecting
+        Assert.assertTrue(dmrProfileNames.contains("default"));
+        Assert.assertTrue(dmrProfileNames.contains("ha"));
+        Assert.assertTrue(dmrProfileNames.contains("full"));
+        Assert.assertTrue(dmrProfileNames.contains("full-ha"));
+        Assert.assertEquals("Wrong number of domain profiles", 4, dmrProfileNames.size());
+    }
+
+    private Collection<String> getHostNames() {
+        return getChildrenNames("host", PathAddress.EMPTY_ADDRESS);
+    }
+
+    private Collection<String> getServerNames() {
+        return getChildrenNames("server", PathAddress.parseCLIStyleAddress("/host=master"));
+    }
+
+    private Collection<String> getServerGroupNames() {
+        return getChildrenNames("server-group", PathAddress.EMPTY_ADDRESS);
+    }
+
+    private Collection<String> getProfileNames() {
+        return getChildrenNames("profile", PathAddress.EMPTY_ADDRESS);
+    }
+
+    private Collection<String> getChildrenNames(String childTypeName, PathAddress parentAddress) {
+        try (ModelControllerClient mcc = newPlainWildFlyModelControllerClient(wfClientConfig)) {
             ModelNode result = OperationBuilder.readChildrenNames()
-                    .address(PathAddress.parseCLIStyleAddress("/host=master"))
-                    .childType("server")
+                    .address(parentAddress)
+                    .childType(childTypeName)
                     .execute(mcc)
                     .getResultNode();
 
             return result.asList().stream().map(n -> n.asString()).collect(Collectors.toList());
 
         } catch (IOException e) {
-            throw new RuntimeException("Could not get wfFeedId", e);
+            throw new RuntimeException("Could not get: " + parentAddress + "/" + childTypeName, e);
         }
     }
 }

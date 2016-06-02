@@ -45,10 +45,10 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
     public void testAddJdbcDriver() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         final ModelNode driverAddress = driverAddress();
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, driverAddress, false);
 
             /* OK, h2 is there let's add a new MySQL Driver */
@@ -91,13 +91,13 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
     public void testRemoveJdbcDriver() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         final ModelNode driverAddress = driverAddress();
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
                 + URLEncoder.encode("~/subsystem=datasources/jdbc-driver=" + driverName, "UTF-8");
 
-        try (ModelControllerClient mcc = newModelControllerClient()) {
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
             assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 2);
             assertResourceExists(mcc, driverAddress, true);

@@ -31,9 +31,9 @@ public class ExportJdrCommandITest extends AbstractCommandITest {
     public void exportJdrCommand() throws Throwable {
         waitForAccountsAndInventory();
 
-        CanonicalPath wfPath = getCurrentASPath();
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
 
-        try (ModelControllerClient ignored = newModelControllerClient()) {
+        try (ModelControllerClient ignored = newHawkularModelControllerClient()) {
             String req = "ExportJdrRequest={\"authentication\":" + authentication + ", "
                     + "\"resourcePath\":\"" + wfPath.toString() + "\""
                     + "}";

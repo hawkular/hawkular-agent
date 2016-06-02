@@ -33,13 +33,13 @@ public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         // this should not exist yet
-        assertResourceNotInInventory("/feeds/" + getFeedId() + "/resourceTypes/MyAppResourceType/resources",
+        assertResourceNotInInventory("/feeds/" + hawkularFeedId + "/resourceTypes/MyAppResourceType/resources",
                 (r -> r.getId().contains("ITest Resource ID")), 5, 5000);
 
         String createResource = getWithRetries(getExampleJndiWarCreateResourceUrl("ITest Resource ID"), 1, 1);
 
         // see that the new resource has been persisted to hawkular-inventory
-        getResource("/feeds/" + getFeedId() + "/resourceTypes/MyAppResourceType/resources",
+        getResource("/feeds/" + hawkularFeedId + "/resourceTypes/MyAppResourceType/resources",
                 (r -> r.getId().contains("ITest Resource ID")));
 
         String metric = getWithRetries(getExampleJndiWarSendMetricUrl("ITest Metric Key", 123.0), 1, 1);
@@ -47,7 +47,7 @@ public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
         String removeResource = getWithRetries(getExampleJndiWarRemoveResourceUrl("ITest Resource ID"), 1, 1);
 
         // this should not exist anymore
-        assertResourceNotInInventory("/feeds/" + getFeedId() + "/resourceTypes/MyAppResourceType/resources",
+        assertResourceNotInInventory("/feeds/" + hawkularFeedId + "/resourceTypes/MyAppResourceType/resources",
                 (r -> r.getId().contains("ITest Resource ID")), 5, 5000);
 
     }
@@ -73,6 +73,6 @@ public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
     }
 
     private String getExampleJndiWarUrl() {
-        return String.format("http://%s:%d/hawkular-wildfly-agent-example-jndi", host, httpPort);
+        return String.format("http://%s:%d/hawkular-wildfly-agent-example-jndi", hawkularHost, hawkularHttpPort);
     }
 }

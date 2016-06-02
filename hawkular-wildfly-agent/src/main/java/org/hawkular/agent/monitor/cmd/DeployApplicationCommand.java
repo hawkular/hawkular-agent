@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.cmd;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
@@ -93,7 +94,13 @@ public class DeployApplicationCommand
         response.setDestinationFileName(request.getDestinationFileName());
 
         DeploymentJBossASClient client = new DeploymentJBossASClient(dmrContext.getClient());
-        client.deployStandalone(destFileName, envelope.getBinaryData(), enabled);
+
+        if (resource.getResourceType().getName().getNameString().equals("Host Controller")) {
+            Collection<String> serverGroups = Arrays.asList("main-server-group"); // TODO pass via the json request
+            client.deployDomain(destFileName, envelope.getBinaryData(), enabled, serverGroups);
+        } else {
+            client.deployStandalone(destFileName, envelope.getBinaryData(), enabled);
+        }
         endpointService.discoverAll();
         return null;
     }

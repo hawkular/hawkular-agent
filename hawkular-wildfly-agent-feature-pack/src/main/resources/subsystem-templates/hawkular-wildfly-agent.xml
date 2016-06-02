@@ -620,6 +620,8 @@
         <resource-config-dmr name="Version"         attribute="product-version" />
         <resource-config-dmr name="Process Type"    attribute="process-type" /> <!-- (Host|Domain) Controller -->
         <resource-config-dmr name="Local Host Name" attribute="local-host-name" />
+
+        <operation-dmr name="Deploy" operationName="deploy" />
       </resource-type-dmr>
 
       <resource-type-dmr name="Domain Profile"
@@ -681,7 +683,7 @@
       <resource-type-dmr name="Hawkular WildFly Agent"
                          resourceNameTemplate="Hawkular WildFly Agent"
                          path="/subsystem=hawkular-wildfly-agent"
-                         parents="WildFly Server,Domain WildFly Server">
+                         parents="WildFly Server,Domain WildFly Server,Domain Host">
         <operation-dmr name="Status"                   operationName="status" />
         <operation-dmr name="Inventory Discovery Scan" operationName="fullDiscoveryScan" />
       </resource-type-dmr>
