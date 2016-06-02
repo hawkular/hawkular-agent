@@ -63,7 +63,7 @@
     <version.io.prometheus.client>0.0.2</version.io.prometheus.client>
     <version.org.hamcrest>1.3</version.org.hamcrest>
 
-    <version.org.hawkular.commons>0.7.2.Final</version.org.hawkular.commons>
+    <version.org.hawkular.commons>0.7.3.Final-SRC-revision-e97d4e34527c4c0a3ca235f4262fe3eb32c3ebed</version.org.hawkular.commons>
     <version.org.hawkular.inventory>0.16.0.Final</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.16.0.Final</version.org.hawkular.metrics>
 
@@ -71,9 +71,6 @@
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.2</version.org.jolokia>
     <version.org.keycloak>1.8.1.Final</version.org.keycloak>
-
-    <version.org.jboss.arquillian>1.1.11.Final</version.org.jboss.arquillian>
-    <version.org.wildfly.arquillian>2.0.0.Alpha1</version.org.wildfly.arquillian>
   </properties>
 
   <dependencyManagement>
