@@ -636,12 +636,14 @@
                          resource-name-template="Domain Profile [%-]"
                          path="/profile=*"
                          parents="Host Controller">
+        <resource-config-dmr name="Name" attribute="name"/>
       </resource-type-dmr>
 
       <resource-type-dmr name="Domain Server Group"
                          resource-name-template="Domain Server Group [%-]"
                          path="/server-group=*"
                          parents="Host Controller">
+        <resource-config-dmr name="Profile" attribute="profile"/>
 
         <operation-dmr name="Reload Servers"  operation-name="reload-servers" />
         <operation-dmr name="Restart Servers" operation-name="restart-servers" />
@@ -656,11 +658,14 @@
                          path="/host=*"
                          parents="Host Controller"
                          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics">
+        <resource-config-dmr name="Name"                 attribute="name"/>
         <resource-config-dmr name="Product Name"         attribute="product-name" />
         <resource-config-dmr name="Version"              attribute="product-version" />
         <resource-config-dmr name="Is Domain Controller" attribute="master" />
         <resource-config-dmr name="Host State"           attribute="host-state" />
         <resource-config-dmr name="Running Mode"         attribute="running-mode" />
+        <resource-config-dmr name="Server State"         attribute="server-state" />
+        <resource-config-dmr name="Suspend State"        attribute="suspend-state" />
         <resource-config-dmr name="UUID"                 attribute="uuid" />
 
         <operation-dmr name="Reload"   operation-name="reload" />
@@ -673,14 +678,16 @@
                          parents="Domain Host"
                          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
                          avail-sets="Server Availability">
-        <resource-config-dmr name="Product Name"         attribute="product-name" />
-        <resource-config-dmr name="Version"              attribute="product-version" />
-        <resource-config-dmr name="Profile Name"         attribute="profile-name" />
-        <resource-config-dmr name="Server Group"         attribute="server-group" />
-        <resource-config-dmr name="Running Mode"         attribute="running-mode" />
-        <resource-config-dmr name="Server State"         attribute="server-state" />
-        <resource-config-dmr name="Suspend State"        attribute="suspend-state" />
-        <resource-config-dmr name="UUID"                 attribute="uuid" />
+        <resource-config-dmr name="Name"           attribute="name"/>
+        <resource-config-dmr name="Host"           attribute="host"/>
+        <resource-config-dmr name="Product Name"   attribute="product-name" />
+        <resource-config-dmr name="Version"        attribute="product-version" />
+        <resource-config-dmr name="Profile Name"   attribute="profile-name" />
+        <resource-config-dmr name="Server Group"   attribute="server-group" />
+        <resource-config-dmr name="Running Mode"   attribute="running-mode" />
+        <resource-config-dmr name="Server State"   attribute="server-state" />
+        <resource-config-dmr name="Suspend State"  attribute="suspend-state" />
+        <resource-config-dmr name="UUID"           attribute="uuid" />
         <resource-config-dmr name="Qualified Host Name"
                              path="/core-service=server-environment"
                              attribute="qualified-host-name"/>
@@ -693,6 +700,25 @@
         <resource-config-dmr name="Base Directory"
                              path="/core-service=server-environment"
                              attribute="base-dir"/>
+      </resource-type-dmr>
+
+      <resource-type-dmr name="Domain WildFly Server Controller"
+                         resource-name-template="Domain WildFly Server Controller [%-]"
+                         path="/server-config=*"
+                         parents="Domain Host">
+        <resource-config-dmr name="Name"         attribute="name"/>
+        <resource-config-dmr name="Server Group" attribute="group"/>
+        <resource-config-dmr name="Auto Start"   attribute="auto-start"/>
+        <resource-config-dmr name="Status"       attribute="status"/>
+
+        <operation-dmr name="Destroy" operation-name="destroy" />
+        <operation-dmr name="Kill"    operation-name="kill" />
+        <operation-dmr name="Reload"  operation-name="reload" />
+        <operation-dmr name="Restart" operation-name="restart" />
+        <operation-dmr name="Resume"  operation-name="resume" />
+        <operation-dmr name="Start"   operation-name="start" />
+        <operation-dmr name="Stop"    operation-name="stop" />
+        <operation-dmr name="Suspend" operation-name="suspend" />
       </resource-type-dmr>
 
     </resource-type-set-dmr>
