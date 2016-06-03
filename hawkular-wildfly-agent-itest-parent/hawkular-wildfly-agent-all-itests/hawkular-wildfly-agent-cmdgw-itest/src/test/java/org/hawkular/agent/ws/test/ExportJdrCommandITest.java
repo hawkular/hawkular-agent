@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 public class ExportJdrCommandITest extends AbstractCommandITest {
     public static final String GROUP = "ExportJdrCommandITest";
 
-    @Test(groups = { GROUP }, dependsOnGroups = { DeployApplicationITest.GROUP })
+    @Test(groups = { GROUP }, dependsOnGroups = { StandaloneDeployApplicationITest.GROUP })
     public void exportJdrCommand() throws Throwable {
         waitForAccountsAndInventory();
 
