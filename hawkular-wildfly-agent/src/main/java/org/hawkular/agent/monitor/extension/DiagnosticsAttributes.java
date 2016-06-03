@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,37 +31,39 @@ public interface DiagnosticsAttributes {
 
     SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
             ModelType.BOOLEAN)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(true))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(true))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     SimpleAttributeDefinition INTERVAL = new SimpleAttributeDefinitionBuilder("interval",
             ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(5))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(5))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("timeUnits",
+    SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("time-units",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
-            .setAllowExpression(true)
-            .setValidator(new TimeUnitValidator(true, true, TimeUnit.MILLISECONDS, TimeUnit.SECONDS, TimeUnit.MINUTES))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
+                    .setAllowExpression(true)
+                    .setValidator(new TimeUnitValidator(true, true, TimeUnit.MILLISECONDS, TimeUnit.SECONDS,
+                            TimeUnit.MINUTES))
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition REPORT_TO = new SimpleAttributeDefinitionBuilder("reportTo",
+    SimpleAttributeDefinition REPORT_TO = new SimpleAttributeDefinitionBuilder("report-to",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setDefaultValue(new ModelNode(MonitorServiceConfiguration.DiagnosticsReportTo.LOG.name()))
-            .setValidator(EnumValidator.create(MonitorServiceConfiguration.DiagnosticsReportTo.class, false, true))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(MonitorServiceConfiguration.DiagnosticsReportTo.LOG.name()))
+                    .setValidator(
+                            EnumValidator.create(MonitorServiceConfiguration.DiagnosticsReportTo.class, false, true))
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,

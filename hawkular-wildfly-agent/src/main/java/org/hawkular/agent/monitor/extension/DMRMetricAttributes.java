@@ -30,19 +30,19 @@ public interface DMRMetricAttributes {
 
     SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
             ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(false)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     SimpleAttributeDefinition ATTRIBUTE = new SimpleAttributeDefinitionBuilder("attribute",
             ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(false)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition RESOLVE_EXPRESSIONS = new SimpleAttributeDefinitionBuilder("resolveExpressions",
+    SimpleAttributeDefinition RESOLVE_EXPRESSIONS = new SimpleAttributeDefinitionBuilder("resolve-expressions",
             ModelType.BOOLEAN)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(false))
@@ -50,7 +50,7 @@ public interface DMRMetricAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition INCLUDE_DEFAULTS = new SimpleAttributeDefinitionBuilder("includeDefaults",
+    SimpleAttributeDefinition INCLUDE_DEFAULTS = new SimpleAttributeDefinitionBuilder("include-defaults",
             ModelType.BOOLEAN)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(true))
@@ -60,36 +60,37 @@ public interface DMRMetricAttributes {
 
     SimpleAttributeDefinition INTERVAL = new SimpleAttributeDefinitionBuilder("interval",
             ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(5))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(5))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("timeUnits",
+    SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("time-units",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
-            .setAllowExpression(true)
-            .setValidator(new TimeUnitValidator(true, true, TimeUnit.MILLISECONDS, TimeUnit.SECONDS, TimeUnit.MINUTES))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
+                    .setAllowExpression(true)
+                    .setValidator(new TimeUnitValidator(true, true, TimeUnit.MILLISECONDS, TimeUnit.SECONDS,
+                            TimeUnit.MINUTES))
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition METRIC_UNITS = new SimpleAttributeDefinitionBuilder("metricUnits",
+    SimpleAttributeDefinition METRIC_UNITS = new SimpleAttributeDefinitionBuilder("metric-units",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setValidator(MeasurementUnitValidator.ANY_OPTIONAL)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .setValidator(MeasurementUnitValidator.ANY_OPTIONAL)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition METRIC_TYPE = new SimpleAttributeDefinitionBuilder("metricType",
+    SimpleAttributeDefinition METRIC_TYPE = new SimpleAttributeDefinitionBuilder("metric-type",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setValidator(MetricTypeValidator.ANY_OPTIONAL)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .setValidator(MetricTypeValidator.ANY_OPTIONAL)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             PATH,

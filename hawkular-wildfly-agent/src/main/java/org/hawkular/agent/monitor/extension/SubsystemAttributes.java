@@ -36,7 +36,7 @@ public interface SubsystemAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition API_JNDI = new SimpleAttributeDefinitionBuilder("apiJndiName",
+    SimpleAttributeDefinition API_JNDI = new SimpleAttributeDefinitionBuilder("api-jndi-name",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setValidator(new StringLengthValidator(0, Integer.MAX_VALUE, true, true))
@@ -46,7 +46,7 @@ public interface SubsystemAttributes {
                     .build();
 
     SimpleAttributeDefinition AUTO_DISCOVERY_SCAN_PERIOD_SECS = new SimpleAttributeDefinitionBuilder(
-            "autoDiscoveryScanPeriodSecs", ModelType.INT)
+            "auto-discovery-scan-period-secs", ModelType.INT)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(ProtocolServices.DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS))
                     .setAllowExpression(true)
@@ -54,7 +54,7 @@ public interface SubsystemAttributes {
                     .build();
 
     SimpleAttributeDefinition NUM_DMR_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
-            "numDmrSchedulerThreads", ModelType.INT)
+            "num-dmr-scheduler-threads", ModelType.INT)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(4))
                     .setAllowExpression(true)
@@ -62,7 +62,7 @@ public interface SubsystemAttributes {
                     .build();
 
     SimpleAttributeDefinition METRIC_DISPATCHER_BUFFER_SIZE = new SimpleAttributeDefinitionBuilder(
-            "metricDispatcherBufferSize", ModelType.INT)
+            "metric-dispatcher-buffer-size", ModelType.INT)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_METRIC_DISPATCHER_BUFFER_SIZE))
                     .setAllowExpression(true)
@@ -70,7 +70,7 @@ public interface SubsystemAttributes {
                     .build();
 
     SimpleAttributeDefinition METRIC_DISPATCHER_MAX_BATCH_SIZE = new SimpleAttributeDefinitionBuilder(
-            "metricDispatcherMaxBatchSize", ModelType.INT)
+            "metric-dispatcher-max-batch-size", ModelType.INT)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE))
                     .setAllowExpression(true)
@@ -78,7 +78,7 @@ public interface SubsystemAttributes {
                     .build();
 
     SimpleAttributeDefinition AVAIL_DISPATCHER_BUFFER_SIZE = new SimpleAttributeDefinitionBuilder(
-            "availDispatcherBufferSize", ModelType.INT)
+            "avail-dispatcher-buffer-size", ModelType.INT)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_AVAIL_DISPATCHER_BUFFER_SIZE))
                     .setAllowExpression(true)
@@ -86,7 +86,7 @@ public interface SubsystemAttributes {
                     .build();
 
     SimpleAttributeDefinition AVAIL_DISPATCHER_MAX_BATCH_SIZE = new SimpleAttributeDefinitionBuilder(
-            "availDispatcherMaxBatchSize", ModelType.INT)
+            "avail-dispatcher-max-batch-size", ModelType.INT)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_AVAIL_DISPATCHER_MAX_BATCH_SIZE))
                     .setAllowExpression(true)

@@ -54,18 +54,18 @@ The Swarm Agent is configured via the same XML as the standard agent.  But inste
       </formatter>
     </subsystem>
 
-    <subsystem xmlns="urn:org.hawkular.agent:agent:1.0" autoDiscoveryScanPeriodSecs="600" enabled="true">
-      <diagnostics enabled="true" interval="1" reportTo="LOG" timeUnits="minutes"/>
-      <storage-adapter username="jdoe" password="password" serverOutboundSocketBindingRef="hawkular" type="HAWKULAR"/>
+    <subsystem xmlns="urn:org.hawkular.agent:agent:1.0" auto-discovery-scan-period-secs="600" enabled="true">
+      <diagnostics enabled="true" interval="1" reportTo="LOG" time-units="minutes"/>
+      <storage-adapter username="jdoe" password="password" server-outbound-socket-binding-ref="hawkular" type="HAWKULAR"/>
       <managed-servers>
         <remote-prometheus enabled="true" name="Prometheus" url="http://127.0.0.1:9090/metrics"/>
       </managed-servers>
 
       <platform enabled="true">
-        <file-stores enabled="true" interval="5" timeUnits="minutes"/>
-        <memory enabled="true" interval="1" timeUnits="minutes"/>
-        <processors enabled="true" interval="1" timeUnits="minutes"/>
-        <power-sources enabled="false" interval="5" timeUnits="minutes"/>
+        <file-stores enabled="true" interval="5" time-units="minutes"/>
+        <memory enabled="true" interval="1" time-units="minutes"/>
+        <processors enabled="true" interval="1" time-units="minutes"/>
+        <power-sources enabled="false" interval="5" time-units="minutes"/>
       </platform>
     </subsystem>
   </profile>

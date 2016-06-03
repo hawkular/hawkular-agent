@@ -27,20 +27,20 @@ public interface DMRResourceConfigAttributes {
 
     SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode("/"))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode("/"))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     SimpleAttributeDefinition ATTRIBUTE = new SimpleAttributeDefinitionBuilder("attribute",
             ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(false)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition RESOLVE_EXPRESSIONS = new SimpleAttributeDefinitionBuilder("resolveExpressions",
+    SimpleAttributeDefinition RESOLVE_EXPRESSIONS = new SimpleAttributeDefinitionBuilder("resolve-expressions",
             ModelType.BOOLEAN)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(false))
@@ -48,7 +48,7 @@ public interface DMRResourceConfigAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition INCLUDE_DEFAULTS = new SimpleAttributeDefinitionBuilder("includeDefaults",
+    SimpleAttributeDefinition INCLUDE_DEFAULTS = new SimpleAttributeDefinitionBuilder("include-defaults",
             ModelType.BOOLEAN)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(true))

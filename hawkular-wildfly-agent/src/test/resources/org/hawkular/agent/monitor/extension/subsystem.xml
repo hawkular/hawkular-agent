@@ -18,38 +18,38 @@
 -->
 <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
            enabled="false"
-           autoDiscoveryScanPeriodSecs="3601"
-           metricDispatcherBufferSize="201"
-           metricDispatcherMaxBatchSize="51"
-           availDispatcherBufferSize="101"
-           availDispatcherMaxBatchSize="26">
+           auto-discovery-scan-period-secs="3601"
+           metric-dispatcher-buffer-size="201"
+           metric-dispatcher-max-batch-size="51"
+           avail-dispatcher-buffer-size="101"
+           avail-dispatcher-max-batch-size="26">
 
   <diagnostics enabled="false"
                interval="1"
-               timeUnits="minutes"/>
+               time-units="minutes"/>
 
   <storage-adapter username="jdoe"
                    password="password"
                    url="http://localhost:8080"
-                   securityRealm="HawkularSecurityRealm"/>
+                   security-realm="HawkularSecurityRealm"/>
 
   <metric-set-dmr name="WildFly Memory Metrics">
     <metric-dmr name="Heap Used"
                 interval="30"
-                timeUnits="seconds"
-                metricUnits="bytes"
+                time-units="seconds"
+                metric-units="bytes"
                 path="/core-service=platform-mbean/type=memory"
                 attribute="heap-memory-usage#used" />
     <metric-dmr name="Counter Test"
-                metricType="counter"
+                metric-type="counter"
                 interval="30"
-                timeUnits="seconds"
+                time-units="seconds"
                 path="/"
                 attribute="foobar" />
     <metric-dmr name="Gauge Test"
-                metricType="gauge"
+                metric-type="gauge"
                 interval="30"
-                timeUnits="seconds"
+                time-units="seconds"
                 path="/"
                 attribute="foobar" />
   </metric-set-dmr>
@@ -57,56 +57,56 @@
   <avail-set-dmr name="Server Availability" enabled="false">
     <avail-dmr name="App Server"
                interval="30"
-               timeUnits="seconds"
+               time-units="seconds"
                path="/"
                attribute="server-state"
-               upRegex="run.*" />
+               up-regex="run.*" />
   </avail-set-dmr>
 
   <resource-type-set-dmr name="Main" enabled="false">
     <resource-type-dmr name="WildFly Server"
-                       resourceNameTemplate="WildFly Server"
+                       resource-name-template="WildFly Server"
                        path="/"
-                       metricSets="WildFly Memory Metrics"
-                       availSets="Server Availability">
+                       metric-sets="WildFly Memory Metrics"
+                       avail-sets="Server Availability">
       <resource-config-dmr name="Hostname"
                            path="/core-service=server-environment"
                            attribute="qualified-host-name" />
       <resource-config-dmr name="Max Heap"
                            path="/core-service=platform-mbean/type=memory"
                            attribute="heap-memory-usage#max" />
-      <operation-dmr name="Reload Server" operationName="reload" path="/some=other/path=here"/>
+      <operation-dmr name="Reload Server" operation-name="reload" path="/some=other/path=here"/>
     </resource-type-dmr>
   </resource-type-set-dmr>
 
   <metric-set-jmx name="M Metric Set">
     <metric-jmx name="M Metric"
                 interval="30"
-                timeUnits="seconds"
-                metricUnits="bytes"
-                objectName="domain:foo=bar"
+                time-units="seconds"
+                metric-units="bytes"
+                object-name="domain:foo=bar"
                 attribute="yAttribute" />
   </metric-set-jmx>
 
   <avail-set-jmx name="A Avail Set" enabled="false">
     <avail-jmx name="A Avail"
                interval="30"
-               timeUnits="seconds"
-               objectName="domain:foo=bar"
+               time-units="seconds"
+               object-name="domain:foo=bar"
                attribute="yAttribute"
-               upRegex="run.*" />
+               up-regex="run.*" />
   </avail-set-jmx>
 
   <resource-type-set-jmx name="R Resource Type Set" enabled="false">
     <resource-type-jmx name="R Resource Type"
-                       resourceNameTemplate="R Resource Name"
-                       objectName="domain:foo=bar"
-                       metricSets="M Metric Set"
-                       availSets="A Avail Set">
+                       resource-name-template="R Resource Name"
+                       object-name="domain:foo=bar"
+                       metric-sets="M Metric Set"
+                       avail-sets="A Avail Set">
       <resource-config-jmx name="Config NAme"
-                           objectName="domain:foo=bar"
+                           object-name="domain:foo=bar"
                            attribute="configAttribute" />
-      <operation-jmx name="O Operation" operationName="oOperation" objectName="domain:foo=bar" />
+      <operation-jmx name="O Operation" operation-name="oOperation" object-name="domain:foo=bar" />
     </resource-type-jmx>
   </resource-type-set-jmx>
 
@@ -115,32 +115,32 @@
                 enabled="false"
                 host="localhost"
                 port="9990"
-                useSSL="false"
-                securityRealm="HawkularRealm"
-                resourceTypeSets="Main" />
+                use-ssl="false"
+                security-realm="HawkularRealm"
+                resource-type-sets="Main" />
 
     <local-dmr name="Self"
-               resourceTypeSets="Main" />
+               resource-type-sets="Main" />
 
     <remote-jmx name="Remote JMX"
                 enabled="false"
                 url="https://localhost:8080/jolokia"
-                securityRealm="HawkularRealm"
-                resourceTypeSets="R Resource Type Set" />
+                security-realm="HawkularRealm"
+                resource-type-sets="R Resource Type Set" />
 
     <remote-prometheus name="Remote Prometheus"
                        enabled="false"
                        url="http://localhost:9090/metrics"
-                       securityRealm="HawkularRealm"
+                       security-realm="HawkularRealm"
                        interval="30"
-                       timeUnits="seconds" />
+                       time-units="seconds" />
   </managed-servers>
 
   <platform enabled="false">
-    <file-stores   enabled="false" interval="30" timeUnits="seconds" />
-    <memory        enabled="false" interval="60"  timeUnits="seconds" />
-    <processors    enabled="false" interval="1"  timeUnits="minutes" />
-    <power-sources enabled="false" interval="10" timeUnits="minutes" />
+    <file-stores   enabled="false" interval="30" time-units="seconds" />
+    <memory        enabled="false" interval="60" time-units="seconds" />
+    <processors    enabled="false" interval="1"  time-units="minutes" />
+    <power-sources enabled="false" interval="10" time-units="minutes" />
   </platform>
 
 </subsystem>
