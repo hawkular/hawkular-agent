@@ -662,6 +662,9 @@
         <resource-config-dmr name="Host State"           attribute="host-state" />
         <resource-config-dmr name="Running Mode"         attribute="running-mode" />
         <resource-config-dmr name="UUID"                 attribute="uuid" />
+
+        <operation-dmr name="Reload"   operation-name="reload" />
+        <operation-dmr name="Shutdown" operation-name="shutdown" />
       </resource-type-dmr>
 
       <resource-type-dmr name="Domain WildFly Server"
