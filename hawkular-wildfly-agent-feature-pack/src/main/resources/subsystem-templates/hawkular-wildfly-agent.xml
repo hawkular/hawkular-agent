@@ -622,8 +622,14 @@
         <resource-config-dmr name="Process Type"    attribute="process-type" /> <!-- (Host|Domain) Controller -->
         <resource-config-dmr name="Local Host Name" attribute="local-host-name" />
 
-        <operation-dmr name="Deploy"   operation-name="deploy" />
-        <operation-dmr name="Undeploy" operation-name="undeploy" />
+        <operation-dmr name="Reload Servers"  operation-name="reload-servers" />
+        <operation-dmr name="Restart Servers" operation-name="restart-servers" />
+        <operation-dmr name="Resume Servers"  operation-name="resume-servers" />
+        <operation-dmr name="Start Servers"   operation-name="start-servers" />
+        <operation-dmr name="Stop Servers"    operation-name="stop-servers" />
+        <operation-dmr name="Suspend Servers" operation-name="suspend-servers" />
+        <operation-dmr name="Deploy"          operation-name="deploy" />
+        <operation-dmr name="Undeploy"        operation-name="undeploy" />
       </resource-type-dmr>
 
       <resource-type-dmr name="Domain Profile"
@@ -636,6 +642,13 @@
                          resource-name-template="Domain Server Group [%-]"
                          path="/server-group=*"
                          parents="Host Controller">
+
+        <operation-dmr name="Reload Servers"  operation-name="reload-servers" />
+        <operation-dmr name="Restart Servers" operation-name="restart-servers" />
+        <operation-dmr name="Resume Servers"  operation-name="resume-servers" />
+        <operation-dmr name="Start Servers"   operation-name="start-servers" />
+        <operation-dmr name="Stop Servers"    operation-name="stop-servers" />
+        <operation-dmr name="Suspend Servers" operation-name="suspend-servers" />
       </resource-type-dmr>
 
       <resource-type-dmr name="Domain Host"
