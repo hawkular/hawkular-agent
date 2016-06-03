@@ -607,7 +607,8 @@
         <operation-dmr name="Resume"   operation-name="resume" />
         <operation-dmr name="Shutdown" operation-name="shutdown" /> <!-- shutdown and restart -->
         <operation-dmr name="Suspend"  operation-name="suspend" />
-        <operation-dmr name="Deploy"   operation-name="deploy"   />
+        <operation-dmr name="Deploy"   operation-name="deploy" />
+        <operation-dmr name="Undeploy" operation-name="undeploy" />
 
       </resource-type-dmr>
     </resource-type-set-dmr>
@@ -621,7 +622,8 @@
         <resource-config-dmr name="Process Type"    attribute="process-type" /> <!-- (Host|Domain) Controller -->
         <resource-config-dmr name="Local Host Name" attribute="local-host-name" />
 
-        <operation-dmr name="Deploy" operation-name="deploy" />
+        <operation-dmr name="Deploy"   operation-name="deploy" />
+        <operation-dmr name="Undeploy" operation-name="undeploy" />
       </resource-type-dmr>
 
       <resource-type-dmr name="Domain Profile"

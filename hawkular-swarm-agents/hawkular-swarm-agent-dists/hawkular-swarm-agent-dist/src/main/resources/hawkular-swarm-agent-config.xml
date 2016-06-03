@@ -837,6 +837,9 @@
           <operation-dmr
             name="Deploy"
             operation-name="deploy"/>
+          <operation-dmr
+            name="Undeploy"
+            operation-name="undeploy"/>
 
         </resource-type-dmr>
       </resource-type-set-dmr>

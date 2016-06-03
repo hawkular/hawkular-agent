@@ -17,19 +17,12 @@
 package org.hawkular.dmrclient;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.concurrent.Future;
+import java.util.Set;
 
 import org.hawkular.dmrclient.deployment.Deployment;
 import org.jboss.as.controller.client.ModelControllerClient;
-import org.jboss.as.controller.client.helpers.standalone.DeploymentAction;
-import org.jboss.as.controller.client.helpers.standalone.DeploymentPlan;
-import org.jboss.as.controller.client.helpers.standalone.ServerDeploymentActionResult;
-import org.jboss.as.controller.client.helpers.standalone.ServerDeploymentPlanResult;
-import org.jboss.as.controller.client.helpers.standalone.impl.ModelControllerClientServerDeploymentManager;
 import org.jboss.dmr.ModelNode;
 
 /**
@@ -128,89 +121,40 @@ public class DeploymentJBossASClient extends JBossASClient {
 
     /**
      * Uploads the content to the app server's content repository and then deploys the content.
-     * This is to be used for app servers in "standalone" mode.
+     * If this is to be used for app servers in "domain" mode you have to pass in one or more
+     * server groups. If this is to be used to deploy an app in a standalone server, the
+     * server groups should be empty.
      *
      * @param deploymentName name that the content will be known as
      * @param content stream containing the actual content data
      * @param enabled if true, the content will be uploaded and actually deployed;
      *                if false, content will be uploaded to the server, but it won't be deployed in the server runtime
+     * @param serverGroups the server groups where the application will be deployed - this is ignored
+     *                     if deploying in standalone server
      */
-    public void deployStandalone(String deploymentName, InputStream content, boolean enabled) {
-        ModelControllerClientServerDeploymentManager deployMgr;
-        deployMgr = new ModelControllerClientServerDeploymentManager(getModelControllerClient(), false);
-
-        DeploymentPlan plan;
-        if (enabled) {
-            plan = deployMgr.newDeploymentPlan().add(deploymentName, content).andDeploy().build();
-        } else {
-            plan = deployMgr.newDeploymentPlan().add(deploymentName, content).build();
+    public void deploy(String deploymentName, InputStream content, boolean enabled, Set<String> serverGroups) {
+        if (serverGroups == null) {
+            serverGroups = Collections.emptySet();
         }
-
-        Future<ServerDeploymentPlanResult> future = deployMgr.execute(plan);
-        ServerDeploymentPlanResult results;
-        try {
-            results = future.get();
-        } catch (Exception e) {
-            throw new FailureException("Failed to execute standalone deployment plan for [" + deploymentName + "]", e);
-        }
-
-        boolean success = true;
-        ArrayList<Throwable> exceptions = new ArrayList<>();
-        List<DeploymentAction> actions = plan.getDeploymentActions();
-        for (DeploymentAction action : actions) {
-            ServerDeploymentActionResult result = results.getDeploymentActionResult(action.getId());
-            switch (result.getResult()) {
-                case EXECUTED:
-                case CONFIGURATION_MODIFIED_REQUIRES_RESTART: {
-                    success &= true; // if it is already false, we want to keep it as false
-                    break;
-                }
-                case FAILED:
-                case NOT_EXECUTED:
-                case ROLLED_BACK: {
-                    success = false;
-                    Throwable error = result.getDeploymentException();
-                    if (error != null) {
-                        exceptions.add(error);
-                    }
-                    break;
-                }
-            }
-        }
-
-        if (!success) {
-            StringBuilder errorMsg = new StringBuilder();
-            errorMsg.append("Failed to deploy [").append(deploymentName).append("]");
-            int errorNumber = 1;
-            for (Throwable exception : exceptions) {
-                errorMsg.append('\n').append(errorNumber++).append(": ").append(exception);
-            }
-            throw new FailureException(errorMsg.toString());
-        }
-
-        return; // success
-    }
-
-    /**
-     * Uploads the content to the app server's content repository and then deploys the content.
-     * This is to be used for app servers in "domain" mode.
-     *
-     * @param deploymentName name that the content will be known as
-     * @param content stream containing the actual content data
-     * @param enabled if true, the content will be uploaded and actually deployed;
-     *                if false, content will be uploaded to the server, but it won't be deployed in the server runtime
-     * @param serverGroups the server groups where the application will be deployed
-     */
-    public void deployDomain(String deploymentName, InputStream content, boolean enabled,
-            Collection<String> serverGroups) {
-        Deployment deployment = new Deployment(getModelControllerClient(), new HashSet<>(serverGroups), content,
-                deploymentName, deploymentName, Deployment.Type.FORCE_DEPLOY, enabled);
 
         try {
+            Deployment deployment = new Deployment(
+                    getModelControllerClient(),
+                    serverGroups,
+                    content,
+                    deploymentName,
+                    deploymentName,
+                    Deployment.Type.FORCE_DEPLOY,
+                    enabled);
             deployment.execute();
         } catch (Exception e) {
-            throw new FailureException(String.format("Failed to deploy [%s] to [%s]", deploymentName, serverGroups),
-                    e);
+            String errMsg;
+            if (serverGroups.isEmpty()) {
+                errMsg = String.format("Failed to deploy [%s] (standalone mode)", deploymentName);
+            } else {
+                errMsg = String.format("Failed to deploy [%s] to server groups: %s", deploymentName, serverGroups);
+            }
+            throw new FailureException(errMsg, e);
         }
 
         return;
@@ -224,19 +168,30 @@ public class DeploymentJBossASClient extends JBossASClient {
      * @param serverGroups the server groups where the application may already be deployed. If empty,
      *                     this will assume the app server is in STANDALONE mode.
      */
-    public void undeploy(String deploymentName, Collection<String> serverGroups) {
+    public void undeploy(String deploymentName, Set<String> serverGroups) {
         if (serverGroups == null) {
-            throw new IllegalArgumentException("server groups is null");
+            serverGroups = Collections.emptySet();
         }
 
-        Deployment deployment = new Deployment(getModelControllerClient(), new HashSet<>(serverGroups), null,
-                deploymentName, deploymentName, Deployment.Type.UNDEPLOY_IGNORE_MISSING, true);
-
         try {
+            Deployment deployment = new Deployment(
+                    getModelControllerClient(),
+                    new HashSet<>(serverGroups),
+                    null,
+                    deploymentName,
+                    deploymentName,
+                    Deployment.Type.UNDEPLOY_IGNORE_MISSING,
+                    true);
+
             deployment.execute();
         } catch (Exception e) {
-            throw new FailureException(String.format("Failed to undeploy [%s] to [%s]", deploymentName, serverGroups),
-                    e);
+            String errMsg;
+            if (serverGroups.isEmpty()) {
+                errMsg = String.format("Failed to undeploy [%s] (standalone mode)", deploymentName);
+            } else {
+                errMsg = String.format("Failed to undeploy [%s] to server groups: %s", deploymentName, serverGroups);
+            }
+            throw new FailureException(errMsg, e);
         }
 
         return;

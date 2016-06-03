@@ -35,24 +35,24 @@ import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
-import org.hawkular.cmdgw.api.DeployApplicationRequest;
-import org.hawkular.cmdgw.api.DeployApplicationResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
+import org.hawkular.cmdgw.api.UndeployApplicationRequest;
+import org.hawkular.cmdgw.api.UndeployApplicationResponse;
 import org.hawkular.dmrclient.DeploymentJBossASClient;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
- * Deploys an application on a resource.
+ * Removes a deployed application from a resource.
  */
-public class DeployApplicationCommand
-        extends AbstractResourcePathCommand<DeployApplicationRequest, DeployApplicationResponse> {
+public class UndeployApplicationCommand
+        extends AbstractResourcePathCommand<UndeployApplicationRequest, UndeployApplicationResponse> {
 
-    private static final MsgLogger log = AgentLoggers.getLogger(DeployApplicationCommand.class);
-    public static final Class<DeployApplicationRequest> REQUEST_CLASS = DeployApplicationRequest.class;
+    private static final MsgLogger log = AgentLoggers.getLogger(UndeployApplicationCommand.class);
+    public static final Class<UndeployApplicationRequest> REQUEST_CLASS = UndeployApplicationRequest.class;
 
-    public DeployApplicationCommand() {
-        super("Deploy", "Application");
+    public UndeployApplicationCommand() {
+        super("Undeploy", "Application");
     }
 
     @Override
@@ -60,17 +60,16 @@ public class DeployApplicationCommand
             ModelControllerClient controllerClient,
             EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath,
-            BasicMessageWithExtraData<DeployApplicationRequest> envelope,
-            DeployApplicationResponse response,
+            BasicMessageWithExtraData<UndeployApplicationRequest> envelope,
+            UndeployApplicationResponse response,
             CommandContext context,
             DMRSession dmrContext)
                     throws Exception {
 
-        DeployApplicationRequest request = envelope.getBasicMessage();
+        UndeployApplicationRequest request = envelope.getBasicMessage();
 
         final String resourcePath = request.getResourcePath();
         final String destFileName = request.getDestinationFileName();
-        final boolean enabled = (request.getEnabled() == null) ? true : request.getEnabled().booleanValue();
         final Set<String> serverGroups = convertCsvToSet(request.getServerGroups());
 
         CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
@@ -80,32 +79,32 @@ public class DeployApplicationCommand
         Resource<DMRNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot deploy application: unknown resource [%s]", resourcePath));
+                    String.format("Cannot undeploy application: unknown resource [%s]", resourcePath));
         }
 
         // find the operation we need to execute - make sure it exists
         Collection<Operation<DMRNodeLocation>> ops = resource.getResourceType().getOperations();
-        boolean canDeploy = false;
+        boolean canUndeploy = false;
         log.tracef("Searching for Deploy operation among operations [%s] for resource [%s].", ops, resource.getID());
         for (Operation<DMRNodeLocation> op : ops) {
-            if ("Deploy".equals(op.getName().getNameString())) {
-                canDeploy = true;
+            if ("Undeploy".equals(op.getName().getNameString())) {
+                canUndeploy = true;
                 break;
             }
         }
 
-        if (!canDeploy) {
+        if (!canUndeploy) {
             throw new IllegalArgumentException(
-                    String.format("Cannot deploy application to [%s]. That feature is disabled.", resource));
+                    String.format("Cannot undeploy application from [%s]. That feature is disabled.", resource));
         }
 
         MessageUtils.prepareResourcePathResponse(request, response);
         response.setDestinationFileName(request.getDestinationFileName());
 
         DeploymentJBossASClient client = new DeploymentJBossASClient(dmrContext.getClient());
-        client.deploy(destFileName, envelope.getBinaryData(), enabled, serverGroups);
+        client.undeploy(destFileName, serverGroups);
 
-        // run discovery now so we can quickly get the new app in inventory
+        // run discovery now so we can quickly show the app has been removed
         endpointService.discoverAll();
         return null;
     }
@@ -118,16 +117,16 @@ public class DeployApplicationCommand
     }
 
     @Override
-    protected void validate(String modelNodePath, BasicMessageWithExtraData<DeployApplicationRequest> envelope) {
+    protected void validate(String modelNodePath, BasicMessageWithExtraData<UndeployApplicationRequest> envelope) {
     }
 
     @Override
-    protected void validate(BasicMessageWithExtraData<DeployApplicationRequest> envelope,
+    protected void validate(BasicMessageWithExtraData<UndeployApplicationRequest> envelope,
             MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
     }
 
     @Override
-    protected DeployApplicationResponse createResponse() {
-        return new DeployApplicationResponse();
+    protected UndeployApplicationResponse createResponse() {
+        return new UndeployApplicationResponse();
     }
 }
