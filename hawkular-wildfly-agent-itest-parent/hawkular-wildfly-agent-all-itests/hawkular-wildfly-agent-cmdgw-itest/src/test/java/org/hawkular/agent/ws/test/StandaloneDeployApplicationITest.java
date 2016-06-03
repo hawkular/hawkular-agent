@@ -56,7 +56,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
 
         // check that the app was really deployed
@@ -97,7 +97,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
 
         // check that the app was really undeployed
@@ -142,7 +142,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
     }
 
@@ -174,7 +174,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
     }
 
@@ -206,7 +206,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
     }
 }

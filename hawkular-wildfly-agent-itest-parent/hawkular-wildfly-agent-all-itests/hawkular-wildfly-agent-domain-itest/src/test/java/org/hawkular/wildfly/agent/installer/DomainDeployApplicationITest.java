@@ -60,7 +60,7 @@ public class DomainDeployApplicationITest extends AbstractITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
 
         // check that the app was really deployed on the two server groups
@@ -110,7 +110,7 @@ public class DomainDeployApplicationITest extends AbstractITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
 
         // check that the app was really undeployed on the two server groups
@@ -161,7 +161,7 @@ public class DomainDeployApplicationITest extends AbstractITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
     }
 
@@ -194,7 +194,7 @@ public class DomainDeployApplicationITest extends AbstractITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
     }
 
@@ -227,7 +227,7 @@ public class DomainDeployApplicationITest extends AbstractITest {
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
-            testClient.validate(10000);
+            testClient.validate(30000);
         }
     }
 }
