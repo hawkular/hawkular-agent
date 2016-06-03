@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,38 +26,38 @@ public interface DMRResourceTypeAttributes {
 
     SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
             ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(false)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition RESOURCE_NAME_TEMPLATE = new SimpleAttributeDefinitionBuilder(
-            "resourceNameTemplate", ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+    SimpleAttributeDefinition RESOURCE_NAME_TEMPLATE = new SimpleAttributeDefinitionBuilder("resource-name-template",
+            ModelType.STRING)
+                    .setAllowNull(false)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     SimpleAttributeDefinition PARENTS = new SimpleAttributeDefinitionBuilder("parents",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder("metricSets",
+    SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder("metric-sets",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition AVAIL_SETS = new SimpleAttributeDefinitionBuilder("availSets",
+    SimpleAttributeDefinition AVAIL_SETS = new SimpleAttributeDefinitionBuilder("avail-sets",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             RESOURCE_NAME_TEMPLATE,

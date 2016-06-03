@@ -29,13 +29,13 @@ public interface LocalDMRAttributes {
 
     SimpleAttributeDefinition ENABLED = new SimpleAttributeDefinitionBuilder("enabled",
             ModelType.BOOLEAN)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(true))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_NONE)
-            .build();
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(true))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_NONE)
+                    .build();
 
-    SimpleAttributeDefinition SET_AVAIL_ON_SHUTDOWN = new SimpleAttributeDefinitionBuilder("setAvailOnShutdown",
+    SimpleAttributeDefinition SET_AVAIL_ON_SHUTDOWN = new SimpleAttributeDefinitionBuilder("set-avail-on-shutdown",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(Avail.DOWN.name()))
@@ -44,15 +44,14 @@ public interface LocalDMRAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder(
-            "resourceTypeSets",
+    SimpleAttributeDefinition RESOURCE_TYPE_SETS = new SimpleAttributeDefinitionBuilder("resource-type-sets",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenantId",
+    SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenant-id",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)

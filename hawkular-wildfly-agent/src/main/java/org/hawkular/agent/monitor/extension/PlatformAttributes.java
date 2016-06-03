@@ -33,7 +33,7 @@ public interface PlatformAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_NONE)
                     .build();
 
-    SimpleAttributeDefinition MACHINE_ID = new SimpleAttributeDefinitionBuilder("machineId",
+    SimpleAttributeDefinition MACHINE_ID = new SimpleAttributeDefinitionBuilder("machine-id",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)

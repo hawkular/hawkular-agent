@@ -95,18 +95,18 @@
 
     <subsystem
       xmlns="urn:org.hawkular.agent:agent:1.0"
-      autoDiscoveryScanPeriodSecs="600"
+      auto-discovery-scan-period-secs="600"
       enabled="true">
       <diagnostics
         enabled="${hawkular.diagnostics.enabled:true}"
         interval="1"
-        reportTo="LOG"
-        timeUnits="minutes"/>
+        report-to="LOG"
+        time-units="minutes"/>
 
       <storage-adapter
         username="${hawkular.storage-adapter.username:jdoe}"
         password="${hawkular.storage-adapter.password:password}"
-        serverOutboundSocketBindingRef="hawkular"
+        server-outbound-socket-binding-ref="hawkular"
         type="HAWKULAR"/>
 
       <metric-set-dmr
@@ -115,44 +115,44 @@
         <metric-dmr
           name="Heap Used"
           interval="30"
-          timeUnits="seconds"
-          metricUnits="bytes"
+          time-units="seconds"
+          metric-units="bytes"
           path="/core-service=platform-mbean/type=memory"
           attribute="heap-memory-usage#used"/>
         <metric-dmr
           name="Heap Committed"
           interval="1"
-          timeUnits="minutes"
-          metricUnits="bytes"
+          time-units="minutes"
+          metric-units="bytes"
           path="/core-service=platform-mbean/type=memory"
           attribute="heap-memory-usage#committed"/>
         <metric-dmr
           name="Heap Max"
           interval="1"
-          timeUnits="minutes"
-          metricUnits="bytes"
+          time-units="minutes"
+          metric-units="bytes"
           path="/core-service=platform-mbean/type=memory"
           attribute="heap-memory-usage#max"/>
         <metric-dmr
           name="NonHeap Used"
           interval="30"
-          timeUnits="seconds"
-          metricUnits="bytes"
+          time-units="seconds"
+          metric-units="bytes"
           path="/core-service=platform-mbean/type=memory"
           attribute="non-heap-memory-usage#used"/>
         <metric-dmr
           name="NonHeap Committed"
           interval="1"
-          timeUnits="minutes"
-          metricUnits="bytes"
+          time-units="minutes"
+          metric-units="bytes"
           path="/core-service=platform-mbean/type=memory"
           attribute="non-heap-memory-usage#committed"/>
         <metric-dmr
           name="Accumulated GC Duration"
-          metricType="counter"
+          metric-type="counter"
           interval="1"
-          timeUnits="minutes"
-          metricUnits="milliseconds"
+          time-units="minutes"
+          metric-units="milliseconds"
           path="/core-service=platform-mbean/type=garbage-collector/name=*"
           attribute="collection-time"/>
       </metric-set-dmr>
@@ -163,8 +163,8 @@
         <metric-dmr
           name="Thread Count"
           interval="2"
-          timeUnits="minutes"
-          metricUnits="none"
+          time-units="minutes"
+          metric-units="none"
           path="/core-service=platform-mbean/type=threading"
           attribute="thread-count"/>
       </metric-set-dmr>
@@ -175,41 +175,41 @@
         <metric-dmr
           name="Aggregated Active Web Sessions"
           interval="1"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/deployment=*/subsystem=undertow"
           attribute="active-sessions"/>
         <metric-dmr
           name="Aggregated Max Active Web Sessions"
           interval="1"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/deployment=*/subsystem=undertow"
           attribute="max-active-sessions"/>
         <metric-dmr
           name="Aggregated Expired Web Sessions"
-          metricType="counter"
+          metric-type="counter"
           interval="1"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/deployment=*/subsystem=undertow"
           attribute="expired-sessions"/>
         <metric-dmr
           name="Aggregated Rejected Web Sessions"
-          metricType="counter"
+          metric-type="counter"
           interval="1"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/deployment=*/subsystem=undertow"
           attribute="rejected-sessions"/>
         <metric-dmr
           name="Aggregated Servlet Request Time"
-          metricType="counter"
+          metric-type="counter"
           interval="1"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/deployment=*/subsystem=undertow/servlet=*"
           attribute="total-request-time"/>
         <metric-dmr
           name="Aggregated Servlet Request Count"
-          metricType="counter"
+          metric-type="counter"
           interval="1"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/deployment=*/subsystem=undertow/servlet=*"
           attribute="request-count"/>
       </metric-set-dmr>
@@ -220,34 +220,34 @@
         <metric-dmr
           name="Active Sessions"
           interval="2"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/subsystem=undertow"
           attribute="active-sessions"/>
         <metric-dmr
           name="Sessions Created"
-          metricType="counter"
+          metric-type="counter"
           interval="2"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/subsystem=undertow"
           attribute="sessions-created"/>
         <metric-dmr
           name="Expired Sessions"
-          metricType="counter"
+          metric-type="counter"
           interval="2"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/subsystem=undertow"
           attribute="expired-sessions"/>
         <metric-dmr
           name="Rejected Sessions"
-          metricType="counter"
+          metric-type="counter"
           interval="2"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/subsystem=undertow"
           attribute="rejected-sessions"/>
         <metric-dmr
           name="Max Active Sessions"
           interval="2"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/subsystem=undertow"
           attribute="max-active-sessions"/>
       </metric-set-dmr>
@@ -258,29 +258,29 @@
         <metric-dmr
           name="Max Request Time"
           interval="5"
-          timeUnits="minutes"
-          metricUnits="milliseconds"
+          time-units="minutes"
+          metric-units="milliseconds"
           path="/"
           attribute="max-request-time"/>
         <metric-dmr
           name="Min Request Time"
           interval="5"
-          timeUnits="minutes"
-          metricUnits="milliseconds"
+          time-units="minutes"
+          metric-units="milliseconds"
           path="/"
           attribute="min-request-time"/>
         <metric-dmr
           name="Total Request Time"
           interval="5"
-          timeUnits="minutes"
-          metricUnits="milliseconds"
+          time-units="minutes"
+          metric-units="milliseconds"
           path="/"
           attribute="total-request-time"/>
         <metric-dmr
           name="Request Count"
-          metricType="counter"
+          metric-type="counter"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="request-count"/>
       </metric-set-dmr>
@@ -291,26 +291,26 @@
         <metric-dmr
           name="Execution Time"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="execution-time"/>
         <metric-dmr
           name="Invocations"
-          metricType="counter"
+          metric-type="counter"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="invocations"/>
         <metric-dmr
           name="Peak Concurrent Invocations"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="peak-concurrent-invocations"/>
         <metric-dmr
           name="Wait Time"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="wait-time"/>
       </metric-set-dmr>
@@ -321,56 +321,56 @@
         <metric-dmr
           name="Execution Time"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="execution-time"/>
         <metric-dmr
           name="Invocations"
-          metricType="counter"
+          metric-type="counter"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="invocations"/>
         <metric-dmr
           name="Peak Concurrent Invocations"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="peak-concurrent-invocations"/>
         <metric-dmr
           name="Wait Time"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="wait-time"/>
         <metric-dmr
           name="Pool Available Count"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-available-count"/>
         <metric-dmr
           name="Pool Create Count"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-create-count"/>
         <metric-dmr
           name="Pool Current Size"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-current-size"/>
         <metric-dmr
           name="Pool Max Size"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-max-size"/>
         <metric-dmr
           name="Pool Remove Count"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-remove-count"/>
       </metric-set-dmr>
@@ -381,56 +381,56 @@
         <metric-dmr
           name="Execution Time"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="execution-time"/>
         <metric-dmr
           name="Invocations"
-          metricType="counter"
+          metric-type="counter"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="invocations"/>
         <metric-dmr
           name="Peak Concurrent Invocations"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="peak-concurrent-invocations"/>
         <metric-dmr
           name="Wait Time"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="wait-time"/>
         <metric-dmr
           name="Pool Availabile Count"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-available-count"/>
         <metric-dmr
           name="Pool Create Count"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-create-count"/>
         <metric-dmr
           name="Pool Current Size"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-current-size"/>
         <metric-dmr
           name="Pool Max Size"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-max-size"/>
         <metric-dmr
           name="Pool Remove Count"
           interval="5"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="pool-remove-count"/>
       </metric-set-dmr>
@@ -441,37 +441,37 @@
         <metric-dmr
           name="Prepared Statement Cache Access Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=jdbc"
           attribute="PreparedStatementCacheAccessCount"/>
         <metric-dmr
           name="Prepared Statement Cache Add Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=jdbc"
           attribute="PreparedStatementCacheAddCount"/>
         <metric-dmr
           name="Prepared Statement Cache Current Size"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=jdbc"
           attribute="PreparedStatementCacheCurrentSize"/>
         <metric-dmr
           name="Prepared Statement Cache Delete Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=jdbc"
           attribute="PreparedStatementCacheDeleteCount"/>
         <metric-dmr
           name="Prepared Statement Cache Hit Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=jdbc"
           attribute="PreparedStatementCacheHitCount"/>
         <metric-dmr
           name="Prepared Statement Cache Miss Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=jdbc"
           attribute="PreparedStatementCacheMissCount"/>
       </metric-set-dmr>
@@ -482,121 +482,121 @@
         <metric-dmr
           name="Active Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/statistics=pool"
           attribute="ActiveCount"/>
         <metric-dmr
           name="Available Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/statistics=pool"
           attribute="AvailableCount"/>
         <metric-dmr
           name="Average Blocking Time"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="AverageBlockingTime"/>
         <metric-dmr
           name="Average Creation Time"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/statistics=pool"
           attribute="AverageCreationTime"/>
         <metric-dmr
           name="Average Get Time"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/statistics=pool"
           attribute="AverageGetTime"/>
         <metric-dmr
           name="Blocking Failure Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="BlockingFailureCount"/>
         <metric-dmr
           name="Created Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="CreatedCount"/>
         <metric-dmr
           name="Destroyed Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="DestroyedCount"/>
         <metric-dmr
           name="Idle Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="IdleCount"/>
         <metric-dmr
           name="In Use Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/statistics=pool"
           attribute="InUseCount"/>
         <metric-dmr
           name="Max Creation Time"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="MaxCreationTime"/>
         <metric-dmr
           name="Max Get Time"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="MaxGetTime"/>
         <metric-dmr
           name="Max Used Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="MaxUsedCount"/>
         <metric-dmr
           name="Max Wait Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="MaxWaitCount"/>
         <metric-dmr
           name="Max Wait Time"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="MaxWaitTime"/>
         <metric-dmr
           name="Timed Out"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/statistics=pool"
           attribute="TimedOut"/>
         <metric-dmr
           name="Total Blocking Time"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="TotalBlockingTime"/>
         <metric-dmr
           name="Total Creation Time"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="TotalCreationTime"/>
         <metric-dmr
           name="Total Get Time"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="TotalGetTime"/>
         <metric-dmr
           name="Wait Count"
           interval="10"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/statistics=pool"
           attribute="WaitCount"/>
       </metric-set-dmr>
@@ -606,64 +606,64 @@
         enabled="true">
         <metric-dmr
           name="Number of Aborted Transactions"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="number-of-aborted-transactions"/>
         <metric-dmr
           name="Number of Application Rollbacks"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="number-of-application-rollbacks"/>
         <metric-dmr
           name="Number of Committed Transactions"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="number-of-committed-transactions"/>
         <metric-dmr
           name="Number of Heuristics"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="number-of-heuristics"/>
         <metric-dmr
           name="Number of In-Flight Transactions"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="number-of-inflight-transactions"/>
         <metric-dmr
           name="Number of Nested Transactions"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="number-of-nested-transactions"/>
         <metric-dmr
           name="Number of Resource Rollbacks"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="number-of-resource-rollbacks"/>
         <metric-dmr
           name="Number of Timed Out Transactions"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="number-of-timed-out-transactions"/>
         <metric-dmr
           name="Number of Transactions"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="number-of-transactions"/>
       </metric-set-dmr>
@@ -674,32 +674,32 @@
         <metric-dmr
           name="Consumer Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="consumer-count"/>
         <metric-dmr
           name="Delivering Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="delivering-count"/>
         <metric-dmr
           name="Message Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="message-count"/>
         <metric-dmr
           name="Messages Added"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="messages-added"/>
         <metric-dmr
           name="Scheduled Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="scheduled-count"/>
       </metric-set-dmr>
@@ -710,50 +710,50 @@
         <metric-dmr
           name="Durable Message Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="durable-message-count"/>
         <metric-dmr
           name="Durable Subscription Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="durable-subscription-count"/>
         <metric-dmr
           name="Delivering Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="delivering-count"/>
         <metric-dmr
           name="Message Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="message-count"/>
         <metric-dmr
           name="Messages Added"
-          metricType="counter"
+          metric-type="counter"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="messages-added"/>
         <metric-dmr
           name="Non-Durable Message Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="non-durable-message-count"/>
         <metric-dmr
           name="Non-Durable Subscription Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="non-durable-subscription-count"/>
         <metric-dmr
           name="Subscription Count"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="subscription-count"/>
       </metric-set-dmr>
@@ -764,10 +764,10 @@
         <avail-dmr
           name="Server Availability"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           path="/"
           attribute="server-state"
-          upRegex="run.*"/>
+          up-regex="run.*"/>
       </avail-set-dmr>
 
       <avail-set-dmr
@@ -776,10 +776,10 @@
         <avail-dmr
           name="Deployment Status"
           interval="1"
-          timeUnits="minutes"
+          time-units="minutes"
           path="/"
           attribute="status"
-          upRegex="OK"/>
+          up-regex="OK"/>
       </avail-set-dmr>
 
       <resource-type-set-dmr
@@ -787,10 +787,10 @@
         enabled="true">
         <resource-type-dmr
           name="WildFly Server"
-          resourceNameTemplate="WildFly Server [%ManagedServerName]"
+          resource-name-template="WildFly Server [%ManagedServerName]"
           path="/"
-          metricSets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
-          availSets="Server Availability">
+          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
+          avail-sets="Server Availability">
           <resource-config-dmr
             name="Product Name"
             attribute="product-name"/>
@@ -820,23 +820,23 @@
 
           <operation-dmr
             name="JDR"
-            operationName="generate-jdr-report"
+            operation-name="generate-jdr-report"
             path="/subsystem=jdr"/>
           <operation-dmr
             name="Reload"
-            operationName="reload"/>
+            operation-name="reload"/>
           <operation-dmr
             name="Resume"
-            operationName="resume"/>
+            operation-name="resume"/>
           <operation-dmr
             name="Shutdown"
-            operationName="shutdown"/> <!-- shutdown and restart -->
+            operation-name="shutdown"/> <!-- shutdown and restart -->
           <operation-dmr
             name="Suspend"
-            operationName="suspend"/>
+            operation-name="suspend"/>
           <operation-dmr
             name="Deploy"
-            operationName="deploy"/>
+            operation-name="deploy"/>
 
         </resource-type-dmr>
       </resource-type-set-dmr>
@@ -846,7 +846,7 @@
         enabled="true">
         <resource-type-dmr
           name="Host Controller"
-          resourceNameTemplate="Host Controller [%ManagedServerName]"
+          resource-name-template="Host Controller [%ManagedServerName]"
           path="/">
           <resource-config-dmr
             name="Product Name"
@@ -864,24 +864,24 @@
 
         <resource-type-dmr
           name="Domain Profile"
-          resourceNameTemplate="Domain Profile [%-]"
+          resource-name-template="Domain Profile [%-]"
           path="/profile=*"
           parents="Host Controller">
         </resource-type-dmr>
 
         <resource-type-dmr
           name="Domain Server Group"
-          resourceNameTemplate="Domain Server Group [%-]"
+          resource-name-template="Domain Server Group [%-]"
           path="/server-group=*"
           parents="Host Controller">
         </resource-type-dmr>
 
         <resource-type-dmr
           name="Domain Host"
-          resourceNameTemplate="Domain Host [%-]"
+          resource-name-template="Domain Host [%-]"
           path="/host=*"
           parents="Host Controller"
-          metricSets="WildFly Memory Metrics,WildFly Threading Metrics">
+          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics">
           <resource-config-dmr
             name="Product Name"
             attribute="product-name"/>
@@ -904,11 +904,11 @@
 
         <resource-type-dmr
           name="Domain WildFly Server"
-          resourceNameTemplate="Domain WildFly Server [%-]"
+          resource-name-template="Domain WildFly Server [%-]"
           path="/server=*"
           parents="Domain Host"
-          metricSets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
-          availSets="Server Availability">
+          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
+          avail-sets="Server Availability">
           <resource-config-dmr
             name="Product Name"
             attribute="product-name"/>
@@ -958,15 +958,15 @@
         enabled="true">
         <resource-type-dmr
           name="Hawkular WildFly Agent"
-          resourceNameTemplate="Hawkular WildFly Agent"
+          resource-name-template="Hawkular WildFly Agent"
           path="/subsystem=hawkular-wildfly-agent"
           parents="WildFly Server,Domain WildFly Server">
           <operation-dmr
             name="Status"
-            operationName="status"/>
+            operation-name="status"/>
           <operation-dmr
             name="Inventory Discovery Scan"
-            operationName="fullDiscoveryScan"/>
+            operation-name="fullDiscoveryScan"/>
         </resource-type-dmr>
       </resource-type-set-dmr>
 
@@ -975,28 +975,28 @@
         enabled="true">
         <resource-type-dmr
           name="Deployment"
-          resourceNameTemplate="%2"
+          resource-name-template="%2"
           path="/deployment=*"
           parents="WildFly Server,Domain WildFly Server"
-          metricSets="Undertow Metrics"
-          availSets="Deployment Status">
+          metric-sets="Undertow Metrics"
+          avail-sets="Deployment Status">
           <operation-dmr
             name="Redeploy"
-            operationName="redeploy"/>
+            operation-name="redeploy"/>
           <operation-dmr
             name="Remove"
-            operationName="remove"/>
+            operation-name="remove"/>
           <operation-dmr
             name="Undeploy"
-            operationName="undeploy"/>
+            operation-name="undeploy"/>
         </resource-type-dmr>
 
         <resource-type-dmr
           name="SubDeployment"
-          resourceNameTemplate="SubDeployment [%-]"
+          resource-name-template="SubDeployment [%-]"
           path="/subdeployment=*"
           parents="Deployment"
-          metricSets="Undertow Metrics">
+          metric-sets="Undertow Metrics">
         </resource-type-dmr>
 
       </resource-type-set-dmr>
@@ -1006,10 +1006,10 @@
         enabled="true">
         <resource-type-dmr
           name="Servlet"
-          resourceNameTemplate="Servlet [%-]"
+          resource-name-template="Servlet [%-]"
           path="/subsystem=undertow/servlet=*"
           parents="Deployment,SubDeployment"
-          metricSets="Servlet Metrics"/>
+          metric-sets="Servlet Metrics"/>
       </resource-type-set-dmr>
 
       <resource-type-set-dmr
@@ -1017,24 +1017,24 @@
         enabled="true">
         <resource-type-dmr
           name="Singleton EJB"
-          resourceNameTemplate="Singleton EJB [%-]"
+          resource-name-template="Singleton EJB [%-]"
           path="/subsystem=ejb3/singleton-bean=*"
           parents="Deployment,SubDeployment"
-          metricSets="Singleton EJB Metrics"/>
+          metric-sets="Singleton EJB Metrics"/>
 
         <resource-type-dmr
           name="Message Driven EJB"
-          resourceNameTemplate="Message Driven EJB [%-]"
+          resource-name-template="Message Driven EJB [%-]"
           path="/subsystem=ejb3/message-driven-bean=*"
           parents="Deployment,SubDeployment"
-          metricSets="Message Driven EJB Metrics"/>
+          metric-sets="Message Driven EJB Metrics"/>
 
         <resource-type-dmr
           name="Stateless Session EJB"
-          resourceNameTemplate="Stateless Session EJB [%-]"
+          resource-name-template="Stateless Session EJB [%-]"
           path="/subsystem=ejb3/stateless-session-bean=*"
           parents="Deployment,SubDeployment"
-          metricSets="Stateless Session EJB Metrics"/>
+          metric-sets="Stateless Session EJB Metrics"/>
       </resource-type-set-dmr>
 
       <resource-type-set-dmr
@@ -1042,10 +1042,10 @@
         enabled="true">
         <resource-type-dmr
           name="Datasource"
-          resourceNameTemplate="%-"
+          resource-name-template="%-"
           path="/subsystem=datasources/data-source=*"
           parents="WildFly Server,Domain WildFly Server"
-          metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
+          metric-sets="Datasource Pool Metrics,Datasource JDBC Metrics">
           <resource-config-dmr
             name="Connection URL"
             attribute="connection-url"/>
@@ -1085,10 +1085,10 @@
         enabled="true">
         <resource-type-dmr
           name="XA Datasource"
-          resourceNameTemplate="%-"
+          resource-name-template="%-"
           path="/subsystem=datasources/xa-data-source=*"
           parents="WildFly Server,Domain WildFly Server"
-          metricSets="Datasource Pool Metrics,Datasource JDBC Metrics">
+          metric-sets="Datasource Pool Metrics,Datasource JDBC Metrics">
           <resource-config-dmr
             name="Driver Name"
             attribute="driver-name"/>
@@ -1122,7 +1122,7 @@
         enabled="true">
         <resource-type-dmr
           name="JDBC Driver"
-          resourceNameTemplate="%-"
+          resource-name-template="%-"
           path="/subsystem=datasources/jdbc-driver=*"
           parents="WildFly Server,Domain WildFly Server"/>
       </resource-type-set-dmr>
@@ -1132,10 +1132,10 @@
         enabled="true">
         <resource-type-dmr
           name="Transaction Manager"
-          resourceNameTemplate="Transaction Manager"
+          resource-name-template="Transaction Manager"
           path="/subsystem=transactions"
           parents="WildFly Server,Domain WildFly Server"
-          metricSets="Transactions Metrics"/>
+          metric-sets="Transactions Metrics"/>
       </resource-type-set-dmr>
 
       <resource-type-set-dmr
@@ -1143,21 +1143,21 @@
         enabled="true">
         <resource-type-dmr
           name="Messaging Server"
-          resourceNameTemplate="Messaging Server [%-]"
+          resource-name-template="Messaging Server [%-]"
           path="/subsystem=messaging-activemq/server=*"
           parents="WildFly Server,Domain WildFly Server"/>
         <resource-type-dmr
           name="JMS Queue"
-          resourceNameTemplate="JMS Queue [%-]"
+          resource-name-template="JMS Queue [%-]"
           path="/jms-queue=*"
           parents="Messaging Server"
-          metricSets="JMS Queue Metrics"/>
+          metric-sets="JMS Queue Metrics"/>
         <resource-type-dmr
           name="JMS Topic"
-          resourceNameTemplate="JMS Topic [%-]"
+          resource-name-template="JMS Topic [%-]"
           path="/jms-topic=*"
           parents="Messaging Server"
-          metricSets="JMS Topic Metrics"/>
+          metric-sets="JMS Topic Metrics"/>
       </resource-type-set-dmr>
 
     <!-- JMX metadata for monitoring Jolokia-enabled applications -->
@@ -1168,9 +1168,9 @@
         <avail-jmx
           name="VM Avail"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           attribute="StartTime"
-          upRegex="[0123456789]+"/>
+          up-regex="[0123456789]+"/>
       </avail-set-jmx>
 
       <avail-set-jmx
@@ -1179,9 +1179,9 @@
         <avail-jmx
           name="Memory Pool Avail"
           interval="30"
-          timeUnits="seconds"
+          time-units="seconds"
           attribute="Valid"
-          upRegex="[tT].*"/>
+          up-regex="[tT].*"/>
       </avail-set-jmx>
 
       <metric-set-jmx
@@ -1190,22 +1190,22 @@
         <metric-jmx
           name="VM Uptime"
           interval="30"
-          timeUnits="seconds"
-          metricUnits="milliseconds"
+          time-units="seconds"
+          metric-units="milliseconds"
           attribute="Uptime"/>
         <metric-jmx
           name="Used Heap Memory"
           interval="30"
-          timeUnits="seconds"
-          metricUnits="bytes"
-          objectName="java.lang:type=Memory"
+          time-units="seconds"
+          metric-units="bytes"
+          object-name="java.lang:type=Memory"
           attribute="HeapMemoryUsage#used"/>
         <metric-jmx
           name="Aggregate GC Collection Time"
           interval="30"
-          timeUnits="seconds"
-          metricUnits="milliseconds"
-          objectName="java.lang:type=GarbageCollector,name=*"
+          time-units="seconds"
+          metric-units="milliseconds"
+          object-name="java.lang:type=GarbageCollector,name=*"
           attribute="CollectionTime"/>
       </metric-set-jmx>
 
@@ -1215,26 +1215,26 @@
         <metric-jmx
           name="Initial"
           interval="2"
-          timeUnits="minutes"
-          metricUnits="bytes"
+          time-units="minutes"
+          metric-units="bytes"
           attribute="Usage#init"/>
         <metric-jmx
           name="Used"
           interval="1"
-          timeUnits="minutes"
-          metricUnits="bytes"
+          time-units="minutes"
+          metric-units="bytes"
           attribute="Usage#used"/>
         <metric-jmx
           name="Committed"
           interval="1"
-          timeUnits="minutes"
-          metricUnits="bytes"
+          time-units="minutes"
+          metric-units="bytes"
           attribute="Usage#committed"/>
         <metric-jmx
           name="Max"
           interval="2"
-          timeUnits="minutes"
-          metricUnits="bytes"
+          time-units="minutes"
+          metric-units="bytes"
           attribute="Usage#max"/>
       </metric-set-jmx>
 
@@ -1243,13 +1243,13 @@
         enabled="true">
         <resource-type-jmx
           name="Runtime MBean"
-          resourceNameTemplate="JMX [%_ManagedServerName%][%type%]"
-          objectName="java.lang:type=Runtime"
-          metricSets="RuntimeMetricsJMX"
-          availSets="RuntimeAvailsJMX">
+          resource-name-template="JMX [%_ManagedServerName%][%type%]"
+          object-name="java.lang:type=Runtime"
+          metric-sets="RuntimeMetricsJMX"
+          avail-sets="RuntimeAvailsJMX">
           <resource-config-jmx
             name="OS Name"
-            objectName="java.lang:type=OperatingSystem"
+            object-name="java.lang:type=OperatingSystem"
             attribute="Name"/>
           <resource-config-jmx
             name="Java VM Name"
@@ -1263,10 +1263,10 @@
         <resource-type-jmx
           name="Memory Pool MBean"
           parents="Runtime MBean"
-          resourceNameTemplate="JMX [%_ManagedServerName%] %type% %name%"
-          objectName="java.lang:type=MemoryPool,name=*"
-          metricSets="MemoryPoolMetricsJMX"
-          availSets="MemoryPoolAvailsJMX">
+          resource-name-template="JMX [%_ManagedServerName%] %type% %name%"
+          object-name="java.lang:type=MemoryPool,name=*"
+          metric-sets="MemoryPoolMetricsJMX"
+          avail-sets="MemoryPoolAvailsJMX">
           <resource-config-jmx
             name="Type"
             attribute="Type"/>
@@ -1281,7 +1281,7 @@
           port="${hawkular.dmr.port:9990}"
           username="${hawkular.dmr.username:admin}"
           password="${hawkular.dmr.password:admin}"
-          resourceTypeSets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Hawkular"/>
+          resource-type-sets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Hawkular"/>
 
         <remote-prometheus
           enabled="${hawkular.prometheus.enabled:false}"
@@ -1293,19 +1293,19 @@
         <file-stores
           enabled="true"
           interval="5"
-          timeUnits="minutes"/>
+          time-units="minutes"/>
         <memory
           enabled="true"
           interval="1"
-          timeUnits="minutes"/>
+          time-units="minutes"/>
         <processors
           enabled="true"
           interval="1"
-          timeUnits="minutes"/>
+          time-units="minutes"/>
         <power-sources
           enabled="false"
           interval="5"
-          timeUnits="minutes"/>
+          time-units="minutes"/>
       </platform>
     </subsystem>
   </profile>

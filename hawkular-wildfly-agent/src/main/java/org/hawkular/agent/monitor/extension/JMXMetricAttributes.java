@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,52 +28,53 @@ import org.jboss.dmr.ModelType;
 
 public interface JMXMetricAttributes {
 
-    SimpleAttributeDefinition OBJECT_NAME = new SimpleAttributeDefinitionBuilder("objectName",
+    SimpleAttributeDefinition OBJECT_NAME = new SimpleAttributeDefinitionBuilder("object-name",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     SimpleAttributeDefinition ATTRIBUTE = new SimpleAttributeDefinitionBuilder("attribute",
             ModelType.STRING)
-            .setAllowNull(false)
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(false)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     SimpleAttributeDefinition INTERVAL = new SimpleAttributeDefinitionBuilder("interval",
             ModelType.INT)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(5))
-            .setAllowExpression(true)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(5))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("timeUnits",
+    SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("time-units",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
-            .setAllowExpression(true)
-            .setValidator(new TimeUnitValidator(true, true, TimeUnit.MILLISECONDS, TimeUnit.SECONDS, TimeUnit.MINUTES))
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
+                    .setAllowExpression(true)
+                    .setValidator(new TimeUnitValidator(true, true, TimeUnit.MILLISECONDS, TimeUnit.SECONDS,
+                            TimeUnit.MINUTES))
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition METRIC_UNITS = new SimpleAttributeDefinitionBuilder("metricUnits",
+    SimpleAttributeDefinition METRIC_UNITS = new SimpleAttributeDefinitionBuilder("metric-units",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setValidator(MeasurementUnitValidator.ANY_OPTIONAL)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .setValidator(MeasurementUnitValidator.ANY_OPTIONAL)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    SimpleAttributeDefinition METRIC_TYPE = new SimpleAttributeDefinitionBuilder("metricType",
+    SimpleAttributeDefinition METRIC_TYPE = new SimpleAttributeDefinitionBuilder("metric-type",
             ModelType.STRING)
-            .setAllowNull(true)
-            .setAllowExpression(true)
-            .setValidator(MetricTypeValidator.ANY_OPTIONAL)
-            .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-            .build();
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .setValidator(MetricTypeValidator.ANY_OPTIONAL)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
     AttributeDefinition[] ATTRIBUTES = {
             OBJECT_NAME,

@@ -39,37 +39,34 @@
       <xs:element name="managed-servers"       type="managedServersType"     minOccurs="1" maxOccurs="1"/>
       <xs:element name="platform"              type="platformType"           minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
-    <xs:attribute name="enabled"                      type="xs:boolean"/>
-    <xs:attribute name="apiJndiName"                  type="xs:string"/>
-    <xs:attribute name="autoDiscoveryScanPeriodSecs"  type="xs:int"/>
-    <xs:attribute name="numDmrSchedulerThreads"       type="xs:int"/>
-    <xs:attribute name="metricDispatcherBufferSize"   type="xs:int"/>
-    <xs:attribute name="metricDispatcherMaxBatchSize" type="xs:int"/>
-    <xs:attribute name="availDispatcherBufferSize"    type="xs:int"/>
-    <xs:attribute name="availDispatcherMaxBatchSize"  type="xs:int"/>
+    <xs:attribute name="enabled"                          type="xs:boolean"/>
+    <xs:attribute name="api-jndi-name"                    type="xs:string"/>
+    <xs:attribute name="auto-discovery-scan-period-secs"  type="xs:int"/>
+    <xs:attribute name="num-dmr-scheduler-threads"        type="xs:int"/>
+    <xs:attribute name="metric-dispatcher-buffer-size"    type="xs:int"/>
+    <xs:attribute name="metric-dispatcher-max-batch-size" type="xs:int"/>
+    <xs:attribute name="avail-dispatcher-buffer-size"     type="xs:int"/>
+    <xs:attribute name="avail-dispatcher-max-batch-size"  type="xs:int"/>
   </xs:complexType>
 
   <!-- storage adapter configuration -->
   <xs:complexType name="storageType">
-    <xs:attribute name="type"             type="adapterType" default="HAWKULAR"/>
-    <xs:attribute name="username"         type="xs:string" use="required"/>
-    <xs:attribute name="password"         type="xs:string" use="required"/>
-    <xs:attribute name="securityKey"      type="xs:string"/>
-    <xs:attribute name="securitySecret"   type="xs:string"/>
-    <xs:attribute name="tenantId"         type="xs:string"/>
-    <xs:attribute name="feedId"           type="xs:string"/>
-    <xs:attribute name="url"              type="xs:string"/>
-    <xs:attribute name="useSSL"           type="xs:boolean"/>
-    <xs:attribute name="securityRealm"    type="xs:string"/>
-    <xs:attribute name="keystorePath"     type="xs:string"/>
-    <xs:attribute name="keystorePassword" type="xs:string"/>
-    <xs:attribute name="serverOutboundSocketBindingRef" type="xs:string"/>
-    <xs:attribute name="accountsContext"  type="xs:string"/>
-    <xs:attribute name="inventoryContext" type="xs:string"/>
-    <xs:attribute name="metricsContext"   type="xs:string"/>
-    <xs:attribute name="feedcommContext"  type="xs:string"/>
-    <xs:attribute name="connectTimeoutSeconds"  type="xs:int"/>
-    <xs:attribute name="readTimeoutSeconds"  type="xs:int"/>
+    <xs:attribute name="type"                  type="adapterType" default="HAWKULAR"/>
+    <xs:attribute name="username"              type="xs:string" use="required"/>
+    <xs:attribute name="password"              type="xs:string" use="required"/>
+    <xs:attribute name="tenant-id"             type="xs:string"/>
+    <xs:attribute name="feed-id"               type="xs:string"/>
+    <xs:attribute name="url"                   type="xs:string"/>
+    <xs:attribute name="use-ssl"               type="xs:boolean"/>
+    <xs:attribute name="security-realm"        type="xs:string"/>
+    <xs:attribute name="keystore-path"         type="xs:string"/>
+    <xs:attribute name="keystore-password"     type="xs:string"/>
+    <xs:attribute name="server-outbound-socket-binding-ref" type="xs:string"/>
+    <xs:attribute name="inventory-context"     type="xs:string"/>
+    <xs:attribute name="metrics-context"       type="xs:string"/>
+    <xs:attribute name="feedcomm-context"      type="xs:string"/>
+    <xs:attribute name="connect-timeout-secs"  type="xs:int"/>
+    <xs:attribute name="read-timeout-secs"     type="xs:int"/>
   </xs:complexType>
 
   <xs:simpleType name="adapterType">
@@ -81,10 +78,10 @@
 
   <!-- diagnostics configuration -->
   <xs:complexType name="diagnosticsType">
-    <xs:attribute name="enabled"   type="xs:boolean"/>
-    <xs:attribute name="interval"  type="xs:int"/>
-    <xs:attribute name="timeUnits" type="timeUnitsType"/>
-    <xs:attribute name="reportTo"  type="reportToType" default="LOG"/>
+    <xs:attribute name="enabled"    type="xs:boolean"/>
+    <xs:attribute name="interval"   type="xs:int"/>
+    <xs:attribute name="time-units" type="timeUnitsType"/>
+    <xs:attribute name="report-to"  type="reportToType" default="LOG"/>
   </xs:complexType>
 
   <xs:simpleType name="reportToType">
@@ -106,15 +103,15 @@
   </xs:complexType>
 
   <xs:complexType name="metricDmrType">
-    <xs:attribute name="name"        type="xs:string" use="required"/>
-    <xs:attribute name="path"        type="xs:string" use="required"/>
-    <xs:attribute name="attribute"   type="xs:string" use="required"/>
-    <xs:attribute name="resolveExpressions" type="xs:boolean"/>
-    <xs:attribute name="includeDefaults"    type="xs:boolean"/>
-    <xs:attribute name="metricType"  type="metricTypeType"/>
-    <xs:attribute name="metricUnits" type="metricUnitsType"/>
-    <xs:attribute name="interval"    type="xs:int"/>
-    <xs:attribute name="timeUnits"   type="timeUnitsType"/>
+    <xs:attribute name="name"                type="xs:string" use="required"/>
+    <xs:attribute name="path"                type="xs:string" use="required"/>
+    <xs:attribute name="attribute"           type="xs:string" use="required"/>
+    <xs:attribute name="resolve-expressions" type="xs:boolean"/>
+    <xs:attribute name="include-defaults"    type="xs:boolean"/>
+    <xs:attribute name="metric-type"         type="metricTypeType"/>
+    <xs:attribute name="metric-units"        type="metricUnitsType"/>
+    <xs:attribute name="interval"            type="xs:int"/>
+    <xs:attribute name="time-units"          type="timeUnitsType"/>
   </xs:complexType>
 
   <xs:simpleType name="metricTypeType">
@@ -157,14 +154,14 @@
   </xs:complexType>
 
   <xs:complexType name="availDmrType">
-    <xs:attribute name="name"      type="xs:string" use="required"/>
-    <xs:attribute name="path"      type="xs:string" use="required"/>
-    <xs:attribute name="attribute" type="xs:string" use="optional"/> <!-- if not specified, existence of resource at path is used for availability status -->
-    <xs:attribute name="resolveExpressions" type="xs:boolean"/>
-    <xs:attribute name="includeDefaults"    type="xs:boolean"/>
-    <xs:attribute name="interval"  type="xs:int"/>
-    <xs:attribute name="timeUnits" type="timeUnitsType"/>
-    <xs:attribute name="upRegex"   type="xs:string"/>
+    <xs:attribute name="name"                type="xs:string" use="required"/>
+    <xs:attribute name="path"                type="xs:string" use="required"/>
+    <xs:attribute name="attribute"           type="xs:string" use="optional"/> <!-- if not specified, existence of resource at path is used for availability status -->
+    <xs:attribute name="resolve-expressions" type="xs:boolean"/>
+    <xs:attribute name="include-defaults"    type="xs:boolean"/>
+    <xs:attribute name="interval"            type="xs:int"/>
+    <xs:attribute name="time-units"          type="timeUnitsType"/>
+    <xs:attribute name="up-regex"            type="xs:string"/>
   </xs:complexType>
 
   <!-- definition of sets of DMR resource types -->
@@ -181,26 +178,26 @@
       <xs:element name="resource-config-dmr" type="resourceConfigDmrType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="operation-dmr"       type="operationDmrType"      minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="name"                 type="xs:string" use="required"/>
-    <xs:attribute name="resourceNameTemplate" type="xs:string" use="required"/>
-    <xs:attribute name="path"                 type="xs:string" use="required"/>
-    <xs:attribute name="parents"              type="xs:string"/>
-    <xs:attribute name="metricSets"           type="xs:string"/>
-    <xs:attribute name="availSets"            type="xs:string"/>
+    <xs:attribute name="name"                   type="xs:string" use="required"/>
+    <xs:attribute name="resource-name-template" type="xs:string" use="required"/>
+    <xs:attribute name="path"                   type="xs:string" use="required"/>
+    <xs:attribute name="parents"                type="xs:string"/>
+    <xs:attribute name="metric-sets"            type="xs:string"/>
+    <xs:attribute name="avail-sets"             type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="resourceConfigDmrType">
-    <xs:attribute name="name"      type="xs:string" use="required"/>
-    <xs:attribute name="path"      type="xs:string" use="required"/>
-    <xs:attribute name="attribute" type="xs:string" use="required"/>
-    <xs:attribute name="resolveExpressions" type="xs:boolean"/>
-    <xs:attribute name="includeDefaults"    type="xs:boolean"/>
+    <xs:attribute name="name"                type="xs:string" use="required"/>
+    <xs:attribute name="path"                type="xs:string" use="required"/>
+    <xs:attribute name="attribute"           type="xs:string" use="required"/>
+    <xs:attribute name="resolve-expressions" type="xs:boolean"/>
+    <xs:attribute name="include-defaults"    type="xs:boolean"/>
   </xs:complexType>
 
   <xs:complexType name="operationDmrType">
-    <xs:attribute name="name"          type="xs:string" use="required"/>
-    <xs:attribute name="path"          type="xs:string"/>
-    <xs:attribute name="operationName" type="xs:string"/>
+    <xs:attribute name="name"           type="xs:string" use="required"/>
+    <xs:attribute name="path"           type="xs:string"/>
+    <xs:attribute name="operation-name" type="xs:string"/>
   </xs:complexType>
 
   <!-- JMX configuration -->
@@ -215,13 +212,13 @@
   </xs:complexType>
 
   <xs:complexType name="metricJmxType">
-    <xs:attribute name="name"        type="xs:string" use="required"/>
-    <xs:attribute name="objectName"  type="xs:string" use="required"/>
-    <xs:attribute name="attribute"   type="xs:string" use="required"/>
-    <xs:attribute name="metricType"  type="metricTypeType"/>
-    <xs:attribute name="metricUnits" type="metricUnitsType"/>
-    <xs:attribute name="interval"    type="xs:int"/>
-    <xs:attribute name="timeUnits"   type="timeUnitsType"/>
+    <xs:attribute name="name"         type="xs:string" use="required"/>
+    <xs:attribute name="object-name"  type="xs:string" use="required"/>
+    <xs:attribute name="attribute"    type="xs:string" use="required"/>
+    <xs:attribute name="metric-type"  type="metricTypeType"/>
+    <xs:attribute name="metric-units" type="metricUnitsType"/>
+    <xs:attribute name="interval"     type="xs:int"/>
+    <xs:attribute name="time-units"   type="timeUnitsType"/>
   </xs:complexType>
 
   <!-- definition of sets of JMX availability checks -->
@@ -234,12 +231,12 @@
   </xs:complexType>
 
   <xs:complexType name="availJmxType">
-    <xs:attribute name="name"       type="xs:string" use="required"/>
-    <xs:attribute name="objectName" type="xs:string" use="required"/>
-    <xs:attribute name="attribute"  type="xs:string" use="optional"/> <!-- if not specified, existence of resource at path is used for availability status -->
-    <xs:attribute name="interval"   type="xs:int"/>
-    <xs:attribute name="timeUnits"  type="timeUnitsType"/>
-    <xs:attribute name="upRegex"    type="xs:string"/>
+    <xs:attribute name="name"        type="xs:string" use="required"/>
+    <xs:attribute name="object-name" type="xs:string" use="required"/>
+    <xs:attribute name="attribute"   type="xs:string" use="optional"/> <!-- if not specified, existence of resource at path is used for availability status -->
+    <xs:attribute name="interval"    type="xs:int"/>
+    <xs:attribute name="time-units"  type="timeUnitsType"/>
+    <xs:attribute name="up-regex"    type="xs:string"/>
   </xs:complexType>
 
   <!-- definition of sets of JMX resource types -->
@@ -256,100 +253,100 @@
       <xs:element name="resource-config-jmx" type="resourceConfigJmxType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="operation-jmx"       type="operationJmxType"      minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="name"                 type="xs:string" use="required"/>
-    <xs:attribute name="resourceNameTemplate" type="xs:string" use="required"/>
-    <xs:attribute name="objectName"           type="xs:string" use="required"/>
-    <xs:attribute name="parents"              type="xs:string"/>
-    <xs:attribute name="metricSets"           type="xs:string"/>
-    <xs:attribute name="availSets"            type="xs:string"/>
+    <xs:attribute name="name"                   type="xs:string" use="required"/>
+    <xs:attribute name="resource-name-template" type="xs:string" use="required"/>
+    <xs:attribute name="object-name"            type="xs:string" use="required"/>
+    <xs:attribute name="parents"                type="xs:string"/>
+    <xs:attribute name="metric-sets"            type="xs:string"/>
+    <xs:attribute name="avail-sets"             type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="resourceConfigJmxType">
-    <xs:attribute name="name"       type="xs:string" use="required"/>
-    <xs:attribute name="objectName" type="xs:string" use="required"/>
-    <xs:attribute name="attribute"  type="xs:string" use="required"/>
+    <xs:attribute name="name"        type="xs:string" use="required"/>
+    <xs:attribute name="object-name" type="xs:string" use="required"/>
+    <xs:attribute name="attribute"   type="xs:string" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="operationJmxType">
-    <xs:attribute name="name"          type="xs:string" use="required"/>
-    <xs:attribute name="objectName"    type="xs:string"/>
-    <xs:attribute name="operationName" type="xs:string"/>
+    <xs:attribute name="name"           type="xs:string" use="required"/>
+    <xs:attribute name="object-name"    type="xs:string"/>
+    <xs:attribute name="operation-name" type="xs:string"/>
   </xs:complexType>
 
   <!-- managed server configuration-->
   <xs:complexType name="managedServersType">
     <xs:sequence>
-      <xs:element name="remote-dmr" type="remoteDmrType" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="local-dmr"  type="localDmrType"  minOccurs="0" maxOccurs="1"/>
-      <xs:element name="remote-jmx" type="remoteJmxType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="remote-dmr"        type="remoteDmrType"        minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="local-dmr"         type="localDmrType"         minOccurs="0" maxOccurs="1"/>
+      <xs:element name="remote-jmx"        type="remoteJmxType"        minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="remote-prometheus" type="remotePrometheusType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
   <xs:complexType name="localDmrType">
-    <xs:attribute name="name"               type="xs:string" use="required"/>
-    <xs:attribute name="enabled"            type="xs:boolean"/>
-    <xs:attribute name="resourceTypeSets"   type="xs:string"/>
-    <xs:attribute name="setAvailOnShutdown" type="xs:string"/>
-    <xs:attribute name="tenantId"           type="xs:string"/>
+    <xs:attribute name="name"                  type="xs:string" use="required"/>
+    <xs:attribute name="enabled"               type="xs:boolean"/>
+    <xs:attribute name="resource-type-sets"    type="xs:string"/>
+    <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
+    <xs:attribute name="tenant-id"             type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remoteDmrType">
-    <xs:attribute name="name"               type="xs:string" use="required"/>
-    <xs:attribute name="enabled"            type="xs:boolean"/>
-    <xs:attribute name="host"               type="xs:string" use="required"/>
-    <xs:attribute name="port"               type="xs:int"    use="required"/>
-    <xs:attribute name="username"           type="xs:string"/>
-    <xs:attribute name="password"           type="xs:string"/>
-    <xs:attribute name="useSSL"             type="xs:boolean"/>
-    <xs:attribute name="securityRealm"      type="xs:string"/>
-    <xs:attribute name="setAvailOnShutdown" type="xs:string"/>
-    <xs:attribute name="resourceTypeSets"   type="xs:string"/>
-    <xs:attribute name="tenantId"           type="xs:string"/>
+    <xs:attribute name="name"                   type="xs:string" use="required"/>
+    <xs:attribute name="enabled"                type="xs:boolean"/>
+    <xs:attribute name="host"                   type="xs:string" use="required"/>
+    <xs:attribute name="port"                   type="xs:int"    use="required"/>
+    <xs:attribute name="username"               type="xs:string"/>
+    <xs:attribute name="password"               type="xs:string"/>
+    <xs:attribute name="use-ssl"                type="xs:boolean"/>
+    <xs:attribute name="security-realm"         type="xs:string"/>
+    <xs:attribute name="set-avail-on-shutdown"  type="xs:string"/>
+    <xs:attribute name="resource-type-sets"     type="xs:string"/>
+    <xs:attribute name="tenant-id"              type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remoteJmxType">
-    <xs:attribute name="name"               type="xs:string" use="required"/>
-    <xs:attribute name="enabled"            type="xs:boolean"/>
-    <xs:attribute name="url"                type="xs:string" use="required"/>
-    <xs:attribute name="username"           type="xs:string"/>
-    <xs:attribute name="password"           type="xs:string"/>
-    <xs:attribute name="securityRealm"      type="xs:string"/>
-    <xs:attribute name="setAvailOnShutdown" type="xs:string"/>
-    <xs:attribute name="resourceTypeSets"   type="xs:string"/>
-    <xs:attribute name="tenantId"           type="xs:string"/>
+    <xs:attribute name="name"                  type="xs:string" use="required"/>
+    <xs:attribute name="enabled"               type="xs:boolean"/>
+    <xs:attribute name="url"                   type="xs:string" use="required"/>
+    <xs:attribute name="username"              type="xs:string"/>
+    <xs:attribute name="password"              type="xs:string"/>
+    <xs:attribute name="security-realm"        type="xs:string"/>
+    <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
+    <xs:attribute name="resource-type-sets"    type="xs:string"/>
+    <xs:attribute name="tenant-id"             type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remotePrometheusType">
-    <xs:attribute name="name"          type="xs:string" use="required"/>
-    <xs:attribute name="enabled"       type="xs:boolean"/>
-    <xs:attribute name="url"           type="xs:string" use="required"/>
-    <xs:attribute name="username"      type="xs:string"/>
-    <xs:attribute name="password"      type="xs:string"/>
-    <xs:attribute name="securityRealm" type="xs:string"/>
-    <xs:attribute name="labels"        type="xs:string"/>
-    <xs:attribute name="interval"      type="xs:int"/>
-    <xs:attribute name="timeUnits"     type="timeUnitsType"/>
-    <xs:attribute name="tenantId"      type="xs:string"/>
+    <xs:attribute name="name"           type="xs:string" use="required"/>
+    <xs:attribute name="enabled"        type="xs:boolean"/>
+    <xs:attribute name="url"            type="xs:string" use="required"/>
+    <xs:attribute name="username"       type="xs:string"/>
+    <xs:attribute name="password"       type="xs:string"/>
+    <xs:attribute name="security-realm" type="xs:string"/>
+    <xs:attribute name="labels"         type="xs:string"/>
+    <xs:attribute name="interval"       type="xs:int"/>
+    <xs:attribute name="time-units"     type="timeUnitsType"/>
+    <xs:attribute name="tenant-id"      type="xs:string"/>
   </xs:complexType>
 
   <!-- [agent] platform configuration -->
   <xs:complexType name="platformType">
     <xs:all>
-      <xs:element name="file-stores"           type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
-      <xs:element name="memory"                type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
-      <xs:element name="processors"            type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
-      <xs:element name="power-sources"         type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
+      <xs:element name="file-stores"   type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
+      <xs:element name="memory"        type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
+      <xs:element name="processors"    type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
+      <xs:element name="power-sources" type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
     </xs:all>
-    <xs:attribute name="enabled"               type="xs:boolean"/>
-    <xs:attribute name="machineId"             type="xs:string"/>
+    <xs:attribute name="enabled"    type="xs:boolean"/>
+    <xs:attribute name="machine-id" type="xs:string"/>
   </xs:complexType>
 
   <!-- various platform metrics configuration -->
   <xs:complexType name="platformMetricType">
-    <xs:attribute name="enabled"   type="xs:boolean"/>
-    <xs:attribute name="interval"  type="xs:int"/>
-    <xs:attribute name="timeUnits" type="timeUnitsType"/>
+    <xs:attribute name="enabled"    type="xs:boolean"/>
+    <xs:attribute name="interval"   type="xs:int"/>
+    <xs:attribute name="time-units" type="timeUnitsType"/>
   </xs:complexType>
 
 </xs:schema>

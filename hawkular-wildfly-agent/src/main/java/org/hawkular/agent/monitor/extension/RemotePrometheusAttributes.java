@@ -57,15 +57,14 @@ public interface RemotePrometheusAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition SECURITY_REALM = new SimpleAttributeDefinitionBuilder("securityRealm",
+    SimpleAttributeDefinition SECURITY_REALM = new SimpleAttributeDefinitionBuilder("security-realm",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder(
-            "metricSets",
+    SimpleAttributeDefinition METRIC_SETS = new SimpleAttributeDefinitionBuilder("metric-sets",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
@@ -80,7 +79,7 @@ public interface RemotePrometheusAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("timeUnits",
+    SimpleAttributeDefinition TIME_UNITS = new SimpleAttributeDefinitionBuilder("time-units",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(TimeUnit.MINUTES.name()))
@@ -90,7 +89,7 @@ public interface RemotePrometheusAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenantId",
+    SimpleAttributeDefinition TENANT_ID = new SimpleAttributeDefinitionBuilder("tenant-id",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)

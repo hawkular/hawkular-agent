@@ -388,16 +388,16 @@ public class AgentInstaller {
         }
 
         if (tenantId != null && !tenantId.isEmpty()) {
-            xml.append(" tenantId=\"" + tenantId + "\"");
+            xml.append(" tenant-id=\"" + tenantId + "\"");
         }
 
         if (withHttps) {
-            xml.append(" securityRealm=\"" + SECURITY_REALM_NAME + "\"")
+            xml.append(" security-realm=\"" + SECURITY_REALM_NAME + "\"")
                     .append(" useSSL=\"true\"");
         }
 
         if (installerConfig.getFeedId() != null && !installerConfig.getFeedId().isEmpty()) {
-            xml.append(" feedId=\"" + installerConfig.getFeedId() + "\"");
+            xml.append(" feed-id=\"" + installerConfig.getFeedId() + "\"");
         }
 
         if (installerConfig.getUsername() != null && !installerConfig.getUsername().isEmpty()) {
@@ -410,7 +410,7 @@ public class AgentInstaller {
         // xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");
         // TODO remove if-stmt and uncomment above when WFCORE-1505 is fixed - domain mode can't use outbound bindings
         if (targetConfigInfo instanceof StandaloneTargetConfigInfo) {
-            xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");
+            xml.append(" server-outbound-socket-binding-ref=\"hawkular\"");
         } else {
             xml.append(" url=\"").append(installerConfig.getServerUrl()).append("\"");
         }
@@ -449,7 +449,7 @@ public class AgentInstaller {
         }
         StringBuilder xml = new StringBuilder("<managed-servers>")
                 .append("<local-dmr name=\"" + managedServerName + "\" enabled=\"true\" "
-                        + "resourceTypeSets=\""
+                        + "resource-type-sets=\""
                         + targetConfigInfo.getManagedServerResourceTypeSets()
                         + "\" />")
                 .append("</managed-servers>");

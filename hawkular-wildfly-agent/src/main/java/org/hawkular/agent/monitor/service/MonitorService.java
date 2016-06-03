@@ -197,7 +197,6 @@ public class MonitorService implements Service<MonitorService> {
                     useUrl,
                     bootStorageAdapter.isUseSSL(),
                     bootStorageAdapter.getServerOutboundSocketBindingRef(),
-                    bootStorageAdapter.getAccountsContext(),
                     bootStorageAdapter.getInventoryContext(),
                     bootStorageAdapter.getMetricsContext(),
                     bootStorageAdapter.getFeedcommContext(),

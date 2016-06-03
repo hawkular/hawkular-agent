@@ -35,7 +35,7 @@
 
   <resource-type-set-dmr name="Main" enabled="true">
     <resource-type-dmr name="WildFly Server"
-                       resourceNameTemplate="WildFly Server"
+                       resource-name-template="WildFly Server"
                        path="/">
       <resource-config-dmr name="Hostname"
                            path="/core-service=server-environment"
@@ -46,22 +46,22 @@
 
   <metric-set-jmx name="M Metric Set">
     <metric-jmx name="M Metric"
-                objectName="domain:foo=bar"
+                object-name="domain:foo=bar"
                 attribute="yAttribute" />
   </metric-set-jmx>
 
   <avail-set-jmx name="A Avail Set">
     <avail-jmx name="A Avail"
-               objectName="domain:foo=bar"
+               object-name="domain:foo=bar"
                attribute="yAttribute"/>
   </avail-set-jmx>
 
   <resource-type-set-jmx name="R Resource Type Set">
     <resource-type-jmx name="R Resource Type"
-                       resourceNameTemplate="R Resource Name"
-                       objectName="domain:foo=bar">
+                       resource-name-template="R Resource Name"
+                       object-name="domain:foo=bar">
       <resource-config-jmx name="Config Name"
-                           objectName="domain:foo=bar"
+                           object-name="domain:foo=bar"
                            attribute="configAttribute" />
       <operation-jmx name="O Operation"/>
     </resource-type-jmx>

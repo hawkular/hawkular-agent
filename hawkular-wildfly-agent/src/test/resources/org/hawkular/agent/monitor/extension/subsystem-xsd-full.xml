@@ -18,105 +18,104 @@
 -->
 <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
            enabled="true"
-           apiJndiName="jndi:name"
-           numDmrSchedulerThreads="1"
-           autoDiscoveryScanPeriodSecs="3601"
-           metricDispatcherBufferSize="201"
-           metricDispatcherMaxBatchSize="51"
-           availDispatcherBufferSize="101"
-           availDispatcherMaxBatchSize="26">
+           api-jndi-name="jndi:name"
+           num-dmr-scheduler-threads="1"
+           auto-discovery-scan-period-secs="3601"
+           metric-dispatcher-buffer-size="201"
+           metric-dispatcher-max-batch-size="51"
+           avail-dispatcher-buffer-size="101"
+           avail-dispatcher-max-batch-size="26">
 
   <diagnostics enabled="true"
                interval="1"
-               timeUnits="minutes"
-               reportTo="LOG"/>
+               time-units="minutes"
+               report-to="LOG"/>
 
   <storage-adapter type="METRICS"
                    username="jdoe"
                    password="password"
-                   tenantId="tenandId"
-                   feedId="feedId"
+                   tenant-id="tenandId"
+                   feed-id="feedId"
                    url="http://localhost:8080"
-                   useSSL="false"
-                   securityRealm="HawkularSecurityRealm"
-                   keystorePath="keystorePath"
-                   keystorePassword="keystorePassword"
-                   serverOutboundSocketBindingRef="serverOutboundSocketBindingRef"
-                   accountsContext="accountsContext"
-                   inventoryContext="inventoryContext"
-                   metricsContext="metricsContext"
-                   feedcommContext="feedcommContext"
-                   connectTimeoutSeconds="16"
-                   readTimeoutSeconds="256"/>
+                   use-ssl="false"
+                   security-realm="HawkularSecurityRealm"
+                   keystore-path="keystorePath"
+                   keystore-password="keystorePassword"
+                   server-outbound-socket-binding-ref="serverOutboundSocketBindingRef"
+                   inventory-context="inventoryContext"
+                   metrics-context="metricsContext"
+                   feedcomm-context="feedcommContext"
+                   connect-timeout-secs="16"
+                   read-timeout-secs="256"/>
 
   <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
     <metric-dmr name="Heap Used"
                 interval="30"
-                timeUnits="seconds"
-                metricType="gauge"
-                metricUnits="bytes"
+                time-units="seconds"
+                metric-type="gauge"
+                metric-units="bytes"
                 path="/core-service=platform-mbean/type=memory"
                 attribute="heap-memory-usage#used"
-                resolveExpressions="true"
-                includeDefaults="true"/>
+                resolve-expressions="true"
+                include-defaults="true"/>
   </metric-set-dmr>
 
   <avail-set-dmr name="Server Availability" enabled="true">
     <avail-dmr name="App Server"
                interval="30"
-               timeUnits="seconds"
+               time-units="seconds"
                path="/"
                attribute="server-state"
-               resolveExpressions="true"
-               includeDefaults="true"
-               upRegex="run.*" />
+               resolve-expressions="true"
+               include-defaults="true"
+               up-regex="run.*" />
   </avail-set-dmr>
 
   <resource-type-set-dmr name="Main" enabled="true">
     <resource-type-dmr name="WildFly Server"
-                       resourceNameTemplate="WildFly Server"
+                       resource-name-template="WildFly Server"
                        path="/"
                        parents="parents"
-                       metricSets="WildFly Memory Metrics"
-                       availSets="Server Availability">
+                       metric-sets="WildFly Memory Metrics"
+                       avail-sets="Server Availability">
       <resource-config-dmr name="Hostname"
                            path="/core-service=server-environment"
                            attribute="qualified-host-name"
-                           resolveExpressions="true"
-                           includeDefaults="true"/>
-      <operation-dmr name="Reload Server" operationName="reload" path="/some=other/path=here"/>
+                           resolve-expressions="true"
+                           include-defaults="true"/>
+      <operation-dmr name="Reload Server" operation-name="reload" path="/some=other/path=here"/>
     </resource-type-dmr>
   </resource-type-set-dmr>
 
   <metric-set-jmx name="M Metric Set">
     <metric-jmx name="M Metric"
                 interval="30"
-                timeUnits="seconds"
-                metricType="counter"
-                metricUnits="bytes"
-                objectName="domain:foo=bar"
+                time-units="seconds"
+                metric-type="counter"
+                metric-units="bytes"
+                object-name="domain:foo=bar"
                 attribute="yAttribute" />
   </metric-set-jmx>
 
   <avail-set-jmx name="A Avail Set" enabled="true">
     <avail-jmx name="A Avail"
                interval="30"
-               timeUnits="seconds"
-               objectName="domain:foo=bar"
+               time-units="seconds"
+               object-name="domain:foo=bar"
                attribute="yAttribute"
-               upRegex="run.*" />
+               up-regex="run.*" />
   </avail-set-jmx>
 
   <resource-type-set-jmx name="R Resource Type Set" enabled="true">
     <resource-type-jmx name="R Resource Type"
-                       resourceNameTemplate="R Resource Name"
-                       objectName="domain:foo=bar"
-                       metricSets="M Metric Set"
-                       availSets="A Avail Set">
+                       resource-name-template="R Resource Name"
+                       object-name="domain:foo=bar"
+                       metric-sets="M Metric Set"
+                       avail-sets="A Avail Set">
       <resource-config-jmx name="Config NAme"
-                           objectName="domain:foo=bar"
+                           object-name="domain:foo=bar"
                            attribute="configAttribute" />
-      <operation-jmx name="O Operation" operationName="oOperation" objectName="domain:foo=bar" />
+      <operation-jmx name="O Operation" operation-name="oOperation" object-name="domain:foo=bar" />
     </resource-type-jmx>
   </resource-type-set-jmx>
 
@@ -127,45 +126,45 @@
                 port="9990"
                 username="jdoe"
                 password="password"
-                useSSL="false"
-                securityRealm="HawkularRealm"
-                setAvailOnShutdown="UP"
-                resourceTypeSets="Main"
-                tenantId="" />
+                use-ssl="false"
+                security-realm="HawkularRealm"
+                set-avail-on-shutdown="UP"
+                resource-type-sets="Main"
+                tenant-id="" />
 
     <local-dmr name="Self"
                enabled="true"
-               setAvailOnShutdown="UP"
-               resourceTypeSets="Main"
-               tenantId="tenantOverride" />
+               set-avail-on-shutdown="UP"
+               resource-type-sets="Main"
+               tenant-id="tenantOverride" />
 
     <remote-jmx name="Remote JMX"
                 enabled="true"
                 url="https://localhost:8080/jolokia"
                 username="jdoe"
                 password="password"
-                securityRealm="HawkularRealm"
-                setAvailOnShutdown="UP"
-                resourceTypeSets="R Resource Type Set"
-                tenantId="tenantOverride" />
+                security-realm="HawkularRealm"
+                set-avail-on-shutdown="UP"
+                resource-type-sets="R Resource Type Set"
+                tenant-id="tenantOverride" />
 
     <remote-prometheus name="Remote Prometheus"
                        enabled="true"
                        url="http://localhost:9090/metrics"
                        username="jdoe"
                        password="password"
-                       securityRealm="HawkularRealm"
+                       security-realm="HawkularRealm"
                        interval="30"
-                       timeUnits="seconds"
-                       tenantId="tenantOverride" />
+                       time-units="seconds"
+                       tenant-id="tenantOverride" />
 
   </managed-servers>
 
-  <platform enabled="true" machineId="1234567890abcdef">
-    <file-stores   enabled="true" interval="30000" timeUnits="milliseconds" />
-    <memory        enabled="true" interval="60"  timeUnits="seconds" />
-    <processors    enabled="true" interval="1"  timeUnits="minutes" />
-    <power-sources enabled="true" interval="10" timeUnits="minutes" />
+  <platform enabled="true" machine-id="1234567890abcdef">
+    <file-stores   enabled="true" interval="30000" time-units="milliseconds" />
+    <memory        enabled="true" interval="60"    time-units="seconds" />
+    <processors    enabled="true" interval="1"     time-units="minutes" />
+    <power-sources enabled="true" interval="10"    time-units="minutes" />
   </platform>
 
 </subsystem>

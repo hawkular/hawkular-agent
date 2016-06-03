@@ -64,7 +64,6 @@ public class MonitorServiceConfiguration {
         private final String url;
         private final boolean useSSL;
         private final String serverOutboundSocketBindingRef;
-        private final String accountsContext;
         private final String inventoryContext;
         private final String metricsContext;
         private final String feedcommContext;
@@ -83,7 +82,6 @@ public class MonitorServiceConfiguration {
                 String url,
                 boolean useSSL,
                 String serverOutboundSocketBindingRef,
-                String accountsContext,
                 String inventoryContext,
                 String metricsContext,
                 String feedcommContext,
@@ -101,7 +99,6 @@ public class MonitorServiceConfiguration {
             this.url = url;
             this.useSSL = useSSL;
             this.serverOutboundSocketBindingRef = serverOutboundSocketBindingRef;
-            this.accountsContext = accountsContext;
             this.inventoryContext = inventoryContext;
             this.metricsContext = metricsContext;
             this.feedcommContext = feedcommContext;
@@ -150,10 +147,6 @@ public class MonitorServiceConfiguration {
 
         public String getServerOutboundSocketBindingRef() {
             return serverOutboundSocketBindingRef;
-        }
-
-        public String getAccountsContext() {
-            return accountsContext;
         }
 
         public String getInventoryContext() {
