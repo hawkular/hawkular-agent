@@ -203,8 +203,7 @@ public abstract class AbstractITest {
         client.getDispatcher().getExecutorService().shutdown();
     }
 
-    protected void assertNodeAttributeEquals(ModelControllerClient mcc, ModelNode addressActual, String attributeName,
-            String expectedAttributeValue) {
+    protected String getNodeAttribute(ModelControllerClient mcc, ModelNode addressActual, String attributeName) {
         String actualAttributeValue = OperationBuilder.readAttribute()
                 .address(addressActual)
                 .name(attributeName)
@@ -213,6 +212,12 @@ public abstract class AbstractITest {
                 .assertSuccess()
                 .getResultNode()
                 .asString();
+        return actualAttributeValue;
+    }
+
+    protected void assertNodeAttributeEquals(ModelControllerClient mcc, ModelNode addressActual, String attributeName,
+            String expectedAttributeValue) {
+        String actualAttributeValue = getNodeAttribute(mcc, addressActual, attributeName);
         Assert.assertEquals(actualAttributeValue, expectedAttributeValue);
     }
 
