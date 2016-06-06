@@ -157,7 +157,8 @@ public final class Discovery<L> {
 
                 builder.resourceConfigurationProperty(cpi);
             } catch (Exception e) {
-                log.warnf(e, "Failed to discover config [%s] for resource [%s]", confPropType, parentAddress);
+                // log this at debug because it is normally due to the fact the resource is down and expected
+                log.debugf(e, "Failed to discover config [%s] for resource [%s]", confPropType, parentAddress);
             }
         }
     }
