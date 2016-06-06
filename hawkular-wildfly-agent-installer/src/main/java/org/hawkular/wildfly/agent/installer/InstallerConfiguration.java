@@ -61,6 +61,7 @@ public class InstallerConfiguration {
     static final String OPTION_FEED_ID = "feed-id";
     static final String OPTION_TENANT_ID = "tenant-id";
     static final String OPTION_METRICS_ONLY_MODE = "metrics-only";
+    static final String OPTION_MANAGED_RESOURCE_TYPE_SETS = "managed-server-resource-type-sets";
 
     static ProcessedCommand<?> buildCommandLineOptions() throws Exception {
         ProcessedCommandBuilder cmd = new ProcessedCommandBuilder();
@@ -165,6 +166,14 @@ public class InstallerConfiguration {
                         + "(inventory will not be stored and no websocket connection to a Hawkular "
                         + "Server will be made.) If true, you must specify a tenant-id.")
                 .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_MANAGED_RESOURCE_TYPE_SETS)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("If true, the agent will be configured to monitor these resource type sets. "
+                        + "If not provided, a default set will be used based on the type of application "
+                        + "server where the agent is being installed into (standalone or domain).")
+                .create());
 
         // SSL/security related config options
 
@@ -268,6 +277,7 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_KEY_ALIAS);
         setProperty(properties, commandLine, OPTION_USERNAME);
         setProperty(properties, commandLine, OPTION_PASSWORD);
+        setProperty(properties, commandLine, OPTION_MANAGED_RESOURCE_TYPE_SETS);
     }
 
     private void setProperty(Properties props, CommandLine<?> commandLine, String option) {
@@ -357,5 +367,9 @@ public class InstallerConfiguration {
 
     public boolean isMetricsOnlyMode() {
         return Boolean.parseBoolean(properties.getProperty(OPTION_METRICS_ONLY_MODE, "false"));
+    }
+
+    public String getManagedResourceTypeSets() {
+        return properties.getProperty(OPTION_MANAGED_RESOURCE_TYPE_SETS);
     }
 }
