@@ -106,7 +106,8 @@ public class InstallerConfigurationTest {
                         "--key-alias", "OVERRIDE-alias",
                         "--username", "OVERRIDE-username",
                         "--password", "OVERRIDE-password",
-                        "--module-dist", "/OVERRIDE/dist.zip"
+                        "--module-dist", "/OVERRIDE/dist.zip",
+                        "--managed-server-resource-type-sets", "\"OVERRIDE First Type,Second Type\""
                 ));
         InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
         Assert.assertFalse(installerConfig.isEnabled());
@@ -124,6 +125,7 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("/OVERRIDE/dist.zip", installerConfig.getModuleDistribution());
         Assert.assertEquals("OVERRIDE-feed-id", installerConfig.getFeedId());
         Assert.assertEquals("OVERRIDE-tenant-id", installerConfig.getTenantId());
+        Assert.assertEquals("OVERRIDE First Type,Second Type", installerConfig.getManagedResourceTypeSets());
         Assert.assertTrue(installerConfig.isMetricsOnlyMode());
     }
 
@@ -216,6 +218,7 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("/test/dist.zip", installerConfig.getModuleDistribution());
         Assert.assertEquals("test-feed-id", installerConfig.getFeedId());
         Assert.assertEquals("test-tenant-id", installerConfig.getTenantId());
+        Assert.assertEquals("First Type,Second Type", installerConfig.getManagedResourceTypeSets());
         Assert.assertFalse("Default metrics-only should have been false", installerConfig.isMetricsOnlyMode());
     }
 }

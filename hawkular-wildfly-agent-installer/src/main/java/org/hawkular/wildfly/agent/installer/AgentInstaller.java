@@ -393,7 +393,7 @@ public class AgentInstaller {
 
         if (withHttps) {
             xml.append(" security-realm=\"" + SECURITY_REALM_NAME + "\"")
-                    .append(" useSSL=\"true\"");
+                    .append(" use-ssl=\"true\"");
         }
 
         if (installerConfig.getFeedId() != null && !installerConfig.getFeedId().isEmpty()) {
@@ -447,10 +447,15 @@ public class AgentInstaller {
         if (managedServerName == null || managedServerName.trim().isEmpty()) {
             managedServerName = "Local"; // just make sure its something
         }
+        String managedServerResourceTypeSets = config.getManagedResourceTypeSets();
+        if (managedServerResourceTypeSets == null || managedServerResourceTypeSets.trim().isEmpty()) {
+            managedServerResourceTypeSets = targetConfigInfo.getManagedServerResourceTypeSets();
+        }
+
         StringBuilder xml = new StringBuilder("<managed-servers>")
                 .append("<local-dmr name=\"" + managedServerName + "\" enabled=\"true\" "
                         + "resource-type-sets=\""
-                        + targetConfigInfo.getManagedServerResourceTypeSets()
+                        + managedServerResourceTypeSets
                         + "\" />")
                 .append("</managed-servers>");
 
