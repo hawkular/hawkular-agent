@@ -127,11 +127,11 @@ public class AgentInstallerDomainITest extends AbstractITest {
         }
 
         // make sure we are testing against what we were expecting
-        Assert.assertTrue(dmrSBGNames.contains("default"));
-        Assert.assertTrue(dmrSBGNames.contains("ha"));
-        Assert.assertTrue(dmrSBGNames.contains("full"));
-        Assert.assertTrue(dmrSBGNames.contains("full-ha"));
-        Assert.assertEquals("Wrong number of domain profiles", 4, dmrSBGNames.size());
+        Assert.assertTrue(dmrSBGNames.contains("standard-sockets"));
+        Assert.assertTrue(dmrSBGNames.contains("ha-sockets"));
+        Assert.assertTrue(dmrSBGNames.contains("full-sockets"));
+        Assert.assertTrue(dmrSBGNames.contains("full-ha-sockets"));
+        Assert.assertEquals("Wrong number of socket binding groups", 4, dmrSBGNames.size());
     }
 
     private Collection<String> getHostNames() {

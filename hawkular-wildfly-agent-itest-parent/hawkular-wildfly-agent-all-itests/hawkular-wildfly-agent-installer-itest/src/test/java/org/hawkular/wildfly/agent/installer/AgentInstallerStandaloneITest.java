@@ -61,11 +61,41 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         }
 
         // make sure we are testing against what we were expecting
-        Assert.assertTrue(dmrSBGNames.contains("default"));
-        Assert.assertTrue(dmrSBGNames.contains("ha"));
-        Assert.assertTrue(dmrSBGNames.contains("full"));
-        Assert.assertTrue(dmrSBGNames.contains("full-ha"));
-        Assert.assertEquals("Wrong number of domain profiles", 4, dmrSBGNames.size());
+        Assert.assertTrue(dmrSBGNames.contains("standard-sockets"));
+        Assert.assertEquals("Wrong number of socket binding groups", 1, dmrSBGNames.size());
+
+        // there is only one group - get the names of all the bindings (incoming and outbound) in that group
+        Collection<String> dmrBindingNames = getSocketBindingNames();
+        for (String bindingName : dmrBindingNames) {
+            Resource binding = getResource(
+                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Socket Binding/resources",
+                    (r -> r.getName().contains(bindingName)));
+            System.out.println("socket binding in inventory=" + binding);
+        }
+
+        // make sure we are testing against what we were expecting
+        Assert.assertTrue(dmrBindingNames.contains("management-http"));
+        Assert.assertTrue(dmrBindingNames.contains("management-https"));
+        Assert.assertTrue(dmrBindingNames.contains("ajp"));
+        Assert.assertTrue(dmrBindingNames.contains("http"));
+        Assert.assertTrue(dmrBindingNames.contains("https"));
+        Assert.assertTrue(dmrBindingNames.contains("txn-recovery-environment"));
+        Assert.assertTrue(dmrBindingNames.contains("txn-status-manager"));
+        Assert.assertEquals("Wrong number of socket binding groups", 7, dmrBindingNames.size());
+
+        dmrBindingNames = getOutboundSocketBindingNames();
+        for (String bindingName : dmrBindingNames) {
+            Resource binding = getResource(
+                    "/feeds/" + wfClientConfig.getFeedId()
+                            + "/resourceTypes/Remote Destination Outbound Socket Binding/resources",
+                    (r -> r.getName().contains(bindingName)));
+            System.out.println("outbound socket binding in inventory=" + binding);
+        }
+
+        // make sure we are testing against what we were expecting
+        Assert.assertTrue(dmrBindingNames.contains("mail-smtp"));
+        Assert.assertTrue(dmrBindingNames.contains("hawkular"));
+        Assert.assertEquals("Wrong number of outbound socket binding groups", 2, dmrBindingNames.size());
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
@@ -82,6 +112,17 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
     private Collection<String> getSocketBindingGroupNames() {
         return getDMRChildrenNames(wfClientConfig, "socket-binding-group", PathAddress.EMPTY_ADDRESS);
+    }
+
+    private Collection<String> getSocketBindingNames() {
+        return getDMRChildrenNames(wfClientConfig,
+                "socket-binding", PathAddress.parseCLIStyleAddress("/socket-binding-group=standard-sockets"));
+    }
+
+    private Collection<String> getOutboundSocketBindingNames() {
+        return getDMRChildrenNames(wfClientConfig,
+                "remote-destination-outbound-socket-binding",
+                PathAddress.parseCLIStyleAddress("/socket-binding-group=standard-sockets"));
     }
 
     private Collection<String> getDatasourceNames() {
