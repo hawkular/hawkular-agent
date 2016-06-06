@@ -16,18 +16,13 @@
  */
 package org.hawkular.wildfly.agent.installer;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Collection;
 
 import org.hawkular.agent.monitor.util.Util;
-import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.client.ModelControllerClient;
-import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.testng.annotations.Test;
 
@@ -39,6 +34,7 @@ import com.squareup.okhttp.Response;
  *
  */
 public class AgentInstallerStandaloneITest extends AbstractITest {
+    public static final String GROUP = "AgentInstallerStandloneITest";
 
     protected static final WildFlyClientConfig wfClientConfig;
 
@@ -46,14 +42,33 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         wfClientConfig = new WildFlyClientConfig();
     }
 
-    @Test
+    @Test(groups = { GROUP })
     public void wfStarted() throws Throwable {
         waitForAccountsAndInventory();
         // System.out.println("wfFeedId = " + wfFeedId);
         Assert.assertNotNull("wfFeedId should not be null", wfClientConfig.getFeedId());
     }
 
-    @Test(dependsOnMethods = { "wfStarted" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    public void socketBindingGroupsInInventory() throws Throwable {
+
+        Collection<String> dmrSBGNames = getSocketBindingGroupNames();
+        for (String sbgName : dmrSBGNames) {
+            Resource sbg = getResource(
+                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Socket Binding Group/resources",
+                    (r -> r.getName().contains(sbgName)));
+            System.out.println("socket binding group in inventory=" + sbg);
+        }
+
+        // make sure we are testing against what we were expecting
+        Assert.assertTrue(dmrSBGNames.contains("default"));
+        Assert.assertTrue(dmrSBGNames.contains("ha"));
+        Assert.assertTrue(dmrSBGNames.contains("full"));
+        Assert.assertTrue(dmrSBGNames.contains("full-ha"));
+        Assert.assertEquals("Wrong number of domain profiles", 4, dmrSBGNames.size());
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void datasourcesAddedToInventory() throws Throwable {
 
         for (String datasourceName : getDatasourceNames()) {
@@ -65,19 +80,13 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         Assert.assertNotNull("feedId should not be null", wfClientConfig.getFeedId());
     }
 
-    private List<String> getDatasourceNames() {
-        try (ModelControllerClient mcc = newPlainWildFlyModelControllerClient(wfClientConfig)) {
-            ModelNode result = OperationBuilder.readChildrenNames()
-                    .address(PathAddress.parseCLIStyleAddress("/subsystem=datasources"))
-                    .childType("data-source")
-                    .execute(mcc)
-                    .getResultNode();
+    private Collection<String> getSocketBindingGroupNames() {
+        return getDMRChildrenNames(wfClientConfig, "socket-binding-group", PathAddress.EMPTY_ADDRESS);
+    }
 
-            return result.asList().stream().map(n -> n.asString()).collect(Collectors.toList());
-
-        } catch (IOException e) {
-            throw new RuntimeException("Could not get wfFeedId", e);
-        }
+    private Collection<String> getDatasourceNames() {
+        return getDMRChildrenNames(wfClientConfig,
+                "data-source", PathAddress.parseCLIStyleAddress("/subsystem=datasources"));
     }
 
     @Test(dependsOnMethods = { "datasourcesAddedToInventory" })

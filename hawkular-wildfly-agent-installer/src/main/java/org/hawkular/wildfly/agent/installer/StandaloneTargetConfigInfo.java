@@ -45,6 +45,7 @@ public class StandaloneTargetConfigInfo implements TargetConfigInfo {
                 .append("JDBC Driver,")
                 .append("Transaction Manager,")
                 .append("Messaging,")
+                .append("Socket Binding Group,")
                 .append("Hawkular")
                 .toString();
     }

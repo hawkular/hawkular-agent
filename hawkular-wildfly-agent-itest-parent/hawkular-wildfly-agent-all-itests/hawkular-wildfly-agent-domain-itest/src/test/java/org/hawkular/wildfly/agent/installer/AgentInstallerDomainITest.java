@@ -16,17 +16,12 @@
  */
 package org.hawkular.wildfly.agent.installer;
 
-import java.io.IOException;
 import java.util.Collection;
-import java.util.stream.Collectors;
 
-import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.client.ModelControllerClient;
-import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.testng.annotations.Test;
 
@@ -120,34 +115,42 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertEquals("Wrong number of domain profiles", 4, dmrProfileNames.size());
     }
 
+    @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    public void socketBindingGroupsInInventory() throws Throwable {
+
+        Collection<String> dmrSBGNames = getSocketBindingGroupNames();
+        for (String sbgName : dmrSBGNames) {
+            Resource sbg = getResource(
+                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Socket Binding Group/resources",
+                    (r -> r.getName().contains(sbgName)));
+            System.out.println("socket binding group in inventory=" + sbg);
+        }
+
+        // make sure we are testing against what we were expecting
+        Assert.assertTrue(dmrSBGNames.contains("default"));
+        Assert.assertTrue(dmrSBGNames.contains("ha"));
+        Assert.assertTrue(dmrSBGNames.contains("full"));
+        Assert.assertTrue(dmrSBGNames.contains("full-ha"));
+        Assert.assertEquals("Wrong number of domain profiles", 4, dmrSBGNames.size());
+    }
+
     private Collection<String> getHostNames() {
-        return getChildrenNames("host", PathAddress.EMPTY_ADDRESS);
+        return getDMRChildrenNames(wfClientConfig, "host", PathAddress.EMPTY_ADDRESS);
     }
 
     private Collection<String> getServerNames() {
-        return getChildrenNames("server", PathAddress.parseCLIStyleAddress("/host=master"));
+        return getDMRChildrenNames(wfClientConfig, "server", PathAddress.parseCLIStyleAddress("/host=master"));
     }
 
     private Collection<String> getServerGroupNames() {
-        return getChildrenNames("server-group", PathAddress.EMPTY_ADDRESS);
+        return getDMRChildrenNames(wfClientConfig, "server-group", PathAddress.EMPTY_ADDRESS);
     }
 
     private Collection<String> getProfileNames() {
-        return getChildrenNames("profile", PathAddress.EMPTY_ADDRESS);
+        return getDMRChildrenNames(wfClientConfig, "profile", PathAddress.EMPTY_ADDRESS);
     }
 
-    private Collection<String> getChildrenNames(String childTypeName, PathAddress parentAddress) {
-        try (ModelControllerClient mcc = newPlainWildFlyModelControllerClient(wfClientConfig)) {
-            ModelNode result = OperationBuilder.readChildrenNames()
-                    .address(parentAddress)
-                    .childType(childTypeName)
-                    .execute(mcc)
-                    .getResultNode();
-
-            return result.asList().stream().map(n -> n.asString()).collect(Collectors.toList());
-
-        } catch (IOException e) {
-            throw new RuntimeException("Could not get: " + parentAddress + "/" + childTypeName, e);
-        }
+    private Collection<String> getSocketBindingGroupNames() {
+        return getDMRChildrenNames(wfClientConfig, "socket-binding-group", PathAddress.EMPTY_ADDRESS);
     }
 }

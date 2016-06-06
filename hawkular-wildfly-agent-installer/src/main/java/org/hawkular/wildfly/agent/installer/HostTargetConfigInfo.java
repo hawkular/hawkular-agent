@@ -45,6 +45,7 @@ public class HostTargetConfigInfo implements TargetConfigInfo {
                 .append("JDBC Driver,")
                 .append("Transaction Manager,")
                 .append("Messaging,")
+                .append("Socket Binding Group,")
                 .append("Hawkular")
                 .toString();
     }
