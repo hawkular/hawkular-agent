@@ -16,8 +16,7 @@
  */
 package org.hawkular.agent.ws.test;
 
-import java.net.URLEncoder;
-
+import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -160,7 +159,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
-                + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
+                + Util.urlEncode("~/subsystem=datasources/data-source=" + datasourceName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
@@ -212,7 +211,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
 
         String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
-                + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
+                + Util.urlEncode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
@@ -265,7 +264,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
-                + URLEncoder.encode("~/subsystem=datasources/data-source=" + datasourceName, "UTF-8");
+                + Util.urlEncode("~/subsystem=datasources/data-source=" + datasourceName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
@@ -312,7 +311,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
 
         String removePath = wfPath.toString().replaceFirst("\\~+$", "")
-                + URLEncoder.encode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName, "UTF-8");
+                + Util.urlEncode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);

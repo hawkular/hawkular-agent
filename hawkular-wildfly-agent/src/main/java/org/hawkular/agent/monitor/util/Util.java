@@ -117,9 +117,10 @@ public class Util {
     }
 
     /**
-     * Encodes the given string so it can be placed inside a URL.
+     * Encodes the given string so it can be placed inside a URL. This should not be the query part of the URL, for
+     * that use {@link #urlEncodeQuery(String)}.
      *
-     * @param str string to encode
+     * @param str non-query string to encode
      * @return encoded string that can be placed inside a URL
      */
     public static String urlEncode(String str) {
@@ -127,6 +128,22 @@ public class Util {
             String encodeForForm = URLEncoder.encode(str, "UTF-8");
             String encodeForUrl = encodeForForm.replace("+", "%20");
             return encodeForUrl;
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("JVM does not support UTF-8");
+        }
+    }
+
+    /**
+     * Encodes the given string so it can be placed inside a URL. This should oly be used for
+     * the query part of the URL, for other parts, like path, use {@link #urlEncode(String)}.
+     *
+     * @param str non-query string to encode
+     * @return encoded string that can be placed inside a URL
+     */
+    public static String urlEncodeQuery(String str) {
+        try {
+            String encodeForForm = URLEncoder.encode(str, "UTF-8");
+            return encodeForForm;
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException("JVM does not support UTF-8");
         }
