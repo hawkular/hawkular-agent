@@ -354,7 +354,23 @@ public class CommandCli {
 
         if (jsonRequestFileStr != null) {
             // the JSON request was given to us via file
-            jsonRequest.append(new String(Files.readAllBytes(new File(jsonRequestFileStr).toPath())));
+            String requestString = new String(Files.readAllBytes(new File(jsonRequestFileStr).toPath()));
+
+            // if the file had a newline or other characters padding its end, remove them
+            int endOfJson = requestString.lastIndexOf('}');
+            if (endOfJson == -1) {
+                log.warnf("The request file [%s] does not appear to be valid JSON", jsonRequestFileStr);
+                jsonRequest.append(requestString); // just send the whole thing and expect an error later
+            } else {
+                if (endOfJson == (requestString.length() - 1)) {
+                    jsonRequest.append(requestString);
+                } else {
+                    int ignoring = requestString.length() - endOfJson - 1;
+                    log.debugf("Ignoring [%d] non-JSON characters found at the end of the request file [%s]",
+                            ignoring, jsonRequestFileStr);
+                    jsonRequest.append(requestString.substring(0, endOfJson + 1));
+                }
+            }
         } else {
             // build the JSON using the properties passed on the command line
             jsonRequest.append("{");
