@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
+import java.util.logging.LogManager;
 import java.util.regex.Pattern;
 
 import org.hawkular.bus.common.BasicMessage;
@@ -63,6 +64,20 @@ import okio.BufferedSink;
  * A simple CLI that lets you send JSON commands to a Hawkular Server.
  */
 public class CommandCli {
+    // read our logging config from our jar if the user didn't provide one
+    static {
+        if (System.getProperty("java.util.logging.config.file") == null) {
+            String filename = Boolean.getBoolean("debug") ? "/logging-debug.properties" : "/logging.properties";
+            final InputStream inputStream = CommandCli.class.getResourceAsStream(filename);
+            try {
+                LogManager.getLogManager().readConfiguration(inputStream);
+            } catch (final IOException e) {
+                java.util.logging.Logger.getAnonymousLogger().severe("Could not load " + filename);
+                java.util.logging.Logger.getAnonymousLogger().severe(e.getMessage());
+            }
+        }
+    }
+
     private static final Logger log = Logger.getLogger(CommandCli.class);
 
     private static final String COMMAND_NAME = "hawkular-command";
@@ -117,7 +132,7 @@ public class CommandCli {
         @Override
         public void onOpen(WebSocket ws, Response response) {
             this.webSocket = ws;
-            log.infof("Web socket opened to [%s]", config.serverUrl);
+            log.debugf("Web socket opened to [%s]", config.serverUrl);
             try {
                 sendCommandNow();
             } catch (Exception e) {
@@ -128,7 +143,7 @@ public class CommandCli {
 
         @Override
         public void onClose(int code, String reason) {
-            log.infof("Web socket closed. code=[%d], reason=[%s]", code, reason);
+            log.debugf("Web socket closed. code=[%d], reason=[%s]", code, reason);
             shutdown(null);
         }
 
@@ -160,16 +175,17 @@ public class CommandCli {
                 BinaryData binary = msgWithData.getBinaryData();
 
                 String messageName = msg.getClass().getSimpleName();
-                log.infof("Received message from server: " + messageName);
+                log.debugf("JSON response: %s=%s", messageName, msg.toJSON());
 
                 long now = System.currentTimeMillis();
                 File jsonMessageFile = new File(config.outputDir, messageName + now + ".json");
                 Files.write(jsonMessageFile.toPath(), msg.toJSON().getBytes(), StandardOpenOption.CREATE_NEW);
+                log.infof("JSON response stored in file: %s", jsonMessageFile);
                 if (binary != null) {
                     File binaryFile = new File(config.outputDir, messageName + now + ".binary");
                     Files.copy(binary, binaryFile.toPath());
+                    log.infof("Binary data was in response and has been stored in file: %s", binaryFile);
                 }
-                log.infof("JSON RESPONSE: %s=%s", messageName, msg.toJSON());
 
                 // the response of our command should always be the same name of the command except
                 // with the word "Response" in the name as opposed to "Request". Remember that JSON commands
@@ -305,7 +321,7 @@ public class CommandCli {
         Map<String, String> jsonProperties = commandLine.getOptionProperties("P");
 
         if (!Pattern.matches(".*[^/]/[^/].*", urlStr)) {
-            log.infof("URL [%s] did not specify a path - using '/hawkular/command-gateway/ui/ws'", urlStr);
+            log.debugf("URL [%s] did not specify a path - using '/hawkular/command-gateway/ui/ws'", urlStr);
             urlStr = urlStr + (urlStr.endsWith("/") ? "" : "/") + "hawkular/command-gateway/ui/ws";
         }
 
@@ -364,7 +380,7 @@ public class CommandCli {
         config.jsonRequest = jsonRequest.toString();
         config.binaryDataFile = (binaryDataFileStr == null) ? null : new File(binaryDataFileStr);
 
-        log.info(config);
+        log.debug(config);
 
         return config;
     }
