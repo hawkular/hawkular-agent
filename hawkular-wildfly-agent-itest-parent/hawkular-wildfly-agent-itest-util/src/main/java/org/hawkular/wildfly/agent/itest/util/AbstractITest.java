@@ -28,6 +28,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -51,6 +52,7 @@ import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.paths.CanonicalPath;
+import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.Operations;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
@@ -459,6 +461,32 @@ public abstract class AbstractITest {
             return ModelControllerClient.Factory.create(inetAddr, managementPort, callbackHandler);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create management client", e);
+        }
+    }
+
+    /**
+     * Gets a list of all DMR children names.
+     *
+     * @param config if null, uses {@link #newHawkularModelControllerClient()}, or creates
+     *               connector to {@link #newPlainWildFlyModelControllerClient(WildFlyClientConfig)}
+     * @param childTypeName the DMR name of the child type
+     * @param parentAddress the parent whose children are to be returned
+     * @return collection of child names
+     */
+    protected Collection<String> getDMRChildrenNames(WildFlyClientConfig config,
+            String childTypeName, PathAddress parentAddress) {
+        try (ModelControllerClient mcc2 = ((config == null) ? newHawkularModelControllerClient()
+                : newPlainWildFlyModelControllerClient(config))) {
+            ModelNode result = OperationBuilder.readChildrenNames()
+                    .address(parentAddress)
+                    .childType(childTypeName)
+                    .execute(mcc2)
+                    .getResultNode();
+
+            return result.asList().stream().map(n -> n.asString()).collect(Collectors.toList());
+
+        } catch (IOException e) {
+            throw new RuntimeException("Could not get: " + parentAddress + "/" + childTypeName, e);
         }
     }
 
