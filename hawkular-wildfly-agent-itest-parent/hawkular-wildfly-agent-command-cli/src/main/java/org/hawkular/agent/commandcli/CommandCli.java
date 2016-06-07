@@ -89,7 +89,7 @@ public class CommandCli {
             StringBuilder str = new StringBuilder("CLI Configuration:\n");
             str.append("Server URL:       ").append(this.serverUrl).append("\n");
             str.append("Username:         ").append(this.username).append("\n");
-            str.append("Password:         ").append(this.password).append("\n");
+            str.append("Password:         ").append("***").append("\n");
             str.append("Output Directory: ").append(this.outputDir).append("\n");
             str.append("Command:          ").append(this.command).append("\n");
             str.append("Binary Data File: ").append(this.binaryDataFile).append("\n");
@@ -101,13 +101,11 @@ public class CommandCli {
     private static class CliWebSocketListener implements WebSocketListener {
         private final Config config;
         private final OkHttpClient httpClient;
-        private final WebSocketCall webSocketCall;
         private final CountDownLatch latch = new CountDownLatch(1);
         private WebSocket webSocket;
 
         public CliWebSocketListener(OkHttpClient httpClient, WebSocketCall wsc, Config config) {
             this.httpClient = httpClient;
-            this.webSocketCall = wsc;
             this.config = config;
             wsc.enqueue(this);
         }
@@ -162,7 +160,7 @@ public class CommandCli {
                 BinaryData binary = msgWithData.getBinaryData();
 
                 String messageName = msg.getClass().getSimpleName();
-                log.debugf("Received message from server: " + messageName);
+                log.infof("Received message from server: " + messageName);
 
                 long now = System.currentTimeMillis();
                 File jsonMessageFile = new File(config.outputDir, messageName + now + ".json");
@@ -171,6 +169,7 @@ public class CommandCli {
                     File binaryFile = new File(config.outputDir, messageName + now + ".binary");
                     Files.copy(binary, binaryFile.toPath());
                 }
+                log.infof("JSON RESPONSE: %s=%s", messageName, msg.toJSON());
 
                 // the response of our command should always be the same name of the command except
                 // with the word "Response" in the name as opposed to "Request". Remember that JSON commands
@@ -229,16 +228,18 @@ public class CommandCli {
         }
 
         private void shutdown(Exception e) {
+            if (latch.getCount() == 0) {
+                return;
+            }
+
             try {
                 if (webSocket != null) {
                     if (e != null) {
                         webSocket.close(1011, e.getMessage());
                     } else {
-                        webSocket.close(1000, "Done");
+                        webSocket.close(1000, CommandCli.class.getSimpleName() + " Done");
                     }
                 }
-
-                webSocketCall.cancel();
 
                 httpClient.getDispatcher().getExecutorService().shutdown();
 
