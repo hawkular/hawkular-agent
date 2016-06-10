@@ -87,6 +87,7 @@ public class CommandCli {
     private static final String OPT_USERNAME = "username";
     private static final String OPT_PASSWORD = "password";
     private static final String OPT_COMMAND = "command";
+    private static final String OPT_EXPECTED_RESPONSE = "expected-response";
     private static final String OPT_REQUEST_FILE = "request-file";
     private static final String OPT_BINARY_DATA_FILE = "binary-data-file";
     private static final char OPT_PROPERTY = 'P';
@@ -97,18 +98,20 @@ public class CommandCli {
         String username;
         String password;
         String command;
+        String expectedResponse;
         String jsonRequest;
         File binaryDataFile;
 
         public String toString() {
             StringBuilder str = new StringBuilder("CLI Configuration:\n");
-            str.append("Server URL:       ").append(this.serverUrl).append("\n");
-            str.append("Username:         ").append(this.username).append("\n");
-            str.append("Password:         ").append("***").append("\n");
-            str.append("Output Directory: ").append(this.outputDir).append("\n");
-            str.append("Command:          ").append(this.command).append("\n");
-            str.append("Binary Data File: ").append(this.binaryDataFile).append("\n");
-            str.append("JSON Request:     ").append(this.jsonRequest).append("\n");
+            str.append("Server URL:        ").append(this.serverUrl).append("\n");
+            str.append("Username:          ").append(this.username).append("\n");
+            str.append("Password:          ").append("***").append("\n");
+            str.append("Output Directory:  ").append(this.outputDir).append("\n");
+            str.append("Command:           ").append(this.command).append("\n");
+            str.append("Expected Response: ").append(this.expectedResponse).append("\n");
+            str.append("Binary Data File:  ").append(this.binaryDataFile).append("\n");
+            str.append("JSON Request:      ").append(this.jsonRequest).append("\n");
             return str.toString();
         }
     }
@@ -187,13 +190,24 @@ public class CommandCli {
                     log.infof("Binary data was in response and has been stored in file: %s", binaryFile);
                 }
 
-                // the response of our command should always be the same name of the command except
-                // with the word "Response" in the name as opposed to "Request". Remember that JSON commands
-                // can be specified with just the simple class name of the fully qualified class name. We
-                // should check for both combinations. So if we send "EchoRequest" command, we should expect
-                // "EchoResponse" back. If we send "org.abc.MyRequest" we can expect "org.abc.MyResponse"
-                finished = (Arrays.asList(msg.getClass().getSimpleName(), msg.getClass().getName())
-                        .contains(config.command.replace("Request", "Response")));
+                // See if the response was the expected one. If so, we can stop.
+                // If we weren't given an exepcted response, then we assume the response is the
+                // same name of the command except with the word "Response" in the name as opposed to "Request".
+                // Also, remember that JSON commands can be specified with just the simple class name of the
+                // fully qualified class name. We should check for both combinations. So if we send
+                // "EchoRequest" command, we can expect "EchoResponse" back. If we send
+                // "org.abc.MyRequest" we can expect "org.abc.MyResponse"
+                // NOTE: if we get the GenericErrorResponse, we immediately abort.
+                if (msg.getClass().getName().equals("GenericErrorResponse")) {
+                    finished = true;
+                } else {
+                    String expectedResponse = config.expectedResponse;
+                    if (expectedResponse == null || expectedResponse.isEmpty()) {
+                        expectedResponse = config.command.replace("Request", "Response");
+                    }
+                    finished = (Arrays.asList(msg.getClass().getSimpleName(), msg.getClass().getName())
+                            .contains(expectedResponse));
+                }
             } finally {
                 responseBody.close();
                 if (finished) {
@@ -250,10 +264,18 @@ public class CommandCli {
 
             try {
                 if (webSocket != null) {
-                    if (e != null) {
-                        webSocket.close(1011, e.getMessage());
-                    } else {
-                        webSocket.close(1000, CommandCli.class.getSimpleName() + " Done");
+                    try {
+                        if (e != null) {
+                            webSocket.close(1011, e.getMessage());
+                        } else {
+                            webSocket.close(1000, CommandCli.class.getSimpleName() + " Done");
+                        }
+                    } catch (Exception closeException) {
+                        // ignore this if it is just telling us the websocket is already closed
+                        if (!(closeException instanceof IllegalStateException)
+                                && !(closeException.getMessage().contains("Socket closed"))) {
+                            throw closeException;
+                        }
                     }
                 }
 
@@ -300,8 +322,9 @@ public class CommandCli {
     private static Config parseCommandLine(ProcessedCommand<?> options, String[] args) throws Exception {
         StringBuilder argLine = new StringBuilder(COMMAND_NAME);
         for (String str : args) {
-            argLine.append(' ').append(str);
+            argLine.append(' ').append('\'').append(str).append('\'');
         }
+        log.debugf("Command line: %s", argLine);
 
         CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
 
@@ -316,6 +339,7 @@ public class CommandCli {
         String username = commandLine.getOptionValue(OPT_USERNAME);
         String password = commandLine.getOptionValue(OPT_PASSWORD);
         String command = commandLine.getOptionValue(OPT_COMMAND);
+        String expectedResponse = commandLine.getOptionValue(OPT_EXPECTED_RESPONSE);
         String jsonRequestFileStr = commandLine.getOptionValue(OPT_REQUEST_FILE);
         String binaryDataFileStr = commandLine.getOptionValue(OPT_BINARY_DATA_FILE);
         Map<String, String> jsonProperties = commandLine.getOptionProperties("P");
@@ -393,6 +417,7 @@ public class CommandCli {
         config.username = username;
         config.password = password;
         config.command = command;
+        config.expectedResponse = expectedResponse;
         config.jsonRequest = jsonRequest.toString();
         config.binaryDataFile = (binaryDataFileStr == null) ? null : new File(binaryDataFileStr);
 
@@ -463,6 +488,13 @@ public class CommandCli {
                 .type(String.class)
                 .description("The name of the JSON command request to send.")
                 .required(true)
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(OPT_EXPECTED_RESPONSE)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("The expected name of the JSON response. "
+                        + "If not specified, a guess will be made based on the name of the command request.")
                 .create());
         cmd.addOption(new ProcessedOptionBuilder()
                 .name(OPT_BINARY_DATA_FILE)

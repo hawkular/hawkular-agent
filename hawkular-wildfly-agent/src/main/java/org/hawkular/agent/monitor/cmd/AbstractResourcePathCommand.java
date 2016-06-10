@@ -129,7 +129,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
 
             String msg = String.format(
                     "Could not perform [%s] on a [%s] given by inventory path [%s] requested on [%s]: %s",
-                    this.getOperationName(envelope), entityType, rawResourcePath, formattedTimestamp, t.getMessage());
+                    this.getOperationName(envelope), entityType, rawResourcePath, formattedTimestamp, t.toString());
             response.setMessage(msg);
             log.debug(msg, t);
         } finally {
