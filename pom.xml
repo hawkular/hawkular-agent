@@ -63,7 +63,7 @@
     <version.io.prometheus.client>0.0.2</version.io.prometheus.client>
     <version.org.hamcrest>1.3</version.org.hamcrest>
 
-    <version.org.hawkular.commons>0.7.3.Final-SRC-revision-16a3b974a28fdd9989be48ab99718b23cf389394</version.org.hawkular.commons>
+    <version.org.hawkular.commons>0.7.3.Final</version.org.hawkular.commons>
     <version.org.hawkular.inventory>0.16.0.Final</version.org.hawkular.inventory>
     <version.org.hawkular.metrics>0.16.0.Final</version.org.hawkular.metrics>
 
