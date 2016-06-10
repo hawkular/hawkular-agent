@@ -29,7 +29,6 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.bus.common.BasicMessage;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
@@ -74,7 +73,7 @@ public class FeedCommProcessor implements WebSocketListener {
     private final int disconnectCode = 1000;
     private final String disconnectReason = "Shutting down FeedCommProcessor";
 
-    private final HttpClientBuilder httpClientBuilder;
+    private final WebSocketClientBuilder webSocketClientBuilder;
     private final MonitorServiceConfiguration config;
     private final MonitorService discoveryService;
     private final String feedcommUrl;
@@ -87,14 +86,14 @@ public class FeedCommProcessor implements WebSocketListener {
     // if this is true, this object should never reconnect
     private boolean destroyed = false;
 
-    public FeedCommProcessor(HttpClientBuilder httpClientBuilder, MonitorServiceConfiguration config, String feedId,
-            MonitorService discoveryService) {
+    public FeedCommProcessor(WebSocketClientBuilder webSocketClientBuilder, MonitorServiceConfiguration config,
+            String feedId, MonitorService discoveryService) {
 
         if (feedId == null || feedId.isEmpty()) {
             throw new IllegalArgumentException("Must have a valid feed ID to communicate with the server");
         }
 
-        this.httpClientBuilder = httpClientBuilder;
+        this.webSocketClientBuilder = webSocketClientBuilder;
         this.config = config;
         this.discoveryService = discoveryService;
 
@@ -133,7 +132,7 @@ public class FeedCommProcessor implements WebSocketListener {
 
         log.debugf("About to connect a feed WebSocket client to endpoint [%s]", feedcommUrl);
 
-        webSocketCall = httpClientBuilder.createWebSocketCall(feedcommUrl, null);
+        webSocketCall = webSocketClientBuilder.createWebSocketCall(feedcommUrl, null);
         webSocketCall.enqueue(this);
     }
 

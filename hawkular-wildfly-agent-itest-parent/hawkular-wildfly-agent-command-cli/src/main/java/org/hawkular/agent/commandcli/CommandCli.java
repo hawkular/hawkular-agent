@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 import java.util.regex.Pattern;
 
@@ -198,7 +199,7 @@ public class CommandCli {
                 // "EchoRequest" command, we can expect "EchoResponse" back. If we send
                 // "org.abc.MyRequest" we can expect "org.abc.MyResponse"
                 // NOTE: if we get the GenericErrorResponse, we immediately abort.
-                if (msg.getClass().getName().equals("GenericErrorResponse")) {
+                if (msg.getClass().getName().contains("GenericErrorResponse")) {
                     finished = true;
                 } else {
                     String expectedResponse = config.expectedResponse;
@@ -307,6 +308,8 @@ public class CommandCli {
     private static CliWebSocketListener sendCommand(Config config) throws Exception {
 
         OkHttpClient httpClient = new OkHttpClient();
+        httpClient.setConnectTimeout(10, TimeUnit.SECONDS);
+        httpClient.setReadTimeout(5, TimeUnit.MINUTES);
 
         Request request = new Request.Builder()
                 .url(config.serverUrl)
