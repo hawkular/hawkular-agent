@@ -27,7 +27,6 @@ import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Request.Builder;
 import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.ws.WebSocketCall;
 
 /**
  * Builds an HTTP client that can be used to talk to the Hawkular server-side.
@@ -54,6 +53,7 @@ public class HttpClientBuilder extends BaseHttpClientGenerator {
                 .username(storageAdapter.getUsername())
                 .password(storageAdapter.getPassword())
                 .useSsl(storageAdapter.isUseSSL())
+                .sslContext(sslContext)
                 .keystorePath(storageAdapter.getKeystorePath())
                 .keystorePassword(storageAdapter.getKeystorePassword())
                 .connectTimeout(storageAdapter.getConnectTimeoutSeconds())
@@ -132,24 +132,5 @@ public class HttpClientBuilder extends BaseHttpClientGenerator {
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), jsonPayload);
 
         return requestBuilder.put(body).build();
-    }
-
-    public WebSocketCall createWebSocketCall(String url, Map<String, String> headers) {
-        String base64Credentials = buildBase64Credentials();
-
-        Builder requestBuilder = new Request.Builder()
-                .url(url)
-                .addHeader("Authorization", "Basic " + base64Credentials)
-                .addHeader("Accept", "application/json");
-
-        if (headers != null) {
-            for (Map.Entry<String, String> header : headers.entrySet()) {
-                requestBuilder.addHeader(header.getKey(), header.getValue());
-            }
-        }
-
-        Request request = requestBuilder.build();
-        WebSocketCall wsc = WebSocketCall.create(getHttpClient(), request);
-        return wsc;
     }
 }

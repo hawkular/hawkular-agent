@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +32,8 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 
 import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.ws.WebSocketCall;
 
 /**
  * Can be used to generate HTTP clients including those that require SSL.
@@ -211,6 +214,32 @@ public class BaseHttpClientGenerator {
      */
     public OkHttpClient getHttpClient() {
         return httpClient;
+    }
+
+    /**
+     * Creates a websocket that connects to the given URL.
+     *
+     * @param url where the websocket server is
+     * @param headers headers to pass in the connect request
+     * @return the websocket
+     */
+    public WebSocketCall createWebSocketCall(String url, Map<String, String> headers) {
+        String base64Credentials = buildBase64Credentials();
+
+        Request.Builder requestBuilder = new Request.Builder()
+                .url(url)
+                .addHeader("Authorization", "Basic " + base64Credentials)
+                .addHeader("Accept", "application/json");
+
+        if (headers != null) {
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                requestBuilder.addHeader(header.getKey(), header.getValue());
+            }
+        }
+
+        Request request = requestBuilder.build();
+        WebSocketCall wsc = WebSocketCall.create(getHttpClient(), request);
+        return wsc;
     }
 
     /**

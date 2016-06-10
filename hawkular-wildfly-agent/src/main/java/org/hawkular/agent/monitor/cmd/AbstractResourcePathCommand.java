@@ -96,7 +96,12 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             // From the inventory manager, we can get the actual resource.
             CanonicalPath canonicalPath = CanonicalPath.fromString(rawResourcePath);
 
-            String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+            String resourceId;
+            try {
+                resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Bad resource path specified in command: " + rawResourcePath);
+            }
             ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
             String modelNodePath = idParts.getIdPart();
             validate(modelNodePath, envelope);

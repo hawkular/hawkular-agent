@@ -41,6 +41,7 @@ import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContextImpl;
 import org.hawkular.agent.monitor.cmd.FeedCommProcessor;
+import org.hawkular.agent.monitor.cmd.WebSocketClientBuilder;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
@@ -255,6 +256,7 @@ public class MonitorService implements Service<MonitorService> {
     private HttpClientBuilder httpClientBuilder;
 
     // used to send/receive data to the server over the feed communications channel
+    private WebSocketClientBuilder webSocketClientBuilder;
     private FeedCommProcessor feedComm;
 
     // scheduled metric and avail collections
@@ -560,7 +562,11 @@ public class MonitorService implements Service<MonitorService> {
 
                     // try to connect to the server via command-gateway channel; keep going on error
                     try {
-                        connectToCommandGatewayCommChannel();
+                        this.webSocketClientBuilder = new WebSocketClientBuilder(
+                                this.configuration.getStorageAdapter(), ssl);
+                        this.feedComm = new FeedCommProcessor(this.webSocketClientBuilder, this.configuration,
+                                this.feedId, this);
+                        this.feedComm.connect();
                     } catch (Exception e) {
                         if (e instanceof InterruptedException) {
                             Thread.currentThread().interrupt();
@@ -959,16 +965,6 @@ public class MonitorService implements Service<MonitorService> {
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot create feed ID [%s]", desiredFeedId), t);
         }
-    }
-
-    /**
-     * Connects to the Hawkular server over the websocket command gateway.
-     *
-     * @throws Exception if failed to connect to the Hawkular server
-     */
-    private void connectToCommandGatewayCommChannel() throws Exception {
-        feedComm = new FeedCommProcessor(this.httpClientBuilder, this.configuration, this.feedId, this);
-        feedComm.connect();
     }
 
     /**
