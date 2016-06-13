@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.scheduler;
 
+import java.util.Set;
+
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 
 public class SchedulerConfiguration {
@@ -24,6 +26,7 @@ public class SchedulerConfiguration {
     public static final int DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE = 100;
     public static final int DEFAULT_AVAIL_DISPATCHER_BUFFER_SIZE = 500;
     public static final int DEFAULT_AVAIL_DISPATCHER_MAX_BATCH_SIZE = 50;
+    public static final int DEFAULT_PING_DISPATCHER_PERIOD_SECONDS = 60;
 
     private int metricDispatcherBufferSize = DEFAULT_METRIC_DISPATCHER_BUFFER_SIZE;
     private int metricDispatcherMaxBatchSize = DEFAULT_METRIC_DISPATCHER_MAX_BATCH_SIZE;
@@ -31,9 +34,13 @@ public class SchedulerConfiguration {
     private int availDispatcherBufferSize = DEFAULT_AVAIL_DISPATCHER_BUFFER_SIZE;
     private int availDispatcherMaxBatchSize = DEFAULT_AVAIL_DISPATCHER_MAX_BATCH_SIZE;
 
+    private int pingDispatcherPeriodSeconds = DEFAULT_PING_DISPATCHER_PERIOD_SECONDS;
 
     private MonitorServiceConfiguration.StorageAdapterConfiguration storageAdapterConfig;
     private MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig;
+
+    private String pingDispatcherFeedId;
+    private Set<String> pingDispatcherTenantIds;
 
     public int getMetricDispatcherBufferSize() {
         return metricDispatcherBufferSize;
@@ -67,6 +74,30 @@ public class SchedulerConfiguration {
         this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
     }
 
+    public int getPingDispatcherPeriodSeconds() {
+        return pingDispatcherPeriodSeconds;
+    }
+
+    public void setPingDispatcherPeriodSeconds(int pingDispatcherPeriodSeconds) {
+        this.pingDispatcherPeriodSeconds = pingDispatcherPeriodSeconds;
+    }
+
+    public String getPingDispatcherFeedId() {
+        return pingDispatcherFeedId;
+    }
+
+    public void setPingDispatcherFeedId(String pingDispatcherFeedId) {
+        this.pingDispatcherFeedId = pingDispatcherFeedId;
+    }
+
+    public Set<String> getPingDispatcherTenantIds() {
+        return pingDispatcherTenantIds;
+    }
+
+    public void setPingDispatcherTenantIds(Set<String> pingDispatcherTenantIds) {
+        this.pingDispatcherTenantIds = pingDispatcherTenantIds;
+    }
+
     public MonitorServiceConfiguration.StorageAdapterConfiguration getStorageAdapterConfig() {
         return this.storageAdapterConfig;
     }
@@ -82,5 +113,5 @@ public class SchedulerConfiguration {
     public void setDiagnosticsConfig(MonitorServiceConfiguration.DiagnosticsConfiguration config) {
         this.diagnosticsConfig = config;
     }
-}
 
+}

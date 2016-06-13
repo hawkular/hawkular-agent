@@ -860,20 +860,20 @@ public class MonitorServiceConfigurationBuilder {
             throws OperationFailedException {
         boolean subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
         String apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
-        int autoDiscoveryScanPeriodSecs = getInt(config, context, SubsystemAttributes.AUTO_DISCOVERY_SCAN_PERIOD_SECS);
+        int autoDiscoveryScanPeriodSecs = getInt(config, context,
+                SubsystemAttributes.AUTO_DISCOVERY_SCAN_PERIOD_SECONDS);
         int numDmrSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_DMR_SCHEDULER_THREADS);
         int metricDispatcherBufferSize = getInt(config, context, SubsystemAttributes.METRIC_DISPATCHER_BUFFER_SIZE);
         int metricDispatcherMaxBatchSize = getInt(config, context,
                 SubsystemAttributes.METRIC_DISPATCHER_MAX_BATCH_SIZE);
         int availDispatcherBufferSize = getInt(config, context, SubsystemAttributes.AVAIL_DISPATCHER_BUFFER_SIZE);
         int availDispatcherMaxBatchSize = getInt(config, context, SubsystemAttributes.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
+        int pingDispatcherPeriodSeconds = getInt(config, context, SubsystemAttributes.PING_DISPATCHER_PERIOD_SECONDS);
 
         return new GlobalConfiguration(subsystemEnabled, apiJndi, autoDiscoveryScanPeriodSecs,
-                numDmrSchedulerThreads,
-                metricDispatcherBufferSize, metricDispatcherMaxBatchSize, availDispatcherBufferSize,
-                availDispatcherMaxBatchSize);
+                numDmrSchedulerThreads, metricDispatcherBufferSize, metricDispatcherMaxBatchSize,
+                availDispatcherBufferSize, availDispatcherMaxBatchSize, pingDispatcherPeriodSeconds);
     }
-
     private static void determineResourceTypeSetDmr(ModelNode config,
             OperationContext context,
             TypeSets.Builder<DMRNodeLocation> typeSetsBuilder)
