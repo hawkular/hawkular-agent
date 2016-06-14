@@ -39,8 +39,8 @@ public class SchedulerConfiguration {
     private MonitorServiceConfiguration.StorageAdapterConfiguration storageAdapterConfig;
     private MonitorServiceConfiguration.DiagnosticsConfiguration diagnosticsConfig;
 
-    private String pingDispatcherFeedId;
-    private Set<String> pingDispatcherTenantIds;
+    private String feedId;
+    private Set<String> tenantIds;
 
     public int getMetricDispatcherBufferSize() {
         return metricDispatcherBufferSize;
@@ -82,20 +82,20 @@ public class SchedulerConfiguration {
         this.pingDispatcherPeriodSeconds = pingDispatcherPeriodSeconds;
     }
 
-    public String getPingDispatcherFeedId() {
-        return pingDispatcherFeedId;
+    public String getFeedId() {
+        return feedId;
     }
 
-    public void setPingDispatcherFeedId(String pingDispatcherFeedId) {
-        this.pingDispatcherFeedId = pingDispatcherFeedId;
+    public void setFeedId(String feedId) {
+        this.feedId = feedId;
     }
 
-    public Set<String> getPingDispatcherTenantIds() {
-        return pingDispatcherTenantIds;
+    public Set<String> getTenantIds() {
+        return tenantIds;
     }
 
-    public void setPingDispatcherTenantIds(Set<String> pingDispatcherTenantIds) {
-        this.pingDispatcherTenantIds = pingDispatcherTenantIds;
+    public void setTenantIds(Set<String> tenantIds) {
+        this.tenantIds = tenantIds;
     }
 
     public MonitorServiceConfiguration.StorageAdapterConfiguration getStorageAdapterConfig() {

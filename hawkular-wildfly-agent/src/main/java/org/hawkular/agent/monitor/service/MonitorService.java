@@ -246,9 +246,6 @@ public class MonitorService implements Service<MonitorService> {
     // this is used to identify us to the Hawkular environment as a particular feed
     private String feedId;
 
-    // these are the tenantIds under which our feedId is registered in the Hawkular environment
-    private Set<String> tenantIds;
-
     // used to report our own internal metrics
     private Diagnostics diagnostics;
     private ScheduledReporter diagnosticsReporter;
@@ -549,6 +546,9 @@ public class MonitorService implements Service<MonitorService> {
             final MetricRegistry metricRegistry = new MetricRegistry();
             this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
 
+            // We need the tenantIds to register our feed (in Hawkular mode) and to schedule pings
+            Set<String> tenantIds = getTenantIds();
+
             // perform some things that are dependent upon what mode the agent is in
             switch (this.configuration.getStorageAdapter().getType()) {
                 case HAWKULAR:
@@ -556,7 +556,7 @@ public class MonitorService implements Service<MonitorService> {
                     // 2. register our feed ID
                     // 3. connect to the server's feed comm channel
                     try {
-                        this.tenantIds = registerFeed();
+                        registerFeed(tenantIds);
                     } catch (Exception e) {
                         log.errorCannotDoAnythingWithoutFeed(e);
                         throw new Exception("Agent needs a feed to run");
@@ -594,7 +594,7 @@ public class MonitorService implements Service<MonitorService> {
             }
 
             try {
-                startScheduler();
+                startScheduler(tenantIds);
             } catch (Exception e) {
                 log.errorCannotInitializeScheduler(e);
                 throw new Exception("Agent cannot initialize scheduler");
@@ -853,11 +853,12 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * Builds the scheduler's configuraton and starts the scheduler.
+     * Builds the scheduler's configuration and starts the scheduler.
      *
+     * @param tenantIds the tenants our feed is using
      * @throws Exception on error
      */
-    private void startScheduler() throws Exception {
+    private void startScheduler(Set<String> tenantIds) throws Exception {
         if (this.schedulerService == null) {
             SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
             schedulerConfig.setDiagnosticsConfig(this.configuration.getDiagnostics());
@@ -867,8 +868,8 @@ public class MonitorService implements Service<MonitorService> {
             schedulerConfig.setAvailDispatcherBufferSize(this.configuration.getAvailDispatcherBufferSize());
             schedulerConfig.setAvailDispatcherMaxBatchSize(this.configuration.getAvailDispatcherMaxBatchSize());
             schedulerConfig.setPingDispatcherPeriodSeconds(this.configuration.getPingDispatcherPeriodSeconds());
-            schedulerConfig.setPingDispatcherFeedId(this.feedId);
-            schedulerConfig.setPingDispatcherTenantIds(this.tenantIds);
+            schedulerConfig.setFeedId(this.feedId);
+            schedulerConfig.setTenantIds(tenantIds);
 
             this.schedulerService = new SchedulerService(schedulerConfig, this.diagnostics, this.storageAdapter);
         }
@@ -879,10 +880,10 @@ public class MonitorService implements Service<MonitorService> {
     /**
      * Registers our feed with the Hawkular system. Note, it is OK to re-register the same feed/tenant combinations.
      *
-     * @return The tenantIds for which we registered the feed
+     * @param tenantIds The tenantIds for which we registered the feed
      * @throws Exception if failed to register feed
      */
-    private Set<String> registerFeed() throws Exception {
+    private void registerFeed(Set<String> tenantIds) throws Exception {
 
         try {
             // get the payload in JSON format
@@ -896,22 +897,6 @@ public class MonitorService implements Service<MonitorService> {
 
             // rest of the URL says we want the feeds API
             url.append("feeds");
-
-            // because we can support multiple tenants, we need to register our feed under all tenants
-            List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
-            endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
-            endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
-            endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
-            endpoints.addAll(configuration.getPrometheusConfiguration().getEndpoints().values());
-
-            Set<String> tenantIds = new HashSet<String>();
-            tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
-            for (AbstractEndpointConfiguration endpoint : endpoints) {
-                String tenantId = endpoint.getTenantId();
-                if (tenantId != null) {
-                    tenantIds.add(tenantId);
-                }
-            }
 
             // now send the REST requests - one for each tenant to register
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
@@ -951,9 +936,6 @@ public class MonitorService implements Service<MonitorService> {
                             request.urlString()));
                 }
             }
-
-            return tenantIds;
-
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot register feed ID [%s]", this.feedId), t);
         }
@@ -974,6 +956,31 @@ public class MonitorService implements Service<MonitorService> {
             return null;
         }
         return this.storageAdapter.getStorageAdapterConfiguration().getTenantId();
+    }
+
+    /**
+     * @return tenant ID of the agent and its monitored endpoints - if the agent has not started, empty set is returned
+     */
+    public Set<String> getTenantIds() {
+        Set<String> tenantIds = new HashSet<String>();
+        if (this.storageAdapter == null) {
+            return tenantIds;
+        }
+
+        List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
+        endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getPrometheusConfiguration().getEndpoints().values());
+
+        tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
+        for (AbstractEndpointConfiguration endpoint : endpoints) {
+            String tenantId = endpoint.getTenantId();
+            if (tenantId != null) {
+                tenantIds.add(tenantId);
+            }
+        }
+        return tenantIds;
     }
 
     public SchedulerService getSchedulerService() {

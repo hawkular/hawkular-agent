@@ -42,7 +42,7 @@ public class PingStorageDispatcher implements Runnable {
         this.config = config;
         this.storageAdapter = storageAdapter;
         this.diagnostics = diagnostics;
-        this.metricId = "hawkular-feed-availability-" + this.config.getPingDispatcherFeedId();
+        this.metricId = "hawkular-feed-availability-" + this.config.getFeedId();
     }
 
     public SchedulerConfiguration getConfig() {
@@ -61,7 +61,7 @@ public class PingStorageDispatcher implements Runnable {
     public void run() {
         long now = System.currentTimeMillis();
 
-        Set<AvailDataPoint> pings = this.config.getPingDispatcherTenantIds().stream()
+        Set<AvailDataPoint> pings = this.config.getTenantIds().stream()
                 .map(t -> new AvailDataPoint(metricId, now, UP, t)).collect(Collectors.toSet());
 
         log.tracef("Sending agent availability pings: %s", pings);
