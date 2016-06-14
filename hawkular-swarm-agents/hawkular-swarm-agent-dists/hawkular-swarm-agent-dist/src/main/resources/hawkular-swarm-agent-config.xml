@@ -1036,7 +1036,7 @@
 
       <managed-servers>
         <remote-dmr enabled="${hawkular.dmr.enabled:true}"
-                    name="Wildfly"
+                    name="WildFly"
                     host="${hawkular.dmr.host:127.0.0.1}"
                     port="${hawkular.dmr.port:9990}"
                     username="${hawkular.dmr.username:admin}"

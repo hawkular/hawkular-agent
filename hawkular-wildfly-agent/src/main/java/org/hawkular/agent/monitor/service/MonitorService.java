@@ -627,10 +627,31 @@ public class MonitorService implements Service<MonitorService> {
 
             log.errorFailedToStartAgent(t);
 
-            // artifically shutdown the agent - agent will be disabled now
+            // artificially shutdown the agent - agent will be disabled now
             started = true;
             stopMonitorService();
         }
+    }
+
+    /**
+     * @return tenant IDs of the agent and its monitored endpoints
+     */
+    private Set<String> getTenantIds() {
+        Set<String> tenantIds = new HashSet<String>();
+        List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
+        endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getPrometheusConfiguration().getEndpoints().values());
+
+        tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
+        for (AbstractEndpointConfiguration endpoint : endpoints) {
+            String tenantId = endpoint.getTenantId();
+            if (tenantId != null) {
+                tenantIds.add(tenantId);
+            }
+        }
+        return tenantIds;
     }
 
     /**
@@ -949,38 +970,10 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * @return tenant ID of the agent - if the agent has not started, null is returned
+     * @return tenant ID of the agent
      */
     public String getTenantId() {
-        if (this.storageAdapter == null) {
-            return null;
-        }
-        return this.storageAdapter.getStorageAdapterConfiguration().getTenantId();
-    }
-
-    /**
-     * @return tenant ID of the agent and its monitored endpoints - if the agent has not started, empty set is returned
-     */
-    public Set<String> getTenantIds() {
-        Set<String> tenantIds = new HashSet<String>();
-        if (this.storageAdapter == null) {
-            return tenantIds;
-        }
-
-        List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
-        endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
-        endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
-        endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
-        endpoints.addAll(configuration.getPrometheusConfiguration().getEndpoints().values());
-
-        tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
-        for (AbstractEndpointConfiguration endpoint : endpoints) {
-            String tenantId = endpoint.getTenantId();
-            if (tenantId != null) {
-                tenantIds.add(tenantId);
-            }
-        }
-        return tenantIds;
+        return this.configuration.getStorageAdapter().getTenantId();
     }
 
     public SchedulerService getSchedulerService() {
