@@ -94,7 +94,7 @@ public interface SubsystemAttributes {
                     .build();
 
     SimpleAttributeDefinition PING_DISPATCHER_PERIOD_SECONDS = new SimpleAttributeDefinitionBuilder(
-            "ping-dispatcher-period-secs", ModelType.INT)
+            "ping-period-secs", ModelType.INT)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_PING_DISPATCHER_PERIOD_SECONDS))
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)

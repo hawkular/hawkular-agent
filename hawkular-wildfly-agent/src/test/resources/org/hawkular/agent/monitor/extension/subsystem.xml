@@ -23,7 +23,7 @@
            metric-dispatcher-max-batch-size="51"
            avail-dispatcher-buffer-size="101"
            avail-dispatcher-max-batch-size="26"
-           ping-dispatcher-period-secs="31">
+           ping-period-secs="31">
 
   <diagnostics enabled="false"
                interval="1"

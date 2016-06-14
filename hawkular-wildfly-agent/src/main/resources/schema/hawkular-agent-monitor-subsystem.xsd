@@ -47,7 +47,7 @@
     <xs:attribute name="metric-dispatcher-max-batch-size" type="xs:int"/>
     <xs:attribute name="avail-dispatcher-buffer-size"     type="xs:int"/>
     <xs:attribute name="avail-dispatcher-max-batch-size"  type="xs:int"/>
-    <xs:attribute name="ping-dispatcher-period-secs"      type="xs:int"/>
+    <xs:attribute name="ping-period-secs"                 type="xs:int"/>
   </xs:complexType>
 
   <!-- storage adapter configuration -->
