@@ -342,6 +342,7 @@
                     <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
                     <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
                     <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
+                    <javaOpt>-Dhawkular.backend=embedded_cassandra</javaOpt>
                     <javaOpt>${debug.wildfly.argLine}</javaOpt>
                   </javaOpts>
                   <add-user>
