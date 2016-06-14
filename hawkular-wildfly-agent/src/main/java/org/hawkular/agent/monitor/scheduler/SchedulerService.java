@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
@@ -38,6 +39,7 @@ import org.hawkular.agent.monitor.storage.MetricBufferedStorageDispatcher;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.storage.PingStorageDispatcher;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
+import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 
 /**
  * The core service that schedules tasks and stores the data resulting from those tasks to its storage adapter.
@@ -76,7 +78,8 @@ public class SchedulerService implements InventoryListener {
                 availStorage);
 
         this.pingStorage = new PingStorageDispatcher(configuration, storageAdapter, diagnostics);
-        this.pingScheduler = new ScheduledThreadPoolExecutor(1);
+        ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true, "Hawkular-WildFly-Scheduler-Ping");
+        this.pingScheduler = new ScheduledThreadPoolExecutor(1, threadFactory);
     }
 
     public void start() {
