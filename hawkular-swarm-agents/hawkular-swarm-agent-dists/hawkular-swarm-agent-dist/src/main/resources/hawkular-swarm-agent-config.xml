@@ -40,9 +40,11 @@
         hawkular.platform.enabled               true                   // all monitoring on at default intervals
         hawkular.prometheus.enabled             false
         hawkular.prometheus.url                 http://127.0.0.1:9090/metrics
+        hawkular.storage-adapter.feed-id        autogenerate
         hawkular.storage-adapter.host           127.0.0.1
         hawkular.storage-adapter.password       password
         hawkular.storage-adapter.port           8080
+        hawkular.storage-adapter.tenant-id      hawkular
         hawkular.storage-adapter.username       jdoe
 
     NOTE!! It is important to keep this config up to date with any changes!
@@ -90,18 +92,20 @@
     </subsystem>
 
     <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
-               auto-discovery-scan-period-secs="600"
-               enabled="true">
+               enabled="true"
+               auto-discovery-scan-period-secs="600">
 
       <diagnostics enabled="${hawkular.diagnostics.enabled:true}"
-                   interval="1"
                    report-to="LOG"
+                   interval="1"
                    time-units="minutes"/>
 
-      <storage-adapter username="${hawkular.storage-adapter.username:jdoe}"
+      <storage-adapter type="HAWKULAR"
+                       tenant-id="${hawkular.storage-adapter.tenant-id:hawkular}"
+                       username="${hawkular.storage-adapter.username:jdoe}"
                        password="${hawkular.storage-adapter.password:password}"
-                       server-outbound-socket-binding-ref="hawkular"
-                       type="HAWKULAR"/>
+                       feed-id="${hawkular.storage-adapter.feed-id:autogenerate}"
+                       server-outbound-socket-binding-ref="hawkular" />
 
       <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
         <metric-dmr name="Heap Used"
@@ -1035,16 +1039,16 @@
       </resource-type-set-jmx>
 
       <managed-servers>
-        <remote-dmr enabled="${hawkular.dmr.enabled:true}"
-                    name="Wildfly"
+        <remote-dmr name="WildFly"
+                    enabled="${hawkular.dmr.enabled:true}"
                     host="${hawkular.dmr.host:127.0.0.1}"
                     port="${hawkular.dmr.port:9990}"
                     username="${hawkular.dmr.username:admin}"
                     password="${hawkular.dmr.password:admin}"
-                    resource-type-sets="Main,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Hawkular"/>
+                    resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Hawkular"/>
 
-        <remote-prometheus enabled="${hawkular.prometheus.enabled:false}"
-                           name="Prometheus"
+        <remote-prometheus name="Prometheus"
+                           enabled="${hawkular.prometheus.enabled:false}"
                            url="${hawkular.prometheus.url:http://127.0.0.1:9090/metrics}"/>
       </managed-servers>
 
