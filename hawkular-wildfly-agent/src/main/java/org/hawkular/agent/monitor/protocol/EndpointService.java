@@ -42,6 +42,7 @@ import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.inventory.NodeLocation;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceManager.AddResult;
@@ -285,8 +286,11 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         LOG.debugf("Checking [%d] avails for endpoint [%s]", instances.size(), getMonitoredEndpoint());
 
+        S session = null;
         Driver<L> driver = null;
-        try (S session = openSession()) {
+
+        try {
+            session = openSession();
             driver = session.getDriver();
         } catch (Exception e) {
             LOG.errorCouldNotAccess(this, e);
@@ -324,6 +328,14 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             }
         } catch (Exception e) {
             LOG.errorAvailCheckFailed(e);
+        } finally {
+            if (session != null) {
+                try {
+                    session.close();
+                } catch (IOException e) {
+                    LOG.tracef(e, "Failed to close session for endpoint [%s]", session.getEndpoint());
+                }
+            }
         }
     }
 
