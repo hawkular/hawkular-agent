@@ -114,7 +114,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             if (endpointService == null) {
                 throw new IllegalArgumentException(String.format(
                         "Cannot perform [%s] on a [%s] given by inventory path [%s]: unknown managed server [%s]",
-                        this.getOperationName(envelope), entityType, managedServerName));
+                        this.getOperationName(envelope), entityType, resourceId, managedServerName));
             }
 
             validate(envelope, endpointService.getMonitoredEndpoint());
