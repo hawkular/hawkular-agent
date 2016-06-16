@@ -16,12 +16,14 @@
  */
 package org.hawkular.agent.monitor.log;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.management.MalformedObjectNameException;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolException;
 import org.jboss.logging.BasicLogger;
@@ -334,5 +336,10 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.INFO)
     @Message(id = 10073, value = "Now monitoring the new endpoint [%s]")
     void infoAddedEndpointService(String string);
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10074, value = "The resource type [%s] is missing a parent. "
+            + "Make sure at least one of these resource types are defined and enabled: %s")
+    void errorInvalidRootResourceType(String idString, Collection<Name> parents);
 
 }

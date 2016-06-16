@@ -106,7 +106,11 @@ public final class ResourceTypeManager<L> {
         Set<ResourceType<L>> allTypes = resourceTypesGraph.vertexSet();
         for (ResourceType<L> type : allTypes) {
             if (index.predecessorsOf(type).isEmpty()) {
-                roots.add(type);
+                if (type.getParents().isEmpty()) {
+                    roots.add(type);
+                } else {
+                    log.errorInvalidRootResourceType(type.getID().getIDString(), type.getParents());
+                }
             }
         }
         return Collections.unmodifiableSet(roots);
