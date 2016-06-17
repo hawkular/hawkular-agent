@@ -220,26 +220,28 @@ public class MonitorServiceConfiguration {
 
         private final boolean subsystemEnabled;
         private final String apiJndi;
-        private final int autoDiscoveryScanPeriodSecs;
+        private final int autoDiscoveryScanPeriodSeconds;
         private final int numDmrSchedulerThreads;
         private final int metricDispatcherBufferSize;
         private final int metricDispatcherMaxBatchSize;
         private final int availDispatcherBufferSize;
         private final int availDispatcherMaxBatchSize;
+        private final int pingDispatcherPeriodSeconds;
 
-        public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int autoDiscoveryScanPeriodSecs,
+        public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int autoDiscoveryScanPeriodSeconds,
                 int numDmrSchedulerThreads,
                 int metricDispatcherBufferSize, int metricDispatcherMaxBatchSize, int availDispatcherBufferSize,
-                int availDispatcherMaxBatchSize) {
+                int availDispatcherMaxBatchSize, int pingDispatcherPeriodSeconds) {
             super();
             this.subsystemEnabled = subsystemEnabled;
             this.apiJndi = apiJndi;
-            this.autoDiscoveryScanPeriodSecs = autoDiscoveryScanPeriodSecs;
+            this.autoDiscoveryScanPeriodSeconds = autoDiscoveryScanPeriodSeconds;
             this.numDmrSchedulerThreads = numDmrSchedulerThreads;
             this.metricDispatcherBufferSize = metricDispatcherBufferSize;
             this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
             this.availDispatcherBufferSize = availDispatcherBufferSize;
             this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
+            this.pingDispatcherPeriodSeconds = pingDispatcherPeriodSeconds;
         }
 
     }
@@ -515,8 +517,8 @@ public class MonitorServiceConfiguration {
         return globalConfiguration.apiJndi;
     }
 
-    public int getAutoDiscoveryScanPeriodSecs() {
-        return globalConfiguration.autoDiscoveryScanPeriodSecs;
+    public int getAutoDiscoveryScanPeriodSeconds() {
+        return globalConfiguration.autoDiscoveryScanPeriodSeconds;
     }
 
     public int getNumDmrSchedulerThreads() {
@@ -537,6 +539,10 @@ public class MonitorServiceConfiguration {
 
     public int getAvailDispatcherMaxBatchSize() {
         return globalConfiguration.availDispatcherMaxBatchSize;
+    }
+
+    public int getPingDispatcherPeriodSeconds() {
+        return globalConfiguration.pingDispatcherPeriodSeconds;
     }
 
     public MonitorServiceConfiguration cloneWith(StorageAdapterConfiguration newStorageAdapter) {

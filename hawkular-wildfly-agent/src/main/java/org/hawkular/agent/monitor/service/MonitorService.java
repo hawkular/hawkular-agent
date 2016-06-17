@@ -21,7 +21,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -241,7 +240,7 @@ public class MonitorService implements Service<MonitorService> {
     // Indicates if we are running in a standalone server or in a host controller (or something similar)
     private final ProcessType processType;
 
-    // A version of bootConfiguration with defaults properly set. This is build in startMonitorService().
+    // A version of bootConfiguration with defaults properly set. This is built in startMonitorService().
     private MonitorServiceConfiguration configuration;
 
     // this is used to identify us to the Hawkular environment as a particular feed
@@ -547,6 +546,9 @@ public class MonitorService implements Service<MonitorService> {
             final MetricRegistry metricRegistry = new MetricRegistry();
             this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
 
+            // We need the tenantIds to register our feed (in Hawkular mode) and to schedule pings
+            Set<String> tenantIds = getTenantIds();
+
             // perform some things that are dependent upon what mode the agent is in
             switch (this.configuration.getStorageAdapter().getType()) {
                 case HAWKULAR:
@@ -554,7 +556,7 @@ public class MonitorService implements Service<MonitorService> {
                     // 2. register our feed ID
                     // 3. connect to the server's feed comm channel
                     try {
-                        registerFeed();
+                        registerFeed(tenantIds);
                     } catch (Exception e) {
                         log.errorCannotDoAnythingWithoutFeed(e);
                         throw new Exception("Agent needs a feed to run");
@@ -592,7 +594,7 @@ public class MonitorService implements Service<MonitorService> {
             }
 
             try {
-                startScheduler();
+                startScheduler(tenantIds);
             } catch (Exception e) {
                 log.errorCannotInitializeScheduler(e);
                 throw new Exception("Agent cannot initialize scheduler");
@@ -602,7 +604,7 @@ public class MonitorService implements Service<MonitorService> {
                     .dmrProtocolService(this.localModelControllerClientFactory, configuration.getDmrConfiguration())
                     .jmxProtocolService(configuration.getJmxConfiguration())
                     .platformProtocolService(configuration.getPlatformConfiguration())
-                    .autoDiscoveryScanPeriodSecs(configuration.getAutoDiscoveryScanPeriodSecs())
+                    .autoDiscoveryScanPeriodSecs(configuration.getAutoDiscoveryScanPeriodSeconds())
                     .build();
             ps.addInventoryListener(inventoryStorageProxy);
             ps.addInventoryListener(schedulerService);
@@ -625,10 +627,31 @@ public class MonitorService implements Service<MonitorService> {
 
             log.errorFailedToStartAgent(t);
 
-            // artifically shutdown the agent - agent will be disabled now
+            // artificially shutdown the agent - agent will be disabled now
             started = true;
             stopMonitorService();
         }
+    }
+
+    /**
+     * @return tenant IDs of the agent and its monitored endpoints
+     */
+    private Set<String> getTenantIds() {
+        Set<String> tenantIds = new HashSet<String>();
+        List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
+        endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getPrometheusConfiguration().getEndpoints().values());
+
+        tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
+        for (AbstractEndpointConfiguration endpoint : endpoints) {
+            String tenantId = endpoint.getTenantId();
+            if (tenantId != null) {
+                tenantIds.add(tenantId);
+            }
+        }
+        return tenantIds;
     }
 
     /**
@@ -762,7 +785,7 @@ public class MonitorService implements Service<MonitorService> {
 
     private Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> getAvailsToChange() {
         Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> avails = new HashMap<>();
-        for (ProtocolService<?, ?> protocolService : protocolServices.getServices()){
+        for (ProtocolService<?, ?> protocolService : protocolServices.getServices()) {
             for (EndpointService<?, ?> endpointService : protocolService.getEndpointServices().values()) {
                 EndpointConfiguration config = (EndpointConfiguration) endpointService.getMonitoredEndpoint()
                         .getEndpointConfiguration();
@@ -851,11 +874,12 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * Builds the scheduler's configuraton and starts the scheduler.
+     * Builds the scheduler's configuration and starts the scheduler.
      *
+     * @param tenantIds the tenants our feed is using
      * @throws Exception on error
      */
-    private void startScheduler() throws Exception {
+    private void startScheduler(Set<String> tenantIds) throws Exception {
         if (this.schedulerService == null) {
             SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
             schedulerConfig.setDiagnosticsConfig(this.configuration.getDiagnostics());
@@ -864,6 +888,9 @@ public class MonitorService implements Service<MonitorService> {
             schedulerConfig.setMetricDispatcherMaxBatchSize(this.configuration.getMetricDispatcherMaxBatchSize());
             schedulerConfig.setAvailDispatcherBufferSize(this.configuration.getAvailDispatcherBufferSize());
             schedulerConfig.setAvailDispatcherMaxBatchSize(this.configuration.getAvailDispatcherMaxBatchSize());
+            schedulerConfig.setPingDispatcherPeriodSeconds(this.configuration.getPingDispatcherPeriodSeconds());
+            schedulerConfig.setFeedId(this.feedId);
+            schedulerConfig.setTenantIds(tenantIds);
 
             this.schedulerService = new SchedulerService(schedulerConfig, this.diagnostics, this.storageAdapter);
         }
@@ -872,31 +899,16 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * Registers our feed with the Hawkular system.
+     * Registers our feed with the Hawkular system. Note, it is OK to re-register the same feed/tenant combinations.
      *
+     * @param tenantIds The tenantIds for which we registered the feed
      * @throws Exception if failed to register feed
      */
-    private void registerFeed() throws Exception {
-        String desiredFeedId = this.feedId;
+    private void registerFeed(Set<String> tenantIds) throws Exception {
 
         try {
-            File feedFile = new File(getDataDirectory(), "feedId.txt");
-            try {
-                String feedIdFromDataFile = Util.read(feedFile);
-                feedIdFromDataFile = feedIdFromDataFile.trim();
-                if (!desiredFeedId.equals(feedIdFromDataFile)) {
-                    log.warnf("Will use feed ID [%s] found in [%s];"
-                            + " note that it is different than our desired feed ID [%s].",
-                            feedIdFromDataFile, feedFile, desiredFeedId);
-                    feedId = feedIdFromDataFile;
-                }
-                return; // we already have a feed ID - we can return now since there is nothing else to do
-            } catch (FileNotFoundException e) {
-                // probably just haven't been registered yet, keep going
-            }
-
             // get the payload in JSON format
-            Feed.Blueprint feedPojo = new Feed.Blueprint(desiredFeedId, null);
+            Feed.Blueprint feedPojo = new Feed.Blueprint(this.feedId, null);
             String jsonPayload = Util.toJson(feedPojo);
 
             // build the REST URL...
@@ -906,22 +918,6 @@ public class MonitorService implements Service<MonitorService> {
 
             // rest of the URL says we want the feeds API
             url.append("feeds");
-
-            // because we can support multiple tenants, we need to register our feed under all tenants
-            List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
-            endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
-            endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
-            endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
-            endpoints.addAll(configuration.getPrometheusConfiguration().getEndpoints().values());
-
-            Set<String> tenantIds = new HashSet<String>();
-            tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
-            for (AbstractEndpointConfiguration endpoint : endpoints) {
-                String tenantId = endpoint.getTenantId();
-                if (tenantId != null) {
-                    tenantIds.add(tenantId);
-                }
-            }
 
             // now send the REST requests - one for each tenant to register
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
@@ -935,35 +931,34 @@ public class MonitorService implements Service<MonitorService> {
                 if (httpResponse.code() == 201) {
                     final String feedObjectFromServer = httpResponse.body().string();
                     final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
-                    if (desiredFeedId.equals(feed.getId())) {
+                    if (this.feedId.equals(feed.getId())) {
                         log.infoUsingFeedId(feed.getId(), tenantId);
                     } else {
-                        log.errorUnwantedFeedId(feed.getId(), desiredFeedId, tenantId);
-                        // should we throw an error here or just use the feed ID we were given?
-                        log.debugf("Using feed ID [%s] with tenant ID [%s];"
-                                + "make sure the agent doesn't lose its data file", feed.getId(), tenantId);
+                        log.errorUnwantedFeedId(feed.getId(), this.feedId, tenantId);
+                        throw new Exception(String.format("Received feed [%s] when registering feed/tenant[%s]/[%s]. "
+                                + "status-code=[%d], reason=[%s], url=[%s]",
+                                feed.getId(),
+                                this.feedId,
+                                tenantId,
+                                httpResponse.code(),
+                                httpResponse.message(),
+                                request.urlString()));
                     }
-
-                    this.feedId = feed.getId();
-
                 } else if (httpResponse.code() == 409) {
                     log.infoFeedIdAlreadyRegistered(this.feedId, tenantId);
+
                 } else {
                     throw new Exception(String.format("Cannot register feed ID [%s] under tenant ID [%s]. "
                             + "status-code=[%d], reason=[%s], url=[%s]",
-                            desiredFeedId,
+                            this.feedId,
                             tenantId,
                             httpResponse.code(),
                             httpResponse.message(),
                             request.urlString()));
                 }
             }
-
-            // persist our feed ID so we can remember it the next time we start up
-            Util.write(feedId, feedFile);
-
         } catch (Throwable t) {
-            throw new Exception(String.format("Cannot create feed ID [%s]", desiredFeedId), t);
+            throw new Exception(String.format("Cannot register feed ID [%s]", this.feedId), t);
         }
     }
 
@@ -975,13 +970,10 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * @return tenant ID of the agent - if the agent has not started, null is returned
+     * @return tenant ID of the agent
      */
     public String getTenantId() {
-        if (this.storageAdapter == null) {
-            return null;
-        }
-        return this.storageAdapter.getStorageAdapterConfiguration().getTenantId();
+        return this.configuration.getStorageAdapter().getTenantId();
     }
 
     public SchedulerService getSchedulerService() {

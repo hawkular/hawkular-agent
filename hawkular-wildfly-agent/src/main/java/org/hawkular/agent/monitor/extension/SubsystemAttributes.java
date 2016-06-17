@@ -45,7 +45,7 @@ public interface SubsystemAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition AUTO_DISCOVERY_SCAN_PERIOD_SECS = new SimpleAttributeDefinitionBuilder(
+    SimpleAttributeDefinition AUTO_DISCOVERY_SCAN_PERIOD_SECONDS = new SimpleAttributeDefinitionBuilder(
             "auto-discovery-scan-period-secs", ModelType.INT)
                     .setAllowNull(true)
                     .setDefaultValue(new ModelNode(ProtocolServices.DEFAULT_AUTO_DISCOVERY_SCAN_PERIOD_SECS))
@@ -93,14 +93,22 @@ public interface SubsystemAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition PING_DISPATCHER_PERIOD_SECONDS = new SimpleAttributeDefinitionBuilder(
+            "ping-period-secs", ModelType.INT)
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(SchedulerConfiguration.DEFAULT_PING_DISPATCHER_PERIOD_SECONDS))
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
             API_JNDI,
-            AUTO_DISCOVERY_SCAN_PERIOD_SECS,
+            AUTO_DISCOVERY_SCAN_PERIOD_SECONDS,
             NUM_DMR_SCHEDULER_THREADS,
             METRIC_DISPATCHER_BUFFER_SIZE,
             METRIC_DISPATCHER_MAX_BATCH_SIZE,
             AVAIL_DISPATCHER_BUFFER_SIZE,
-            AVAIL_DISPATCHER_MAX_BATCH_SIZE
+            AVAIL_DISPATCHER_MAX_BATCH_SIZE,
+            PING_DISPATCHER_PERIOD_SECONDS
     };
 }
