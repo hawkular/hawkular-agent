@@ -1,6 +1,6 @@
 == SUMMARY
 
-This command CLI utility allows you to send commands to the Hawkular Server over the command gateway websocket,
+This command CLI utility allows you to send commands to the Hawkular Server over the https://github.com/hawkular/hawkular-commons/tree/master/hawkular-command-gateway/hawkular-command-gateway-api[Hawkular Command Gateway] websocket,
 which in turn can forward the command to the agent.
 
 It can be run on the command line like this:
@@ -25,5 +25,5 @@ java -jar hawkular-wildfly-agent-command-cli-*.jar \
    --binary-data-file=/home/me/files/hello-world.war
 ```
 
-Refer to the command gateway JSON schemas to know what commands can be passed (the command name is the name of the schema)
+Refer to the https://github.com/hawkular/hawkular-commons/tree/master/hawkular-command-gateway/hawkular-command-gateway-api/src/main/resources/schema[Command Gateway JSON schemas] to know what commands can be passed (the command name is the name of the schema)
 and what parameters those commands support.
