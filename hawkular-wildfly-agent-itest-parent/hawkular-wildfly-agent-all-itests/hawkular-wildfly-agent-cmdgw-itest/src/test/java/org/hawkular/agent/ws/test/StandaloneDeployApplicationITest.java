@@ -120,7 +120,8 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/feeds/" + hawkularFeedId + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
+                + "id=Deployment/rl;defines/type=r",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
@@ -152,7 +153,8 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/feeds/" + hawkularFeedId + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
+                + "id=Deployment/rl;defines/type=r",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
@@ -184,7 +186,8 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/feeds/" + hawkularFeedId + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
+                 + "id=Deployment/rl;defines/type=r",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "

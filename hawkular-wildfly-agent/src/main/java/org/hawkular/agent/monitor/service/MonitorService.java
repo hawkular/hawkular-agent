@@ -947,7 +947,7 @@ public class MonitorService implements Service<MonitorService> {
                 configuration.getStorageAdapter().getInventoryContext());
 
         // rest of the URL says we want the feeds API
-        url.append("feeds");
+        url.append("entity/feed");
 
         // now send the REST requests - one for each tenant to register
         OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();

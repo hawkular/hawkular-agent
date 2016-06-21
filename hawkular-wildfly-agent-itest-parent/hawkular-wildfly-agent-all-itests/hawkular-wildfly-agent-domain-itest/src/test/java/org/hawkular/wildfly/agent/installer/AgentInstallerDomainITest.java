@@ -51,7 +51,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Collection<String> dmrHostNames = getHostNames();
         for (String hostName : dmrHostNames) {
             Resource host = getResource(
-                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Domain Host/resources",
+                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
+                    + "id=Domain Host/rl;defines/type=r",
                     (r -> r.getName().contains(hostName)));
             System.out.println("domain host in inventory=" + host);
         }
@@ -67,7 +68,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Collection<String> dmrServerNames = getServerNames();
         for (String serverName : dmrServerNames) {
             Resource server = getResource(
-                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Domain WildFly Server/resources",
+                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
+                    + "id=Domain WildFly Server/rl;defines/type=r",
                     (r -> r.getName().contains(serverName)));
             System.out.println("domain server in inventory=" + server);
         }
@@ -85,7 +87,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Collection<String> dmrServerGroupNames = getServerGroupNames();
         for (String groupName : dmrServerGroupNames) {
             Resource group = getResource(
-                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Domain Server Group/resources",
+                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
+                    + "id=Domain Server Group/rl;defines/type=r",
                     (r -> r.getName().contains(groupName)));
             System.out.println("domain server group in inventory=" + group);
         }
@@ -102,7 +105,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Collection<String> dmrProfileNames = getProfileNames();
         for (String profileName : dmrProfileNames) {
             Resource profile = getResource(
-                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Domain Profile/resources",
+                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
+                    + "id=Domain Profile/rl;defines/type=r",
                     (r -> r.getName().contains(profileName)));
             System.out.println("domain profile in inventory=" + profile);
         }
@@ -121,7 +125,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
         for (String sbgName : dmrSBGNames) {
             Resource sbg = getResource(
-                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Socket Binding Group/resources",
+                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
+                    + "id=Socket Binding Group/rl;defines/type=r",
                     (r -> r.getName().contains(sbgName)));
             System.out.println("socket binding group in inventory=" + sbg);
         }

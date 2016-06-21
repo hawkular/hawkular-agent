@@ -547,11 +547,23 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     AsyncInventoryStorage.this.config.getInventoryContext());
             for (QueueElement resourceElement : removeQueueElements) {
                 StringBuilder deleteUrl = new StringBuilder(url.toString());
-                deleteUrl.append("feeds/").append(resourceElement.getFeedId()).append("/resources");
-                for (Resource<?> resource : getAncestry(resourceElement.getResource())) {
-                    deleteUrl.append('/');
-                    deleteUrl.append(Util.urlEncode(resource.getID().getIDString()));
+                List< Resource<?> > ancestries = getAncestry(resourceElement.getResource());
+                String tenandId = resourceElement.getTenantId();
+                StringBuilder resourcePath = new StringBuilder();
+                Collections.reverse(ancestries);
+                for (Resource<?> resource : ancestries) {
+                    String resourceIdPath = "/" + Util.urlEncode(resource.getID().getIDString());
+                    resourcePath.insert(0, resourceIdPath);
                 }
+
+                // The final URL should be in the form: entity/<resource_canonical_path>
+                // for example: entity/t;hawkular/f;myfeed/r;resource_parent/r;resource_child
+
+                CanonicalPath pathPrefix = CanonicalPath.of().tenant(tenandId).feed(feedId).get();
+                CanonicalPath resourceCanonicalPath = CanonicalPath.fromPartiallyUntypedString(resourcePath.toString(),
+                        pathPrefix, org.hawkular.inventory.api.model.Resource.class);
+
+                deleteUrl.append("entity").append(resourceCanonicalPath.toString());
 
                 Request request = AsyncInventoryStorage.this.httpClientBuilder
                         .buildJsonDeleteRequest(deleteUrl.toString(), getTenantHeader(resourceElement.getTenantId()));

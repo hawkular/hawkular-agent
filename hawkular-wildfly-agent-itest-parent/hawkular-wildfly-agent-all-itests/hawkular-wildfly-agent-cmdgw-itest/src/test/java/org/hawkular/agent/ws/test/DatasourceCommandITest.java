@@ -270,7 +270,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/feeds/" + hawkularFeedId + "/resourceTypes/Datasource/resources",
+            getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
+                    + "id=Datasource/rl;defines/type=r",
                     (r -> r.getId().contains(datasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
@@ -297,7 +298,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/feeds/" + hawkularFeedId + "/resourceTypes/Datasource/resources",
+            assertResourceNotInInventory("/traversal/f;"  + hawkularFeedId + "/type=rt;"
+                    + "id=Datasource/rl;defines/type=r",
                     (r -> r.getId().contains(datasourceName)), 10, 5000);
 
         }
@@ -317,7 +319,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/feeds/" + hawkularFeedId + "/resourceTypes/XA%20Datasource/resources",
+            getResource("/traversal/f;" + hawkularFeedId +  "/type=rt;"
+                    + "id=XA%20Datasource/rl;defines/type=r",
                     (r -> r.getId().contains(xaDatasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
@@ -344,7 +347,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/feeds/" + hawkularFeedId + "/resourceTypes/XA%20Datasource/resources",
+            assertResourceNotInInventory("/traversal/f;" + hawkularFeedId +  "/type=rt;"
+                    + "id=XA%20Datasource/rl;defines/type=r",
                     (r -> r.getId().contains(xaDatasourceName)), 10, 5000);
         }
     }

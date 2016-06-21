@@ -139,7 +139,8 @@ public class DomainDeployApplicationITest extends AbstractITest {
         WildFlyClientConfig clientConfig = getPlainWildFlyClientConfig();
         CanonicalPath wfPath = getHostController(clientConfig);
         final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/feeds/" + clientConfig.getFeedId() + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/traversal/f;" + clientConfig.getFeedId() + "/type=rt;"
+                + "id=Deployment/rl;defines/type=r",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
@@ -172,7 +173,8 @@ public class DomainDeployApplicationITest extends AbstractITest {
         WildFlyClientConfig clientConfig = getPlainWildFlyClientConfig();
         CanonicalPath wfPath = getHostController(clientConfig);
         final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/feeds/" + clientConfig.getFeedId() + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/traversal/f;" + clientConfig.getFeedId() + "/type=rt;"
+                + "id=Deployment/rl;defines/type=r",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
@@ -205,7 +207,8 @@ public class DomainDeployApplicationITest extends AbstractITest {
         WildFlyClientConfig clientConfig = getPlainWildFlyClientConfig();
         CanonicalPath wfPath = getHostController(clientConfig);
         final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/feeds/" + clientConfig.getFeedId() + "/resourceTypes/Deployment/resources",
+        Resource deployment = getResource("/traversal/f;" + clientConfig.getFeedId() + "/type=rt;"
+                + "id=Deployment/rl;defines/type=r",
                 (r -> r.getId().endsWith("=" + deploymentName)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "

@@ -55,7 +55,8 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
         for (String sbgName : dmrSBGNames) {
             Resource sbg = getResource(
-                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Socket Binding Group/resources",
+                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
+                            "id=Socket Binding Group/rl;defines/type=r",
                     (r -> r.getName().contains(sbgName)));
             System.out.println("socket binding group in inventory=" + sbg);
         }
@@ -68,7 +69,8 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         Collection<String> dmrBindingNames = getSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
             Resource binding = getResource(
-                    "/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Socket Binding/resources",
+                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
+                    "id=Socket Binding/rl;defines/type=r",
                     (r -> r.getName().contains(bindingName)));
             System.out.println("socket binding in inventory=" + binding);
         }
@@ -86,8 +88,8 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         dmrBindingNames = getOutboundSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
             Resource binding = getResource(
-                    "/feeds/" + wfClientConfig.getFeedId()
-                            + "/resourceTypes/Remote Destination Outbound Socket Binding/resources",
+                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
+                            "id=Remote Destination Outbound Socket Binding/rl;defines/type=r",
                     (r -> r.getName().contains(bindingName)));
             System.out.println("outbound socket binding in inventory=" + binding);
         }
@@ -102,7 +104,8 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     public void datasourcesAddedToInventory() throws Throwable {
 
         for (String datasourceName : getDatasourceNames()) {
-            Resource ds = getResource("/feeds/" + wfClientConfig.getFeedId() + "/resourceTypes/Datasource/resources",
+            Resource ds = getResource("/traversal/f;" + wfClientConfig.getFeedId()  + "/type=rt;"
+                    + "id=Datasource/rl;defines/type=r",
                     (r -> r.getId().contains(datasourceName)));
             System.out.println("ds = " + ds);
         }
