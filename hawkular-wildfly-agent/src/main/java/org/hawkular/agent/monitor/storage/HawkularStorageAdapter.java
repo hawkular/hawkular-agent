@@ -176,6 +176,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
                         if (latch != null) {
                             latch.countDown();
                         }
+                        response.body().close();
                     }
                 }
             });
@@ -273,6 +274,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
                         if (latch != null) {
                             latch.countDown();
                         }
+                        response.body().close();
                     }
                 }
             });

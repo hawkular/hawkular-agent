@@ -561,16 +561,22 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         .getHttpClient()
                         .newCall(request)
                         .execute();
-                final long duration = System.currentTimeMillis() - start;
 
-                if (response.code() != 204 && response.code() != 404) {
-                    // 204 means successfully deleted, 404 means it didn't exist in the first place.
-                    // In either case, the resource no longer exists which is what we want;
-                    // any other response code means it is an error and we didn't remove the resource.
-                    throw new Exception("status-code=[" + response.code() + "], reason=["
-                            + response.message() + "], url=[" + request.urlString() + "]");
+                try {
+                    final long duration = System.currentTimeMillis() - start;
+
+                    if (response.code() != 204 && response.code() != 404) {
+                        // 204 means successfully deleted, 404 means it didn't exist in the first place.
+                        // In either case, the resource no longer exists which is what we want;
+                        // any other response code means it is an error and we didn't remove the resource.
+                        throw new Exception("status-code=[" + response.code() + "], reason=["
+                                + response.message() + "], url=[" + request.urlString() + "]");
+                    }
+
+                    log.debugf("Took [%d]ms to remove resource [%s]", duration, resourceElement.getResource());
+                } finally {
+                    response.body().close();
                 }
-                log.debugf("Took [%d]ms to remove resource [%s]", duration, resourceElement.getResource());
             }
 
             return; // done removeResources
@@ -618,49 +624,54 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     Call call = AsyncInventoryStorage.this.httpClientBuilder.getHttpClient().newCall(request);
                     final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
                     Response response = call.execute();
-                    final long durationNanos = timer.stop();
-                    log.tracef("Received bulk insert response from inventory: code [%d]", response.code());
 
-                    // HTTP status of 201 means success, 409 means it already exists; anything else is an error
-                    if (response.code() != 201 && response.code() != 409) {
-                        throw new Exception("status-code=[" + response.code() + "], reason=["
-                                + response.message() + "], url=[" + request.urlString() + "]");
-                    }
+                    try {
+                        final long durationNanos = timer.stop();
+                        log.tracef("Received bulk insert response from inventory: code [%d]", response.code());
 
-                    diagnostics.getInventoryRate().mark(addQueueElements.size());
+                        // HTTP status of 201 means success, 409 means it already exists; anything else is an error
+                        if (response.code() != 201 && response.code() != 409) {
+                            throw new Exception("status-code=[" + response.code() + "], reason=["
+                                    + response.message() + "], url=[" + request.urlString() + "]");
+                        }
 
-                    final Reader responseBodyReader;
-                    if (log.isDebugEnabled()) {
-                        long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
-                        log.debugf("Took [%d]ms to store [%d] resources", durationMs, addQueueElements.size());
-                        String body = response.body().string();
-                        responseBodyReader = new StringReader(body);
-                        log.tracef("Body of bulk insert request response: %s", body);
-                    } else {
-                        responseBodyReader = response.body().charStream();
-                    }
+                        diagnostics.getInventoryRate().mark(addQueueElements.size());
 
-                    TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>> typeRef = //
-                    new TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>>() {
-                    };
-                    LinkedHashMap<String, LinkedHashMap<String, Object>> responses = Util
-                            .fromJson(responseBodyReader, typeRef);
-                    for (Entry<String, LinkedHashMap<String, Object>> typeEntry : responses.entrySet()) {
-                        for (Entry<String, Object> entityEntry : typeEntry.getValue().entrySet()) {
-                            Object rawCode = entityEntry.getValue();
-                            if (rawCode instanceof Integer) {
-                                int code = ((Integer) rawCode).intValue();
-                                switch (code) {
-                                    case 201: // success
-                                    case 409: // already existed
-                                        break;
-                                    default:
-                                        log.errorFailedToStorePathToInventory(code, typeEntry.getKey(),
-                                                entityEntry.getKey());
-                                        break;
+                        final Reader responseBodyReader;
+                        if (log.isDebugEnabled()) {
+                            long durationMs = TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS);
+                            log.debugf("Took [%d]ms to store [%d] resources", durationMs, addQueueElements.size());
+                            String body = response.body().string();
+                            responseBodyReader = new StringReader(body);
+                            log.tracef("Body of bulk insert request response: %s", body);
+                        } else {
+                            responseBodyReader = response.body().charStream();
+                        }
+
+                        TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>> typeRef = //
+                                new TypeReference<LinkedHashMap<String, LinkedHashMap<String, Object>>>() {
+                                };
+                        LinkedHashMap<String, LinkedHashMap<String, Object>> responses = Util
+                                .fromJson(responseBodyReader, typeRef);
+                        for (Entry<String, LinkedHashMap<String, Object>> typeEntry : responses.entrySet()) {
+                            for (Entry<String, Object> entityEntry : typeEntry.getValue().entrySet()) {
+                                Object rawCode = entityEntry.getValue();
+                                if (rawCode instanceof Integer) {
+                                    int code = ((Integer) rawCode).intValue();
+                                    switch (code) {
+                                        case 201: // success
+                                        case 409: // already existed
+                                            break;
+                                        default:
+                                            log.errorFailedToStorePathToInventory(code, typeEntry.getKey(),
+                                                    entityEntry.getKey());
+                                            break;
+                                    }
                                 }
                             }
                         }
+                    } finally {
+                        response.body().close();
                     }
 
                     // mark our resource pojos to indicate we persisted everything to inventory
