@@ -927,34 +927,38 @@ public class MonitorService implements Service<MonitorService> {
                 Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), header, jsonPayload);
                 Response httpResponse = httpclient.newCall(request).execute();
 
-                // HTTP status of 201 means success; 409 means it already exists, anything else is an error
-                if (httpResponse.code() == 201) {
-                    final String feedObjectFromServer = httpResponse.body().string();
-                    final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
-                    if (this.feedId.equals(feed.getId())) {
-                        log.infoUsingFeedId(feed.getId(), tenantId);
+                try {
+                    // HTTP status of 201 means success; 409 means it already exists, anything else is an error
+                    if (httpResponse.code() == 201) {
+                        final String feedObjectFromServer = httpResponse.body().string();
+                        final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
+                        if (this.feedId.equals(feed.getId())) {
+                            log.infoUsingFeedId(feed.getId(), tenantId);
+                        } else {
+                            log.errorUnwantedFeedId(feed.getId(), this.feedId, tenantId);
+                            throw new Exception(
+                                    String.format("Received feed [%s] when registering feed/tenant[%s]/[%s]. "
+                                            + "status-code=[%d], reason=[%s], url=[%s]",
+                                            feed.getId(),
+                                            this.feedId,
+                                            tenantId,
+                                            httpResponse.code(),
+                                            httpResponse.message(),
+                                            request.urlString()));
+                        }
+                    } else if (httpResponse.code() == 409) {
+                        log.infoFeedIdAlreadyRegistered(this.feedId, tenantId);
                     } else {
-                        log.errorUnwantedFeedId(feed.getId(), this.feedId, tenantId);
-                        throw new Exception(String.format("Received feed [%s] when registering feed/tenant[%s]/[%s]. "
+                        throw new Exception(String.format("Cannot register feed ID [%s] under tenant ID [%s]. "
                                 + "status-code=[%d], reason=[%s], url=[%s]",
-                                feed.getId(),
                                 this.feedId,
                                 tenantId,
                                 httpResponse.code(),
                                 httpResponse.message(),
                                 request.urlString()));
                     }
-                } else if (httpResponse.code() == 409) {
-                    log.infoFeedIdAlreadyRegistered(this.feedId, tenantId);
-
-                } else {
-                    throw new Exception(String.format("Cannot register feed ID [%s] under tenant ID [%s]. "
-                            + "status-code=[%d], reason=[%s], url=[%s]",
-                            this.feedId,
-                            tenantId,
-                            httpResponse.code(),
-                            httpResponse.message(),
-                            request.urlString()));
+                } finally {
+                    httpResponse.body().close();
                 }
             }
         } catch (Throwable t) {
