@@ -305,7 +305,7 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10065, value = "Received request to perform [%s] on a [%s] given by inventory path [%s]")
     void infoReceivedResourcePathCommand(String operationName, String entityType, String resourcePath);
 
-    @LogMessage(level = Level.INFO)
+    @LogMessage(level = Level.DEBUG) // making DEBUG as this gets noisy if you run discovery often enough
     @Message(id = 10066, value = "Being asked to discover all resources for endpoint [%s]")
     void infoDiscoveryRequested(MonitoredEndpoint<?> monitoredEndpoint);
 

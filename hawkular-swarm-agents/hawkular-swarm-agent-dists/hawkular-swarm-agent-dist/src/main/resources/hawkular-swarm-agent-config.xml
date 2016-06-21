@@ -808,7 +808,7 @@
 
       <resource-type-set-dmr name="Deployment" enabled="true">
         <resource-type-dmr name="Deployment"
-                           resource-name-template="%2"
+                           resource-name-template="Deployment [%-]"
                            path="/deployment=*"
                            parents="WildFly Server,Domain WildFly Server"
                            metric-sets="Undertow Metrics"
@@ -857,7 +857,7 @@
 
       <resource-type-set-dmr name="Datasource" enabled="true">
         <resource-type-dmr name="Datasource"
-                           resource-name-template="%-"
+                           resource-name-template="Datasource [%-]"
                            path="/subsystem=datasources/data-source=*"
                            parents="WildFly Server,Domain WildFly Server"
                            metric-sets="Datasource Pool Metrics,Datasource JDBC Metrics">
@@ -878,7 +878,7 @@
 
       <resource-type-set-dmr name="XA Datasource" enabled="true">
         <resource-type-dmr name="XA Datasource"
-                           resource-name-template="%-"
+                           resource-name-template="XA Datasource [%-]"
                            path="/subsystem=datasources/xa-data-source=*"
                            parents="WildFly Server,Domain WildFly Server"
                            metric-sets="Datasource Pool Metrics,Datasource JDBC Metrics">
@@ -897,7 +897,7 @@
 
       <resource-type-set-dmr name="JDBC Driver" enabled="true">
         <resource-type-dmr name="JDBC Driver"
-                           resource-name-template="%-"
+                           resource-name-template="JDBC Driver [%-]"
                            path="/subsystem=datasources/jdbc-driver=*"
                            parents="WildFly Server,Domain WildFly Server"/>
       </resource-type-set-dmr>
@@ -943,7 +943,7 @@
           <resource-config-dmr name="Name" attribute="name" />
           <resource-config-dmr name="Interface" attribute="interface" />
           <resource-config-dmr name="Port" attribute="port" />
-          <resource-config-dmr name="Multicast Address" attribute="multicast-address" />
+          <resource-config-dmr name="Multicast Address" attribute="multicast-address" resolve-expressions="true" />
           <resource-config-dmr name="Multicast Port" attribute="multicast-port" />
         </resource-type-dmr>
         <resource-type-dmr name="Remote Destination Outbound Socket Binding"
@@ -952,6 +952,50 @@
                            parents="Socket Binding Group">
           <resource-config-dmr name="Host" attribute="host" />
           <resource-config-dmr name="Port" attribute="port" />
+        </resource-type-dmr>
+      </resource-type-set-dmr>
+
+      <resource-type-set-dmr name="Clustering" enabled="true">
+        <resource-type-dmr name="ModCluster"
+                           resource-name-template="ModCluster"
+                           path="/subsystem=modcluster"
+                           parents="WildFly Server,Domain WildFly Server">
+          <resource-config-dmr name="Connector"
+                               attribute="connector"
+                               path="/mod-cluster-config=configuration"/>
+          <resource-config-dmr name="Advertise Socket Binding"
+                               attribute="advertise-socket"
+                               path="/mod-cluster-config=configuration"/>
+        </resource-type-dmr>
+
+        <resource-type-dmr name="JGroups"
+                           resource-name-template="JGroups"
+                           path="/subsystem=jgroups"
+                           parents="WildFly Server,Domain WildFly Server">
+        </resource-type-dmr>
+
+        <resource-type-dmr name="JGroups Channel"
+                           resource-name-template="JGroups Channel [%-]"
+                           path="/channel=*"
+                           parents="JGroups">
+          <resource-config-dmr name="Cluster Name" attribute="cluster" />
+          <resource-config-dmr name="IP Address" attribute="address" />
+        </resource-type-dmr>
+
+        <resource-type-dmr name="Infinispan"
+                           resource-name-template="Infinispan"
+                           path="/subsystem=infinispan"
+                           parents="WildFly Server,Domain WildFly Server">
+          <resource-config-dmr name="Cache Container" attribute="cache-container" />
+        </resource-type-dmr>
+
+        <resource-type-dmr name="Infinispan Cache Container"
+                           resource-name-template="Infinispan Cache Container [%-]"
+                           path="/cache-container=*"
+                           parents="Infinispan">
+          <resource-config-dmr name="Cluster Name" attribute="cluster-name" />
+          <resource-config-dmr name="Coordinator Address" attribute="coordinator-address" />
+          <resource-config-dmr name="Is Coordinator" attribute="is-coordinator" />
         </resource-type-dmr>
       </resource-type-set-dmr>
 
@@ -1045,7 +1089,7 @@
                     port="${hawkular.dmr.port:9990}"
                     username="${hawkular.dmr.username:admin}"
                     password="${hawkular.dmr.password:admin}"
-                    resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Hawkular"/>
+                    resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Clustering,Hawkular"/>
 
         <remote-prometheus name="Prometheus"
                            enabled="${hawkular.prometheus.enabled:false}"

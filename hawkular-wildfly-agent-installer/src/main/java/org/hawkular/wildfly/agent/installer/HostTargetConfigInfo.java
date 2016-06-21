@@ -46,6 +46,7 @@ public class HostTargetConfigInfo implements TargetConfigInfo {
                 .append("Transaction Manager,")
                 .append("Messaging,")
                 .append("Socket Binding Group,")
+                .append("Clustering,")
                 .append("Hawkular")
                 .toString();
     }
