@@ -957,7 +957,7 @@
 
       <resource-type-set-dmr name="Clustering" enabled="true">
         <resource-type-dmr name="ModCluster"
-                           resource-name-template="ModCluser"
+                           resource-name-template="ModCluster"
                            path="/subsystem=modcluster"
                            parents="WildFly Server,Domain WildFly Server">
           <resource-config-dmr name="Connector"
