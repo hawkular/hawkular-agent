@@ -33,7 +33,8 @@ public interface Constants {
     // since OSHI only supports a fixed set of resources/metrics, we just hardwire them here
     enum PlatformResourceType {
         OPERATING_SYSTEM("Operating System",
-                Arrays.asList(OPERATING_SYSTEM_SYS_CPU_LOAD, OPERATING_SYSTEM_SYS_LOAD_AVG)),
+                Arrays.asList(OPERATING_SYSTEM_SYS_CPU_LOAD, OPERATING_SYSTEM_SYS_LOAD_AVG,
+                        OPERATING_SYSTEM_PROCESS_COUNT)),
 
         FILE_STORE("File Store",
                 Arrays.asList(FILE_STORE_USABLE_SPACE, FILE_STORE_TOTAL_SPACE)),
@@ -73,6 +74,7 @@ public interface Constants {
 
     Name OPERATING_SYSTEM_SYS_CPU_LOAD = new Name("System CPU Load");
     Name OPERATING_SYSTEM_SYS_LOAD_AVG = new Name("System Load Average");
+    Name OPERATING_SYSTEM_PROCESS_COUNT = new Name("Process Count");
 
     Name FILE_STORE_USABLE_SPACE = new Name("Usable Space");
     Name FILE_STORE_TOTAL_SPACE = new Name("Total Space");
