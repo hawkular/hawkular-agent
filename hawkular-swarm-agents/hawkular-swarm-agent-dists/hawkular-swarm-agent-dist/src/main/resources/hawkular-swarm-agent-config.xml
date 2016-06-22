@@ -761,7 +761,7 @@
           <resource-config-dmr name="Server State"  attribute="server-state"/>
           <resource-config-dmr name="Suspend State" attribute="suspend-state"/>
           <resource-config-dmr name="UUID"          attribute="uuid"/>
-          <resource-config-dmr name="Qualified Host Name"
+          <resource-config-dmr name="Hostname"
                                path="/core-service=server-environment"
                                attribute="qualified-host-name"/>
           <resource-config-dmr name="Node Name"
