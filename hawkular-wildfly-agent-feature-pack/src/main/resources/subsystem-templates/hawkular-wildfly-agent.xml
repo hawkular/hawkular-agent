@@ -913,7 +913,6 @@
                          resource-name-template="Infinispan"
                          path="/subsystem=infinispan"
                          parents="WildFly Server,Domain WildFly Server">
-        <resource-config-dmr name="Cache Container" attribute="cache-container" />
       </resource-type-dmr>
 
       <resource-type-dmr name="Infinispan Cache Container"
