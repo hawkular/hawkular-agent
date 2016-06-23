@@ -980,6 +980,7 @@
                            parents="JGroups">
           <resource-config-dmr name="Cluster Name" attribute="cluster" />
           <resource-config-dmr name="IP Address" attribute="address" />
+          <resource-config-dmr name="Group Membership View" attribute="view" />
         </resource-type-dmr>
 
         <resource-type-dmr name="Infinispan"
