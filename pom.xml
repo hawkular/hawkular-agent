@@ -57,7 +57,7 @@
 
   <properties>
     <version.commons.io>2.4</version.commons.io>
-    <version.com.github.dblock>1.5</version.com.github.dblock>
+    <version.com.github.dblock>2.6.2</version.com.github.dblock>
     <version.com.samskivert.jmustache>1.11</version.com.samskivert.jmustache>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
     <version.io.prometheus.client>0.0.2</version.io.prometheus.client>

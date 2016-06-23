@@ -27,9 +27,9 @@ import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceTy
 import org.hawkular.agent.monitor.util.Util;
 
 import oshi.SystemInfo;
-import oshi.hardware.Memory;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.GlobalMemory;
 import oshi.hardware.PowerSource;
-import oshi.hardware.Processor;
 import oshi.software.os.OSFileStore;
 import oshi.software.os.OperatingSystem;
 
@@ -145,15 +145,15 @@ public class OshiPlatformCache {
     /**
      * @return information about all the platform's memory
      */
-    public Memory getMemory() {
-        Memory ret;
+    public GlobalMemory getMemory() {
+        GlobalMemory ret;
 
         wLock.lock();
         try {
 
             if (!sysInfoCache.containsKey(PlatformResourceType.MEMORY)) {
-                HashMap<String, Memory> cache = new HashMap<>(1);
-                Memory mem = sysInfo.getHardware().getMemory();
+                HashMap<String, GlobalMemory> cache = new HashMap<>(1);
+                GlobalMemory mem = sysInfo.getHardware().getMemory();
                 cache.put(PlatformResourceType.MEMORY.getName().getNameString(), mem);
                 sysInfoCache.put(PlatformResourceType.MEMORY, cache);
             }
@@ -162,7 +162,7 @@ public class OshiPlatformCache {
             rLock.lock();
             try {
                 wLock.unlock();
-                ret = (Memory) sysInfoCache.get(PlatformResourceType.MEMORY)
+                ret = (GlobalMemory) sysInfoCache.get(PlatformResourceType.MEMORY)
                         .get(PlatformResourceType.MEMORY.getName().getNameString());
             } finally {
                 rLock.unlock();
@@ -176,20 +176,16 @@ public class OshiPlatformCache {
      * @return information about all processors/CPUs on the platform
      */
     @SuppressWarnings("unchecked")
-    public Map<String, Processor> getProcessors() {
-        Map<String, Processor> ret;
+    public CentralProcessor getProcessor() {
+        CentralProcessor ret;
 
         wLock.lock();
         try {
 
             if (!sysInfoCache.containsKey(PlatformResourceType.PROCESSOR)) {
-                HashMap<String, Processor> cache = new HashMap<>();
-                Processor[] arr = sysInfo.getHardware().getProcessors();
-                if (arr != null) {
-                    for (Processor item : arr) {
-                        cache.put(String.valueOf(item.getProcessorNumber()), item);
-                    }
-                }
+                HashMap<String, CentralProcessor> cache = new HashMap<>(1);
+                CentralProcessor cp = sysInfo.getHardware().getProcessor();
+                cache.put(PlatformResourceType.PROCESSOR.getName().getNameString(), cp);
                 sysInfoCache.put(PlatformResourceType.PROCESSOR, cache);
             }
         } finally {
@@ -197,7 +193,8 @@ public class OshiPlatformCache {
             rLock.lock();
             try {
                 wLock.unlock();
-                ret = (Map<String, Processor>) sysInfoCache.get(PlatformResourceType.PROCESSOR);
+                ret = (CentralProcessor) sysInfoCache.get(PlatformResourceType.PROCESSOR)
+                        .get(PlatformResourceType.PROCESSOR.getName().getNameString());
             } finally {
                 rLock.unlock();
             }
@@ -273,14 +270,24 @@ public class OshiPlatformCache {
      */
     public Double getProcessorMetric(String processorNumber, Name metricToCollect) {
 
-        Map<String, Processor> cache = getProcessors();
-        Processor processor = cache.get(processorNumber);
+        CentralProcessor processor = getProcessor();
         if (processor == null) {
             return null;
         }
 
+        int processorIndex;
+        try {
+            processorIndex = Integer.parseInt(processorNumber);
+            if (processorIndex < 0 || processorIndex >= processor.getLogicalProcessorCount()) {
+                return null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+
+
         if (Constants.PROCESSOR_CPU_USAGE.equals(metricToCollect)) {
-            return processor.getProcessorCpuLoadBetweenTicks();
+            return processor.getProcessorCpuLoadBetweenTicks()[processorIndex];
         } else {
             throw new UnsupportedOperationException("Invalid processor metric to collect: " + metricToCollect);
         }
@@ -318,7 +325,7 @@ public class OshiPlatformCache {
      */
     public Double getMemoryMetric(Name metricToCollect) {
 
-        Memory mem = getMemory();
+        GlobalMemory mem = getMemory();
 
         if (Constants.MEMORY_AVAILABLE.equals(metricToCollect)) {
             return Double.valueOf(mem.getAvailable());
@@ -326,6 +333,27 @@ public class OshiPlatformCache {
             return Double.valueOf(mem.getTotal());
         } else {
             throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
+        }
+    }
+
+    /**
+     * Returns the given OS metric's value.
+     *
+     * @param metricToCollect the metric to collect
+     * @return the value of the metric
+     */
+    public Double getOperatingSystemMetric(Name metricToCollect) {
+
+        CentralProcessor cp = getProcessor();
+
+        if (Constants.OPERATING_SYSTEM_SYS_CPU_LOAD.equals(metricToCollect)) {
+            return Double.valueOf(cp.getSystemCpuLoad());
+        } else if (Constants.OPERATING_SYSTEM_SYS_LOAD_AVG.equals(metricToCollect)) {
+            return Double.valueOf(cp.getSystemLoadAverage());
+        } else if (Constants.OPERATING_SYSTEM_PROCESS_COUNT.equals(metricToCollect)) {
+            return Double.valueOf(cp.getProcessCount());
+        } else {
+            throw new UnsupportedOperationException("Invalid OS metric to collect: " + metricToCollect);
         }
     }
 
@@ -358,11 +386,6 @@ public class OshiPlatformCache {
                 throw new IllegalArgumentException("Platform resource node [" + node + "] does not have metrics");
             }
         }
-    }
-
-    private Double getOperatingSystemMetric(Name metricToCollect) {
-        // there are none yet - just a placeholder in case we add some in the future
-        throw new UnsupportedOperationException("Invalid memory metric to collect: " + metricToCollect);
     }
 
     /**
@@ -435,9 +458,9 @@ public class OshiPlatformCache {
 
             } else if (searchType == PlatformResourceType.PROCESSOR) {
 
-                Map<String, Processor> processors = getProcessors();
-                for (Processor processor : processors.values()) {
-                    String id = String.valueOf(processor.getProcessorNumber());
+                CentralProcessor centralProcessor = getProcessor();
+                for (int i = 0; i < centralProcessor.getLogicalProcessorCount(); i++) {
+                    String id = String.valueOf(i);
                     if (PlatformPath.ANY_NAME.equals(searchName) || searchName.equals(id)) {
                         PlatformPath resourcePath = PlatformPath.builder()
                                 .segments(osPath)

@@ -26,9 +26,9 @@ import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceTy
 import org.junit.Assert;
 import org.junit.Test;
 
-import oshi.hardware.Memory;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.GlobalMemory;
 import oshi.hardware.PowerSource;
-import oshi.hardware.Processor;
 import oshi.software.os.OSFileStore;
 import oshi.software.os.OperatingSystem;
 import oshi.software.os.OperatingSystemVersion;
@@ -108,7 +108,7 @@ public class OshiPlatformCacheTest {
         oshi.getOperatingSystem();
         oshi.getFileStores();
         oshi.getMemory();
-        oshi.getProcessors();
+        oshi.getProcessor();
         oshi.getPowerSources();
         oshi.refresh();
     }
@@ -202,6 +202,18 @@ public class OshiPlatformCacheTest {
         Double val;
         OshiPlatformCache oshi = newOshiPlatformCache();
 
+        // Operating System
+        for (Name metricName : PlatformResourceType.OPERATING_SYSTEM.getMetricNames()) {
+            val = oshi.getOperatingSystemMetric(metricName);
+            print("OS metric [%s]=[%s]", metricName, val);
+            Assert.assertNotNull(val);
+        }
+        try {
+            oshi.getOperatingSystemMetric(new Name("invalidMetricName"));
+            Assert.fail("Exception should have been thrown on bad OS metric name");
+        } catch (Exception ok) {
+        }
+
         // Memory
         for (Name metricName : PlatformResourceType.MEMORY.getMetricNames()) {
             val = oshi.getMemoryMetric(metricName);
@@ -230,15 +242,15 @@ public class OshiPlatformCacheTest {
         }
 
         // Processors
-        Map<String, Processor> processors = oshi.getProcessors();
-        for (Processor p : processors.values()) {
+        CentralProcessor processor = oshi.getProcessor();
+        for (int i = 0; i < processor.getLogicalProcessorCount(); i++) {
             for (Name metricName : PlatformResourceType.PROCESSOR.getMetricNames()) {
-                val = oshi.getProcessorMetric("" + p.getProcessorNumber(), metricName);
-                print("Processor [%s] metric [%s]=[%s]", "" + p.getProcessorNumber(), metricName, val);
+                val = oshi.getProcessorMetric("" + i, metricName);
+                print("Processor [%s] metric [%s]=[%s]", "" + i, metricName, val);
                 Assert.assertNotNull(val);
             }
             try {
-                oshi.getProcessorMetric("" + p.getProcessorNumber(), new Name("invalidMetricName"));
+                oshi.getProcessorMetric("" + i, new Name("invalidMetricName"));
                 Assert.fail("Exception should have been thrown on bad processor metric name");
             } catch (Exception ok) {
             }
@@ -271,14 +283,14 @@ public class OshiPlatformCacheTest {
         Object os1 = oshi.getOperatingSystem();
         Object mem1 = oshi.getMemory();
         Object fs1 = oshi.getFileStores();
-        Object proc1 = oshi.getProcessors();
+        Object proc1 = oshi.getProcessor();
         Object ps1 = oshi.getPowerSources();
 
         // see that they are cached - same objects as before
         Object os2 = oshi.getOperatingSystem();
         Object mem2 = oshi.getMemory();
         Object fs2 = oshi.getFileStores();
-        Object proc2 = oshi.getProcessors();
+        Object proc2 = oshi.getProcessor();
         Object ps2 = oshi.getPowerSources();
         Assert.assertSame(os1, os2);
         Assert.assertSame(mem1, mem2);
@@ -291,7 +303,7 @@ public class OshiPlatformCacheTest {
         os2 = oshi.getOperatingSystem();
         mem2 = oshi.getMemory();
         fs2 = oshi.getFileStores();
-        proc2 = oshi.getProcessors();
+        proc2 = oshi.getProcessor();
         ps2 = oshi.getPowerSources();
         Assert.assertNotSame(os1, os2);
         Assert.assertNotSame(mem1, mem2);
@@ -352,7 +364,7 @@ public class OshiPlatformCacheTest {
     @Test
     public void getMemory() {
         OshiPlatformCache oshi = newOshiPlatformCache();
-        Memory memory = oshi.getMemory();
+        GlobalMemory memory = oshi.getMemory();
         Assert.assertNotNull(memory);
 
         long avail = memory.getAvailable();
@@ -370,13 +382,12 @@ public class OshiPlatformCacheTest {
     @Test
     public void getProcessors() {
         OshiPlatformCache oshi = newOshiPlatformCache();
-        Map<String, Processor> processors = oshi.getProcessors();
-        Assert.assertNotNull(processors);
+        CentralProcessor processor = oshi.getProcessor();
+        Assert.assertNotNull(processor);
 
         Util.sleep(2000L); // sleep to let processors be able to calculate load
 
-        int i = 0;
-        for (Processor processor : processors.values()) {
+        for (int i = 0; i < processor.getLogicalProcessorCount(); i++) {
             String name = processor.getName();
             String family;
             try {
@@ -407,7 +418,7 @@ public class OshiPlatformCacheTest {
             String vendor = processor.getVendor();
             double systemCpuLoad = processor.getSystemCpuLoad();
             double systemLoadAverage = processor.getSystemLoadAverage();
-            int processorNumber = processor.getProcessorNumber();
+            int processorNumber = i;
             long systemUpTime = processor.getSystemUptime();
             long vendorFrequency = processor.getVendorFreq();
             boolean isCpu64bit;
@@ -418,13 +429,13 @@ public class OshiPlatformCacheTest {
                         + " " + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
                 isCpu64bit = false;
             }
-            long[] processorCpuLoadTicks = processor.getProcessorCpuLoadTicks();
+            long[] processorCpuLoadTicks = processor.getProcessorCpuLoadTicks()[i];
             long[] systemCpuLoadTicks = processor.getSystemCpuLoadTicks();
 
             processor.getProcessorCpuLoadBetweenTicks();
             processor.getSystemCpuLoadBetweenTicks();
             Util.sleep(1100L); // provide some time to let the getXCpuLoadBetweenTicks have good data to use
-            double processorCpuLoadBetweenTicks = processor.getProcessorCpuLoadBetweenTicks();
+            double processorCpuLoadBetweenTicks = processor.getProcessorCpuLoadBetweenTicks()[i];
             double systemCpuLoadBetweenTicks = processor.getSystemCpuLoadBetweenTicks();
 
             Assert.assertNotNull(name);
@@ -434,7 +445,7 @@ public class OshiPlatformCacheTest {
             Assert.assertNotNull(stepping);
             Assert.assertNotNull(vendor);
 
-            print("===PROCESSOR #%d ===", ++i);
+            print("===PROCESSOR #%d ===", i);
             print("  Name=[%s]", name);
             print("  Family=[%s]", family);
             print("  Identifier=[%s]", identifier);

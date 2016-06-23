@@ -456,7 +456,7 @@ public class MonitorServiceConfigurationBuilder {
     }
 
     private static TypeSets<PlatformNodeLocation> buildPlatformTypeSets(ModelNode config, OperationContext context)
-                    throws OperationFailedException {
+            throws OperationFailedException {
 
         // assume they are disabled unless configured otherwise
 
@@ -493,25 +493,66 @@ public class MonitorServiceConfigurationBuilder {
                         PlatformPath.builder().any(PlatformResourceType.OPERATING_SYSTEM).build()))
                 .resourceNameTemplate("%s");
 
-        ResourceConfigurationPropertyType<PlatformNodeLocation> machineIdConfigType =
-                new ResourceConfigurationPropertyType<> (
-                        ID.NULL_ID,
+        ResourceConfigurationPropertyType<PlatformNodeLocation> machineIdConfigType = //
+                new ResourceConfigurationPropertyType<>(ID.NULL_ID,
                         Constants.MACHINE_ID,
                         new AttributeLocation<>(
-                                new PlatformNodeLocation(PlatformPath.empty()), Constants.MACHINE_ID.getNameString()
-                        )
-                );
+                                new PlatformNodeLocation(PlatformPath.empty()), Constants.MACHINE_ID.getNameString()));
         rootTypeBldr.resourceConfigurationPropertyType(machineIdConfigType);
 
-        populateMetricAndAvailTypesForResourceType(rootTypeBldr, typeSetsBuilder);
-        ResourceType<PlatformNodeLocation> rootType = rootTypeBldr.build();
+        // OS top-level metrics
 
-        TypeSet<ResourceType<PlatformNodeLocation>> rootTypeSet =
-                TypeSet.<ResourceType<PlatformNodeLocation>> builder()
-                        .enabled(true)
-                        .name(osName)
-                        .type(rootType)
-                        .build();
+        Interval osInterval = new Interval(getInt(platformValueNode, context, PlatformAttributes.INTERVAL),
+                TimeUnit.valueOf(getString(platformValueNode, context, PlatformAttributes.TIME_UNITS).toUpperCase()));
+
+        MetricType<PlatformNodeLocation> systemCpuLoad = new MetricType<PlatformNodeLocation>(null,
+                Constants.OPERATING_SYSTEM_SYS_CPU_LOAD,
+                new AttributeLocation<>(
+                        new PlatformNodeLocation(PlatformPath.empty()),
+                        Constants.OPERATING_SYSTEM_SYS_CPU_LOAD.getNameString()),
+                osInterval,
+                MeasurementUnit.PERCENTAGE,
+                org.hawkular.metrics.client.common.MetricType.GAUGE);
+
+        MetricType<PlatformNodeLocation> systemLoadAverage = new MetricType<PlatformNodeLocation>(null,
+                Constants.OPERATING_SYSTEM_SYS_LOAD_AVG,
+                new AttributeLocation<>(
+                        new PlatformNodeLocation(PlatformPath.empty()),
+                        Constants.OPERATING_SYSTEM_SYS_LOAD_AVG.getNameString()),
+                osInterval,
+                MeasurementUnit.NONE,
+                org.hawkular.metrics.client.common.MetricType.GAUGE);
+
+        MetricType<PlatformNodeLocation> processCount = new MetricType<PlatformNodeLocation>(null,
+                Constants.OPERATING_SYSTEM_PROCESS_COUNT,
+                new AttributeLocation<>(
+                        new PlatformNodeLocation(PlatformPath.empty()),
+                        Constants.OPERATING_SYSTEM_PROCESS_COUNT.getNameString()),
+                osInterval,
+                MeasurementUnit.NONE,
+                org.hawkular.metrics.client.common.MetricType.GAUGE);
+
+        TypeSet<MetricType<PlatformNodeLocation>> osMetrics = TypeSet
+                .<MetricType<PlatformNodeLocation>> builder()
+                .name(PlatformResourceType.OPERATING_SYSTEM.getName())
+                .type(systemCpuLoad)
+                .type(systemLoadAverage)
+                .type(processCount)
+                .build();
+
+        typeSetsBuilder.metricTypeSet(osMetrics);
+
+        rootTypeBldr.metricSetName(osMetrics.getName());
+        populateMetricAndAvailTypesForResourceType(rootTypeBldr, typeSetsBuilder);
+
+        ResourceType<PlatformNodeLocation> rootType = rootTypeBldr.build();
+        TypeSet<ResourceType<PlatformNodeLocation>> rootTypeSet = TypeSet
+                .<ResourceType<PlatformNodeLocation>> builder()
+                .enabled(true)
+                .name(osName)
+                .type(rootType)
+                .build();
+
         typeSetsBuilder.resourceTypeSet(rootTypeSet);
 
         // now add children types if they are enabled
@@ -523,8 +564,8 @@ public class MonitorServiceConfigurationBuilder {
                 boolean enabled = getBoolean(fileStoresNode, context, FileStoresAttributes.ENABLED);
                 if (enabled) {
                     Interval interval = new Interval(getInt(fileStoresNode, context, FileStoresAttributes.INTERVAL),
-                            TimeUnit.valueOf(getString(fileStoresNode, context,
-                                    FileStoresAttributes.TIME_UNITS).toUpperCase()));
+                            TimeUnit.valueOf(getString(fileStoresNode, context, FileStoresAttributes.TIME_UNITS)
+                                    .toUpperCase()));
 
                     MetricType<PlatformNodeLocation> usableSpace = new MetricType<PlatformNodeLocation>(null,
                             Constants.FILE_STORE_USABLE_SPACE,
@@ -544,12 +585,12 @@ public class MonitorServiceConfigurationBuilder {
                             MeasurementUnit.BYTES,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
-                    TypeSet<MetricType<PlatformNodeLocation>> fileStoreMetrics =
-                            TypeSet.<MetricType<PlatformNodeLocation>> builder()
+                    TypeSet<MetricType<PlatformNodeLocation>> fileStoreMetrics = TypeSet
+                            .<MetricType<PlatformNodeLocation>> builder()
                             .name(PlatformResourceType.FILE_STORE.getName())
-                                    .type(usableSpace)
-                                    .type(totalSpace)
-                                    .build();
+                            .type(usableSpace)
+                            .type(totalSpace)
+                            .build();
 
                     typeSetsBuilder.metricTypeSet(fileStoreMetrics);
 
@@ -558,19 +599,18 @@ public class MonitorServiceConfigurationBuilder {
                     Builder<?, PlatformNodeLocation> fileStoreBldr = ResourceType.<PlatformNodeLocation> builder()
                             .name(PlatformResourceType.FILE_STORE.getName())
                             .location(fileStoreLocation)
-                            .resourceNameTemplate(
-                                    PlatformResourceType.FILE_STORE.getName().getNameString() + " [%s]")
+                            .resourceNameTemplate(PlatformResourceType.FILE_STORE.getName().getNameString() + " [%s]")
                             .parent(rootType.getName())
                             .metricSetName(fileStoreMetrics.getName());
 
                     populateMetricAndAvailTypesForResourceType(fileStoreBldr, typeSetsBuilder);
 
                     ResourceType<PlatformNodeLocation> fileStore = fileStoreBldr.build();
-                    TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
-                            TypeSet.<ResourceType<PlatformNodeLocation>> builder()
+                    TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
+                            .<ResourceType<PlatformNodeLocation>> builder()
                             .name(PlatformResourceType.FILE_STORE.getName())
-                                    .type(fileStore)
-                                    .build();
+                            .type(fileStore)
+                            .build();
 
                     typeSetsBuilder.resourceTypeSet(typeSet);
                 }
@@ -587,8 +627,8 @@ public class MonitorServiceConfigurationBuilder {
                 boolean enabled = getBoolean(memoryNode, context, MemoryAttributes.ENABLED);
                 if (enabled) {
                     Interval interval = new Interval(getInt(memoryNode, context, MemoryAttributes.INTERVAL),
-                            TimeUnit.valueOf(getString(memoryNode, context,
-                                    MemoryAttributes.TIME_UNITS).toUpperCase()));
+                            TimeUnit.valueOf(
+                                    getString(memoryNode, context, MemoryAttributes.TIME_UNITS).toUpperCase()));
 
                     MetricType<PlatformNodeLocation> available = new MetricType<PlatformNodeLocation>(null,
                             Constants.MEMORY_AVAILABLE,
@@ -608,12 +648,12 @@ public class MonitorServiceConfigurationBuilder {
                             MeasurementUnit.BYTES,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
-                    TypeSet<MetricType<PlatformNodeLocation>> memoryMetrics =
-                            TypeSet.<MetricType<PlatformNodeLocation>> builder()
+                    TypeSet<MetricType<PlatformNodeLocation>> memoryMetrics = TypeSet
+                            .<MetricType<PlatformNodeLocation>> builder()
                             .name(PlatformResourceType.MEMORY.getName())
-                                    .type(available)
-                                    .type(total)
-                                    .build();
+                            .type(available)
+                            .type(total)
+                            .build();
 
                     typeSetsBuilder.metricTypeSet(memoryMetrics);
 
@@ -629,11 +669,11 @@ public class MonitorServiceConfigurationBuilder {
                     populateMetricAndAvailTypesForResourceType(memoryBldr, typeSetsBuilder);
 
                     ResourceType<PlatformNodeLocation> memory = memoryBldr.build();
-                    TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
-                            TypeSet.<ResourceType<PlatformNodeLocation>> builder()
+                    TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
+                            .<ResourceType<PlatformNodeLocation>> builder()
                             .name(PlatformResourceType.MEMORY.getName())
-                                    .type(memory)
-                                    .build();
+                            .type(memory)
+                            .build();
 
                     typeSetsBuilder.resourceTypeSet(typeSet);
                 }
@@ -650,8 +690,8 @@ public class MonitorServiceConfigurationBuilder {
                 boolean enabled = getBoolean(processorsNode, context, ProcessorsAttributes.ENABLED);
                 if (enabled) {
                     Interval interval = new Interval(getInt(processorsNode, context, ProcessorsAttributes.INTERVAL),
-                            TimeUnit.valueOf(getString(processorsNode, context,
-                                    ProcessorsAttributes.TIME_UNITS).toUpperCase()));
+                            TimeUnit.valueOf(getString(processorsNode, context, ProcessorsAttributes.TIME_UNITS)
+                                    .toUpperCase()));
 
                     // this is the Processor.getProcessorCpuLoadBetweenTicks value
                     MetricType<PlatformNodeLocation> cpuUsage = new MetricType<PlatformNodeLocation>(null,
@@ -663,11 +703,11 @@ public class MonitorServiceConfigurationBuilder {
                             MeasurementUnit.PERCENTAGE,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
-                    TypeSet<MetricType<PlatformNodeLocation>> processorMetrics =
-                            TypeSet.<MetricType<PlatformNodeLocation>> builder()
+                    TypeSet<MetricType<PlatformNodeLocation>> processorMetrics = TypeSet
+                            .<MetricType<PlatformNodeLocation>> builder()
                             .name(PlatformResourceType.PROCESSOR.getName())
-                                    .type(cpuUsage)
-                                    .build();
+                            .type(cpuUsage)
+                            .build();
 
                     typeSetsBuilder.metricTypeSet(processorMetrics);
 
@@ -683,11 +723,11 @@ public class MonitorServiceConfigurationBuilder {
                     populateMetricAndAvailTypesForResourceType(processorBldr, typeSetsBuilder);
 
                     ResourceType<PlatformNodeLocation> processor = processorBldr.build();
-                    TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
-                            TypeSet.<ResourceType<PlatformNodeLocation>> builder()
+                    TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
+                            .<ResourceType<PlatformNodeLocation>> builder()
                             .name(PlatformResourceType.PROCESSOR.getName())
-                                    .type(processor)
-                                    .build();
+                            .type(processor)
+                            .build();
 
                     typeSetsBuilder.resourceTypeSet(typeSet);
                 }
@@ -705,8 +745,8 @@ public class MonitorServiceConfigurationBuilder {
                 if (enabled) {
                     Interval interval = new Interval(
                             getInt(powerSourcesNode, context, PowerSourcesAttributes.INTERVAL),
-                            TimeUnit.valueOf(getString(powerSourcesNode, context,
-                                    PowerSourcesAttributes.TIME_UNITS).toUpperCase()));
+                            TimeUnit.valueOf(getString(powerSourcesNode, context, PowerSourcesAttributes.TIME_UNITS)
+                                    .toUpperCase()));
 
                     MetricType<PlatformNodeLocation> remainingCap = new MetricType<PlatformNodeLocation>(null,
                             Constants.POWER_SOURCE_REMAINING_CAPACITY,
@@ -726,12 +766,12 @@ public class MonitorServiceConfigurationBuilder {
                             MeasurementUnit.SECONDS,
                             org.hawkular.metrics.client.common.MetricType.GAUGE);
 
-                    TypeSet<MetricType<PlatformNodeLocation>> powerSourceMetrics =
-                            TypeSet.<MetricType<PlatformNodeLocation>> builder()
+                    TypeSet<MetricType<PlatformNodeLocation>> powerSourceMetrics = TypeSet
+                            .<MetricType<PlatformNodeLocation>> builder()
                             .name(PlatformResourceType.POWER_SOURCE.getName())
-                                    .type(remainingCap)
-                                    .type(timeRemaining)
-                                    .build();
+                            .type(remainingCap)
+                            .type(timeRemaining)
+                            .build();
 
                     typeSetsBuilder.metricTypeSet(powerSourceMetrics);
 
@@ -748,11 +788,11 @@ public class MonitorServiceConfigurationBuilder {
                     populateMetricAndAvailTypesForResourceType(powerSourceBldr, typeSetsBuilder);
 
                     ResourceType<PlatformNodeLocation> powerSource = powerSourceBldr.build();
-                    TypeSet<ResourceType<PlatformNodeLocation>> typeSet =
-                            TypeSet.<ResourceType<PlatformNodeLocation>> builder()
+                    TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
+                            .<ResourceType<PlatformNodeLocation>> builder()
                             .name(PlatformResourceType.POWER_SOURCE.getName())
-                                    .type(powerSource)
-                                    .build();
+                            .type(powerSource)
+                            .build();
 
                     typeSetsBuilder.resourceTypeSet(typeSet);
                 }
