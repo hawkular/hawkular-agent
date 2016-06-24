@@ -1,0 +1,12 @@
+= Docker
+
+This builds a WF 10 server with an agent installed
+
+== Build
+
+$ sh do.sh
+
+== Run
+
+docker run -p 8081:8080 --link 2271bcd4adca:hawkular pilhuhn/hawkfly
+
