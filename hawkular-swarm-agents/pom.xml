@@ -32,10 +32,10 @@
   <name>Hawkular Agent: Wildfly Swarm Agent Parent</name>
 
   <properties>
-    <version.swarm.core>1.0.0.CR3</version.swarm.core>
+    <version.swarm.core>1.0.0.Final</version.swarm.core>
     <version.swarm.spi>1.0.0.Final</version.swarm.spi>
-    <version.swarm.fraction-plugin>18</version.swarm.fraction-plugin>
-    <version.swarm.plugin>1.0.0.CR1</version.swarm.plugin>
+    <version.swarm.fraction-plugin>20</version.swarm.fraction-plugin>
+    <version.swarm.plugin>1.0.0.Final</version.swarm.plugin>
   </properties>
 
   <dependencyManagement>
