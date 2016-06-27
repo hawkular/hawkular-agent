@@ -41,15 +41,15 @@ public interface MsgLogger extends BasicLogger {
     MsgLogger LOG = Logger.getMessageLogger(MsgLogger.class, "org.hawkular.agent.monitor");
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10000, value = "Starting Hawkular Monitor service")
+    @Message(id = 10000, value = "Starting Hawkular WildFly Agent service")
     void infoStarting();
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10001, value = "Stopping Hawkular Monitor service")
+    @Message(id = 10001, value = "Stopping Hawkular WildFly Agent service")
     void infoStopping();
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10002, value = "Hawkular Monitor subsystem is disabled; service will not be started")
+    @Message(id = 10002, value = "Hawkular WildFly Agent subsystem is disabled; service will not be started")
     void infoSubsystemDisabled();
 
     @LogMessage(level = Level.INFO)
@@ -225,8 +225,7 @@ public interface MsgLogger extends BasicLogger {
     void infoNoPlatformConfig();
 
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10046,
-            value = "Got response code [%d] when storing entity of type [%s] under path [%s] to inventory")
+    @Message(id = 10046, value = "Got response code [%d] when storing entity of type [%s] under path [%s] to inventory")
     void errorFailedToStorePathToInventory(int code, String entityType, String path);
 
     @LogMessage(level = Level.WARN)
@@ -341,5 +340,9 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10074, value = "The resource type [%s] is missing a parent. "
             + "Make sure at least one of these resource types are defined and enabled: %s")
     void errorInvalidRootResourceType(String idString, Collection<Name> parents);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10075, value = "Cannot register feed ID [%s] under tenant ID [%s] via URL [%s]: %s")
+    void warnCannotRegisterFeed(String feedId, String tenantId, String url, String message);
 
 }

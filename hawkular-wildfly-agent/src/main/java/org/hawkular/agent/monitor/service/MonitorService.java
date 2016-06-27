@@ -188,23 +188,23 @@ public class MonitorService implements Service<MonitorService> {
             log.infoUsingServerSideUrl(useUrl);
 
             MonitorServiceConfiguration.StorageAdapterConfiguration runtimeStorageAdapter = //
-            new MonitorServiceConfiguration.StorageAdapterConfiguration(
-                    bootStorageAdapter.getType(),
-                    bootStorageAdapter.getUsername(),
-                    bootStorageAdapter.getPassword(),
-                    bootStorageAdapter.getTenantId(),
-                    bootStorageAdapter.getFeedId(),
-                    useUrl,
-                    bootStorageAdapter.isUseSSL(),
-                    bootStorageAdapter.getServerOutboundSocketBindingRef(),
-                    bootStorageAdapter.getInventoryContext(),
-                    bootStorageAdapter.getMetricsContext(),
-                    bootStorageAdapter.getFeedcommContext(),
-                    bootStorageAdapter.getKeystorePath(),
-                    bootStorageAdapter.getKeystorePassword(),
-                    bootStorageAdapter.getSecurityRealm(),
-                    bootStorageAdapter.getConnectTimeoutSeconds(),
-                    bootStorageAdapter.getReadTimeoutSeconds());
+                    new MonitorServiceConfiguration.StorageAdapterConfiguration(
+                            bootStorageAdapter.getType(),
+                            bootStorageAdapter.getUsername(),
+                            bootStorageAdapter.getPassword(),
+                            bootStorageAdapter.getTenantId(),
+                            bootStorageAdapter.getFeedId(),
+                            useUrl,
+                            bootStorageAdapter.isUseSSL(),
+                            bootStorageAdapter.getServerOutboundSocketBindingRef(),
+                            bootStorageAdapter.getInventoryContext(),
+                            bootStorageAdapter.getMetricsContext(),
+                            bootStorageAdapter.getFeedcommContext(),
+                            bootStorageAdapter.getKeystorePath(),
+                            bootStorageAdapter.getKeystorePassword(),
+                            bootStorageAdapter.getSecurityRealm(),
+                            bootStorageAdapter.getConnectTimeoutSeconds(),
+                            bootStorageAdapter.getReadTimeoutSeconds());
 
             return bootConfiguration.cloneWith(runtimeStorageAdapter);
         }
@@ -901,6 +901,9 @@ public class MonitorService implements Service<MonitorService> {
     /**
      * Registers our feed with the Hawkular system. Note, it is OK to re-register the same feed/tenant combinations.
      *
+     * This will not return until the feed is properly registered. If the Hawkular server is not up, this could mean
+     * we are stuck here for a long time.
+     *
      * @param tenantIds The tenantIds for which we registered the feed
      * @throws Exception if failed to register feed
      */
@@ -919,47 +922,69 @@ public class MonitorService implements Service<MonitorService> {
             // rest of the URL says we want the feeds API
             url.append("feeds");
 
+            // if we need to retry the request, this is the timeout
+            int retryMillis;
+            try {
+                retryMillis = Integer.parseInt(
+                        System.getProperty("hawkular.agent.feed.registration.retry", "60000"));
+            } catch (Exception e) {
+                retryMillis = 60000;
+            }
+
             // now send the REST requests - one for each tenant to register
             OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
 
             for (String tenantId : tenantIds) {
                 Map<String, String> header = Collections.singletonMap("Hawkular-Tenant", tenantId);
                 Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), header, jsonPayload);
-                Response httpResponse = httpclient.newCall(request).execute();
 
-                try {
-                    // HTTP status of 201 means success; 409 means it already exists, anything else is an error
-                    if (httpResponse.code() == 201) {
-                        final String feedObjectFromServer = httpResponse.body().string();
-                        final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
-                        if (this.feedId.equals(feed.getId())) {
-                            log.infoUsingFeedId(feed.getId(), tenantId);
-                        } else {
-                            log.errorUnwantedFeedId(feed.getId(), this.feedId, tenantId);
-                            throw new Exception(
-                                    String.format("Received feed [%s] when registering feed/tenant[%s]/[%s]. "
-                                            + "status-code=[%d], reason=[%s], url=[%s]",
-                                            feed.getId(),
-                                            this.feedId,
-                                            tenantId,
-                                            httpResponse.code(),
-                                            httpResponse.message(),
-                                            request.urlString()));
+                boolean keepRetrying = true; // assume it will be a failure that we can retry on
+                do {
+                    try {
+                        // note that we always retry if newCall.execute throws an exception
+                        Response httpResponse = httpclient.newCall(request).execute();
+
+                        try {
+                            // HTTP status of 201 means success; 409 means it already exists, anything else is an error
+                            if (httpResponse.code() == 201) {
+                                keepRetrying = false;
+                                final String feedObjectFromServer = httpResponse.body().string();
+                                final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
+                                if (this.feedId.equals(feed.getId())) {
+                                    log.infoUsingFeedId(feed.getId(), tenantId);
+                                } else {
+                                    // do not keep retrying - this is a bad error; we need to abort
+                                    log.errorUnwantedFeedId(feed.getId(), this.feedId, tenantId);
+                                    throw new Exception(String.format("Received unwanted feed [%s]", feed.getId()));
+                                }
+                            } else if (httpResponse.code() == 409) {
+                                keepRetrying = false;
+                                log.infoFeedIdAlreadyRegistered(this.feedId, tenantId);
+                            } else if (httpResponse.code() == 404) {
+                                // the server is probably just starting to come up - wait for it
+                                keepRetrying = true;
+                                throw new Exception(String.format("Is the Hawkular Server booting up? (%d=%s)",
+                                        httpResponse.code(),
+                                        httpResponse.message()));
+                            } else {
+                                // futile to keep retrying and getting the same 500 or whatever error
+                                keepRetrying = false;
+                                throw new Exception(String.format("status-code=[%d], reason=[%s]",
+                                        httpResponse.code(),
+                                        httpResponse.message()));
+                            }
+                        } finally {
+                            httpResponse.body().close();
                         }
-                    } else if (httpResponse.code() == 409) {
-                        log.infoFeedIdAlreadyRegistered(this.feedId, tenantId);
-                    } else {
-                        throw new Exception(String.format("Cannot register feed ID [%s] under tenant ID [%s]. "
-                                + "status-code=[%d], reason=[%s], url=[%s]",
-                                this.feedId,
-                                tenantId,
-                                httpResponse.code(),
-                                httpResponse.message(),
-                                request.urlString()));
+                    } catch (Exception e) {
+                        log.warnCannotRegisterFeed(this.feedId, tenantId, request.urlString(), e.toString());
+                        if (keepRetrying) {
+                            Thread.sleep(retryMillis);
+                        } else {
+                            throw e;
+                        }
                     }
-                } finally {
-                    httpResponse.body().close();
-                }
+                } while (keepRetrying);
             }
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot register feed ID [%s]", this.feedId), t);
