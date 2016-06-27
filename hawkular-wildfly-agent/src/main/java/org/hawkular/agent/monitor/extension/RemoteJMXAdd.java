@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.EndpointService;
@@ -52,16 +53,34 @@ public class RemoteJMXAdd extends MonitorServiceAddStepHandler {
         }
 
         MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
+        String newEndpointName = context.getCurrentAddressValue();
 
-        // create a new endpoint service
-        ProtocolServices newServices = monitorService.createProtocolServicesBuilder()
-                .jmxProtocolService(config.getJmxConfiguration()).build();
-        EndpointService<JMXNodeLocation, JMXSession> endpointService = newServices.getJmxProtocolService()
-                .getEndpointServices().get(context.getCurrentAddressValue());
+        // Register the feed under the tenant of the new managed server.
+        // If endpoint has a null tenant then there is nothing to do since it will just reuse the agent's tenant ID
+        EndpointConfiguration endpointConfig = config.getJmxConfiguration().getEndpoints().get(newEndpointName);
+        boolean isEnabled = endpointConfig.isEnabled();
 
-        // put the new endpoint service in the original protocol services container
-        ProtocolService<JMXNodeLocation, JMXSession> jmxService = monitorService.getProtocolServices()
-                .getJmxProtocolService();
-        jmxService.add(endpointService);
+        String newTenantId = endpointConfig.getTenantId();
+        if (newTenantId != null) {
+            try {
+                monitorService.registerFeed(newTenantId, 0);
+            } catch (Exception e) {
+                isEnabled = false;
+                log.warnCannotRegisterFeedForNewManagedServer(newTenantId, newEndpointName, e.toString());
+            }
+        }
+
+        if (isEnabled) {
+            // create a new endpoint service
+            ProtocolServices newServices = monitorService.createProtocolServicesBuilder()
+                    .jmxProtocolService(config.getJmxConfiguration()).build();
+            EndpointService<JMXNodeLocation, JMXSession> endpointService = newServices.getJmxProtocolService()
+                    .getEndpointServices().get(newEndpointName);
+
+            // put the new endpoint service in the original protocol services container
+            ProtocolService<JMXNodeLocation, JMXSession> jmxService = monitorService.getProtocolServices()
+                    .getJmxProtocolService();
+            jmxService.add(endpointService);
+        }
     }
 }

@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.extension;
 import org.hawkular.agent.monitor.dynamicprotocol.DynamicEndpointService;
 import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolService;
 import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolServices;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.MonitorService;
@@ -50,18 +51,37 @@ public class RemotePrometheusAdd extends MonitorServiceAddStepHandler {
         }
 
         MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
+        String newEndpointName = context.getCurrentAddressValue();
 
-        // create a new endpoint service
-        DynamicProtocolServices newServices = monitorService.createDynamicProtocolServicesBuilder()
-                .prometheusDynamicProtocolService(config.getPrometheusConfiguration(),
-                        monitorService.getHawkularMonitorContext())
-                .build();
-        DynamicEndpointService endpointService = newServices.getPrometheusProtocolService()
-                .getDynamicEndpointServices().get(context.getCurrentAddressValue());
+        // Register the feed under the tenant of the new managed server.
+        // If endpoint has a null tenant then there is nothing to do since it will just reuse the agent's tenant ID
+        DynamicEndpointConfiguration endpointConfig = config.getPrometheusConfiguration().getEndpoints()
+                .get(newEndpointName);
+        boolean isEnabled = endpointConfig.isEnabled();
 
-        // put the new endpoint service in the original protocol services container
-        DynamicProtocolService promService = monitorService.getDynamicProtocolServices()
-                .getPrometheusProtocolService();
-        promService.add(endpointService);
+        String newTenantId = endpointConfig.getTenantId();
+        if (newTenantId != null) {
+            try {
+                monitorService.registerFeed(newTenantId, 0);
+            } catch (Exception e) {
+                isEnabled = false;
+                log.warnCannotRegisterFeedForNewManagedServer(newTenantId, newEndpointName, e.toString());
+            }
+        }
+
+        if (isEnabled) {
+            // create a new endpoint service
+            DynamicProtocolServices newServices = monitorService.createDynamicProtocolServicesBuilder()
+                    .prometheusDynamicProtocolService(config.getPrometheusConfiguration(),
+                            monitorService.getHawkularMonitorContext())
+                    .build();
+            DynamicEndpointService endpointService = newServices.getPrometheusProtocolService()
+                    .getDynamicEndpointServices().get(newEndpointName);
+
+            // put the new endpoint service in the original protocol services container
+            DynamicProtocolService promService = monitorService.getDynamicProtocolServices()
+                    .getPrometheusProtocolService();
+            promService.add(endpointService);
+        }
     }
 }
