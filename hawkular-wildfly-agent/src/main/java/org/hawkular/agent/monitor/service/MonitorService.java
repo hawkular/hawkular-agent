@@ -634,7 +634,7 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * @return tenant IDs of the agent and its monitored endpoints
+     * @return tenant IDs of the agent and its monitored endpoints (even if those monitored endpoints are not enabled)
      */
     private Set<String> getTenantIds() {
         Set<String> tenantIds = new HashSet<String>();
@@ -899,96 +899,109 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * Registers our feed with the Hawkular system. Note, it is OK to re-register the same feed/tenant combinations.
+     * Registers the feed with the Hawkular system under the given tenants.
+     * Note, it is OK to re-register the same feed/tenant combinations.
      *
-     * This will not return until the feed is properly registered. If the Hawkular server is not up, this could mean
-     * we are stuck here for a long time.
+     * This will not return until the feed is properly registered under all tenants.
+     * If the Hawkular server is not up, this could mean we are stuck here for a long time.
      *
-     * @param tenantIds The tenantIds for which we registered the feed
+     * @param tenantIds the feed is registered under the given tenantIds
      * @throws Exception if failed to register feed
      */
     private void registerFeed(Set<String> tenantIds) throws Exception {
+        int retryMillis;
+        try {
+            retryMillis = Integer.parseInt(System.getProperty("hawkular.agent.feed.registration.retry", "60000"));
+        } catch (Exception e) {
+            retryMillis = 60000;
+        }
 
         try {
-            // get the payload in JSON format
-            Feed.Blueprint feedPojo = new Feed.Blueprint(this.feedId, null);
-            String jsonPayload = Util.toJson(feedPojo);
-
-            // build the REST URL...
-            // start with the protocol, host, and port, plus context
-            StringBuilder url = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
-                    configuration.getStorageAdapter().getInventoryContext());
-
-            // rest of the URL says we want the feeds API
-            url.append("feeds");
-
-            // if we need to retry the request, this is the timeout
-            int retryMillis;
-            try {
-                retryMillis = Integer.parseInt(
-                        System.getProperty("hawkular.agent.feed.registration.retry", "60000"));
-            } catch (Exception e) {
-                retryMillis = 60000;
-            }
-
-            // now send the REST requests - one for each tenant to register
-            OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-
             for (String tenantId : tenantIds) {
-                Map<String, String> header = Collections.singletonMap("Hawkular-Tenant", tenantId);
-                Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), header, jsonPayload);
-
-                boolean keepRetrying = true; // assume it will be a failure that we can retry on
-                do {
-                    try {
-                        // note that we always retry if newCall.execute throws an exception
-                        Response httpResponse = httpclient.newCall(request).execute();
-
-                        try {
-                            // HTTP status of 201 means success; 409 means it already exists, anything else is an error
-                            if (httpResponse.code() == 201) {
-                                keepRetrying = false;
-                                final String feedObjectFromServer = httpResponse.body().string();
-                                final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
-                                if (this.feedId.equals(feed.getId())) {
-                                    log.infoUsingFeedId(feed.getId(), tenantId);
-                                } else {
-                                    // do not keep retrying - this is a bad error; we need to abort
-                                    log.errorUnwantedFeedId(feed.getId(), this.feedId, tenantId);
-                                    throw new Exception(String.format("Received unwanted feed [%s]", feed.getId()));
-                                }
-                            } else if (httpResponse.code() == 409) {
-                                keepRetrying = false;
-                                log.infoFeedIdAlreadyRegistered(this.feedId, tenantId);
-                            } else if (httpResponse.code() == 404) {
-                                // the server is probably just starting to come up - wait for it
-                                keepRetrying = true;
-                                throw new Exception(String.format("Is the Hawkular Server booting up? (%d=%s)",
-                                        httpResponse.code(),
-                                        httpResponse.message()));
-                            } else {
-                                // futile to keep retrying and getting the same 500 or whatever error
-                                keepRetrying = false;
-                                throw new Exception(String.format("status-code=[%d], reason=[%s]",
-                                        httpResponse.code(),
-                                        httpResponse.message()));
-                            }
-                        } finally {
-                            httpResponse.body().close();
-                        }
-                    } catch (Exception e) {
-                        log.warnCannotRegisterFeed(this.feedId, tenantId, request.urlString(), e.toString());
-                        if (keepRetrying) {
-                            Thread.sleep(retryMillis);
-                        } else {
-                            throw e;
-                        }
-                    }
-                } while (keepRetrying);
+                registerFeed(tenantId, retryMillis);
             }
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot register feed ID [%s]", this.feedId), t);
         }
+    }
+
+    /**
+     * Registers the feed with the Hawkular system under the given tenant.
+     * Note, it is OK to re-register the same feed/tenant combinations.
+     *
+     * If retryMillis > 0 then this will not return until the feed is properly registered.
+     * If the Hawkular server is not up, this could mean we are stuck here for a long time.
+     *
+     * @param tenantId the feed is registered under the given tenantId
+     * @param retryMillis if >0 the amount of millis to elapse before retrying
+     * @throws Exception if failed to register feed
+     */
+    public void registerFeed(String tenantId, int retryMillis) throws Exception {
+        // get the payload in JSON format
+        Feed.Blueprint feedPojo = new Feed.Blueprint(this.feedId, null);
+        String jsonPayload = Util.toJson(feedPojo);
+
+        // build the REST URL...
+        // start with the protocol, host, and port, plus context
+        StringBuilder url = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
+                configuration.getStorageAdapter().getInventoryContext());
+
+        // rest of the URL says we want the feeds API
+        url.append("feeds");
+
+        // now send the REST requests - one for each tenant to register
+        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
+
+        Map<String, String> header = Collections.singletonMap("Hawkular-Tenant", tenantId);
+        Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), header, jsonPayload);
+
+        boolean keepRetrying = (retryMillis > 0);
+        do {
+            try {
+                // note that we retry if newCall.execute throws an exception (assuming we were told to retry)
+                Response httpResponse = httpclient.newCall(request).execute();
+
+                try {
+                    // HTTP status of 201 means success; 409 means it already exists, anything else is an error
+                    if (httpResponse.code() == 201) {
+                        keepRetrying = false;
+                        final String feedObjectFromServer = httpResponse.body().string();
+                        final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
+                        if (this.feedId.equals(feed.getId())) {
+                            log.infoUsingFeedId(feed.getId(), tenantId);
+                        } else {
+                            // do not keep retrying - this is a bad error; we need to abort
+                            log.errorUnwantedFeedId(feed.getId(), this.feedId, tenantId);
+                            throw new Exception(String.format("Received unwanted feed [%s]", feed.getId()));
+                        }
+                    } else if (httpResponse.code() == 409) {
+                        keepRetrying = false;
+                        log.infoFeedIdAlreadyRegistered(this.feedId, tenantId);
+                    } else if (httpResponse.code() == 404) {
+                        // the server is probably just starting to come up - wait for it if we were told to retry
+                        keepRetrying = (retryMillis > 0);
+                        throw new Exception(String.format("Is the Hawkular Server booting up? (%d=%s)",
+                                httpResponse.code(),
+                                httpResponse.message()));
+                    } else {
+                        // futile to keep retrying and getting the same 500 or whatever error
+                        keepRetrying = false;
+                        throw new Exception(String.format("status-code=[%d], reason=[%s]",
+                                httpResponse.code(),
+                                httpResponse.message()));
+                    }
+                } finally {
+                    httpResponse.body().close();
+                }
+            } catch (Exception e) {
+                log.warnCannotRegisterFeed(this.feedId, tenantId, request.urlString(), e.toString());
+                if (keepRetrying) {
+                    Thread.sleep(retryMillis);
+                } else {
+                    throw e;
+                }
+            }
+        } while (keepRetrying);
     }
 
     /**

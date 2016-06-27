@@ -345,4 +345,8 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10075, value = "Cannot register feed ID [%s] under tenant ID [%s] via URL [%s]: %s")
     void warnCannotRegisterFeed(String feedId, String tenantId, String url, String message);
 
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10076, value = "Cannot register feed under tenant ID [%s] for new managed server [%s]: %s")
+    void warnCannotRegisterFeedForNewManagedServer(String tenantId, String managedServerName, String error);
+
 }
