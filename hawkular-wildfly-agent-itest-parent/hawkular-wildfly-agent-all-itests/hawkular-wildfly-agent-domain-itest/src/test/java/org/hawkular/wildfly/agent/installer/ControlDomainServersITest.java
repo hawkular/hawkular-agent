@@ -47,7 +47,8 @@ public class ControlDomainServersITest extends AbstractITest {
 
         CanonicalPath wfPath = getHostController(clientConfig);
         Resource agent = getResource(
-                "/feeds/" + clientConfig.getFeedId() + "/resourceTypes/Domain WildFly Server Controller/resources",
+                "/traversal/f;" + clientConfig.getFeedId() + "/type=rt;"
+                + "id=Domain WildFly Server Controller/rl;defines/type=r",
                 (r -> r.getId().contains(serverToTest)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "

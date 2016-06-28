@@ -529,7 +529,7 @@ public abstract class AbstractITest {
      * @throws Throwable
      */
     protected CanonicalPath getHawkularWildFlyServerResourcePath() throws Throwable {
-        List<Resource> servers = getResources("/feeds/" + hawkularFeedId + "/resources", 2);
+        List<Resource> servers = getResources("/traversal/f;" + hawkularFeedId + "/type=r", 2);
         List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
                 .collect(Collectors.toList());
         AssertJUnit.assertEquals(1, wfs.size());
@@ -544,7 +544,7 @@ public abstract class AbstractITest {
      * @throws Throwable
      */
     protected CanonicalPath getHostController(WildFlyClientConfig hostControllerClientConfig) throws Throwable {
-        List<Resource> servers = getResources("/feeds/" + hostControllerClientConfig.getFeedId() + "/resources", 2);
+        List<Resource> servers = getResources("/traversal/f;" + hostControllerClientConfig.getFeedId() + "/type=r", 2);
         List<Resource> hcs = servers.stream().filter(s -> "Host Controller".equals(s.getType().getId()))
                 .collect(Collectors.toList());
         AssertJUnit.assertEquals(1, hcs.size());

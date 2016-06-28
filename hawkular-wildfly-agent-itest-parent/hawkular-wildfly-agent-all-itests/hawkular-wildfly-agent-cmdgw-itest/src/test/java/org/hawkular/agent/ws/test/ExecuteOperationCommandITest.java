@@ -35,7 +35,8 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         Resource agent = getResource(
-                "/feeds/" + hawkularFeedId + "/resourceTypes/Hawkular%20WildFly%20Agent/resources",
+                "/traversal/f;" + hawkularFeedId + "/type=rt;"
+                + "id=Hawkular%20WildFly%20Agent/rl;defines/type=r",
                 (r -> r.getId() != null));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
