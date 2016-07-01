@@ -18,12 +18,14 @@ package org.hawkular.dmrclient;
 
 import java.io.InputStream;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
-import org.hawkular.dmrclient.deployment.Deployment;
 import org.jboss.as.controller.client.ModelControllerClient;
-import org.jboss.dmr.ModelNode;
+import org.wildfly.plugin.core.Deployment;
+import org.wildfly.plugin.core.DeploymentManager;
+import org.wildfly.plugin.core.DeploymentResult;
+import org.wildfly.plugin.core.SimpleDeploymentDescription;
+import org.wildfly.plugin.core.UndeployDescription;
 
 /**
  * Provides convenience methods associated with deployments.
@@ -32,39 +34,8 @@ import org.jboss.dmr.ModelNode;
  */
 public class DeploymentJBossASClient extends JBossASClient {
 
-    public static final String SUBSYSTEM_DEPLOYMENT = "deployment";
-    public static final String ENABLED = "enabled";
-    public static final String CONTENT = "content";
-    public static final String PATH = "path";
-
     public DeploymentJBossASClient(ModelControllerClient client) {
         super(client);
-    }
-
-    /**
-     * Checks to see if there is already a deployment with the given name.
-     *
-     * @param name the deployment name to check
-     * @return true if there is a deployment with the given name already in existence
-     * @throws Exception any error
-     */
-    public boolean isDeployment(String name) throws Exception {
-        Address addr = Address.root().add(SUBSYSTEM_DEPLOYMENT, name);
-        return null != readResource(addr);
-    }
-
-    public boolean isDeploymentEnabled(String name) throws Exception {
-        Address addr = Address.root().add(SUBSYSTEM_DEPLOYMENT, name);
-        ModelNode results = readResource(addr);
-        if (results == null) {
-            throw new IllegalArgumentException("There is no deployment with the name: " + name);
-        }
-        boolean enabledFlag = false;
-        if (results.hasDefined(ENABLED)) {
-            ModelNode enabled = results.get(ENABLED);
-            enabledFlag = enabled.asBoolean(false);
-        }
-        return enabledFlag;
     }
 
     public void enableDeployment(String name) throws Exception {
@@ -76,47 +47,20 @@ public class DeploymentJBossASClient extends JBossASClient {
     }
 
     private void enableDisableDeployment(String name, boolean enable) throws Exception {
-        if (isDeploymentEnabled(name) == enable) {
-            return; // nothing to do - its already in the state we want
-        }
+        DeploymentManager dm = DeploymentManager.Factory.create(getModelControllerClient());
+        DeploymentResult result;
 
-        Address addr = Address.root().add(SUBSYSTEM_DEPLOYMENT, name);
-        ModelNode request = createWriteAttributeRequest(ENABLED, Boolean.toString(enable), addr);
-        ModelNode results = execute(request);
-        if (!isSuccess(results)) {
-            throw new FailureException(results);
-        }
-        return; // everything is OK
-    }
-
-    /**
-     * Given the name of a deployment, this returns where the deployment is (specifically,
-     * it returns the PATH of the deployment).
-     *
-     * @param name the name of the deployment
-     * @return the path where the deployment is found
-     *
-     * @throws Exception any error
-     */
-    public String getDeploymentPath(String name) throws Exception {
-        Address addr = Address.root().add(SUBSYSTEM_DEPLOYMENT, name);
-        ModelNode op = createReadAttributeRequest(CONTENT, addr);
-        final ModelNode results = execute(op);
-        if (isSuccess(results)) {
-            ModelNode path;
-            try {
-                path = getResults(results).asList().get(0).asObject().get(PATH);
-            } catch (Exception e) {
-                throw new Exception("Cannot get path associated with deployment [" + name + "]");
-            }
-            if (path != null) {
-                return path.asString();
-            } else {
-                throw new Exception("No path associated with deployment [" + name + "]");
-            }
+        if (enable) {
+            result = dm.deployToRuntime(SimpleDeploymentDescription.of(name));
         } else {
-            throw new FailureException(results, "Cannot get the deployment path");
+            result = dm.undeploy(UndeployDescription.of(name).setRemoveContent(false));
         }
+
+        if (!result.successful()) {
+            throw new FailureException(result.getFailureMessage());
+        }
+
+        return; // everything is OK
     }
 
     /**
@@ -129,24 +73,21 @@ public class DeploymentJBossASClient extends JBossASClient {
      * @param content stream containing the actual content data
      * @param enabled if true, the content will be uploaded and actually deployed;
      *                if false, content will be uploaded to the server, but it won't be deployed in the server runtime
-     * @param serverGroups the server groups where the application will be deployed - this is ignored
-     *                     if deploying in standalone server
+     * @param serverGroups the server groups where the application will be deployed if in domain mode
      */
     public void deploy(String deploymentName, InputStream content, boolean enabled, Set<String> serverGroups) {
         if (serverGroups == null) {
             serverGroups = Collections.emptySet();
         }
 
+        DeploymentResult result = null;
+
         try {
-            Deployment deployment = new Deployment(
-                    getModelControllerClient(),
-                    serverGroups,
-                    content,
-                    deploymentName,
-                    deploymentName,
-                    Deployment.Type.FORCE_DEPLOY,
-                    enabled);
-            deployment.execute();
+            DeploymentManager dm = DeploymentManager.Factory.create(getModelControllerClient());
+            Deployment deployment = Deployment.of(content, deploymentName)
+                    .addServerGroups(serverGroups)
+                    .setEnabled(enabled);
+            result = dm.forceDeploy(deployment);
         } catch (Exception e) {
             String errMsg;
             if (serverGroups.isEmpty()) {
@@ -157,7 +98,17 @@ public class DeploymentJBossASClient extends JBossASClient {
             throw new FailureException(errMsg, e);
         }
 
-        return;
+        if (!result.successful()) {
+            String errMsg;
+            if (serverGroups.isEmpty()) {
+                errMsg = String.format("Failed to deploy [%s] (standalone mode)", deploymentName);
+            } else {
+                errMsg = String.format("Failed to deploy [%s] to server groups [%s]", deploymentName, serverGroups);
+            }
+            throw new FailureException(errMsg + ": " + result.getFailureMessage());
+        }
+
+        return; // everything is OK
     }
 
     /**
@@ -173,27 +124,35 @@ public class DeploymentJBossASClient extends JBossASClient {
             serverGroups = Collections.emptySet();
         }
 
-        try {
-            Deployment deployment = new Deployment(
-                    getModelControllerClient(),
-                    new HashSet<>(serverGroups),
-                    null,
-                    deploymentName,
-                    deploymentName,
-                    Deployment.Type.UNDEPLOY_IGNORE_MISSING,
-                    true);
+        DeploymentResult result = null;
 
-            deployment.execute();
+        try {
+            DeploymentManager dm = DeploymentManager.Factory.create(getModelControllerClient());
+            UndeployDescription undeployDescription = UndeployDescription.of(deploymentName)
+                    .addServerGroups(serverGroups)
+                    .setFailOnMissing(false);
+            result = dm.undeploy(undeployDescription);
         } catch (Exception e) {
             String errMsg;
             if (serverGroups.isEmpty()) {
                 errMsg = String.format("Failed to undeploy [%s] (standalone mode)", deploymentName);
             } else {
-                errMsg = String.format("Failed to undeploy [%s] to server groups: %s", deploymentName, serverGroups);
+                errMsg = String.format("Failed to undeploy [%s] from server groups: %s", deploymentName, serverGroups);
             }
             throw new FailureException(errMsg, e);
         }
 
-        return;
+        if (!result.successful()) {
+            String errMsg;
+            if (serverGroups.isEmpty()) {
+                errMsg = String.format("Failed to undeploy [%s] (standalone mode)", deploymentName);
+            } else {
+                errMsg = String.format("Failed to undeploy [%s] from server groups [%s]", deploymentName,
+                        serverGroups);
+            }
+            throw new FailureException(errMsg + ": " + result.getFailureMessage());
+        }
+
+        return; // everything is OK
     }
 }
