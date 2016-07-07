@@ -98,15 +98,12 @@ public final class Discovery<L> {
                 // build the resource now - we might need it to generate metric IDs
                 Resource<L> resource = builder.build();
 
-                // now that the resource is built (and measurement instances assigned to it) we can generate metric IDs
+                // The resource is built (and measurement instances assigned to it) so we can generate metric IDs.
                 for (MeasurementInstance<L, MetricType<L>> instance : resource.getMetrics()) {
-                    instance.addProperty(MeasurementInstance.METRIC_ID_PROPERTY,
-                            samplingService.generateMetricId(instance));
+                    instance.setAssociatedMetricId(samplingService.generateAssociatedMetricId(instance));
                 }
-
                 for (MeasurementInstance<L, AvailType<L>> instance : resource.getAvails()) {
-                    instance.addProperty(MeasurementInstance.METRIC_ID_PROPERTY,
-                            samplingService.generateMetricId(instance));
+                    instance.setAssociatedMetricId(samplingService.generateAssociatedMetricId(instance));
                 }
 
                 log.debugf("Discovered resource [%s]", resource);

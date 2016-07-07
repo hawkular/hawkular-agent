@@ -46,8 +46,7 @@ public interface SamplingService<L> {
     /**
      * Given a measurement instance, this will generate the key to be used when
      * storing that measurement instance's collected data to storage. In the Hawkular Metrics
-     * REST API, this key is known as the "metric id" hence why this method is called
-     * <code>generateMetricId</code>.
+     * REST API, this key is known as the "metric id".
      *
      * The service can generate a default one or can use the metric ID template provided by the user
      * via {@link MonitoredEndpoint#getEndpointConfiguration() the endpoint configuration} which contains a
@@ -58,8 +57,10 @@ public interface SamplingService<L> {
      *
      * @param instance the measurement instance whose key is to be generated
      * @return the measurement key to be used to identify measured data for the given instance
+     * @see MeasurementInstance#getAssociatedMetricId(String)
+     * @see MeasurementInstance#setAssociatedMetricId(String)
      */
-    default String generateMetricId(MeasurementInstance<L, ?> instance) {
+    default String generateAssociatedMetricId(MeasurementInstance<L, ?> instance) {
         return instance.getID().getIDString();
     }
 

@@ -322,7 +322,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                     avail = Avail.DOWN;
                 }
                 long ts = System.currentTimeMillis();
-                String key = getMetricId(instance);
+                String key = instance.getAssociatedMetricId();
                 AvailDataPoint dataPoint = new AvailDataPoint(key, ts, avail,
                         getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
                 consumer.accept(dataPoint);
@@ -365,7 +365,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                     value = toDouble(o);
                 }
                 long ts = System.currentTimeMillis();
-                String key = getMetricId(instance);
+                String key = instance.getAssociatedMetricId();
                 MetricDataPoint dataPoint = new MetricDataPoint(key, ts, value, instance.getType().getMetricType(),
                         getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
                 consumer.accept(dataPoint);
@@ -377,7 +377,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     @Override
-    public String generateMetricId(MeasurementInstance<L, ?> instance) {
+    public String generateAssociatedMetricId(MeasurementInstance<L, ?> instance) {
         String generatedKey;
         EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
         String metricIdTemplate = config.getMetricIdTemplate();
@@ -460,14 +460,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             return false;
         }
         return true;
-    }
-
-    private String getMetricId(MeasurementInstance<L, ?> instance) {
-        if (instance.getProperties().containsKey(MeasurementInstance.METRIC_ID_PROPERTY)) {
-            return instance.getProperties().get(MeasurementInstance.METRIC_ID_PROPERTY).toString();
-        } else {
-            return instance.getID().getIDString();
-        }
     }
 
     private double toDouble(Object valueObject) {
