@@ -362,16 +362,19 @@ public class MonitorServiceConfiguration {
         private final ConnectionData connectionData;
         private final String securityRealm;
         private final String tenantId;
+        private final String metricIdTemplate;
         private final Map<String, ? extends Object> customData;
 
         public AbstractEndpointConfiguration(String name, boolean enabled, ConnectionData connectionData,
-                String securityRealm, String tenantId, Map<String, ? extends Object> customData) {
+                String securityRealm, String tenantId, String metricIdTemplate,
+                Map<String, ? extends Object> customData) {
             super();
             this.name = name;
             this.enabled = enabled;
             this.connectionData = connectionData;
             this.securityRealm = securityRealm;
             this.tenantId = tenantId;
+            this.metricIdTemplate = metricIdTemplate;
             this.customData = (customData != null) ? Collections.unmodifiableMap(customData) : Collections.emptyMap();
         }
 
@@ -400,6 +403,13 @@ public class MonitorServiceConfiguration {
         }
 
         /**
+         * @return if not null this is the template to use to create all metric IDs for this managed server.
+         */
+        public String getMetricIdTemplate() {
+            return metricIdTemplate;
+        }
+
+        /**
          * @return custom information related to an endpoint. The endpoint service should know the value types.
          */
         public Map<String, ? extends Object> getCustomData() {
@@ -417,8 +427,8 @@ public class MonitorServiceConfiguration {
 
         public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
                 ConnectionData connectionData, String securityRealm, Avail setAvailOnShutdown, String tenantId,
-                Map<String, ? extends Object> customData) {
-            super(name, enabled, connectionData, securityRealm, tenantId, customData);
+                String metricIdTemplate, Map<String, ? extends Object> customData) {
+            super(name, enabled, connectionData, securityRealm, tenantId, metricIdTemplate, customData);
             this.resourceTypeSets = resourceTypeSets;
             this.setAvailOnShutdown = setAvailOnShutdown;
         }
@@ -452,8 +462,8 @@ public class MonitorServiceConfiguration {
 
         public DynamicEndpointConfiguration(String name, boolean enabled,
                 Collection<Name> metricSets, ConnectionData connectionData, String securityRealm, int interval,
-                TimeUnit timeUnits, String tenantId, Map<String, Object> customData) {
-            super(name, enabled, connectionData, securityRealm, tenantId, customData);
+                TimeUnit timeUnits, String tenantId, String metricIdTemplate, Map<String, Object> customData) {
+            super(name, enabled, connectionData, securityRealm, tenantId, metricIdTemplate, customData);
             this.metricSets = metricSets;
             this.interval = interval;
             this.timeUnits = timeUnits;

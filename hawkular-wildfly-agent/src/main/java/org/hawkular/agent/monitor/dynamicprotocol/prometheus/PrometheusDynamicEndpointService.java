@@ -227,13 +227,21 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
         }
 
         private String generateKey(Metric metric) {
-            // TODO figure out a good key
             StringBuilder key = new StringBuilder();
 
-            key.append(getFeedId()).append("_");
-            key.append(metric.getName()).append("_");
-            if (!metric.getLabels().isEmpty()) {
-                key.append(buildLabelListString(metric.getLabels(), null, null)).append("_");
+            DynamicEndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
+            String metricIdTemplate = config.getMetricIdTemplate();
+            if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
+                key.append(getFeedId()).append("_");
+                key.append(metric.getName()).append("_");
+                if (!metric.getLabels().isEmpty()) {
+                    key.append(buildLabelListString(metric.getLabels(), null, null)).append("_");
+                }
+            } else {
+                key.append(metricIdTemplate
+                        .replaceAll("%FeedId", getFeedId())
+                        .replaceAll("%ManagedServerName", config.getName())
+                        .replaceAll("%MetricName", metric.getName()));
             }
 
             return key.toString();

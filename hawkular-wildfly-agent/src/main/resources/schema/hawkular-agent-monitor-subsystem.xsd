@@ -290,20 +290,22 @@
     <xs:attribute name="resource-type-sets"    type="xs:string"/>
     <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
     <xs:attribute name="tenant-id"             type="xs:string"/>
+    <xs:attribute name="metric-id-template"    type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remoteDmrType">
-    <xs:attribute name="name"                   type="xs:string" use="required"/>
-    <xs:attribute name="enabled"                type="xs:boolean"/>
-    <xs:attribute name="host"                   type="xs:string" use="required"/>
-    <xs:attribute name="port"                   type="xs:int"    use="required"/>
-    <xs:attribute name="username"               type="xs:string"/>
-    <xs:attribute name="password"               type="xs:string"/>
-    <xs:attribute name="use-ssl"                type="xs:boolean"/>
-    <xs:attribute name="security-realm"         type="xs:string"/>
-    <xs:attribute name="set-avail-on-shutdown"  type="xs:string"/>
-    <xs:attribute name="resource-type-sets"     type="xs:string"/>
-    <xs:attribute name="tenant-id"              type="xs:string"/>
+    <xs:attribute name="name"                  type="xs:string" use="required"/>
+    <xs:attribute name="enabled"               type="xs:boolean"/>
+    <xs:attribute name="host"                  type="xs:string" use="required"/>
+    <xs:attribute name="port"                  type="xs:int"    use="required"/>
+    <xs:attribute name="username"              type="xs:string"/>
+    <xs:attribute name="password"              type="xs:string"/>
+    <xs:attribute name="use-ssl"               type="xs:boolean"/>
+    <xs:attribute name="security-realm"        type="xs:string"/>
+    <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
+    <xs:attribute name="resource-type-sets"    type="xs:string"/>
+    <xs:attribute name="tenant-id"             type="xs:string"/>
+    <xs:attribute name="metric-id-template"    type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remoteJmxType">
@@ -316,19 +318,21 @@
     <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
     <xs:attribute name="resource-type-sets"    type="xs:string"/>
     <xs:attribute name="tenant-id"             type="xs:string"/>
+    <xs:attribute name="metric-id-template"    type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remotePrometheusType">
-    <xs:attribute name="name"           type="xs:string" use="required"/>
-    <xs:attribute name="enabled"        type="xs:boolean"/>
-    <xs:attribute name="url"            type="xs:string" use="required"/>
-    <xs:attribute name="username"       type="xs:string"/>
-    <xs:attribute name="password"       type="xs:string"/>
-    <xs:attribute name="security-realm" type="xs:string"/>
-    <xs:attribute name="labels"         type="xs:string"/>
-    <xs:attribute name="interval"       type="xs:int"/>
-    <xs:attribute name="time-units"     type="timeUnitsType"/>
-    <xs:attribute name="tenant-id"      type="xs:string"/>
+    <xs:attribute name="name"                  type="xs:string" use="required"/>
+    <xs:attribute name="enabled"               type="xs:boolean"/>
+    <xs:attribute name="url"                   type="xs:string" use="required"/>
+    <xs:attribute name="username"              type="xs:string"/>
+    <xs:attribute name="password"              type="xs:string"/>
+    <xs:attribute name="security-realm"        type="xs:string"/>
+    <xs:attribute name="labels"                type="xs:string"/>
+    <xs:attribute name="interval"              type="xs:int"/>
+    <xs:attribute name="time-units"            type="timeUnitsType"/>
+    <xs:attribute name="tenant-id"             type="xs:string"/>
+    <xs:attribute name="metric-id-template"    type="xs:string"/>
   </xs:complexType>
 
   <!-- [agent] platform configuration -->

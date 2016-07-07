@@ -118,7 +118,8 @@
                 port="9990"
                 use-ssl="false"
                 security-realm="HawkularRealm"
-                resource-type-sets="Main" />
+                resource-type-sets="Main"
+                metric-id-template="%FeedId-%ResourceName-%MetricTypeName" />
 
     <local-dmr name="Self"
                resource-type-sets="Main" />

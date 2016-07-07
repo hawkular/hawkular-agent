@@ -96,6 +96,13 @@ public interface RemotePrometheusAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition METRIC_ID_TEMPLATE = new SimpleAttributeDefinitionBuilder("metric-id-template",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
             URL,
@@ -105,6 +112,7 @@ public interface RemotePrometheusAttributes {
             METRIC_SETS,
             INTERVAL,
             TIME_UNITS,
-            TENANT_ID
+            TENANT_ID,
+            METRIC_ID_TEMPLATE
     };
 }

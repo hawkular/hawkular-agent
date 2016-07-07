@@ -198,7 +198,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 LOG.infoDiscoveryRequested(getMonitoredEndpoint());
                 long duration = -1;
                 try (S session = openSession()) {
-                    Set<ResourceType<L>> rootTypes = resourceTypeManager.getRootResourceTypes();
+                    Set<ResourceType<L>> rootTypes = getResourceTypeManager().getRootResourceTypes();
                     Context timer = getDiagnostics().getFullDiscoveryScanTimer().time();
                     for (ResourceType<L> rootType : rootTypes) {
                         discoverChildren(null, rootType, session);
@@ -208,7 +208,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 } catch (Exception e) {
                     LOG.errorCouldNotAccess(EndpointService.this, e);
                 }
-                resourceManager.logTreeGraph("Discovered all resources for [" + endpoint + "]", duration);
+                getResourceManager().logTreeGraph("Discovered all resources for [" + getMonitoredEndpoint() + "]",
+                        duration);
             }
         };
 
@@ -241,16 +242,16 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             /* FIXME: resourceManager should be write-locked here over find and add */
             List<Resource<L>> parents;
             if (parentLocation != null) {
-                parents = resourceManager.findResources(parentLocation, sessionToUse.getLocationResolver());
+                parents = getResourceManager().findResources(parentLocation, sessionToUse.getLocationResolver());
             } else {
                 parents = Arrays.asList((Resource<L>) null);
             }
             List<Resource<L>> added = new ArrayList<>();
             Discovery<L> discovery = new Discovery<>();
             for (Resource<L> parent : parents) {
-                discovery.discoverChildren(parent, childType, sessionToUse, new Consumer<Resource<L>>() {
+                discovery.discoverChildren(parent, childType, sessionToUse, this, new Consumer<Resource<L>>() {
                     public void accept(Resource<L> resource) {
-                        AddResult<L> result = resourceManager.addResource(resource);
+                        AddResult<L> result = getResourceManager().addResource(resource);
                         if (result.getEffect() != AddResult.Effect.UNCHANGED) {
                             added.add(result.getResource());
                         }
@@ -321,7 +322,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                     avail = Avail.DOWN;
                 }
                 long ts = System.currentTimeMillis();
-                String key = generateMeasurementKey(instance);
+                String key = getMetricId(instance);
                 AvailDataPoint dataPoint = new AvailDataPoint(key, ts, avail,
                         getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
                 consumer.accept(dataPoint);
@@ -364,7 +365,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                     value = toDouble(o);
                 }
                 long ts = System.currentTimeMillis();
-                String key = generateMeasurementKey(instance);
+                String key = getMetricId(instance);
                 MetricDataPoint dataPoint = new MetricDataPoint(key, ts, value, instance.getType().getMetricType(),
                         getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
                 consumer.accept(dataPoint);
@@ -375,6 +376,27 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
     }
 
+    @Override
+    public String generateMetricId(MeasurementInstance<L, ?> instance) {
+        String generatedKey;
+        EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
+        String metricIdTemplate = config.getMetricIdTemplate();
+        if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
+            generatedKey = instance.getID().getIDString();
+        } else {
+            // should probably find a more efficient way to do this
+            generatedKey = metricIdTemplate
+                    .replaceAll("%FeedId", getFeedId())
+                    .replaceAll("%ManagedServerName", config.getName())
+                    .replaceAll("%ResourceName", instance.getResource().getName().getNameString())
+                    .replaceAll("%ResourceID", instance.getResource().getID().getIDString())
+                    .replaceAll("%MetricTypeName", instance.getType().getName().getNameString())
+                    .replaceAll("%MetricTypeID", instance.getType().getID().getIDString())
+                    .replaceAll("%MetricInstanceID", instance.getID().getIDString());
+        }
+        return generatedKey;
+    }
+
     /**
      * Remove resources matching the given {@code location} and all their direct and indirect descendant resources.
      *
@@ -383,7 +405,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public void removeResources(L location) {
         status.assertRunning(getClass(), "removeResources()");
         try (S session = openSession()) {
-            List<Resource<L>> removed = resourceManager.removeResources(location, session.getLocationResolver());
+            List<Resource<L>> removed = getResourceManager().removeResources(location, session.getLocationResolver());
             inventoryListenerSupport.fireResourcesRemoved(removed);
         } catch (Exception e) {
             LOG.errorCouldNotAccess(this, e);
@@ -440,16 +462,12 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         return true;
     }
 
-    /**
-     * Given a measurement instance, this will generate the key to be used when
-     * storing that measurement instance to storage.
-     *
-     * @param instance measurement instance whose key is to be returned
-     * @return the measurement instance key
-     */
-    public String generateMeasurementKey(MeasurementInstance<L, ?> instance) {
-        String key = instance.getID().getIDString();
-        return key;
+    private String getMetricId(MeasurementInstance<L, ?> instance) {
+        if (instance.getProperties().containsKey(MeasurementInstance.METRIC_ID_PROPERTY)) {
+            return instance.getProperties().get(MeasurementInstance.METRIC_ID_PROPERTY).toString();
+        } else {
+            return instance.getID().getIDString();
+        }
     }
 
     private double toDouble(Object valueObject) {
