@@ -291,6 +291,7 @@
     <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
     <xs:attribute name="tenant-id"             type="xs:string"/>
     <xs:attribute name="metric-id-template"    type="xs:string"/>
+    <xs:attribute name="metric-labels"         type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remoteDmrType">
@@ -306,6 +307,7 @@
     <xs:attribute name="resource-type-sets"    type="xs:string"/>
     <xs:attribute name="tenant-id"             type="xs:string"/>
     <xs:attribute name="metric-id-template"    type="xs:string"/>
+    <xs:attribute name="metric-labels"         type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remoteJmxType">
@@ -319,6 +321,7 @@
     <xs:attribute name="resource-type-sets"    type="xs:string"/>
     <xs:attribute name="tenant-id"             type="xs:string"/>
     <xs:attribute name="metric-id-template"    type="xs:string"/>
+    <xs:attribute name="metric-labels"         type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="remotePrometheusType">
@@ -333,6 +336,7 @@
     <xs:attribute name="time-units"            type="timeUnitsType"/>
     <xs:attribute name="tenant-id"             type="xs:string"/>
     <xs:attribute name="metric-id-template"    type="xs:string"/>
+    <xs:attribute name="metric-labels"         type="xs:string"/>
   </xs:complexType>
 
   <!-- [agent] platform configuration -->

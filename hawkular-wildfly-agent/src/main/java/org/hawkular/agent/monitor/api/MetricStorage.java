@@ -32,4 +32,20 @@ public interface MetricStorage {
      * @param waitMillis the amount of milliseconds to wait for the store to complete before returning (0==no wait)
      */
     void store(MetricDataPayloadBuilder payloadBuilder, long waitMillis);
+
+    /**
+     * @return a builder object suitable for wrapping metric tags in a proper payload
+     * message format to be sent to the storage backend.
+     */
+    MetricTagPayloadBuilder createMetricTagPayloadBuilder();
+
+    /**
+     * Stores the metric tags found in the given builder.
+     * This is an asynchronous call. But if a <code>waitMillis</code> is provided, it indicates the caller is willing
+     * to wait up to that amount of milliseconds for the store to complete before returning.
+     *
+     * @param payloadBuilder contains the metric tags to store
+     * @param waitMillis the amount of milliseconds to wait for the store to complete before returning (0==no wait)
+     */
+    void store(MetricTagPayloadBuilder payloadBuilder, long waitMillis);
 }

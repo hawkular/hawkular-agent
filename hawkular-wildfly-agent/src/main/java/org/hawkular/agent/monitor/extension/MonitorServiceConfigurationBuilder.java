@@ -126,7 +126,7 @@ public class MonitorServiceConfigurationBuilder {
         if (!platformTypeSets.isDisabledOrEmpty()) {
             String machineId = determinePlatformMachineId(config, context);
             EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null, Avail.DOWN,
-                    null, null, Collections.singletonMap(Constants.MACHINE_ID.getNameString(), machineId));
+                    null, null, null, Collections.singletonMap(Constants.MACHINE_ID.getNameString(), machineId));
             platformConfigBuilder.endpoint(endpoint);
         }
 
@@ -1175,6 +1175,8 @@ public class MonitorServiceConfigurationBuilder {
                     String tenantId = getString(remoteDMRValueNode, context, RemoteDMRAttributes.TENANT_ID);
                     String metricIdTemplate = getString(remoteDMRValueNode, context,
                             RemoteDMRAttributes.METRIC_ID_TEMPLATE);
+                    Map<String, String> metricTags = getMapFromString(remoteDMRValueNode, context,
+                            RemoteDMRAttributes.METRIC_TAGS);
 
                     if (useSsl && securityRealm == null) {
                         log.debugf("Using SSL with no security realm - will rely on the JVM truststore: " + name);
@@ -1183,7 +1185,8 @@ public class MonitorServiceConfigurationBuilder {
                     String protocol = useSsl ? "https-remoting" : "http-remoting";
                     ConnectionData connectionData = new ConnectionData(protocol, host, port, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
-                            connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, null);
+                            connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, metricTags,
+                            null);
 
                     dmrConfigBuilder.endpoint(endpoint);
                 }
@@ -1208,9 +1211,11 @@ public class MonitorServiceConfigurationBuilder {
                         LocalDMRAttributes.RESOURCE_TYPE_SETS);
                 String tenantId = getString(localDMRValueNode, context, LocalDMRAttributes.TENANT_ID);
                 String metricIdTemplate = getString(localDMRValueNode, context, LocalDMRAttributes.METRIC_ID_TEMPLATE);
+                Map<String, String> metricTags = getMapFromString(localDMRValueNode, context,
+                        LocalDMRAttributes.METRIC_TAGS);
 
                 EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets, null, null,
-                        setAvailOnShutdown, tenantId, metricIdTemplate, null);
+                        setAvailOnShutdown, tenantId, metricIdTemplate, metricTags, null);
                 dmrConfigBuilder.endpoint(endpoint);
             }
 
@@ -1236,6 +1241,8 @@ public class MonitorServiceConfigurationBuilder {
                     String tenantId = getString(remoteJMXValueNode, context, RemoteJMXAttributes.TENANT_ID);
                     String metricIdTemplate = getString(remoteJMXValueNode, context,
                             RemoteDMRAttributes.METRIC_ID_TEMPLATE);
+                    Map<String, String> metricTags = getMapFromString(remoteJMXValueNode, context,
+                            RemoteDMRAttributes.METRIC_TAGS);
 
                     // make sure the URL is at least syntactically valid
                     URI url;
@@ -1251,7 +1258,8 @@ public class MonitorServiceConfigurationBuilder {
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
-                            connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, null);
+                            connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, metricTags,
+                            null);
 
                     jmxConfigBuilder.endpoint(endpoint);
                 }
@@ -1281,6 +1289,8 @@ public class MonitorServiceConfigurationBuilder {
                     String tenandId = getString(remotePromValueNode, context, RemotePrometheusAttributes.TENANT_ID);
                     String metricIdTemplate = getString(remotePromValueNode, context,
                             RemotePrometheusAttributes.METRIC_ID_TEMPLATE);
+                    Map<String, String> metricTags = getMapFromString(remotePromValueNode, context,
+                            RemotePrometheusAttributes.METRIC_TAGS);
 
                     // make sure the URL is at least syntactically valid
                     URI url;
@@ -1297,7 +1307,7 @@ public class MonitorServiceConfigurationBuilder {
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     DynamicEndpointConfiguration endpoint = new DynamicEndpointConfiguration(name, enabled,
                             metricSets, connectionData, securityRealm, interval, timeUnits, tenandId, metricIdTemplate,
-                            null);
+                            metricTags, null);
 
                     prometheusConfigBuilder.endpoint(endpoint);
                 }

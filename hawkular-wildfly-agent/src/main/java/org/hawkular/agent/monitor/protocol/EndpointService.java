@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -55,6 +57,7 @@ import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
 import org.hawkular.agent.monitor.util.Consumer;
 import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
+import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 import com.codahale.metrics.Timer.Context;
 
@@ -384,17 +387,44 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
             generatedKey = instance.getID().getIDString();
         } else {
-            // should probably find a more efficient way to do this
-            generatedKey = metricIdTemplate
-                    .replaceAll("%FeedId", getFeedId())
-                    .replaceAll("%ManagedServerName", config.getName())
-                    .replaceAll("%ResourceName", instance.getResource().getName().getNameString())
-                    .replaceAll("%ResourceID", instance.getResource().getID().getIDString())
-                    .replaceAll("%MetricTypeName", instance.getType().getName().getNameString())
-                    .replaceAll("%MetricTypeID", instance.getType().getID().getIDString())
-                    .replaceAll("%MetricInstanceID", instance.getID().getIDString());
+            generatedKey = replaceTokens(instance, config, metricIdTemplate);
         }
         return generatedKey;
+    }
+
+    @Override
+    public Map<String, String> generateAssociatedMetricTags(MeasurementInstance<L, ?> instance) {
+        Map<String, String> generatedTags;
+        EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
+        Map<String, String> tokenizedTags = config.getMetricTags();
+        if (tokenizedTags == null || tokenizedTags.isEmpty()) {
+            generatedTags = Collections.emptyMap();
+        } else {
+            generatedTags = new HashMap<>(tokenizedTags.size());
+            for (Map.Entry<String, String> tokenizedTag : tokenizedTags.entrySet()) {
+                String name = replaceTokens(instance, config, tokenizedTag.getKey());
+                String value = replaceTokens(instance, config, tokenizedTag.getValue());
+                generatedTags.put(name, value);
+            }
+        }
+        return generatedTags;
+    }
+
+    private String replaceTokens(MeasurementInstance<L, ?> instance, EndpointConfiguration config, String string) {
+        MeasurementUnit units = null;
+        if (instance.getType() instanceof MetricType) {
+            units = ((MetricType<?>) instance.getType()).getMetricUnits();
+        }
+
+        return string
+                .replaceAll("%FeedId", getFeedId())
+                .replaceAll("%ManagedServerName", config.getName())
+                .replaceAll("%ResourceName", instance.getResource().getName().getNameString())
+                .replaceAll("%ResourceID", instance.getResource().getID().getIDString())
+                .replaceAll("%MetricTypeName", instance.getType().getName().getNameString())
+                .replaceAll("%MetricTypeID", instance.getType().getID().getIDString())
+                .replaceAll("%MetricTypeUnits", units == null ? "" : units.toString())
+                .replaceAll("%MetricInstanceID", instance.getID().getIDString());
     }
 
     /**
