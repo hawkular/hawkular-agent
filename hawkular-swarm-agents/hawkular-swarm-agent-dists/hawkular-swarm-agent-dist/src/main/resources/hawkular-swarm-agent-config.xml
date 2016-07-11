@@ -682,7 +682,10 @@
           <operation-dmr name="JDR"      operation-name="generate-jdr-report" path="/subsystem=jdr"/>
           <operation-dmr name="Reload"   operation-name="reload"/>
           <operation-dmr name="Resume"   operation-name="resume"/>
-          <operation-dmr name="Shutdown" operation-name="shutdown"/> <!-- shutdown and restart -->
+          <operation-dmr name="Shutdown" operation-name="shutdown" > <!-- shutdown and restart -->
+            <param name="timeout" type="number" default-value="0"     description="Timeout in seconds to allow active connections to drain"/>
+            <param name="restart" type="bool"   default-value="false" description="Should the server be restarted after shutdown?"/>
+          </operation-dmr>
           <operation-dmr name="Suspend"  operation-name="suspend"/>
           <operation-dmr name="Deploy"   operation-name="deploy"/>
           <operation-dmr name="Undeploy" operation-name="undeploy"/>
@@ -700,11 +703,15 @@
           <resource-config-dmr name="Local Host Name" attribute="local-host-name"/>
 
           <operation-dmr name="Reload Servers"  operation-name="reload-servers" />
-          <operation-dmr name="Restart Servers" operation-name="restart-servers" />
+          <operation-dmr name="Restart Servers" operation-name="restart-servers" >
+            <param name="timeout" type="number" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
+          </operation-dmr>
           <operation-dmr name="Resume Servers"  operation-name="resume-servers" />
           <operation-dmr name="Start Servers"   operation-name="start-servers" />
           <operation-dmr name="Stop Servers"    operation-name="stop-servers" />
-          <operation-dmr name="Suspend Servers" operation-name="suspend-servers" />
+          <operation-dmr name="Suspend Servers" operation-name="suspend-servers" >
+            <param name="timeout" type="number" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
+          </operation-dmr>
           <operation-dmr name="Deploy"          operation-name="deploy" />
           <operation-dmr name="Undeploy"        operation-name="undeploy" />
         </resource-type-dmr>

@@ -16,6 +16,9 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Defines an operation that can be executed on the managed resource.
  *
@@ -29,6 +32,8 @@ package org.hawkular.agent.monitor.inventory;
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
  */
 public final class Operation<L> extends NodeLocationProvider<L> {
+
+    private static final String PROP_PARAMETERS = "params"; // parameter definitions are stored in this property
 
     private final String operationName;
 
@@ -46,10 +51,14 @@ public final class Operation<L> extends NodeLocationProvider<L> {
      * @param operationName the actual name of the operation as it is known to the actual resource being managed.
      *                      This is the name that is used when telling the managed resource what operation to invoke.
      *                      It may or may not be the same as <code>name</code>.
+     * @param params Additional params for this operation definition, e.g. coming from operation-dmr. Can be null.
      */
-    public Operation(ID id, Name name, L location, String operationName) {
+    public Operation(ID id, Name name, L location, String operationName, List<OperationParam> params) {
         super(id, name, location);
         this.operationName = operationName;
+        if (params != null && !params.isEmpty()) {
+            addProperty(PROP_PARAMETERS, params);
+        }
     }
 
     /**
@@ -62,4 +71,16 @@ public final class Operation<L> extends NodeLocationProvider<L> {
         return operationName;
     }
 
+    /**
+     * @return parameters defined for this operation - will be empty (not null) if no parameters exist
+     */
+    public List<OperationParam> getParameters() {
+        List<OperationParam> paramList = (List<OperationParam>) getProperties().get(PROP_PARAMETERS);
+        if (paramList != null) {
+            paramList = Collections.unmodifiableList(paramList);
+        } else {
+            paramList = Collections.emptyList();
+        }
+        return paramList;
+    }
 }

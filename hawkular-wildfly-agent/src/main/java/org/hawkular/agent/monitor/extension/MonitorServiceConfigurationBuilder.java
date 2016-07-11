@@ -50,6 +50,7 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.NameSet;
 import org.hawkular.agent.monitor.inventory.NameSet.NameSetBuilder;
 import org.hawkular.agent.monitor.inventory.Operation;
+import org.hawkular.agent.monitor.inventory.OperationParam;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceType.Builder;
@@ -971,13 +972,20 @@ public class MonitorServiceConfigurationBuilder {
                             List<Property> operationList = opModelNode.asPropertyList();
                             for (Property operationProperty : operationList) {
                                 ModelNode operationValueNode = operationProperty.getValue();
-                                String operationName = operationProperty.getName();
+                                String name = operationProperty.getName();
+
+                                List<OperationParam> params = getOpParamListFromOpNode(operationValueNode, context);
 
                                 PathAddress pathAddress = getPath(operationValueNode, context,
                                         DMROperationAttributes.PATH);
-                                Operation<DMRNodeLocation> op = new Operation<>(ID.NULL_ID, new Name(operationName),
+                                String internalName = getString(operationValueNode, context,
+                                        DMROperationAttributes.OPERATION_NAME);
+                                Operation<DMRNodeLocation> op = new Operation<>(
+                                        ID.NULL_ID,
+                                        new Name(name),
                                         new DMRNodeLocation(pathAddress),
-                                        getString(operationValueNode, context, DMROperationAttributes.OPERATION_NAME));
+                                        internalName,
+                                        params);
                                 resourceTypeBuilder.operation(op);
                             }
                         }
@@ -1090,7 +1098,8 @@ public class MonitorServiceConfigurationBuilder {
                                             new JMXNodeLocation(getObjectName(operationValueNode, context,
                                                     JMXOperationAttributes.OBJECT_NAME)),
                                             getString(operationValueNode, context,
-                                                    JMXOperationAttributes.OPERATION_NAME));
+                                                    JMXOperationAttributes.OPERATION_NAME),
+                                            null);
                                     resourceTypeBuilder.operation(op);
                                 }
                             }
@@ -1375,6 +1384,29 @@ public class MonitorServiceConfigurationBuilder {
         } else {
             return Collections.emptyList();
         }
+    }
+
+    private static List<OperationParam> getOpParamListFromOpNode(ModelNode modelNode, OperationContext context)
+            throws OperationFailedException {
+
+        List<OperationParam> ret = new ArrayList<>();
+
+        ModelNode params = modelNode.get(DMROperationParamDefinition.PARAM);
+        if (params == null || !params.isDefined()) {
+            return Collections.emptyList();
+        }
+
+        List<Property> propList = params.asPropertyList();
+        for (Property prop : propList) {
+            String paramName = prop.getName();
+            ModelNode paramModelNode = prop.getValue();
+            String paramType = getString(paramModelNode, context, DMROperationParamAttributes.TYPE);
+            String paramDesc = getString(paramModelNode, context, DMROperationParamAttributes.DESCRIPTION);
+            String paramDefaultValue = getString(paramModelNode, context, DMROperationParamAttributes.DEFAULT_VALUE);
+            OperationParam operationParam = new OperationParam(paramName, paramType, paramDesc, paramDefaultValue);
+            ret.add(operationParam);
+        }
+        return ret;
     }
 
     private static Map<String, String> getMapFromString(ModelNode modelNode, OperationContext context,
