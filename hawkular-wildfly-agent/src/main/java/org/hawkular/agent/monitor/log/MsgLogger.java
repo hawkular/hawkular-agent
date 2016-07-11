@@ -349,4 +349,7 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10076, value = "Cannot register feed under tenant ID [%s] for new managed server [%s]: %s")
     void warnCannotRegisterFeedForNewManagedServer(String tenantId, String managedServerName, String error);
 
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10077, value = "Failed to store metric tags: %s")
+    void errorFailedToStoreMetricTags(@Cause Throwable t, String data);
 }

@@ -106,6 +106,13 @@ public interface RemoteDMRAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition METRIC_TAGS = new SimpleAttributeDefinitionBuilder("metric-tags",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
             HOST,
@@ -117,6 +124,7 @@ public interface RemoteDMRAttributes {
             SET_AVAIL_ON_SHUTDOWN,
             RESOURCE_TYPE_SETS,
             TENANT_ID,
-            METRIC_ID_TEMPLATE
+            METRIC_ID_TEMPLATE,
+            METRIC_TAGS
     };
 }

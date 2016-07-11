@@ -19,6 +19,7 @@ package org.hawkular.agent.example;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
@@ -46,11 +47,16 @@ public class MyAppSamplingService implements SamplingService<MyAppNodeLocation> 
             // this is our endpoint that Hawkular uses to collect metrics and availabilities for our managed resources
             ConnectionData connectionData = new ConnectionData(new URI("myapp:local-uri"), null, null);
             EndpointConfiguration config = new EndpointConfiguration("My App Endpoint", true, Collections.emptyList(),
-                    connectionData, null, null, null, null, null);
+                    connectionData, null, null, null, null, null, null);
             this.endpoint = MonitoredEndpoint.of(config, null);
         } catch (Exception e) {
             throw new IllegalStateException("Cannot create sampling service", e);
         }
+    }
+
+    @Override
+    public Map<String, String> generateAssociatedMetricTags(MeasurementInstance<MyAppNodeLocation, ?> instance) {
+        return Collections.emptyMap();
     }
 
     @Override
@@ -73,5 +79,4 @@ public class MyAppSamplingService implements SamplingService<MyAppNodeLocation> 
         // TODO collect availabilities
         log.warnf("Need to check availabilities for these: %s", instances);
     }
-
 }

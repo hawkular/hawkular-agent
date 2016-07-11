@@ -18,13 +18,16 @@ package org.hawkular.agent.monitor.dynamicprotocol.prometheus;
 
 import java.net.MalformedURLException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricStorage;
+import org.hawkular.agent.monitor.api.MetricTagPayloadBuilder;
 import org.hawkular.agent.monitor.dynamicprotocol.DynamicEndpointService;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
@@ -121,7 +124,8 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
     class Walker implements PrometheusMetricsWalker {
 
         private MetricStorage metricStorage;
-        private MetricDataPayloadBuilder payloadBuilder;
+        private MetricDataPayloadBuilder dataPayloadBuilder;
+        private MetricTagPayloadBuilder tagPayloadBuilder;
 
         public Walker() {
         }
@@ -131,15 +135,19 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
             HawkularWildFlyAgentContext storage = getHawkularStorage();
             metricStorage = storage.getMetricStorage();
 
-            payloadBuilder = metricStorage.createMetricDataPayloadBuilder();
-            payloadBuilder.setTenantId(tenantId);
+            dataPayloadBuilder = metricStorage.createMetricDataPayloadBuilder();
+            dataPayloadBuilder.setTenantId(tenantId);
+
+            tagPayloadBuilder = metricStorage.createMetricTagPayloadBuilder();
+            tagPayloadBuilder.setTenantId(tenantId);
         }
 
         @Override
         public void walkFinish(int familiesProcessed, int metricsProcessed) {
             log.debugf("Storing [%d] of [%d] Prometheus metrics from endpoint [%s]",
-                    payloadBuilder.getNumberDataPoints(), metricsProcessed, getMonitoredEndpoint());
-            metricStorage.store(payloadBuilder, 0);
+                    dataPayloadBuilder.getNumberDataPoints(), metricsProcessed, getMonitoredEndpoint());
+            metricStorage.store(dataPayloadBuilder, 0);
+            metricStorage.store(tagPayloadBuilder, 0);
         }
 
         @Override
@@ -164,9 +172,14 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
                     buildLabelListString(metric.getLabels(), null, null),
                     metric.getValue());
 
-            String key = generateKey(metric);
+            String key = generateKey(family, metric);
             log.debugf("Will store counter in Hawkular Metrics with key: %s", key);
-            payloadBuilder.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.COUNTER);
+            dataPayloadBuilder.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.COUNTER);
+
+            Map<String, String> tags = generateTags(family, metric);
+            for (Map.Entry<String, String> entry : tags.entrySet()) {
+                tagPayloadBuilder.addTag(key, entry.getKey(), entry.getValue(), MetricType.COUNTER);
+            }
         }
 
         @Override
@@ -179,9 +192,14 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
                     buildLabelListString(metric.getLabels(), null, null),
                     metric.getValue());
 
-            String key = generateKey(metric);
+            String key = generateKey(family, metric);
             log.debugf("Will store gauge in Hawkular Metrics with key: %s", key);
-            payloadBuilder.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.GAUGE);
+            dataPayloadBuilder.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.GAUGE);
+
+            Map<String, String> tags = generateTags(family, metric);
+            for (Map.Entry<String, String> entry : tags.entrySet()) {
+                tagPayloadBuilder.addTag(key, entry.getKey(), entry.getValue(), MetricType.GAUGE);
+            }
         }
 
         @Override
@@ -226,25 +244,52 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
             return true;
         }
 
-        private String generateKey(Metric metric) {
+        private String generateKey(MetricFamily family, Metric metric) {
             StringBuilder key = new StringBuilder();
 
             DynamicEndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
             String metricIdTemplate = config.getMetricIdTemplate();
             if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
-                key.append(getFeedId()).append("_");
-                key.append(metric.getName()).append("_");
-                if (!metric.getLabels().isEmpty()) {
-                    key.append(buildLabelListString(metric.getLabels(), null, null)).append("_");
-                }
+                key.append(getFeedId())
+                        .append("_")
+                        .append(config.getName())
+                        .append("_")
+                        .append(metric.getName());
             } else {
-                key.append(metricIdTemplate
-                        .replaceAll("%FeedId", getFeedId())
-                        .replaceAll("%ManagedServerName", config.getName())
-                        .replaceAll("%MetricName", metric.getName()));
+                key.append(replaceTokens(family, metric, config, metricIdTemplate));
             }
 
             return key.toString();
+        }
+
+        private Map<String, String> generateTags(MetricFamily family, Metric metric) {
+            Map<String, String> generatedTags;
+            DynamicEndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
+            Map<String, String> tokenizedTags = config.getMetricTags();
+            if (tokenizedTags == null || tokenizedTags.isEmpty()) {
+                generatedTags = new HashMap<>();
+            } else {
+                generatedTags = new HashMap<>();
+                for (Map.Entry<String, String> tokenizedTag : tokenizedTags.entrySet()) {
+                    String name = replaceTokens(family, metric, config, tokenizedTag.getKey());
+                    String value = replaceTokens(family, metric, config, tokenizedTag.getValue());
+                    generatedTags.put(name, value);
+                }
+            }
+
+            // for each prometheus label, add a tag
+            generatedTags.putAll(metric.getLabels());
+
+            return generatedTags;
+        }
+
+        private String replaceTokens(MetricFamily family, Metric metric, DynamicEndpointConfiguration config,
+                String string) {
+            return string
+                    .replaceAll("%FeedId", getFeedId())
+                    .replaceAll("%ManagedServerName", config.getName())
+                    .replaceAll("%MetricTypeName", family.getType().name())
+                    .replaceAll("%MetricName", metric.getName());
         }
     }
 }
