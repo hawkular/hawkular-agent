@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.api;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
@@ -42,6 +43,19 @@ public interface SamplingService<L> {
      * @return the endpoint this service is able to sample
      */
     MonitoredEndpoint<EndpointConfiguration> getMonitoredEndpoint();
+
+    /**
+     * Given a measurement instance, this will generate the tags to be added to the
+     * associated Hawkular Metrics metric definition.
+     *
+     * The service can use the metric tags provided by the user via
+     * {@link MonitoredEndpoint#getEndpointConfiguration() the endpoint configuration} which contains
+     * {@link AbstractEndpointConfiguration#getMetricTags() the metric tags}.
+     *
+     * @param instance the measurement instance whose tags are to be generated
+     * @return the measurement tags to be added to the metric definition
+     */
+    Map<String, String> generateAssociatedMetricTags(MeasurementInstance<L, ?> instance);
 
     /**
      * Given a measurement instance, this will generate the key to be used when

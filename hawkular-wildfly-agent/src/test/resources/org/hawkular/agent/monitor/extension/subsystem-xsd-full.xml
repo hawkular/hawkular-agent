@@ -132,14 +132,16 @@
                 set-avail-on-shutdown="UP"
                 resource-type-sets="Main"
                 tenant-id=""
-                metric-id-template="%FeedId-%ResourceName-%MetricTypeName" />
+                metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
+                metric-labels="feed=%FeedId,Label One=Value One" />
 
     <local-dmr name="Self"
                enabled="true"
                set-avail-on-shutdown="UP"
                resource-type-sets="Main"
                tenant-id="tenantOverride"
-               metric-id-template="%FeedId-%ResourceName-%MetricTypeName" />
+               metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
+               metric-labels="feed=%FeedId,Label One=Value One" />
 
     <remote-jmx name="Remote JMX"
                 enabled="true"
@@ -150,7 +152,8 @@
                 set-avail-on-shutdown="UP"
                 resource-type-sets="R Resource Type Set"
                 tenant-id="tenantOverride"
-                metric-id-template="%FeedId-%ResourceName-%MetricTypeName" />
+                metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
+                metric-labels="feed=%FeedId,Label One=Value One" />
 
     <remote-prometheus name="Remote Prometheus"
                        enabled="true"
@@ -161,7 +164,8 @@
                        interval="30"
                        time-units="seconds"
                        tenant-id="tenantOverride"
-                       metric-id-template="%FeedId-%MetricName" />
+                       metric-id-template="%FeedId-%MetricName"
+                       metric-labels="feed=%FeedId,Label One=Value One" />
 
   </managed-servers>
 

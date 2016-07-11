@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.storage;
 
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricStorage;
+import org.hawkular.agent.monitor.api.MetricTagPayloadBuilder;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 
 /**
@@ -44,6 +45,22 @@ public class MetricStorageProxy implements MetricStorage {
 
     @Override
     public void store(MetricDataPayloadBuilder payloadBuilder, long waitMillis) {
+        if (storageAdapter == null) {
+            throw new IllegalStateException("Storage infrastructure is not ready yet");
+        }
+        storageAdapter.store(payloadBuilder, waitMillis);
+    }
+
+    @Override
+    public MetricTagPayloadBuilder createMetricTagPayloadBuilder() {
+        if (storageAdapter == null) {
+            throw new IllegalStateException("Storage infrastructure is not ready yet");
+        }
+        return storageAdapter.createMetricTagPayloadBuilder();
+    }
+
+    @Override
+    public void store(MetricTagPayloadBuilder payloadBuilder, long waitMillis) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
