@@ -42,6 +42,7 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Endpoint
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
+import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NodeLocation;
@@ -380,10 +381,16 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     @Override
-    public String generateAssociatedMetricId(MeasurementInstance<L, ?> instance) {
+    public String generateAssociatedMetricId(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
+        // the user can configure a metric's ID in one of two places - either in the metric definition itself or
+        // in the endpoint configuration. The metric definition takes precedence in case a metric ID template
+        // is provided in both.
         String generatedKey;
         EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
-        String metricIdTemplate = config.getMetricIdTemplate();
+        String metricIdTemplate = instance.getType().getMetricIdTemplate();
+        if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
+            metricIdTemplate = config.getMetricIdTemplate();
+        }
         if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
             generatedKey = instance.getID().getIDString();
         } else {
@@ -393,11 +400,22 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     @Override
-    public Map<String, String> generateAssociatedMetricTags(MeasurementInstance<L, ?> instance) {
+    public Map<String, String> generateAssociatedMetricTags(
+            MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
+        // Metric tags are configured in one of two places - either in the metric definition itself or in the endpoint
+        // configuration. If tags are defined in both places, all the tags found in both places are associated with
+        // the metric. If, however, both places define the same tag name, the metric definition takes precedence.
         Map<String, String> generatedTags;
         EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
-        Map<String, String> tokenizedTags = config.getMetricTags();
-        if (tokenizedTags == null || tokenizedTags.isEmpty()) {
+        Map<String, String> tokenizedTags = new HashMap<>();
+        if (config.getMetricTags() != null) {
+            tokenizedTags.putAll(config.getMetricTags());
+        }
+        if (instance.getType().getMetricTags() != null) {
+            tokenizedTags.putAll(instance.getType().getMetricTags());
+        }
+
+        if (tokenizedTags.isEmpty()) {
             generatedTags = Collections.emptyMap();
         } else {
             generatedTags = new HashMap<>(tokenizedTags.size());

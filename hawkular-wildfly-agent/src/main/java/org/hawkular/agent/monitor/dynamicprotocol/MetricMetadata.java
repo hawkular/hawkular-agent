@@ -14,29 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hawkular.agent.monitor.inventory;
+
+package org.hawkular.agent.monitor.dynamicprotocol;
 
 import java.util.Map;
-import java.util.regex.Pattern;
 
-public final class AvailType<L> extends MeasurementType<L> {
+import org.hawkular.agent.monitor.inventory.Name;
 
-    private static final Pattern DEFAULT_UP_PATTERN = Pattern.compile("(?i)(UP|OK)");
+public class MetricMetadata {
 
-    public static Pattern getDefaultUpPattern() {
-        return DEFAULT_UP_PATTERN;
+    private final Name name;
+    private final String metricIdTemplate;
+    private final Map<String, String> metricTags;
+
+    public MetricMetadata(Name name, String metricIdTemplate, Map<String, String> metricTags) {
+        this.name = name;
+        this.metricIdTemplate = metricIdTemplate;
+        this.metricTags = metricTags;
     }
 
-    private final Pattern upPattern;
-
-    public AvailType(ID id, Name name, AttributeLocation<L> location, Interval interval, Pattern upPattern,
-            String metricIdTemplate, Map<String, String> metricTags) {
-        super(id, name, location, interval, metricIdTemplate, metricTags);
-        this.upPattern = upPattern;
+    public Name getName() {
+        return name;
     }
 
-    public Pattern getUpPattern() {
-        return upPattern;
+    public String getMetricIdTemplate() {
+        return metricIdTemplate;
     }
 
+    public Map<String, String> getMetricTags() {
+        return metricTags;
+    }
 }

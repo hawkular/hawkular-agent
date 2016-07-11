@@ -19,9 +19,7 @@ package org.hawkular.agent.monitor.dynamicprotocol.prometheus;
 import java.net.MalformedURLException;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
@@ -29,6 +27,7 @@ import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.api.MetricTagPayloadBuilder;
 import org.hawkular.agent.monitor.dynamicprotocol.DynamicEndpointService;
+import org.hawkular.agent.monitor.dynamicprotocol.MetricMetadata;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -61,12 +60,12 @@ import org.hawkular.metrics.client.common.MetricType;
 public class PrometheusDynamicEndpointService extends DynamicEndpointService {
     private static final MsgLogger log = AgentLoggers.getLogger(PrometheusDynamicEndpointService.class);
 
-    private final Set<String> metricExactNames;
-    private final Set<Pattern> metricRegexNames;
+    private final Map<String, MetricMetadata> metricExactNames;
+    private final Map<Pattern, MetricMetadata> metricRegexNames;
     private final String tenantId;
 
     public PrometheusDynamicEndpointService(String feedId, MonitoredEndpoint<DynamicEndpointConfiguration> endpoint,
-            HawkularWildFlyAgentContext hawkularStorage, Collection<Name> metrics) {
+            HawkularWildFlyAgentContext hawkularStorage, Collection<MetricMetadata> metrics) {
         super(feedId, endpoint, hawkularStorage, metrics);
 
         // set the tenant ID in case our endpoint wants to associate its data with a special tenant
@@ -84,14 +83,14 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
             // only those characters, we know it is not a regex so we store them for exact name checking. Anything
             // else and we assume the metric name is really a regex, so we'll precompile its Pattern and store it so
             // we can match against it when we start collecting metrics
-            metricExactNames = new HashSet<>();
-            metricRegexNames = new HashSet<>();
-            for (Name name : metrics) {
-                String nameString = name.getNameString();
+            metricExactNames = new HashMap<>();
+            metricRegexNames = new HashMap<>();
+            for (MetricMetadata metric : metrics) {
+                String nameString = metric.getName().getNameString();
                 if (nameString.matches("[a-zA-Z_:][a-zA-Z0-9_:]*")) {
-                    metricExactNames.add(nameString);
+                    metricExactNames.put(nameString, metric);
                 } else {
-                    metricRegexNames.add(Pattern.compile(nameString));
+                    metricRegexNames.put(Pattern.compile(nameString), metric);
                 }
             }
         }
@@ -152,7 +151,7 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
 
         @Override
         public void walkMetricFamily(MetricFamily family, int index) {
-            if (shouldMetricBeIgnored(family.getName())) {
+            if (metricToBeCollected(family.getName()) == null) {
                 return;
             }
             log.debugf("Processing Prometheus Metric Family [%d]: [%s] (%s) (%d total metrics)",
@@ -164,7 +163,8 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
 
         @Override
         public void walkCounterMetric(MetricFamily family, Counter metric, int index) {
-            if (shouldMetricBeIgnored(metric.getName())) {
+            MetricMetadata metricMetadata = metricToBeCollected(metric.getName());
+            if (metricMetadata == null) {
                 return;
             }
             log.debugf("Processing Prometheus Counter Metric [%s|%s]: value=%f",
@@ -172,11 +172,11 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
                     buildLabelListString(metric.getLabels(), null, null),
                     metric.getValue());
 
-            String key = generateKey(family, metric);
+            String key = generateKey(family, metric, metricMetadata);
             log.debugf("Will store counter in Hawkular Metrics with key: %s", key);
             dataPayloadBuilder.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.COUNTER);
 
-            Map<String, String> tags = generateTags(family, metric);
+            Map<String, String> tags = generateTags(family, metric, metricMetadata);
             for (Map.Entry<String, String> entry : tags.entrySet()) {
                 tagPayloadBuilder.addTag(key, entry.getKey(), entry.getValue(), MetricType.COUNTER);
             }
@@ -184,7 +184,8 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
 
         @Override
         public void walkGaugeMetric(MetricFamily family, Gauge metric, int index) {
-            if (shouldMetricBeIgnored(metric.getName())) {
+            MetricMetadata metricMetadata = metricToBeCollected(metric.getName());
+            if (metricMetadata == null) {
                 return;
             }
             log.debugf("Processing Prometheus Gauge Metric [%s|%s]: value=%f",
@@ -192,11 +193,11 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
                     buildLabelListString(metric.getLabels(), null, null),
                     metric.getValue());
 
-            String key = generateKey(family, metric);
+            String key = generateKey(family, metric, metricMetadata);
             log.debugf("Will store gauge in Hawkular Metrics with key: %s", key);
             dataPayloadBuilder.addDataPoint(key, System.currentTimeMillis(), metric.getValue(), MetricType.GAUGE);
 
-            Map<String, String> tags = generateTags(family, metric);
+            Map<String, String> tags = generateTags(family, metric, metricMetadata);
             for (Map.Entry<String, String> entry : tags.entrySet()) {
                 tagPayloadBuilder.addTag(key, entry.getKey(), entry.getValue(), MetricType.GAUGE);
             }
@@ -204,7 +205,7 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
 
         @Override
         public void walkSummaryMetric(MetricFamily family, Summary metric, int index) {
-            if (shouldMetricBeIgnored(metric.getName())) {
+            if (metricToBeCollected(metric.getName()) == null) {
                 return;
             }
             log.debugf("Prometheus SUMMARY metrics not yet supported - skipping [%s|%s|%s]",
@@ -215,7 +216,7 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
 
         @Override
         public void walkHistogramMetric(MetricFamily family, Histogram metric, int index) {
-            if (shouldMetricBeIgnored(metric.getName())) {
+            if (metricToBeCollected(metric.getName()) == null) {
                 return;
             }
             log.debugf("Prometheus HISTOGRAM metrics not yet supported - skipping [%s|%s|%s]",
@@ -224,31 +225,42 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
                     metric.getBuckets());
         }
 
-        private boolean shouldMetricBeIgnored(String metricName) {
+        private MetricMetadata metricToBeCollected(String metricName) {
             if (metricExactNames == null) {
-                return false; // we are to process every metric that is scraped - do not ignore anything
+                // we are to process every metric that is scraped - do not ignore anything
+                return new MetricMetadata(new Name(metricName), null, null);
             }
 
-            if (metricExactNames.contains(metricName)) {
-                return false; // the metric name matched exactly one that we are looking for - do not ignore it
+            MetricMetadata exactMatchMetric = metricExactNames.get(metricName);
+            if (exactMatchMetric != null) {
+                // the metric name matched exactly one that we are looking for - do not ignore it
+                return exactMatchMetric;
             }
 
             // see if the metric name matches one of the regex patterns we were given
-            for (Pattern pattern : metricRegexNames) {
+            for (Map.Entry<Pattern, MetricMetadata> entry : metricRegexNames.entrySet()) {
+                Pattern pattern = entry.getKey();
                 if (pattern.matcher(metricName).matches()) {
-                    return false; // the metric name matches one of our regex patterns - do not ignore it
+                    return entry.getValue(); // the metric name matches one of our regex patterns - do not ignore it
                 }
             }
 
             // this metric name didn't match anything - we are to ignore it
-            return true;
+            return null;
         }
 
-        private String generateKey(MetricFamily family, Metric metric) {
+        private String generateKey(MetricFamily family, Metric metric, MetricMetadata metricMetadata) {
             StringBuilder key = new StringBuilder();
 
             DynamicEndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
-            String metricIdTemplate = config.getMetricIdTemplate();
+
+            // See if the metric had a configured metric ID (in either metric metadata or the endpoint config).
+            // If not, generate our own metric id key.
+            String metricIdTemplate = metricMetadata.getMetricIdTemplate();
+            if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
+                metricIdTemplate = config.getMetricIdTemplate();
+            }
+
             if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
                 key.append(getFeedId())
                         .append("_")
@@ -262,11 +274,22 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
             return key.toString();
         }
 
-        private Map<String, String> generateTags(MetricFamily family, Metric metric) {
+        private Map<String, String> generateTags(MetricFamily family, Metric metric, MetricMetadata metricMetadata) {
             Map<String, String> generatedTags;
             DynamicEndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
-            Map<String, String> tokenizedTags = config.getMetricTags();
-            if (tokenizedTags == null || tokenizedTags.isEmpty()) {
+
+            // See if the metric had configured metric tags (in either metric metadata or the endpoint config).
+            // Notice that if the same tag is defined in both the endpoint config and metric metadata, the metric
+            // metadata wins (i.e. it overrides the endpoing config tag definition).
+            Map<String, String> tokenizedTags = new HashMap<>();
+            if (config.getMetricTags() != null) {
+                tokenizedTags.putAll(config.getMetricTags());
+            }
+            if (metricMetadata.getMetricTags() != null) {
+                tokenizedTags.putAll(metricMetadata.getMetricTags());
+            }
+
+            if (tokenizedTags.isEmpty()) {
                 generatedTags = new HashMap<>();
             } else {
                 generatedTags = new HashMap<>();

@@ -23,6 +23,7 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Abstract
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
+import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NodeLocation;
@@ -55,7 +56,7 @@ public interface SamplingService<L> {
      * @param instance the measurement instance whose tags are to be generated
      * @return the measurement tags to be added to the metric definition
      */
-    Map<String, String> generateAssociatedMetricTags(MeasurementInstance<L, ?> instance);
+    Map<String, String> generateAssociatedMetricTags(MeasurementInstance<L, ? extends MeasurementType<L>> instance);
 
     /**
      * Given a measurement instance, this will generate the key to be used when
@@ -74,7 +75,7 @@ public interface SamplingService<L> {
      * @see MeasurementInstance#getAssociatedMetricId(String)
      * @see MeasurementInstance#setAssociatedMetricId(String)
      */
-    default String generateAssociatedMetricId(MeasurementInstance<L, ?> instance) {
+    default String generateAssociatedMetricId(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
         return instance.getID().getIDString();
     }
 

@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.Avail;
+import org.hawkular.agent.monitor.dynamicprotocol.MetricSetMetadata;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.NameSet;
 import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -308,7 +308,7 @@ public class MonitorServiceConfiguration {
         }
 
         public static class Builder {
-            private Map<Name, NameSet> metricSets;
+            private Map<Name, MetricSetMetadata> metricSets;
             private Map<String, DynamicEndpointConfiguration> endpoints = new LinkedHashMap<>();
 
             public Builder endpoint(DynamicEndpointConfiguration endpoint) {
@@ -316,7 +316,7 @@ public class MonitorServiceConfiguration {
                 return this;
             }
 
-            public Builder metricSets(Map<Name, NameSet> metricSets) {
+            public Builder metricSets(Map<Name, MetricSetMetadata> metricSets) {
                 this.metricSets = metricSets;
                 return this;
             }
@@ -338,16 +338,16 @@ public class MonitorServiceConfiguration {
             }
         }
 
-        private final Map<Name, NameSet> metricSets;
+        private final Map<Name, MetricSetMetadata> metricSets;
         private final Map<String, DynamicEndpointConfiguration> endpoints;
 
-        public DynamicProtocolConfiguration(Map<Name, NameSet> metricSets,
+        public DynamicProtocolConfiguration(Map<Name, MetricSetMetadata> metricSets,
                 Map<String, DynamicEndpointConfiguration> managedServers) {
             this.metricSets = metricSets;
             this.endpoints = managedServers;
         }
 
-        public Map<Name, NameSet> getMetrics() {
+        public Map<Name, MetricSetMetadata> getMetrics() {
             return metricSets;
         }
 

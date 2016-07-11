@@ -30,7 +30,6 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicE
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicProtocolConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.NameSet;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.jboss.msc.value.InjectedValue;
@@ -82,11 +81,11 @@ public class DynamicProtocolServices {
                             .<DynamicEndpointConfiguration> of(endpointConfig, sslContext);
 
                     // get all the metric names that are to be collected, if any are specified
-                    List<Name> metrics = new ArrayList<>();
+                    List<MetricMetadata> metrics = new ArrayList<>();
                     for (Name metricSetName : endpointConfig.getMetricSets()) {
-                        NameSet metricSet = protocolConfig.getMetrics().get(metricSetName);
+                        MetricSetMetadata metricSet = protocolConfig.getMetrics().get(metricSetName);
                         if (metricSet != null && metricSet.isEnabled()) {
-                            metrics.addAll(metricSet.getNameSet());
+                            metrics.addAll(metricSet.getMetrics());
                         }
                     }
 

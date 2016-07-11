@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,11 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.Collections;
+import java.util.Map;
+
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
+
 /**
  * A common superclass for {@link AvailType} and {@link MetricType}.
  *
@@ -25,10 +30,15 @@ package org.hawkular.agent.monitor.inventory;
 public class MeasurementType<L> extends AttributeLocationProvider<L> {
 
     private final Interval interval;
+    private final String metricIdTemplate;
+    private final Map<String, String> metricTags;
 
-    public MeasurementType(ID id, Name name, AttributeLocation<L> location, Interval interval) {
+    public MeasurementType(ID id, Name name, AttributeLocation<L> location, Interval interval, String metricIdTemplate,
+            Map<String, String> metricTags) {
         super(id, name, location);
         this.interval = interval;
+        this.metricIdTemplate = metricIdTemplate;
+        this.metricTags = (metricTags != null) ? Collections.unmodifiableMap(metricTags) : Collections.emptyMap();
 
         if (interval.seconds() < 1) {
             throw new IllegalArgumentException("Interval is too small: " + interval);
@@ -40,6 +50,27 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
      */
     public Interval getInterval() {
         return interval;
+    }
+
+    /**
+     * @return if not null, this should be used to generate the Hawkular Metrics metric ID
+     *         for all instances of this measurement type.
+     *
+     * @see EndpointConfiguration#getMetricIdTemplate()
+     * @see MeasurementInstance#getAssociatedMetricId()
+     */
+    public String getMetricIdTemplate() {
+        return metricIdTemplate;
+    }
+
+    /**
+     * @return Defines what Hawkular Metrics tags should be generated for all instances of this measurement type.
+     *         May be empty.
+     *
+     * @see EndpointConfiguration#getMetricTags()
+     */
+    public Map<String, String> getMetricTags() {
+        return metricTags;
     }
 
 }
