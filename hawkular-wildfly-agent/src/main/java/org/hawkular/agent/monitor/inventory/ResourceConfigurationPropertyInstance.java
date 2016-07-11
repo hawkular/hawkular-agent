@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +21,7 @@ package org.hawkular.agent.monitor.inventory;
  *
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
  */
-public final class ResourceConfigurationPropertyInstance<L>
-        extends Instance<L, ResourceConfigurationPropertyType<L>> {
+public final class ResourceConfigurationPropertyInstance<L> extends Instance<L, ResourceConfigurationPropertyType<L>> {
 
     private final String value;
 
@@ -30,6 +29,12 @@ public final class ResourceConfigurationPropertyInstance<L>
             ResourceConfigurationPropertyType<L> type, String value) {
         super(id, name, attributeLocation, type);
         this.value = value;
+    }
+
+    // copy-constructor
+    public ResourceConfigurationPropertyInstance(ResourceConfigurationPropertyInstance<L> original, boolean disown) {
+        super(original, disown);
+        this.value = original.value;
     }
 
     public String getValue() {

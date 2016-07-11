@@ -771,7 +771,7 @@ public class MonitorService implements Service<MonitorService> {
                     List<MeasurementInstance<?, AvailType<?>>> avails = availsToChange.get(endpointService);
                     for (MeasurementInstance avail : avails) {
                         AvailDataPoint availDataPoint = new AvailDataPoint(
-                                endpointService.generateMeasurementKey(avail),
+                                avail.getAssociatedMetricId(),
                                 now,
                                 setAvailOnShutdown,
                                 config.getTenantId());

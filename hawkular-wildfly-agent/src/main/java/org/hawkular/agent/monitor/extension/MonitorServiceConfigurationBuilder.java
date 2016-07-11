@@ -126,7 +126,7 @@ public class MonitorServiceConfigurationBuilder {
         if (!platformTypeSets.isDisabledOrEmpty()) {
             String machineId = determinePlatformMachineId(config, context);
             EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null, Avail.DOWN,
-                    null, Collections.singletonMap(Constants.MACHINE_ID.getNameString(), machineId));
+                    null, null, Collections.singletonMap(Constants.MACHINE_ID.getNameString(), machineId));
             platformConfigBuilder.endpoint(endpoint);
         }
 
@@ -146,7 +146,7 @@ public class MonitorServiceConfigurationBuilder {
             OperationContext context,
             org.hawkular.agent.monitor.inventory.TypeSets.Builder<DMRNodeLocation>//
             typeSetsBuilder)
-                    throws OperationFailedException {
+            throws OperationFailedException {
 
         boolean enabled = false;
 
@@ -159,15 +159,16 @@ public class MonitorServiceConfigurationBuilder {
                 }
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
 
-                TypeSetBuilder<MetricType<DMRNodeLocation>> typeSetBuilder =
-                        TypeSet.<MetricType<DMRNodeLocation>> builder()
-                                .name(new Name(metricSetName))
-                                .enabled(getBoolean(metricSetValueNode, context, DMRMetricSetAttributes.ENABLED));
+                TypeSetBuilder<MetricType<DMRNodeLocation>> typeSetBuilder = TypeSet
+                        .<MetricType<DMRNodeLocation>> builder()
+                        .name(new Name(metricSetName))
+                        .enabled(getBoolean(metricSetValueNode, context, DMRMetricSetAttributes.ENABLED));
 
                 if (metricSetValueNode.hasDefined(DMRMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(DMRMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
-                        String metricName = metricSetName + "~" + metricProperty.getName();
+                        String metricId = metricSetName + "~" + metricProperty.getName();
+                        String metricName = metricProperty.getName();
                         ModelNode metricValueNode = metricProperty.getValue();
                         String attributeString = getString(metricValueNode, context, DMRMetricAttributes.ATTRIBUTE);
                         PathAddress pathAddress = getPath(metricValueNode, context, DMRMetricAttributes.PATH);
@@ -177,7 +178,7 @@ public class MonitorServiceConfigurationBuilder {
                                 new DMRNodeLocation(pathAddress, re, id),
                                 attributeString);
                         MetricType<DMRNodeLocation> metric = new MetricType<>(
-                                ID.NULL_ID,
+                                new ID(metricId),
                                 new Name(metricName),
                                 location,
                                 new Interval(getInt(metricValueNode, context, DMRMetricAttributes.INTERVAL),
@@ -228,7 +229,7 @@ public class MonitorServiceConfigurationBuilder {
     private static void determineAvailSetDmr(ModelNode config,
             OperationContext context,
             TypeSets.Builder<DMRNodeLocation> typeSetsBuilder)
-                    throws OperationFailedException {
+            throws OperationFailedException {
         boolean enabled = false;
 
         if (config.hasDefined(DMRAvailSetDefinition.AVAIL_SET)) {
@@ -239,10 +240,10 @@ public class MonitorServiceConfigurationBuilder {
                     log.warnCommaInName(availSetName);
                 }
                 ModelNode availSetValueNode = availSetProperty.getValue();
-                TypeSetBuilder<AvailType<DMRNodeLocation>> typeSetBuilder =
-                        TypeSet.<AvailType<DMRNodeLocation>> builder()
-                                .name(new Name(availSetName))
-                                .enabled(getBoolean(availSetValueNode, context, DMRAvailSetAttributes.ENABLED));
+                TypeSetBuilder<AvailType<DMRNodeLocation>> typeSetBuilder = TypeSet
+                        .<AvailType<DMRNodeLocation>> builder()
+                        .name(new Name(availSetName))
+                        .enabled(getBoolean(availSetValueNode, context, DMRAvailSetAttributes.ENABLED));
 
                 if (availSetValueNode.hasDefined(DMRAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(DMRAvailDefinition.AVAIL).asPropertyList();
@@ -279,7 +280,7 @@ public class MonitorServiceConfigurationBuilder {
     private static void determineMetricSetJmx(ModelNode config,
             OperationContext context,
             TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
-                    throws OperationFailedException {
+            throws OperationFailedException {
 
         boolean enabled = false;
 
@@ -291,14 +292,15 @@ public class MonitorServiceConfigurationBuilder {
                     log.warnCommaInName(metricSetName);
                 }
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
-                TypeSetBuilder<MetricType<JMXNodeLocation>> typeSetBuilder =
-                        TypeSet.<MetricType<JMXNodeLocation>> builder()
-                                .name(new Name(metricSetName))
-                                .enabled(getBoolean(metricSetValueNode, context, JMXMetricSetAttributes.ENABLED));
+                TypeSetBuilder<MetricType<JMXNodeLocation>> typeSetBuilder = TypeSet
+                        .<MetricType<JMXNodeLocation>> builder()
+                        .name(new Name(metricSetName))
+                        .enabled(getBoolean(metricSetValueNode, context, JMXMetricSetAttributes.ENABLED));
                 if (metricSetValueNode.hasDefined(JMXMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(JMXMetricDefinition.METRIC).asPropertyList();
                     for (Property metricProperty : metricsList) {
-                        String metricName = metricSetName + "~" + metricProperty.getName();
+                        String metricId = metricSetName + "~" + metricProperty.getName();
+                        String metricName = metricProperty.getName();
 
                         ModelNode metricValueNode = metricProperty.getValue();
                         String objectName = getString(metricValueNode, context, JMXMetricAttributes.OBJECT_NAME);
@@ -307,7 +309,8 @@ public class MonitorServiceConfigurationBuilder {
                                     new JMXNodeLocation(objectName),
                                     getString(metricValueNode, context, JMXMetricAttributes.ATTRIBUTE));
 
-                            MetricType<JMXNodeLocation> metric = new MetricType<JMXNodeLocation>(ID.NULL_ID,
+                            MetricType<JMXNodeLocation> metric = new MetricType<JMXNodeLocation>(
+                                    new ID(metricId),
                                     new Name(metricName),
                                     location,
                                     new Interval(getInt(metricValueNode, context, JMXMetricAttributes.INTERVAL),
@@ -334,7 +337,7 @@ public class MonitorServiceConfigurationBuilder {
     private static void determineAvailSetJmx(ModelNode config,
             OperationContext context,
             TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
-                    throws OperationFailedException {
+            throws OperationFailedException {
 
         boolean enabled = false;
 
@@ -346,10 +349,10 @@ public class MonitorServiceConfigurationBuilder {
                     log.warnCommaInName(availSetName);
                 }
                 ModelNode availSetValueNode = availSetProperty.getValue();
-                TypeSetBuilder<AvailType<JMXNodeLocation>> typeSetBuilder =
-                        TypeSet.<AvailType<JMXNodeLocation>> builder() //
-                                .name(new Name(availSetName)) //
-                                .enabled(getBoolean(availSetValueNode, context, JMXAvailSetAttributes.ENABLED));
+                TypeSetBuilder<AvailType<JMXNodeLocation>> typeSetBuilder = TypeSet
+                        .<AvailType<JMXNodeLocation>> builder() //
+                        .name(new Name(availSetName)) //
+                        .enabled(getBoolean(availSetValueNode, context, JMXAvailSetAttributes.ENABLED));
                 if (availSetValueNode.hasDefined(JMXAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(JMXAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
@@ -387,7 +390,7 @@ public class MonitorServiceConfigurationBuilder {
     private static void determineMetricSetPrometheus(ModelNode config,
             OperationContext context,
             Map<Name, NameSet> namedMetricSets)
-                    throws OperationFailedException {
+            throws OperationFailedException {
 
         boolean enabled = false;
 
@@ -834,7 +837,7 @@ public class MonitorServiceConfigurationBuilder {
 
     private static StorageAdapterConfiguration determineStorageAdapterConfig(ModelNode config,
             OperationContext context)
-                    throws OperationFailedException {
+            throws OperationFailedException {
 
         if (!config.hasDefined(StorageDefinition.STORAGE_ADAPTER)) {
             throw new IllegalArgumentException("Missing storage adapter configuration: " + config.toJSONString(true));
@@ -914,10 +917,11 @@ public class MonitorServiceConfigurationBuilder {
                 numDmrSchedulerThreads, metricDispatcherBufferSize, metricDispatcherMaxBatchSize,
                 availDispatcherBufferSize, availDispatcherMaxBatchSize, pingDispatcherPeriodSeconds);
     }
+
     private static void determineResourceTypeSetDmr(ModelNode config,
             OperationContext context,
             TypeSets.Builder<DMRNodeLocation> typeSetsBuilder)
-                    throws OperationFailedException {
+            throws OperationFailedException {
         boolean enabled = false;
 
         if (config.hasDefined(DMRResourceTypeSetDefinition.RESOURCE_TYPE_SET)) {
@@ -926,11 +930,11 @@ public class MonitorServiceConfigurationBuilder {
             for (Property resourceTypeSetProperty : resourceTypeSetsList) {
                 String resourceTypeSetName = resourceTypeSetProperty.getName();
                 ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
-                TypeSetBuilder<ResourceType<DMRNodeLocation>> typeSetBuilder =
-                        TypeSet.<ResourceType<DMRNodeLocation>> builder()
-                                .name(new Name(resourceTypeSetName))
-                                .enabled(getBoolean(resourceTypeSetValueNode, context,
-                                        DMRResourceTypeSetAttributes.ENABLED));
+                TypeSetBuilder<ResourceType<DMRNodeLocation>> typeSetBuilder = TypeSet
+                        .<ResourceType<DMRNodeLocation>> builder()
+                        .name(new Name(resourceTypeSetName))
+                        .enabled(getBoolean(resourceTypeSetValueNode, context,
+                                DMRResourceTypeSetAttributes.ENABLED));
                 if (resourceTypeSetName.indexOf(',') > -1) {
                     log.warnCommaInName(resourceTypeSetName);
                 }
@@ -995,8 +999,7 @@ public class MonitorServiceConfigurationBuilder {
                                 boolean id = getBoolean(configValueNode, context,
                                         DMRResourceConfigAttributes.INCLUDE_DEFAULTS);
 
-                                ResourceConfigurationPropertyType<DMRNodeLocation> configType =
-                                new ResourceConfigurationPropertyType<>(
+                                ResourceConfigurationPropertyType<DMRNodeLocation> configType = new ResourceConfigurationPropertyType<>(
                                         ID.NULL_ID, new Name(configName),
                                         new AttributeLocation<DMRNodeLocation>(
                                                 new DMRNodeLocation(pathAddress, re, id),
@@ -1029,7 +1032,7 @@ public class MonitorServiceConfigurationBuilder {
 
     private static void determineResourceTypeSetJmx(ModelNode config,
             OperationContext context, TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
-                    throws OperationFailedException {
+            throws OperationFailedException {
         boolean enabled = false;
 
         if (config.hasDefined(JMXResourceTypeSetDefinition.RESOURCE_TYPE_SET)) {
@@ -1038,11 +1041,11 @@ public class MonitorServiceConfigurationBuilder {
             for (Property resourceTypeSetProperty : resourceTypeSetsList) {
                 String resourceTypeSetName = resourceTypeSetProperty.getName();
                 ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
-                TypeSetBuilder<ResourceType<JMXNodeLocation>> typeSetBuilder =
-                        TypeSet.<ResourceType<JMXNodeLocation>> builder()
-                                .name(new Name(resourceTypeSetName))
-                                .enabled(getBoolean(resourceTypeSetValueNode, context,
-                                        JMXResourceTypeSetAttributes.ENABLED));
+                TypeSetBuilder<ResourceType<JMXNodeLocation>> typeSetBuilder = TypeSet
+                        .<ResourceType<JMXNodeLocation>> builder()
+                        .name(new Name(resourceTypeSetName))
+                        .enabled(getBoolean(resourceTypeSetValueNode, context,
+                                JMXResourceTypeSetAttributes.ENABLED));
                 if (resourceTypeSetName.indexOf(',') > -1) {
                     log.warnCommaInName(resourceTypeSetName);
                 }
@@ -1057,15 +1060,14 @@ public class MonitorServiceConfigurationBuilder {
                         String objectName = getObjectName(resourceTypeValueNode, context,
                                 JMXResourceTypeAttributes.OBJECT_NAME);
                         try {
-                            Builder<?, JMXNodeLocation> resourceTypeBuilder =
-                                    ResourceType.<JMXNodeLocation> builder()
-                                            .id(ID.NULL_ID)
-                                            .name(new Name(resourceTypeName))
-                                            .location(new JMXNodeLocation(objectName))
-                                            .resourceNameTemplate(getString(resourceTypeValueNode, context,
-                                                    JMXResourceTypeAttributes.RESOURCE_NAME_TEMPLATE))
-                                            .parents(getNameListFromString(resourceTypeValueNode, context,
-                                                    JMXResourceTypeAttributes.PARENTS));
+                            Builder<?, JMXNodeLocation> resourceTypeBuilder = ResourceType.<JMXNodeLocation> builder()
+                                    .id(ID.NULL_ID)
+                                    .name(new Name(resourceTypeName))
+                                    .location(new JMXNodeLocation(objectName))
+                                    .resourceNameTemplate(getString(resourceTypeValueNode, context,
+                                            JMXResourceTypeAttributes.RESOURCE_NAME_TEMPLATE))
+                                    .parents(getNameListFromString(resourceTypeValueNode, context,
+                                            JMXResourceTypeAttributes.PARENTS));
 
                             List<Name> metricSets = getNameListFromString(resourceTypeValueNode, context,
                                     JMXResourceTypeAttributes.METRIC_SETS);
@@ -1106,11 +1108,10 @@ public class MonitorServiceConfigurationBuilder {
                                             JMXResourceConfigAttributes.OBJECT_NAME);
                                     String attr = getString(configValueNode, context,
                                             JMXResourceConfigAttributes.ATTRIBUTE);
-                                    AttributeLocation<JMXNodeLocation> attribLoc =
-                                            new AttributeLocation<JMXNodeLocation>(new JMXNodeLocation(on), attr);
-                                    ResourceConfigurationPropertyType<JMXNodeLocation> configType =
-                                            new ResourceConfigurationPropertyType<>(
-                                                    ID.NULL_ID, new Name(configName), attribLoc);
+                                    AttributeLocation<JMXNodeLocation> attribLoc = new AttributeLocation<JMXNodeLocation>(
+                                            new JMXNodeLocation(on), attr);
+                                    ResourceConfigurationPropertyType<JMXNodeLocation> configType = new ResourceConfigurationPropertyType<>(
+                                            ID.NULL_ID, new Name(configName), attribLoc);
                                     resourceTypeBuilder.resourceConfigurationPropertyType(configType);
 
                                 }
@@ -1172,6 +1173,8 @@ public class MonitorServiceConfigurationBuilder {
                     List<Name> resourceTypeSets = getNameListFromString(remoteDMRValueNode, context,
                             RemoteDMRAttributes.RESOURCE_TYPE_SETS);
                     String tenantId = getString(remoteDMRValueNode, context, RemoteDMRAttributes.TENANT_ID);
+                    String metricIdTemplate = getString(remoteDMRValueNode, context,
+                            RemoteDMRAttributes.METRIC_ID_TEMPLATE);
 
                     if (useSsl && securityRealm == null) {
                         log.debugf("Using SSL with no security realm - will rely on the JVM truststore: " + name);
@@ -1180,7 +1183,7 @@ public class MonitorServiceConfigurationBuilder {
                     String protocol = useSsl ? "https-remoting" : "http-remoting";
                     ConnectionData connectionData = new ConnectionData(protocol, host, port, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
-                            connectionData, securityRealm, setAvailOnShutdown, tenantId, null);
+                            connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, null);
 
                     dmrConfigBuilder.endpoint(endpoint);
                 }
@@ -1204,9 +1207,10 @@ public class MonitorServiceConfigurationBuilder {
                 List<Name> resourceTypeSets = getNameListFromString(localDMRValueNode, context,
                         LocalDMRAttributes.RESOURCE_TYPE_SETS);
                 String tenantId = getString(localDMRValueNode, context, LocalDMRAttributes.TENANT_ID);
+                String metricIdTemplate = getString(localDMRValueNode, context, LocalDMRAttributes.METRIC_ID_TEMPLATE);
 
                 EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets, null, null,
-                        setAvailOnShutdown, tenantId, null);
+                        setAvailOnShutdown, tenantId, metricIdTemplate, null);
                 dmrConfigBuilder.endpoint(endpoint);
             }
 
@@ -1230,6 +1234,8 @@ public class MonitorServiceConfigurationBuilder {
                     List<Name> resourceTypeSets = getNameListFromString(remoteJMXValueNode, context,
                             RemoteJMXAttributes.RESOURCE_TYPE_SETS);
                     String tenantId = getString(remoteJMXValueNode, context, RemoteJMXAttributes.TENANT_ID);
+                    String metricIdTemplate = getString(remoteJMXValueNode, context,
+                            RemoteDMRAttributes.METRIC_ID_TEMPLATE);
 
                     // make sure the URL is at least syntactically valid
                     URI url;
@@ -1245,7 +1251,7 @@ public class MonitorServiceConfigurationBuilder {
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
-                            connectionData, securityRealm, setAvailOnShutdown, tenantId, null);
+                            connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, null);
 
                     jmxConfigBuilder.endpoint(endpoint);
                 }
@@ -1273,6 +1279,8 @@ public class MonitorServiceConfigurationBuilder {
                             RemotePrometheusAttributes.TIME_UNITS);
                     TimeUnit timeUnits = TimeUnit.valueOf(timeUnitsStr.toUpperCase());
                     String tenandId = getString(remotePromValueNode, context, RemotePrometheusAttributes.TENANT_ID);
+                    String metricIdTemplate = getString(remotePromValueNode, context,
+                            RemotePrometheusAttributes.METRIC_ID_TEMPLATE);
 
                     // make sure the URL is at least syntactically valid
                     URI url;
@@ -1288,7 +1296,8 @@ public class MonitorServiceConfigurationBuilder {
 
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     DynamicEndpointConfiguration endpoint = new DynamicEndpointConfiguration(name, enabled,
-                            metricSets, connectionData, securityRealm, interval, timeUnits, tenandId, null);
+                            metricSets, connectionData, securityRealm, interval, timeUnits, tenandId, metricIdTemplate,
+                            null);
 
                     prometheusConfigBuilder.endpoint(endpoint);
                 }
@@ -1328,7 +1337,7 @@ public class MonitorServiceConfigurationBuilder {
 
     private static String getObjectName(ModelNode modelNode, OperationContext context,
             SimpleAttributeDefinition attrib)
-                    throws OperationFailedException {
+            throws OperationFailedException {
         String value = getString(modelNode, context, attrib);
         if (value != null && !value.isEmpty()) {
             // just make sure it follows valid object name syntax rules

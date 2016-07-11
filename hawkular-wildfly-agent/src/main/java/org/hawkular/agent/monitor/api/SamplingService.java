@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.api;
 
 import java.util.Collection;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
@@ -41,6 +42,27 @@ public interface SamplingService<L> {
      * @return the endpoint this service is able to sample
      */
     MonitoredEndpoint<EndpointConfiguration> getMonitoredEndpoint();
+
+    /**
+     * Given a measurement instance, this will generate the key to be used when
+     * storing that measurement instance's collected data to storage. In the Hawkular Metrics
+     * REST API, this key is known as the "metric id".
+     *
+     * The service can generate a default one or can use the metric ID template provided by the user
+     * via {@link MonitoredEndpoint#getEndpointConfiguration() the endpoint configuration} which contains a
+     * {@link AbstractEndpointConfiguration#getMetricIdTemplate() metric ID template}.
+     *
+     * If this method is not implemented, the default behavior is to return the ID of
+     * the measurement instance itself.
+     *
+     * @param instance the measurement instance whose key is to be generated
+     * @return the measurement key to be used to identify measured data for the given instance
+     * @see MeasurementInstance#getAssociatedMetricId(String)
+     * @see MeasurementInstance#setAssociatedMetricId(String)
+     */
+    default String generateAssociatedMetricId(MeasurementInstance<L, ?> instance) {
+        return instance.getID().getIDString();
+    }
 
     /**
      * Checks the availabilities defined by {@code instances} and reports them back to the given {@code consumer}.

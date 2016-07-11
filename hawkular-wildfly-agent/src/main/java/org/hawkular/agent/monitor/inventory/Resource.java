@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,11 +22,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Identifies a managed resource and contains all of its related data.
+ *
  * @author John Mazzitelli
  *
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
  */
 public final class Resource<L> extends NodeLocationProvider<L> {
+
     public static class Builder<L>
             extends NodeLocationProvider.Builder<Builder<L>, L> {
         private ResourceType<L> resourceType;
@@ -44,13 +47,13 @@ public final class Resource<L> extends NodeLocationProvider<L> {
             parent(template.getParent());
             type(template.getResourceType());
             for (MeasurementInstance<L, MetricType<L>> m : template.getMetrics()) {
-                metric(m);
+                metric(new MeasurementInstance<>(m, true));
             }
             for (MeasurementInstance<L, AvailType<L>> a : template.getAvails()) {
-                avail(a);
+                avail(new MeasurementInstance<>(a, true));
             }
             for (ResourceConfigurationPropertyInstance<L> r : template.getResourceConfigurationProperties()) {
-                resourceConfigurationProperty(r);
+                resourceConfigurationProperty(new ResourceConfigurationPropertyInstance<>(r, true));
             }
         }
 
@@ -108,16 +111,31 @@ public final class Resource<L> extends NodeLocationProvider<L> {
     private final Set<MeasurementInstance<L, AvailType<L>>> avails;
     private final Set<ResourceConfigurationPropertyInstance<L>> resourceConfigurationProperties;
 
-    private Resource(ID id, Name name, L location, ResourceType<L> resourceType, Resource<L> parent,
-            Set<MeasurementInstance<L, MetricType<L>>> metrics, Set<MeasurementInstance<L, AvailType<L>>> avails,
-            Set<ResourceConfigurationPropertyInstance<L>> //
-            resourceConfigurationProperties) {
+    private Resource(ID id,
+            Name name,
+            L location,
+            ResourceType<L> resourceType,
+            Resource<L> parent,
+            Set<MeasurementInstance<L, MetricType<L>>> metrics,
+            Set<MeasurementInstance<L, AvailType<L>>> avails,
+            Set<ResourceConfigurationPropertyInstance<L>> resourceConfigurationProperties) {
         super(id, name, location);
         this.resourceType = resourceType;
         this.parent = parent;
         this.metrics = metrics;
         this.avails = avails;
         this.resourceConfigurationProperties = resourceConfigurationProperties;
+        assignToThisResource(this.metrics);
+        assignToThisResource(this.avails);
+        assignToThisResource(this.resourceConfigurationProperties);
+    }
+
+    private void assignToThisResource(Collection<? extends Instance<L, ?>> instances) {
+        if (instances != null && !instances.isEmpty()) {
+            for (Instance<L, ?> instance : instances) {
+                instance.setResource(this);
+            }
+        }
     }
 
     public ResourceType<L> getResourceType() {

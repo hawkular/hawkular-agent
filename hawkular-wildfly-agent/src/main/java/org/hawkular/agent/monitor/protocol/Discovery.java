@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
@@ -56,12 +57,14 @@ public final class Discovery<L> {
      * @param parent look under this resource to find its children (if null, this looks for root resources)
      * @param childType only find children of this type
      * @param session session used to query the managed endpoint
+     * @param samplingService the service that collects measurements - this is used here just to generate metric IDs
      * @param resourceConsumer if not null, will be a listener that gets notified when resources are discovered
      */
     public <N> void discoverChildren(
             Resource<L> parent,
             ResourceType<L> childType,
             Session<L> session,
+            SamplingService<L> samplingService,
             Consumer<Resource<L>> resourceConsumer) {
 
         try {
@@ -92,8 +95,20 @@ public final class Discovery<L> {
                 // populate the metrics/avails based on the resource's type
                 addMetricAndAvailInstances(id, childType, location, entry.getValue(), builder, session);
 
+                // build the resource now - we might need it to generate metric IDs
                 Resource<L> resource = builder.build();
+
+                // The resource is built (and measurement instances assigned to it) so we can generate metric IDs.
+                for (MeasurementInstance<L, MetricType<L>> instance : resource.getMetrics()) {
+                    instance.setAssociatedMetricId(samplingService.generateAssociatedMetricId(instance));
+                }
+                for (MeasurementInstance<L, AvailType<L>> instance : resource.getAvails()) {
+                    instance.setAssociatedMetricId(samplingService.generateAssociatedMetricId(instance));
+                }
+
                 log.debugf("Discovered resource [%s]", resource);
+
+                // tell our consumer about our new resource
                 if (resourceConsumer != null) {
                     resourceConsumer.accept(resource);
                 }
@@ -102,7 +117,7 @@ public final class Discovery<L> {
                 Set<ResourceType<L>> childTypes = session.getResourceTypeManager()
                         .getChildren(childType);
                 for (ResourceType<L> nextLevelChildType : childTypes) {
-                    discoverChildren(resource, nextLevelChildType, session, resourceConsumer);
+                    discoverChildren(resource, nextLevelChildType, session, samplingService, resourceConsumer);
                 }
 
             }

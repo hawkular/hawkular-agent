@@ -131,13 +131,15 @@
                 security-realm="HawkularRealm"
                 set-avail-on-shutdown="UP"
                 resource-type-sets="Main"
-                tenant-id="" />
+                tenant-id=""
+                metric-id-template="%FeedId-%ResourceName-%MetricTypeName" />
 
     <local-dmr name="Self"
                enabled="true"
                set-avail-on-shutdown="UP"
                resource-type-sets="Main"
-               tenant-id="tenantOverride" />
+               tenant-id="tenantOverride"
+               metric-id-template="%FeedId-%ResourceName-%MetricTypeName" />
 
     <remote-jmx name="Remote JMX"
                 enabled="true"
@@ -147,7 +149,8 @@
                 security-realm="HawkularRealm"
                 set-avail-on-shutdown="UP"
                 resource-type-sets="R Resource Type Set"
-                tenant-id="tenantOverride" />
+                tenant-id="tenantOverride"
+                metric-id-template="%FeedId-%ResourceName-%MetricTypeName" />
 
     <remote-prometheus name="Remote Prometheus"
                        enabled="true"
@@ -157,7 +160,8 @@
                        security-realm="HawkularRealm"
                        interval="30"
                        time-units="seconds"
-                       tenant-id="tenantOverride" />
+                       tenant-id="tenantOverride"
+                       metric-id-template="%FeedId-%MetricName" />
 
   </managed-servers>
 

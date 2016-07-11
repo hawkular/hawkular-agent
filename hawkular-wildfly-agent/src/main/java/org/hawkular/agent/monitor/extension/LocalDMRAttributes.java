@@ -58,10 +58,18 @@ public interface LocalDMRAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition METRIC_ID_TEMPLATE = new SimpleAttributeDefinitionBuilder("metric-id-template",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
             SET_AVAIL_ON_SHUTDOWN,
             RESOURCE_TYPE_SETS,
-            TENANT_ID
+            TENANT_ID,
+            METRIC_ID_TEMPLATE
     };
 }
