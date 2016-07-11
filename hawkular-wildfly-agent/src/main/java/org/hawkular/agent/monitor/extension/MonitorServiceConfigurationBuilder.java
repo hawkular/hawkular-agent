@@ -50,6 +50,7 @@ import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.NameSet;
 import org.hawkular.agent.monitor.inventory.NameSet.NameSetBuilder;
 import org.hawkular.agent.monitor.inventory.Operation;
+import org.hawkular.agent.monitor.inventory.OperationParam;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceType.Builder;
@@ -70,6 +71,7 @@ import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.ModelType;
 import org.jboss.dmr.Property;
 
 /**
@@ -439,7 +441,7 @@ public class MonitorServiceConfigurationBuilder {
 
     }
 
-    private static String determinePlatformMachineId(ModelNode config, OperationContext context)
+    private static String   determinePlatformMachineId(ModelNode config, OperationContext context)
             throws OperationFailedException {
 
         if (!config.hasDefined(PlatformDefinition.PLATFORM)) {
@@ -971,13 +973,16 @@ public class MonitorServiceConfigurationBuilder {
                             List<Property> operationList = opModelNode.asPropertyList();
                             for (Property operationProperty : operationList) {
                                 ModelNode operationValueNode = operationProperty.getValue();
-                                String operationName = operationProperty.getName();
+                                String name = operationProperty.getName();
+
+                                List<OperationParam> params = getOpParamListFromOpNode(operationValueNode);
 
                                 PathAddress pathAddress = getPath(operationValueNode, context,
                                         DMROperationAttributes.PATH);
-                                Operation<DMRNodeLocation> op = new Operation<>(ID.NULL_ID, new Name(operationName),
+                                String operationName = getString(operationValueNode, context, DMROperationAttributes.OPERATION_NAME);
+                                Operation<DMRNodeLocation> op = new Operation<>(ID.NULL_ID, new Name(name),
                                         new DMRNodeLocation(pathAddress),
-                                        getString(operationValueNode, context, DMROperationAttributes.OPERATION_NAME));
+                                        operationName, params);
                                 resourceTypeBuilder.operation(op);
                             }
                         }
@@ -1090,7 +1095,7 @@ public class MonitorServiceConfigurationBuilder {
                                             new JMXNodeLocation(getObjectName(operationValueNode, context,
                                                     JMXOperationAttributes.OBJECT_NAME)),
                                             getString(operationValueNode, context,
-                                                    JMXOperationAttributes.OPERATION_NAME));
+                                                    JMXOperationAttributes.OPERATION_NAME),null);
                                     resourceTypeBuilder.operation(op);
                                 }
                             }
@@ -1375,6 +1380,33 @@ public class MonitorServiceConfigurationBuilder {
         } else {
             return Collections.emptyList();
         }
+    }
+
+    private static List<OperationParam> getOpParamListFromOpNode(ModelNode modelNode) throws OperationFailedException {
+
+        List<OperationParam> ret = new ArrayList<>();
+
+        ModelNode params = modelNode.get("param");
+        if (params.getType()==ModelType.UNDEFINED) {
+            return Collections.emptyList();
+        }
+        List<Property> ps = params.asPropertyList();
+        for (Property prop : ps) {
+            String name = prop.getName();
+            ModelNode m = prop.getValue();
+            String typ = m.get("type").asString();
+            String desc = m.get("description").asString();
+
+            OperationParam operationParam = new OperationParam(name,typ,desc);
+
+            ModelNode defaultValue = m.get("defaultValue");
+            if (defaultValue.getType()!= ModelType.UNDEFINED) {
+                String defVal = defaultValue.asString();
+                operationParam.setDefaultvalue(defVal);
+            }
+            ret.add(operationParam);
+        }
+        return ret;
     }
 
     private static Map<String, String> getMapFromString(ModelNode modelNode, OperationContext context,
