@@ -196,6 +196,9 @@
   </xs:complexType>
 
   <xs:complexType name="operationDmrType">
+    <xs:sequence>
+      <xs:element name="param"          type="operationParamDmr" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
     <xs:attribute name="name"           type="xs:string" use="required"/>
     <xs:attribute name="path"           type="xs:string"/>
     <xs:attribute name="operation-name" type="xs:string"/>
@@ -360,4 +363,18 @@
     <xs:attribute name="time-units" type="timeUnitsType"/>
   </xs:complexType>
 
+  <xs:complexType name="operationParamDmr">
+    <xs:attribute name="name"         type="xs:string" use="required"/>
+    <xs:attribute name="type"         type="paramTypeType" use="optional" default="string"/>
+    <xs:attribute name="defaultValue" type="xs:string" use="optional"/>
+    <xs:attribute name="description"  type="xs:string" use="optional" />
+  </xs:complexType>
+
+  <xs:simpleType name="paramTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="string"/>
+      <xs:enumeration value="bool"/>
+      <xs:enumeration value="number"/>
+    </xs:restriction>
+  </xs:simpleType>
 </xs:schema>

@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.List;
+
 /**
  * Defines an operation that can be executed on the managed resource.
  *
@@ -46,10 +48,15 @@ public final class Operation<L> extends NodeLocationProvider<L> {
      * @param operationName the actual name of the operation as it is known to the actual resource being managed.
      *                      This is the name that is used when telling the managed resource what operation to invoke.
      *                      It may or may not be the same as <code>name</code>.
+     * @param params Additional params for this operation definition, e.g. coming from dmr describe-operation.
+     *                   Can be null.
      */
-    public Operation(ID id, Name name, L location, String operationName) {
+    public Operation(ID id, Name name, L location, String operationName, List<OperationParam> params) {
         super(id, name, location);
         this.operationName = operationName;
+        if (params!=null && !params.isEmpty()) {
+            addProperty("params", params);
+        }
     }
 
     /**

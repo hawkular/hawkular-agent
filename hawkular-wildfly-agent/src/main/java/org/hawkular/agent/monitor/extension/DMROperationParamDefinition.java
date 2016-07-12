@@ -18,36 +18,31 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class DMROperationDefinition extends PersistentResourceDefinition {
+public class DMROperationParamDefinition extends PersistentResourceDefinition {
 
-    public static final DMROperationDefinition INSTANCE = new DMROperationDefinition();
+    public static final DMROperationParamDefinition INSTANCE = new DMROperationParamDefinition();
 
-    static final String OPERATION = "operation-dmr";
+    static final String PARAM = "param";
 
-    private DMROperationDefinition() {
-        super(PathElement.pathElement(OPERATION),
+    private DMROperationParamDefinition() {
+        super(PathElement.pathElement(PARAM),
                 SubsystemExtension.getResourceDescriptionResolver(DMRResourceTypeSetDefinition.RESOURCE_TYPE_SET,
-                        DMRResourceTypeDefinition.RESOURCE_TYPE, OPERATION),
-                DMROperationAdd.INSTANCE,
-                DMROperationRemove.INSTANCE,
+                        DMRResourceTypeDefinition.RESOURCE_TYPE, DMROperationDefinition.OPERATION, PARAM),
+                DMROperationParamAdd.INSTANCE,
+                DMROperationParamRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
 
-    @Override
-    public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(DMROperationAttributes.ATTRIBUTES);
-    }
 
     @Override
-    protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(DMROperationParamDefinition.INSTANCE);
+    public Collection<AttributeDefinition> getAttributes() {
+        return Arrays.asList(DMROperationParamAttributes.ATTRIBUTES);
     }
 }

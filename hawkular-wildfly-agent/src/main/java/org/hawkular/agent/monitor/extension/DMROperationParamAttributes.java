@@ -16,33 +16,38 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.registry.AttributeAccess;
-import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
-public interface DMROperationAttributes {
+public interface DMROperationParamAttributes {
 
-    SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
+
+    SimpleAttributeDefinition TYPE = new SimpleAttributeDefinitionBuilder("type",
             ModelType.STRING)
-                    .setAllowNull(true)
-                    .setDefaultValue(new ModelNode("/"))
+                    .setAllowNull(false)
                     .setAllowExpression(true)
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition OPERATION_NAME = new SimpleAttributeDefinitionBuilder("operation-name",
+    SimpleAttributeDefinition DEFAULT_VALUE = new SimpleAttributeDefinitionBuilder("defaultValue",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition DESCRIPTION = new SimpleAttributeDefinitionBuilder("description",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
 
-    AttributeDefinition[] ATTRIBUTES = {
-            PATH,
-            OPERATION_NAME,
+    SimpleAttributeDefinition[] ATTRIBUTES = {
+            TYPE,
+            DEFAULT_VALUE,
+            DESCRIPTION
     };
 }
