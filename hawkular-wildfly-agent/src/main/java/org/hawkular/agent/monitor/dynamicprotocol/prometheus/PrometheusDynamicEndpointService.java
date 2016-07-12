@@ -275,7 +275,6 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
         }
 
         private Map<String, String> generateTags(MetricFamily family, Metric metric, MetricMetadata metricMetadata) {
-            Map<String, String> generatedTags;
             DynamicEndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
 
             // See if the metric had configured metric tags (in either metric metadata or the endpoint config).
@@ -289,10 +288,8 @@ public class PrometheusDynamicEndpointService extends DynamicEndpointService {
                 tokenizedTags.putAll(metricMetadata.getMetricTags());
             }
 
-            if (tokenizedTags.isEmpty()) {
-                generatedTags = new HashMap<>();
-            } else {
-                generatedTags = new HashMap<>();
+            Map<String, String> generatedTags = new HashMap<>();
+            if (!tokenizedTags.isEmpty()) {
                 for (Map.Entry<String, String> tokenizedTag : tokenizedTags.entrySet()) {
                     String name = replaceTokens(family, metric, config, tokenizedTag.getKey());
                     String value = replaceTokens(family, metric, config, tokenizedTag.getValue());
