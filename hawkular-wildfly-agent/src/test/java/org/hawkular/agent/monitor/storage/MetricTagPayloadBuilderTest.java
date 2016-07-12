@@ -61,6 +61,12 @@ public class MetricTagPayloadBuilderTest {
         builder.addTag("metric4", "m4tagname1", "m4tagvalue1", MetricType.COUNTER);
         builder.addTag("metric4", "m4tagname2", "m4tagvalue2", MetricType.COUNTER);
 
+        builder.addTag("metric5", "m5tagname1", "m5tagvalue1", MetricType.AVAILABILITY);
+        builder.addTag("metric5", "m5tagname2", "m5tagvalue2", MetricType.AVAILABILITY);
+
+        builder.addTag("metric6", "m6tagname1", "m6tagvalue1", MetricType.AVAILABILITY);
+        builder.addTag("metric6", "m6tagname2", "m6tagvalue2", MetricType.AVAILABILITY);
+
         Map<String, String> payload = builder.toPayload();
 
         String json;
@@ -73,6 +79,10 @@ public class MetricTagPayloadBuilderTest {
         Assert.assertEquals("{\"m3tagname1\":\"m3tagvalue1\",\"m3tagname2\":\"m3tagvalue2\"}", json);
         json = payload.get("counters/metric4");
         Assert.assertEquals("{\"m4tagname1\":\"m4tagvalue1\",\"m4tagname2\":\"m4tagvalue2\"}", json);
+        json = payload.get("availability/metric5");
+        Assert.assertEquals("{\"m5tagname1\":\"m5tagvalue1\",\"m5tagname2\":\"m5tagvalue2\"}", json);
+        json = payload.get("availability/metric6");
+        Assert.assertEquals("{\"m6tagname1\":\"m6tagvalue1\",\"m6tagname2\":\"m6tagvalue2\"}", json);
 
     }
 }

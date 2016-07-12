@@ -256,7 +256,8 @@ public class MonitorServiceConfigurationBuilder {
                 if (availSetValueNode.hasDefined(DMRAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(DMRAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
-                        String availName = availSetName + "~" + availProperty.getName();
+                        String availId = availSetName + "~" + availProperty.getName();
+                        String availName = availProperty.getName();
                         ModelNode availValueNode = availProperty.getValue();
                         String attributeString = getString(availValueNode, context, DMRAvailAttributes.ATTRIBUTE);
                         PathAddress pathAddress = getPath(availValueNode, context, DMRAvailAttributes.PATH);
@@ -271,7 +272,8 @@ public class MonitorServiceConfigurationBuilder {
                                 new DMRNodeLocation(pathAddress, re, id),
                                 attributeString);
 
-                        AvailType<DMRNodeLocation> avail = new AvailType<DMRNodeLocation>(ID.NULL_ID,
+                        AvailType<DMRNodeLocation> avail = new AvailType<DMRNodeLocation>(
+                                new ID(availId),
                                 new Name(availName),
                                 location,
                                 new Interval(getInt(availValueNode, context, DMRAvailAttributes.INTERVAL),
@@ -378,7 +380,8 @@ public class MonitorServiceConfigurationBuilder {
                 if (availSetValueNode.hasDefined(JMXAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(JMXAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
-                        String availName = availSetName + "~" + availProperty.getName();
+                        String availId = availSetName + "~" + availProperty.getName();
+                        String availName = availProperty.getName();
                         ModelNode availValueNode = availProperty.getValue();
                         String objectName = getString(availValueNode, context, JMXAvailAttributes.OBJECT_NAME);
                         String metricIdTemplate = getString(availValueNode, context,
@@ -391,8 +394,10 @@ public class MonitorServiceConfigurationBuilder {
                                     new JMXNodeLocation(objectName),
                                     getString(availValueNode, context, JMXAvailAttributes.ATTRIBUTE));
 
-                            AvailType<JMXNodeLocation> avail = new AvailType<JMXNodeLocation>(ID.NULL_ID,
-                                    new Name(availName), location,
+                            AvailType<JMXNodeLocation> avail = new AvailType<JMXNodeLocation>(
+                                    new ID(availId),
+                                    new Name(availName),
+                                    location,
                                     new Interval(getInt(availValueNode, context, JMXAvailAttributes.INTERVAL),
                                             getTimeUnit(availValueNode, context, JMXAvailAttributes.TIME_UNITS)),
                                     Pattern.compile(getString(availValueNode, context, JMXAvailAttributes.UP_REGEX)),

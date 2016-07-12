@@ -65,7 +65,7 @@
 
     <version.org.hawkular.commons>0.7.4.Final</version.org.hawkular.commons>
     <version.org.hawkular.inventory>0.17.1.Final</version.org.hawkular.inventory>
-    <version.org.hawkular.metrics>0.16.0.Final</version.org.hawkular.metrics>
+    <version.org.hawkular.metrics>0.18.0.Final-SRC-revision-a72334d8591cc72f39741abbe7e40d6317e19a06</version.org.hawkular.metrics>
 
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>

@@ -34,6 +34,7 @@ public class MetricTagPayloadBuilderImpl implements MetricTagPayloadBuilder {
     // key is metric ID, value is map of name/value pairs (the actual tags)
     private Map<String, Map<String, String>> allGauges = new HashMap<>();
     private Map<String, Map<String, String>> allCounters = new HashMap<>();
+    private Map<String, Map<String, String>> allAvails = new HashMap<>();
 
     // a running count of the number of tags that have been added
     private int count = 0;
@@ -54,10 +55,10 @@ public class MetricTagPayloadBuilderImpl implements MetricTagPayloadBuilder {
                 map = allCounters;
                 break;
             }
-            // case AVAILABILITY: {
-            //     map = allAvails;
-            //     break;
-            // }
+            case AVAILABILITY: {
+                map = allAvails;
+                break;
+            }
             default: {
                 throw new IllegalArgumentException("Unsupported metric type: " + metricType);
             }
@@ -82,6 +83,9 @@ public class MetricTagPayloadBuilderImpl implements MetricTagPayloadBuilder {
         }
         for (Map.Entry<String, Map<String, String>> counterEntry : allCounters.entrySet()) {
             withMapObject.put("counters/" + Util.urlEncode(counterEntry.getKey()), counterEntry.getValue());
+        }
+        for (Map.Entry<String, Map<String, String>> availEntry : allAvails.entrySet()) {
+            withMapObject.put("availability/" + Util.urlEncode(availEntry.getKey()), availEntry.getValue());
         }
 
         // now convert all the maps of tags to json
