@@ -31,6 +31,8 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.api.Avail;
+import org.hawkular.agent.monitor.dynamicprotocol.MetricMetadata;
+import org.hawkular.agent.monitor.dynamicprotocol.MetricSetMetadata;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsReportTo;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
@@ -47,8 +49,6 @@ import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Interval;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.NameSet;
-import org.hawkular.agent.monitor.inventory.NameSet.NameSetBuilder;
 import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.OperationParam;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
@@ -103,7 +103,7 @@ public class MonitorServiceConfigurationBuilder {
 
         TypeSets.Builder<DMRNodeLocation> dmrTypeSetsBuilder = TypeSets.builder();
         TypeSets.Builder<JMXNodeLocation> jmxTypeSetsBuilder = TypeSets.builder();
-        Map<Name, NameSet> prometheusMetricSets = new HashMap<>();
+        Map<Name, MetricSetMetadata> prometheusMetricSets = new HashMap<>();
 
         determineMetricSetDmr(config, context, dmrTypeSetsBuilder);
         determineAvailSetDmr(config, context, dmrTypeSetsBuilder);
@@ -175,6 +175,11 @@ public class MonitorServiceConfigurationBuilder {
                         PathAddress pathAddress = getPath(metricValueNode, context, DMRMetricAttributes.PATH);
                         boolean re = getBoolean(metricValueNode, context, DMRMetricAttributes.RESOLVE_EXPRESSIONS);
                         boolean id = getBoolean(metricValueNode, context, DMRMetricAttributes.INCLUDE_DEFAULTS);
+                        String metricIdTemplate = getString(metricValueNode, context,
+                                DMRMetricAttributes.METRIC_ID_TEMPLATE);
+                        Map<String, String> metricTags = getMapFromString(metricValueNode, context,
+                                DMRMetricAttributes.METRIC_TAGS);
+
                         AttributeLocation<DMRNodeLocation> location = new AttributeLocation<>(
                                 new DMRNodeLocation(pathAddress, re, id),
                                 attributeString);
@@ -185,7 +190,9 @@ public class MonitorServiceConfigurationBuilder {
                                 new Interval(getInt(metricValueNode, context, DMRMetricAttributes.INTERVAL),
                                         getTimeUnit(metricValueNode, context, DMRMetricAttributes.TIME_UNITS)),
                                 getMeasurementUnit(metricValueNode, context, DMRMetricAttributes.METRIC_UNITS),
-                                getMetricType(metricValueNode, context, DMRMetricAttributes.METRIC_TYPE));
+                                getMetricType(metricValueNode, context, DMRMetricAttributes.METRIC_TYPE),
+                                metricIdTemplate,
+                                metricTags);
                         typeSetBuilder.type(metric);
                     }
                 }
@@ -231,6 +238,7 @@ public class MonitorServiceConfigurationBuilder {
             OperationContext context,
             TypeSets.Builder<DMRNodeLocation> typeSetsBuilder)
             throws OperationFailedException {
+
         boolean enabled = false;
 
         if (config.hasDefined(DMRAvailSetDefinition.AVAIL_SET)) {
@@ -249,22 +257,31 @@ public class MonitorServiceConfigurationBuilder {
                 if (availSetValueNode.hasDefined(DMRAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(DMRAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
-                        String availName = availSetName + "~" + availProperty.getName();
+                        String availId = availSetName + "~" + availProperty.getName();
+                        String availName = availProperty.getName();
                         ModelNode availValueNode = availProperty.getValue();
                         String attributeString = getString(availValueNode, context, DMRAvailAttributes.ATTRIBUTE);
                         PathAddress pathAddress = getPath(availValueNode, context, DMRAvailAttributes.PATH);
                         boolean re = getBoolean(availValueNode, context, DMRAvailAttributes.RESOLVE_EXPRESSIONS);
                         boolean id = getBoolean(availValueNode, context, DMRAvailAttributes.INCLUDE_DEFAULTS);
+                        String metricIdTemplate = getString(availValueNode, context,
+                                DMRAvailAttributes.METRIC_ID_TEMPLATE);
+                        Map<String, String> metricTags = getMapFromString(availValueNode, context,
+                                DMRAvailAttributes.METRIC_TAGS);
+
                         AttributeLocation<DMRNodeLocation> location = new AttributeLocation<>(
                                 new DMRNodeLocation(pathAddress, re, id),
                                 attributeString);
 
-                        AvailType<DMRNodeLocation> avail = new AvailType<DMRNodeLocation>(ID.NULL_ID,
+                        AvailType<DMRNodeLocation> avail = new AvailType<DMRNodeLocation>(
+                                new ID(availId),
                                 new Name(availName),
                                 location,
                                 new Interval(getInt(availValueNode, context, DMRAvailAttributes.INTERVAL),
                                         getTimeUnit(availValueNode, context, DMRAvailAttributes.TIME_UNITS)),
-                                Pattern.compile(getString(availValueNode, context, DMRAvailAttributes.UP_REGEX)));
+                                Pattern.compile(getString(availValueNode, context, DMRAvailAttributes.UP_REGEX)),
+                                metricIdTemplate,
+                                metricTags);
                         typeSetBuilder.type(avail);
                     }
                     TypeSet<AvailType<DMRNodeLocation>> typeSet = typeSetBuilder.build();
@@ -305,6 +322,11 @@ public class MonitorServiceConfigurationBuilder {
 
                         ModelNode metricValueNode = metricProperty.getValue();
                         String objectName = getString(metricValueNode, context, JMXMetricAttributes.OBJECT_NAME);
+                        String metricIdTemplate = getString(metricValueNode, context,
+                                JMXMetricAttributes.METRIC_ID_TEMPLATE);
+                        Map<String, String> metricTags = getMapFromString(metricValueNode, context,
+                                JMXMetricAttributes.METRIC_TAGS);
+
                         try {
                             AttributeLocation<JMXNodeLocation> location = new AttributeLocation<>(
                                     new JMXNodeLocation(objectName),
@@ -317,7 +339,9 @@ public class MonitorServiceConfigurationBuilder {
                                     new Interval(getInt(metricValueNode, context, JMXMetricAttributes.INTERVAL),
                                             getTimeUnit(metricValueNode, context, JMXMetricAttributes.TIME_UNITS)),
                                     getMeasurementUnit(metricValueNode, context, JMXMetricAttributes.METRIC_UNITS),
-                                    getMetricType(metricValueNode, context, JMXMetricAttributes.METRIC_TYPE));
+                                    getMetricType(metricValueNode, context, JMXMetricAttributes.METRIC_TYPE),
+                                    metricIdTemplate,
+                                    metricTags);
                             typeSetBuilder.type(metric);
                         } catch (MalformedObjectNameException e) {
                             log.warnMalformedJMXObjectName(objectName, e);
@@ -357,20 +381,29 @@ public class MonitorServiceConfigurationBuilder {
                 if (availSetValueNode.hasDefined(JMXAvailDefinition.AVAIL)) {
                     List<Property> availsList = availSetValueNode.get(JMXAvailDefinition.AVAIL).asPropertyList();
                     for (Property availProperty : availsList) {
-                        String availName = availSetName + "~" + availProperty.getName();
+                        String availId = availSetName + "~" + availProperty.getName();
+                        String availName = availProperty.getName();
                         ModelNode availValueNode = availProperty.getValue();
-
                         String objectName = getString(availValueNode, context, JMXAvailAttributes.OBJECT_NAME);
+                        String metricIdTemplate = getString(availValueNode, context,
+                                JMXAvailAttributes.METRIC_ID_TEMPLATE);
+                        Map<String, String> metricTags = getMapFromString(availValueNode, context,
+                                JMXAvailAttributes.METRIC_TAGS);
+
                         try {
                             AttributeLocation<JMXNodeLocation> location = new AttributeLocation<>(
                                     new JMXNodeLocation(objectName),
                                     getString(availValueNode, context, JMXAvailAttributes.ATTRIBUTE));
 
-                            AvailType<JMXNodeLocation> avail = new AvailType<JMXNodeLocation>(ID.NULL_ID,
-                                    new Name(availName), location,
+                            AvailType<JMXNodeLocation> avail = new AvailType<JMXNodeLocation>(
+                                    new ID(availId),
+                                    new Name(availName),
+                                    location,
                                     new Interval(getInt(availValueNode, context, JMXAvailAttributes.INTERVAL),
                                             getTimeUnit(availValueNode, context, JMXAvailAttributes.TIME_UNITS)),
-                                    Pattern.compile(getString(availValueNode, context, JMXAvailAttributes.UP_REGEX)));
+                                    Pattern.compile(getString(availValueNode, context, JMXAvailAttributes.UP_REGEX)),
+                                    metricIdTemplate,
+                                    metricTags);
                             typeSetBuilder.type(avail);
                         } catch (MalformedObjectNameException e) {
                             log.warnMalformedJMXObjectName(objectName, e);
@@ -390,7 +423,7 @@ public class MonitorServiceConfigurationBuilder {
 
     private static void determineMetricSetPrometheus(ModelNode config,
             OperationContext context,
-            Map<Name, NameSet> namedMetricSets)
+            Map<Name, MetricSetMetadata> namedMetricSets)
             throws OperationFailedException {
 
         boolean enabled = false;
@@ -398,18 +431,17 @@ public class MonitorServiceConfigurationBuilder {
         if (config.hasDefined(PrometheusMetricSetDefinition.METRIC_SET)) {
             List<Property> metricSetsList = config.get(PrometheusMetricSetDefinition.METRIC_SET).asPropertyList();
             for (Property metricSetProperty : metricSetsList) {
-                NameSetBuilder nameSetBuilder = NameSet.builder();
+                MetricSetMetadata.Builder builder = MetricSetMetadata.builder();
 
                 String metricSetName = metricSetProperty.getName();
                 if (metricSetName.indexOf(',') > -1) {
                     log.warnCommaInName(metricSetName);
                 }
-                nameSetBuilder.nameOfSet(new Name(metricSetName));
+                builder.name(new Name(metricSetName));
 
                 ModelNode metricSetValueNode = metricSetProperty.getValue();
 
-                enabled = getBoolean(metricSetValueNode, context, PrometheusMetricSetAttributes.ENABLED);
-                nameSetBuilder.enabled(enabled);
+                builder.enabled(getBoolean(metricSetValueNode, context, PrometheusMetricSetAttributes.ENABLED));
 
                 if (metricSetValueNode.hasDefined(PrometheusMetricDefinition.METRIC)) {
                     List<Property> metricsList = metricSetValueNode.get(PrometheusMetricDefinition.METRIC)
@@ -418,22 +450,29 @@ public class MonitorServiceConfigurationBuilder {
                         String metricName = metricProperty.getName();
                         try {
                             Pattern.compile(metricName); // metric name can be a regex, make sure it can compile
-                            nameSetBuilder.name(new Name(metricName));
                         } catch (Exception e) {
                             throw new OperationFailedException("Metric name is an invalid regex: " + metricName);
                         }
 
-                        // there are no attributes (other than 'name')to process
-                        //ModelNode metricValueNode = metricProperty.getValue();
+                        ModelNode metricValueNode = metricProperty.getValue();
+                        String metricIdTemplate = getString(metricValueNode, context,
+                                PrometheusMetricAttributes.METRIC_ID_TEMPLATE);
+                        Map<String, String> metricTags = getMapFromString(metricValueNode, context,
+                                PrometheusMetricAttributes.METRIC_TAGS);
+
+                        MetricMetadata promMetric = new MetricMetadata(new Name(metricName), metricIdTemplate,
+                                metricTags);
+                        builder.metric(promMetric);
                     }
 
-                    NameSet nameSet = nameSetBuilder.build();
-                    namedMetricSets.put(nameSet.getName(), nameSet);
+                    MetricSetMetadata metricSet = builder.build();
+                    namedMetricSets.put(metricSet.getName(), metricSet);
 
-                    enabled = enabled || !nameSet.isDisabledOrEmpty();
+                    enabled = enabled || metricSet.isEnabled() || !metricSet.getMetrics().isEmpty();
                 }
             }
         }
+
         if (!enabled) {
             log.infoNoEnabledMetricsConfigured("Prometheus");
         }
@@ -516,7 +555,9 @@ public class MonitorServiceConfigurationBuilder {
                         Constants.OPERATING_SYSTEM_SYS_CPU_LOAD.getNameString()),
                 osInterval,
                 MeasurementUnit.PERCENTAGE,
-                org.hawkular.metrics.client.common.MetricType.GAUGE);
+                org.hawkular.metrics.client.common.MetricType.GAUGE,
+                null,
+                null);
 
         MetricType<PlatformNodeLocation> systemLoadAverage = new MetricType<PlatformNodeLocation>(null,
                 Constants.OPERATING_SYSTEM_SYS_LOAD_AVG,
@@ -525,7 +566,9 @@ public class MonitorServiceConfigurationBuilder {
                         Constants.OPERATING_SYSTEM_SYS_LOAD_AVG.getNameString()),
                 osInterval,
                 MeasurementUnit.NONE,
-                org.hawkular.metrics.client.common.MetricType.GAUGE);
+                org.hawkular.metrics.client.common.MetricType.GAUGE,
+                null,
+                null);
 
         MetricType<PlatformNodeLocation> processCount = new MetricType<PlatformNodeLocation>(null,
                 Constants.OPERATING_SYSTEM_PROCESS_COUNT,
@@ -534,7 +577,9 @@ public class MonitorServiceConfigurationBuilder {
                         Constants.OPERATING_SYSTEM_PROCESS_COUNT.getNameString()),
                 osInterval,
                 MeasurementUnit.NONE,
-                org.hawkular.metrics.client.common.MetricType.GAUGE);
+                org.hawkular.metrics.client.common.MetricType.GAUGE,
+                null,
+                null);
 
         TypeSet<MetricType<PlatformNodeLocation>> osMetrics = TypeSet
                 .<MetricType<PlatformNodeLocation>> builder()
@@ -578,7 +623,9 @@ public class MonitorServiceConfigurationBuilder {
                                     Constants.FILE_STORE_USABLE_SPACE.getNameString()),
                             interval,
                             MeasurementUnit.BYTES,
-                            org.hawkular.metrics.client.common.MetricType.GAUGE);
+                            org.hawkular.metrics.client.common.MetricType.GAUGE,
+                            null,
+                            null);
 
                     MetricType<PlatformNodeLocation> totalSpace = new MetricType<PlatformNodeLocation>(null,
                             Constants.FILE_STORE_TOTAL_SPACE,
@@ -587,7 +634,9 @@ public class MonitorServiceConfigurationBuilder {
                                     Constants.FILE_STORE_TOTAL_SPACE.getNameString()),
                             interval,
                             MeasurementUnit.BYTES,
-                            org.hawkular.metrics.client.common.MetricType.GAUGE);
+                            org.hawkular.metrics.client.common.MetricType.GAUGE,
+                            null,
+                            null);
 
                     TypeSet<MetricType<PlatformNodeLocation>> fileStoreMetrics = TypeSet
                             .<MetricType<PlatformNodeLocation>> builder()
@@ -641,7 +690,9 @@ public class MonitorServiceConfigurationBuilder {
                                     Constants.MEMORY_AVAILABLE.getNameString()),
                             interval,
                             MeasurementUnit.BYTES,
-                            org.hawkular.metrics.client.common.MetricType.GAUGE);
+                            org.hawkular.metrics.client.common.MetricType.GAUGE,
+                            null,
+                            null);
 
                     MetricType<PlatformNodeLocation> total = new MetricType<PlatformNodeLocation>(null,
                             Constants.MEMORY_TOTAL,
@@ -650,7 +701,9 @@ public class MonitorServiceConfigurationBuilder {
                                     Constants.MEMORY_TOTAL.getNameString()),
                             interval,
                             MeasurementUnit.BYTES,
-                            org.hawkular.metrics.client.common.MetricType.GAUGE);
+                            org.hawkular.metrics.client.common.MetricType.GAUGE,
+                            null,
+                            null);
 
                     TypeSet<MetricType<PlatformNodeLocation>> memoryMetrics = TypeSet
                             .<MetricType<PlatformNodeLocation>> builder()
@@ -705,7 +758,9 @@ public class MonitorServiceConfigurationBuilder {
                                     Constants.PROCESSOR_CPU_USAGE.getNameString()),
                             interval,
                             MeasurementUnit.PERCENTAGE,
-                            org.hawkular.metrics.client.common.MetricType.GAUGE);
+                            org.hawkular.metrics.client.common.MetricType.GAUGE,
+                            null,
+                            null);
 
                     TypeSet<MetricType<PlatformNodeLocation>> processorMetrics = TypeSet
                             .<MetricType<PlatformNodeLocation>> builder()
@@ -759,7 +814,9 @@ public class MonitorServiceConfigurationBuilder {
                                     Constants.POWER_SOURCE_REMAINING_CAPACITY.getNameString()),
                             interval,
                             MeasurementUnit.PERCENTAGE,
-                            org.hawkular.metrics.client.common.MetricType.GAUGE);
+                            org.hawkular.metrics.client.common.MetricType.GAUGE,
+                            null,
+                            null);
 
                     MetricType<PlatformNodeLocation> timeRemaining = new MetricType<PlatformNodeLocation>(null,
                             Constants.POWER_SOURCE_TIME_REMAINING,
@@ -768,7 +825,9 @@ public class MonitorServiceConfigurationBuilder {
                                     Constants.POWER_SOURCE_TIME_REMAINING.getNameString()),
                             interval,
                             MeasurementUnit.SECONDS,
-                            org.hawkular.metrics.client.common.MetricType.GAUGE);
+                            org.hawkular.metrics.client.common.MetricType.GAUGE,
+                            null,
+                            null);
 
                     TypeSet<MetricType<PlatformNodeLocation>> powerSourceMetrics = TypeSet
                             .<MetricType<PlatformNodeLocation>> builder()

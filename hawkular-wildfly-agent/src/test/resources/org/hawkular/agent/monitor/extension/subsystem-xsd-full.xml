@@ -58,7 +58,9 @@
                 path="/core-service=platform-mbean/type=memory"
                 attribute="heap-memory-usage#used"
                 resolve-expressions="true"
-                include-defaults="true"/>
+                include-defaults="true"
+                metric-id-template="%FeedId_%MetricName"
+                metric-tags="feedid=%FeedId" />
   </metric-set-dmr>
 
   <avail-set-dmr name="Server Availability" enabled="true">
@@ -69,7 +71,9 @@
                attribute="server-state"
                resolve-expressions="true"
                include-defaults="true"
-               up-regex="run.*" />
+               up-regex="run.*"
+               metric-id-template="%FeedId_%MetricName"
+               metric-tags="feedid=%FeedId" />
   </avail-set-dmr>
 
   <resource-type-set-dmr name="Main" enabled="true">
@@ -100,7 +104,9 @@
                 metric-type="counter"
                 metric-units="bytes"
                 object-name="domain:foo=bar"
-                attribute="yAttribute" />
+                attribute="yAttribute"
+                metric-id-template="%FeedId_%MetricName"
+                metric-tags="feedid=%FeedId" />
   </metric-set-jmx>
 
   <avail-set-jmx name="A Avail Set" enabled="true">
@@ -109,7 +115,9 @@
                time-units="seconds"
                object-name="domain:foo=bar"
                attribute="yAttribute"
-               up-regex="run.*" />
+               up-regex="run.*"
+               metric-id-template="%FeedId_%MetricName"
+               metric-tags="feedid=%FeedId" />
   </avail-set-jmx>
 
   <resource-type-set-jmx name="R Resource Type Set" enabled="true">
@@ -124,6 +132,12 @@
       <operation-jmx name="O Operation" internal-name="oOperation" object-name="domain:foo=bar" />
     </resource-type-jmx>
   </resource-type-set-jmx>
+
+  <metric-set-prometheus name="Prom Metric Set">
+    <metric-prometheus name="Prom Metric"
+                       metric-id-template="%FeedId_%MetricName"
+                       metric-tags="feedid=%FeedId" />
+  </metric-set-prometheus>
 
   <managed-servers>
     <remote-dmr name="Local Host"
@@ -169,6 +183,7 @@
                        interval="30"
                        time-units="seconds"
                        tenant-id="tenantOverride"
+                       metric-sets="Prom Metric Set"
                        metric-id-template="%FeedId-%MetricName"
                        metric-labels="feed=%FeedId,Label One=Value One" />
 

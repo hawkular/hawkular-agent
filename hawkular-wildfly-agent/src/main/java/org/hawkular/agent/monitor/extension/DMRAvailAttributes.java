@@ -83,6 +83,20 @@ public interface DMRAvailAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition METRIC_ID_TEMPLATE = new SimpleAttributeDefinitionBuilder("metric-id-template",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
+    SimpleAttributeDefinition METRIC_TAGS = new SimpleAttributeDefinitionBuilder("metric-tags",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             PATH,
             ATTRIBUTE,
@@ -90,6 +104,8 @@ public interface DMRAvailAttributes {
             INCLUDE_DEFAULTS,
             UP_REGEX,
             INTERVAL,
-            TIME_UNITS
+            TIME_UNITS,
+            METRIC_ID_TEMPLATE,
+            METRIC_TAGS
     };
 }

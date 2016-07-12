@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.Map;
+
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 /**
@@ -30,8 +32,9 @@ public final class MetricType<L> extends MeasurementType<L> {
     private final org.hawkular.metrics.client.common.MetricType metricType;
 
     public MetricType(ID id, Name name, AttributeLocation<L> location, Interval interval, MeasurementUnit metricUnits,
-            org.hawkular.metrics.client.common.MetricType metricType) {
-        super(id, name, location, interval);
+            org.hawkular.metrics.client.common.MetricType metricType, String metricIdTemplate,
+            Map<String, String> metricTags) {
+        super(id, name, location, interval, metricIdTemplate, metricTags);
         this.metricUnits = metricUnits;
         this.metricType = metricType;
     }

@@ -287,7 +287,7 @@ public class ScheduledCollectionsQueueTest {
         org.hawkular.metrics.client.common.MetricType metricType = org.hawkular.metrics.client.common.MetricType.GAUGE;
 
         MetricType<DMRNodeLocation> type = new MetricType<DMRNodeLocation>(id, name, location, interval, metricUnits,
-                metricType);
+                metricType, null, null);
         return type;
     }
 

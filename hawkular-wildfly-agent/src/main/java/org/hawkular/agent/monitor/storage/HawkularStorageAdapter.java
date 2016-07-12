@@ -34,6 +34,7 @@ import org.hawkular.agent.monitor.api.MetricTagPayloadBuilder;
 import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
+import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.Resource;
@@ -381,6 +382,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
             inventoryStorage.resourcesAdded(event);
         }
 
+        // create the metric tags for the metrics associated with the new resource
+
         SamplingService<L> service = event.getSamplingService();
 
         for (Resource<L> resource : event.getPayload()) {
@@ -394,12 +397,23 @@ public class HawkularStorageAdapter implements StorageAdapter {
                         bldr.addTag(metric.getAssociatedMetricId(), tag.getKey(), tag.getValue(),
                                 metric.getType().getMetricType());
                     }
-                    store(bldr, 0L);
                 }
             }
 
-            // TODO we need to do avails
-            //resource.getAvails()
+            Collection<MeasurementInstance<L, AvailType<L>>> avails = resource.getAvails();
+            for (MeasurementInstance<L, AvailType<L>> avail : avails) {
+                Map<String, String> tags = service.generateAssociatedMetricTags(avail);
+                if (!tags.isEmpty()) {
+                    for (Map.Entry<String, String> tag : tags.entrySet()) {
+                        bldr.addTag(avail.getAssociatedMetricId(), tag.getKey(), tag.getValue(),
+                                org.hawkular.metrics.client.common.MetricType.AVAILABILITY);
+                    }
+                }
+            }
+
+            if (bldr.getNumberTags() > 0) {
+                store(bldr, 0L);
+            }
         }
     }
 

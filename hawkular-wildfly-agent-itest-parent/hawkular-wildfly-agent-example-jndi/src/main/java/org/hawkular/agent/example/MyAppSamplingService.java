@@ -26,6 +26,7 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Endpoint
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
+import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
@@ -55,7 +56,8 @@ public class MyAppSamplingService implements SamplingService<MyAppNodeLocation> 
     }
 
     @Override
-    public Map<String, String> generateAssociatedMetricTags(MeasurementInstance<MyAppNodeLocation, ?> instance) {
+    public Map<String, String> generateAssociatedMetricTags(
+            MeasurementInstance<MyAppNodeLocation, ? extends MeasurementType<MyAppNodeLocation>> instance) {
         return Collections.emptyMap();
     }
 
