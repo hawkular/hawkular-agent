@@ -979,7 +979,7 @@ public class MonitorServiceConfigurationBuilder {
                                 PathAddress pathAddress = getPath(operationValueNode, context,
                                         DMROperationAttributes.PATH);
                                 String internalName = getString(operationValueNode, context,
-                                        DMROperationAttributes.OPERATION_NAME);
+                                        DMROperationAttributes.INTERNAL_NAME);
                                 Operation<DMRNodeLocation> op = new Operation<>(
                                         ID.NULL_ID,
                                         new Name(name),
@@ -1098,7 +1098,7 @@ public class MonitorServiceConfigurationBuilder {
                                             new JMXNodeLocation(getObjectName(operationValueNode, context,
                                                     JMXOperationAttributes.OBJECT_NAME)),
                                             getString(operationValueNode, context,
-                                                    JMXOperationAttributes.OPERATION_NAME),
+                                                    JMXOperationAttributes.INTERNAL_NAME),
                                             null);
                                     resourceTypeBuilder.operation(op);
                                 }

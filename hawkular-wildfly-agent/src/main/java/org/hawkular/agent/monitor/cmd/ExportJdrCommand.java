@@ -82,7 +82,7 @@ public class ExportJdrCommand extends AbstractResourcePathCommand<ExportJdrReque
         for (Operation<DMRNodeLocation> op : ops) {
             if (requestedOpName.equals(op.getID().getIDString())) {
                 opLocation = dmrContext.getLocationResolver().absolutize(resource.getLocation(), op.getLocation());
-                actualOperationName = op.getOperationName();
+                actualOperationName = op.getInternalName();
                 break;
             }
         }

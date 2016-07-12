@@ -76,13 +76,13 @@
       <resource-config-dmr name="Max Heap"
                            path="/core-service=platform-mbean/type=memory"
                            attribute="heap-memory-usage#max" />
-      <operation-dmr name="Reload Server" operation-name="reload" path="/some=other/path=here">
+      <operation-dmr name="Reload Server" internal-name="reload" path="/some=other/path=here">
         <param name="param1" description="A string parameter" />
         <param name="param2" type="number" default-value="42" description="An int param"/>
         <param name="param3" type="bool"   default-value="false" description="Something wrong"/>
       </operation-dmr>
 
-      <operation-dmr name="Stop Server" operation-name="shutdown" path="/some=other/path=here"/>
+      <operation-dmr name="Stop Server" internal-name="shutdown" path="/some=other/path=here"/>
     </resource-type-dmr>
   </resource-type-set-dmr>
 
@@ -113,7 +113,7 @@
       <resource-config-jmx name="Config NAme"
                            object-name="domain:foo=bar"
                            attribute="configAttribute" />
-      <operation-jmx name="O Operation" operation-name="oOperation" object-name="domain:foo=bar" />
+      <operation-jmx name="O Operation" internal-name="oOperation" object-name="domain:foo=bar" />
     </resource-type-jmx>
   </resource-type-set-jmx>
 

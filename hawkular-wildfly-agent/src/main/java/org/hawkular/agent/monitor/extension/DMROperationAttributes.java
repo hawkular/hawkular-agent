@@ -33,7 +33,7 @@ public interface DMROperationAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition OPERATION_NAME = new SimpleAttributeDefinitionBuilder("operation-name",
+    SimpleAttributeDefinition INTERNAL_NAME = new SimpleAttributeDefinitionBuilder("internal-name",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
@@ -42,6 +42,6 @@ public interface DMROperationAttributes {
 
     AttributeDefinition[] ATTRIBUTES = {
             PATH,
-            OPERATION_NAME
+            INTERNAL_NAME
     };
 }

@@ -23,9 +23,9 @@ import java.util.List;
  * Defines an operation that can be executed on the managed resource.
  *
  * The {@link #getName()} is the user-visible name (e.g. a human-readable, descriptive name).
- * The {@link #getOperationName()} is the actual operation that is to be executed on the managed resource.
+ * The {@link #getInternalName()} is the actual operation that is to be executed on the managed resource.
  * For example, {@link #getName()} could return "Deploy Your Application" with the actual operation
- * to be executed on the managed resource, {@link #getOperationName()}, being "deploy-app".
+ * to be executed on the managed resource, {@link #getInternalName()}, being "deploy-app".
  *
  * @author John Mazzitelli
  *
@@ -35,7 +35,7 @@ public final class Operation<L> extends NodeLocationProvider<L> {
 
     private static final String PROP_PARAMETERS = "params"; // parameter definitions are stored in this property
 
-    private final String operationName;
+    private final String internalName;
 
     /**
      * Creates an operation definition based on the given information.
@@ -48,14 +48,14 @@ public final class Operation<L> extends NodeLocationProvider<L> {
      *             This name could also be useful as a default user-visible name (which perhaps could be overridden
      *             for i18n purposes) and can also be useful for logging.
      * @param location identifies the location of the resource to whom this operation definition belongs
-     * @param operationName the actual name of the operation as it is known to the actual resource being managed.
+     * @param internalName the actual name of the operation as it is known to the actual resource being managed.
      *                      This is the name that is used when telling the managed resource what operation to invoke.
      *                      It may or may not be the same as <code>name</code>.
      * @param params Additional params for this operation definition, e.g. coming from operation-dmr. Can be null.
      */
-    public Operation(ID id, Name name, L location, String operationName, List<OperationParam> params) {
+    public Operation(ID id, Name name, L location, String internalName, List<OperationParam> params) {
         super(id, name, location);
-        this.operationName = operationName;
+        this.internalName = internalName;
         if (params != null && !params.isEmpty()) {
             addProperty(PROP_PARAMETERS, params);
         }
@@ -67,8 +67,8 @@ public final class Operation<L> extends NodeLocationProvider<L> {
      *         when being asked to execute this operation.
      *         This is not the user-visible name (see {@link #getName()} for that).
      */
-    public String getOperationName() {
-        return operationName;
+    public String getInternalName() {
+        return internalName;
     }
 
     /**

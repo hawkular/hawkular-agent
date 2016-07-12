@@ -201,7 +201,7 @@
     </xs:sequence>
     <xs:attribute name="name"           type="xs:string" use="required"/>
     <xs:attribute name="path"           type="xs:string"/>
-    <xs:attribute name="operation-name" type="xs:string"/>
+    <xs:attribute name="internal-name"  type="xs:string"/>
   </xs:complexType>
 
   <!-- JMX configuration -->
@@ -274,7 +274,7 @@
   <xs:complexType name="operationJmxType">
     <xs:attribute name="name"           type="xs:string" use="required"/>
     <xs:attribute name="object-name"    type="xs:string"/>
-    <xs:attribute name="operation-name" type="xs:string"/>
+    <xs:attribute name="internal-name"  type="xs:string"/>
   </xs:complexType>
 
   <!-- managed server configuration-->

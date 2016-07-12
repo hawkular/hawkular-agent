@@ -97,7 +97,7 @@ public class ExecuteOperationCommand extends
         for (Operation<DMRNodeLocation> op : ops) {
             if (requestedOpName.equals(op.getName().getNameString())) {
                 opLocation = dmrContext.getLocationResolver().absolutize(resource.getLocation(), op.getLocation());
-                actualOperationName = op.getOperationName();
+                actualOperationName = op.getInternalName();
                 break;
             }
         }

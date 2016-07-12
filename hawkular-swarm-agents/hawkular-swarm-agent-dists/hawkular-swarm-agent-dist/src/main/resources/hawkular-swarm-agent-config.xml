@@ -679,16 +679,16 @@
                                path="/socket-binding-group=standard-sockets/socket-binding=http"
                                attribute="bound-address"/>
 
-          <operation-dmr name="JDR"      operation-name="generate-jdr-report" path="/subsystem=jdr"/>
-          <operation-dmr name="Reload"   operation-name="reload"/>
-          <operation-dmr name="Resume"   operation-name="resume"/>
-          <operation-dmr name="Shutdown" operation-name="shutdown" > <!-- shutdown and restart -->
+          <operation-dmr name="JDR"      internal-name="generate-jdr-report" path="/subsystem=jdr"/>
+          <operation-dmr name="Reload"   internal-name="reload"/>
+          <operation-dmr name="Resume"   internal-name="resume"/>
+          <operation-dmr name="Shutdown" internal-name="shutdown" > <!-- shutdown and restart -->
             <param name="timeout" type="number" default-value="0"     description="Timeout in seconds to allow active connections to drain"/>
             <param name="restart" type="bool"   default-value="false" description="Should the server be restarted after shutdown?"/>
           </operation-dmr>
-          <operation-dmr name="Suspend"  operation-name="suspend"/>
-          <operation-dmr name="Deploy"   operation-name="deploy"/>
-          <operation-dmr name="Undeploy" operation-name="undeploy"/>
+          <operation-dmr name="Suspend"  internal-name="suspend"/>
+          <operation-dmr name="Deploy"   internal-name="deploy"/>
+          <operation-dmr name="Undeploy" internal-name="undeploy"/>
 
         </resource-type-dmr>
       </resource-type-set-dmr>
@@ -702,18 +702,18 @@
           <resource-config-dmr name="Process Type"    attribute="process-type"/> <!-- (Host|Domain) Controller -->
           <resource-config-dmr name="Local Host Name" attribute="local-host-name"/>
 
-          <operation-dmr name="Reload Servers"  operation-name="reload-servers" />
-          <operation-dmr name="Restart Servers" operation-name="restart-servers" >
+          <operation-dmr name="Reload Servers"  internal-name="reload-servers" />
+          <operation-dmr name="Restart Servers" internal-name="restart-servers" >
             <param name="timeout" type="number" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
           </operation-dmr>
-          <operation-dmr name="Resume Servers"  operation-name="resume-servers" />
-          <operation-dmr name="Start Servers"   operation-name="start-servers" />
-          <operation-dmr name="Stop Servers"    operation-name="stop-servers" />
-          <operation-dmr name="Suspend Servers" operation-name="suspend-servers" >
+          <operation-dmr name="Resume Servers"  internal-name="resume-servers" />
+          <operation-dmr name="Start Servers"   internal-name="start-servers" />
+          <operation-dmr name="Stop Servers"    internal-name="stop-servers" />
+          <operation-dmr name="Suspend Servers" internal-name="suspend-servers" >
             <param name="timeout" type="number" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
           </operation-dmr>
-          <operation-dmr name="Deploy"          operation-name="deploy" />
-          <operation-dmr name="Undeploy"        operation-name="undeploy" />
+          <operation-dmr name="Deploy"          internal-name="deploy" />
+          <operation-dmr name="Undeploy"        internal-name="undeploy" />
         </resource-type-dmr>
 
         <resource-type-dmr name="Domain Profile"
@@ -729,12 +729,12 @@
                            parents="Host Controller">
           <resource-config-dmr name="Profile" attribute="profile"/>
 
-          <operation-dmr name="Reload Servers"  operation-name="reload-servers" />
-          <operation-dmr name="Restart Servers" operation-name="restart-servers" />
-          <operation-dmr name="Resume Servers"  operation-name="resume-servers" />
-          <operation-dmr name="Start Servers"   operation-name="start-servers" />
-          <operation-dmr name="Stop Servers"    operation-name="stop-servers" />
-          <operation-dmr name="Suspend Servers" operation-name="suspend-servers" />
+          <operation-dmr name="Reload Servers"  internal-name="reload-servers" />
+          <operation-dmr name="Restart Servers" internal-name="restart-servers" />
+          <operation-dmr name="Resume Servers"  internal-name="resume-servers" />
+          <operation-dmr name="Start Servers"   internal-name="start-servers" />
+          <operation-dmr name="Stop Servers"    internal-name="stop-servers" />
+          <operation-dmr name="Suspend Servers" internal-name="suspend-servers" />
         </resource-type-dmr>
 
         <resource-type-dmr name="Domain Host"
@@ -752,8 +752,8 @@
           <resource-config-dmr name="Suspend State"        attribute="suspend-state" />
           <resource-config-dmr name="UUID"                 attribute="uuid"/>
 
-          <operation-dmr name="Reload"   operation-name="reload" />
-          <operation-dmr name="Shutdown" operation-name="shutdown" />
+          <operation-dmr name="Reload"   internal-name="reload" />
+          <operation-dmr name="Shutdown" internal-name="shutdown" />
         </resource-type-dmr>
 
         <resource-type-dmr name="Domain WildFly Server"
@@ -795,14 +795,14 @@
           <resource-config-dmr name="Auto Start"   attribute="auto-start"/>
           <resource-config-dmr name="Status"       attribute="status"/>
 
-          <operation-dmr name="Destroy" operation-name="destroy" />
-          <operation-dmr name="Kill"    operation-name="kill" />
-          <operation-dmr name="Reload"  operation-name="reload" />
-          <operation-dmr name="Restart" operation-name="restart" />
-          <operation-dmr name="Resume"  operation-name="resume" />
-          <operation-dmr name="Start"   operation-name="start" />
-          <operation-dmr name="Stop"    operation-name="stop" />
-          <operation-dmr name="Suspend" operation-name="suspend" />
+          <operation-dmr name="Destroy" internal-name="destroy" />
+          <operation-dmr name="Kill"    internal-name="kill" />
+          <operation-dmr name="Reload"  internal-name="reload" />
+          <operation-dmr name="Restart" internal-name="restart" />
+          <operation-dmr name="Resume"  internal-name="resume" />
+          <operation-dmr name="Start"   internal-name="start" />
+          <operation-dmr name="Stop"    internal-name="stop" />
+          <operation-dmr name="Suspend" internal-name="suspend" />
         </resource-type-dmr>
 
       </resource-type-set-dmr>
@@ -812,8 +812,8 @@
                            resource-name-template="Hawkular WildFly Agent"
                            path="/subsystem=hawkular-wildfly-agent"
                            parents="WildFly Server,Domain WildFly Server,Domain Host">
-          <operation-dmr name="Status"                   operation-name="status"/>
-          <operation-dmr name="Inventory Discovery Scan" operation-name="fullDiscoveryScan"/>
+          <operation-dmr name="Status"                   internal-name="status"/>
+          <operation-dmr name="Inventory Discovery Scan" internal-name="fullDiscoveryScan"/>
         </resource-type-dmr>
       </resource-type-set-dmr>
 
@@ -824,9 +824,9 @@
                            parents="WildFly Server,Domain WildFly Server"
                            metric-sets="Undertow Metrics"
                            avail-sets="Deployment Status">
-          <operation-dmr name="Redeploy" operation-name="redeploy"/>
-          <operation-dmr name="Remove"   operation-name="remove"/>
-          <operation-dmr name="Undeploy" operation-name="undeploy"/>
+          <operation-dmr name="Redeploy" internal-name="redeploy"/>
+          <operation-dmr name="Remove"   internal-name="remove"/>
+          <operation-dmr name="Undeploy" internal-name="undeploy"/>
         </resource-type-dmr>
 
         <resource-type-dmr name="SubDeployment"
