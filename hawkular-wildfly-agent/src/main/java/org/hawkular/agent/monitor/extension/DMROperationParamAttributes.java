@@ -16,32 +16,39 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
-public interface DMROperationAttributes {
+public interface DMROperationParamAttributes {
 
-    SimpleAttributeDefinition PATH = new SimpleAttributeDefinitionBuilder("path",
+    SimpleAttributeDefinition TYPE = new SimpleAttributeDefinitionBuilder("type",
             ModelType.STRING)
                     .setAllowNull(true)
-                    .setDefaultValue(new ModelNode("/"))
+                    .setDefaultValue(new ModelNode("string"))
                     .setAllowExpression(true)
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition INTERNAL_NAME = new SimpleAttributeDefinitionBuilder("internal-name",
+    SimpleAttributeDefinition DEFAULT_VALUE = new SimpleAttributeDefinitionBuilder("default-value",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    AttributeDefinition[] ATTRIBUTES = {
-            PATH,
-            INTERNAL_NAME
+    SimpleAttributeDefinition DESCRIPTION = new SimpleAttributeDefinitionBuilder("description",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
+    SimpleAttributeDefinition[] ATTRIBUTES = {
+            TYPE,
+            DEFAULT_VALUE,
+            DESCRIPTION
     };
 }

@@ -84,7 +84,12 @@
                            attribute="qualified-host-name"
                            resolve-expressions="true"
                            include-defaults="true"/>
-      <operation-dmr name="Reload Server" operation-name="reload" path="/some=other/path=here"/>
+      <operation-dmr name="Reload Server" internal-name="reload" path="/some=other/path=here">
+        <param name="param0" />
+        <param name="param1" type="string" description="a string parameter" />
+        <param name="param2" type="bool"   description="a bool parameter"   default-value="false" />
+        <param name="param3" type="number" description="a number parameter" default-value="1" />
+      </operation-dmr>
     </resource-type-dmr>
   </resource-type-set-dmr>
 
@@ -116,7 +121,7 @@
       <resource-config-jmx name="Config NAme"
                            object-name="domain:foo=bar"
                            attribute="configAttribute" />
-      <operation-jmx name="O Operation" operation-name="oOperation" object-name="domain:foo=bar" />
+      <operation-jmx name="O Operation" internal-name="oOperation" object-name="domain:foo=bar" />
     </resource-type-jmx>
   </resource-type-set-jmx>
 

@@ -31,7 +31,7 @@ public interface JMXOperationAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition OPERATION_NAME = new SimpleAttributeDefinitionBuilder("operation-name",
+    SimpleAttributeDefinition INTERNAL_NAME = new SimpleAttributeDefinitionBuilder("internal-name",
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
@@ -40,6 +40,6 @@ public interface JMXOperationAttributes {
 
     AttributeDefinition[] ATTRIBUTES = {
             OBJECT_NAME,
-            OPERATION_NAME
+            INTERNAL_NAME
     };
 }
