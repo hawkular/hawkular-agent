@@ -596,6 +596,9 @@
         <resource-config-dmr name="Server State"  attribute="server-state" />
         <resource-config-dmr name="Suspend State" attribute="suspend-state" />
         <resource-config-dmr name="UUID"          attribute="uuid" />
+        <resource-config-dmr name="Home Directory"
+                             path="/core-service=server-environment"
+                             attribute="home-dir"/>
         <resource-config-dmr name="Node Name"
                              path="/core-service=server-environment"
                              attribute="node-name"/>
@@ -678,6 +681,9 @@
         <resource-config-dmr name="Server State"         attribute="server-state" />
         <resource-config-dmr name="Suspend State"        attribute="suspend-state" />
         <resource-config-dmr name="UUID"                 attribute="uuid" />
+        <resource-config-dmr name="Home Directory"
+                             path="/core-service=host-environment"
+                             attribute="home-dir"/>
 
         <operation-dmr name="Reload"   internal-name="reload" />
         <operation-dmr name="Shutdown" internal-name="shutdown" />
