@@ -46,9 +46,17 @@ public interface DMROperationParamAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition REQUIRED = new SimpleAttributeDefinitionBuilder("required",
+            ModelType.BOOLEAN)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     SimpleAttributeDefinition[] ATTRIBUTES = {
             TYPE,
             DEFAULT_VALUE,
-            DESCRIPTION
+            DESCRIPTION,
+            REQUIRED
     };
 }

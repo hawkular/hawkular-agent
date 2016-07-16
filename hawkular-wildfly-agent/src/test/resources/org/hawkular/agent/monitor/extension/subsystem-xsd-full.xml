@@ -92,7 +92,8 @@
         <param name="param0" />
         <param name="param1" type="string" description="a string parameter" />
         <param name="param2" type="bool"   description="a bool parameter"   default-value="false" />
-        <param name="param3" type="number" description="a number parameter" default-value="1" />
+        <param name="param3" type="int" description="an int parameter" default-value="1" />
+        <param name="param4" type="float" required="true" description="an required float parameter" default-value="1" />
       </operation-dmr>
     </resource-type-dmr>
   </resource-type-set-dmr>
