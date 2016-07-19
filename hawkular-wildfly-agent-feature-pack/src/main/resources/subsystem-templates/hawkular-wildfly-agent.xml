@@ -1035,7 +1035,7 @@
                   password="adminPass"
                   resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Clustering" />
 
-      <local-dmr name="Local"
+      <local-dmr name="${hawkular.agent.name:Local}"
                  enabled="true"
                  resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Clustering,Hawkular" />
 
