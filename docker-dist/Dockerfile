@@ -21,6 +21,7 @@ MAINTAINER Heiko W. Rupp <hrupp@redhat.com>
 
 #ADD target/agent.jar /tmp/
 ADD target/installer.jar /tmp/
+ADD test-simple.war /opt/jboss/wildfly/standalone/deployments/
 
 ENV HAWKULAR_SERVER http://hawkular:8080
 ENV HAWKULAR_USER jdoe
