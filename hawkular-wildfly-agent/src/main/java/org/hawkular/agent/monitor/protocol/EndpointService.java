@@ -306,21 +306,26 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 Avail avail = null;
                 if (driver != null) {
                     AttributeLocation<L> location = instance.getAttributeLocation();
-                    Object o = driver.fetchAttribute(location);
-                    final Pattern pattern = instance.getType().getUpPattern();
-                    if (o instanceof List<?>) {
-                        /* aggregate */
-                        List<?> list = (List<?>) o;
-                        for (Object item : list) {
-                            Avail a = toAvail(pattern, item);
-                            if (avail == null) {
-                                avail = a;
-                            } else {
-                                avail = (a == Avail.DOWN) ? Avail.DOWN : avail;
+                    try {
+                        Object o = driver.fetchAttribute(location);
+                        final Pattern pattern = instance.getType().getUpPattern();
+                        if (o instanceof List<?>) {
+                            /* aggregate */
+                            List<?> list = (List<?>) o;
+                            for (Object item : list) {
+                                Avail a = toAvail(pattern, item);
+                                if (avail == null) {
+                                    avail = a;
+                                } else {
+                                    avail = (a == Avail.DOWN) ? Avail.DOWN : avail;
+                                }
                             }
+                        } else {
+                            avail = toAvail(instance.getType().getUpPattern(), o);
                         }
-                    } else {
-                        avail = toAvail(instance.getType().getUpPattern(), o);
+                    } catch (Exception e) {
+                        LOG.errorAvailCheckFailed(e);
+                        avail = Avail.DOWN;
                     }
                 } else {
                     avail = Avail.DOWN;
