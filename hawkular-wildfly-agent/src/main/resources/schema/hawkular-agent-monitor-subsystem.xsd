@@ -133,6 +133,7 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <!-- see org.jboss.as.controller.client.helpers.MeasurementUnit -->
   <xs:simpleType name="metricUnitsType">
     <xs:restriction base="xs:string">
       <!-- memory -->
@@ -143,8 +144,12 @@
       <xs:enumeration value="terabytes"/>
 
       <!-- time -->
+      <xs:enumeration value="milliseconds"/>
       <xs:enumeration value="seconds"/>
       <xs:enumeration value="minutes"/>
+      <!-- other -->
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="percentage"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -194,7 +199,7 @@
 
   <xs:complexType name="resourceConfigDmrType">
     <xs:attribute name="name"                type="xs:string" use="required"/>
-    <xs:attribute name="path"                type="xs:string" use="required"/>
+    <xs:attribute name="path"                type="xs:string"/>
     <xs:attribute name="attribute"           type="xs:string" use="required"/>
     <xs:attribute name="resolve-expressions" type="xs:boolean"/>
     <xs:attribute name="include-defaults"    type="xs:boolean"/>
@@ -222,7 +227,7 @@
 
   <xs:complexType name="metricJmxType">
     <xs:attribute name="name"                type="xs:string" use="required"/>
-    <xs:attribute name="object-name"         type="xs:string" use="required"/>
+    <xs:attribute name="object-name"         type="xs:string"/>
     <xs:attribute name="attribute"           type="xs:string" use="required"/>
     <xs:attribute name="metric-type"         type="metricTypeType"/>
     <xs:attribute name="metric-units"        type="metricUnitsType"/>
@@ -243,8 +248,8 @@
 
   <xs:complexType name="availJmxType">
     <xs:attribute name="name"               type="xs:string" use="required"/>
-    <xs:attribute name="object-name"        type="xs:string" use="required"/>
-    <xs:attribute name="attribute"          type="xs:string" use="optional"/> <!-- if not specified, existence of resource at path is used for availability status -->
+    <xs:attribute name="object-name"        type="xs:string"/>
+    <xs:attribute name="attribute"          type="xs:string"/> <!-- if not specified, existence of resource at path is used for availability status -->
     <xs:attribute name="interval"           type="xs:int"/>
     <xs:attribute name="time-units"         type="timeUnitsType"/>
     <xs:attribute name="up-regex"           type="xs:string"/>
@@ -276,7 +281,7 @@
 
   <xs:complexType name="resourceConfigJmxType">
     <xs:attribute name="name"        type="xs:string" use="required"/>
-    <xs:attribute name="object-name" type="xs:string" use="required"/>
+    <xs:attribute name="object-name" type="xs:string"/>
     <xs:attribute name="attribute"   type="xs:string" use="required"/>
   </xs:complexType>
 
