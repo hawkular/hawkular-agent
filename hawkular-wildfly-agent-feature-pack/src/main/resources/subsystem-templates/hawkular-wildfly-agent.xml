@@ -31,6 +31,7 @@
 
     <storage-adapter type="HAWKULAR"
                      tenant-id="${hawkular.rest.tenantId:hawkular}"
+                     feed-id="${hawkular.rest.feedId:autogenerate}"
                      username="${hawkular.rest.user}"
                      password="${hawkular.rest.password}" />
 

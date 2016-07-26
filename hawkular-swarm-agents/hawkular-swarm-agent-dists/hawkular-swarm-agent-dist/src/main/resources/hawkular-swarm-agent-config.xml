@@ -40,12 +40,12 @@
         hawkular.platform.enabled               true                   // all monitoring on at default intervals
         hawkular.prometheus.enabled             false
         hawkular.prometheus.url                 http://127.0.0.1:9090/metrics
-        hawkular.storage-adapter.feed-id        autogenerate
-        hawkular.storage-adapter.host           127.0.0.1
-        hawkular.storage-adapter.password       password
-        hawkular.storage-adapter.port           8080
-        hawkular.storage-adapter.tenant-id      hawkular
-        hawkular.storage-adapter.username       jdoe
+        hawkular.rest.feedId                    autogenerate
+        hawkular.rest.host                      127.0.0.1
+        hawkular.rest.password                  password
+        hawkular.rest.port                      8080
+        hawkular.rest.tenantId                  hawkular
+        hawkular.rest.user                      jdoe
 
     NOTE!! It is important to keep this config up to date with any changes!
 -->
@@ -101,10 +101,10 @@
                    time-units="minutes"/>
 
       <storage-adapter type="HAWKULAR"
-                       tenant-id="${hawkular.storage-adapter.tenant-id:hawkular}"
-                       username="${hawkular.storage-adapter.username:jdoe}"
-                       password="${hawkular.storage-adapter.password:password}"
-                       feed-id="${hawkular.storage-adapter.feed-id:autogenerate}"
+                       tenant-id="${hawkular.rest.tenantId:hawkular}"
+                       username="${hawkular.rest.user:jdoe}"
+                       password="${hawkular.rest.password:password}"
+                       feed-id="${hawkular.rest.feedId:autogenerate}"
                        server-outbound-socket-binding-ref="hawkular" />
 
       <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
@@ -1130,7 +1130,7 @@
 
   <socket-binding-group default-interface="public" name="standard-sockets" port-offset="${jboss.socket.binding.port-offset:0}">
     <outbound-socket-binding name="hawkular">
-      <remote-destination host="${hawkular.storage-adapter.host:127.0.0.1}" port="${hawkular.storage-adapter.port:8080}"/>
+      <remote-destination host="${hawkular.rest.host:127.0.0.1}" port="${hawkular.rest.port:8080}"/>
     </outbound-socket-binding>
   </socket-binding-group>
 </server>

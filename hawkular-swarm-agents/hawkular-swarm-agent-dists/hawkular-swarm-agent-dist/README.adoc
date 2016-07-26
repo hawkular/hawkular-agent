@@ -99,10 +99,12 @@ For some standard monitoring scenarios the configuration file can be omitted in 
 |hawkular.platform.enabled               |true                   |all monitoring on at default intervals
 |hawkular.prometheus.enabled             |false                  |
 |hawkular.prometheus.url                 |http://127.0.0.1:9090/metrics |
-|hawkular.storage-adapter.host           |127.0.0.1              |
-|hawkular.storage-adapter.password       |password               |
-|hawkular.storage-adapter.port           |8080                   |
-|hawkular.storage-adapter.username       |jdoe                   |
+|hawkular.rest.feedId                    |autogenerate           |
+|hawkular.rest.host                      |127.0.0.1              |
+|hawkular.rest.password                  |password               |
+|hawkular.rest.port                      |8080                   |
+|hawkular.rest.tenantId                  |hawkular               |
+|hawkular.rest.user                      |jdoe                   |
 |=========================================================
 
 == Starting the Swarm Agent
