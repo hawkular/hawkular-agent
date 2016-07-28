@@ -115,7 +115,7 @@ public class UpdateDatasourceCommand
                     .parentBuilder()
                     .writeAttribute().address(adr).attribute(USER_NAME, request.getUserName()).parentBuilder() //
                     .writeAttribute().address(adr).attribute(PASSWORD, request.getPassword()).parentBuilder() //
-                    ;
+            ;
             syncProps(controllerClient, adr, CONNECTION_PROPERTIES, request.getDatasourceProperties(), batch,
                     isXaDatasource);
             opResult = batch.execute(controllerClient).assertSuccess();
@@ -123,15 +123,13 @@ public class UpdateDatasourceCommand
 
         setServerRefreshIndicator(opResult, response);
 
+        // discover the updated datasource so it gets updated in inventory
         endpointService.discoverAll();
+
         return null;
 
     }
 
-    /**
-     * @param adr
-     * @return
-     */
     private boolean isXa(ModelNode adr) {
         List<Property> props = adr.asPropertyList();
         Property lastProp = props.get(props.size() - 1);

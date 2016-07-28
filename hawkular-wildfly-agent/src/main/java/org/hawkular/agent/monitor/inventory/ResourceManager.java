@@ -172,6 +172,32 @@ public final class ResourceManager<L> {
     }
 
     /**
+     * @return the total number of resources currently in the graph.
+     */
+    public int size() {
+        return resourceCache.size();
+    }
+
+    /**
+     * @return the total number of resources currently in the graph relative to the given resource (that is,
+     *         it counts that resource and all of its descendants).
+     */
+    public int size(Resource<L> relativeTo) {
+        graphLockRead.lock();
+        try {
+            if (getResource(relativeTo.getID()) == null) {
+                return 0; // the resource doesn't even exist
+            } else {
+                List<Resource<L>> descendants = new ArrayList<>();
+                getAllDescendants(relativeTo, descendants);
+                return 1 + descendants.size();
+            }
+        } finally {
+            graphLockRead.unlock();
+        }
+    }
+
+    /**
      * Adds the given resource to the resource hierarchy, replacing the resource if it already exist but
      * has changed.
      *
@@ -207,7 +233,7 @@ public final class ResourceManager<L> {
                 if (parentInGraph == null) {
                     throw new IllegalArgumentException(
                             String.format("The new resource [%s] has a parent [%s] that has not been added yet",
-                            newResource, newResource.getParent()));
+                                    newResource, newResource.getParent()));
                 }
 
                 // if parents are not the same instance, create a new resource with the parent we have in the graph
@@ -245,6 +271,28 @@ public final class ResourceManager<L> {
 
             return result;
 
+        } finally {
+            graphLockWrite.unlock();
+        }
+    }
+
+    /**
+     * Remove the resource from {@link #resourcesGraph}, including all its descendants.
+     *
+     * @param doomedResource the resource to remove
+     * @return an unmodifiable list of {@link Resources} that were removed by this method
+     */
+    public List<Resource<L>> removeResource(Resource<L> doomedResource) {
+        graphLockWrite.lock();
+        try {
+            List<Resource<L>> removedResources = new ArrayList<Resource<L>>();
+            Resource<L> resourceToRemove = getResource(doomedResource.getID());
+            if (resourceToRemove != null) {
+                getAllDescendants(resourceToRemove, removedResources);
+                removedResources.add(resourceToRemove);
+                removedResources.forEach(r -> this.resourcesGraph.removeVertex(r));
+            }
+            return Collections.unmodifiableList(removedResources);
         } finally {
             graphLockWrite.unlock();
         }

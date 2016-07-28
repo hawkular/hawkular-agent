@@ -79,6 +79,10 @@ public abstract class AbstractRemoveModelNodeCommand<REQ extends ResourcePathReq
 
         DMRNodeLocation doomedLocation = DMRNodeLocation.of(modelNodePath);
         endpointService.removeResources(doomedLocation);
+
+        // discover that the old resource has been removed so it is deleted from inventory
+        endpointService.discoverAll();
+
         return null;
     }
 

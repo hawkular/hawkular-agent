@@ -28,12 +28,17 @@ import org.testng.annotations.Test;
 public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
     public static final String GROUP = "HawkularWildFlyAgentContextITest";
 
+    @Override
+    protected String getTenantId() {
+        return "my-app-tenant"; // see org.hawkular.agent.example.HawkularWildFlyAgentProvider.TENANT_ID
+    }
+
     @Test(groups = { GROUP }, dependsOnGroups = { DatasourceCommandITest.GROUP })
     public void testAgentFromJNDI() throws Throwable {
         waitForAccountsAndInventory();
 
         // this should not exist yet
-        assertResourceNotInInventory("/traversal/f;" + hawkularFeedId +"/type=rt;"
+        assertResourceNotInInventory("/traversal/f;" + hawkularFeedId + "/type=rt;"
                 + "id=MyAppResourceType/rl;defines/type=r",
                 (r -> r.getId().contains("ITest Resource ID")), 5, 5000);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,11 +61,6 @@ public interface Diagnostics {
     Counter getAvailStorageBufferSize();
 
     /**
-     * @return tracks the size of the buffer that holds resources waiting to get stored in inventory
-     */
-    Counter getInventoryStorageBufferSize();
-
-    /**
      * @return tracks the number of metrics that have been stored
      */
     Meter getMetricRate();
@@ -76,7 +71,7 @@ public interface Diagnostics {
     Meter getAvailRate();
 
     /**
-     * @return tracks the number of resources that have been stored in inventory over time
+     * @return tracks the number of resources that have been stored/synced in inventory over time
      */
     Meter getInventoryRate();
 

@@ -53,8 +53,8 @@ public class AgentInstallerDomainPrepare extends AbstractITest {
     public void installAgent() throws Throwable {
 
         assertAgentInHostController(false);
-        File agentModuleXml =
-                new File(wfHome, "modules/system/add-ons/hawkular-agent/org/hawkular/agent/main/module.xml");
+        File agentModuleXml = new File(wfHome,
+                "modules/system/add-ons/hawkular-agent/org/hawkular/agent/main/module.xml");
         Assert.assertFalse(agentModuleXml.exists(), "[" + agentModuleXml.getAbsolutePath() + "] should not exist");
 
         String agentExtensionZipPath = System.getProperty("hawkular-wildfly-agent-wf-extension.zip.path");
@@ -68,7 +68,7 @@ public class AgentInstallerDomainPrepare extends AbstractITest {
                 "--server-url=http://" + hawkularHost + ":" + hawkularHttpPort,
                 "--username=" + testUser,
                 "--password=" + testPasword,
-                "--tenant-id="+ tenantId,
+                "--tenant-id=" + getTenantId(),
                 "--enabled=true"
         });
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +16,13 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.util.List;
+import java.util.Map;
+
+import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryStorage;
+import org.hawkular.agent.monitor.inventory.ResourceType;
 
 /**
  * A proxy that delegates to a {@link StorageAdapter}.
@@ -47,6 +52,22 @@ public class InventoryStorageProxy implements InventoryStorage {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }
         storageAdapter.resourcesRemoved(event);
+    }
+
+    @Override
+    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
+        if (storageAdapter == null) {
+            throw new IllegalStateException("Storage infrastructure is not ready yet");
+        }
+        storageAdapter.discoveryCompleted(event);
+    }
+
+    @Override
+    public <L> void allResourceTypes(Map<String, List<ResourceType<L>>> typesByTenantId) {
+        if (storageAdapter == null) {
+            throw new IllegalStateException("Storage infrastructure is not ready yet");
+        }
+        storageAdapter.allResourceTypes(typesByTenantId);
     }
 
 }

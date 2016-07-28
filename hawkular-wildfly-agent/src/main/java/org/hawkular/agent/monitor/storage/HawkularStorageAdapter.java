@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
+import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricTagPayloadBuilder;
@@ -38,6 +40,7 @@ import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
@@ -383,7 +386,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
 
         // create the metric tags for the metrics associated with the new resource
-
         SamplingService<L> service = event.getSamplingService();
 
         for (Resource<L> resource : event.getPayload()) {
@@ -424,6 +426,20 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
 
         // TODO: should we delete the metrics from Hawkular Metrics?
+    }
+
+    @Override
+    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
+        if (inventoryStorage != null) {
+            inventoryStorage.discoveryCompleted(event);
+        }
+    }
+
+    @Override
+    public <L> void allResourceTypes(Map<String, List<ResourceType<L>>> typesByTenantId) {
+        if (inventoryStorage != null) {
+            inventoryStorage.allResourceTypes(typesByTenantId);
+        }
     }
 
     @Override

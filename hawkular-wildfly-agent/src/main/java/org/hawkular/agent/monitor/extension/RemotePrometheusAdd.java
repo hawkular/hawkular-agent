@@ -82,6 +82,11 @@ public class RemotePrometheusAdd extends MonitorServiceAddStepHandler {
             DynamicProtocolService promService = monitorService.getDynamicProtocolServices()
                     .getPrometheusProtocolService();
             promService.add(endpointService);
+
+            // We know that the Prometheus dynamic protocol service does not involve inventory, so we do not have to
+            // worry about registering any new resource types. So we do not have to call regsiterAllResourceTypes.
+            //monitorService.registerAllResourceTypes();
+
         }
     }
 }
