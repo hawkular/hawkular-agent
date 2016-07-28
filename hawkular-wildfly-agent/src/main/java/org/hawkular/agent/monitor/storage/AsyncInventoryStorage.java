@@ -16,8 +16,6 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import static org.hawkular.inventory.api.Relationships.WellKnown.incorporates;
-
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -40,7 +38,6 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageA
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Instance;
-import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.NamedObject;
@@ -52,16 +49,18 @@ import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
-import org.hawkular.inventory.api.Relationships.Direction;
-import org.hawkular.inventory.api.model.AbstractElement;
-import org.hawkular.inventory.api.model.AbstractElement.Blueprint;
+import org.hawkular.inventory.api.Relationships.WellKnown;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.Feed;
+import org.hawkular.inventory.api.model.Feed.Blueprint;
+import org.hawkular.inventory.api.model.InventoryStructure;
+import org.hawkular.inventory.api.model.InventoryStructure.Builder;
+import org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder;
+import org.hawkular.inventory.api.model.InventoryStructure.Offline;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Relationship;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
@@ -76,6 +75,7 @@ import com.squareup.okhttp.Response;
  * An {@link InventoryStorage} that sends the resources submitted via {@link #storeResources(String, List)}
  * asynchronously to inventory.
  *
+ * @author John Mazzitelli
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class AsyncInventoryStorage implements InventoryStorage {
@@ -123,97 +123,206 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     /**
-     * A builder of a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory. See the docs inside
-     * {@code org.hawkular.inventory.rest.RestBulk} in Inventory source tree.
+     * A builder of a {@link Map} structure that can be sent to {@code /sync} endpoint of Inventory.
      */
-    private static class BulkPayloadBuilder {
-
-        /** The result */
-        private Map<String, Map<String, List<AbstractElement.Blueprint>>> result = new LinkedHashMap<>();
-
-        /** A set of entity IDs already added to the currently built request */
-        private Set<String> addedIds = new HashSet<>();
+    private static class SyncPayloadBuilder {
 
         private final String feedId;
         private final String tenantId;
 
-        public BulkPayloadBuilder(String tenantId, String feedId) {
-            super();
+        private InventoryStructure.Builder<Feed.Blueprint> inventoryBuilder;
+
+        // a set of ids already added
+        private Set<String> addedIds;
+
+        public SyncPayloadBuilder(String tenantId, String feedId) {
             this.tenantId = tenantId;
             this.feedId = feedId;
+
+            this.inventoryBuilder = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId(feedId).build());
+            this.addedIds = new HashSet<>();
         }
 
         /**
-         * Returns a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory. See the docs inside
-         * {@code org.hawkular.inventory.rest.RestBulk} in Inventory source tree.
-         *
-         * @return a {@link Map} structure that can be sent to {@code /bulk} endpoint of Inventory
+         * @return a structure that can be sent to {@code /sync} endpoint of Inventory
          */
-        public Map<String, Map<String, List<AbstractElement.Blueprint>>> build() {
-            Map<String, Map<String, List<Blueprint>>> result = this.result;
-            this.result = new LinkedHashMap<>();
-            this.addedIds = new HashSet<>();
+        public InventoryStructure<Feed.Blueprint> build() {
+            Offline<Blueprint> result = inventoryBuilder.build();
+            inventoryBuilder = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId(feedId).build());
+            addedIds = new HashSet<>();
             return result;
         }
 
         /**
-         * Adds an {@link Entity.Blueprint} unless its ID is available in {@link #addedIds}.
+         * Adds the given {@code resource}, its metrics, availabilities, and configurations
+         * to {@link #inventoryBuilder}.
          *
-         * @param blueprint the blueprint to add
-         * @param entityClass the class of the blueprint's {@link Entity}
+         * @param resource the {@link Resource} to add
          * @return this builder
          */
-        private BulkPayloadBuilder entity(Entity.Blueprint blueprint, Class<? extends Entity<?, ?>> entityClass) {
-            String parentPath = newPathPrefix().get().toString();
-            return entity(blueprint, entityClass, parentPath);
-        }
+        public <L> SyncPayloadBuilder resource(Resource<L> resource) {
 
-        /**
-         * Adds an {@link Entity.Blueprint} unless its ID is available in {@link #addedIds}.
-         *
-         * @param blueprint the blueprint to add
-         * @param entityClass the class of the blueprint's {@link Entity}
-         * @param parentPath the inventory path of the parent entity to add the given {@code blueprint} under
-         * @return this builder
-         */
-        private BulkPayloadBuilder entity(Entity.Blueprint blueprint, Class<? extends Entity<?, ?>> entityClass,
-                String parentPath) {
-            String id = blueprint.getId();
-            if (!addedIds.contains(id)) {
-                relationshipOrEntity(parentPath, entityClass, blueprint);
-                addedIds.add(id);
+            // resource
+            String resourceId = getInventoryId(resource);
+
+            // skip if we already did it
+            if (!addedIds.add(resourceId)) {
+                return this;
             }
+
+            // the relationship between the resource and its parent (which should already be in inventory)
+            StringBuilder parentPathStr = new StringBuilder();
+            Resource<?> parent = resource.getParent();
+            while (parent != null) {
+                String resourceIdPath = "/" + Util.urlEncode(parent.getID().getIDString());
+                parentPathStr.insert(0, resourceIdPath);
+                parent = parent.getParent();
+            }
+
+            CanonicalPath parentCanonicalPath = parentPathStr.length() == 0 ? newPathPrefix().get()
+                    : CanonicalPath.fromPartiallyUntypedString(parentPathStr.toString(), newPathPrefix().get(),
+                            org.hawkular.inventory.api.model.Resource.class);
+            // Relationship.Blueprint parentRelationshipBP = Relationship.Blueprint.builder()
+            //         .withDirection(org.hawkular.inventory.api.Relationships.Direction.incoming)
+            //         .withName(WellKnown.isParentOf.toString())
+            //         .withOtherEnd(parentCanonicalPath)
+            //         .build();
+
+            // the resource blueprint itself
+            String resourceTypePath = newPathPrefix().resourceType(getInventoryId(resource.getResourceType())).get()
+                    .toString();
+            String resourceName = resource.getName().getNameString();
+            Map<String, Object> resourceProperties = resource.getProperties();
+
+            org.hawkular.inventory.api.model.Resource.Blueprint resourceBP;
+            resourceBP = org.hawkular.inventory.api.model.Resource.Blueprint.builder()
+                    .withId(resourceId)
+                    .withName(resourceName)
+                    .withResourceTypePath(resourceTypePath)
+                    .withProperties(resourceProperties)
+                    .addIncomingRelationship(WellKnown.isParentOf.toString(), parentCanonicalPath)
+                    .build();
+
+            // now the resource's associated data - resource config, metrics, and avails
+            ChildBuilder<Builder<Blueprint>> childBuilder = inventoryBuilder.startChild(resourceBP);
+
+            try {
+                // resource configuration
+                Collection<ResourceConfigurationPropertyInstance<L>> resConfigInstances = resource
+                        .getResourceConfigurationProperties();
+                resourceConfigurations(resConfigInstances, childBuilder);
+
+                // metrics and avails (which are just metrics, too)
+                Collection<? extends Instance<?, ?>> metricInstances = resource.getMetrics();
+                for (Instance<?, ?> metric : metricInstances) {
+                    metric(metric, childBuilder);
+                }
+                Collection<? extends Instance<?, ?>> availInstances = resource.getAvails();
+                for (Instance<?, ?> metric : availInstances) {
+                    metric(metric, childBuilder);
+                }
+
+            } finally {
+                childBuilder.end();
+            }
+
             return this;
         }
 
         /**
-         * Adds the given {@code metric} to the {@link #result}.
+         * Adds the given {@code resourceType}, its metric types (including availability) and operations to
+         * {@link #inventoryBuilder} linking them properly together.
          *
-         * @param metric the {@link MeasurementInstance} to add
+         * @param resourceType the {@link ResourceType} to add
+         * @return this builder
          */
-        private void metric(Instance<?, ?> metric) {
+        public SyncPayloadBuilder resourceType(ResourceType<?> resourceType) {
+
+            // resource type
+            String resourceTypeId = getInventoryId(resourceType);
+
+            // skip if we already did it
+            if (!addedIds.add(resourceTypeId)) {
+                return this;
+            }
+
+            String resourceTypeName = resourceType.getName().getNameString();
+            Map<String, Object> resourceTypeProperties = resourceType.getProperties();
+
+            org.hawkular.inventory.api.model.ResourceType.Blueprint resourceTypeBP = //
+                    org.hawkular.inventory.api.model.ResourceType.Blueprint.builder()
+                            .withId(resourceTypeId)
+                            .withName(resourceTypeName)
+                            .withProperties(resourceTypeProperties)
+                            .build();
+
+            ChildBuilder<Builder<Blueprint>> childBuilder = inventoryBuilder.startChild(resourceTypeBP);
+
+            try {
+                // operations (which are children of the resource type)
+                Collection<? extends Operation<?>> ops = resourceType.getOperations();
+                for (Operation<?> op : ops) {
+                    operation(op, childBuilder);
+                }
+
+                // resource configuration types (which are children of the resource type)
+                Collection<? extends ResourceConfigurationPropertyType<?>> rcpts = //
+                        resourceType.getResourceConfigurationPropertyTypes();
+                resourceConfigurationTypes(rcpts, childBuilder);
+
+            } finally {
+                childBuilder.end();
+            }
+
+            // Metric types and avail types are at the root level, not children of the resource type itself.
+            // I don't know if that's the right or wrong thing to do, but its how we've been doing it.
+
+            // metric types
+            Collection<? extends MetricType<?>> metricTypes = resourceType.getMetricTypes();
+            for (MetricType<?> metricType : metricTypes) {
+                metricType(metricType);
+            }
+
+            // avail types (which are just metric types, too)
+            Collection<? extends AvailType<?>> availTypes = resourceType.getAvailTypes();
+            for (AvailType<?> availType : availTypes) {
+                metricType(availType);
+            }
+
+            return this;
+        }
+
+        private void metric(Instance<?, ?> metric, ChildBuilder<Builder<Blueprint>> childBuilder) {
 
             String metricId = getInventoryId(metric);
             String metricTypeId = getInventoryId(metric.getType());
             String metricTypePath = newPathPrefix().metricType(metricTypeId).get().toString();
+            String metricName = metric.getName().getNameString();
+            Map<String, Object> metricProperties = metric.getProperties();
 
-            Metric.Blueprint blueprint = new Metric.Blueprint(metricTypePath, metricId,
-                    metric.getName().getNameString(), metric.getProperties(), null, null);
+            Metric.Blueprint blueprint = Metric.Blueprint.builder()
+                    .withId(metricId)
+                    .withMetricTypePath(metricTypePath)
+                    .withName(metricName)
+                    .withProperties(metricProperties)
+                    .build();
 
-            entity(blueprint, Metric.class);
-
+            childBuilder.addChild(blueprint);
         }
 
-        /**
-         * Adds the given {@code metricType} to the {@link #result}.
-         *
-         * @param metricType the {@link MeasurementType} to add
-         */
         private void metricType(MeasurementType<?> metricType) {
-            MetricUnit mu = MetricUnit.NONE;
+
+            String metricTypeId = getInventoryId(metricType);
+
+            // skip if we already did it
+            if (!addedIds.add(metricTypeId)) {
+                return;
+            }
+
+            MetricUnit metricUnit = MetricUnit.NONE;
             MetricDataType metricDataType;
             if (metricType instanceof MetricType) {
-                mu = MetricUnit.valueOf(((MetricType<?>) metricType).getMetricUnits().name());
+                metricUnit = MetricUnit.valueOf(((MetricType<?>) metricType).getMetricUnits().name());
                 // we need to translate from metric API type to inventory API type
                 switch (((MetricType<?>) metricType).getMetricType()) {
                     case GAUGE:
@@ -234,32 +343,69 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         "Invalid measurement type - please report this bug: " + metricType.getClass());
             }
 
-            org.hawkular.inventory.api.model.MetricType.Blueprint blueprint = //
-            new org.hawkular.inventory.api.model.MetricType.Blueprint(
-                    getInventoryId(metricType),
-                    metricType.getName().getNameString(),
-                    mu,
-                    metricDataType,
-                    metricType.getProperties(),
-                    metricType.getInterval().seconds(),
-                    null,
-                    null);
+            String metricTypeName = metricType.getName().getNameString();
+            long metricTypeIntervalSecs = metricType.getInterval().seconds();
+            Map<String, Object> metricTypeProperties = metricType.getProperties();
 
-            entity(blueprint, org.hawkular.inventory.api.model.MetricType.class);
+            org.hawkular.inventory.api.model.MetricType.Blueprint blueprint = org.hawkular.inventory.api.model.MetricType.Blueprint
+                    .builder(metricDataType)
+                    .withId(metricTypeId)
+                    .withName(metricTypeName)
+                    .withInterval(metricTypeIntervalSecs)
+                    .withProperties(metricTypeProperties)
+                    .withUnit(metricUnit)
+                    .withType(metricDataType)
+                    .build();
 
+            inventoryBuilder.addChild(blueprint);
         }
 
-        /**
-         * Adds the given {@code operation} to the {@link #result}.
-         *
-         * @param operation the {@link Operation} to add
-         * @param resourceTypePath the inventory path of the resourceType to add the given {@code operation} under
-         */
-        private void operation(Operation<?> operation, String resourceTypePath) {
-            OperationType.Blueprint blueprint = new OperationType.Blueprint(getInventoryId(operation),
-                    operation.getName().getNameString(), operation.getProperties(), null, null);
+        private void operation(Operation<?> operation, ChildBuilder<Builder<Blueprint>> childBuilder) {
+            String operationId = getInventoryId(operation);
+            String operationName = operation.getName().getNameString();
+            Map<String, Object> operationProperties = operation.getProperties();
 
-            entity(blueprint, OperationType.class, resourceTypePath);
+            OperationType.Blueprint blueprint = OperationType.Blueprint.builder()
+                    .withId(operationId)
+                    .withName(operationName)
+                    .withProperties(operationProperties)
+                    .build();
+
+            childBuilder.addChild(blueprint);
+        }
+
+        private void resourceConfigurationTypes(Collection<? extends ResourceConfigurationPropertyType<?>> rcpts,
+                ChildBuilder<Builder<Blueprint>> childBuilder) {
+            if (!rcpts.isEmpty()) {
+                StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
+                for (ResourceConfigurationPropertyType<?> rcpt : rcpts) {
+                    structDataBuilder.putString(rcpt.getID().getIDString(), rcpt.getName().getNameString());
+                }
+
+                DataEntity.Blueprint<DataRole> dataEntity = DataEntity.Blueprint.builder()
+                        .withRole(DataRole.ResourceType.configurationSchema)
+                        .withValue(structDataBuilder.build())
+                        .build();
+
+                childBuilder.addChild(dataEntity);
+            }
+        }
+
+        private void resourceConfigurations(Collection<? extends ResourceConfigurationPropertyInstance<?>> rcpis,
+                ChildBuilder<Builder<Blueprint>> childBuilder) {
+            if (!rcpis.isEmpty()) {
+                StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
+                for (ResourceConfigurationPropertyInstance<?> rcpi : rcpis) {
+                    structDataBuilder.putString(rcpi.getID().getIDString(), rcpi.getValue());
+                }
+
+                DataEntity.Blueprint<DataRole> dataEntity = DataEntity.Blueprint.builder()
+                        .withRole(DataRole.Resource.configuration)
+                        .withValue(structDataBuilder.build())
+                        .build();
+
+                childBuilder.addChild(dataEntity);
+            }
         }
 
         /**
@@ -267,200 +413,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
          */
         private CanonicalPath.FeedBuilder newPathPrefix() {
             return CanonicalPath.of().tenant(tenantId).feed(feedId);
-        }
-
-        /**
-         * Add the given {@link Relationship.Blueprint} to the {@link #result}.
-         *
-         * @param parent the path to link {@code child under}
-         * @param child the {@link Relationship} to create
-         */
-        private void relationship(CanonicalPath parent, Relationship.Blueprint child) {
-            relationshipOrEntity(parent.toString(), Relationship.class, child);
-        }
-
-        /**
-         * Puts the given {@code blueprint} at a proper location into {@link #result}.
-         *
-         * @param path the first level key
-         * @param entityClass the base for the second level key (see {@link #toKey(Class)})
-         * @param blueprint the blueprint to add
-         */
-        private void relationshipOrEntity(String path, Class<? extends AbstractElement<?, ?>> entityClass,
-                AbstractElement.Blueprint blueprint) {
-
-            Map<String, List<AbstractElement.Blueprint>> pathEntities = result.get(path);
-            if (pathEntities == null) {
-                pathEntities = new LinkedHashMap<>();
-                result.put(path, pathEntities);
-            }
-
-            final String key = toKey(entityClass);
-            List<AbstractElement.Blueprint> list = pathEntities.get(key);
-            if (list == null) {
-                list = new ArrayList<>();
-                pathEntities.put(key, list);
-            }
-            list.add(blueprint);
-
-        }
-
-        /**
-         * Adds the given {@code resource}, its metrics, availabilities and configurations to {@link #result}.
-         *
-         * @param resource the {@link Resource} to add
-         * @return this builder
-         */
-        public <L> BulkPayloadBuilder resource(Resource<L> resource) {
-
-            // resource
-            org.hawkular.inventory.api.model.Resource.Blueprint rPojo;
-            String resourceTypePath = newPathPrefix().resourceType(getInventoryId(resource.getResourceType())).get()
-                    .toString();
-            rPojo = new org.hawkular.inventory.api.model.Resource.Blueprint(
-                    getInventoryId(resource),
-                    resource.getName().getNameString(),
-                    resourceTypePath,
-                    resource.getProperties(),
-                    null,
-                    null);
-
-            StringBuilder parentPath = new StringBuilder();
-            Resource<?> parent = resource.getParent();
-            while (parent != null) {
-                String resourceIdPath = "/" + Util.urlEncode(parent.getID().getIDString());
-                parentPath.insert(0, resourceIdPath);
-                parent = parent.getParent();
-            }
-
-            CanonicalPath parentCanonicalPath = parentPath.length() == 0 ? newPathPrefix().get()
-                    : CanonicalPath.fromPartiallyUntypedString(parentPath.toString(), newPathPrefix().get(),
-                            org.hawkular.inventory.api.model.Resource.class);
-
-            relationshipOrEntity(parentCanonicalPath.toString(), org.hawkular.inventory.api.model.Resource.class,
-                    rPojo);
-
-            String resourcePath = parentPath.toString() + "/" + Util.urlEncode(resource.getID().getIDString());
-            CanonicalPath resourceCanonicalPath = CanonicalPath.fromPartiallyUntypedString(resourcePath,
-                    newPathPrefix().get(), org.hawkular.inventory.api.model.Resource.class);
-
-            // resource configuration
-            Collection<ResourceConfigurationPropertyInstance<L>> resConfigInstances = resource
-                    .getResourceConfigurationProperties();
-            if (resConfigInstances != null && !resConfigInstances.isEmpty()) {
-                StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
-                for (ResourceConfigurationPropertyInstance<?> resConfigInstance : resConfigInstances) {
-                    structDataBuilder.putString(resConfigInstance.getID().getIDString(), resConfigInstance.getValue());
-                }
-
-                DataEntity.Blueprint<DataRole.Resource> dataEntity = new DataEntity.Blueprint<>(
-                        DataRole.Resource.configuration, structDataBuilder.build(), null);
-
-                relationshipOrEntity(resourceCanonicalPath.toString(), DataEntity.class, dataEntity);
-            }
-
-            // metrics and avails (which are just metrics, too)
-            Collection<? extends Instance<?, ?>> metricInstances = resource.getMetrics();
-            for (Instance<?, ?> metric : metricInstances) {
-                metric(metric);
-                CanonicalPath metricPath = newPathPrefix().metric(getInventoryId(metric)).get();
-                Relationship.Blueprint bp = new Relationship.Blueprint(Direction.outgoing, incorporates.toString(),
-                        metricPath, Collections.emptyMap());
-                relationship(resourceCanonicalPath, bp);
-            }
-            Collection<? extends Instance<?, ?>> availInstances = resource.getAvails();
-            for (Instance<?, ?> metric : availInstances) {
-                metric(metric);
-                CanonicalPath metricPath = newPathPrefix().metric(getInventoryId(metric)).get();
-                Relationship.Blueprint bp = new Relationship.Blueprint(Direction.outgoing, incorporates.toString(),
-                        metricPath, Collections.emptyMap());
-                relationship(resourceCanonicalPath, bp);
-            }
-
-            return this;
-        }
-
-        /**
-         * Adds the given {@code resourceType}, its metric types (including availability) and operations to
-         * {@link #result} linking them properly together.
-         *
-         * @param resourceType the {@link ResourceType} to add
-         * @return this builder
-         */
-        public BulkPayloadBuilder resourceType(ResourceType<?> resourceType) {
-
-            // resource type
-            String resourceTypeId = getInventoryId(resourceType);
-            org.hawkular.inventory.api.model.ResourceType.Blueprint blueprint = //
-            new org.hawkular.inventory.api.model.ResourceType.Blueprint(resourceTypeId,
-                    resourceType.getName().getNameString(), resourceType.getProperties(), null, null);
-            entity(blueprint, org.hawkular.inventory.api.model.ResourceType.class);
-
-            CanonicalPath parentPath = newPathPrefix().resourceType(getInventoryId(resourceType)).get();
-
-            // metrics
-            Collection<? extends MetricType<?>> metricTypes = resourceType.getMetricTypes();
-            for (MetricType<?> metricType : metricTypes) {
-                metricType(metricType);
-
-                String metricTypeId = getInventoryId(metricType);
-
-                CanonicalPath metricTypePath = newPathPrefix().metricType(metricTypeId).get();
-                Relationship.Blueprint bp = new Relationship.Blueprint(Direction.outgoing, incorporates.toString(),
-                        metricTypePath, Collections.emptyMap());
-                relationship(parentPath, bp);
-            }
-
-            // avails (which are just metrics, too)
-            Collection<? extends AvailType<?>> availTypes = resourceType.getAvailTypes();
-            for (AvailType<?> availType : availTypes) {
-                metricType(availType);
-
-                String metricTypeId = getInventoryId(availType);
-                CanonicalPath metricTypePath = newPathPrefix().metricType(metricTypeId).get();
-                Relationship.Blueprint bp = new Relationship.Blueprint(Direction.outgoing, incorporates.toString(),
-                        metricTypePath, Collections.emptyMap());
-                relationship(parentPath, bp);
-            }
-
-            // operations
-            String resourceTypePath = newPathPrefix().resourceType(resourceTypeId).get().toString();
-            Collection<? extends Operation<?>> ops = resourceType.getOperations();
-            for (Operation<?> op : ops) {
-                operation(op, resourceTypePath);
-            }
-
-            // resource configuration
-            Collection<? extends ResourceConfigurationPropertyType<?>> rcpts = //
-            resourceType.getResourceConfigurationPropertyTypes();
-
-            if (rcpts != null && !rcpts.isEmpty()) {
-                StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
-                for (ResourceConfigurationPropertyType<?> rcpt : rcpts) {
-                    structDataBuilder.putString(rcpt.getID().getIDString(), rcpt.getName().getNameString());
-                }
-
-                DataEntity.Blueprint<DataRole.ResourceType> dataEntity = new DataEntity.Blueprint<>(
-                        DataRole.ResourceType.configurationSchema, structDataBuilder.build(), null);
-
-                relationshipOrEntity(parentPath.toString(), DataEntity.class, dataEntity);
-            }
-
-            return this;
-        }
-
-        /**
-         * Returns the simple class name of {@code cl} with first character made lower case.
-         *
-         * @param cl the class to use as a base for the result of this method
-         * @return the simple class name of {@code cl} with first character made lower case
-         */
-        private static String toKey(Class<? extends AbstractElement<?, ?>> cl) {
-            String src = cl.getSimpleName();
-            return new StringBuilder(src.length())
-                    .append(Character.toLowerCase(src.charAt(0)))
-                    .append(src.substring(1))
-                    .toString();
         }
     }
 
@@ -547,7 +499,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     AsyncInventoryStorage.this.config.getInventoryContext());
             for (QueueElement resourceElement : removeQueueElements) {
                 StringBuilder deleteUrl = new StringBuilder(url.toString());
-                List< Resource<?> > ancestries = getAncestry(resourceElement.getResource());
+                List<Resource<?>> ancestries = getAncestry(resourceElement.getResource());
                 String tenandId = resourceElement.getTenantId();
                 StringBuilder resourcePath = new StringBuilder();
                 Collections.reverse(ancestries);
@@ -600,7 +552,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             String tenantIdToUse = addQueueElements.get(0).getTenantId(); // all elements have same tenant id
 
             // build one big bulk request that will be used to add everything
-            BulkPayloadBuilder builder = new BulkPayloadBuilder(tenantIdToUse, AsyncInventoryStorage.this.feedId);
+            SyncPayloadBuilder builder = new SyncPayloadBuilder(tenantIdToUse, AsyncInventoryStorage.this.feedId);
             for (QueueElement elem : addQueueElements) {
                 Resource<?> resource = elem.getResource();
                 ResourceType<?> resourceType = resource.getResourceType();
@@ -618,17 +570,19 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 log.debugf("Storing resource and eventually its type in inventory: [%s]", resource);
             }
 
-            Map<String, Map<String, List<AbstractElement.Blueprint>>> payload = builder.build();
+            InventoryStructure<Blueprint> payload = builder.build();
 
-            if (!payload.isEmpty()) {
+            if (payload.getRoot() != null) {
                 try {
                     StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
                             AsyncInventoryStorage.this.config.getInventoryContext());
-                    url.append("bulk");
+                    url.append("sync/");
+                    url.append("f;").append(builder.feedId);
                     String jsonPayload = Util.toJson(payload);
 
                     Map<String, String> headers = getTenantHeader(tenantIdToUse);
-                    log.tracef("About to send a bulk insert request to inventory: headers=[%s] body=[%s]", headers, jsonPayload);
+                    log.tracef("About to send a sync insert request to inventory: headers=[%s] body=[%s]", headers,
+                            jsonPayload);
 
                     // now send the REST request
                     Request request = AsyncInventoryStorage.this.httpClientBuilder.buildJsonPostRequest(url.toString(),
@@ -639,7 +593,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     try {
                         final long durationNanos = timer.stop();
-                        log.tracef("Received bulk insert response from inventory: code [%d]", response.code());
+                        log.tracef("Received sync insert response from inventory: code [%d]", response.code());
 
                         // HTTP status of 201 means success, 409 means it already exists; anything else is an error
                         if (response.code() != 201 && response.code() != 409) {
@@ -655,7 +609,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                             log.debugf("Took [%d]ms to store [%d] resources", durationMs, addQueueElements.size());
                             String body = response.body().string();
                             responseBodyReader = new StringReader(body);
-                            log.tracef("Body of bulk insert request response: %s", body);
+                            log.tracef("Body of sync insert request response: %s", body);
                         } else {
                             responseBodyReader = response.body().charStream();
                         }
