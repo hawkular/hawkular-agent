@@ -38,7 +38,6 @@ public interface LocalDMRAttributes {
     SimpleAttributeDefinition SET_AVAIL_ON_SHUTDOWN = new SimpleAttributeDefinitionBuilder("set-avail-on-shutdown",
             ModelType.STRING)
                     .setAllowNull(true)
-                    .setDefaultValue(new ModelNode(Avail.DOWN.name()))
                     .setValidator(EnumValidator.create(Avail.class, true, true))
                     .setAllowExpression(true)
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
