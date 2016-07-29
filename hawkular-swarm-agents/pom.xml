@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-wildfly-agent-parent</artifactId>
-    <version>0.20.1.Final</version>
+    <version>0.20.2.Final-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-swarm-agents</artifactId>
