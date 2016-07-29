@@ -27,12 +27,14 @@ public class OperationParam {
     private final String type;
     private final String description;
     private final String defaultValue;
+    private final Boolean required;
 
-    public OperationParam(String name, String type, String description, String defaultValue) {
+    public OperationParam(String name, String type, String description, String defaultValue, Boolean required) {
         this.name = name;
         this.type = type;
         this.description = description;
         this.defaultValue = defaultValue;
+        this.required = required;
     }
 
     public String getName() {
@@ -58,6 +60,7 @@ public class OperationParam {
         str.append("], type=[").append(this.type);
         str.append("], description=[").append(this.description);
         str.append("], defaultValue=[").append(this.defaultValue);
+        str.append("], required=[").append(this.required);
         str.append("]");
         return str.toString();
     }

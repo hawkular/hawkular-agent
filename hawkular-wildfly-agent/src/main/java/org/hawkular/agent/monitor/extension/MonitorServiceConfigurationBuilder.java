@@ -1462,7 +1462,8 @@ public class MonitorServiceConfigurationBuilder {
             String paramType = getString(paramModelNode, context, DMROperationParamAttributes.TYPE);
             String paramDesc = getString(paramModelNode, context, DMROperationParamAttributes.DESCRIPTION);
             String paramDefaultValue = getString(paramModelNode, context, DMROperationParamAttributes.DEFAULT_VALUE);
-            OperationParam operationParam = new OperationParam(paramName, paramType, paramDesc, paramDefaultValue);
+            Boolean paramRequired = getBoolean(paramModelNode, context, DMROperationParamAttributes.REQUIRED);
+            OperationParam operationParam = new OperationParam(paramName, paramType, paramDesc, paramDefaultValue, paramRequired);
             ret.add(operationParam);
         }
         return ret;

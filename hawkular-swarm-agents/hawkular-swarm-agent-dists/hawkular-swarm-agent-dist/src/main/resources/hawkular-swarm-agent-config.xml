@@ -683,13 +683,18 @@
                                attribute="bound-address"/>
 
           <operation-dmr name="JDR"      internal-name="generate-jdr-report" path="/subsystem=jdr"/>
-          <operation-dmr name="Reload"   internal-name="reload"/>
+          <operation-dmr name="Reload"   internal-name="reload">
+            <param name="admin-only" type="bool" description="Whether the server should start in running mode ADMIN_ONLY when it restarts" default-value="false"/>
+            <param name="use-current-server-config" type="bool" default-value="false"/>
+          </operation-dmr>
           <operation-dmr name="Resume"   internal-name="resume"/>
           <operation-dmr name="Shutdown" internal-name="shutdown" > <!-- shutdown and restart -->
-            <param name="timeout" type="number" default-value="0"     description="Timeout in seconds to allow active connections to drain"/>
+            <param name="timeout" type="int" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
             <param name="restart" type="bool"   default-value="false" description="Should the server be restarted after shutdown?"/>
           </operation-dmr>
-          <operation-dmr name="Suspend"  internal-name="suspend"/>
+          <operation-dmr name="Suspend"  internal-name="suspend">
+            <param name="timemout" type="int" description="Timeout in seconds to allow active connections to drain"/>
+          </operation-dmr>
           <operation-dmr name="Deploy"   internal-name="deploy"/>
           <operation-dmr name="Undeploy" internal-name="undeploy"/>
 
@@ -705,15 +710,22 @@
           <resource-config-dmr name="Process Type"    attribute="process-type"/> <!-- (Host|Domain) Controller -->
           <resource-config-dmr name="Local Host Name" attribute="local-host-name"/>
 
-          <operation-dmr name="Reload Servers"  internal-name="reload-servers" />
+          <operation-dmr name="Reload Servers"  internal-name="reload-servers" >
+            <param name="blocking" type="bool" description="Wait until the servers are stopped before returning from the operation."/>
+          </operation-dmr>
           <operation-dmr name="Restart Servers" internal-name="restart-servers" >
-            <param name="timeout" type="number" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
+            <param name="blocking" type="bool" description="Wait until the servers are stopped before returning from the operation."/>
           </operation-dmr>
           <operation-dmr name="Resume Servers"  internal-name="resume-servers" />
-          <operation-dmr name="Start Servers"   internal-name="start-servers" />
-          <operation-dmr name="Stop Servers"    internal-name="stop-servers" />
+          <operation-dmr name="Start Servers"   internal-name="start-servers" >
+            <param name="blocking" type="bool" description="Wait until the servers are stopped before returning from the operation."/>
+          </operation-dmr>
+          <operation-dmr name="Stop Servers"    internal-name="stop-servers" >
+            <param name="blocking" type="bool" description="Wait until the servers are stopped before returning from the operation."/>
+            <param name="timeout" type="int" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
+          </operation-dmr>
           <operation-dmr name="Suspend Servers" internal-name="suspend-servers" >
-            <param name="timeout" type="number" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
+            <param name="timeout" type="int" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
           </operation-dmr>
           <operation-dmr name="Deploy"          internal-name="deploy" />
           <operation-dmr name="Undeploy"        internal-name="undeploy" />
@@ -732,12 +744,23 @@
                            parents="Host Controller">
           <resource-config-dmr name="Profile" attribute="profile"/>
 
-          <operation-dmr name="Reload Servers"  internal-name="reload-servers" />
-          <operation-dmr name="Restart Servers" internal-name="restart-servers" />
+          <operation-dmr name="Reload Servers"  internal-name="reload-servers" >
+            <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
+          </operation-dmr>
+          <operation-dmr name="Restart Servers" internal-name="restart-servers" >
+            <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
+          </operation-dmr>
           <operation-dmr name="Resume Servers"  internal-name="resume-servers" />
-          <operation-dmr name="Start Servers"   internal-name="start-servers" />
-          <operation-dmr name="Stop Servers"    internal-name="stop-servers" />
-          <operation-dmr name="Suspend Servers" internal-name="suspend-servers" />
+          <operation-dmr name="Start Servers"   internal-name="start-servers" >
+            <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
+          </operation-dmr>
+          <operation-dmr name="Stop Servers"    internal-name="stop-servers" >
+            <param name="timeout" type="int" description="Timeout in seconds to allow active connections to drain"/>
+            <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
+          </operation-dmr>
+          <operation-dmr name="Suspend Servers" internal-name="suspend-servers" >
+            <param name="timeout" type="int" description="Timeout in seconds to allow active connections to drain"/>
+          </operation-dmr>
         </resource-type-dmr>
 
         <resource-type-dmr name="Domain Host"
@@ -759,7 +782,9 @@
                                attribute="home-dir"/>
 
           <operation-dmr name="Reload"   internal-name="reload" />
-          <operation-dmr name="Shutdown" internal-name="shutdown" />
+          <operation-dmr name="Shutdown" internal-name="shutdown">
+            <param name="restart" type="bool" description="If true, once shutdown the host controller will be restarted again."/>
+          </operation-dmr>
         </resource-type-dmr>
 
         <resource-type-dmr name="Domain WildFly Server"
@@ -803,12 +828,23 @@
 
           <operation-dmr name="Destroy" internal-name="destroy" />
           <operation-dmr name="Kill"    internal-name="kill" />
-          <operation-dmr name="Reload"  internal-name="reload" />
-          <operation-dmr name="Restart" internal-name="restart" />
+          <operation-dmr name="Reload"  internal-name="reload" >
+            <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
+          </operation-dmr>
+          <operation-dmr name="Restart" internal-name="restart" >
+            <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
+          </operation-dmr>
           <operation-dmr name="Resume"  internal-name="resume" />
-          <operation-dmr name="Start"   internal-name="start" />
-          <operation-dmr name="Stop"    internal-name="stop" />
-          <operation-dmr name="Suspend" internal-name="suspend" />
+          <operation-dmr name="Start"   internal-name="start" >
+            <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
+          </operation-dmr>
+          <operation-dmr name="Stop"    internal-name="stop" >
+            <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
+            <param name="timeout" type="int" description="Timeout in seconds to allow active connections to drain"/>
+          </operation-dmr>
+          <operation-dmr name="Suspend" internal-name="suspend" >
+            <param name="timeout" type="int" description="Timeout in seconds to allow active connections to drain"/>
+          </operation-dmr>
         </resource-type-dmr>
 
       </resource-type-set-dmr>

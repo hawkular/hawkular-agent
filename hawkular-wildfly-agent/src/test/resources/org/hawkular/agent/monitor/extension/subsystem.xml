@@ -78,7 +78,7 @@
                            attribute="heap-memory-usage#max" />
       <operation-dmr name="Reload Server" internal-name="reload" path="/some=other/path=here">
         <param name="param1" description="A string parameter" />
-        <param name="param2" type="number" default-value="42" description="An int param"/>
+        <param name="param2" type="int" default-value="42" description="An int param"/>
         <param name="param3" type="bool"   default-value="false" description="Something wrong"/>
       </operation-dmr>
 
