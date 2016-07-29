@@ -215,6 +215,9 @@ public final class Discovery<L> {
 
                     MeasurementInstance<L, AvailType<L>> availInstance = new MeasurementInstance<>(id, name,
                             instanceLocation, availType);
+                    if (!session.getEndpoint().getEndpointConfiguration().isLocal()) {
+                        availInstance.addProperty("hawkular-services.monitoring-type", "remote");
+                    }
                     builder.avail(availInstance);
                 }
             } catch (ProtocolException e) {
