@@ -49,7 +49,6 @@ import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
-import org.hawkular.inventory.api.Relationships.WellKnown;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.Feed.Blueprint;
@@ -200,7 +199,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     .withName(resourceName)
                     .withResourceTypePath(resourceTypePath)
                     .withProperties(resourceProperties)
-                    .addIncomingRelationship(WellKnown.isParentOf.toString(), parentCanonicalPath)
                     .build();
 
             // now the resource's associated data - resource config, metrics, and avails
