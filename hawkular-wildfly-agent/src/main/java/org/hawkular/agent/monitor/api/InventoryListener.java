@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,4 +37,13 @@ public interface InventoryListener {
      * @param event the {@link InventoryEvent}
      */
     <L> void resourcesRemoved(InventoryEvent<L> event);
+
+    /**
+     * Notifies this listener that a discovery scan has completed. The resource tree
+     * in {@link DiscoveryEvent#getResourceManager()} were updated as part of the completed
+     * discovery scan.
+     *
+     * @param event the {@link DiscoveryEvent}
+     */
+    <L> void discoveryCompleted(DiscoveryEvent<L> event);
 }

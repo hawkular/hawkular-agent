@@ -172,6 +172,13 @@ public final class ResourceManager<L> {
     }
 
     /**
+     * @return the total number of resources currently in the graph.
+     */
+    public int size() {
+        return resourceCache.size();
+    }
+
+    /**
      * Adds the given resource to the resource hierarchy, replacing the resource if it already exist but
      * has changed.
      *
@@ -207,7 +214,7 @@ public final class ResourceManager<L> {
                 if (parentInGraph == null) {
                     throw new IllegalArgumentException(
                             String.format("The new resource [%s] has a parent [%s] that has not been added yet",
-                            newResource, newResource.getParent()));
+                                    newResource, newResource.getParent()));
                 }
 
                 // if parents are not the same instance, create a new resource with the parent we have in the graph

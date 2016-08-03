@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
@@ -147,6 +148,12 @@ public class SchedulerService implements InventoryListener {
                 resources.size(), service.getMonitoredEndpoint());
 
         unschedule(service, resources);
+    }
+
+    @Override
+    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
+        // not interested in this
+        return;
     }
 
     public <L> void unschedule(SamplingService<L> service, Collection<Resource<L>> resources) {
