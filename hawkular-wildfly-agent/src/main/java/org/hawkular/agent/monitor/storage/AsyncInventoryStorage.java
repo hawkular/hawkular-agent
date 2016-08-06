@@ -40,6 +40,7 @@ import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NamedObject;
 import org.hawkular.agent.monitor.inventory.Operation;
+import org.hawkular.agent.monitor.inventory.OperationParam;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstance;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
@@ -60,6 +61,8 @@ import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.api.model.StructuredData.InnerMapBuilder;
+import org.hawkular.inventory.api.model.StructuredData.MapBuilder;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 
@@ -321,7 +324,38 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     .withProperties(operationProperties)
                     .build();
 
-            childBuilder.addChild(blueprint);
+            List<OperationParam> params = operation.getParameters();
+            if (params.isEmpty()) {
+                childBuilder.addChild(blueprint);
+            } else {
+                ChildBuilder<?> opBuilder = childBuilder.startChild(blueprint);
+                try {
+                    StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
+
+                    for (OperationParam param : params) {
+                        InnerMapBuilder<MapBuilder> innerMap = structDataBuilder.putMap(param.getName());
+                        if (param.getType() != null) {
+                            innerMap.putString("type", param.getType());
+                        }
+                        if (param.getDescription() != null) {
+                            innerMap.putString("description", param.getDescription());
+                        }
+                        if (param.getDefaultValue() != null) {
+                            innerMap.putString("defaultValue", param.getDefaultValue());
+                        }
+                        innerMap.closeMap();
+                    }
+
+                    DataEntity.Blueprint<DataRole> paramsDataEntity = DataEntity.Blueprint.builder()
+                            .withRole(DataRole.OperationType.parameterTypes)
+                            .withValue(structDataBuilder.build())
+                            .build();
+
+                    opBuilder.addChild(paramsDataEntity);
+                } finally {
+                    opBuilder.end();
+                }
+            }
         }
 
         private void resourceConfigurationTypes(Collection<? extends ResourceConfigurationPropertyType<L>> rcpts,
