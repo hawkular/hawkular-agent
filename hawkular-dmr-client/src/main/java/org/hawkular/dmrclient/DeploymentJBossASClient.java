@@ -74,8 +74,12 @@ public class DeploymentJBossASClient extends JBossASClient {
      * @param enabled if true, the content will be uploaded and actually deployed;
      *                if false, content will be uploaded to the server, but it won't be deployed in the server runtime
      * @param serverGroups the server groups where the application will be deployed if in domain mode
+     * @param forceDeploy if true the deployment content is uploaded even if that deployment name already has content
+     *                    (in other words, the new content will overwrite the old). If false, an error will occur if
+     *                    there is already content associated with the deployment name.
      */
-    public void deploy(String deploymentName, InputStream content, boolean enabled, Set<String> serverGroups) {
+    public void deploy(String deploymentName, InputStream content, boolean enabled, Set<String> serverGroups,
+            boolean forceDeploy) {
         if (serverGroups == null) {
             serverGroups = Collections.emptySet();
         }
@@ -87,7 +91,11 @@ public class DeploymentJBossASClient extends JBossASClient {
             Deployment deployment = Deployment.of(content, deploymentName)
                     .addServerGroups(serverGroups)
                     .setEnabled(enabled);
-            result = dm.forceDeploy(deployment);
+            if (forceDeploy) {
+                result = dm.forceDeploy(deployment);
+            } else {
+                result = dm.deploy(deployment);
+            }
         } catch (Exception e) {
             String errMsg;
             if (serverGroups.isEmpty()) {
@@ -118,8 +126,9 @@ public class DeploymentJBossASClient extends JBossASClient {
      * @param deploymentName name that the app is known as
      * @param serverGroups the server groups where the application may already be deployed. If empty,
      *                     this will assume the app server is in STANDALONE mode.
+     * @param removeContent if true, the content will be removed from the repository; false means the content stays.
      */
-    public void undeploy(String deploymentName, Set<String> serverGroups) {
+    public void undeploy(String deploymentName, Set<String> serverGroups, boolean removeContent) {
         if (serverGroups == null) {
             serverGroups = Collections.emptySet();
         }
@@ -130,7 +139,8 @@ public class DeploymentJBossASClient extends JBossASClient {
             DeploymentManager dm = DeploymentManager.Factory.create(getModelControllerClient());
             UndeployDescription undeployDescription = UndeployDescription.of(deploymentName)
                     .addServerGroups(serverGroups)
-                    .setFailOnMissing(false);
+                    .setFailOnMissing(false)
+                    .setRemoveContent(removeContent);
             result = dm.undeploy(undeployDescription);
         } catch (Exception e) {
             String errMsg;
