@@ -117,7 +117,7 @@ public class InstallerConfiguration {
                 .name(InstallerConfiguration.OPTION_MODULE_DISTRIBUTION)
                 .optionType(OptionType.NORMAL)
                 .type(String.class)
-                .description("Hawkular WildFly Agent Module distribution zip file")
+                .description("Hawkular WildFly Agent Module distribution zip file - can be a file path or URL")
                 .create());
         cmd.addOption(new ProcessedOptionBuilder()
                 .name(InstallerConfiguration.OPTION_SERVER_URL)
