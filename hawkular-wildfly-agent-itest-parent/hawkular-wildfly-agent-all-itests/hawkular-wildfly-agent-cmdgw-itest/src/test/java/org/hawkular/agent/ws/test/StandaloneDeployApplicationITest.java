@@ -21,7 +21,6 @@ import java.io.File;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.annotations.Test;
@@ -71,6 +70,159 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testAddDeployment" })
+    public void testDisableDeployment() throws Throwable {
+        waitForAccountsAndInventory();
+
+        // check that the app is currently enabled
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
+            assertNodeAttributeEquals(mcc,
+                    Address.parse(
+                            "/deployment=hawkular-wildfly-agent-helloworld-war.war")
+                            .getAddressNode(),
+                    "enabled",
+                    "true");
+        }
+
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        File applicationFile = getTestApplicationFile();
+        final String deploymentName = applicationFile.getName();
+
+        String req = "DisableApplicationRequest={\"authentication\":" + authentication + ", "
+                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"destinationFileName\":\"" + deploymentName + "\""
+                + "}";
+        String response = "DisableApplicationResponse={"
+                + "\"destinationFileName\":\"" + deploymentName + "\","
+                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"destinationSessionId\":\"{{sessionId}}\","
+                + "\"status\":\"OK\","
+                + "\"message\":\"Performed [Disable Deployment] on a [Application] given by Inventory path ["
+                + wfPath.toString() + "]\""
+                + "}";
+        try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                .url(baseGwUri + "/ui/ws")
+                .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
+                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
+                .build()) {
+            testClient.validate(30000);
+        }
+
+        // check that the app is currently disabled
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
+            assertNodeAttributeEquals(mcc,
+                    Address.parse(
+                            "/deployment=hawkular-wildfly-agent-helloworld-war.war")
+                            .getAddressNode(),
+                    "enabled",
+                    "false");
+        }
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "testDisableDeployment" })
+    public void testEnableDeployment() throws Throwable {
+        waitForAccountsAndInventory();
+
+        // check that the app is currently disabled
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
+            assertNodeAttributeEquals(mcc,
+                    Address.parse(
+                            "/deployment=hawkular-wildfly-agent-helloworld-war.war")
+                            .getAddressNode(),
+                    "enabled",
+                    "false");
+        }
+
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        File applicationFile = getTestApplicationFile();
+        final String deploymentName = applicationFile.getName();
+
+        String req = "EnableApplicationRequest={\"authentication\":" + authentication + ", "
+                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"destinationFileName\":\"" + deploymentName + "\""
+                + "}";
+        String response = "EnableApplicationResponse={"
+                + "\"destinationFileName\":\"" + deploymentName + "\","
+                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"destinationSessionId\":\"{{sessionId}}\","
+                + "\"status\":\"OK\","
+                + "\"message\":\"Performed [Enable Deployment] on a [Application] given by Inventory path ["
+                + wfPath.toString() + "]\""
+                + "}";
+        try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                .url(baseGwUri + "/ui/ws")
+                .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
+                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
+                .build()) {
+            testClient.validate(30000);
+        }
+
+        // check that the app is currently enabled
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
+            assertNodeAttributeEquals(mcc,
+                    Address.parse(
+                            "/deployment=hawkular-wildfly-agent-helloworld-war.war")
+                            .getAddressNode(),
+                    "enabled",
+                    "true");
+        }
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "testEnableDeployment" })
+    public void testRestartDeployment() throws Throwable {
+        waitForAccountsAndInventory();
+
+        // check that the app is currently enabled
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
+            assertNodeAttributeEquals(mcc,
+                    Address.parse(
+                            "/deployment=hawkular-wildfly-agent-helloworld-war.war")
+                            .getAddressNode(),
+                    "enabled",
+                    "true");
+        }
+
+        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        File applicationFile = getTestApplicationFile();
+        final String deploymentName = applicationFile.getName();
+
+        String req = "RestartApplicationRequest={\"authentication\":" + authentication + ", "
+                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"destinationFileName\":\"" + deploymentName + "\""
+                + "}";
+        String response = "RestartApplicationResponse={"
+                + "\"destinationFileName\":\"" + deploymentName + "\","
+                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"destinationSessionId\":\"{{sessionId}}\","
+                + "\"status\":\"OK\","
+                + "\"message\":\"Performed [Restart Deployment] on a [Application] given by Inventory path ["
+                + wfPath.toString() + "]\""
+                + "}";
+        try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                .url(baseGwUri + "/ui/ws")
+                .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
+                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                .expectClose()
+                .build()) {
+            testClient.validate(30000);
+        }
+
+        // check that the app is again enabled
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
+            assertNodeAttributeEquals(mcc,
+                    Address.parse(
+                            "/deployment=hawkular-wildfly-agent-helloworld-war.war")
+                            .getAddressNode(),
+                    "enabled",
+                    "true");
+        }
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "testRestartDeployment" })
     public void testUndeploy() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -107,109 +259,6 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                             "/deployment=hawkular-wildfly-agent-helloworld-war.war")
                             .getAddressNode(),
                     false);
-        }
-    }
-
-    // this and the following tests will use the individual operations on the deployment itself to do things
-    @Test(groups = { GROUP }, dependsOnMethods = { "testUndeploy" })
-    public void testReloadDeploymentViaExecOp() throws Throwable {
-        waitForAccountsAndInventory();
-
-        // put the deployments back in (our earlier test "testUndeploy" removed them)
-        testAddDeployment();
-
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
-        final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=Deployment/rl;defines/type=r",
-                (r -> r.getId().endsWith("=" + deploymentName)));
-
-        String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + deployment.getPath().toString() + "\","
-                + "\"operationName\":\"Redeploy\""
-                + "}";
-        String response = "ExecuteOperationResponse={"
-                + "\"operationName\":\"Redeploy\","
-                + "\"resourcePath\":\"" + deployment.getPath() + "\","
-                + "\"destinationSessionId\":\"{{sessionId}}\","
-                + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Redeploy] on a [DMR Node] given by Inventory path ["
-                + deployment.getPath() + "]\""
-                + "}";
-        try (TestWebSocketClient testClient = TestWebSocketClient.builder()
-                .url(baseGwUri + "/ui/ws")
-                .expectWelcome(req)
-                .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response, TestWebSocketClient.Answer.CLOSE)
-                .expectClose()
-                .build()) {
-            testClient.validate(30000);
-        }
-    }
-
-    @Test(groups = { GROUP }, dependsOnMethods = { "testReloadDeploymentViaExecOp" })
-    public void testUndeployDeploymentViaExecOp() throws Throwable {
-        waitForAccountsAndInventory();
-
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
-        final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=Deployment/rl;defines/type=r",
-                (r -> r.getId().endsWith("=" + deploymentName)));
-
-        String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + deployment.getPath().toString() + "\","
-                + "\"operationName\":\"Undeploy\""
-                + "}";
-        String response = "ExecuteOperationResponse={"
-                + "\"operationName\":\"Undeploy\","
-                + "\"resourcePath\":\"" + deployment.getPath() + "\","
-                + "\"destinationSessionId\":\"{{sessionId}}\","
-                + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Undeploy] on a [DMR Node] given by Inventory path ["
-                + deployment.getPath() + "]\""
-                + "}";
-        try (TestWebSocketClient testClient = TestWebSocketClient.builder()
-                .url(baseGwUri + "/ui/ws")
-                .expectWelcome(req)
-                .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response, TestWebSocketClient.Answer.CLOSE)
-                .expectClose()
-                .build()) {
-            testClient.validate(30000);
-        }
-    }
-
-    @Test(groups = { GROUP }, dependsOnMethods = { "testUndeployDeploymentViaExecOp" })
-    public void testRemoveDeploymentViaExecOp() throws Throwable {
-        waitForAccountsAndInventory();
-
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
-        final String deploymentName = getTestApplicationFile().getName();
-        Resource deployment = getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                 + "id=Deployment/rl;defines/type=r",
-                (r -> r.getId().endsWith("=" + deploymentName)));
-
-        String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + deployment.getPath().toString() + "\","
-                + "\"operationName\":\"Remove\""
-                + "}";
-        String response = "ExecuteOperationResponse={"
-                + "\"operationName\":\"Remove\","
-                + "\"resourcePath\":\"" + deployment.getPath() + "\","
-                + "\"destinationSessionId\":\"{{sessionId}}\","
-                + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Remove] on a [DMR Node] given by Inventory path ["
-                + deployment.getPath() + "]\""
-                + "}";
-        try (TestWebSocketClient testClient = TestWebSocketClient.builder()
-                .url(baseGwUri + "/ui/ws")
-                .expectWelcome(req)
-                .expectGenericSuccess(wfPath.ids().getFeedId())
-                .expectText(response, TestWebSocketClient.Answer.CLOSE)
-                .expectClose()
-                .build()) {
-            testClient.validate(30000);
         }
     }
 }

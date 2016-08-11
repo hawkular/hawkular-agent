@@ -38,23 +38,49 @@ public class DeploymentJBossASClient extends JBossASClient {
         super(client);
     }
 
-    public void enableDeployment(String name) throws Exception {
-        enableDisableDeployment(name, true);
+    public void enableDeployment(String name, Set<String> serverGroups) throws Exception {
+        enableDisableDeployment(name, true, serverGroups);
     }
 
-    public void disableDeployment(String name) throws Exception {
-        enableDisableDeployment(name, false);
+    public void disableDeployment(String name, Set<String> serverGroups) throws Exception {
+        enableDisableDeployment(name, false, serverGroups);
     }
 
-    private void enableDisableDeployment(String name, boolean enable) throws Exception {
+    private void enableDisableDeployment(String name, boolean enable, Set<String> serverGroups) throws Exception {
+        if (serverGroups == null) {
+            serverGroups = Collections.emptySet();
+        }
         DeploymentManager dm = DeploymentManager.Factory.create(getModelControllerClient());
         DeploymentResult result;
 
         if (enable) {
-            result = dm.deployToRuntime(SimpleDeploymentDescription.of(name));
+            SimpleDeploymentDescription sdd = SimpleDeploymentDescription.of(name);
+            sdd.addServerGroups(serverGroups);
+            result = dm.deployToRuntime(sdd);
         } else {
-            result = dm.undeploy(UndeployDescription.of(name).setRemoveContent(false));
+            UndeployDescription ud = UndeployDescription.of(name);
+            ud.addServerGroups(serverGroups);
+            ud.setRemoveContent(false);
+            result = dm.undeploy(ud);
         }
+
+        if (!result.successful()) {
+            throw new FailureException(result.getFailureMessage());
+        }
+
+        return; // everything is OK
+    }
+
+    public void restartDeployment(String name, Set<String> serverGroups) throws Exception {
+        if (serverGroups == null) {
+            serverGroups = Collections.emptySet();
+        }
+        DeploymentManager dm = DeploymentManager.Factory.create(getModelControllerClient());
+        DeploymentResult result;
+
+        SimpleDeploymentDescription sdd = SimpleDeploymentDescription.of(name);
+        sdd.addServerGroups(serverGroups);
+        result = dm.redeployToRuntime(sdd);
 
         if (!result.successful()) {
             throw new FailureException(result.getFailureMessage());
