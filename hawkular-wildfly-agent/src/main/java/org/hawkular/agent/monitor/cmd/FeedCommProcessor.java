@@ -56,18 +56,21 @@ public class FeedCommProcessor implements WebSocketListener {
 
     static {
         VALID_COMMANDS = new HashMap<>();
-        VALID_COMMANDS.put(EchoCommand.REQUEST_CLASS.getName(), EchoCommand.class);
-        VALID_COMMANDS.put(GenericErrorResponseCommand.REQUEST_CLASS.getName(), GenericErrorResponseCommand.class);
-        VALID_COMMANDS.put(ExecuteOperationCommand.REQUEST_CLASS.getName(), ExecuteOperationCommand.class);
-        VALID_COMMANDS.put(DeployApplicationCommand.REQUEST_CLASS.getName(), DeployApplicationCommand.class);
-        VALID_COMMANDS.put(UndeployApplicationCommand.REQUEST_CLASS.getName(), UndeployApplicationCommand.class);
-        VALID_COMMANDS.put(AddJdbcDriverCommand.REQUEST_CLASS.getName(), AddJdbcDriverCommand.class);
         VALID_COMMANDS.put(AddDatasourceCommand.REQUEST_CLASS.getName(), AddDatasourceCommand.class);
+        VALID_COMMANDS.put(AddJdbcDriverCommand.REQUEST_CLASS.getName(), AddJdbcDriverCommand.class);
+        VALID_COMMANDS.put(DeployApplicationCommand.REQUEST_CLASS.getName(), DeployApplicationCommand.class);
+        VALID_COMMANDS.put(DisableApplicationCommand.REQUEST_CLASS.getName(), DisableApplicationCommand.class);
+        VALID_COMMANDS.put(EchoCommand.REQUEST_CLASS.getName(), EchoCommand.class);
+        VALID_COMMANDS.put(EnableApplicationCommand.REQUEST_CLASS.getName(), EnableApplicationCommand.class);
+        VALID_COMMANDS.put(ExecuteOperationCommand.REQUEST_CLASS.getName(), ExecuteOperationCommand.class);
         VALID_COMMANDS.put(ExportJdrCommand.REQUEST_CLASS.getName(), ExportJdrCommand.class);
+        VALID_COMMANDS.put(GenericErrorResponseCommand.REQUEST_CLASS.getName(), GenericErrorResponseCommand.class);
         VALID_COMMANDS.put(RemoveDatasourceCommand.REQUEST_CLASS.getName(), RemoveDatasourceCommand.class);
         VALID_COMMANDS.put(RemoveJdbcDriverCommand.REQUEST_CLASS.getName(), RemoveJdbcDriverCommand.class);
-        VALID_COMMANDS.put(UpdateDatasourceCommand.REQUEST_CLASS.getName(), UpdateDatasourceCommand.class);
+        VALID_COMMANDS.put(RestartApplicationCommand.REQUEST_CLASS.getName(), RestartApplicationCommand.class);
         VALID_COMMANDS.put(StatisticsControlCommand.REQUEST_CLASS.getName(), StatisticsControlCommand.class);
+        VALID_COMMANDS.put(UndeployApplicationCommand.REQUEST_CLASS.getName(), UndeployApplicationCommand.class);
+        VALID_COMMANDS.put(UpdateDatasourceCommand.REQUEST_CLASS.getName(), UpdateDatasourceCommand.class);
     }
 
     private final int disconnectCode = 1000;

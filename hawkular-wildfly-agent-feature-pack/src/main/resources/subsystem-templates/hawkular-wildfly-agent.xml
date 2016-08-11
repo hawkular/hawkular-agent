@@ -623,9 +623,11 @@
         <operation-dmr name="Suspend"  internal-name="suspend" >
           <param name="timeout" type="int"    default-value="0"     description="Timeout in seconds to allow active connections to drain"/>
         </operation-dmr>
-        <operation-dmr name="Deploy"   internal-name="deploy" />
-        <operation-dmr name="Undeploy" internal-name="undeploy" />
-
+        <operation-dmr name="Deploy"             internal-name="deploy"/>
+        <operation-dmr name="Undeploy"           internal-name="undeploy"/>
+        <operation-dmr name="Enable Deployment"  internal-name="enable-deployment"/>
+        <operation-dmr name="Disable Deployment" internal-name="disable-deployment"/>
+        <operation-dmr name="Restart Deployment" internal-name="restart-deployment"/>
       </resource-type-dmr>
     </resource-type-set-dmr>
 
@@ -655,8 +657,11 @@
         <operation-dmr name="Suspend Servers" internal-name="suspend-servers" >
           <param name="timeout" type="int" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
         </operation-dmr>
-        <operation-dmr name="Deploy"          internal-name="deploy" />
-        <operation-dmr name="Undeploy"        internal-name="undeploy" />
+        <operation-dmr name="Deploy"             internal-name="deploy"/>
+        <operation-dmr name="Undeploy"           internal-name="undeploy"/>
+        <operation-dmr name="Enable Deployment"  internal-name="enable-deployment"/>
+        <operation-dmr name="Disable Deployment" internal-name="disable-deployment"/>
+        <operation-dmr name="Restart Deployment" internal-name="restart-deployment"/>
       </resource-type-dmr>
 
       <resource-type-dmr name="Domain Profile"
