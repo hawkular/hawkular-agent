@@ -47,6 +47,9 @@ public class DeploymentJBossASClient extends JBossASClient {
     }
 
     private void enableDisableDeployment(String name, boolean enable, Set<String> serverGroups) throws Exception {
+        if (serverGroups == null) {
+            serverGroups = Collections.emptySet();
+        }
         DeploymentManager dm = DeploymentManager.Factory.create(getModelControllerClient());
         DeploymentResult result;
 
@@ -69,6 +72,9 @@ public class DeploymentJBossASClient extends JBossASClient {
     }
 
     public void restartDeployment(String name, Set<String> serverGroups) throws Exception {
+        if (serverGroups == null) {
+            serverGroups = Collections.emptySet();
+        }
         DeploymentManager dm = DeploymentManager.Factory.create(getModelControllerClient());
         DeploymentResult result;
 
