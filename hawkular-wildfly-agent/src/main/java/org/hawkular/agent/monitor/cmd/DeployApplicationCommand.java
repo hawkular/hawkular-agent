@@ -64,13 +64,15 @@ public class DeployApplicationCommand
             DeployApplicationResponse response,
             CommandContext context,
             DMRSession dmrContext)
-                    throws Exception {
+            throws Exception {
 
         DeployApplicationRequest request = envelope.getBasicMessage();
 
         final String resourcePath = request.getResourcePath();
         final String destFileName = request.getDestinationFileName();
         final boolean enabled = (request.getEnabled() == null) ? true : request.getEnabled().booleanValue();
+        final boolean forceDeploy = (request.getForceDeploy() == null) ? true
+                : request.getForceDeploy().booleanValue();
         final Set<String> serverGroups = convertCsvToSet(request.getServerGroups());
 
         CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
@@ -103,7 +105,7 @@ public class DeployApplicationCommand
         response.setDestinationFileName(request.getDestinationFileName());
 
         DeploymentJBossASClient client = new DeploymentJBossASClient(dmrContext.getClient());
-        client.deploy(destFileName, envelope.getBinaryData(), enabled, serverGroups);
+        client.deploy(destFileName, envelope.getBinaryData(), enabled, serverGroups, forceDeploy);
 
         // run discovery now so we can quickly get the new app in inventory
         endpointService.discoverAll();

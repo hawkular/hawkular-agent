@@ -64,12 +64,15 @@ public class UndeployApplicationCommand
             UndeployApplicationResponse response,
             CommandContext context,
             DMRSession dmrContext)
-                    throws Exception {
+            throws Exception {
 
         UndeployApplicationRequest request = envelope.getBasicMessage();
 
         final String resourcePath = request.getResourcePath();
         final String destFileName = request.getDestinationFileName();
+        final boolean removeContent = (request.getRemoveContent() == null) ? true
+                : request.getRemoveContent().booleanValue();
+
         final Set<String> serverGroups = convertCsvToSet(request.getServerGroups());
 
         CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
@@ -102,7 +105,7 @@ public class UndeployApplicationCommand
         response.setDestinationFileName(request.getDestinationFileName());
 
         DeploymentJBossASClient client = new DeploymentJBossASClient(dmrContext.getClient());
-        client.undeploy(destFileName, serverGroups);
+        client.undeploy(destFileName, serverGroups, removeContent);
 
         // run discovery now so we can quickly show the app has been removed
         endpointService.discoverAll();
