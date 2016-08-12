@@ -60,5 +60,8 @@ public class PlatformAdd extends MonitorServiceAddStepHandler {
         ProtocolService<PlatformNodeLocation, PlatformSession> platformService = monitorService.getProtocolServices()
                 .getPlatformProtocolService();
         platformService.add(endpointService);
+
+        // in case any types were added due to new endpoint being added, we need to register the new types
+        monitorService.registerAllResourceTypes();
     }
 }

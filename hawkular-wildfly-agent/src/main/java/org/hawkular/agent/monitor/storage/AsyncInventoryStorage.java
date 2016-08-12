@@ -46,7 +46,6 @@ import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstanc
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceType;
-import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
@@ -100,26 +99,19 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         /**
-         * Builds a sync structure that can be sent to {@code /sync} endpoint of Inventory.
+         * Builds a sync structure that can be sent to {@code /sync} endpoint of Inventory
+         * in order to sync resources in the given resource manager. No types are synced.
          *
          * @param resourceManager the resources to be sync'ed
-         * @param resourceTypeManager all the possible types to be found in inventory
          * @return sync structure
          */
-        public InventoryStructure<Feed.Blueprint> build(ResourceManager<L> resourceManager,
-                ResourceTypeManager<L> resourceTypeManager) {
+        public InventoryStructure<Feed.Blueprint> build(ResourceManager<L> resourceManager) {
 
             Builder<Blueprint> inventoryBuilder;
             inventoryBuilder = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId(feedId).build());
 
             synchronized (addedIds) {
                 prepareAddedIds();
-
-                // we don't sync parent-child relations for types; they are all stored at root level in inventory
-                List<ResourceType<L>> resourceTypes = resourceTypeManager.getResourceTypesBreadthFirst();
-                for (ResourceType<L> resourceType : resourceTypes) {
-                    resourceType(resourceType, inventoryBuilder);
-                }
 
                 // recursively builds the sync structure starting at the roots of the inventory
                 Set<Resource<L>> roots = resourceManager.getRootResources();
@@ -131,6 +123,30 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     } finally {
                         childBuilder.end();
                     }
+                }
+            }
+
+            return inventoryBuilder.build();
+        }
+
+        /**
+         * Builds a sync structure that can be sent to {@code /sync} endpoint of Inventory
+         * in order to sync resourced types. No resources are synced.
+         *
+         * @param resourceTypes
+         * @return sync structure
+         */
+        public InventoryStructure<Feed.Blueprint> build(List<ResourceType<L>> resourceTypes) {
+
+            Builder<Blueprint> inventoryBuilder;
+            inventoryBuilder = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId(feedId).build());
+
+            synchronized (addedIds) {
+                prepareAddedIds();
+
+                // we don't sync parent-child relations for types; all types are stored at root level in inventory
+                for (ResourceType<L> resourceType : resourceTypes) {
+                    resourceType(resourceType, inventoryBuilder);
                 }
             }
 
@@ -463,25 +479,39 @@ public class AsyncInventoryStorage implements InventoryStorage {
         String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
         String tenantIdToUse = (endpointTenantId != null) ? endpointTenantId : config.getTenantId();
         SyncPayloadBuilder<L> bldr = new SyncPayloadBuilder<>(tenantIdToUse, feedId);
-        InventoryStructure<Blueprint> payload = bldr.build(event.getResourceManager(), event.getResourceTypeManager());
+        InventoryStructure<Blueprint> payload = bldr.build(event.getResourceManager());
 
-        performSync(payload, tenantIdToUse, event.getResourceManager());
+        performResourceSync(payload, tenantIdToUse, event.getResourceManager().size());
     }
 
-    private <L> void performSync(InventoryStructure<Blueprint> payload, String tenantIdToUse,
-            ResourceManager<L> resourceManager) {
+    @Override
+    public <L> void allResourceTypes(Map<String, List<ResourceType<L>>> typesByTenantId) {
+        for (Map.Entry<String, List<ResourceType<L>>> entry : typesByTenantId.entrySet()) {
+            String tenantIdToUse = entry.getKey();
+            List<ResourceType<L>> types = entry.getValue();
+            SyncPayloadBuilder<L> bldr = new SyncPayloadBuilder<>(tenantIdToUse, feedId);
+            InventoryStructure<Blueprint> payload = bldr.build(types);
+
+            performResourceTypeSync(payload, tenantIdToUse, types.size());
+
+        }
+    }
+
+    private <L> void performResourceSync(InventoryStructure<Blueprint> payload, String tenantIdToUse,
+            int totalResourceCount) {
 
         if (payload.getRoot() != null) {
             try {
                 StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
                         AsyncInventoryStorage.this.config.getInventoryContext());
-                url.append("sync/");
-                url.append("f;").append(this.feedId);
+                url.append("sync");
+                url.append("/f;").append(this.feedId);
+                url.append("/r;").append(payload.getRoot().getId());
                 String jsonPayload = Util.toJson(payload);
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
                 log.tracef("Syncing [%d] resources to inventory: headers=[%s] body=[%s]",
-                        resourceManager.size(), headers, jsonPayload);
+                        totalResourceCount, headers, jsonPayload);
 
                 Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), headers, jsonPayload);
                 Call call = this.httpClientBuilder.getHttpClient().newCall(request);
@@ -499,12 +529,65 @@ public class AsyncInventoryStorage implements InventoryStorage {
                                 + response.message() + "], url=[" + request.urlString() + "]");
                     }
 
-                    diagnostics.getInventoryRate().mark(resourceManager.size());
+                    diagnostics.getInventoryRate().mark(totalResourceCount);
 
                     if (log.isDebugEnabled()) {
                         log.debugf("Took [%d]ms to sync [%d] resources to inventory",
                                 TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS),
-                                resourceManager.size());
+                                totalResourceCount);
+                    }
+                } finally {
+                    response.body().close();
+                }
+            } catch (InterruptedException ie) {
+                log.errorFailedToStoreInventoryData(ie);
+                Thread.currentThread().interrupt(); // preserve interrupt
+            } catch (Exception e) {
+                log.errorFailedToStoreInventoryData(e);
+                diagnostics.getStorageErrorRate().mark(1);
+            }
+        }
+
+        return;
+    }
+
+    private <L> void performResourceTypeSync(InventoryStructure<Blueprint> payload, String tenantIdToUse,
+            int totalResourceTypeCount) {
+
+        if (payload.getRoot() != null) {
+            try {
+                StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
+                        AsyncInventoryStorage.this.config.getInventoryContext());
+                url.append("sync");
+                url.append("/f;").append(this.feedId);
+                String jsonPayload = Util.toJson(payload);
+                Map<String, String> headers = getTenantHeader(tenantIdToUse);
+
+                log.tracef("Syncing [%d] resource types to inventory: headers=[%s] body=[%s]",
+                        totalResourceTypeCount, headers, jsonPayload);
+
+                Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), headers, jsonPayload);
+                Call call = this.httpClientBuilder.getHttpClient().newCall(request);
+                final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
+                Response response = call.execute();
+
+                try {
+                    final long durationNanos = timer.stop();
+
+                    log.tracef("Received type sync response from inventory: code [%d]", response.code());
+
+                    // HTTP status of 204 means success, anything else is an error
+                    if (response.code() != 204) {
+                        throw new Exception("status-code=[" + response.code() + "], reason=["
+                                + response.message() + "], url=[" + request.urlString() + "]");
+                    }
+
+                    diagnostics.getInventoryRate().mark(totalResourceTypeCount);
+
+                    if (log.isDebugEnabled()) {
+                        log.debugf("Took [%d]ms to sync [%d] resource types to inventory",
+                                TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS),
+                                totalResourceTypeCount);
                     }
                 } finally {
                     response.body().close();

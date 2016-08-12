@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -39,6 +40,7 @@ import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
@@ -424,6 +426,13 @@ public class HawkularStorageAdapter implements StorageAdapter {
     public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
         if (inventoryStorage != null) {
             inventoryStorage.discoveryCompleted(event);
+        }
+    }
+
+    @Override
+    public <L> void allResourceTypes(Map<String, List<ResourceType<L>>> typesByTenantId) {
+        if (inventoryStorage != null) {
+            inventoryStorage.allResourceTypes(typesByTenantId);
         }
     }
 
