@@ -179,6 +179,25 @@ public final class ResourceManager<L> {
     }
 
     /**
+     * @return the total number of resources currently in the graph relative to the given resource (that is,
+     *         it counts that resource and all of its descendants).
+     */
+    public int size(Resource<L> relativeTo) {
+        graphLockRead.lock();
+        try {
+            if (getResource(relativeTo.getID()) == null) {
+                return 0; // the resource doesn't even exist
+            } else {
+                List<Resource<L>> descendants = new ArrayList<>();
+                getAllDescendants(relativeTo, descendants);
+                return 1 + descendants.size();
+            }
+        } finally {
+            graphLockRead.unlock();
+        }
+    }
+
+    /**
      * Adds the given resource to the resource hierarchy, replacing the resource if it already exist but
      * has changed.
      *

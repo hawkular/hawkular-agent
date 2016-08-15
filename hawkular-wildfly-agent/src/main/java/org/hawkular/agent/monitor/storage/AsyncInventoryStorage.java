@@ -51,10 +51,10 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Feed;
-import org.hawkular.inventory.api.model.Feed.Blueprint;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.InventoryStructure.Builder;
 import org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder;
+import org.hawkular.inventory.api.model.InventoryStructure.Offline;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricDataType;
 import org.hawkular.inventory.api.model.MetricUnit;
@@ -103,30 +103,33 @@ public class AsyncInventoryStorage implements InventoryStorage {
          * in order to sync resources in the given resource manager. No types are synced.
          *
          * @param resourceManager the resources to be sync'ed
-         * @return sync structure
+         * @return sync structure for each root resource in the given resource manager
          */
-        public InventoryStructure<Feed.Blueprint> build(ResourceManager<L> resourceManager) {
+        public Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> build(
+                ResourceManager<L> resourceManager) {
 
-            Builder<Blueprint> inventoryBuilder;
-            inventoryBuilder = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId(feedId).build());
+            Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> retVal;
+            Set<Resource<L>> roots = resourceManager.getRootResources();
+            retVal = new HashMap<>(roots.size());
 
             synchronized (addedIds) {
-                prepareAddedIds();
-
                 // recursively builds the sync structure starting at the roots of the inventory
-                Set<Resource<L>> roots = resourceManager.getRootResources();
                 for (Resource<L> root : roots) {
+                    prepareAddedIds();
+                    Builder<org.hawkular.inventory.api.model.Resource.Blueprint> inventoryBuilder;
                     org.hawkular.inventory.api.model.Resource.Blueprint rootBP = buildResourceBlueprint(root);
+                    inventoryBuilder = InventoryStructure.Offline.of(rootBP);
                     ChildBuilder<?> childBuilder = inventoryBuilder.startChild(rootBP);
                     try {
                         resource(resourceManager, root, childBuilder);
                     } finally {
                         childBuilder.end();
                     }
+                    retVal.put(root, inventoryBuilder.build());
                 }
             }
 
-            return inventoryBuilder.build();
+            return retVal;
         }
 
         /**
@@ -138,7 +141,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
          */
         public InventoryStructure<Feed.Blueprint> build(List<ResourceType<L>> resourceTypes) {
 
-            Builder<Blueprint> inventoryBuilder;
+            Builder<Feed.Blueprint> inventoryBuilder;
             inventoryBuilder = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId(feedId).build());
 
             synchronized (addedIds) {
@@ -479,9 +482,13 @@ public class AsyncInventoryStorage implements InventoryStorage {
         String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
         String tenantIdToUse = (endpointTenantId != null) ? endpointTenantId : config.getTenantId();
         SyncPayloadBuilder<L> bldr = new SyncPayloadBuilder<>(tenantIdToUse, feedId);
-        InventoryStructure<Blueprint> payload = bldr.build(event.getResourceManager());
 
-        performResourceSync(payload, tenantIdToUse, event.getResourceManager().size());
+        Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> blueprints;
+        blueprints = bldr.build(event.getResourceManager());
+
+        // Note that it is possible for a endpoint to define multiple root resources.
+        // We have to sync each root resource separately.
+        blueprints.forEach((r, bp) -> performResourceSync(bp, tenantIdToUse, event.getResourceManager().size(r)));
     }
 
     @Override
@@ -490,14 +497,16 @@ public class AsyncInventoryStorage implements InventoryStorage {
             String tenantIdToUse = entry.getKey();
             List<ResourceType<L>> types = entry.getValue();
             SyncPayloadBuilder<L> bldr = new SyncPayloadBuilder<>(tenantIdToUse, feedId);
-            InventoryStructure<Blueprint> payload = bldr.build(types);
+            InventoryStructure<Feed.Blueprint> payload = bldr.build(types);
 
             performResourceTypeSync(payload, tenantIdToUse, types.size());
 
         }
     }
 
-    private <L> void performResourceSync(InventoryStructure<Blueprint> payload, String tenantIdToUse,
+    private <L> void performResourceSync(
+            InventoryStructure<org.hawkular.inventory.api.model.Resource.Blueprint> payload,
+            String tenantIdToUse,
             int totalResourceCount) {
 
         if (payload.getRoot() != null) {
@@ -551,7 +560,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return;
     }
 
-    private <L> void performResourceTypeSync(InventoryStructure<Blueprint> payload, String tenantIdToUse,
+    private <L> void performResourceTypeSync(InventoryStructure<Feed.Blueprint> payload, String tenantIdToUse,
             int totalResourceTypeCount) {
 
         if (payload.getRoot() != null) {
