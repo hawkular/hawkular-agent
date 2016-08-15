@@ -52,6 +52,7 @@ import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.InventoryStructure;
+import org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder;
 import org.hawkular.inventory.api.model.InventoryStructure.Builder;
 import org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder;
 import org.hawkular.inventory.api.model.InventoryStructure.Offline;
@@ -119,12 +120,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     Builder<org.hawkular.inventory.api.model.Resource.Blueprint> inventoryBuilder;
                     org.hawkular.inventory.api.model.Resource.Blueprint rootBP = buildResourceBlueprint(root);
                     inventoryBuilder = InventoryStructure.Offline.of(rootBP);
-                    ChildBuilder<?> childBuilder = inventoryBuilder.startChild(rootBP);
-                    try {
-                        resource(resourceManager, root, childBuilder);
-                    } finally {
-                        childBuilder.end();
-                    }
+                    resource(resourceManager, root, inventoryBuilder);
                     retVal.put(root, inventoryBuilder.build());
                 }
             }
@@ -180,7 +176,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         private void resource(ResourceManager<L> resourceManager, Resource<L> resource,
-                ChildBuilder<?> resourceBuilder) {
+                AbstractBuilder<?> resourceBuilder) {
 
             // resource configuration
             Collection<ResourceConfigurationPropertyInstance<L>> resConfigInstances = resource
@@ -265,7 +261,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             return;
         }
 
-        private void metric(Instance<L, ?> metric, ChildBuilder<?> childBuilder) {
+        private void metric(Instance<L, ?> metric, AbstractBuilder<?> childBuilder) {
 
             String metricId = getInventoryId(metric);
             String metricTypeId = getInventoryId(metric.getType());
@@ -283,7 +279,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             childBuilder.addChild(blueprint);
         }
 
-        private void metricType(MeasurementType<L> metricType, Builder<?> inventoryBuilder) {
+        private void metricType(MeasurementType<L> metricType, AbstractBuilder<?> inventoryBuilder) {
 
             String metricTypeId = getInventoryId(metricType);
 
@@ -378,7 +374,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         private void resourceConfigurationTypes(Collection<? extends ResourceConfigurationPropertyType<L>> rcpts,
-                ChildBuilder<?> childBuilder) {
+                AbstractBuilder<?> childBuilder) {
             // TODO inventory sync doesn't work when resource config exists
             //      put this back when fixed
             if (true) {
@@ -401,7 +397,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         private void resourceConfigurations(Collection<? extends ResourceConfigurationPropertyInstance<L>> rcpis,
-                ChildBuilder<?> childBuilder) {
+                AbstractBuilder<?> childBuilder) {
             // TODO inventory sync doesn't work when resource config exists
             //      put this back when fixed
             if (true) {
