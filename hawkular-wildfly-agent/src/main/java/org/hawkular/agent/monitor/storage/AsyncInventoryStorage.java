@@ -511,7 +511,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         AsyncInventoryStorage.this.config.getInventoryContext());
                 url.append("sync");
                 url.append("/f;").append(this.feedId);
-                url.append("/r;").append(payload.getRoot().getId());
+                url.append("/r;").append(Util.urlEncodeQuery(payload.getRoot().getId()));
                 String jsonPayload = Util.toJson(payload);
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
