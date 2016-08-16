@@ -361,6 +361,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         if (param.getDefaultValue() != null) {
                             innerMap.putString("defaultValue", param.getDefaultValue());
                         }
+                        if (param.isRequired() != null) {
+                            innerMap.putBool("required", param.isRequired());
+                        }
                         innerMap.closeMap();
                     }
 
