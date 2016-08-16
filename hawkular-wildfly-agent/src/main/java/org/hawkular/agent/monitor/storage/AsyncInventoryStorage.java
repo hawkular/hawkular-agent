@@ -63,8 +63,11 @@ import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.StructuredData.InnerMapBuilder;
 import org.hawkular.inventory.api.model.StructuredData.MapBuilder;
+import org.hawkular.inventory.api.model.SyncConfiguration;
+import org.hawkular.inventory.api.model.SyncRequest;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
+import org.hawkular.inventory.paths.SegmentType;
 
 import com.codahale.metrics.Timer;
 import com.squareup.okhttp.Call;
@@ -501,18 +504,22 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     private <L> void performResourceSync(
-            InventoryStructure<org.hawkular.inventory.api.model.Resource.Blueprint> payload,
+            InventoryStructure<org.hawkular.inventory.api.model.Resource.Blueprint> resourceStructure,
             String tenantIdToUse,
             int totalResourceCount) {
 
-        if (payload.getRoot() != null) {
+        if (resourceStructure.getRoot() != null) {
             try {
+                SyncConfiguration syncConfig = SyncConfiguration.builder().withAllTypes().build();
+                SyncRequest<org.hawkular.inventory.api.model.Resource.Blueprint> sync;
+                sync = new SyncRequest<>(syncConfig, resourceStructure);
+
                 StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
                         AsyncInventoryStorage.this.config.getInventoryContext());
                 url.append("sync");
                 url.append("/f;").append(this.feedId);
-                url.append("/r;").append(Util.urlEncodeQuery(payload.getRoot().getId()));
-                String jsonPayload = Util.toJson(payload);
+                url.append("/r;").append(Util.urlEncodeQuery(resourceStructure.getRoot().getId()));
+                String jsonPayload = Util.toJson(sync);
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
                 log.tracef("Syncing [%d] resources to inventory: headers=[%s] body=[%s]",
@@ -556,16 +563,27 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return;
     }
 
-    private <L> void performResourceTypeSync(InventoryStructure<Feed.Blueprint> payload, String tenantIdToUse,
+    private <L> void performResourceTypeSync(InventoryStructure<Feed.Blueprint> typeStructure, String tenantIdToUse,
             int totalResourceTypeCount) {
 
-        if (payload.getRoot() != null) {
+        if (typeStructure.getRoot() != null) {
+
             try {
+                SyncConfiguration syncConfig = SyncConfiguration.builder()
+                        .withType(SegmentType.rt)
+                        .withType(SegmentType.mt)
+                        .withType(SegmentType.ot)
+                        .withType(SegmentType.sd)
+                        .withType(SegmentType.d)
+                        .build();
+
+                SyncRequest<Feed.Blueprint> sync = new SyncRequest<>(syncConfig, typeStructure);
+
                 StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
                         AsyncInventoryStorage.this.config.getInventoryContext());
                 url.append("sync");
                 url.append("/f;").append(this.feedId);
-                String jsonPayload = Util.toJson(payload);
+                String jsonPayload = Util.toJson(sync);
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
                 log.tracef("Syncing [%d] resource types to inventory: headers=[%s] body=[%s]",
