@@ -378,11 +378,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
         private void resourceConfigurationTypes(Collection<? extends ResourceConfigurationPropertyType<L>> rcpts,
                 AbstractBuilder<?> childBuilder) {
-            // TODO inventory sync doesn't work when resource config exists
-            //      put this back when fixed
-            if (true) {
-                return;
-            }
 
             if (!rcpts.isEmpty()) {
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
@@ -401,11 +396,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
         private void resourceConfigurations(Collection<? extends ResourceConfigurationPropertyInstance<L>> rcpis,
                 AbstractBuilder<?> childBuilder) {
-            // TODO inventory sync doesn't work when resource config exists
-            //      put this back when fixed
-            if (true) {
-                return;
-            }
 
             if (!rcpis.isEmpty()) {
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
