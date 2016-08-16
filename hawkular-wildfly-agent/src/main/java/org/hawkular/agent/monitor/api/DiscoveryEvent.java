@@ -17,7 +17,6 @@
 package org.hawkular.agent.monitor.api;
 
 import org.hawkular.agent.monitor.inventory.ResourceManager;
-import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 
 /**
  * A event for discovery scans.
@@ -28,7 +27,6 @@ public class DiscoveryEvent<L> {
 
     private final SamplingService<L> samplingService;
     private final ResourceManager<L> resourceManager;
-    private final ResourceTypeManager<L> resourceTypeManager;
 
     /**
      * Creates a discovery event.
@@ -37,10 +35,8 @@ public class DiscoveryEvent<L> {
      *                        identify the resources in the event, plus has methods that can be used to monitor
      *                        the resources in the event.
      * @param resourceManager the resources associated with the discovery
-     * @param resourceTypeManager the resource types associated with the discovery
      */
-    public DiscoveryEvent(SamplingService<L> samplingService, ResourceManager<L> resourceManager,
-            ResourceTypeManager<L> resourceTypeManager) {
+    public DiscoveryEvent(SamplingService<L> samplingService, ResourceManager<L> resourceManager) {
         if (samplingService == null) {
             throw new IllegalArgumentException("Sampling service cannot be null");
         }
@@ -49,27 +45,8 @@ public class DiscoveryEvent<L> {
             throw new IllegalArgumentException("Resource manager cannot be null");
         }
 
-        if (resourceTypeManager == null) {
-            throw new IllegalArgumentException("Resource type manager cannot be null");
-        }
-
         this.samplingService = samplingService;
         this.resourceManager = resourceManager;
-        this.resourceTypeManager = resourceTypeManager;
-    }
-
-    /**
-     * @return the resource manager that was populated by the discovery scan
-     */
-    public ResourceManager<L> getResourceManager() {
-        return resourceManager;
-    }
-
-    /**
-     * @return the resource type manager that has all the types used by the discovery scan
-     */
-    public ResourceTypeManager<L> getResourceTypeManager() {
-        return resourceTypeManager;
     }
 
     /**
@@ -79,4 +56,10 @@ public class DiscoveryEvent<L> {
         return samplingService;
     }
 
+    /**
+     * @return the resource manager that was populated by the discovery scan
+     */
+    public ResourceManager<L> getResourceManager() {
+        return resourceManager;
+    }
 }

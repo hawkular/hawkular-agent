@@ -277,6 +277,28 @@ public final class ResourceManager<L> {
     }
 
     /**
+     * Remove the resource from {@link #resourcesGraph}, including all its descendants.
+     *
+     * @param doomedResource the resource to remove
+     * @return an unmodifiable list of {@link Resources} that were removed by this method
+     */
+    public List<Resource<L>> removeResource(Resource<L> doomedResource) {
+        graphLockWrite.lock();
+        try {
+            List<Resource<L>> removedResources = new ArrayList<Resource<L>>();
+            Resource<L> resourceToRemove = getResource(doomedResource.getID());
+            if (resourceToRemove != null) {
+                getAllDescendants(resourceToRemove, removedResources);
+                removedResources.add(resourceToRemove);
+                removedResources.forEach(r -> this.resourcesGraph.removeVertex(r));
+            }
+            return Collections.unmodifiableList(removedResources);
+        } finally {
+            graphLockWrite.unlock();
+        }
+    }
+
+    /**
      * Find the resources in {@link #resourcesGraph} matching the given {@code query}.
      *
      * @param query a location eventually containing wildcards

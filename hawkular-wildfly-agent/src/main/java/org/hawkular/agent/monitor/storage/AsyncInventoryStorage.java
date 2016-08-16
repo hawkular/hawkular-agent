@@ -486,7 +486,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     @Override
     public <L> void allResourceTypes(Map<String, List<ResourceType<L>>> typesByTenantId) {
         for (Map.Entry<String, List<ResourceType<L>>> entry : typesByTenantId.entrySet()) {
-            String tenantIdToUse = entry.getKey();
+            String tenantIdToUse = (entry.getKey() != null) ? entry.getKey() : config.getTenantId();
             List<ResourceType<L>> types = entry.getValue();
             SyncPayloadBuilder<L> bldr = new SyncPayloadBuilder<>(tenantIdToUse, feedId);
             InventoryStructure<Feed.Blueprint> payload = bldr.build(types);
