@@ -464,7 +464,65 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
     @Override
     public <L> void resourcesRemoved(InventoryEvent<L> event) {
-        // We don't do anything here - the real work will be done when discovery is completed.
+        // due to the way inventory sync works and how we are using it, we only care about explicitly
+        // removing root resources. We can't individually sync a root resource (because it doesn't exist!)
+        // so we remove it here. Any children resources will be synced via discoveryCompleted so we don't
+        // do anything in here.
+        List<Resource<L>> removedResources = event.getPayload();
+        for (Resource<L> removedResource : removedResources) {
+            if (removedResource.getParent() == null) {
+                try {
+                    log.debugf("Removing root resource: %s", removedResource);
+
+                    MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService()
+                            .getMonitoredEndpoint();
+                    String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
+                    String tenantIdToUse = (endpointTenantId != null) ? endpointTenantId : config.getTenantId();
+
+                    // The final URL should be in the form: entity/<resource_canonical_path>
+                    // for example: entity/t;hawkular/f;myfeed/r;resource_id
+
+                    CanonicalPath resourceCanonicalPath = CanonicalPath.of()
+                            .tenant(tenantIdToUse)
+                            .feed(feedId)
+                            .resource(removedResource.getID().getIDString())
+                            .get();
+
+                    StringBuilder deleteUrl = Util.getContextUrlString(config.getUrl(), config.getInventoryContext());
+                    deleteUrl.append("entity")
+                            .append(resourceCanonicalPath.toString());
+
+                    Request request = httpClientBuilder.buildJsonDeleteRequest(deleteUrl.toString(),
+                            getTenantHeader(tenantIdToUse));
+
+                    long start = System.currentTimeMillis(); // we don't store this time in our diagnostics
+                    Response response = httpClientBuilder.getHttpClient().newCall(request).execute();
+
+                    try {
+                        final long duration = System.currentTimeMillis() - start;
+
+                        if (response.code() != 204 && response.code() != 404) {
+                            // 204 means successfully deleted, 404 means it didn't exist in the first place.
+                            // In either case, the resource no longer exists which is what we want;
+                            // any other response code means it is an error and we didn't remove the resource.
+                            throw new Exception("status-code=[" + response.code() + "], reason=["
+                                    + response.message() + "], url=[" + request.urlString() + "]");
+                        }
+
+                        log.debugf("Took [%d]ms to remove root resource [%s]", duration, removedResource);
+                    } finally {
+                        response.body().close();
+                    }
+                } catch (InterruptedException ie) {
+                    log.errorFailedToStoreInventoryData(ie);
+                    Thread.currentThread().interrupt(); // preserve interrupt
+                } catch (Exception e) {
+                    log.errorFailedToStoreInventoryData(e);
+                    diagnostics.getStorageErrorRate().mark(1);
+                }
+
+            }
+        }
         return;
     }
 

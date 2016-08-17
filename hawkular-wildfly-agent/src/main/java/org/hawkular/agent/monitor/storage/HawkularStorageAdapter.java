@@ -381,6 +381,9 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
+        if (inventoryStorage != null) {
+            inventoryStorage.resourcesAdded(event);
+        }
 
         // create the metric tags for the metrics associated with the new resource
         SamplingService<L> service = event.getSamplingService();
@@ -418,8 +421,11 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public <L> void resourcesRemoved(InventoryEvent<L> event) {
+        if (inventoryStorage != null) {
+            inventoryStorage.resourcesRemoved(event);
+        }
+
         // TODO: should we delete the metrics from Hawkular Metrics?
-        return;
     }
 
     @Override
