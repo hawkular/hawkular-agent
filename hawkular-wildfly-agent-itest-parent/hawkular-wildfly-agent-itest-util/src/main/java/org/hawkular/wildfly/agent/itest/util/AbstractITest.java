@@ -49,7 +49,10 @@ import org.hawkular.cmdgw.api.WelcomeResponse;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.JBossASClient;
+import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.PathAddress;
@@ -339,6 +342,100 @@ public abstract class AbstractITest {
                 }
                 System.out.println("Got only " + result.size() + " resources while expected " + minCount + " on "
                         + (i + 1) + " of " + attemptCount + " attempts for URL [" + url + "]");
+                // System.out.println(body);
+            } catch (Throwable t) {
+                /* some initial attempts may fail */
+                e = t;
+                System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + attemptCount
+                        + " attempts, about to retry after " + attemptDelay + " ms");
+            }
+            Thread.sleep(attemptDelay);
+        }
+        if (e != null) {
+            throw e;
+        } else {
+            throw new AssertionError("Could not get [" + url + "]");
+        }
+    }
+
+    protected ResourceType getResourceType(String path, int attemptCount, long attemptDelay)
+            throws Throwable {
+        String url = baseInvUri + path;
+        Throwable e = null;
+        int minCount = 1; // for now, we expect to retrieve only 1 type
+        for (int i = 0; i < attemptCount; i++) {
+            try {
+                String body = getWithRetries(url, attemptCount, attemptDelay);
+                TypeFactory tf = mapper.getTypeFactory();
+                JavaType listType = tf.constructCollectionType(ArrayList.class, ResourceType.class);
+                JsonNode node = mapper.readTree(body);
+                List<ResourceType> result = mapper.readValue(node.traverse(), listType);
+                if (result.size() >= minCount) {
+                    return result.get(0); // we assume we are just getting 1
+                }
+                System.out.println("Got only " + result.size() + " resource types while expected " + minCount + " on "
+                        + (i + 1) + " of " + attemptCount + " attempts for URL [" + url + "]");
+                // System.out.println(body);
+            } catch (Throwable t) {
+                /* some initial attempts may fail */
+                e = t;
+                System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + attemptCount
+                        + " attempts, about to retry after " + attemptDelay + " ms");
+            }
+            Thread.sleep(attemptDelay);
+        }
+        if (e != null) {
+            throw e;
+        } else {
+            throw new AssertionError("Could not get [" + url + "]");
+        }
+    }
+
+    protected OperationType getOperationType(String path, int attemptCount, long attemptDelay)
+            throws Throwable {
+        String url = baseInvUri + path;
+        Throwable e = null;
+        int minCount = 1; // for now, we expect to retrieve only 1 type
+        for (int i = 0; i < attemptCount; i++) {
+            try {
+                String body = getWithRetries(url, attemptCount, attemptDelay);
+                TypeFactory tf = mapper.getTypeFactory();
+                JavaType listType = tf.constructCollectionType(ArrayList.class, OperationType.class);
+                JsonNode node = mapper.readTree(body);
+                List<OperationType> result = mapper.readValue(node.traverse(), listType);
+                if (result.size() >= minCount) {
+                    return result.get(0); // we assume we are just getting 1
+                }
+                System.out.println("Got only " + result.size() + " operation types while expected " + minCount + " on "
+                        + (i + 1) + " of " + attemptCount + " attempts for URL [" + url + "]");
+                // System.out.println(body);
+            } catch (Throwable t) {
+                /* some initial attempts may fail */
+                e = t;
+                System.out.println("URL [" + url + "] not ready yet on " + (i + 1) + " of " + attemptCount
+                        + " attempts, about to retry after " + attemptDelay + " ms");
+            }
+            Thread.sleep(attemptDelay);
+        }
+        if (e != null) {
+            throw e;
+        } else {
+            throw new AssertionError("Could not get [" + url + "]");
+        }
+    }
+
+    protected DataEntity getDataEntity(String path, int attemptCount, long attemptDelay)
+            throws Throwable {
+        String url = baseInvUri + path;
+        Throwable e = null;
+        for (int i = 0; i < attemptCount; i++) {
+            try {
+                String body = getWithRetries(url, attemptCount, attemptDelay);
+                TypeFactory tf = mapper.getTypeFactory();
+                JavaType javaType = tf.constructType(DataEntity.class);
+                JsonNode node = mapper.readTree(body);
+                DataEntity result = mapper.readValue(node.traverse(), javaType);
+                return result;
                 // System.out.println(body);
             } catch (Throwable t) {
                 /* some initial attempts may fail */
