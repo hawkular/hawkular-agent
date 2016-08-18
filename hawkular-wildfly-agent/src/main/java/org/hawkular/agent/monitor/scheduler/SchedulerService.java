@@ -18,11 +18,13 @@ package org.hawkular.agent.monitor.scheduler;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
@@ -30,6 +32,7 @@ import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.ServiceStatus;
@@ -147,6 +150,18 @@ public class SchedulerService implements InventoryListener {
                 resources.size(), service.getMonitoredEndpoint());
 
         unschedule(service, resources);
+    }
+
+    @Override
+    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
+        // not interested in this
+        return;
+    }
+
+    @Override
+    public <L> void allResourceTypes(Map<String, List<ResourceType<L>>> typesByTenantId) {
+        // not interested in this
+        return;
     }
 
     public <L> void unschedule(SamplingService<L> service, Collection<Resource<L>> resources) {

@@ -1,7 +1,10 @@
 language: java
 # Enable container-based infrastructure
 # see http://docs.travis-ci.com/user/workers/container-based-infrastructure/
+# sudo=required and dist=trusty has a newer jdk8 but older maven
 sudo: false
+#sudo: required
+#dist: trusty
 
 # manage the caches here https://travis-ci.org/hawkular/hawkular-agent/caches
 cache:

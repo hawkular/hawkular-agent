@@ -120,7 +120,7 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
         OperationResult<?> opResult = batch.execute(controllerClient).assertSuccess();
         setServerRefreshIndicator(opResult, response);
 
-        // TODO replace with endpointService.discoverChildren(parentLocation, childType)
+        // discover the new datasource so it gets placed into inventory
         endpointService.discoverAll();
 
         return null;

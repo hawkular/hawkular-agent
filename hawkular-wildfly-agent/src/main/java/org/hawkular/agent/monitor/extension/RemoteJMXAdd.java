@@ -81,6 +81,9 @@ public class RemoteJMXAdd extends MonitorServiceAddStepHandler {
             ProtocolService<JMXNodeLocation, JMXSession> jmxService = monitorService.getProtocolServices()
                     .getJmxProtocolService();
             jmxService.add(endpointService);
+
+            // in case any types were added due to new endpoint being added, we need to register the new types
+            monitorService.registerAllResourceTypes();
         }
     }
 }

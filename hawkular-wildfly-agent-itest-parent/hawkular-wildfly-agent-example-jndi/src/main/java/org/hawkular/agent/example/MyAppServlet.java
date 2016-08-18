@@ -18,8 +18,6 @@ package org.hawkular.agent.example;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.ejb.EJB;
 import javax.servlet.ServletException;
@@ -28,16 +26,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
-import org.hawkular.agent.monitor.api.AvailStorage;
-import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
-import org.hawkular.agent.monitor.api.InventoryEvent;
-import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
-import org.hawkular.agent.monitor.api.MetricStorage;
-import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.Name;
-import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.metrics.client.common.MetricType;
 
 public class MyAppServlet extends HttpServlet {
@@ -46,7 +34,8 @@ public class MyAppServlet extends HttpServlet {
     @EJB
     private HawkularWildFlyAgentProvider hawkularAgent;
 
-    public void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         String newResourceId = request.getParameter("newResourceID");
         String oldResourceId = request.getParameter("oldResourceID");
         String metricKey = request.getParameter("metricKey");
@@ -72,12 +61,7 @@ public class MyAppServlet extends HttpServlet {
     private void sendAvail(HttpServletRequest request, HttpServletResponse response, String availKey,
             Avail availValue) {
         try {
-            HawkularWildFlyAgentContext hawkularWildFlyAgent = hawkularAgent.getHawkularWildFlyAgent();
-            AvailStorage availStorage = hawkularWildFlyAgent.getAvailStorage();
-
-            AvailDataPayloadBuilder payloadBuilder = availStorage.createAvailDataPayloadBuilder();
-            payloadBuilder.addDataPoint(availKey, System.currentTimeMillis(), availValue);
-            availStorage.store(payloadBuilder, 0);
+            hawkularAgent.sendAvail(availKey, availValue);
 
             String results = String.format("<h1>Send Avail</h1>\n<p>Avail Key=%s</p>\n<p>Avail Value=%s</p>",
                     availKey, availValue);
@@ -90,12 +74,7 @@ public class MyAppServlet extends HttpServlet {
     private void sendMetric(HttpServletRequest request, HttpServletResponse response, String metricKey,
             Double metricValue) {
         try {
-            HawkularWildFlyAgentContext hawkularWildFlyAgent = hawkularAgent.getHawkularWildFlyAgent();
-            MetricStorage metricStorage = hawkularWildFlyAgent.getMetricStorage();
-
-            MetricDataPayloadBuilder payloadBuilder = metricStorage.createMetricDataPayloadBuilder();
-            payloadBuilder.addDataPoint(metricKey, System.currentTimeMillis(), metricValue, MetricType.GAUGE);
-            metricStorage.store(payloadBuilder, 0);
+            hawkularAgent.sendMetric(metricKey, metricValue, MetricType.GAUGE);
 
             String results = String.format("<h1>Send Metric</h1>\n<p>Metric Key=%s</p>\n<p>Metric Value=%s</p>",
                     metricKey, metricValue);
@@ -107,14 +86,9 @@ public class MyAppServlet extends HttpServlet {
 
     private void createNewResource(HttpServletRequest request, HttpServletResponse response, String resourceId) {
         try {
-            MyAppSamplingService myAppSamplingService = hawkularAgent.getSamplingService();
-            HawkularWildFlyAgentContext hawkularWildFlyAgent = hawkularAgent.getHawkularWildFlyAgent();
-            Resource<MyAppNodeLocation> resource = instantiateResource(resourceId);
-            List<Resource<MyAppNodeLocation>> resources = Arrays.asList(resource);
-            InventoryEvent<MyAppNodeLocation> event = new InventoryEvent<>(myAppSamplingService, resources);
-            hawkularWildFlyAgent.getInventoryStorage().resourcesAdded(event);
+            hawkularAgent.addResourceToInventory(resourceId);
 
-            String results = String.format("<h1>Create New Resource</h1>\n<p>Resource=%s</p>", resource);
+            String results = String.format("<h1>Create New Resource</h1>\n<p>Resource=%s</p>", resourceId);
             printResults(response, results);
         } catch (Exception e) {
             printResults(response, "createNewResource failure: " + e);
@@ -123,35 +97,13 @@ public class MyAppServlet extends HttpServlet {
 
     private void removeOldResource(HttpServletRequest request, HttpServletResponse response, String resourceId) {
         try {
-            MyAppSamplingService myAppSamplingService = hawkularAgent.getSamplingService();
-            HawkularWildFlyAgentContext hawkularWildFlyAgent = hawkularAgent.getHawkularWildFlyAgent();
-            Resource<MyAppNodeLocation> resource = instantiateResource(resourceId);
-            List<Resource<MyAppNodeLocation>> resources = Arrays.asList(resource);
-            InventoryEvent<MyAppNodeLocation> event = new InventoryEvent<>(myAppSamplingService, resources);
-            hawkularWildFlyAgent.getInventoryStorage().resourcesRemoved(event);
-            String results = String.format("<h1>Removed Old Resource</h1>\n<p>Resource=%s</p>", resource);
+            hawkularAgent.removeResourceFromInventory(resourceId);
+
+            String results = String.format("<h1>Removed Old Resource</h1>\n<p>Resource=%s</p>", resourceId);
             printResults(response, results);
         } catch (Exception e) {
             printResults(response, "removeOldResource failure: " + e);
         }
-    }
-
-    private Resource<MyAppNodeLocation> instantiateResource(String resourceId) {
-        ResourceType<MyAppNodeLocation> resourceType = ResourceType.<MyAppNodeLocation> builder()
-                .id(new ID("MyAppResourceType"))
-                .name(new Name("My App Resource Type"))
-                .parent(null)
-                .location(new MyAppNodeLocation("/"))
-                .build();
-
-        Resource<MyAppNodeLocation> resource = Resource.<MyAppNodeLocation> builder()
-                .type(resourceType)
-                .id(new ID(resourceId))
-                .name(new Name("My App Resource " + resourceId))
-                .parent(null)
-                .location(new MyAppNodeLocation("/" + resourceId))
-                .build();
-        return resource;
     }
 
     private void printResults(HttpServletResponse response, String msg) {

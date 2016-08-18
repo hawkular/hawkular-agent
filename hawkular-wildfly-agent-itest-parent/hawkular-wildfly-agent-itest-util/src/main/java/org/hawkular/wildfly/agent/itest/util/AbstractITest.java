@@ -97,7 +97,7 @@ public abstract class AbstractITest {
     protected static final String managementUser = System.getProperty("hawkular.agent.itest.mgmt.user");
     protected static final String testPasword = System.getProperty("hawkular.itest.rest.password");
     protected static final String testUser = System.getProperty("hawkular.itest.rest.user");
-    protected static final String tenantId = System.getProperty("hawkular.itest.rest.tenantId");
+    private static final String tenantId = System.getProperty("hawkular.itest.rest.tenantId"); // see getTenantId
     protected static final String authHeader;
     protected static final String hawkularFeedId;
     protected static final File wfHome;
@@ -118,7 +118,7 @@ public abstract class AbstractITest {
         baseMetricsUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/metrics";
         baseGwUri = "ws://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/command-gateway";
         authentication = "{\"username\":\"" + testUser + "\",\"password\":\"" + testPasword + "\"}";
-        System.out.println("using REST user ["+ testUser +"] with password ["+ testPasword +"]");
+        System.out.println("using REST user [" + testUser + "] with password [" + testPasword + "]");
         authHeader = Credentials.basic(testUser, testPasword);
 
         try (ModelControllerClient mcc = newModelControllerClient(hawkularHost, hawkularManagementPort)) {
@@ -181,8 +181,7 @@ public abstract class AbstractITest {
             outputFile.getParentFile().mkdirs();
         }
 
-        try (PrintWriter out =
-                new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "utf-8"))) {
+        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "utf-8"))) {
             node.writeString(out, false);
         }
     }
@@ -403,7 +402,15 @@ public abstract class AbstractITest {
         return new Request.Builder()//
                 .addHeader("Authorization", authHeader)//
                 .addHeader("Accept", "application/json")//
-                .addHeader("Hawkular-Tenant", tenantId);
+                .addHeader("Hawkular-Tenant", getTenantId());
+    }
+
+    /**
+     * Subclass tests can override this if they are putting things in other tenants.
+     * @return the tenant to use when connecting to the hawkular server.
+     */
+    protected String getTenantId() {
+        return tenantId;
     }
 
     /**

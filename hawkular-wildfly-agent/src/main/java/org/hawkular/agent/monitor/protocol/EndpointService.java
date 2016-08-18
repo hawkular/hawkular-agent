@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.Avail;
+import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
@@ -94,6 +95,14 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 for (InventoryListener inventoryListener : inventoryListeners) {
                     inventoryListener.resourcesRemoved(event);
                 }
+            }
+        }
+
+        public void fireDiscoveryComplete() {
+            LOG.debugf("Firing inventory event for [%s] discovery complete");
+            DiscoveryEvent<L> event = new DiscoveryEvent<L>(EndpointService.this, getResourceManager());
+            for (InventoryListener inventoryListener : inventoryListeners) {
+                inventoryListener.discoveryCompleted(event);
             }
         }
     }
@@ -214,6 +223,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 }
                 getResourceManager().logTreeGraph("Discovered all resources for [" + getMonitoredEndpoint() + "]",
                         duration);
+
+                // notify listener
+                inventoryListenerSupport.fireDiscoveryComplete();
             }
         };
 
@@ -234,7 +246,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      *        If a non-null session is passed in, the caller is responsible for closing it - this method will
      *        not close it. If a null session is passed in, this method will create and close a session itself.
      */
-    public void discoverChildren(L parentLocation, ResourceType<L> childType, S session) {
+    private void discoverChildren(L parentLocation, ResourceType<L> childType, S session) {
         status.assertRunning(getClass(), "discoverChildren()");
         LOG.debugf("Being asked to discover children of type [%s] under parent [%s] for endpoint [%s]",
                 childType, parentLocation, getMonitoredEndpoint());

@@ -53,6 +53,10 @@ public class OperationParam {
         return defaultValue;
     }
 
+    public Boolean isRequired() {
+        return required;
+    }
+
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder("OperationParam: ");

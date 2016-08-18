@@ -41,14 +41,14 @@ import org.jboss.logging.Logger;
 public class MyAppSamplingService implements SamplingService<MyAppNodeLocation> {
     private static final Logger log = Logger.getLogger(MyAppSamplingService.class);
 
-    private final MonitoredEndpoint endpoint;
+    private final MonitoredEndpoint<EndpointConfiguration> endpoint;
 
     public MyAppSamplingService() {
         try {
             // this is our endpoint that Hawkular uses to collect metrics and availabilities for our managed resources
             ConnectionData connectionData = new ConnectionData(new URI("myapp:local-uri"), null, null);
             EndpointConfiguration config = new EndpointConfiguration("My App Endpoint", true, Collections.emptyList(),
-                    connectionData, null, null, null, null, null, null);
+                    connectionData, null, null, HawkularWildFlyAgentProvider.TENANT_ID, null, null, null);
             this.endpoint = MonitoredEndpoint.of(config, null);
         } catch (Exception e) {
             throw new IllegalStateException("Cannot create sampling service", e);
@@ -62,7 +62,7 @@ public class MyAppSamplingService implements SamplingService<MyAppNodeLocation> 
     }
 
     @Override
-    public MonitoredEndpoint getMonitoredEndpoint() {
+    public MonitoredEndpoint<EndpointConfiguration> getMonitoredEndpoint() {
         return this.endpoint;
     }
 
