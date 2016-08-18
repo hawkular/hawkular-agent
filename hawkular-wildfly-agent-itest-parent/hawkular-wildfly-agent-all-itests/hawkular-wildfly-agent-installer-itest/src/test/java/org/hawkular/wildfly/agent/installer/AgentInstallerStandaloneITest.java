@@ -17,9 +17,13 @@
 package org.hawkular.wildfly.agent.installer;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
@@ -50,6 +54,32 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    public void operationParameters() throws Throwable {
+
+        // get the operation
+        OperationType op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
+                "id=WildFly Server/type=ot;id=Shutdown", ATTEMPT_COUNT, ATTEMPT_DELAY);
+        Assert.assertEquals("Shutdown", op.getId());
+        System.out.println("operation=" + op);
+
+        // get parameters
+        DataEntity data = getDataEntity(
+                "/entity/f;" + wfClientConfig.getFeedId() + "/rt;WildFly Server/ot;Shutdown/d;parameterTypes",
+                ATTEMPT_COUNT, ATTEMPT_DELAY);
+        Assert.assertNotNull(data);
+        Map<String, StructuredData> paramsMap = data.getValue().map();
+        Map<String, StructuredData> timeoutParam = paramsMap.get("timeout").map();
+        Assert.assertEquals("int", timeoutParam.get("type").string());
+        Assert.assertEquals("0", timeoutParam.get("defaultValue").string());
+        Assert.assertNotNull(timeoutParam.get("description").string());
+
+        Map<String, StructuredData> restartParam = paramsMap.get("restart").map();
+        Assert.assertEquals("bool", restartParam.get("type").string());
+        Assert.assertEquals("false", restartParam.get("defaultValue").string());
+        Assert.assertNotNull(restartParam.get("description").string());
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void socketBindingGroupsInInventory() throws Throwable {
 
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
@@ -70,7 +100,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         for (String bindingName : dmrBindingNames) {
             Resource binding = getResource(
                     "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                    "id=Socket Binding/rl;defines/type=r",
+                            "id=Socket Binding/rl;defines/type=r",
                     (r -> r.getName().contains(bindingName)));
             System.out.println("socket binding in inventory=" + binding);
         }
@@ -104,7 +134,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     public void datasourcesAddedToInventory() throws Throwable {
 
         for (String datasourceName : getDatasourceNames()) {
-            Resource ds = getResource("/traversal/f;" + wfClientConfig.getFeedId()  + "/type=rt;"
+            Resource ds = getResource("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
                     + "id=Datasource/rl;defines/type=r",
                     (r -> r.getId().contains(datasourceName)));
             System.out.println("ds = " + ds);
