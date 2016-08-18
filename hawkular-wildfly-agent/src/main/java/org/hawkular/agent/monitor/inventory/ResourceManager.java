@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -409,6 +410,29 @@ public final class ResourceManager<L> {
             }
 
             return Collections.unmodifiableList(result);
+        } finally {
+            graphLockRead.unlock();
+        }
+    }
+
+    /**
+     * @param filter if not null, any resources whose IDs are in here will not exist in the returned collection
+     * @return a list of the resources in this resource manager masked by the given IDs
+     *         (that is, if an ID in this resource manager matches an ID found in the filter collection,
+     *         the resource whose ID it is will not be found in the returned collection).
+     *         DO NOT THINK THIS RETURNS ONLY THOSE RESOURCES WHOSE IDS MATCH THOSE IN FILTER, IT IS THE OPPOSITE.
+     */
+    public List<Resource<L>> getAllResources(Collection<ID> filter) {
+        graphLockRead.lock();
+        try {
+            Set<ID> resultIds = new HashSet<>(this.resourceCache.keySet());
+            if (filter != null) {
+                resultIds.removeAll(filter);
+            }
+            return resultIds
+                    .stream()
+                    .map(i -> getResource(i))
+                    .collect(Collectors.toList());
         } finally {
             graphLockRead.unlock();
         }
