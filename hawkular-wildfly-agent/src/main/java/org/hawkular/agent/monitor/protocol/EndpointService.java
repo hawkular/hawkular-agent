@@ -42,6 +42,7 @@ import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.AvailType;
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricType;
@@ -80,7 +81,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         public void fireResourcesAdded(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
-                LOG.debugf("Firing inventory event for [%s] added/modified resources", resources.size());
+                LOG.debugf("Firing inventory event for [%d] added/modified resources", resources.size());
                 InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
                 for (InventoryListener inventoryListener : inventoryListeners) {
                     inventoryListener.resourcesAdded(event);
@@ -90,7 +91,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         public void fireResourcesRemoved(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
-                LOG.debugf("Firing inventory event for [%s] removed resources", resources.size());
+                LOG.debugf("Firing inventory event for [%d] removed resources", resources.size());
                 InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
                 for (InventoryListener inventoryListener : inventoryListeners) {
                     inventoryListener.resourcesRemoved(event);
@@ -99,10 +100,60 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
 
         public void fireDiscoveryComplete() {
-            LOG.debugf("Firing inventory event for [%s] discovery complete");
+            LOG.debugf("Firing inventory event for discovery complete");
             DiscoveryEvent<L> event = new DiscoveryEvent<L>(EndpointService.this, getResourceManager());
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.discoveryCompleted(event);
+            }
+        }
+    }
+
+    private class DiscoveryResults {
+        private final List<Resource<L>> newOrModifiedResources = new ArrayList<>();
+        private final List<ID> discoveredResourceIds = new ArrayList<>(); // to save space, just store the IDs
+        private final List<Throwable> errors = new ArrayList<>();
+
+        public DiscoveryResults() {
+        }
+
+        public void error(Throwable t) {
+            errors.add(t);
+        }
+
+        public void added(Resource<L> resource) {
+            discoveredResourceIds.add(resource.getID());
+            newOrModifiedResources.add(resource);
+        }
+
+        public void modified(Resource<L> resource) {
+            discoveredResourceIds.add(resource.getID());
+            newOrModifiedResources.add(resource);
+        }
+
+        public void unchanged(Resource<L> resource) {
+            discoveredResourceIds.add(resource.getID());
+        }
+
+        public void discoveryFinished() {
+            // Discovery is complete so the resource manager has all known resources (including all previously
+            // discovered resources that may not have been discovered this last time around). removedResources will be
+            // those resources that were not added, modified, or discovered-but-unchanged but still found in the
+            // resource manager - we need to remove them internally and fire the removed event.
+            List<Resource<L>> removedResources = getResourceManager().getAllResources(discoveredResourceIds);
+
+            // remove them from the resource manager itself
+            removedResources.forEach(r -> getResourceManager().removeResource(r));
+
+            // now emit events so other parts of the system can add/remove resources and persist to Hawkular Inventory
+            inventoryListenerSupport.fireResourcesAdded(newOrModifiedResources);
+            inventoryListenerSupport.fireResourcesRemoved(removedResources);
+
+            // do not fire a discovery complete event if errors occurred since we might be missing resources
+            // that really do exist - we don't want to permanently delete those during an inventory sync
+            if (errors.isEmpty()) {
+                inventoryListenerSupport.fireDiscoveryComplete();
+            } else {
+                LOG.debugf("[%d] discovery errors occurred - not firing event: %s", errors.size(), errors);
             }
         }
     }
@@ -118,8 +169,10 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
-    public EndpointService(String feedId, MonitoredEndpoint<EndpointConfiguration> endpoint,
-            ResourceTypeManager<L> resourceTypeManager, LocationResolver<L> locationResolver,
+    public EndpointService(String feedId,
+            MonitoredEndpoint<EndpointConfiguration> endpoint,
+            ResourceTypeManager<L> resourceTypeManager,
+            LocationResolver<L> locationResolver,
             ProtocolDiagnostics diagnostics) {
         super();
         this.feedId = feedId;
@@ -208,24 +261,26 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
+                DiscoveryResults discoveryResults = new DiscoveryResults();
+
                 LOG.infoDiscoveryRequested(getMonitoredEndpoint());
                 long duration = -1;
                 try (S session = openSession()) {
                     Set<ResourceType<L>> rootTypes = getResourceTypeManager().getRootResourceTypes();
                     Context timer = getDiagnostics().getFullDiscoveryScanTimer().time();
                     for (ResourceType<L> rootType : rootTypes) {
-                        discoverChildren(null, rootType, session);
+                        discoverChildren(null, rootType, session, discoveryResults);
                     }
                     long nanos = timer.stop();
                     duration = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS);
                 } catch (Exception e) {
                     LOG.errorCouldNotAccess(EndpointService.this, e);
+                    discoveryResults.error(e);
                 }
-                getResourceManager().logTreeGraph("Discovered all resources for [" + getMonitoredEndpoint() + "]",
-                        duration);
 
-                // notify listener
-                inventoryListenerSupport.fireDiscoveryComplete();
+                getResourceManager().logTreeGraph("Discovered all resources for: " + getMonitoredEndpoint(), duration);
+
+                discoveryResults.discoveryFinished();
             }
         };
 
@@ -245,8 +300,11 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      * @param session If not <code>null</code>, this session is used; if <code>null</code> one will be created.
      *        If a non-null session is passed in, the caller is responsible for closing it - this method will
      *        not close it. If a null session is passed in, this method will create and close a session itself.
+     * @param discoveryResults the object that collects results from this method as it executes recursively
      */
-    private void discoverChildren(L parentLocation, ResourceType<L> childType, S session) {
+    private void discoverChildren(L parentLocation, ResourceType<L> childType, S session,
+            DiscoveryResults discoveryResults) {
+
         status.assertRunning(getClass(), "discoverChildren()");
         LOG.debugf("Being asked to discover children of type [%s] under parent [%s] for endpoint [%s]",
                 childType, parentLocation, getMonitoredEndpoint());
@@ -262,25 +320,35 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             } else {
                 parents = Arrays.asList((Resource<L>) null);
             }
-            List<Resource<L>> added = new ArrayList<>();
             Discovery<L> discovery = new Discovery<>();
             for (Resource<L> parent : parents) {
                 discovery.discoverChildren(parent, childType, sessionToUse, this, new Consumer<Resource<L>>() {
                     public void accept(Resource<L> resource) {
-                        AddResult<L> result = getResourceManager().addResource(resource);
-                        if (result.getEffect() != AddResult.Effect.UNCHANGED) {
-                            added.add(result.getResource());
+                        AddResult<L> addResult = getResourceManager().addResource(resource);
+                        switch (addResult.getEffect()) {
+                            case ADDED:
+                                discoveryResults.added(addResult.getResource());
+                                break;
+                            case MODIFIED:
+                                discoveryResults.modified(addResult.getResource());
+                                break;
+                            case UNCHANGED:
+                                discoveryResults.unchanged(addResult.getResource());
+                                break;
+                            default:
+                                throw new RuntimeException("Bad effect; report this bug: " + addResult.getEffect());
                         }
                     }
 
                     @Override
-                    public void report(Throwable e) {
-                        LOG.errorCouldNotAccess(EndpointService.this, e);
+                    public void report(Throwable t) {
+                        discoveryResults.error(t);
+                        LOG.errorCouldNotAccess(EndpointService.this, t);
                     }
                 });
             }
-            inventoryListenerSupport.fireResourcesAdded(Collections.unmodifiableList(added));
         } catch (Exception e) {
+            discoveryResults.error(e);
             LOG.errorCouldNotAccess(this, e);
         } finally {
             // We only close the session that we used if it was one we created;
