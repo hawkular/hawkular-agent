@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
@@ -46,14 +47,13 @@ import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstanc
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceType;
+import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.Feed;
 import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.InventoryStructure.AbstractBuilder;
-import org.hawkular.inventory.api.model.InventoryStructure.Builder;
 import org.hawkular.inventory.api.model.InventoryStructure.ChildBuilder;
 import org.hawkular.inventory.api.model.InventoryStructure.Offline;
 import org.hawkular.inventory.api.model.Metric;
@@ -67,7 +67,6 @@ import org.hawkular.inventory.api.model.SyncConfiguration;
 import org.hawkular.inventory.api.model.SyncRequest;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
-import org.hawkular.inventory.paths.SegmentType;
 
 import com.codahale.metrics.Timer;
 import com.squareup.okhttp.Call;
@@ -83,9 +82,9 @@ import com.squareup.okhttp.Response;
 public class AsyncInventoryStorage implements InventoryStorage {
 
     /**
-     * A builder of inventory JSON structures that can be sent to {@code /sync} endpoint of Hawkular-Inventory.
+     * A builder of inventory JSON structures that can be sent to Hawkular-Inventory.
      */
-    private static class SyncPayloadBuilder<L> {
+    private static class InventoryPayloadBuilder<L> {
 
         private final String feedId;
         private final String tenantId;
@@ -96,7 +95,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
         private final Map<IdType, Set<String>> addedIds; // tracks what we already added so we don't add duplicates
 
-        public SyncPayloadBuilder(String tenantId, String feedId) {
+        public InventoryPayloadBuilder(String tenantId, String feedId) {
             this.tenantId = tenantId;
             this.feedId = feedId;
             this.addedIds = new HashMap<>();
@@ -117,14 +116,15 @@ public class AsyncInventoryStorage implements InventoryStorage {
             retVal = new HashMap<>(roots.size());
 
             synchronized (addedIds) {
+                prepareAddedIds();
+
                 // recursively builds the sync structure starting at the roots of the inventory
                 for (Resource<L> root : roots) {
-                    prepareAddedIds();
-                    Builder<org.hawkular.inventory.api.model.Resource.Blueprint> inventoryBuilder;
+                    InventoryStructure.Builder<org.hawkular.inventory.api.model.Resource.Blueprint> invBldr;
                     org.hawkular.inventory.api.model.Resource.Blueprint rootBP = buildResourceBlueprint(root);
-                    inventoryBuilder = InventoryStructure.Offline.of(rootBP);
-                    resource(resourceManager, root, inventoryBuilder);
-                    retVal.put(root, inventoryBuilder.build());
+                    invBldr = InventoryStructure.Offline.of(rootBP);
+                    resource(resourceManager, root, invBldr);
+                    retVal.put(root, invBldr.build());
                 }
             }
 
@@ -132,27 +132,31 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         /**
-         * Builds a sync structure that can be sent to {@code /sync} endpoint of Inventory
-         * in order to sync resourced types. No resources are synced.
+         * Builds structures that can be sent to inventory to create or update resource types.
          *
          * @param resourceTypes
-         * @return sync structure
+         * @return inventory structures all rooted at the given resource types
          */
-        public InventoryStructure<Feed.Blueprint> build(List<ResourceType<L>> resourceTypes) {
+        public Map<ResourceType<L>, Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint>> build(
+                List<ResourceType<L>> resourceTypes) {
 
-            Builder<Feed.Blueprint> inventoryBuilder;
-            inventoryBuilder = InventoryStructure.Offline.of(Feed.Blueprint.builder().withId(feedId).build());
+            Map<ResourceType<L>, Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint>> retVal;
+            retVal = new HashMap<>(resourceTypes.size());
 
             synchronized (addedIds) {
                 prepareAddedIds();
 
                 // we don't sync parent-child relations for types; all types are stored at root level in inventory
-                for (ResourceType<L> resourceType : resourceTypes) {
-                    resourceType(resourceType, inventoryBuilder);
+                for (ResourceType<L> rt : resourceTypes) {
+                    InventoryStructure.Builder<org.hawkular.inventory.api.model.ResourceType.Blueprint> invBldr;
+                    org.hawkular.inventory.api.model.ResourceType.Blueprint rtBP = buildResourceTypeBlueprint(rt);
+                    invBldr = InventoryStructure.Offline.of(rtBP);
+                    resourceType(rt, invBldr);
+                    retVal.put(rt, invBldr.build());
                 }
             }
 
-            return inventoryBuilder.build();
+            return retVal;
         }
 
         private void prepareAddedIds() {
@@ -176,6 +180,21 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     .withProperties(resourceProperties)
                     .build();
             return resourceBP;
+        }
+
+        private org.hawkular.inventory.api.model.ResourceType.Blueprint buildResourceTypeBlueprint(
+                ResourceType<L> resourceType) {
+            String resourceTypeId = getInventoryId(resourceType);
+            String resourceTypeName = resourceType.getName().getNameString();
+            Map<String, Object> resourceTypeProperties = resourceType.getProperties();
+
+            org.hawkular.inventory.api.model.ResourceType.Blueprint resourceTypeBP;
+            resourceTypeBP = org.hawkular.inventory.api.model.ResourceType.Blueprint.builder()
+                    .withId(resourceTypeId)
+                    .withName(resourceTypeName)
+                    .withProperties(resourceTypeProperties)
+                    .build();
+            return resourceTypeBP;
         }
 
         private void resource(ResourceManager<L> resourceManager, Resource<L> resource,
@@ -209,24 +228,15 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
         }
 
-        private void resourceType(ResourceType<L> resourceType, Builder<?> inventoryBuilder) {
+        private void resourceType(ResourceType<L> resourceType, InventoryStructure.Builder<?> inventoryBuilder) {
 
-            // resource type
-            String resourceTypeId = getInventoryId(resourceType);
-
-            if (!addedIds.get(IdType.RESOURCE_TYPE).add(resourceTypeId)) {
+            if (!addedIds.get(IdType.RESOURCE_TYPE).add(resourceType.getID().getIDString())) {
                 return; // we already did this resource type
             }
 
-            String resourceTypeName = resourceType.getName().getNameString();
-            Map<String, Object> resourceTypeProperties = resourceType.getProperties();
-
-            org.hawkular.inventory.api.model.ResourceType.Blueprint resourceTypeBP = //
-                    org.hawkular.inventory.api.model.ResourceType.Blueprint.builder()
-                            .withId(resourceTypeId)
-                            .withName(resourceTypeName)
-                            .withProperties(resourceTypeProperties)
-                            .build();
+            // resource type
+            org.hawkular.inventory.api.model.ResourceType.Blueprint resourceTypeBP;
+            resourceTypeBP = buildResourceTypeBlueprint(resourceType);
 
             ChildBuilder<?> childBuilder = inventoryBuilder.startChild(resourceTypeBP);
 
@@ -527,30 +537,36 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
     @Override
     public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
+        ResourceManager<L> resourceManager = event.getResourceManager();
+        ResourceTypeManager<L> resourceTypeManager = event.getResourceTypeManager();
         MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
         String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
         String tenantIdToUse = (endpointTenantId != null) ? endpointTenantId : config.getTenantId();
-        SyncPayloadBuilder<L> bldr = new SyncPayloadBuilder<>(tenantIdToUse, feedId);
 
-        Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> blueprints;
-        blueprints = bldr.build(event.getResourceManager());
+        InventoryPayloadBuilder<L> bldr = new InventoryPayloadBuilder<>(tenantIdToUse, feedId);
 
+        // Since we know types never change during the lifetime of the agent, we don't have to process
+        // types that have already been flagged as having been persisted.
+        List<ResourceType<L>> allResourceTypes = resourceTypeManager.getResourceTypesBreadthFirst()
+                .stream()
+                .filter(rt -> rt.isPersisted() == false)
+                .collect(Collectors.toList());
+        Map<ResourceType<L>, Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint>> rtBlueprints;
+        rtBlueprints = bldr.build(allResourceTypes);
+        rtBlueprints.forEach((rt, bp) -> performResourceTypeSync(bp, tenantIdToUse));
+
+        // indicate we persisted the resource types
+        allResourceTypes.forEach(rt -> rt.setPersisted(true));
+
+        // build the JSON blueprints for the sync resource requests
         // Note that it is possible for a endpoint to define multiple root resources.
         // We have to sync each root resource separately.
-        blueprints.forEach((r, bp) -> performResourceSync(bp, tenantIdToUse, event.getResourceManager().size(r)));
-    }
+        Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> rBlueprints;
+        rBlueprints = bldr.build(resourceManager);
+        rBlueprints.forEach((r, bp) -> performResourceSync(bp, tenantIdToUse, resourceManager.size(r)));
 
-    @Override
-    public <L> void allResourceTypes(Map<String, List<ResourceType<L>>> typesByTenantId) {
-        for (Map.Entry<String, List<ResourceType<L>>> entry : typesByTenantId.entrySet()) {
-            String tenantIdToUse = (entry.getKey() != null) ? entry.getKey() : config.getTenantId();
-            List<ResourceType<L>> types = entry.getValue();
-            SyncPayloadBuilder<L> bldr = new SyncPayloadBuilder<>(tenantIdToUse, feedId);
-            InventoryStructure<Feed.Blueprint> payload = bldr.build(types);
-
-            performResourceTypeSync(payload, tenantIdToUse, types.size());
-
-        }
+        // indicate we persisted the resources
+        resourceManager.getResourcesBreadthFirst().forEach(r -> r.setPersisted(true));
     }
 
     private <L> void performResourceSync(
@@ -613,31 +629,25 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return;
     }
 
-    private <L> void performResourceTypeSync(InventoryStructure<Feed.Blueprint> typeStructure, String tenantIdToUse,
-            int totalResourceTypeCount) {
+    private <L> void performResourceTypeSync(
+            Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint> resourceTypeStructure,
+            String tenantIdToUse) {
 
-        if (typeStructure.getRoot() != null) {
-
+        if (resourceTypeStructure.getRoot() != null) {
             try {
-                SyncConfiguration syncConfig = SyncConfiguration.builder()
-                        .withType(SegmentType.rt)
-                        .withType(SegmentType.mt)
-                        .withType(SegmentType.ot)
-                        .withType(SegmentType.sd)
-                        .withType(SegmentType.d)
-                        .build();
-
-                SyncRequest<Feed.Blueprint> sync = new SyncRequest<>(syncConfig, typeStructure);
+                SyncConfiguration syncConfig = SyncConfiguration.builder().withAllTypes().build();
+                SyncRequest<org.hawkular.inventory.api.model.ResourceType.Blueprint> sync;
+                sync = new SyncRequest<>(syncConfig, resourceTypeStructure);
 
                 StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
                         AsyncInventoryStorage.this.config.getInventoryContext());
                 url.append("sync");
                 url.append("/f;").append(this.feedId);
+                url.append("/rt;").append(Util.urlEncodeQuery(resourceTypeStructure.getRoot().getId()));
                 String jsonPayload = Util.toJson(sync);
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
-                log.tracef("Syncing [%d] resource types to inventory: headers=[%s] body=[%s]",
-                        totalResourceTypeCount, headers, jsonPayload);
+                log.tracef("Syncing resource type to inventory: headers=[%s] body=[%s]", headers, jsonPayload);
 
                 Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), headers, jsonPayload);
                 Call call = this.httpClientBuilder.getHttpClient().newCall(request);
@@ -647,7 +657,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 try {
                     final long durationNanos = timer.stop();
 
-                    log.tracef("Received type sync response from inventory: code [%d]", response.code());
+                    log.tracef("Received sync response from inventory: code [%d]", response.code());
 
                     // HTTP status of 204 means success, anything else is an error
                     if (response.code() != 204) {
@@ -655,12 +665,11 @@ public class AsyncInventoryStorage implements InventoryStorage {
                                 + response.message() + "], url=[" + request.urlString() + "]");
                     }
 
-                    diagnostics.getInventoryRate().mark(totalResourceTypeCount);
+                    diagnostics.getInventoryRate().mark(1);
 
                     if (log.isDebugEnabled()) {
-                        log.debugf("Took [%d]ms to sync [%d] resource types to inventory",
-                                TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS),
-                                totalResourceTypeCount);
+                        log.debugf("Took [%d]ms to sync resource type to inventory",
+                                TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS));
                     }
                 } finally {
                     response.body().close();

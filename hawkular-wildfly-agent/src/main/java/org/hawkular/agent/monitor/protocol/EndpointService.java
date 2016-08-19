@@ -101,7 +101,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         public void fireDiscoveryComplete() {
             LOG.debugf("Firing inventory event for discovery complete");
-            DiscoveryEvent<L> event = new DiscoveryEvent<L>(EndpointService.this, getResourceManager());
+            DiscoveryEvent<L> event = new DiscoveryEvent<L>(EndpointService.this, getResourceManager(),
+                    getResourceTypeManager());
             for (InventoryListener inventoryListener : inventoryListeners) {
                 inventoryListener.discoveryCompleted(event);
             }

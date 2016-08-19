@@ -17,9 +17,7 @@
 package org.hawkular.agent.example;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
@@ -33,7 +31,6 @@ import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.logging.Logger;
 
@@ -45,7 +42,7 @@ public class HawkularWildFlyAgentProvider {
     private static final Logger log = Logger.getLogger(HawkularWildFlyAgentProvider.class);
     private static final String AGENT_JNDI = "java:global/hawkular/agent/api";
 
-    static final String TENANT_ID = "my-app-tenant";
+    static final String TENANT_ID = null; // reuse the agent's global tenant
 
     @javax.annotation.Resource(name = AGENT_JNDI)
     private HawkularWildFlyAgentContext hawkularAgent;
@@ -114,9 +111,9 @@ public class HawkularWildFlyAgentProvider {
 
         // we want to persist this - since we only added one, we can tell the
         // system our "discovery" is done now and our inventory has been updated
-        syncAllResourceTypes();
         DiscoveryEvent<MyAppNodeLocation> dEvent;
-        dEvent = new DiscoveryEvent<>(myAppSamplingService, myAppInventory.getResourceManager());
+        dEvent = new DiscoveryEvent<>(myAppSamplingService, myAppInventory.getResourceManager(),
+                myAppInventory.getResourceTypeManager());
         getHawkularWildFlyAgent().getInventoryStorage().discoveryCompleted(dEvent);
     }
 
@@ -139,16 +136,10 @@ public class HawkularWildFlyAgentProvider {
 
         // we want to persist this - since we only removed one, we can tell the
         // system our "discovery" is done now and our inventory has been updated
-        syncAllResourceTypes();
         DiscoveryEvent<MyAppNodeLocation> dEvent;
-        dEvent = new DiscoveryEvent<>(myAppSamplingService, myAppInventory.getResourceManager());
+        dEvent = new DiscoveryEvent<>(myAppSamplingService, myAppInventory.getResourceManager(),
+                myAppInventory.getResourceTypeManager());
         getHawkularWildFlyAgent().getInventoryStorage().discoveryCompleted(dEvent);
-    }
-
-    private void syncAllResourceTypes() {
-        Map<String, List<ResourceType<MyAppNodeLocation>>> allTypes = new HashMap<>();
-        allTypes.put(TENANT_ID, myAppInventory.getResourceTypeManager().getResourceTypesBreadthFirst());
-        getHawkularWildFlyAgent().getInventoryStorage().allResourceTypes(allTypes);
     }
 
     private HawkularWildFlyAgentContext getHawkularWildFlyAgent() throws UnsupportedOperationException {
