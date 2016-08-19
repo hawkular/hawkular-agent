@@ -226,6 +226,10 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
     public void testUndeploy() throws Throwable {
         waitForAccountsAndInventory();
 
+        // this should exist
+        getResource("/traversal/f;" + hawkularFeedId + "/type=rt;id=Deployment/rl;defines/type=r",
+                (r -> r.getId().contains("hawkular-wildfly-agent-helloworld-war.war")), 10, 5000);
+
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
@@ -260,5 +264,9 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                             .getAddressNode(),
                     false);
         }
+
+        // this should be gone now, let's make sure it does get deleted from h-inventory
+        assertResourceNotInInventory("/traversal/f;" + hawkularFeedId + "/type=rt;id=Deployment/rl;defines/type=r",
+                (r -> r.getId().contains("hawkular-wildfly-agent-helloworld-war.war")), 10, 5000);
     }
 }
