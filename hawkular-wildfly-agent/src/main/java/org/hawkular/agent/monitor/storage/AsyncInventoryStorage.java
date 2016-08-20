@@ -159,6 +159,44 @@ public class AsyncInventoryStorage implements InventoryStorage {
             return retVal;
         }
 
+        /**
+         * Builds structures that can be sent to inventory to create or update metric types.
+         *
+         * @param resourceTypes all resource types whose metrics are to be processed
+         * @return inventory structures all rooted at the given resource types
+         */
+        public Map<MeasurementType<L>, Offline<org.hawkular.inventory.api.model.MetricType.Blueprint>> buildMetrics(
+                List<ResourceType<L>> resourceTypes) {
+
+            Set<MeasurementType<L>> measTypes = new HashSet<>();
+            for (ResourceType<L> resourceType : resourceTypes) {
+                if (resourceType.isPersisted() == false) {
+                    measTypes.addAll(resourceType.getMetricTypes().stream().filter(t -> t.isPersisted() == false)
+                            .collect(Collectors.toList()));
+                    measTypes.addAll(resourceType.getAvailTypes().stream().filter(t -> t.isPersisted() == false)
+                            .collect(Collectors.toList()));
+                }
+            }
+
+            Map<MeasurementType<L>, Offline<org.hawkular.inventory.api.model.MetricType.Blueprint>> retVal;
+            retVal = new HashMap<>(measTypes.size());
+
+            synchronized (addedIds) {
+                prepareAddedIds();
+
+                // we don't sync parent-child relations for types; all types are stored at root level in inventory
+                for (MeasurementType<L> mt : measTypes) {
+                    InventoryStructure.Builder<org.hawkular.inventory.api.model.MetricType.Blueprint> invBldr;
+                    org.hawkular.inventory.api.model.MetricType.Blueprint mtBP = buildMetricTypeBlueprint(mt);
+                    invBldr = InventoryStructure.Offline.of(mtBP);
+                    metricType(mt, invBldr);
+                    retVal.put(mt, invBldr.build());
+                }
+            }
+
+            return retVal;
+        }
+
         private void prepareAddedIds() {
             addedIds.clear();
             addedIds.put(IdType.RESOURCE_TYPE, new HashSet<>());
@@ -197,109 +235,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
             return resourceTypeBP;
         }
 
-        private void resource(ResourceManager<L> resourceManager, Resource<L> resource,
-                AbstractBuilder<?> resourceBuilder) {
-
-            // resource configuration
-            Collection<ResourceConfigurationPropertyInstance<L>> resConfigInstances = resource
-                    .getResourceConfigurationProperties();
-            resourceConfigurations(resConfigInstances, resourceBuilder);
-
-            // metrics and avails (which are just metrics, too)
-            Collection<? extends Instance<L, ?>> metricInstances = resource.getMetrics();
-            for (Instance<L, ?> metric : metricInstances) {
-                metric(metric, resourceBuilder);
-            }
-            Collection<? extends Instance<L, ?>> availInstances = resource.getAvails();
-            for (Instance<L, ?> metric : availInstances) {
-                metric(metric, resourceBuilder);
-            }
-
-            // children resources
-            Set<Resource<L>> children = resourceManager.getChildren(resource);
-            for (Resource<L> child : children) {
-                org.hawkular.inventory.api.model.Resource.Blueprint childBP = buildResourceBlueprint(child);
-                ChildBuilder<?> childBuilder = resourceBuilder.startChild(childBP);
-                try {
-                    resource(resourceManager, child, childBuilder);
-                } finally {
-                    childBuilder.end();
-                }
-            }
-        }
-
-        private void resourceType(ResourceType<L> resourceType, InventoryStructure.Builder<?> inventoryBuilder) {
-
-            if (!addedIds.get(IdType.RESOURCE_TYPE).add(resourceType.getID().getIDString())) {
-                return; // we already did this resource type
-            }
-
-            // resource type
-            org.hawkular.inventory.api.model.ResourceType.Blueprint resourceTypeBP;
-            resourceTypeBP = buildResourceTypeBlueprint(resourceType);
-
-            ChildBuilder<?> childBuilder = inventoryBuilder.startChild(resourceTypeBP);
-
-            try {
-                // operations (which are children of the resource type)
-                Collection<? extends Operation<L>> ops = resourceType.getOperations();
-                for (Operation<L> op : ops) {
-                    operation(op, childBuilder);
-                }
-
-                // resource configuration types (which are children of the resource type)
-                Collection<? extends ResourceConfigurationPropertyType<L>> rcpts = //
-                        resourceType.getResourceConfigurationPropertyTypes();
-                resourceConfigurationTypes(rcpts, childBuilder);
-
-            } finally {
-                childBuilder.end();
-            }
-
-            // NOTE: Metric types and avail types are not children of the resource type itself.
-            // Inventory doesn't yet support child relationships like that.
-
-            // metric types
-            Collection<? extends MetricType<L>> metricTypes = resourceType.getMetricTypes();
-            for (MetricType<L> metricType : metricTypes) {
-                metricType(metricType, inventoryBuilder);
-            }
-
-            // avail types (which are just metric types, too)
-            Collection<? extends AvailType<L>> availTypes = resourceType.getAvailTypes();
-            for (AvailType<L> availType : availTypes) {
-                metricType(availType, inventoryBuilder);
-            }
-
-            return;
-        }
-
-        private void metric(Instance<L, ?> metric, AbstractBuilder<?> childBuilder) {
-
-            String metricId = getInventoryId(metric);
-            String metricTypeId = getInventoryId(metric.getType());
-            String metricTypePath = newPathPrefix().metricType(metricTypeId).get().toString();
-            String metricName = metric.getName().getNameString();
-            Map<String, Object> metricProperties = metric.getProperties();
-
-            Metric.Blueprint blueprint = Metric.Blueprint.builder()
-                    .withId(metricId)
-                    .withMetricTypePath(metricTypePath)
-                    .withName(metricName)
-                    .withProperties(metricProperties)
-                    .build();
-
-            childBuilder.addChild(blueprint);
-        }
-
-        private void metricType(MeasurementType<L> metricType, AbstractBuilder<?> inventoryBuilder) {
-
+        private org.hawkular.inventory.api.model.MetricType.Blueprint buildMetricTypeBlueprint(
+                MeasurementType<L> metricType) {
             String metricTypeId = getInventoryId(metricType);
-
-            if (!addedIds.get(IdType.METRIC_TYPE).add(metricTypeId)) {
-                return; // we already did this metric type
-            }
-
             MetricUnit metricUnit = MetricUnit.NONE;
             MetricDataType metricDataType;
             if (metricType instanceof MetricType) {
@@ -336,11 +274,89 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     .withProperties(metricTypeProperties)
                     .withUnit(metricUnit)
                     .build();
-
-            inventoryBuilder.addChild(blueprint);
+            return blueprint;
         }
 
-        private void operation(Operation<L> operation, ChildBuilder<?> childBuilder) {
+        private void resource(ResourceManager<L> resourceManager, Resource<L> resource,
+                AbstractBuilder<?> theBuilder) {
+
+            // resource configuration
+            Collection<ResourceConfigurationPropertyInstance<L>> resConfigInstances = resource
+                    .getResourceConfigurationProperties();
+            resourceConfigurations(resConfigInstances, theBuilder);
+
+            // metrics and avails (which are just metrics, too)
+            Collection<? extends Instance<L, ?>> metricInstances = resource.getMetrics();
+            for (Instance<L, ?> metric : metricInstances) {
+                metric(metric, theBuilder);
+            }
+            Collection<? extends Instance<L, ?>> availInstances = resource.getAvails();
+            for (Instance<L, ?> metric : availInstances) {
+                metric(metric, theBuilder);
+            }
+
+            // children resources
+            Set<Resource<L>> children = resourceManager.getChildren(resource);
+            for (Resource<L> child : children) {
+                org.hawkular.inventory.api.model.Resource.Blueprint childBP = buildResourceBlueprint(child);
+                ChildBuilder<?> childBuilder = theBuilder.startChild(childBP);
+                try {
+                    resource(resourceManager, child, childBuilder);
+                } finally {
+                    childBuilder.end();
+                }
+            }
+        }
+
+        private void resourceType(ResourceType<L> resourceType, AbstractBuilder<?> theBuilder) {
+
+            if (!addedIds.get(IdType.RESOURCE_TYPE).add(theBuilder.getBlueprint().getId())) {
+                return; // we already did this resource type
+            }
+
+            // operations (which are children of the resource type)
+            Collection<? extends Operation<L>> ops = resourceType.getOperations();
+            for (Operation<L> op : ops) {
+                operation(op, theBuilder);
+            }
+
+            // resource configuration types (which are children of the resource type)
+            Collection<? extends ResourceConfigurationPropertyType<L>> rcpts = //
+                    resourceType.getResourceConfigurationPropertyTypes();
+            resourceConfigurationTypes(rcpts, theBuilder);
+        }
+
+        private void metric(Instance<L, ?> metric, AbstractBuilder<?> theBuilder) {
+
+            String metricId = getInventoryId(metric);
+            String metricTypeId = getInventoryId(metric.getType());
+            String metricTypePath = newPathPrefix().metricType(metricTypeId).get().toString();
+            String metricName = metric.getName().getNameString();
+            Map<String, Object> metricProperties = metric.getProperties();
+
+            Metric.Blueprint blueprint = Metric.Blueprint.builder()
+                    .withId(metricId)
+                    .withMetricTypePath(metricTypePath)
+                    .withName(metricName)
+                    .withProperties(metricProperties)
+                    .build();
+
+            theBuilder.addChild(blueprint);
+        }
+
+        private void metricType(MeasurementType<L> metricType, AbstractBuilder<?> theBuilder) {
+
+            org.hawkular.inventory.api.model.MetricType.Blueprint blueprint = buildMetricTypeBlueprint(metricType);
+
+            if (!addedIds.get(IdType.METRIC_TYPE).add(blueprint.getId())) {
+                return; // we already did this metric type
+            }
+
+            theBuilder.addChild(blueprint);
+        }
+
+        private void operation(Operation<L> operation, AbstractBuilder<?> theBuilder) {
+
             String operationId = getInventoryId(operation);
             String operationName = operation.getName().getNameString();
             Map<String, Object> operationProperties = operation.getProperties();
@@ -353,9 +369,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             List<OperationParam> params = operation.getParameters();
             if (params.isEmpty()) {
-                childBuilder.addChild(blueprint);
+                theBuilder.addChild(blueprint);
             } else {
-                ChildBuilder<?> opBuilder = childBuilder.startChild(blueprint);
+                ChildBuilder<?> opBuilder = theBuilder.startChild(blueprint);
                 try {
                     StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
 
@@ -389,7 +405,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         private void resourceConfigurationTypes(Collection<? extends ResourceConfigurationPropertyType<L>> rcpts,
-                AbstractBuilder<?> childBuilder) {
+                AbstractBuilder<?> theBuilder) {
 
             if (!rcpts.isEmpty()) {
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
@@ -402,12 +418,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         .withValue(structDataBuilder.build())
                         .build();
 
-                childBuilder.addChild(dataEntity);
+                theBuilder.addChild(dataEntity);
             }
         }
 
         private void resourceConfigurations(Collection<? extends ResourceConfigurationPropertyInstance<L>> rcpis,
-                AbstractBuilder<?> childBuilder) {
+                AbstractBuilder<?> theBuilder) {
 
             if (!rcpis.isEmpty()) {
                 StructuredData.MapBuilder structDataBuilder = StructuredData.get().map();
@@ -420,7 +436,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         .withValue(structDataBuilder.build())
                         .build();
 
-                childBuilder.addChild(dataEntity);
+                theBuilder.addChild(dataEntity);
             }
         }
 
@@ -547,10 +563,16 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
         // Since we know types never change during the lifetime of the agent, we don't have to process
         // types that have already been flagged as having been persisted.
+        // We first must persist metric types then resource types (remember, there are no hierarchies,
+        // all metric types and resource types are peers to one another).
         List<ResourceType<L>> allResourceTypes = resourceTypeManager.getResourceTypesBreadthFirst()
                 .stream()
                 .filter(rt -> rt.isPersisted() == false)
                 .collect(Collectors.toList());
+        Map<MeasurementType<L>, Offline<org.hawkular.inventory.api.model.MetricType.Blueprint>> mtBlueprints;
+        mtBlueprints = bldr.buildMetrics(allResourceTypes);
+        mtBlueprints.forEach((mt, bp) -> performMetricTypeSync(bp, tenantIdToUse));
+
         Map<ResourceType<L>, Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint>> rtBlueprints;
         rtBlueprints = bldr.build(allResourceTypes);
         rtBlueprints.forEach((rt, bp) -> performResourceTypeSync(bp, tenantIdToUse));
@@ -669,6 +691,63 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     if (log.isDebugEnabled()) {
                         log.debugf("Took [%d]ms to sync resource type to inventory",
+                                TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS));
+                    }
+                } finally {
+                    response.body().close();
+                }
+            } catch (InterruptedException ie) {
+                log.errorFailedToStoreInventoryData(ie);
+                Thread.currentThread().interrupt(); // preserve interrupt
+            } catch (Exception e) {
+                log.errorFailedToStoreInventoryData(e);
+                diagnostics.getStorageErrorRate().mark(1);
+            }
+        }
+
+        return;
+    }
+
+    private <L> void performMetricTypeSync(
+            Offline<org.hawkular.inventory.api.model.MetricType.Blueprint> metricTypeStructure,
+            String tenantIdToUse) {
+
+        if (metricTypeStructure.getRoot() != null) {
+            try {
+                SyncConfiguration syncConfig = SyncConfiguration.builder().withAllTypes().build();
+                SyncRequest<org.hawkular.inventory.api.model.MetricType.Blueprint> sync;
+                sync = new SyncRequest<>(syncConfig, metricTypeStructure);
+
+                StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
+                        AsyncInventoryStorage.this.config.getInventoryContext());
+                url.append("sync");
+                url.append("/f;").append(this.feedId);
+                url.append("/mt;").append(Util.urlEncodeQuery(metricTypeStructure.getRoot().getId()));
+                String jsonPayload = Util.toJson(sync);
+                Map<String, String> headers = getTenantHeader(tenantIdToUse);
+
+                log.tracef("Syncing metric type to inventory: headers=[%s] body=[%s]", headers, jsonPayload);
+
+                Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), headers, jsonPayload);
+                Call call = this.httpClientBuilder.getHttpClient().newCall(request);
+                final Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
+                Response response = call.execute();
+
+                try {
+                    final long durationNanos = timer.stop();
+
+                    log.tracef("Received sync response from inventory: code [%d]", response.code());
+
+                    // HTTP status of 204 means success, anything else is an error
+                    if (response.code() != 204) {
+                        throw new Exception("status-code=[" + response.code() + "], reason=["
+                                + response.message() + "], url=[" + request.urlString() + "]");
+                    }
+
+                    diagnostics.getInventoryRate().mark(1);
+
+                    if (log.isDebugEnabled()) {
+                        log.debugf("Took [%d]ms to sync metric type to inventory",
                                 TimeUnit.MILLISECONDS.convert(durationNanos, TimeUnit.NANOSECONDS));
                     }
                 } finally {
