@@ -21,7 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
 import org.junit.Assert;
 import org.junit.Test;
@@ -122,7 +122,7 @@ public class OshiPlatformCacheTest {
         // OS
         query = PlatformPath.builder().any(PlatformResourceType.OPERATING_SYSTEM).build();
         map = oshi.discoverResources(query);
-        Assert.assertEquals("Should only have 1 operating system resource", map.size(), 1);
+        Assert.assertEquals("Should only have 1 operating system resource", 1, map.size());
         PlatformPath osPath = map.keySet().iterator().next();
         PlatformResourceNode osNode = map.values().iterator().next();
         print("---> OS path=[%s], node=[%s]", osPath, osNode);
@@ -131,22 +131,24 @@ public class OshiPlatformCacheTest {
         // find the OS using a non-wildcard, explicit query path
         query = PlatformPath.builder().segment(PlatformResourceType.OPERATING_SYSTEM, osNode.getId()).build();
         map = oshi.discoverResources(query);
-        Assert.assertEquals("Should only have 1 operating system resource", map.size(), 1);
+        Assert.assertEquals("Should only have 1 operating system resource", 1, map.size());
 
         // Memory
         query = PlatformPath.builder().segments(osPath).any(PlatformResourceType.MEMORY).build();
         map = oshi.discoverResources(query);
-        Assert.assertEquals("Should only have 1 memory resource", map.size(), 1);
+        Assert.assertEquals("Should only have 1 memory resource", 1, map.size());
         PlatformPath memPath = map.keySet().iterator().next();
         PlatformResourceNode memNode = map.values().iterator().next();
         print("---> Memory path=[%s], node=[%s]", memPath, memNode);
         Assert.assertEquals(PlatformResourceType.MEMORY, memNode.getType());
 
-        // find the Memory using a non-wildcard, explicit query path
+        // find the Memory using a non-wildcard, explicit query path (there is only one - resource with ID "Memory")
         query = PlatformPath.builder()
-                .segment(PlatformResourceType.MEMORY, PlatformResourceType.MEMORY.getName().getNameString()).build();
+                .segment(PlatformResourceType.MEMORY,
+                        PlatformResourceType.MEMORY.getResourceTypeName().getNameString())
+                .build();
         map = oshi.discoverResources(query);
-        Assert.assertEquals("Should only have 1 memory resource", map.size(), 1);
+        Assert.assertEquals("Should only have 1 memory resource", 1, map.size());
 
         // File Stores
         query = PlatformPath.builder().segments(osPath).any(PlatformResourceType.FILE_STORE).build();
@@ -161,7 +163,7 @@ public class OshiPlatformCacheTest {
             // find it using a non-wildcard, explicit query path
             query = PlatformPath.builder().segment(PlatformResourceType.FILE_STORE, node.getId()).build();
             Map<PlatformPath, PlatformResourceNode> singletonMap = oshi.discoverResources(query);
-            Assert.assertEquals("Should only have returned 1", singletonMap.size(), 1);
+            Assert.assertEquals("Should only have returned 1", 1, singletonMap.size());
         }
 
         // Processors
@@ -177,7 +179,7 @@ public class OshiPlatformCacheTest {
             // find it using a non-wildcard, explicit query path
             query = PlatformPath.builder().segment(PlatformResourceType.PROCESSOR, node.getId()).build();
             Map<PlatformPath, PlatformResourceNode> singletonMap = oshi.discoverResources(query);
-            Assert.assertEquals("Should only have returned 1", singletonMap.size(), 1);
+            Assert.assertEquals("Should only have returned 1", 1, singletonMap.size());
         }
 
         // Power Sources
@@ -193,7 +195,7 @@ public class OshiPlatformCacheTest {
             // find it using a non-wildcard, explicit query path
             query = PlatformPath.builder().segment(PlatformResourceType.POWER_SOURCE, node.getId()).build();
             Map<PlatformPath, PlatformResourceNode> singletonMap = oshi.discoverResources(query);
-            Assert.assertEquals("Should only have returned 1", singletonMap.size(), 1);
+            Assert.assertEquals("Should only have returned 1", 1, singletonMap.size());
         }
     }
 
@@ -203,25 +205,25 @@ public class OshiPlatformCacheTest {
         OshiPlatformCache oshi = newOshiPlatformCache();
 
         // Operating System
-        for (Name metricName : PlatformResourceType.OPERATING_SYSTEM.getMetricNames()) {
-            val = oshi.getOperatingSystemMetric(metricName);
-            print("OS metric [%s]=[%s]", metricName, val);
+        for (ID metricId : PlatformResourceType.OPERATING_SYSTEM.getMetricTypeIds()) {
+            val = oshi.getOperatingSystemMetric(metricId);
+            print("OS metric [%s]=[%s]", metricId, val);
             Assert.assertNotNull(val);
         }
         try {
-            oshi.getOperatingSystemMetric(new Name("invalidMetricName"));
+            oshi.getOperatingSystemMetric(new ID("invalidMetricName"));
             Assert.fail("Exception should have been thrown on bad OS metric name");
         } catch (Exception ok) {
         }
 
         // Memory
-        for (Name metricName : PlatformResourceType.MEMORY.getMetricNames()) {
-            val = oshi.getMemoryMetric(metricName);
-            print("Memory metric [%s]=[%s]", metricName, val);
+        for (ID metricId : PlatformResourceType.MEMORY.getMetricTypeIds()) {
+            val = oshi.getMemoryMetric(metricId);
+            print("Memory metric [%s]=[%s]", metricId, val);
             Assert.assertNotNull(val);
         }
         try {
-            oshi.getMemoryMetric(new Name("invalidMetricName"));
+            oshi.getMemoryMetric(new ID("invalidMetricName"));
             Assert.fail("Exception should have been thrown on bad memory metric name");
         } catch (Exception ok) {
         }
@@ -229,13 +231,13 @@ public class OshiPlatformCacheTest {
         // File Stores
         Map<String, OSFileStore> fileStores = oshi.getFileStores();
         for (OSFileStore fs : fileStores.values()) {
-            for (Name metricName : PlatformResourceType.FILE_STORE.getMetricNames()) {
-                val = oshi.getFileStoreMetric(fs.getName(), metricName);
-                print("FileStore [%s] metric [%s]=[%s]", fs.getName(), metricName, val);
+            for (ID metricId : PlatformResourceType.FILE_STORE.getMetricTypeIds()) {
+                val = oshi.getFileStoreMetric(fs.getName(), metricId);
+                print("FileStore [%s] metric [%s]=[%s]", fs.getName(), metricId, val);
                 Assert.assertNotNull(val);
             }
             try {
-                oshi.getFileStoreMetric(fs.getName(), new Name("invalidMetricName"));
+                oshi.getFileStoreMetric(fs.getName(), new ID("invalidMetricName"));
                 Assert.fail("Exception should have been thrown on bad filestore metric name");
             } catch (Exception ok) {
             }
@@ -244,13 +246,13 @@ public class OshiPlatformCacheTest {
         // Processors
         CentralProcessor processor = oshi.getProcessor();
         for (int i = 0; i < processor.getLogicalProcessorCount(); i++) {
-            for (Name metricName : PlatformResourceType.PROCESSOR.getMetricNames()) {
-                val = oshi.getProcessorMetric("" + i, metricName);
-                print("Processor [%s] metric [%s]=[%s]", "" + i, metricName, val);
+            for (ID metricId : PlatformResourceType.PROCESSOR.getMetricTypeIds()) {
+                val = oshi.getProcessorMetric("" + i, metricId);
+                print("Processor [%s] metric [%s]=[%s]", "" + i, metricId, val);
                 Assert.assertNotNull(val);
             }
             try {
-                oshi.getProcessorMetric("" + i, new Name("invalidMetricName"));
+                oshi.getProcessorMetric("" + i, new ID("invalidMetricName"));
                 Assert.fail("Exception should have been thrown on bad processor metric name");
             } catch (Exception ok) {
             }
@@ -259,22 +261,22 @@ public class OshiPlatformCacheTest {
         // Power Sources
         Map<String, PowerSource> powersources = oshi.getPowerSources();
         for (PowerSource p : powersources.values()) {
-            for (Name metricName : PlatformResourceType.POWER_SOURCE.getMetricNames()) {
-                val = oshi.getPowerSourceMetric(p.getName(), metricName);
-                print("PowerSource [%s] metric [%s]=[%s]", "" + p.getName(), metricName, val);
+            for (ID metricId : PlatformResourceType.POWER_SOURCE.getMetricTypeIds()) {
+                val = oshi.getPowerSourceMetric(p.getName(), metricId);
+                print("PowerSource [%s] metric [%s]=[%s]", "" + p.getName(), metricId, val);
                 Assert.assertNotNull(val);
             }
             try {
-                oshi.getPowerSourceMetric(p.getName(), new Name("invalidMetricName"));
+                oshi.getPowerSourceMetric(p.getName(), new ID("invalidMetricName"));
                 Assert.fail("Exception should have been thrown on bad powersource metric name");
             } catch (Exception ok) {
             }
         }
 
         // some more negative testing
-        Assert.assertNull(oshi.getFileStoreMetric("invalidName", new Name("invalidMetricName")));
-        Assert.assertNull(oshi.getProcessorMetric("invalidName", new Name("invalidMetricName")));
-        Assert.assertNull(oshi.getPowerSourceMetric("invalidName", new Name("invalidMetricName")));
+        Assert.assertNull(oshi.getFileStoreMetric("invalidName", new ID("invalidMetricName")));
+        Assert.assertNull(oshi.getProcessorMetric("invalidName", new ID("invalidMetricName")));
+        Assert.assertNull(oshi.getPowerSourceMetric("invalidName", new ID("invalidMetricName")));
     }
 
     @Test
@@ -408,7 +410,7 @@ public class OshiPlatformCacheTest {
             }
             String stepping;
             try {
-               stepping =  processor.getStepping();
+                stepping = processor.getStepping();
             } catch (UnsupportedOperationException e) {
                 stepping = "";
                 print(processor.getClass().getName() + ".getStepping() unsupported on " + System.getProperty("os.name")

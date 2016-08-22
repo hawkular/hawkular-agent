@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ public class PlatformResourceNode {
     private final PlatformResourceType type;
     private final String id;
 
-    public PlatformResourceNode(Constants.PlatformResourceType type, String id) {
+    public PlatformResourceNode(PlatformResourceType type, String id) {
         this.type = type;
         this.id = id;
     }
