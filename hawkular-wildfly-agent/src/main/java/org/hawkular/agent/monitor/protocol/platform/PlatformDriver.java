@@ -25,7 +25,7 @@ import java.util.Map.Entry;
 
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
-import org.hawkular.agent.monitor.inventory.Name;
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.ProtocolException;
 
@@ -69,12 +69,12 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
             case 0:
                 return false;
             case 1:
-                Name attributeToCheck = new Name(location.getAttribute());
+                ID attributeToCheck = new ID(location.getAttribute());
                 // see if this is asking for the special "machine id" attribute
                 if (Constants.MACHINE_ID.equals(attributeToCheck)) {
                     return true;
                 } else {
-                    return nodes.values().iterator().next().getType().getMetricNames().contains(attributeToCheck);
+                    return nodes.values().iterator().next().getType().getMetricTypeIds().contains(attributeToCheck);
                 }
             default:
                 throw new ProtocolException(
@@ -86,7 +86,7 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
     public Object fetchAttribute(AttributeLocation<PlatformNodeLocation> location) throws ProtocolException {
         try {
             Map<PlatformPath, PlatformResourceNode> nodes = null;
-            Name metricToCollect = new Name(location.getAttribute()); // we know these are all metrics (no avails)
+            ID metricToCollect = new ID(location.getAttribute()); // we know these are all metrics (no avails)
             try (Context timerContext = diagnostics.getRequestTimer().time()) {
                 platform.refresh(); // refresh to make sure we get the latest data (TODO: bulk collect to avoid this)
                 nodes = platform.discoverResources(location.getLocation().getPlatformPath());

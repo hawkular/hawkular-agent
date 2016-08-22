@@ -17,73 +17,114 @@
 package org.hawkular.agent.monitor.protocol.platform;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.stream.Collectors;
 
+import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Name;
 
 /**
  * Because the resource types, metrics, etc. are fixed for our native platform support,
  * these constants are here to define those fixed names of things.
+ *
  * @author John Mazzitelli
  */
 public interface Constants {
+    // this is a special resource config property on the platform OS resource itself
+    Name MACHINE_ID = new Name("Machine Id");
 
-    // these list the names of all the known resource types for platform resources
-    // since OSHI only supports a fixed set of resources/metrics, we just hardwire them here
     enum PlatformResourceType {
-        OPERATING_SYSTEM("Operating System",
-                Arrays.asList(OPERATING_SYSTEM_SYS_CPU_LOAD, OPERATING_SYSTEM_SYS_LOAD_AVG,
-                        OPERATING_SYSTEM_PROCESS_COUNT)),
+        OPERATING_SYSTEM("Operating System"), //
+        FILE_STORE("File Store"), //
+        MEMORY("Memory"), //
+        PROCESSOR("Processor"), //
+        POWER_SOURCE("Power Source");
 
-        FILE_STORE("File Store",
-                Arrays.asList(FILE_STORE_USABLE_SPACE, FILE_STORE_TOTAL_SPACE)),
+        private final ID resourceTypeId;
+        private final Name resourceTypeName;
+        private Collection<PlatformMetricType> metricTypes;
+        private Collection<ID> metricTypeIds;
 
-        MEMORY("Memory",
-                Arrays.asList(MEMORY_AVAILABLE, MEMORY_TOTAL)),
-
-        PROCESSOR("Processor",
-                Collections.singletonList(PROCESSOR_CPU_USAGE)),
-
-        POWER_SOURCE("Power Source",
-                Arrays.asList(POWER_SOURCE_REMAINING_CAPACITY, POWER_SOURCE_TIME_REMAINING))
-
-        ;
-
-        private final Name name;
-        private final List<Name> metricNames;
-
-        PlatformResourceType(String label, List<Name> metricNames) {
-            this.name = new Name(label);
-            this.metricNames = Collections.unmodifiableList(metricNames);
+        PlatformResourceType(String name) {
+            this.resourceTypeId = new ID("Platform_" + name);
+            this.resourceTypeName = new Name(name);
         }
 
-        public Name getName() {
-            return name;
+        public ID getResourceTypeId() {
+            return resourceTypeId;
         }
 
-        public List<Name> getMetricNames() {
-            return metricNames;
+        public Name getResourceTypeName() {
+            return resourceTypeName;
+        }
+
+        public Collection<PlatformMetricType> getMetricTypes() {
+            if (metricTypes == null) {
+                metricTypes = PlatformMetricType.getPlatformMetricTypes(this);
+            }
+            return metricTypes;
+        }
+
+        public Collection<ID> getMetricTypeIds() {
+            if (metricTypeIds == null) {
+                metricTypeIds = Collections.unmodifiableList(getMetricTypes()
+                        .stream()
+                        .map(n -> n.getMetricTypeId())
+                        .collect(Collectors.toList()));
+            }
+            return metricTypeIds;
         }
     }
 
-    Name PLATFORM = new Name("Platform");
-    Name MACHINE_ID = new Name("Machine Id");
+    enum PlatformMetricType {
+        // OPERATING SYSTEM METRICS
+        OS_SYS_CPU_LOAD(PlatformResourceType.OPERATING_SYSTEM, "System CPU Load"), //
+        OS_SYS_LOAD_AVG(PlatformResourceType.OPERATING_SYSTEM, "System Load Average"), //
+        OS_PROCESS_COUNT(PlatformResourceType.OPERATING_SYSTEM, "Process Count"), //
 
-    // names of all known metrics of all known platform resource types
+        // FILE STORE METRICS
+        FILE_STORE_USABLE_SPACE(PlatformResourceType.FILE_STORE, "Usable Space"), //
+        FILE_STORE_TOTAL_SPACE(PlatformResourceType.FILE_STORE, "Total Space"), //
 
-    Name OPERATING_SYSTEM_SYS_CPU_LOAD = new Name("System CPU Load");
-    Name OPERATING_SYSTEM_SYS_LOAD_AVG = new Name("System Load Average");
-    Name OPERATING_SYSTEM_PROCESS_COUNT = new Name("Process Count");
+        // MEMORY METRICS
+        MEMORY_AVAILABLE(PlatformResourceType.MEMORY, "Available Memory"), //
+        MEMORY_TOTAL(PlatformResourceType.MEMORY, "Total Memory"), //
 
-    Name FILE_STORE_USABLE_SPACE = new Name("Usable Space");
-    Name FILE_STORE_TOTAL_SPACE = new Name("Total Space");
+        // PROCESSOR METRICS
+        PROCESSOR_CPU_USAGE(PlatformResourceType.PROCESSOR, "CPU Usage"), //
 
-    Name MEMORY_AVAILABLE = new Name("Available Memory");
-    Name MEMORY_TOTAL = new Name("Total Memory");
+        // POWER SOURCE METRICS
+        POWER_SOURCE_REMAINING_CAPACITY(PlatformResourceType.POWER_SOURCE, "Remaining Capacity"), //
+        POWER_SOURCE_TIME_REMAINING(PlatformResourceType.POWER_SOURCE, "Time Remaining"); //
 
-    Name PROCESSOR_CPU_USAGE = new Name("CPU Usage");
+        private final PlatformResourceType resourceType;
+        private final ID metricTypeId;
+        private final Name metricTypeName;
 
-    Name POWER_SOURCE_REMAINING_CAPACITY = new Name("Remaining Capacity");
-    Name POWER_SOURCE_TIME_REMAINING = new Name("Time Remaining");
+        PlatformMetricType(PlatformResourceType resourceType, String name) {
+            this.resourceType = resourceType;
+            this.metricTypeId = new ID(resourceType.getResourceTypeId().getIDString() + "_" + name);
+            this.metricTypeName = new Name(name);
+        }
+
+        public PlatformResourceType getResourceType() {
+            return resourceType;
+        }
+
+        public ID getMetricTypeId() {
+            return metricTypeId;
+        }
+
+        public Name getMetricTypeName() {
+            return metricTypeName;
+        }
+
+        public static Collection<PlatformMetricType> getPlatformMetricTypes(PlatformResourceType type) {
+            return Collections.unmodifiableList(Arrays.asList(PlatformMetricType.values())
+                    .stream()
+                    .filter(t -> t.getResourceType() == type)
+                    .collect(Collectors.toList()));
+        }
+    }
 }
