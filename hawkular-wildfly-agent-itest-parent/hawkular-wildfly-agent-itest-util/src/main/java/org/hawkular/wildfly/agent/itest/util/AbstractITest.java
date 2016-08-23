@@ -30,6 +30,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
@@ -53,6 +54,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.PathAddress;
@@ -450,6 +452,14 @@ public abstract class AbstractITest {
         } else {
             throw new AssertionError("Could not get [" + url + "]");
         }
+    }
+
+    // path must have the "/d;configuration" at the end
+    protected Map<String, StructuredData> getResourceConfiguration(String path, int attemptCount, long attemptDelay)
+            throws Throwable {
+        DataEntity resConfigEntity = getDataEntity(path, attemptCount, attemptDelay);
+        Map<String, StructuredData> resConfig = resConfigEntity.getValue().map();
+        return resConfig;
     }
 
     protected String getWithRetries(String url) throws Throwable {
