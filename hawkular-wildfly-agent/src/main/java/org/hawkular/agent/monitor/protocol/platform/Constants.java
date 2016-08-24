@@ -32,7 +32,7 @@ import org.hawkular.agent.monitor.inventory.Name;
  */
 public interface Constants {
     // this is a special resource config property on the platform OS resource itself
-    Name MACHINE_ID = new Name("Machine Id");
+    String MACHINE_ID = "Machine Id";
 
     enum PlatformResourceType {
         OPERATING_SYSTEM("Operating System"), //

@@ -71,7 +71,7 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
             case 1:
                 ID attributeToCheck = new ID(location.getAttribute());
                 // see if this is asking for the special "machine id" attribute
-                if (Constants.MACHINE_ID.equals(attributeToCheck)) {
+                if (Constants.MACHINE_ID.equals(attributeToCheck.getIDString())) {
                     return true;
                 } else {
                     return nodes.values().iterator().next().getType().getMetricTypeIds().contains(attributeToCheck);
@@ -95,7 +95,7 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
                         return null;
                     case 1:
                         // see if this is asking for the special "machine id" attribute
-                        if (Constants.MACHINE_ID.equals(metricToCollect)) {
+                        if (Constants.MACHINE_ID.equals(metricToCollect.getIDString())) {
                             return platform.getMachineId();
                         } else {
                             return platform.getMetric(nodes.values().iterator().next(), metricToCollect);
@@ -104,7 +104,7 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
                         List<Object> results = new ArrayList<>(nodes.size());
                         for (PlatformResourceNode node : nodes.values()) {
                             // see if this is asking for the special "machine id" attribute
-                            if (Constants.MACHINE_ID.equals(metricToCollect)) {
+                            if (Constants.MACHINE_ID.equals(metricToCollect.getIDString())) {
                                 results.add(platform.getMachineId());
                             } else {
                                 results.add(platform.getMetric(node, metricToCollect));

@@ -33,7 +33,6 @@ import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
 import org.junit.Assert;
-import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
@@ -253,7 +252,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         List<Resource> servers = getResources("/traversal/f;" + wfClientConfig.getFeedId() + "/type=r", 2);
         List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
                 .collect(Collectors.toList());
-        AssertJUnit.assertEquals(1, wfs.size());
+        Assert.assertEquals(1, wfs.size());
         return wfs.get(0).getPath();
     }
 
@@ -262,18 +261,18 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         CanonicalPath osTypePath = getOperatingSystemResourceTypePath();
         osTypePath = osTypePath.extend(SegmentType.d, "configurationSchema").get();
         Map<String, StructuredData> schema = getStructuredData("/entity" + osTypePath.toString(), 1, 1);
-        AssertJUnit.assertTrue(schema.containsKey("Machine Id"));
+        Assert.assertTrue(schema.containsKey("Machine Id"));
 
-        //CanonicalPath osPath = getOperatingSystemResourcePath();
-        //osPath = osPath.extend(SegmentType.d, "configuration").get();
-        //Map<String, StructuredData> resConfig = getStructuredData("/entity" + osPath.toString(), 1, 1);
-        //AssertJUnit.assertTrue(resConfig.containsKey("Machine Id"));
+        CanonicalPath osPath = getOperatingSystemResourcePath();
+        osPath = osPath.extend(SegmentType.d, "configuration").get();
+        Map<String, StructuredData> resConfig = getStructuredData("/entity" + osPath.toString(), 1, 1);
+        Assert.assertTrue(resConfig.containsKey("Machine Id"));
     }
 
     private CanonicalPath getOperatingSystemResourceTypePath() throws Throwable {
         ResourceType osType = getResourceType(
                 "/entity/f;" + wfClientConfig.getFeedId() + "/rt;Platform_Operating%20System", 1, 1);
-        AssertJUnit.assertNotNull(osType);
+        Assert.assertNotNull(osType);
         return osType.getPath();
     }
 
@@ -281,7 +280,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         List<Resource> servers = getResources("/traversal/f;" + wfClientConfig.getFeedId() + "/type=r", 2);
         List<Resource> os = servers.stream().filter(s -> "Platform_Operating System".equals(s.getType().getId()))
                 .collect(Collectors.toList());
-        AssertJUnit.assertEquals(1, os.size());
+        Assert.assertEquals(1, os.size());
         return os.get(0).getPath();
     }
 }
