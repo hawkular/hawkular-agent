@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,9 +34,8 @@ import java.util.List;
  */
 public final class Operation<L> extends NodeLocationProvider<L> {
 
-    private static final String PROP_PARAMETERS = "params"; // parameter definitions are stored in this property
-
     private final String internalName;
+    private final List<OperationParam> parameters;
 
     /**
      * Creates an operation definition based on the given information.
@@ -57,7 +57,9 @@ public final class Operation<L> extends NodeLocationProvider<L> {
         super(id, name, location);
         this.internalName = internalName;
         if (params != null && !params.isEmpty()) {
-            addProperty(PROP_PARAMETERS, params);
+            parameters = Collections.unmodifiableList(new ArrayList<>(params));
+        } else {
+            parameters = Collections.emptyList();
         }
     }
 
@@ -75,12 +77,6 @@ public final class Operation<L> extends NodeLocationProvider<L> {
      * @return parameters defined for this operation - will be empty (not null) if no parameters exist
      */
     public List<OperationParam> getParameters() {
-        List<OperationParam> paramList = (List<OperationParam>) getProperties().get(PROP_PARAMETERS);
-        if (paramList != null) {
-            paramList = Collections.unmodifiableList(paramList);
-        } else {
-            paramList = Collections.emptyList();
-        }
-        return paramList;
+        return parameters;
     }
 }
