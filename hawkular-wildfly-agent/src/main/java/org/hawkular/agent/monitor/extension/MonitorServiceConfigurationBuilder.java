@@ -128,7 +128,7 @@ public class MonitorServiceConfigurationBuilder {
         if (!platformTypeSets.isDisabledOrEmpty()) {
             String machineId = determinePlatformMachineId(config, context);
             EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null, Avail.DOWN,
-                    null, null, null, Collections.singletonMap(Constants.MACHINE_ID.getNameString(), machineId));
+                    null, null, null, Collections.singletonMap(Constants.MACHINE_ID, machineId));
             platformConfigBuilder.endpoint(endpoint);
         }
 
@@ -541,9 +541,9 @@ public class MonitorServiceConfigurationBuilder {
 
         ResourceConfigurationPropertyType<PlatformNodeLocation> machineIdConfigType = //
                 new ResourceConfigurationPropertyType<>(ID.NULL_ID,
-                        Constants.MACHINE_ID,
+                        new Name(Constants.MACHINE_ID),
                         new AttributeLocation<>(
-                                new PlatformNodeLocation(PlatformPath.empty()), Constants.MACHINE_ID.getNameString()));
+                                new PlatformNodeLocation(PlatformPath.empty()), Constants.MACHINE_ID));
         rootTypeBldr.resourceConfigurationPropertyType(machineIdConfigType);
 
         // OS top-level metrics

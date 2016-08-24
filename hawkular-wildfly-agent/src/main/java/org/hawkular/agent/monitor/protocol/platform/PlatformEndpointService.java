@@ -46,7 +46,7 @@ public class PlatformEndpointService extends EndpointService<PlatformNodeLocatio
 
     private String getMachineId() {
         Map<String, ? extends Object> customData = getMonitoredEndpoint().getEndpointConfiguration().getCustomData();
-        return (String) customData.get(Constants.MACHINE_ID.getNameString());
+        return (String) customData.get(Constants.MACHINE_ID);
     }
 
 }
