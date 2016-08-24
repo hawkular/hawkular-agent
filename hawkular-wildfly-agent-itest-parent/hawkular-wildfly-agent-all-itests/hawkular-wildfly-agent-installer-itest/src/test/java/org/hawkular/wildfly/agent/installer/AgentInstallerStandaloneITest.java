@@ -17,17 +17,23 @@
 package org.hawkular.wildfly.agent.installer;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
 import org.junit.Assert;
+import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 import com.squareup.okhttp.Request;
@@ -225,4 +231,57 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
     }
 
+    @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
+    public void resourceConfig() throws Throwable {
+        CanonicalPath wfPath = getWildFlyServerResourcePath();
+        wfPath = wfPath.extend(SegmentType.d, "configuration").get();
+        Map<String, StructuredData> resConfig = getStructuredData("/entity" + wfPath.toString(), 1, 1);
+        Assert.assertEquals("NORMAL", resConfig.get("Running Mode").string());
+        Assert.assertEquals("RUNNING", resConfig.get("Suspend State").string());
+        Assert.assertTrue(resConfig.containsKey("Name"));
+        Assert.assertTrue(resConfig.containsKey("UUID"));
+        Assert.assertTrue(resConfig.containsKey("Hostname"));
+        Assert.assertTrue(resConfig.containsKey("Product Name"));
+        Assert.assertTrue(resConfig.containsKey("Server State"));
+        Assert.assertTrue(resConfig.containsKey("Node Name"));
+        Assert.assertTrue(resConfig.containsKey("Version"));
+        Assert.assertTrue(resConfig.containsKey("Home Directory"));
+        Assert.assertTrue(resConfig.containsKey("Bound Address"));
+    }
+
+    private CanonicalPath getWildFlyServerResourcePath() throws Throwable {
+        List<Resource> servers = getResources("/traversal/f;" + wfClientConfig.getFeedId() + "/type=r", 2);
+        List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
+                .collect(Collectors.toList());
+        AssertJUnit.assertEquals(1, wfs.size());
+        return wfs.get(0).getPath();
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
+    public void machineId() throws Throwable {
+        CanonicalPath osTypePath = getOperatingSystemResourceTypePath();
+        osTypePath = osTypePath.extend(SegmentType.d, "configurationSchema").get();
+        Map<String, StructuredData> schema = getStructuredData("/entity" + osTypePath.toString(), 1, 1);
+        AssertJUnit.assertTrue(schema.containsKey("Machine Id"));
+
+        //CanonicalPath osPath = getOperatingSystemResourcePath();
+        //osPath = osPath.extend(SegmentType.d, "configuration").get();
+        //Map<String, StructuredData> resConfig = getStructuredData("/entity" + osPath.toString(), 1, 1);
+        //AssertJUnit.assertTrue(resConfig.containsKey("Machine Id"));
+    }
+
+    private CanonicalPath getOperatingSystemResourceTypePath() throws Throwable {
+        ResourceType osType = getResourceType(
+                "/entity/f;" + wfClientConfig.getFeedId() + "/rt;Platform_Operating%20System", 1, 1);
+        AssertJUnit.assertNotNull(osType);
+        return osType.getPath();
+    }
+
+    private CanonicalPath getOperatingSystemResourcePath() throws Throwable {
+        List<Resource> servers = getResources("/traversal/f;" + wfClientConfig.getFeedId() + "/type=r", 2);
+        List<Resource> os = servers.stream().filter(s -> "Platform_Operating System".equals(s.getType().getId()))
+                .collect(Collectors.toList());
+        AssertJUnit.assertEquals(1, os.size());
+        return os.get(0).getPath();
+    }
 }

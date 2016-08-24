@@ -30,6 +30,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
@@ -53,6 +54,7 @@ import org.hawkular.inventory.api.model.DataEntity;
 import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
+import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.PathAddress;
@@ -358,23 +360,19 @@ public abstract class AbstractITest {
         }
     }
 
+    // expects entity not traversal path URL
     protected ResourceType getResourceType(String path, int attemptCount, long attemptDelay)
             throws Throwable {
         String url = baseInvUri + path;
         Throwable e = null;
-        int minCount = 1; // for now, we expect to retrieve only 1 type
         for (int i = 0; i < attemptCount; i++) {
             try {
                 String body = getWithRetries(url, attemptCount, attemptDelay);
                 TypeFactory tf = mapper.getTypeFactory();
-                JavaType listType = tf.constructCollectionType(ArrayList.class, ResourceType.class);
+                JavaType javaType = tf.constructType(ResourceType.class);
                 JsonNode node = mapper.readTree(body);
-                List<ResourceType> result = mapper.readValue(node.traverse(), listType);
-                if (result.size() >= minCount) {
-                    return result.get(0); // we assume we are just getting 1
-                }
-                System.out.println("Got only " + result.size() + " resource types while expected " + minCount + " on "
-                        + (i + 1) + " of " + attemptCount + " attempts for URL [" + url + "]");
+                ResourceType result = mapper.readValue(node.traverse(), javaType);
+                return result;
                 // System.out.println(body);
             } catch (Throwable t) {
                 /* some initial attempts may fail */
@@ -391,6 +389,7 @@ public abstract class AbstractITest {
         }
     }
 
+    // expects traversal, not entity path URL
     protected OperationType getOperationType(String path, int attemptCount, long attemptDelay)
             throws Throwable {
         String url = baseInvUri + path;
@@ -450,6 +449,14 @@ public abstract class AbstractITest {
         } else {
             throw new AssertionError("Could not get [" + url + "]");
         }
+    }
+
+    // path be entity not traversal and must have the "/d;configuration" at the end
+    protected Map<String, StructuredData> getStructuredData(String path, int attemptCount, long attemptDelay)
+            throws Throwable {
+        DataEntity resConfigEntity = getDataEntity(path, attemptCount, attemptDelay);
+        Map<String, StructuredData> resConfig = resConfigEntity.getValue().map();
+        return resConfig;
     }
 
     protected String getWithRetries(String url) throws Throwable {
