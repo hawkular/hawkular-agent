@@ -186,10 +186,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                 // we don't sync parent-child relations for types; all types are stored at root level in inventory
                 for (MeasurementType<L> mt : measTypes) {
+                    if (!addedIds.get(IdType.METRIC_TYPE).add(mt.getID().getIDString())) {
+                        continue; // we already did this metric type
+                    }
                     InventoryStructure.Builder<org.hawkular.inventory.api.model.MetricType.Blueprint> invBldr;
                     org.hawkular.inventory.api.model.MetricType.Blueprint mtBP = buildMetricTypeBlueprint(mt);
                     invBldr = InventoryStructure.Offline.of(mtBP);
-                    metricType(mt, invBldr);
                     retVal.put(mt, invBldr.build());
                 }
             }
@@ -340,17 +342,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     .withName(metricName)
                     .withProperties(metricProperties)
                     .build();
-
-            theBuilder.addChild(blueprint);
-        }
-
-        private void metricType(MeasurementType<L> metricType, AbstractBuilder<?> theBuilder) {
-
-            org.hawkular.inventory.api.model.MetricType.Blueprint blueprint = buildMetricTypeBlueprint(metricType);
-
-            if (!addedIds.get(IdType.METRIC_TYPE).add(blueprint.getId())) {
-                return; // we already did this metric type
-            }
 
             theBuilder.addChild(blueprint);
         }
@@ -606,7 +597,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         AsyncInventoryStorage.this.config.getInventoryContext());
                 url.append("sync");
                 url.append("/f;").append(this.feedId);
-                url.append("/r;").append(Util.urlEncodeQuery(resourceStructure.getRoot().getId()));
+                url.append("/r;").append(Util.urlEncode(resourceStructure.getRoot().getId()));
                 String jsonPayload = Util.toJson(sync);
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
@@ -665,7 +656,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         AsyncInventoryStorage.this.config.getInventoryContext());
                 url.append("sync");
                 url.append("/f;").append(this.feedId);
-                url.append("/rt;").append(Util.urlEncodeQuery(resourceTypeStructure.getRoot().getId()));
+                url.append("/rt;").append(Util.urlEncode(resourceTypeStructure.getRoot().getId()));
                 String jsonPayload = Util.toJson(sync);
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
@@ -722,7 +713,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         AsyncInventoryStorage.this.config.getInventoryContext());
                 url.append("sync");
                 url.append("/f;").append(this.feedId);
-                url.append("/mt;").append(Util.urlEncodeQuery(metricTypeStructure.getRoot().getId()));
+                url.append("/mt;").append(Util.urlEncode(metricTypeStructure.getRoot().getId()));
                 String jsonPayload = Util.toJson(sync);
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
