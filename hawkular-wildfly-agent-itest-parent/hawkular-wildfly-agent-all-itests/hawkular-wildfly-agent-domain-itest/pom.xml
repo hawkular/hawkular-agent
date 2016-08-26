@@ -381,7 +381,6 @@
                 <phase>pre-integration-test</phase>
                 <goals>
                   <goal>start</goal>
-                  <goal>execute-commands</goal>
                 </goals>
                 <configuration>
                   <jboss-home>${project.build.directory}/plain-wildfly</jboss-home>
@@ -409,9 +408,6 @@
                       </user>
                     </users>
                   </add-user>
-                  <commands>
-                    <command>/subsystem=logging/logger=org.hawkular.agent:add(level=${hawkular.log.agent})</command>
-                  </commands>
                 </configuration>
               </execution>
 
