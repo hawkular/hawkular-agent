@@ -322,6 +322,7 @@
                   <javaOpts>
                     <javaOpt>-Xmx1024m</javaOpt>
                     <javaOpt>-XX:MaxPermSize=1024m</javaOpt>
+                    <javaOpt>-Dhawkular.inventory.transaction.retries=15</javaOpt>
                     <javaOpt>-Djava.net.preferIPv4Stack=true</javaOpt>
                     <javaOpt>-Djboss.bind.address=${hawkular.bind.address}</javaOpt>
                     <javaOpt>-Djboss.modules.system.pkgs=org.jboss.byteman</javaOpt>
