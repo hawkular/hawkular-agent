@@ -919,7 +919,7 @@
                          path="/socket-binding-group=*"
                          parents="WildFly Server,Host Controller">
         <resource-config-dmr name="Name" attribute="name" />
-        <resource-config-dmr name="Port Offset" attribute="port-offset" />
+        <resource-config-dmr name="Port Offset" attribute="port-offset" resolve-expressions="true"/>
         <resource-config-dmr name="Default Interface" attribute="default-interface" />
       </resource-type-dmr>
       <resource-type-dmr name="Socket Binding"
@@ -928,7 +928,7 @@
                          parents="Socket Binding Group">
         <resource-config-dmr name="Name" attribute="name" />
         <resource-config-dmr name="Interface" attribute="interface" />
-        <resource-config-dmr name="Port" attribute="port" />
+        <resource-config-dmr name="Port" attribute="port" resolve-expressions="true"/>
         <resource-config-dmr name="Multicast Address" attribute="multicast-address" resolve-expressions="true" />
         <resource-config-dmr name="Multicast Port" attribute="multicast-port" />
       </resource-type-dmr>
