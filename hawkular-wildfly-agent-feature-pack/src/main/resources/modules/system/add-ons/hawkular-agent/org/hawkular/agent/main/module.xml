@@ -33,6 +33,7 @@
     <artifact name="${com.squareup.okhttp:okhttp}"/>
     <artifact name="${com.squareup.okhttp:okhttp-ws}"/>
     <artifact name="${com.squareup.okio:okio}"/>
+    <artifact name="${com.fasterxml.jackson.dataformat:jackson-dataformat-yaml}"/>
 
     <!-- These are pulled in due to hawkular-inventory-json-helper.jar. -->
     <!--

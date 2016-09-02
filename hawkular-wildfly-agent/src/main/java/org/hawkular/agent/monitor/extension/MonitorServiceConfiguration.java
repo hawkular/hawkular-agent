@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.dynamicprotocol.MetricSetMetadata;
+import org.hawkular.agent.monitor.extension.config.ConfigManager;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.TypeSets;
@@ -495,6 +496,7 @@ public class MonitorServiceConfiguration {
         }
     }
 
+    private final ConfigManager overlayConfig;
     private final GlobalConfiguration globalConfiguration;
     private final DiagnosticsConfiguration diagnostics;
     private final StorageAdapterConfiguration storageAdapter;
@@ -503,14 +505,16 @@ public class MonitorServiceConfiguration {
     private final ProtocolConfiguration<PlatformNodeLocation> platformConfiguration;
     private final DynamicProtocolConfiguration prometheusConfiguration;
 
-    public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration,
+    public MonitorServiceConfiguration(
+            ConfigManager overlayConfig,
+            GlobalConfiguration globalConfiguration,
             DiagnosticsConfiguration diagnostics,
             StorageAdapterConfiguration storageAdapter,
             ProtocolConfiguration<DMRNodeLocation> dmrConfiguration,
             ProtocolConfiguration<JMXNodeLocation> jmxConfiguration,
             ProtocolConfiguration<PlatformNodeLocation> platformConfiguration,
             DynamicProtocolConfiguration prometheusConfiguration) {
-        super();
+        this.overlayConfig = overlayConfig;
         this.globalConfiguration = globalConfiguration;
         this.diagnostics = diagnostics;
         this.storageAdapter = storageAdapter;
@@ -518,6 +522,10 @@ public class MonitorServiceConfiguration {
         this.jmxConfiguration = jmxConfiguration;
         this.platformConfiguration = platformConfiguration;
         this.prometheusConfiguration = prometheusConfiguration;
+    }
+
+    public ConfigManager getOverlayConfig() {
+        return overlayConfig;
     }
 
     public GlobalConfiguration getGlobalConfiguration() {
@@ -568,12 +576,6 @@ public class MonitorServiceConfiguration {
         return globalConfiguration.pingDispatcherPeriodSeconds;
     }
 
-    public MonitorServiceConfiguration cloneWith(StorageAdapterConfiguration newStorageAdapter) {
-        return new MonitorServiceConfiguration(globalConfiguration,
-                diagnostics, newStorageAdapter, dmrConfiguration,
-                jmxConfiguration, platformConfiguration, prometheusConfiguration);
-    }
-
     public ProtocolConfiguration<DMRNodeLocation> getDmrConfiguration() {
         return dmrConfiguration;
     }
@@ -588,6 +590,11 @@ public class MonitorServiceConfiguration {
 
     public DynamicProtocolConfiguration getPrometheusConfiguration() {
         return prometheusConfiguration;
+    }
+
+    public MonitorServiceConfiguration cloneWith(StorageAdapterConfiguration newStorageAdapter) {
+        return new MonitorServiceConfiguration(overlayConfig, globalConfiguration, diagnostics, newStorageAdapter,
+                dmrConfiguration, jmxConfiguration, platformConfiguration, prometheusConfiguration);
     }
 
 }
