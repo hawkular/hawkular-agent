@@ -123,7 +123,7 @@ public class TextPrometheusMetricDataParser extends PrometheusMetricDataParser<M
                             sBuilder.setName(name);
                             sBuilder.addLabels(textSample.getLabels());
                             if (textSample.getName().endsWith("_count")) {
-                                sBuilder.setSampleCount(Long.valueOf(textSample.getValue()));
+                                sBuilder.setSampleCount((long)Util.convertStringToDouble(textSample.getValue()));
                             } else if (textSample.getName().endsWith("_sum")) {
                                 sBuilder.setSampleSum(Util.convertStringToDouble(textSample.getValue()));
                             } else {
@@ -152,7 +152,7 @@ public class TextPrometheusMetricDataParser extends PrometheusMetricDataParser<M
                             hBuilder.setName(name);
                             hBuilder.addLabels(textSample.getLabels());
                             if (textSample.getName().endsWith("_count")) {
-                                hBuilder.setSampleCount(Long.valueOf(textSample.getValue()));
+                                hBuilder.setSampleCount((long)Util.convertStringToDouble(textSample.getValue()));
                             } else if (textSample.getName().endsWith("_sum")) {
                                 hBuilder.setSampleSum(Util.convertStringToDouble(textSample.getValue()));
                             } else {
@@ -161,7 +161,7 @@ public class TextPrometheusMetricDataParser extends PrometheusMetricDataParser<M
                                     throw new Exception("Histogram bucket sample is missing the 'le' label");
                                 }
                                 hBuilder.addBucket(Util.convertStringToDouble(bucket),
-                                        Long.valueOf(textSample.getValue()));
+                                        (long)Util.convertStringToDouble(textSample.getValue()));
                             }
                             break;
                     }
@@ -346,6 +346,8 @@ public class TextPrometheusMetricDataParser extends PrometheusMetricDataParser<M
             } else if (state.equals("labelname")) {
                 if (charAt == '=') {
                     state = "labelvaluequote";
+                } else if (charAt == '}') {
+                    state = "endoflabels";
                 } else if (charAt == ' ' || charAt == '\t') {
                     state = "labelvalueequals";
                 } else {

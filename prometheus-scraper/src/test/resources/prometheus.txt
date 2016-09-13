@@ -245,11 +245,11 @@ http_request_size_bytes_sum{handler="version"} 0
 http_request_size_bytes_count{handler="version"} 0
 # HELP http_requests_total Total number of HTTP requests made.
 # TYPE http_requests_total counter
-http_requests_total{code="200",handler="prometheus",method="get"} 162030
-http_requests_total{code="200",handler="query",method="get"} 40
-http_requests_total{code="200",handler="series",method="get"} 4
-http_requests_total{code="400",handler="query",method="get"} 6
-http_requests_total{code="400",handler="series",method="get"} 6
+http_requests_total{code="200",handler="prometheus",method="get",} 162030
+http_requests_total{code="200",handler="query",method="get",} 40
+http_requests_total{code="200",handler="series",method="get",} 4
+http_requests_total{code="400",handler="query",method="get",} 6
+http_requests_total{code="400",handler="series",method="get",} 6
 # HELP http_response_size_bytes The HTTP response sizes in bytes.
 # TYPE http_response_size_bytes summary
 http_response_size_bytes{handler="alerts",quantile="0.5"} NaN
