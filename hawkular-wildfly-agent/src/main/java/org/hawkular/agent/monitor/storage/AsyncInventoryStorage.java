@@ -542,8 +542,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return;
     }
 
+    // FIXME: This really shouldn't be synchronized but it seems to workaround inventory/titan issues.
+    //        Once Titan is fixed/replaced, we need to delete the "synchronized" keyword here.
     @Override
-    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
+    public synchronized <L> void discoveryCompleted(DiscoveryEvent<L> event) {
         ResourceManager<L> resourceManager = event.getResourceManager();
         ResourceTypeManager<L> resourceTypeManager = event.getResourceTypeManager();
         MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
