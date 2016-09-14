@@ -31,7 +31,7 @@ public final class MeasurementInstance<L, T extends MeasurementType<L>> extends 
      * the data for this measurement instance as it is found in Hawkular Metrics storage. If this
      * property doesn't exist, you can assume the metric ID is the same as the ID of this measurement instance.
      */
-    private static final String METRIC_ID_PROPERTY = "metric-id";
+    private static final String METRIC_ID_PROPERTY = "hawkular-metric-id";
 
     public MeasurementInstance(ID id, Name name, AttributeLocation<L> attributeLocation, T type) {
         super(id, name, attributeLocation, type);
