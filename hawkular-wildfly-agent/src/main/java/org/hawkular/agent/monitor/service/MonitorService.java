@@ -52,25 +52,17 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Abstract
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
-import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
-import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
-import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
-import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
-import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
-import org.hawkular.agent.monitor.protocol.platform.PlatformSession;
 import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
@@ -625,11 +617,6 @@ public class MonitorService implements Service<MonitorService> {
                     .build();
             dynamicProtocolServices = dps;
 
-            // regsister all types to inventory
-            if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
-                registerAllResourceTypes();
-            }
-
             // start all protocol services - this should perform the initial discovery scans
             protocolServices.start();
             dynamicProtocolServices.start();
@@ -1018,46 +1005,6 @@ public class MonitorService implements Service<MonitorService> {
                 }
             }
         } while (keepRetrying);
-    }
-
-    public <L> void registerAllResourceTypes() {
-        // dynamic protocol services do not deal with inventory - types are only in protocol services
-        Collection<EndpointService<DMRNodeLocation, DMRSession>> dmrServices = this.protocolServices
-                .getDmrProtocolService().getEndpointServices().values();
-        Collection<EndpointService<JMXNodeLocation, JMXSession>> jmxServices = this.protocolServices
-                .getJmxProtocolService().getEndpointServices().values();
-        Collection<EndpointService<PlatformNodeLocation, PlatformSession>> platServices = this.protocolServices
-                .getPlatformProtocolService().getEndpointServices().values();
-
-        Map<String, List<ResourceType<L>>> typesByTenantId = new HashMap<>();
-        dmrServices.forEach(service -> collateTypes(typesByTenantId, service));
-        jmxServices.forEach(service -> collateTypes(typesByTenantId, service));
-        platServices.forEach(service -> collateTypes(typesByTenantId, service));
-        this.inventoryStorageProxy.allResourceTypes(typesByTenantId);
-    }
-
-    private <L> void collateTypes(Map<String, List<ResourceType<L>>> typesByTenantId, EndpointService<?, ?> service) {
-
-        // determine which tenant the types belong to - if there is no tenant defined for the specific service,
-        // then the types belong to the agent's global tenant.
-        String tenantId = service.getMonitoredEndpoint().getEndpointConfiguration().getTenantId();
-        if (tenantId == null) {
-            tenantId = getTenantId();
-        }
-        final List<ResourceType<L>> types;
-
-        if (!typesByTenantId.containsKey(tenantId)) {
-            types = new ArrayList<>();
-            typesByTenantId.put(tenantId, types);
-        } else {
-            types = typesByTenantId.get(tenantId);
-        }
-
-        service.getResourceTypeManager().getResourceTypesBreadthFirst().forEach(type -> {
-            if (!types.contains(type)) {
-                types.add((ResourceType<L>) type);
-            }
-        });
     }
 
     /**

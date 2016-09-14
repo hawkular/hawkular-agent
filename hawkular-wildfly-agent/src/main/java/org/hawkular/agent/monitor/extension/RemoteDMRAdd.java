@@ -81,9 +81,6 @@ public class RemoteDMRAdd extends MonitorServiceAddStepHandler {
             ProtocolService<DMRNodeLocation, DMRSession> dmrService = monitorService.getProtocolServices()
                     .getDmrProtocolService();
             dmrService.add(endpointService);
-
-            // in case any types were added due to new endpoint being added, we need to register the new types
-            monitorService.registerAllResourceTypes();
         }
     }
 }

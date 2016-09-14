@@ -334,6 +334,7 @@
                     <javaOpt>-server</javaOpt>
                     <javaOpt>-Xms64m</javaOpt>
                     <javaOpt>-Xmx512m</javaOpt>
+                    <javaOpt>-Dhawkular.inventory.transaction.retries=15</javaOpt>
                     <javaOpt>-Djava.net.preferIPv4Stack=true</javaOpt>
                     <javaOpt>-Djboss.modules.system.pkgs=org.jboss.byteman</javaOpt>
                     <javaOpt>-Djava.awt.headless=true</javaOpt>

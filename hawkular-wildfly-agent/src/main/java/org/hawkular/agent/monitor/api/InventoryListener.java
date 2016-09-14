@@ -16,11 +16,6 @@
  */
 package org.hawkular.agent.monitor.api;
 
-import java.util.List;
-import java.util.Map;
-
-import org.hawkular.agent.monitor.inventory.ResourceType;
-
 /**
  * A listener for changes in the inventory of resources maintained by the present agent.
  *
@@ -62,13 +57,4 @@ public interface InventoryListener {
      * @param event the {@link DiscoveryEvent}
      */
     <L> void discoveryCompleted(DiscoveryEvent<L> event);
-
-    /**
-     * Notifies the listener that the full set of resource types known to the agent has been refreshed.
-     * These are all the known types - some may be new, some may be the same from a prior refresh, and some
-     * may have been removed this time as compared to a previous refresh.
-     *
-     * @param typesByTenantId a collection of all resource types known to the agent organized by tenant ID
-     */
-    <L> void allResourceTypes(Map<String, List<ResourceType<L>>> typesByTenantId);
 }

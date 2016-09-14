@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.api;
 
 import org.hawkular.agent.monitor.inventory.ResourceManager;
+import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 
 /**
  * A event for discovery scans.
@@ -27,6 +28,7 @@ public class DiscoveryEvent<L> {
 
     private final SamplingService<L> samplingService;
     private final ResourceManager<L> resourceManager;
+    private final ResourceTypeManager<L> resourceTypeManager;
 
     /**
      * Creates a discovery event.
@@ -35,8 +37,10 @@ public class DiscoveryEvent<L> {
      *                        identify the resources in the event, plus has methods that can be used to monitor
      *                        the resources in the event.
      * @param resourceManager the resources associated with the discovery
+     * @param resourceTypeManager the resource types associated with the discovery
      */
-    public DiscoveryEvent(SamplingService<L> samplingService, ResourceManager<L> resourceManager) {
+    public DiscoveryEvent(SamplingService<L> samplingService, ResourceManager<L> resourceManager,
+            ResourceTypeManager<L> resourceTypeManager) {
         if (samplingService == null) {
             throw new IllegalArgumentException("Sampling service cannot be null");
         }
@@ -45,8 +49,13 @@ public class DiscoveryEvent<L> {
             throw new IllegalArgumentException("Resource manager cannot be null");
         }
 
+        if (resourceTypeManager == null) {
+            throw new IllegalArgumentException("Resource type manager cannot be null");
+        }
+
         this.samplingService = samplingService;
         this.resourceManager = resourceManager;
+        this.resourceTypeManager = resourceTypeManager;
     }
 
     /**
@@ -61,5 +70,12 @@ public class DiscoveryEvent<L> {
      */
     public ResourceManager<L> getResourceManager() {
         return resourceManager;
+    }
+
+    /**
+     * @return the resource type manager containing all the types of resources that discovery scans might find
+     */
+    public ResourceTypeManager<L> getResourceTypeManager() {
+        return resourceTypeManager;
     }
 }

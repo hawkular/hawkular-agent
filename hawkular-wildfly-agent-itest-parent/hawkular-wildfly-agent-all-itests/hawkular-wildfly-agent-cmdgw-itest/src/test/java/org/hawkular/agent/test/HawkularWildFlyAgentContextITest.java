@@ -30,7 +30,9 @@ public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
 
     @Override
     protected String getTenantId() {
-        return "my-app-tenant"; // see org.hawkular.agent.example.HawkularWildFlyAgentProvider.TENANT_ID
+        // see org.hawkular.agent.example.HawkularWildFlyAgentProvider.TENANT_ID
+        // if that is non-null, we want to return that string; otherwise, just return our superclass's tenant
+        return super.getTenantId();
     }
 
     @Test(groups = { GROUP }, dependsOnGroups = { DatasourceCommandITest.GROUP })
