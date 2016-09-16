@@ -111,7 +111,7 @@ If you have need to package an agent in your own WildFly distribution, you can d
 
 == Setting up SSL
 
-If needed, the installer can setup a secured connection between the Hawkular WildFly Agent and the Hawkular server. By specifying `https` scheme  (ie. `--server-url=https://localhost:8443`) the following command-line options become required: `--keystore-path` and `--key-alias`. Installer also needs `--keystore-password` and `--key-password` options but they can be omitted in case you run it in console (in such case, installer will prompt for passwords). For more details see http://www.hawkular.org/docs/user/secure-comm.html[Secure Communications].
+If needed, the installer can setup a secured connection between the Hawkular WildFly Agent and the Hawkular server. By specifying `https` scheme  (ie. `--server-url=https://localhost:8443`) the following command-line options become required: `--keystore-path` and `--key-alias`. Installer also needs `--keystore-password` and `--key-password` options but they can be omitted in case you run it in console (in such case, installer will prompt for passwords). For more details see http://www.hawkular.org/hawkular-services/docs/installation-guide/secure-comm.html[Secure Communications].
 
 == Configuration File
 
