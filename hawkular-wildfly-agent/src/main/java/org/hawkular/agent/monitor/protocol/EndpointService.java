@@ -452,6 +452,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                         /* aggregate */
                         List<?> list = (List<?>) o;
                         for (Object item : list) {
+                            if (svalue.length() > 0) {
+                                svalue.append(",");
+                            }
                             svalue.append(String.valueOf(item));
                         }
                     } else {

@@ -45,7 +45,7 @@ public class NumericMetricDataPoint extends MetricDataPoint {
         if (v instanceof Number) {
             return ((Number) v).doubleValue();
         } else {
-            return (v != null) ? (Double.valueOf(v.toString())).doubleValue() : Double.valueOf(0.0);
+            return (v != null) ? (Double.valueOf(v.toString())) : Double.valueOf(0.0);
         }
     }
 }
