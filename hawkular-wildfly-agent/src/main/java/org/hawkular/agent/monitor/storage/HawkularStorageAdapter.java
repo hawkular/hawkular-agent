@@ -122,8 +122,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
             for (MetricDataPoint datapoint : tenantDataPoints) {
                 long timestamp = datapoint.getTimestamp();
-                double value = datapoint.getValue();
-                payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value, datapoint.getMetricType());
+                if (datapoint instanceof NumericMetricDataPoint) {
+                    double value = ((NumericMetricDataPoint) datapoint).getMetricValue();
+                    payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value, datapoint.getMetricType());
+                } else if (datapoint instanceof StringMetricDataPoint) {
+                    String value = ((StringMetricDataPoint) datapoint).getMetricValue();
+                    payloadBuilder.addDataPoint(datapoint.getKey(), timestamp, value);
+                } else {
+                    log.errorf("Invalid data point type [%s] - please report this bug", datapoint.getClass());
+                }
             }
 
             store(payloadBuilder, waitMillis);

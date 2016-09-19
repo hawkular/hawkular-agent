@@ -77,6 +77,21 @@ public class HawkularWildFlyAgentProvider {
     }
 
     /**
+     * Given a metric identifier and the metric data value, this writes the data to Hawkular.
+     * @param metricKey identifies the metric
+     * @param metricValue the string value of the metric
+     */
+    public void sendStringMetric(String metricKey, String metricValue) {
+        HawkularWildFlyAgentContext hawkularWildFlyAgent = getHawkularWildFlyAgent();
+        MetricStorage metricStorage = hawkularWildFlyAgent.getMetricStorage();
+
+        MetricDataPayloadBuilder payloadBuilder = metricStorage.createMetricDataPayloadBuilder();
+        payloadBuilder.addDataPoint(metricKey, System.currentTimeMillis(), metricValue);
+        payloadBuilder.setTenantId(TENANT_ID);
+        metricStorage.store(payloadBuilder, 0);
+    }
+
+    /**
      * Given an availability identifier and the avail data value, this writes the data to Hawkular.
      * @param availKey identifies the availability metric
      * @param availValue the value of the availability

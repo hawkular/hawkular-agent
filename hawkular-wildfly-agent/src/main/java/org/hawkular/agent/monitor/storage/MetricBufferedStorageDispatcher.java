@@ -67,11 +67,10 @@ public class MetricBufferedStorageDispatcher implements Consumer<MetricDataPoint
     @Override
     public void accept(MetricDataPoint sample) {
         if (queue.remainingCapacity() > 0) {
-            log.debugf("Metric collected: [%s]->[%f]", sample.getKey(), sample.getValue());
+            log.debugf("Metric collected: [%s]->[%s]", sample.getKey(), sample.getMetricValue());
             diagnostics.getMetricsStorageBufferSize().inc();
             queue.add(sample);
-        }
-        else {
+        } else {
             throw new RuntimeException("Metric dispatcher buffer capacity has been exceeded [" + bufferSize + "]");
         }
     }
@@ -113,4 +112,3 @@ public class MetricBufferedStorageDispatcher implements Consumer<MetricDataPoint
         }
     }
 }
-

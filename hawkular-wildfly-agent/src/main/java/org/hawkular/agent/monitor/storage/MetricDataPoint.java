@@ -21,21 +21,26 @@ import org.hawkular.metrics.client.common.MetricType;
 /**
  * Metric data that was collected.
  */
-public class MetricDataPoint extends DataPoint {
+public abstract class MetricDataPoint extends DataPoint {
 
-    private final double value;
     private final MetricType metricType;
+    private final Object value;
 
-    public MetricDataPoint(String key, long timestamp, double value, MetricType metricType, String tenantId) {
+    public MetricDataPoint(String key, long timestamp, Object value, MetricType metricType, String tenantId) {
         super(key, timestamp, tenantId);
-        this.value = value;
+
+        if (metricType == null) {
+            throw new IllegalArgumentException("Metric type must not be null");
+        }
+
         this.metricType = metricType;
+        this.value = value;
     }
 
     /**
      * @return the actual data that was collected
      */
-    public double getValue() {
+    public Object getMetricValue() {
         return value;
     }
 
@@ -48,8 +53,7 @@ public class MetricDataPoint extends DataPoint {
 
     @Override
     public String toString() {
-        return "MetricDataPoint [value=" + value + ", metricType=" + metricType + ", key=" + key + ", timestamp="
-                + timestamp + "]";
+        return String.format("MetricDataPoint: metricValue=[%s], metricType=[%s], key=[%s], timestamp=[%d]",
+                String.valueOf(value), metricType, key, timestamp);
     }
-
 }

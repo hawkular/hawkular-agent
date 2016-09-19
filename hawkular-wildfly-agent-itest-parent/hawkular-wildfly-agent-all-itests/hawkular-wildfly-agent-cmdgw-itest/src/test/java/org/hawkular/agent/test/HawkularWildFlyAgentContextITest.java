@@ -52,6 +52,7 @@ public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
                 (r -> r.getId().contains("ITest Resource ID")));
 
         String metric = getWithRetries(getExampleJndiWarSendMetricUrl("ITest Metric Key", 123.0), 1, 1);
+        String strMetric = getWithRetries(getExampleJndiWarSendStringMetricUrl("ITest Metric Key", "ITest Val"), 1, 1);
         String avail = getWithRetries(getExampleJndiWarSendAvailUrl("ITest Avail Key", "DOWN"), 1, 1);
         String removeResource = getWithRetries(getExampleJndiWarRemoveResourceUrl("ITest Resource ID"), 1, 1);
 
@@ -72,6 +73,10 @@ public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
 
     private String getExampleJndiWarSendMetricUrl(String metricKey, double metricValue) {
         return getExampleJndiWarServletUrl(String.format("metricKey=%s&metricValue=%f", metricKey, metricValue));
+    }
+
+    private String getExampleJndiWarSendStringMetricUrl(String metricKey, String metricValue) {
+        return getExampleJndiWarServletUrl(String.format("metricKey=%s&metricValue=%s", metricKey, metricValue));
     }
 
     private String getExampleJndiWarSendAvailUrl(String availKey, String availValue) {

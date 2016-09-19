@@ -58,6 +58,8 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.agent.monitor.storage.AvailDataPoint;
 import org.hawkular.agent.monitor.storage.MetricDataPoint;
+import org.hawkular.agent.monitor.storage.NumericMetricDataPoint;
+import org.hawkular.agent.monitor.storage.StringMetricDataPoint;
 import org.hawkular.agent.monitor.util.Consumer;
 import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
@@ -443,21 +445,48 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             for (MeasurementInstance<L, MetricType<L>> instance : instances) {
                 AttributeLocation<L> location = instance.getAttributeLocation();
                 Object o = driver.fetchAttribute(location);
-                double value = 0;
-                if (o instanceof List<?>) {
-                    /* aggregate */
-                    List<?> list = (List<?>) o;
-                    for (Object item : list) {
-                        double num = toDouble(item);
-                        value += num;
+                Object metricValue; // will be either a String or Double
+                if (instance.getType().getMetricType() == org.hawkular.metrics.client.common.MetricType.STRING) {
+                    StringBuilder svalue = new StringBuilder();
+                    if (o instanceof List<?>) {
+                        /* aggregate */
+                        List<?> list = (List<?>) o;
+                        for (Object item : list) {
+                            if (svalue.length() > 0) {
+                                svalue.append(",");
+                            }
+                            svalue.append(String.valueOf(item));
+                        }
+                    } else {
+                        svalue.append(String.valueOf(o));
                     }
+                    metricValue = svalue.toString();
                 } else {
-                    value = toDouble(o);
+                    double dvalue = 0;
+                    if (o instanceof List<?>) {
+                        /* aggregate */
+                        List<?> list = (List<?>) o;
+                        for (Object item : list) {
+                            double num = toDouble(item);
+                            dvalue += num;
+                        }
+                    } else {
+                        dvalue = toDouble(o);
+                    }
+                    metricValue = Double.valueOf(dvalue);
                 }
+
                 long ts = System.currentTimeMillis();
                 String key = instance.getAssociatedMetricId();
-                MetricDataPoint dataPoint = new MetricDataPoint(key, ts, value, instance.getType().getMetricType(),
-                        getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
+                String tenantId = getMonitoredEndpoint().getEndpointConfiguration().getTenantId();
+                MetricDataPoint dataPoint;
+
+                if (instance.getType().getMetricType() == org.hawkular.metrics.client.common.MetricType.STRING) {
+                    dataPoint = new StringMetricDataPoint(key, ts, (String) metricValue, tenantId);
+                } else {
+                    dataPoint = new NumericMetricDataPoint(key, ts, (Double) metricValue,
+                            instance.getType().getMetricType(), tenantId);
+                }
                 consumer.accept(dataPoint);
             }
         } catch (Exception e) {
