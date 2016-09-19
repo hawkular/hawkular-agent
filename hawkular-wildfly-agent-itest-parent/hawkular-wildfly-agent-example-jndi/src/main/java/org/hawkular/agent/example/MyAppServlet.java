@@ -50,8 +50,14 @@ public class MyAppServlet extends HttpServlet {
         } else if (oldResourceId != null) {
             removeOldResource(request, response, oldResourceId);
         } else if (metricKey != null) {
-            Double metricValue = Double.valueOf(request.getParameter("metricValue"));
-            sendMetric(request, response, metricKey, metricValue);
+            try {
+                Double metricValue = Double.valueOf(request.getParameter("metricValue"));
+                sendMetric(request, response, metricKey, metricValue);
+            } catch (NumberFormatException e) {
+                // value isn't a parsable number - save it as a string metric
+                String metricValue = request.getParameter("metricValue");
+                sendStringMetric(request, response, metricKey, metricValue);
+            }
         } else if (availKey != null) {
             Avail availValue = Avail.valueOf(request.getParameter("availValue"));
             sendAvail(request, response, availKey, availValue);
@@ -81,6 +87,19 @@ public class MyAppServlet extends HttpServlet {
             printResults(response, results);
         } catch (Exception e) {
             printResults(response, "sendMetric failure: " + e);
+        }
+    }
+
+    private void sendStringMetric(HttpServletRequest request, HttpServletResponse response, String metricKey,
+            String metricValue) {
+        try {
+            hawkularAgent.sendStringMetric(metricKey, metricValue);
+
+            String results = String.format("<h1>Send String Metric</h1>\n<p>Metric Key=%s</p>\n<p>Metric Value=%s</p>",
+                    metricKey, metricValue);
+            printResults(response, results);
+        } catch (Exception e) {
+            printResults(response, "sendStringMetric failure: " + e);
         }
     }
 

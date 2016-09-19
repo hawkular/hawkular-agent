@@ -122,6 +122,7 @@
     <xs:restriction base="xs:string">
       <xs:enumeration value="gauge"/>
       <xs:enumeration value="counter"/>
+      <xs:enumeration value="string"/>
     </xs:restriction>
   </xs:simpleType>
 
