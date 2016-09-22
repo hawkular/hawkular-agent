@@ -10,17 +10,26 @@ dist: trusty
 cache:
   directories:
   - $HOME/.m2/repository
+  - $HOME/mvn-home
+
 jdk:
 - oraclejdk8
+
 notifications:
   irc:
     channels:
     - chat.freenode.net#hawkular
     on_success: change
+
 install:
+# install maven 3.3.9 if it is not in cache already
+- bash .travis.install.maven.sh "3.3.9" "${HOME}/mvn-home"
+- export M2_HOME=${HOME}/mvn-home
+- export PATH=${HOME}/mvn-home/bin:${PATH}
 - mvn -version -B
 # unshallow is needed by license-maven-plugin
 - git fetch origin --unshallow
+
 script:
 - mvn -s .travis.maven.settings.xml verify -Pitest -Dfailsafe.useFile=false | grep -vF "[INFO] Downloading:" | grep
   -vF "[INFO] Downloaded:"; test ${PIPESTATUS[0]} -eq 0
