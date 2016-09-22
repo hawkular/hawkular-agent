@@ -52,6 +52,7 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.Abstract
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
+import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.Resource;
@@ -549,6 +550,9 @@ public class MonitorService implements Service<MonitorService> {
             // We need the tenantIds to register our feed (in Hawkular mode) and to schedule pings
             Set<String> tenantIds = getTenantIds();
 
+            // Before we go on, we must make sure the Hawkular Server is up and ready
+            waitForHawkularServer();
+
             // perform some things that are dependent upon what mode the agent is in
             switch (this.configuration.getStorageAdapter().getType()) {
                 case HAWKULAR:
@@ -925,6 +929,58 @@ public class MonitorService implements Service<MonitorService> {
             }
         } catch (Throwable t) {
             throw new Exception(String.format("Cannot register feed ID [%s]", this.feedId), t);
+        }
+    }
+
+    private void waitForHawkularServer() throws Exception {
+        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
+
+        String statusUrl = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
+                configuration.getStorageAdapter().getMetricsContext()).append("status").toString();
+        Request request = this.httpClientBuilder.buildJsonGetRequest(statusUrl, null);
+        while (true) {
+            Response response = null;
+            try {
+                response = httpclient.newCall(request).execute();
+                if (response.code() != 200) {
+                    log.debugf("Hawkular Metrics is not ready yet: %d/%s", response.code(), response.message());
+                } else {
+                    log.debugf("Hawkular Metrics is ready: %s", response.body().string());
+                    break;
+                }
+            } catch (Exception e) {
+                log.debugf("Hawkular Metrics is not ready yet: %s", e.toString());
+            } finally {
+                if (response != null) {
+                    response.body().close();
+                }
+            }
+            Thread.sleep(5000L);
+        }
+
+        if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
+            statusUrl = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
+                    configuration.getStorageAdapter().getInventoryContext()).append("status").toString();
+            request = this.httpClientBuilder.buildJsonGetRequest(statusUrl, null);
+            while (true) {
+                Response response = null;
+                try {
+                    response = httpclient.newCall(request).execute();
+                    if (response.code() != 200) {
+                        log.debugf("Hawkular Inventory is not ready yet: %d/%s", response.code(), response.message());
+                    } else {
+                        log.debugf("Hawkular Inventory is ready: %s", response.body().string());
+                        break;
+                    }
+                } catch (Exception e) {
+                    log.debugf("Hawkular Inventory is not ready yet: %s", e.toString());
+                } finally {
+                    if (response != null) {
+                        response.body().close();
+                    }
+                }
+                Thread.sleep(5000L);
+            }
         }
     }
 
