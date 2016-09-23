@@ -41,6 +41,11 @@
     <subsystem>hawkular-wildfly-agent-itest-logging.xml</subsystem>
   </xsl:template>
 
+  <!-- Replace datasources.xml with hawkular-inventory-datasources.xml -->
+  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='datasources.xml']">
+    <subsystem>hawkular-inventory-datasources.xml</subsystem>
+  </xsl:template>
+
   <!-- copy everything else as-is -->
   <xsl:template match="node()|comment()|@*">
     <xsl:copy>

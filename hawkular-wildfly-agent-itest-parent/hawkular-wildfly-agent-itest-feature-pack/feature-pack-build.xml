@@ -21,6 +21,7 @@
   <dependencies>
     <artifact name="org.hawkular.commons:hawkular-nest-feature-pack" />
     <artifact name="org.hawkular.agent:hawkular-wildfly-agent-feature-pack" />
+    <artifact name="org.hawkular.inventory:hawkular-inventory-feature-pack"/>
   </dependencies>
 
   <config>
@@ -28,7 +29,6 @@
   </config>
 
   <copy-artifacts>
-    <copy-artifact artifact="org.hawkular.inventory:hawkular-inventory-dist" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-inventory-dist.war" />
     <copy-artifact artifact="org.hawkular.metrics:hawkular-metrics-component" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-metrics-component.war" />
     <copy-artifact artifact="org.hawkular.agent:hawkular-wildfly-agent-example-jndi" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-wildfly-agent-example-jndi.war" />
     <copy-artifact artifact="org.hawkular.commons:hawkular-commons-embedded-cassandra-war" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-commons-embedded-cassandra-war.war" />

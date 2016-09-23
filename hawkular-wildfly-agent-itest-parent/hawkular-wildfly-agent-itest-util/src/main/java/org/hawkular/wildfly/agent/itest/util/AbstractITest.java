@@ -85,7 +85,7 @@ public abstract class AbstractITest {
 
     private static volatile boolean accountsAndInventoryReady = false;
 
-    protected static final int ATTEMPT_COUNT = 50;
+    protected static final int ATTEMPT_COUNT = 500;
 
     protected static final long ATTEMPT_DELAY = 5000;
 
