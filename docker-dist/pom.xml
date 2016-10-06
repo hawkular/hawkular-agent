@@ -44,6 +44,7 @@
             <exclude>**/test-simple.war</exclude>
             <exclude>*/test-simple.war</exclude>
             <exclude>*.zip</exclude>
+            <exclude>*.adoc</exclude>
           </excludes>
         </configuration>
       </plugin>
