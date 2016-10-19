@@ -1,0 +1,108 @@
+#
+# Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+# and other contributors as indicated by the @author tags.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+subsystem:
+  enabled:                         true
+  auto-discovery-scan-period-secs: 600
+
+storage-adapter:
+  type:                 HAWKULAR
+  url:                  http://127.0.0.1:8080
+  tenant-id:            hawkular
+  username:             jdoe
+  password:             password
+  feed-id:              autogenerate
+  security-realm:       MySecurityRealm
+  keystore-path:        /my/keystore/path
+  keystore-password:    my keystore password
+  inventory-context:    /my-inventory
+  metrics-context:      /my-metrics
+  feedcomm-context:     /my-feedcomm
+  connect-timeout-secs: 123
+  read-timeout-secs:    456
+
+managed-servers:
+  local-dmr:
+    name:               Local WildFly
+    enabled:            false
+    tenant-id:          local wildfly tenant
+    resource-type-sets: LocalTypeSet1,TypeSet2
+    metric-id-template: local feed id is %FeedId and metric name is %MetricName
+    metric-tags:        localdmrtag1=val1,dmrtag2=val2
+
+  remote-dmr:
+    - name:               My WildFly
+      enabled:            true
+      host:               my-host
+      port:               9999
+      use-ssl:            true
+      username:           dmr user
+      password:           dmr pass
+      tenant-id:          wildfly tenant
+      resource-type-sets: TypeSet1,TypeSet2
+      metric-id-template: feed id is %FeedId and metric name is %MetricName
+      metric-tags:        dmrtag1=val1,dmrtag2=val2
+
+    - name:               My Other WildFly
+      enabled:            false
+      host:               my-other-host
+      port:               19999
+      username:           dmr2 user
+      password:           dmr2 pass
+
+  remote-prometheus:
+    - name:               My Prometheus
+      enabled:            true
+      url:                http://127.0.0.1:9090/metrics
+      username:           foo
+      password:           bar
+      interval:           1
+      time-units:         minutes
+      tenant-id:          prom-tenant
+      metric-id-template: metric name is %MetricName
+      metric-tags:        tag1=val1,tag2=val2
+
+    - name:               My Other Prometheus
+      enabled:            false
+      url:                http://my-other-prometheus:9090/metrics
+
+platform:
+  enabled:      true
+  interval:     1234
+  time-units:   seconds
+  machine-id:   my-machine-id-here
+
+  file-stores:
+    enabled:    true
+    interval:   5000
+    time-units: milliseconds
+
+  memory:
+    enabled:    true
+    interval:   30
+    time-units: seconds
+
+  processors:
+    enabled:    true
+    interval:   1
+    time-units: minutes
+
+  power-sources:
+    enabled:    false
+    interval:   5
+    time-units: minutes

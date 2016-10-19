@@ -40,6 +40,9 @@ public class XsdTest {
                 "src/main/resources/schema/hawkular-agent-monitor-subsystem.xsd"));
         Validator validator = schema.newValidator();
         for (File f : new File("src/test/resources/org/hawkular/agent/monitor/extension").listFiles()) {
+            if (f.isDirectory()) {
+                continue;
+            }
             Source xmlFile = new StreamSource(f);
             try {
                 System.out.println("Validating " + xmlFile.getSystemId());

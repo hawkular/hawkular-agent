@@ -16,10 +16,12 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,6 +44,14 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.GlobalCo
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ProtocolConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
+import org.hawkular.agent.monitor.extension.config.ConfigManager;
+import org.hawkular.agent.monitor.extension.config.LocalDMR;
+import org.hawkular.agent.monitor.extension.config.ManagedServers;
+import org.hawkular.agent.monitor.extension.config.Platform;
+import org.hawkular.agent.monitor.extension.config.RemoteDMR;
+import org.hawkular.agent.monitor.extension.config.RemotePrometheus;
+import org.hawkular.agent.monitor.extension.config.StorageAdapter;
+import org.hawkular.agent.monitor.extension.config.Subsystem;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
@@ -71,6 +81,8 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.jboss.as.host.controller.HostControllerEnvironment;
+import org.jboss.as.server.ServerEnvironment;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 
@@ -90,11 +102,15 @@ public class MonitorServiceConfigurationBuilder {
 
     private GlobalConfiguration globalConfiguration;
 
+    private ConfigManager overlayConfig;
+
     public MonitorServiceConfigurationBuilder(ModelNode config, OperationContext context)
             throws OperationFailedException {
 
-        this.globalConfiguration = determineGlobalConfig(config, context);
-        this.storageAdapter = determineStorageAdapterConfig(config, context);
+        this.overlayConfig = getOverlayConfiguration(context);
+
+        this.globalConfiguration = determineGlobalConfig(config, context, overlayConfig);
+        this.storageAdapter = determineStorageAdapterConfig(config, context, overlayConfig);
         this.diagnostics = determineDiagnosticsConfig(config, context);
 
         dmrConfigBuilder = ProtocolConfiguration.builder();
@@ -123,7 +139,7 @@ public class MonitorServiceConfigurationBuilder {
         jmxConfigBuilder.typeSets(jmxTypeSetsBuilder.build());
         prometheusConfigBuilder.metricSets(prometheusMetricSets);
 
-        TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context);
+        TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context, overlayConfig);
         platformConfigBuilder.typeSets(platformTypeSets);
         if (!platformTypeSets.isDisabledOrEmpty()) {
             String machineId = determinePlatformMachineId(config, context);
@@ -133,15 +149,20 @@ public class MonitorServiceConfigurationBuilder {
         }
 
         // make sure to call this AFTER the resource type sets have been determined
-        this.determineManagedServers(config, context);
+        this.determineManagedServers(config, context, overlayConfig);
 
     }
 
     public MonitorServiceConfiguration build() {
 
-        return new MonitorServiceConfiguration(globalConfiguration,
-                diagnostics, storageAdapter, dmrConfigBuilder.build(), jmxConfigBuilder.build(),
-                platformConfigBuilder.build(), prometheusConfigBuilder.build());
+        return new MonitorServiceConfiguration(overlayConfig,
+                globalConfiguration,
+                diagnostics,
+                storageAdapter,
+                dmrConfigBuilder.build(),
+                jmxConfigBuilder.build(),
+                platformConfigBuilder.build(),
+                prometheusConfigBuilder.build());
     }
 
     private static void determineMetricSetDmr(ModelNode config,
@@ -499,8 +520,103 @@ public class MonitorServiceConfigurationBuilder {
         return machineId;
     }
 
-    private static TypeSets<PlatformNodeLocation> buildPlatformTypeSets(ModelNode config, OperationContext context)
+    private static TypeSets<PlatformNodeLocation> buildPlatformTypeSets(ModelNode config, OperationContext context,
+            ConfigManager overlayConfig)
             throws OperationFailedException {
+
+        if (overlayConfig.hasConfiguration()) {
+            Platform platformOverlay = overlayConfig.getConfiguration().platform;
+            if (platformOverlay != null) {
+                config = new ModelNode();
+                ModelNode platformNode = config.get(PlatformDefinition.PLATFORM);
+                ModelNode platformNodeList = platformNode.get("default");
+
+                if (platformOverlay.enabled != null) {
+                    platformNodeList.get(PlatformAttributes.ENABLED.getName())
+                            .set(platformOverlay.enabled);
+                }
+                if (platformOverlay.machineId != null) {
+                    platformNodeList.get(PlatformAttributes.MACHINE_ID.getName())
+                            .set(platformOverlay.machineId);
+                }
+                if (platformOverlay.interval != null) {
+                    platformNodeList.get(PlatformAttributes.INTERVAL.getName())
+                            .set(platformOverlay.interval);
+                }
+                if (platformOverlay.timeUnits != null) {
+                    platformNodeList.get(PlatformAttributes.TIME_UNITS.getName())
+                            .set(platformOverlay.timeUnits.name());
+                }
+
+                if (platformOverlay.fileStores != null) {
+                    ModelNode fileStores = platformNodeList.get(FileStoresDefinition.FILE_STORES);
+                    fileStores = fileStores.get("default");
+                    if (platformOverlay.fileStores.enabled != null) {
+                        fileStores.get(FileStoresAttributes.ENABLED.getName())
+                                .set(platformOverlay.fileStores.enabled);
+                    }
+                    if (platformOverlay.fileStores.interval != null) {
+                        fileStores.get(FileStoresAttributes.INTERVAL.getName())
+                                .set(platformOverlay.fileStores.interval);
+                    }
+                    if (platformOverlay.fileStores.enabled != null) {
+                        fileStores.get(FileStoresAttributes.TIME_UNITS.getName())
+                                .set(platformOverlay.fileStores.timeUnits.name());
+                    }
+                }
+
+                if (platformOverlay.memory != null) {
+                    ModelNode memory = platformNodeList.get(MemoryDefinition.MEMORY);
+                    memory = memory.get("default");
+                    if (platformOverlay.memory.enabled != null) {
+                        memory.get(MemoryAttributes.ENABLED.getName())
+                                .set(platformOverlay.memory.enabled);
+                    }
+                    if (platformOverlay.memory.interval != null) {
+                        memory.get(MemoryAttributes.INTERVAL.getName())
+                                .set(platformOverlay.memory.interval);
+                    }
+                    if (platformOverlay.memory.enabled != null) {
+                        memory.get(MemoryAttributes.TIME_UNITS.getName())
+                                .set(platformOverlay.memory.timeUnits.name());
+                    }
+                }
+
+                if (platformOverlay.processors != null) {
+                    ModelNode processors = platformNodeList.get(ProcessorsDefinition.PROCESSORS);
+                    processors = processors.get("default");
+                    if (platformOverlay.processors.enabled != null) {
+                        processors.get(ProcessorsAttributes.ENABLED.getName())
+                                .set(platformOverlay.processors.enabled);
+                    }
+                    if (platformOverlay.processors.interval != null) {
+                        processors.get(ProcessorsAttributes.INTERVAL.getName())
+                                .set(platformOverlay.processors.interval);
+                    }
+                    if (platformOverlay.processors.enabled != null) {
+                        processors.get(ProcessorsAttributes.TIME_UNITS.getName())
+                                .set(platformOverlay.processors.timeUnits.name());
+                    }
+                }
+
+                if (platformOverlay.powerSources != null) {
+                    ModelNode powerSources = platformNodeList.get(PowerSourcesDefinition.POWER_SOURCES);
+                    powerSources = powerSources.get("default");
+                    if (platformOverlay.powerSources.enabled != null) {
+                        powerSources.get(PowerSourcesAttributes.ENABLED.getName())
+                                .set(platformOverlay.powerSources.enabled);
+                    }
+                    if (platformOverlay.powerSources.interval != null) {
+                        powerSources.get(PowerSourcesAttributes.INTERVAL.getName())
+                                .set(platformOverlay.powerSources.interval);
+                    }
+                    if (platformOverlay.powerSources.enabled != null) {
+                        powerSources.get(PowerSourcesAttributes.TIME_UNITS.getName())
+                                .set(platformOverlay.powerSources.timeUnits.name());
+                    }
+                }
+            }
+        }
 
         // assume they are disabled unless configured otherwise
 
@@ -916,8 +1032,74 @@ public class MonitorServiceConfigurationBuilder {
     }
 
     private static StorageAdapterConfiguration determineStorageAdapterConfig(ModelNode config,
-            OperationContext context)
+            OperationContext context, ConfigManager overlayConfig)
             throws OperationFailedException {
+
+        if (overlayConfig.hasConfiguration()) {
+            StorageAdapter storageAdapterOverlay = overlayConfig.getConfiguration().storageAdapter;
+            if (storageAdapterOverlay != null) {
+                config = new ModelNode();
+                ModelNode storageAdapterNode = config.get(StorageDefinition.STORAGE_ADAPTER);
+                ModelNode storageAdapterNodeList = storageAdapterNode.get("default");
+
+                if (storageAdapterOverlay.type != null) {
+                    storageAdapterNodeList.get(StorageAttributes.TYPE.getName())
+                            .set(storageAdapterOverlay.type.name());
+                }
+                if (storageAdapterOverlay.url != null) {
+                    storageAdapterNodeList.get(StorageAttributes.URL.getName())
+                            .set(storageAdapterOverlay.url);
+                }
+                if (storageAdapterOverlay.username != null) {
+                    storageAdapterNodeList.get(StorageAttributes.USERNAME.getName())
+                            .set(storageAdapterOverlay.username);
+                }
+                if (storageAdapterOverlay.password != null) {
+                    storageAdapterNodeList.get(StorageAttributes.PASSWORD.getName())
+                            .set(storageAdapterOverlay.password);
+                }
+                if (storageAdapterOverlay.securityRealm != null) {
+                    storageAdapterNodeList.get(StorageAttributes.SECURITY_REALM.getName())
+                            .set(storageAdapterOverlay.securityRealm);
+                }
+                if (storageAdapterOverlay.keystorePath != null) {
+                    storageAdapterNodeList.get(StorageAttributes.KEYSTORE_PATH.getName())
+                            .set(storageAdapterOverlay.keystorePath);
+                }
+                if (storageAdapterOverlay.keystorePassword != null) {
+                    storageAdapterNodeList.get(StorageAttributes.KEYSTORE_PASSWORD.getName())
+                            .set(storageAdapterOverlay.keystorePassword);
+                }
+                if (storageAdapterOverlay.tenantId != null) {
+                    storageAdapterNodeList.get(StorageAttributes.TENANT_ID.getName())
+                            .set(storageAdapterOverlay.tenantId);
+                }
+                if (storageAdapterOverlay.feedId != null) {
+                    storageAdapterNodeList.get(StorageAttributes.FEED_ID.getName())
+                            .set(storageAdapterOverlay.feedId);
+                }
+                if (storageAdapterOverlay.metricsContext != null) {
+                    storageAdapterNodeList.get(StorageAttributes.METRICS_CONTEXT.getName())
+                            .set(storageAdapterOverlay.metricsContext);
+                }
+                if (storageAdapterOverlay.inventoryContext != null) {
+                    storageAdapterNodeList.get(StorageAttributes.INVENTORY_CONTEXT.getName())
+                            .set(storageAdapterOverlay.inventoryContext);
+                }
+                if (storageAdapterOverlay.feedcommContext != null) {
+                    storageAdapterNodeList.get(StorageAttributes.FEEDCOMM_CONTEXT.getName())
+                            .set(storageAdapterOverlay.feedcommContext);
+                }
+                if (storageAdapterOverlay.connectTimeoutSecs != null) {
+                    storageAdapterNodeList.get(StorageAttributes.CONNECT_TIMEOUT_SECONDS.getName())
+                            .set(storageAdapterOverlay.connectTimeoutSecs);
+                }
+                if (storageAdapterOverlay.readTimeoutSecs != null) {
+                    storageAdapterNodeList.get(StorageAttributes.READ_TIMEOUT_SECONDS.getName())
+                            .set(storageAdapterOverlay.readTimeoutSecs);
+                }
+            }
+        }
 
         if (!config.hasDefined(StorageDefinition.STORAGE_ADAPTER)) {
             throw new IllegalArgumentException("Missing storage adapter configuration: " + config.toJSONString(true));
@@ -933,6 +1115,7 @@ public class MonitorServiceConfigurationBuilder {
         ModelNode storageAdapterConfig = asPropertyList.get(0).getValue();
 
         String url = getString(storageAdapterConfig, context, StorageAttributes.URL);
+
         boolean useSSL = false;
         if (url != null) {
             useSSL = url.startsWith("https");
@@ -979,7 +1162,8 @@ public class MonitorServiceConfigurationBuilder {
                 keystorePath, keystorePassword, securityRealm, connectTimeoutSeconds, readTimeoutSeconds);
     }
 
-    private static GlobalConfiguration determineGlobalConfig(ModelNode config, OperationContext context)
+    private static GlobalConfiguration determineGlobalConfig(ModelNode config, OperationContext context,
+            ConfigManager overlayConfig)
             throws OperationFailedException {
         boolean subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
         String apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
@@ -992,6 +1176,17 @@ public class MonitorServiceConfigurationBuilder {
         int availDispatcherBufferSize = getInt(config, context, SubsystemAttributes.AVAIL_DISPATCHER_BUFFER_SIZE);
         int availDispatcherMaxBatchSize = getInt(config, context, SubsystemAttributes.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
         int pingDispatcherPeriodSeconds = getInt(config, context, SubsystemAttributes.PING_DISPATCHER_PERIOD_SECONDS);
+
+        if (overlayConfig.hasConfiguration()) {
+            Subsystem subsystem = overlayConfig.getConfiguration().subsystem;
+            if (subsystem != null) {
+                subsystemEnabled = (subsystem.enabled != null)
+                        ? subsystem.enabled.booleanValue() : subsystemEnabled;
+                autoDiscoveryScanPeriodSecs = (subsystem.autoDiscoveryScanPeriodSecs != null)
+                        ? subsystem.autoDiscoveryScanPeriodSecs.intValue() : autoDiscoveryScanPeriodSecs;
+            }
+
+        }
 
         return new GlobalConfiguration(subsystemEnabled, apiJndi, autoDiscoveryScanPeriodSecs,
                 numDmrSchedulerThreads, metricDispatcherBufferSize, metricDispatcherMaxBatchSize,
@@ -1228,7 +1423,7 @@ public class MonitorServiceConfigurationBuilder {
         }
     }
 
-    private void determineManagedServers(ModelNode config, OperationContext context)
+    private void determineManagedServers(ModelNode config, OperationContext context, ConfigManager overlayConfig)
             throws OperationFailedException {
         if (config.hasDefined(ManagedServersDefinition.MANAGED_SERVERS)) {
             List<Property> asPropertyList = config.get(ManagedServersDefinition.MANAGED_SERVERS).asPropertyList();
@@ -1238,6 +1433,11 @@ public class MonitorServiceConfigurationBuilder {
             }
 
             ModelNode managedServersValueNode = asPropertyList.get(0).getValue();
+
+            if (overlayConfig.hasConfiguration() && overlayConfig.getConfiguration().managedServers != null) {
+                managedServersValueNode = managedServersValueNode.clone();
+                overlayManagedServers(managedServersValueNode, overlayConfig);
+            }
 
             // DMR
 
@@ -1403,14 +1603,291 @@ public class MonitorServiceConfigurationBuilder {
         }
     }
 
+    private void overlayManagedServers(ModelNode managedServersValueNode, ConfigManager overlayConfig) {
+        ManagedServers managedServers = overlayConfig.getConfiguration().managedServers; // caller ensures it's !null
+
+        if (managedServers.localDmr != null) {
+            LocalDMR overlayObj = managedServers.localDmr;
+
+            if (managedServersValueNode.hasDefined(LocalDMRDefinition.LOCAL_DMR)) {
+                List<Property> propertyList = managedServersValueNode.get(LocalDMRDefinition.LOCAL_DMR)
+                        .asPropertyList();
+                // overlay on top of existing local DMR endpoint already configured (there is at most 1)
+                if (!propertyList.isEmpty()) {
+                    Property property = propertyList.get(0);
+                    String name = property.getName();
+                    if (!name.equals(overlayObj.name)) {
+                        log.debugf("Overylay config name [%s] doesn't match the name in the standard config [%s] " +
+                                "for local-dmr. This mismatch will be ignored. Overlay config will still be used.",
+                                overlayObj.name, name);
+                    }
+                    ModelNode valueNode = property.getValue();
+                    if (overlayObj.enabled != null) {
+                        valueNode.get(LocalDMRAttributes.ENABLED.getName()).set(overlayObj.enabled);
+                    }
+                    if (overlayObj.metricIdTemplate != null) {
+                        valueNode.get(LocalDMRAttributes.METRIC_ID_TEMPLATE.getName())
+                                .set(overlayObj.metricIdTemplate);
+                    }
+                    if (overlayObj.metricTags != null) {
+                        valueNode.get(LocalDMRAttributes.METRIC_TAGS.getName()).set(overlayObj.metricTags);
+                    }
+                    if (overlayObj.resourceTypeSets != null) {
+                        valueNode.get(LocalDMRAttributes.RESOURCE_TYPE_SETS.getName())
+                                .set(overlayObj.resourceTypeSets);
+                    }
+                    if (overlayObj.tenantId != null) {
+                        valueNode.get(LocalDMRAttributes.TENANT_ID.getName()).set(overlayObj.tenantId);
+                    }
+                    overlayObj = null; // done with it - null it out so we don't try to add it again
+
+                    // valueNode is a cloned copy - so we have to set the real structure
+                    managedServersValueNode.get(LocalDMRDefinition.LOCAL_DMR).get(name).set(valueNode);
+
+                }
+            }
+
+            // overlay on top of endpoints that are new in the overlay config that do not exist in the standard config
+            if (overlayObj != null) {
+                ModelNode valueNode = new ModelNode();
+
+                if (overlayObj.enabled != null) {
+                    valueNode.get(LocalDMRAttributes.ENABLED.getName()).set(overlayObj.enabled);
+                }
+                if (overlayObj.metricIdTemplate != null) {
+                    valueNode.get(LocalDMRAttributes.METRIC_ID_TEMPLATE.getName()).set(overlayObj.metricIdTemplate);
+                }
+                if (overlayObj.metricTags != null) {
+                    valueNode.get(LocalDMRAttributes.METRIC_TAGS.getName()).set(overlayObj.metricTags);
+                }
+                if (overlayObj.resourceTypeSets != null) {
+                    valueNode.get(LocalDMRAttributes.RESOURCE_TYPE_SETS.getName()).set(overlayObj.resourceTypeSets);
+                }
+                if (overlayObj.tenantId != null) {
+                    valueNode.get(LocalDMRAttributes.TENANT_ID.getName()).set(overlayObj.tenantId);
+                }
+
+                managedServersValueNode.get(LocalDMRDefinition.LOCAL_DMR).get(overlayObj.name).set(valueNode);
+            }
+        } // END local dmr overlay
+
+        if (managedServers.remoteDmr != null) {
+            List<RemoteDMR> overlayObjs = copyArrayToEditableList(managedServers.remoteDmr);
+            if (managedServersValueNode.hasDefined(RemoteDMRDefinition.REMOTE_DMR)) {
+                List<Property> propertyList = managedServersValueNode.get(RemoteDMRDefinition.REMOTE_DMR)
+                        .asPropertyList();
+                // overlay on top of existing DMR endpoints already configured
+                for (Property property : propertyList) {
+                    String name = property.getName();
+                    ModelNode valueNode = property.getValue();
+                    Iterator<RemoteDMR> iter = overlayObjs.iterator();
+                    while (iter.hasNext()) {
+                        RemoteDMR overlayObj = iter.next();
+                        if (name.equals(overlayObj.name)) {
+                            iter.remove(); // found it - remove it so we don't process it again later
+                            if (overlayObj.enabled != null) {
+                                valueNode.get(RemoteDMRAttributes.ENABLED.getName()).set(overlayObj.enabled);
+                            }
+                            if (overlayObj.host != null) {
+                                valueNode.get(RemoteDMRAttributes.HOST.getName()).set(overlayObj.host);
+                            }
+                            if (overlayObj.metricIdTemplate != null) {
+                                valueNode.get(RemoteDMRAttributes.METRIC_ID_TEMPLATE.getName())
+                                        .set(overlayObj.metricIdTemplate);
+                            }
+                            if (overlayObj.metricTags != null) {
+                                valueNode.get(RemoteDMRAttributes.METRIC_TAGS.getName()).set(overlayObj.metricTags);
+                            }
+                            if (overlayObj.password != null) {
+                                valueNode.get(RemoteDMRAttributes.PASSWORD.getName()).set(overlayObj.password);
+                            }
+                            if (overlayObj.port != null) {
+                                valueNode.get(RemoteDMRAttributes.PORT.getName()).set(overlayObj.port);
+                            }
+                            if (overlayObj.resourceTypeSets != null) {
+                                valueNode.get(RemoteDMRAttributes.RESOURCE_TYPE_SETS.getName())
+                                        .set(overlayObj.resourceTypeSets);
+                            }
+                            if (overlayObj.tenantId != null) {
+                                valueNode.get(RemoteDMRAttributes.TENANT_ID.getName()).set(overlayObj.tenantId);
+                            }
+                            if (overlayObj.username != null) {
+                                valueNode.get(RemoteDMRAttributes.USERNAME.getName()).set(overlayObj.username);
+                            }
+                            if (overlayObj.useSsl != null) {
+                                valueNode.get(RemoteDMRAttributes.USE_SSL.getName()).set(overlayObj.useSsl);
+                            }
+
+                            // valueNode is a cloned copy - so we have to set the real structure
+                            managedServersValueNode.get(RemoteDMRDefinition.REMOTE_DMR).get(name).set(valueNode);
+                        }
+                    }
+                }
+            }
+
+            // overlay on top of endpoints that are new in the overlay config that do not exist in the standard config
+            for (RemoteDMR overlayObj : overlayObjs) {
+                ModelNode valueNode = new ModelNode();
+
+                if (overlayObj.enabled != null) {
+                    valueNode.get(RemoteDMRAttributes.ENABLED.getName()).set(overlayObj.enabled);
+                }
+                if (overlayObj.host != null) {
+                    valueNode.get(RemoteDMRAttributes.HOST.getName()).set(overlayObj.host);
+                }
+                if (overlayObj.metricIdTemplate != null) {
+                    valueNode.get(RemoteDMRAttributes.METRIC_ID_TEMPLATE.getName()).set(overlayObj.metricIdTemplate);
+                }
+                if (overlayObj.metricTags != null) {
+                    valueNode.get(RemoteDMRAttributes.METRIC_TAGS.getName()).set(overlayObj.metricTags);
+                }
+                if (overlayObj.password != null) {
+                    valueNode.get(RemoteDMRAttributes.PASSWORD.getName()).set(overlayObj.password);
+                }
+                if (overlayObj.port != null) {
+                    valueNode.get(RemoteDMRAttributes.PORT.getName()).set(overlayObj.port);
+                }
+                if (overlayObj.resourceTypeSets != null) {
+                    valueNode.get(RemoteDMRAttributes.RESOURCE_TYPE_SETS.getName()).set(overlayObj.resourceTypeSets);
+                }
+                if (overlayObj.tenantId != null) {
+                    valueNode.get(RemoteDMRAttributes.TENANT_ID.getName()).set(overlayObj.tenantId);
+                }
+                if (overlayObj.username != null) {
+                    valueNode.get(RemoteDMRAttributes.USERNAME.getName()).set(overlayObj.username);
+                }
+                if (overlayObj.useSsl != null) {
+                    valueNode.get(RemoteDMRAttributes.USE_SSL.getName()).set(overlayObj.useSsl);
+                }
+
+                managedServersValueNode.get(RemoteDMRDefinition.REMOTE_DMR).get(overlayObj.name).set(valueNode);
+            }
+        } // END remote dmr overlay
+
+        if (managedServers.remotePrometheus != null) {
+            List<RemotePrometheus> overlayObjs = copyArrayToEditableList(managedServers.remotePrometheus);
+            if (managedServersValueNode.hasDefined(RemotePrometheusDefinition.REMOTE_PROMETHEUS)) {
+                List<Property> propertyList = managedServersValueNode.get(RemotePrometheusDefinition.REMOTE_PROMETHEUS)
+                        .asPropertyList();
+                // overlay on top of existing prometheus endpoints already configured
+                for (Property property : propertyList) {
+                    String name = property.getName();
+                    ModelNode valueNode = property.getValue();
+                    Iterator<RemotePrometheus> iter = overlayObjs.iterator();
+                    while (iter.hasNext()) {
+                        RemotePrometheus overlayObj = iter.next();
+                        if (name.equals(overlayObj.name)) {
+                            iter.remove(); // found it - remove it so we don't process it again later
+                            if (overlayObj.enabled != null) {
+                                valueNode.get(RemotePrometheusAttributes.ENABLED.getName()).set(overlayObj.enabled);
+                            }
+                            if (overlayObj.interval != null) {
+                                valueNode.get(RemotePrometheusAttributes.INTERVAL.getName()).set(overlayObj.interval);
+                            }
+                            if (overlayObj.metricIdTemplate != null) {
+                                valueNode.get(RemotePrometheusAttributes.METRIC_ID_TEMPLATE.getName())
+                                        .set(overlayObj.metricIdTemplate);
+                            }
+                            if (overlayObj.metricTags != null) {
+                                valueNode.get(RemotePrometheusAttributes.METRIC_TAGS.getName())
+                                        .set(overlayObj.metricTags);
+                            }
+                            if (overlayObj.password != null) {
+                                valueNode.get(RemotePrometheusAttributes.PASSWORD.getName()).set(overlayObj.password);
+                            }
+                            if (overlayObj.tenantId != null) {
+                                valueNode.get(RemotePrometheusAttributes.TENANT_ID.getName()).set(overlayObj.tenantId);
+                            }
+                            if (overlayObj.timeUnits != null) {
+                                valueNode.get(RemotePrometheusAttributes.TIME_UNITS.getName())
+                                        .set(overlayObj.timeUnits.name());
+                            }
+                            if (overlayObj.url != null) {
+                                valueNode.get(RemotePrometheusAttributes.URL.getName()).set(overlayObj.url);
+                            }
+                            if (overlayObj.username != null) {
+                                valueNode.get(RemotePrometheusAttributes.USERNAME.getName()).set(overlayObj.username);
+                            }
+
+                            // valueNode is a cloned copy - so we have to set the real structure
+                            managedServersValueNode.get(RemotePrometheusDefinition.REMOTE_PROMETHEUS).get(name)
+                                    .set(valueNode);
+                        }
+                    }
+                }
+            }
+
+            // overlay on top of endpoints that are new in the overlay config that do not exist in the standard config
+            for (RemotePrometheus overlayObj : overlayObjs) {
+                ModelNode valueNode = new ModelNode();
+
+                if (overlayObj.enabled != null) {
+                    valueNode.get(RemotePrometheusAttributes.ENABLED.getName())
+                            .set(overlayObj.enabled);
+                }
+                if (overlayObj.interval != null) {
+                    valueNode.get(RemotePrometheusAttributes.INTERVAL.getName())
+                            .set(overlayObj.interval);
+                }
+                if (overlayObj.metricIdTemplate != null) {
+                    valueNode.get(RemotePrometheusAttributes.METRIC_ID_TEMPLATE.getName())
+                            .set(overlayObj.metricIdTemplate);
+                }
+                if (overlayObj.metricTags != null) {
+                    valueNode.get(RemotePrometheusAttributes.METRIC_TAGS.getName())
+                            .set(overlayObj.metricTags);
+                }
+                if (overlayObj.password != null) {
+                    valueNode.get(RemotePrometheusAttributes.PASSWORD.getName())
+                            .set(overlayObj.password);
+                }
+                if (overlayObj.tenantId != null) {
+                    valueNode.get(RemotePrometheusAttributes.TENANT_ID.getName())
+                            .set(overlayObj.tenantId);
+                }
+                if (overlayObj.timeUnits != null) {
+                    valueNode.get(RemotePrometheusAttributes.TIME_UNITS.getName())
+                            .set(overlayObj.timeUnits.name());
+                }
+                if (overlayObj.url != null) {
+                    valueNode.get(RemotePrometheusAttributes.URL.getName()).set(overlayObj.url);
+                }
+                if (overlayObj.username != null) {
+                    valueNode.get(RemotePrometheusAttributes.USERNAME.getName())
+                            .set(overlayObj.username);
+                }
+
+                managedServersValueNode.get(RemotePrometheusDefinition.REMOTE_PROMETHEUS).get(overlayObj.name)
+                        .set(valueNode);
+            }
+        } // END remote prometheus overlay
+    }
+
+    // we want a cloned copy of the array as a list, where the list should be editable so we can remove items from it
+    private <T> List<T> copyArrayToEditableList(T[] arr) {
+        List<T> list = new ArrayList<>(arr.length);
+        for (T ele : arr) {
+            list.add(ele);
+        }
+        return list;
+    }
+
     private static boolean getBoolean(ModelNode modelNode, OperationContext context, SimpleAttributeDefinition attrib)
             throws OperationFailedException {
+        if (modelNode == null) {
+            log.debugf("No node - skipping boolean attrib: %s", attrib.getName());
+            return false;
+        }
         ModelNode value = attrib.resolveModelAttribute(context, modelNode);
         return (value.isDefined()) ? value.asBoolean() : false;
     }
 
     private static String getString(ModelNode modelNode, OperationContext context, SimpleAttributeDefinition attrib)
             throws OperationFailedException {
+        if (modelNode == null) {
+            log.debugf("No node - skipping string attrib: %s", attrib.getName());
+            return null;
+        }
         ModelNode value = attrib.resolveModelAttribute(context, modelNode);
         return (value.isDefined()) ? value.asString() : null;
     }
@@ -1429,6 +1906,10 @@ public class MonitorServiceConfigurationBuilder {
 
     private static int getInt(ModelNode modelNode, OperationContext context, SimpleAttributeDefinition attrib)
             throws OperationFailedException {
+        if (modelNode == null) {
+            log.debugf("No node - skipping int attrib: %s", attrib.getName());
+            return 0;
+        }
         ModelNode value = attrib.resolveModelAttribute(context, modelNode);
         return (value.isDefined()) ? value.asInt() : 0;
     }
@@ -1451,6 +1932,10 @@ public class MonitorServiceConfigurationBuilder {
 
     private static List<Name> getNameListFromString(ModelNode modelNode, OperationContext context,
             SimpleAttributeDefinition attrib) throws OperationFailedException {
+        if (modelNode == null) {
+            log.debugf("No node - skipping name list attrib: %s", attrib.getName());
+            return Collections.emptyList();
+        }
         ModelNode value = attrib.resolveModelAttribute(context, modelNode);
         if (value.isDefined()) {
             String commaSeparatedList = value.asString();
@@ -1467,6 +1952,10 @@ public class MonitorServiceConfigurationBuilder {
 
     private static List<OperationParam> getOpParamListFromOpNode(ModelNode modelNode, OperationContext context)
             throws OperationFailedException {
+        if (modelNode == null) {
+            log.debugf("No node - skipping op param list");
+            return Collections.emptyList();
+        }
 
         List<OperationParam> ret = new ArrayList<>();
 
@@ -1492,6 +1981,11 @@ public class MonitorServiceConfigurationBuilder {
 
     private static Map<String, String> getMapFromString(ModelNode modelNode, OperationContext context,
             SimpleAttributeDefinition attrib) throws OperationFailedException {
+        if (modelNode == null) {
+            log.debugf("No node - skipping map from string attrib: %s", attrib.getName());
+            return Collections.emptyMap();
+        }
+
         ModelNode value = attrib.resolveModelAttribute(context, modelNode);
         if (value.isDefined()) {
             Map<String, String> map = new HashMap<>();
@@ -1539,4 +2033,26 @@ public class MonitorServiceConfigurationBuilder {
             }
         }
     }
+
+    private ConfigManager getOverlayConfiguration(OperationContext context) {
+        File configDir;
+        if (context.getProcessType().isManagedDomain()) {
+            configDir = new File(System.getProperty(HostControllerEnvironment.DOMAIN_CONFIG_DIR));
+        } else {
+            String configDirString = System.getProperty(ServerEnvironment.SERVER_CONFIG_DIR, ".");
+            configDir = new File(configDirString);
+        }
+
+        File configFile = new File(configDir, "hawkular-wildfly-agent.yaml");
+        ConfigManager configMgr = new ConfigManager(configFile);
+        if (configFile.exists()) {
+            try {
+                configMgr.getConfiguration(true);
+            } catch (Exception e) {
+                log.warnf(e, "Cannot read config file [%s] - relying on standard configuration only", configFile);
+            }
+        }
+        return configMgr;
+    }
+
 }
