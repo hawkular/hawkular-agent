@@ -26,6 +26,7 @@ ADD test-simple.war /opt/jboss/wildfly/domain/deployments/
 ENV HAWKULAR_SERVER http://hawkular:8080
 ENV HAWKULAR_USER jdoe
 ENV HAWKULAR_PASSWORD password
+ENV JAVA_OPTS=-Xmx256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m
 
 EXPOSE 8080 9090
 
