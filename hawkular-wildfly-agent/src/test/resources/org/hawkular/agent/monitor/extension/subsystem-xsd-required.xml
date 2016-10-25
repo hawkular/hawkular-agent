@@ -44,41 +44,12 @@
     </resource-type-dmr>
   </resource-type-set-dmr>
 
-  <metric-set-jmx name="M Metric Set">
-    <metric-jmx name="M Metric"
-                object-name="domain:foo=bar"
-                attribute="yAttribute" />
-  </metric-set-jmx>
-
-  <avail-set-jmx name="A Avail Set">
-    <avail-jmx name="A Avail"
-               object-name="domain:foo=bar"
-               attribute="yAttribute"/>
-  </avail-set-jmx>
-
-  <resource-type-set-jmx name="R Resource Type Set">
-    <resource-type-jmx name="R Resource Type"
-                       resource-name-template="R Resource Name"
-                       object-name="domain:foo=bar">
-      <resource-config-jmx name="Config Name"
-                           object-name="domain:foo=bar"
-                           attribute="configAttribute" />
-      <operation-jmx name="O Operation"/>
-    </resource-type-jmx>
-  </resource-type-set-jmx>
-
   <managed-servers>
     <remote-dmr name="Local Host"
                 host="localhost"
                 port="9990"/>
 
     <local-dmr name="Self"/>
-
-    <remote-jmx name="Remote JMX"
-                url="https://localhost:8080/jolokia"/>
-
-    <remote-prometheus name="Remote Prometheus"
-                       url="http://localhost:9090/metrics"/>
   </managed-servers>
 
 </subsystem>

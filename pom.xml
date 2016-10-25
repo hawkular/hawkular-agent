@@ -35,7 +35,6 @@
   <inceptionYear>2015</inceptionYear>
 
   <modules>
-    <module>prometheus-scraper</module>
     <module>hawkular-dmr-client</module>
     <module>hawkular-wildfly-agent</module>
     <module>hawkular-wildfly-agent-download</module>
@@ -60,7 +59,6 @@
     <version.com.github.dblock>2.6.2</version.com.github.dblock>
     <version.com.samskivert.jmustache>1.11</version.com.samskivert.jmustache>
     <version.io.dropwizard.metrics>3.1.0</version.io.dropwizard.metrics>
-    <version.io.prometheus.client>0.0.2</version.io.prometheus.client>
     <version.org.hamcrest>1.3</version.org.hamcrest>
     <version.org.hawkular.commons>0.7.10.Final</version.org.hawkular.commons>
     <version.org.hawkular.inventory>1.0.1.Final</version.org.hawkular.inventory>
@@ -68,7 +66,6 @@
 
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
-    <version.org.jolokia>1.3.2</version.org.jolokia>
   </properties>
 
   <dependencyManagement>
@@ -95,12 +92,6 @@
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
         <version>${version.io.dropwizard.metrics}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.prometheus.client</groupId>
-        <artifactId>model</artifactId>
-        <version>${version.io.prometheus.client}</version>
       </dependency>
 
       <dependency>
@@ -176,12 +167,6 @@
         <groupId>org.jgrapht</groupId>
         <artifactId>jgrapht-core</artifactId>
         <version>${version.org.jgrapht}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.jolokia</groupId>
-        <artifactId>jolokia-client-java</artifactId>
-        <version>${version.org.jolokia}</version>
       </dependency>
 
       <dependency>

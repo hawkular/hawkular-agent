@@ -86,12 +86,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>prometheus-scraper</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-bus-common</artifactId>
     </dependency>
@@ -125,11 +119,6 @@
     <dependency>
       <groupId>org.jgrapht</groupId>
       <artifactId>jgrapht-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jolokia</groupId>
-      <artifactId>jolokia-client-java</artifactId>
     </dependency>
 
     <dependency>

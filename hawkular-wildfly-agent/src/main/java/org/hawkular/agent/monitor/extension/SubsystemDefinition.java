@@ -42,30 +42,30 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
 
     static final SimpleAttributeDefinition OPPARAM_RESTART = new SimpleAttributeDefinitionBuilder(
             "restart", ModelType.BOOLEAN)
-            .setAllowExpression(true)
-            .setDefaultValue(new ModelNode(false))
-            .build();
+                    .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(false))
+                    .build();
 
     static final SimpleOperationDefinition OP_START = new SimpleOperationDefinitionBuilder(
             "start", SubsystemExtension.getResourceDescriptionResolver())
-            .addParameter(OPPARAM_RESTART)
-            .build();
+                    .addParameter(OPPARAM_RESTART)
+                    .build();
 
     static final SimpleOperationDefinition OP_STOP = new SimpleOperationDefinitionBuilder(
             "stop", SubsystemExtension.getResourceDescriptionResolver())
-            .build();
+                    .build();
 
     static final SimpleOperationDefinition OP_STATUS = new SimpleOperationDefinitionBuilder(
             "status", SubsystemExtension.getResourceDescriptionResolver())
-            .build();
+                    .build();
 
     static final SimpleOperationDefinition OP_FULL_DISCOVERY_SCAN = new SimpleOperationDefinitionBuilder(
             "fullDiscoveryScan", SubsystemExtension.getResourceDescriptionResolver())
-            .build();
+                    .build();
 
     static final SimpleOperationDefinition OP_INVENTORY_REPORT = new SimpleOperationDefinitionBuilder(
             "inventoryReport", SubsystemExtension.getResourceDescriptionResolver())
-            .build();
+                    .build();
 
     private SubsystemDefinition() {
         super(PathElement.pathElement(SUBSYSTEM, SubsystemExtension.SUBSYSTEM_NAME),
@@ -90,11 +90,7 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
                 ManagedServersDefinition.INSTANCE,
                 DMRResourceTypeSetDefinition.INSTANCE,
                 DMRMetricSetDefinition.INSTANCE,
-                DMRAvailSetDefinition.INSTANCE,
-                JMXResourceTypeSetDefinition.INSTANCE,
-                JMXMetricSetDefinition.INSTANCE,
-                JMXAvailSetDefinition.INSTANCE,
-                PrometheusMetricSetDefinition.INSTANCE);
+                DMRAvailSetDefinition.INSTANCE);
     }
 
     @Override
