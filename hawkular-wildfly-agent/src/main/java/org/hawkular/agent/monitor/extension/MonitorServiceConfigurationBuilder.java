@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,12 +30,8 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.dynamicprotocol.MetricMetadata;
-import org.hawkular.agent.monitor.dynamicprotocol.MetricSetMetadata;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsReportTo;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicProtocolConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.GlobalConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ProtocolConfiguration;
@@ -60,7 +55,6 @@ import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
-import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.Constants;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformMetricType;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
@@ -81,9 +75,7 @@ public class MonitorServiceConfigurationBuilder {
     private static final MsgLogger log = AgentLoggers.getLogger(MonitorServiceConfigurationBuilder.class);
 
     private ProtocolConfiguration.Builder<DMRNodeLocation> dmrConfigBuilder;
-    private ProtocolConfiguration.Builder<JMXNodeLocation> jmxConfigBuilder;
     private ProtocolConfiguration.Builder<PlatformNodeLocation> platformConfigBuilder;
-    private DynamicProtocolConfiguration.Builder prometheusConfigBuilder;
 
     private DiagnosticsConfiguration diagnostics;
     private StorageAdapterConfiguration storageAdapter;
@@ -98,30 +90,17 @@ public class MonitorServiceConfigurationBuilder {
         this.diagnostics = determineDiagnosticsConfig(config, context);
 
         dmrConfigBuilder = ProtocolConfiguration.builder();
-        jmxConfigBuilder = ProtocolConfiguration.builder();
         platformConfigBuilder = ProtocolConfiguration.builder();
-        prometheusConfigBuilder = DynamicProtocolConfiguration.builder();
 
         TypeSets.Builder<DMRNodeLocation> dmrTypeSetsBuilder = TypeSets.builder();
-        TypeSets.Builder<JMXNodeLocation> jmxTypeSetsBuilder = TypeSets.builder();
-        Map<Name, MetricSetMetadata> prometheusMetricSets = new HashMap<>();
 
         determineMetricSetDmr(config, context, dmrTypeSetsBuilder);
         determineAvailSetDmr(config, context, dmrTypeSetsBuilder);
 
-        determineMetricSetJmx(config, context, jmxTypeSetsBuilder);
-        determineAvailSetJmx(config, context, jmxTypeSetsBuilder);
-
-        determineMetricSetPrometheus(config, context, prometheusMetricSets);
-
         // make sure to call this AFTER the metric sets and avail sets have been determined
         determineResourceTypeSetDmr(config, context, dmrTypeSetsBuilder);
 
-        determineResourceTypeSetJmx(config, context, jmxTypeSetsBuilder);
-
         dmrConfigBuilder.typeSets(dmrTypeSetsBuilder.build());
-        jmxConfigBuilder.typeSets(jmxTypeSetsBuilder.build());
-        prometheusConfigBuilder.metricSets(prometheusMetricSets);
 
         TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context);
         platformConfigBuilder.typeSets(platformTypeSets);
@@ -140,8 +119,7 @@ public class MonitorServiceConfigurationBuilder {
     public MonitorServiceConfiguration build() {
 
         return new MonitorServiceConfiguration(globalConfiguration,
-                diagnostics, storageAdapter, dmrConfigBuilder.build(), jmxConfigBuilder.build(),
-                platformConfigBuilder.build(), prometheusConfigBuilder.build());
+                diagnostics, storageAdapter, dmrConfigBuilder.build(), platformConfigBuilder.build());
     }
 
     private static void determineMetricSetDmr(ModelNode config,
@@ -294,190 +272,6 @@ public class MonitorServiceConfigurationBuilder {
         if (!enabled) {
             log.infoNoEnabledAvailsConfigured("DMR");
         }
-    }
-
-    private static void determineMetricSetJmx(ModelNode config,
-            OperationContext context,
-            TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
-            throws OperationFailedException {
-
-        boolean enabled = false;
-
-        if (config.hasDefined(JMXMetricSetDefinition.METRIC_SET)) {
-            List<Property> metricSetsList = config.get(JMXMetricSetDefinition.METRIC_SET).asPropertyList();
-            for (Property metricSetProperty : metricSetsList) {
-                String metricSetName = metricSetProperty.getName();
-                if (metricSetName.indexOf(',') > -1) {
-                    log.warnCommaInName(metricSetName);
-                }
-                ModelNode metricSetValueNode = metricSetProperty.getValue();
-                TypeSetBuilder<MetricType<JMXNodeLocation>> typeSetBuilder = TypeSet
-                        .<MetricType<JMXNodeLocation>> builder()
-                        .name(new Name(metricSetName))
-                        .enabled(getBoolean(metricSetValueNode, context, JMXMetricSetAttributes.ENABLED));
-                if (metricSetValueNode.hasDefined(JMXMetricDefinition.METRIC)) {
-                    List<Property> metricsList = metricSetValueNode.get(JMXMetricDefinition.METRIC).asPropertyList();
-                    for (Property metricProperty : metricsList) {
-                        String metricId = metricSetName + "~" + metricProperty.getName();
-                        String metricName = metricProperty.getName();
-
-                        ModelNode metricValueNode = metricProperty.getValue();
-                        String objectName = getString(metricValueNode, context, JMXMetricAttributes.OBJECT_NAME);
-                        String metricIdTemplate = getString(metricValueNode, context,
-                                JMXMetricAttributes.METRIC_ID_TEMPLATE);
-                        Map<String, String> metricTags = getMapFromString(metricValueNode, context,
-                                JMXMetricAttributes.METRIC_TAGS);
-
-                        try {
-                            AttributeLocation<JMXNodeLocation> location = new AttributeLocation<>(
-                                    new JMXNodeLocation(objectName),
-                                    getString(metricValueNode, context, JMXMetricAttributes.ATTRIBUTE));
-
-                            MetricType<JMXNodeLocation> metric = new MetricType<JMXNodeLocation>(
-                                    new ID(metricId),
-                                    new Name(metricName),
-                                    location,
-                                    new Interval(getInt(metricValueNode, context, JMXMetricAttributes.INTERVAL),
-                                            getTimeUnit(metricValueNode, context, JMXMetricAttributes.TIME_UNITS)),
-                                    getMeasurementUnit(metricValueNode, context, JMXMetricAttributes.METRIC_UNITS),
-                                    getMetricType(metricValueNode, context, JMXMetricAttributes.METRIC_TYPE),
-                                    metricIdTemplate,
-                                    metricTags);
-                            typeSetBuilder.type(metric);
-                        } catch (MalformedObjectNameException e) {
-                            log.warnMalformedJMXObjectName(objectName, e);
-                        }
-                    }
-                    TypeSet<MetricType<JMXNodeLocation>> typeSet = typeSetBuilder.build();
-                    enabled = enabled || !typeSet.isDisabledOrEmpty();
-                    typeSetsBuilder.metricTypeSet(typeSet);
-                }
-            }
-        }
-        if (!enabled) {
-            log.infoNoEnabledMetricsConfigured("JMX");
-        }
-
-    }
-
-    private static void determineAvailSetJmx(ModelNode config,
-            OperationContext context,
-            TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
-            throws OperationFailedException {
-
-        boolean enabled = false;
-
-        if (config.hasDefined(JMXAvailSetDefinition.AVAIL_SET)) {
-            List<Property> availSetsList = config.get(JMXAvailSetDefinition.AVAIL_SET).asPropertyList();
-            for (Property availSetProperty : availSetsList) {
-                String availSetName = availSetProperty.getName();
-                if (availSetName.indexOf(',') > -1) {
-                    log.warnCommaInName(availSetName);
-                }
-                ModelNode availSetValueNode = availSetProperty.getValue();
-                TypeSetBuilder<AvailType<JMXNodeLocation>> typeSetBuilder = TypeSet
-                        .<AvailType<JMXNodeLocation>> builder() //
-                        .name(new Name(availSetName)) //
-                        .enabled(getBoolean(availSetValueNode, context, JMXAvailSetAttributes.ENABLED));
-                if (availSetValueNode.hasDefined(JMXAvailDefinition.AVAIL)) {
-                    List<Property> availsList = availSetValueNode.get(JMXAvailDefinition.AVAIL).asPropertyList();
-                    for (Property availProperty : availsList) {
-                        String availId = availSetName + "~" + availProperty.getName();
-                        String availName = availProperty.getName();
-                        ModelNode availValueNode = availProperty.getValue();
-                        String objectName = getString(availValueNode, context, JMXAvailAttributes.OBJECT_NAME);
-                        String metricIdTemplate = getString(availValueNode, context,
-                                JMXAvailAttributes.METRIC_ID_TEMPLATE);
-                        Map<String, String> metricTags = getMapFromString(availValueNode, context,
-                                JMXAvailAttributes.METRIC_TAGS);
-
-                        try {
-                            AttributeLocation<JMXNodeLocation> location = new AttributeLocation<>(
-                                    new JMXNodeLocation(objectName),
-                                    getString(availValueNode, context, JMXAvailAttributes.ATTRIBUTE));
-
-                            AvailType<JMXNodeLocation> avail = new AvailType<JMXNodeLocation>(
-                                    new ID(availId),
-                                    new Name(availName),
-                                    location,
-                                    new Interval(getInt(availValueNode, context, JMXAvailAttributes.INTERVAL),
-                                            getTimeUnit(availValueNode, context, JMXAvailAttributes.TIME_UNITS)),
-                                    Pattern.compile(getString(availValueNode, context, JMXAvailAttributes.UP_REGEX)),
-                                    metricIdTemplate,
-                                    metricTags);
-                            typeSetBuilder.type(avail);
-                        } catch (MalformedObjectNameException e) {
-                            log.warnMalformedJMXObjectName(objectName, e);
-                        }
-                    }
-                    TypeSet<AvailType<JMXNodeLocation>> typeSet = typeSetBuilder.build();
-                    enabled = enabled || !typeSet.isDisabledOrEmpty();
-                    typeSetsBuilder.availTypeSet(typeSet);
-                }
-            }
-        }
-
-        if (!enabled) {
-            log.infoNoEnabledAvailsConfigured("JMX");
-        }
-    }
-
-    private static void determineMetricSetPrometheus(ModelNode config,
-            OperationContext context,
-            Map<Name, MetricSetMetadata> namedMetricSets)
-            throws OperationFailedException {
-
-        boolean enabled = false;
-
-        if (config.hasDefined(PrometheusMetricSetDefinition.METRIC_SET)) {
-            List<Property> metricSetsList = config.get(PrometheusMetricSetDefinition.METRIC_SET).asPropertyList();
-            for (Property metricSetProperty : metricSetsList) {
-                MetricSetMetadata.Builder builder = MetricSetMetadata.builder();
-
-                String metricSetName = metricSetProperty.getName();
-                if (metricSetName.indexOf(',') > -1) {
-                    log.warnCommaInName(metricSetName);
-                }
-                builder.name(new Name(metricSetName));
-
-                ModelNode metricSetValueNode = metricSetProperty.getValue();
-
-                builder.enabled(getBoolean(metricSetValueNode, context, PrometheusMetricSetAttributes.ENABLED));
-
-                if (metricSetValueNode.hasDefined(PrometheusMetricDefinition.METRIC)) {
-                    List<Property> metricsList = metricSetValueNode.get(PrometheusMetricDefinition.METRIC)
-                            .asPropertyList();
-                    for (Property metricProperty : metricsList) {
-                        String metricName = metricProperty.getName();
-                        try {
-                            Pattern.compile(metricName); // metric name can be a regex, make sure it can compile
-                        } catch (Exception e) {
-                            throw new OperationFailedException("Metric name is an invalid regex: " + metricName);
-                        }
-
-                        ModelNode metricValueNode = metricProperty.getValue();
-                        String metricIdTemplate = getString(metricValueNode, context,
-                                PrometheusMetricAttributes.METRIC_ID_TEMPLATE);
-                        Map<String, String> metricTags = getMapFromString(metricValueNode, context,
-                                PrometheusMetricAttributes.METRIC_TAGS);
-
-                        MetricMetadata promMetric = new MetricMetadata(new Name(metricName), metricIdTemplate,
-                                metricTags);
-                        builder.metric(promMetric);
-                    }
-
-                    MetricSetMetadata metricSet = builder.build();
-                    namedMetricSets.put(metricSet.getName(), metricSet);
-
-                    enabled = enabled || metricSet.isEnabled() || !metricSet.getMetrics().isEmpty();
-                }
-            }
-        }
-
-        if (!enabled) {
-            log.infoNoEnabledMetricsConfigured("Prometheus");
-        }
-
     }
 
     private static String determinePlatformMachineId(ModelNode config, OperationContext context)
@@ -1117,117 +911,6 @@ public class MonitorServiceConfigurationBuilder {
         }
     }
 
-    private static void determineResourceTypeSetJmx(ModelNode config,
-            OperationContext context, TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
-            throws OperationFailedException {
-        boolean enabled = false;
-
-        if (config.hasDefined(JMXResourceTypeSetDefinition.RESOURCE_TYPE_SET)) {
-            List<Property> resourceTypeSetsList = config.get(JMXResourceTypeSetDefinition.RESOURCE_TYPE_SET)
-                    .asPropertyList();
-            for (Property resourceTypeSetProperty : resourceTypeSetsList) {
-                String resourceTypeSetName = resourceTypeSetProperty.getName();
-                ModelNode resourceTypeSetValueNode = resourceTypeSetProperty.getValue();
-                TypeSetBuilder<ResourceType<JMXNodeLocation>> typeSetBuilder = TypeSet
-                        .<ResourceType<JMXNodeLocation>> builder()
-                        .name(new Name(resourceTypeSetName))
-                        .enabled(getBoolean(resourceTypeSetValueNode, context,
-                                JMXResourceTypeSetAttributes.ENABLED));
-                if (resourceTypeSetName.indexOf(',') > -1) {
-                    log.warnCommaInName(resourceTypeSetName);
-                }
-                if (resourceTypeSetValueNode.hasDefined(JMXResourceTypeDefinition.RESOURCE_TYPE)) {
-                    List<Property> resourceTypesList = resourceTypeSetValueNode.get(
-                            JMXResourceTypeDefinition.RESOURCE_TYPE).asPropertyList();
-                    for (Property resourceTypeProperty : resourceTypesList) {
-                        ModelNode resourceTypeValueNode = resourceTypeProperty.getValue();
-
-                        String resourceTypeName = resourceTypeProperty.getName();
-
-                        String objectName = getObjectName(resourceTypeValueNode, context,
-                                JMXResourceTypeAttributes.OBJECT_NAME);
-                        try {
-                            Builder<?, JMXNodeLocation> resourceTypeBuilder = ResourceType.<JMXNodeLocation> builder()
-                                    .id(ID.NULL_ID)
-                                    .name(new Name(resourceTypeName))
-                                    .location(new JMXNodeLocation(objectName))
-                                    .resourceNameTemplate(getString(resourceTypeValueNode, context,
-                                            JMXResourceTypeAttributes.RESOURCE_NAME_TEMPLATE))
-                                    .parents(getNameListFromString(resourceTypeValueNode, context,
-                                            JMXResourceTypeAttributes.PARENTS));
-
-                            List<Name> metricSets = getNameListFromString(resourceTypeValueNode, context,
-                                    JMXResourceTypeAttributes.METRIC_SETS);
-                            List<Name> availSets = getNameListFromString(resourceTypeValueNode, context,
-                                    JMXResourceTypeAttributes.AVAIL_SETS);
-
-                            resourceTypeBuilder.metricSetNames(metricSets)
-                                    .availSetNames(availSets);
-
-                            // get operations
-                            ModelNode opModelNode = resourceTypeValueNode.get(JMXOperationDefinition.OPERATION);
-                            if (opModelNode != null && opModelNode.isDefined()) {
-                                List<Property> operationList = opModelNode.asPropertyList();
-                                for (Property operationProperty : operationList) {
-                                    ModelNode operationValueNode = operationProperty.getValue();
-                                    String operationName = operationProperty.getName();
-
-                                    Operation<JMXNodeLocation> op = new Operation<>(ID.NULL_ID,
-                                            new Name(operationName),
-                                            new JMXNodeLocation(getObjectName(operationValueNode, context,
-                                                    JMXOperationAttributes.OBJECT_NAME)),
-                                            getString(operationValueNode, context,
-                                                    JMXOperationAttributes.INTERNAL_NAME),
-                                            null);
-                                    resourceTypeBuilder.operation(op);
-                                }
-                            }
-
-                            // get resource config properties
-                            ModelNode configModelNode = resourceTypeValueNode
-                                    .get(JMXResourceConfigDefinition.RESOURCE_CONFIG);
-                            if (configModelNode != null && configModelNode.isDefined()) {
-                                List<Property> configList = configModelNode.asPropertyList();
-                                for (Property configProperty : configList) {
-                                    ModelNode configValueNode = configProperty.getValue();
-                                    String configName = configProperty.getName();
-
-                                    String on = getObjectName(configValueNode, context,
-                                            JMXResourceConfigAttributes.OBJECT_NAME);
-                                    String attr = getString(configValueNode, context,
-                                            JMXResourceConfigAttributes.ATTRIBUTE);
-                                    AttributeLocation<JMXNodeLocation> attribLoc = new AttributeLocation<JMXNodeLocation>(
-                                            new JMXNodeLocation(on), attr);
-                                    ResourceConfigurationPropertyType<JMXNodeLocation> configType = new ResourceConfigurationPropertyType<>(
-                                            ID.NULL_ID, new Name(configName), attribLoc);
-                                    resourceTypeBuilder.resourceConfigurationPropertyType(configType);
-
-                                }
-                            }
-
-                            populateMetricAndAvailTypesForResourceType(resourceTypeBuilder, typeSetsBuilder);
-
-                            ResourceType<JMXNodeLocation> resourceType = resourceTypeBuilder.build();
-                            typeSetBuilder.type(resourceType);
-                        } catch (MalformedObjectNameException e) {
-                            log.warnMalformedJMXObjectName(objectName, e);
-                        }
-
-                    }
-                }
-                TypeSet<ResourceType<JMXNodeLocation>> typeSet = typeSetBuilder.build();
-                enabled = enabled || !typeSet.isDisabledOrEmpty();
-                typeSetsBuilder.resourceTypeSet(typeSet);
-            }
-
-            // can we build a graph of the full type hierarchy just to test to make sure it all is valid?
-        }
-
-        if (!enabled) {
-            log.infoNoEnabledResourceTypesConfigured("JMX");
-        }
-    }
-
     private void determineManagedServers(ModelNode config, OperationContext context)
             throws OperationFailedException {
         if (config.hasDefined(ManagedServersDefinition.MANAGED_SERVERS)) {
@@ -1307,99 +990,6 @@ public class MonitorServiceConfigurationBuilder {
                 dmrConfigBuilder.endpoint(endpoint);
             }
 
-            // JMX
-
-            if (managedServersValueNode.hasDefined(RemoteJMXDefinition.REMOTE_JMX)) {
-                List<Property> remoteJMXsList = managedServersValueNode.get(RemoteJMXDefinition.REMOTE_JMX)
-                        .asPropertyList();
-                for (Property remoteJMXProperty : remoteJMXsList) {
-                    String name = remoteJMXProperty.getName();
-                    ModelNode remoteJMXValueNode = remoteJMXProperty.getValue();
-                    boolean enabled = getBoolean(remoteJMXValueNode, context, RemoteJMXAttributes.ENABLED);
-                    String setAvailOnShutdownStr = getString(remoteJMXValueNode, context,
-                            RemoteJMXAttributes.SET_AVAIL_ON_SHUTDOWN);
-                    Avail setAvailOnShutdown = (setAvailOnShutdownStr == null) ? null
-                            : Avail.valueOf(setAvailOnShutdownStr);
-                    String urlStr = getString(remoteJMXValueNode, context, RemoteJMXAttributes.URL);
-                    String username = getString(remoteJMXValueNode, context, RemoteJMXAttributes.USERNAME);
-                    String password = getString(remoteJMXValueNode, context, RemoteJMXAttributes.PASSWORD);
-                    String securityRealm = getString(remoteJMXValueNode, context, RemoteJMXAttributes.SECURITY_REALM);
-                    List<Name> resourceTypeSets = getNameListFromString(remoteJMXValueNode, context,
-                            RemoteJMXAttributes.RESOURCE_TYPE_SETS);
-                    String tenantId = getString(remoteJMXValueNode, context, RemoteJMXAttributes.TENANT_ID);
-                    String metricIdTemplate = getString(remoteJMXValueNode, context,
-                            RemoteDMRAttributes.METRIC_ID_TEMPLATE);
-                    Map<String, String> metricTags = getMapFromString(remoteJMXValueNode, context,
-                            RemoteDMRAttributes.METRIC_TAGS);
-
-                    // make sure the URL is at least syntactically valid
-                    URI url;
-                    try {
-                        url = new URI(urlStr);
-                    } catch (Exception e) {
-                        throw new OperationFailedException("Invalid remote JMX URL: " + urlStr, e);
-                    }
-
-                    if (url.getScheme().equalsIgnoreCase("https") && securityRealm == null) {
-                        log.debugf("Using SSL with no security realm - will rely on the JVM truststore: " + name);
-                    }
-
-                    ConnectionData connectionData = new ConnectionData(url, username, password);
-                    EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
-                            connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, metricTags,
-                            null);
-
-                    jmxConfigBuilder.endpoint(endpoint);
-                }
-            }
-
-            // PROMETHEUS
-
-            if (managedServersValueNode.hasDefined(RemotePrometheusDefinition.REMOTE_PROMETHEUS)) {
-                List<Property> remotePromsList = managedServersValueNode
-                        .get(RemotePrometheusDefinition.REMOTE_PROMETHEUS)
-                        .asPropertyList();
-                for (Property remotePromProperty : remotePromsList) {
-                    String name = remotePromProperty.getName();
-                    ModelNode remotePromValueNode = remotePromProperty.getValue();
-                    boolean enabled = getBoolean(remotePromValueNode, context, RemotePrometheusAttributes.ENABLED);
-                    String urlStr = getString(remotePromValueNode, context, RemotePrometheusAttributes.URL);
-                    String username = getString(remotePromValueNode, context, RemotePrometheusAttributes.USERNAME);
-                    String password = getString(remotePromValueNode, context, RemotePrometheusAttributes.PASSWORD);
-                    String securityRealm = getString(remotePromValueNode, context,
-                            RemotePrometheusAttributes.SECURITY_REALM);
-                    List<Name> metricSets = getNameListFromString(remotePromValueNode, context,
-                            RemotePrometheusAttributes.METRIC_SETS);
-                    int interval = getInt(remotePromValueNode, context, RemotePrometheusAttributes.INTERVAL);
-                    String timeUnitsStr = getString(remotePromValueNode, context,
-                            RemotePrometheusAttributes.TIME_UNITS);
-                    TimeUnit timeUnits = TimeUnit.valueOf(timeUnitsStr.toUpperCase());
-                    String tenandId = getString(remotePromValueNode, context, RemotePrometheusAttributes.TENANT_ID);
-                    String metricIdTemplate = getString(remotePromValueNode, context,
-                            RemotePrometheusAttributes.METRIC_ID_TEMPLATE);
-                    Map<String, String> metricTags = getMapFromString(remotePromValueNode, context,
-                            RemotePrometheusAttributes.METRIC_TAGS);
-
-                    // make sure the URL is at least syntactically valid
-                    URI url;
-                    try {
-                        url = new URI(urlStr);
-                    } catch (Exception e) {
-                        throw new OperationFailedException("Invalid remote Prometheus URL: " + urlStr, e);
-                    }
-
-                    if (url.getScheme().equalsIgnoreCase("https") && securityRealm == null) {
-                        log.debugf("Using SSL with no security realm - will rely on the JVM truststore: " + name);
-                    }
-
-                    ConnectionData connectionData = new ConnectionData(url, username, password);
-                    DynamicEndpointConfiguration endpoint = new DynamicEndpointConfiguration(name, enabled,
-                            metricSets, connectionData, securityRealm, interval, timeUnits, tenandId, metricIdTemplate,
-                            metricTags, null);
-
-                    prometheusConfigBuilder.endpoint(endpoint);
-                }
-            }
         }
     }
 

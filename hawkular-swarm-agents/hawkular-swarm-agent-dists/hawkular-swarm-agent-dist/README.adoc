@@ -7,7 +7,7 @@ Hawkular WildFly Swarm Agent is a standalone java agent delivered as a http://wi
 
 == Configuring the Swarm Agent
 
-The Swarm Agent is configured via the same XML as the standard agent.  But instead of a full standalone.xml, it requires only the snippets relevant to the agent. So, minimally the agent subsystem and optionally, the logging subsystem.  For example, here is a valid configuration file for monitoring a Prometheus endpoint wuth DEBUG logging. For default logging the logging subsystem could be removed.
+The Swarm Agent is configured via the same XML as the standard agent.  But instead of a full standalone.xml, it requires only the snippets relevant to the agent. So, minimally the agent subsystem and optionally, the logging subsystem.  For example, here is a valid configuration file for monitoring a WildFly endpoint with DEBUG logging. For default logging the logging subsystem could be removed.
 
 [source,xml]
 ----
@@ -34,7 +34,7 @@ The Swarm Agent is configured via the same XML as the standard agent.  But inste
         <append value="true"/>
       </periodic-rotating-file-handler>
       <logger category="org.hawkular.agent">
-        <level name="INFO"/>
+        <level name="DEBUG"/>
       </logger>
       <logger category="sun.rmi">
         <level name="WARN"/>
@@ -58,7 +58,7 @@ The Swarm Agent is configured via the same XML as the standard agent.  But inste
       <diagnostics enabled="true" interval="1" reportTo="LOG" time-units="minutes"/>
       <storage-adapter username="jdoe" password="password" server-outbound-socket-binding-ref="hawkular" type="HAWKULAR"/>
       <managed-servers>
-        <remote-prometheus enabled="true" name="Prometheus" url="http://127.0.0.1:9090/metrics"/>
+        <remote-dmr enabled="true" ...and the rest.../>
       </managed-servers>
 
       <platform enabled="true">
@@ -97,8 +97,6 @@ For some standard monitoring scenarios the configuration file can be omitted in 
 |hawkular.dmr.username                   |admin                  |WFly ManagementRealm user
 |hawkular.log.agent                      |INFO                   |
 |hawkular.platform.enabled               |true                   |all monitoring on at default intervals
-|hawkular.prometheus.enabled             |false                  |
-|hawkular.prometheus.url                 |http://127.0.0.1:9090/metrics |
 |hawkular.rest.feedId                    |autogenerate           |
 |hawkular.rest.host                      |127.0.0.1              |
 |hawkular.rest.password                  |password               |
@@ -121,9 +119,9 @@ For some standard monitoring scenarios the configuration file can be omitted in 
 
 === Starting using default configuration with overrides
 
-    We'll turn off dmr monitoring and turn on default prometheus monitoring, with debug logging.
+    We'll turn on dmr monitoring with debug logging.
 
-    java -jar -Dhawkular.dmr.enabled=false -Dhawkular.prometheus.enabled=true -Dhawkular.log.agent=DEBUG hawkular-swarm-agent-<version>-swarm.jar
+    java -jar -Dhawkular.dmr.enabled=true -Dhawkular.log.agent=DEBUG hawkular-swarm-agent-<version>-swarm.jar
 
 == Tips
 

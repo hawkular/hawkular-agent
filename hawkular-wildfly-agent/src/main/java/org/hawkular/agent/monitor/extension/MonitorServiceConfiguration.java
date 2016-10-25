@@ -23,14 +23,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.dynamicprotocol.MetricSetMetadata;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
-import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 
 /**
@@ -301,61 +299,6 @@ public class MonitorServiceConfiguration {
         }
     }
 
-    public static class DynamicProtocolConfiguration {
-
-        public static Builder builder() {
-            return new Builder();
-        }
-
-        public static class Builder {
-            private Map<Name, MetricSetMetadata> metricSets;
-            private Map<String, DynamicEndpointConfiguration> endpoints = new LinkedHashMap<>();
-
-            public Builder endpoint(DynamicEndpointConfiguration endpoint) {
-                endpoints.put(endpoint.getName(), endpoint);
-                return this;
-            }
-
-            public Builder metricSets(Map<Name, MetricSetMetadata> metricSets) {
-                this.metricSets = metricSets;
-                return this;
-            }
-
-            public DynamicProtocolConfiguration build() {
-                for (DynamicEndpointConfiguration server : endpoints.values()) {
-                    if (server.getMetricSets() != null) {
-                        for (Name metricSetName : server.getMetricSets()) {
-                            if (!metricSets.containsKey(metricSetName)) {
-                                log.warnf("The managed server [%s] wants to use an unknown metric set [%s]",
-                                        server.getName().toString(),
-                                        metricSetName.toString());
-                            }
-                        }
-                    }
-                }
-
-                return new DynamicProtocolConfiguration(metricSets, endpoints);
-            }
-        }
-
-        private final Map<Name, MetricSetMetadata> metricSets;
-        private final Map<String, DynamicEndpointConfiguration> endpoints;
-
-        public DynamicProtocolConfiguration(Map<Name, MetricSetMetadata> metricSets,
-                Map<String, DynamicEndpointConfiguration> managedServers) {
-            this.metricSets = metricSets;
-            this.endpoints = managedServers;
-        }
-
-        public Map<Name, MetricSetMetadata> getMetrics() {
-            return metricSets;
-        }
-
-        public Map<String, DynamicEndpointConfiguration> getEndpoints() {
-            return endpoints;
-        }
-    }
-
     public static class AbstractEndpointConfiguration {
         private final String name;
         private final boolean enabled;
@@ -458,66 +401,23 @@ public class MonitorServiceConfiguration {
 
     }
 
-    /**
-     * Dynamic endpoints do not have explicit concepts of inventory or metric metadata except
-     * for a list of metric names that might have semantics for the dynamic endpoint (e.g. Prometheus
-     * endpoints will take the list of metrics and will only collect them ignoring other metrics that
-     * are not in the list). But notice there is no concept of "metric types" here regardless.
-     *
-     * It is up to the implementation of the dynamic protocol handler to deal with inventory (if it wants)
-     * or ignore it entirely. The same with metric metadata as well.
-     */
-    public static class DynamicEndpointConfiguration extends AbstractEndpointConfiguration {
-        private final Collection<Name> metricSets;
-        private final int interval;
-        private final TimeUnit timeUnits;
-
-        public DynamicEndpointConfiguration(String name, boolean enabled,
-                Collection<Name> metricSets, ConnectionData connectionData, String securityRealm, int interval,
-                TimeUnit timeUnits, String tenantId, String metricIdTemplate, Map<String, String> metricTags,
-                Map<String, Object> customData) {
-            super(name, enabled, connectionData, securityRealm, tenantId, metricIdTemplate, metricTags, customData);
-            this.metricSets = metricSets;
-            this.interval = interval;
-            this.timeUnits = timeUnits;
-        }
-
-        public Collection<Name> getMetricSets() {
-            return metricSets;
-        }
-
-        public int getInterval() {
-            return interval;
-        }
-
-        public TimeUnit getTimeUnits() {
-            return timeUnits;
-        }
-    }
-
     private final GlobalConfiguration globalConfiguration;
     private final DiagnosticsConfiguration diagnostics;
     private final StorageAdapterConfiguration storageAdapter;
     private final ProtocolConfiguration<DMRNodeLocation> dmrConfiguration;
-    private final ProtocolConfiguration<JMXNodeLocation> jmxConfiguration;
     private final ProtocolConfiguration<PlatformNodeLocation> platformConfiguration;
-    private final DynamicProtocolConfiguration prometheusConfiguration;
 
     public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration,
             DiagnosticsConfiguration diagnostics,
             StorageAdapterConfiguration storageAdapter,
             ProtocolConfiguration<DMRNodeLocation> dmrConfiguration,
-            ProtocolConfiguration<JMXNodeLocation> jmxConfiguration,
-            ProtocolConfiguration<PlatformNodeLocation> platformConfiguration,
-            DynamicProtocolConfiguration prometheusConfiguration) {
+            ProtocolConfiguration<PlatformNodeLocation> platformConfiguration) {
         super();
         this.globalConfiguration = globalConfiguration;
         this.diagnostics = diagnostics;
         this.storageAdapter = storageAdapter;
         this.dmrConfiguration = dmrConfiguration;
-        this.jmxConfiguration = jmxConfiguration;
         this.platformConfiguration = platformConfiguration;
-        this.prometheusConfiguration = prometheusConfiguration;
     }
 
     public GlobalConfiguration getGlobalConfiguration() {
@@ -570,24 +470,14 @@ public class MonitorServiceConfiguration {
 
     public MonitorServiceConfiguration cloneWith(StorageAdapterConfiguration newStorageAdapter) {
         return new MonitorServiceConfiguration(globalConfiguration,
-                diagnostics, newStorageAdapter, dmrConfiguration,
-                jmxConfiguration, platformConfiguration, prometheusConfiguration);
+                diagnostics, newStorageAdapter, dmrConfiguration, platformConfiguration);
     }
 
     public ProtocolConfiguration<DMRNodeLocation> getDmrConfiguration() {
         return dmrConfiguration;
     }
 
-    public ProtocolConfiguration<JMXNodeLocation> getJmxConfiguration() {
-        return jmxConfiguration;
-    }
-
     public ProtocolConfiguration<PlatformNodeLocation> getPlatformConfiguration() {
         return platformConfiguration;
     }
-
-    public DynamicProtocolConfiguration getPrometheusConfiguration() {
-        return prometheusConfiguration;
-    }
-
 }

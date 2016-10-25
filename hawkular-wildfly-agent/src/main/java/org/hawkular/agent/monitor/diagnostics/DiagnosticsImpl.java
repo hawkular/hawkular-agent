@@ -27,7 +27,6 @@ public class DiagnosticsImpl implements Diagnostics {
     private final MetricRegistry metricsRegistry;
 
     private final ProtocolDiagnostics dmrDiagnostics;
-    private final ProtocolDiagnostics jmxDiagnostics;
     private final ProtocolDiagnostics platformDiagnostics;
     private final Meter storageError;
     private final Counter metricsStorageBuffer;
@@ -45,7 +44,6 @@ public class DiagnosticsImpl implements Diagnostics {
             String feedId) {
         // we don't need config now, but maybe in future - so keep "config" param here for future API consistency
         this.dmrDiagnostics = newDiagnostics("dmr", feedId, registry);
-        this.jmxDiagnostics = newDiagnostics("jmx", feedId, registry);
         this.platformDiagnostics = newDiagnostics("platform", feedId, registry);
 
         storageError = registry.meter(name(feedId, "storage.error-rate"));
@@ -74,11 +72,6 @@ public class DiagnosticsImpl implements Diagnostics {
     @Override
     public ProtocolDiagnostics getDMRDiagnostics() {
         return dmrDiagnostics;
-    }
-
-    @Override
-    public ProtocolDiagnostics getJMXDiagnostics() {
-        return jmxDiagnostics;
     }
 
     @Override

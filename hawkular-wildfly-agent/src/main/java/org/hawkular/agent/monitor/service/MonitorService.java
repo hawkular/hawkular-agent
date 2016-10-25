@@ -46,10 +46,8 @@ import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
 import org.hawkular.agent.monitor.diagnostics.StorageReporter;
-import org.hawkular.agent.monitor.dynamicprotocol.DynamicProtocolServices;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DynamicEndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
@@ -267,9 +265,8 @@ public class MonitorService implements Service<MonitorService> {
     private final AvailStorageProxy availStorageProxy = new AvailStorageProxy();
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
 
-    // contains endpoint services for all the different protocols that are supported (dmr, jmx, prometheus, platform)
+    // contains endpoint services for all the different protocols that are supported (dmr, platform)
     private ProtocolServices protocolServices;
-    private DynamicProtocolServices dynamicProtocolServices;
 
     // used to talk to the management interface of the WildFly server the agent is deployed in
     private ModelControllerClientFactory localModelControllerClientFactory;
@@ -356,21 +353,8 @@ public class MonitorService implements Service<MonitorService> {
                     trustStoreOnly);
         }
 
-        // get the security realms for any configured remote DMR and JMX and Prometheus servers that require ssl
+        // get the security realms for any configured remote servers that require ssl
         for (EndpointConfiguration endpoint : bootConfiguration.getDmrConfiguration().getEndpoints().values()) {
-            String securityRealm = endpoint.getSecurityRealm();
-            if (securityRealm != null) {
-                addSslContext(securityRealm, bldr);
-            }
-        }
-        for (EndpointConfiguration endpoint : bootConfiguration.getJmxConfiguration().getEndpoints().values()) {
-            String securityRealm = endpoint.getSecurityRealm();
-            if (securityRealm != null) {
-                addSslContext(securityRealm, bldr);
-            }
-        }
-        for (DynamicEndpointConfiguration endpoint : bootConfiguration.getPrometheusConfiguration().getEndpoints()
-                .values()) {
             String securityRealm = endpoint.getSecurityRealm();
             if (securityRealm != null) {
                 addSslContext(securityRealm, bldr);
@@ -607,7 +591,6 @@ public class MonitorService implements Service<MonitorService> {
             // build the protocol services
             ProtocolServices ps = createProtocolServicesBuilder()
                     .dmrProtocolService(this.localModelControllerClientFactory, configuration.getDmrConfiguration())
-                    .jmxProtocolService(configuration.getJmxConfiguration())
                     .platformProtocolService(configuration.getPlatformConfiguration())
                     .autoDiscoveryScanPeriodSecs(configuration.getAutoDiscoveryScanPeriodSeconds())
                     .build();
@@ -615,15 +598,8 @@ public class MonitorService implements Service<MonitorService> {
             ps.addInventoryListener(schedulerService);
             protocolServices = ps;
 
-            DynamicProtocolServices dps = createDynamicProtocolServicesBuilder()
-                    .prometheusDynamicProtocolService(configuration.getPrometheusConfiguration(),
-                            getHawkularMonitorContext())
-                    .build();
-            dynamicProtocolServices = dps;
-
             // start all protocol services - this should perform the initial discovery scans
             protocolServices.start();
-            dynamicProtocolServices.start();
 
             started = true;
 
@@ -647,9 +623,7 @@ public class MonitorService implements Service<MonitorService> {
         Set<String> tenantIds = new HashSet<String>();
         List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
         endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
-        endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
         endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
-        endpoints.addAll(configuration.getPrometheusConfiguration().getEndpoints().values());
 
         tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
         for (AbstractEndpointConfiguration endpoint : endpoints) {
@@ -688,17 +662,6 @@ public class MonitorService implements Service<MonitorService> {
             } catch (Throwable t) {
                 error.compareAndSet(null, t);
                 log.debug("Cannot shutdown feed comm but will continue shutdown", t);
-            }
-
-            // stop our dynamic protocol services
-            try {
-                if (dynamicProtocolServices != null) {
-                    dynamicProtocolServices.stop();
-                    dynamicProtocolServices = null;
-                }
-            } catch (Throwable t) {
-                error.compareAndSet(null, t);
-                log.debug("Cannot shutdown dynamic protocol services but will continue shutdown", t);
             }
 
             // stop our normal protocol services
@@ -1097,23 +1060,10 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * @return builder that let's you create dynamic protocol services and their endpoints
-     */
-    public DynamicProtocolServices.Builder createDynamicProtocolServicesBuilder() {
-        return DynamicProtocolServices.builder(feedId, trustOnlySSLContextValues);
-    }
-
-    /**
      * @return the current set of protocol services
      */
     public ProtocolServices getProtocolServices() {
         return protocolServices;
     }
 
-    /**
-     * @return the current set of dynamic protocol services
-     */
-    public DynamicProtocolServices getDynamicProtocolServices() {
-        return dynamicProtocolServices;
-    }
 }

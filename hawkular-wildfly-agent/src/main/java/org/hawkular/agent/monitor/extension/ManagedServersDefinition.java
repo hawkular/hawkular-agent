@@ -49,8 +49,6 @@ public class ManagedServersDefinition extends PersistentResourceDefinition {
     protected List<? extends PersistentResourceDefinition> getChildren() {
         return Arrays.asList(
                 LocalDMRDefinition.INSTANCE,
-                RemoteDMRDefinition.INSTANCE,
-                RemoteJMXDefinition.INSTANCE,
-                RemotePrometheusDefinition.INSTANCE);
+                RemoteDMRDefinition.INSTANCE);
     }
 }

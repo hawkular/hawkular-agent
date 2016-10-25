@@ -19,8 +19,6 @@ package org.hawkular.agent.monitor.log;
 import java.util.Collection;
 import java.util.List;
 
-import javax.management.MalformedObjectNameException;
-
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -233,8 +231,8 @@ public interface MsgLogger extends BasicLogger {
     void warnFailedToLocate(@Cause ProtocolException e, String typeName, String location, String parentLocation);
 
     @LogMessage(level = Level.WARN)
-    @Message(id = 10048, value = "Malformed JMX object name: [%s]")
-    void warnMalformedJMXObjectName(String objectName, @Cause MalformedObjectNameException e);
+    @Message(id = 10048, value = "")
+    void warn10048();
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10049, value = "Could not access resources of endpoint [%s]")
@@ -321,16 +319,16 @@ public interface MsgLogger extends BasicLogger {
     void errorRetryTenantId(String errorMsg);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10070, value = "No longer monitoring the endpoint [%s]")
-    void infoRemovedDynamicEndpointService(String id);
+    @Message(id = 10070, value = "")
+    void info10070();
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10071, value = "No longer monitoring the endpoint [%s]")
     void infoRemovedEndpointService(String id);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10072, value = "Now monitoring the new endpoint [%s]")
-    void infoAddedDynamicEndpointService(String string);
+    @Message(id = 10072, value = "")
+    void info10072();
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10073, value = "Now monitoring the new endpoint [%s]")
