@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+# Copyright 2016 Red Hat, Inc. and/or its affiliates
 # and other contributors as indicated by the @author tags.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +16,6 @@
 # limitations under the License.
 #
 
-set -x
-
-mkdir target
-cp ../hawkular-wildfly-agent-installer-full/target/hawk*.jar target/installer.jar
-docker build . -t pilhuhn/hawkfly
-docker build  -f Dockerfile.domain -t pilhuhn/hawkfly-domain .
+echo ${HOSTNAME} > /etc/machine-id
+export JAVA_OPTS="-Xmx256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m"
+/opt/jboss/wildfly/bin/standalone.sh -Dhawkular.rest.feedId=${HOSTNAME} -Djboss.server.name=${HOSTNAME}

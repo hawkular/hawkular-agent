@@ -19,14 +19,14 @@ FROM jboss/wildfly:10.0.0.Final
 
 MAINTAINER Heiko W. Rupp <hrupp@redhat.com>
 
-#ADD target/agent.jar /tmp/
 ADD target/installer.jar /tmp/
 ADD test-simple.war /opt/jboss/wildfly/standalone/deployments/
+ADD src/main/resources/startcmd.sh /
 
 ENV HAWKULAR_SERVER http://hawkular:8080
 ENV HAWKULAR_USER jdoe
 ENV HAWKULAR_PASSWORD password
-ENV JAVA_OPTS=-Xmx256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m
+ENV JAVA_OPTS="-Xmx256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m"
 
 EXPOSE 8080 9090
 
@@ -34,7 +34,8 @@ WORKDIR /tmp
 
 RUN java -jar installer.jar --enabled true --server-url ${HAWKULAR_SERVER} \
   --module-dist classpath:hawkular-wildfly-agent-wf-extension.zip --username ${HAWKULAR_USER} \
-  --password ${HAWKULAR_PASSWORD} --target-location /opt/jboss/wildfly
+  --password ${HAWKULAR_PASSWORD} --target-location /opt/jboss/wildfly \
+  --feed-id='${hawkular.rest.feedId}'
 
 
-CMD /opt/jboss/wildfly/bin/standalone.sh
+CMD /startcmd.sh
