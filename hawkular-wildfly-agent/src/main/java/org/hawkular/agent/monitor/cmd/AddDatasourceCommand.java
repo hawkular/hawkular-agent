@@ -109,7 +109,7 @@ public class AddDatasourceCommand extends AbstractResourcePathCommand<AddDatasou
                     .parentBuilder();
 
         }
-        if (!props.isEmpty()) {
+        if (props!=null && !props.isEmpty()) {
             for (Entry<String, String> prop : props.entrySet()) {
                 batch.add() //
                         .address().segments(dsAdr).segment(dsPropsDmrResourceType, prop.getKey()).parentBuilder() //
