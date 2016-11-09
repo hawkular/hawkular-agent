@@ -350,4 +350,8 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.ERROR)
     @Message(id = 10077, value = "Failed to store metric tags: %s")
     void errorFailedToStoreMetricTags(@Cause Throwable t, String data);
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10078, value = "Tried %d times to reach the server %s endpoint at %s. Is it up?")
+    void warnConnectionDelayed(int count, String what, String url);
 }
