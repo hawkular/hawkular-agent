@@ -901,6 +901,7 @@ public class MonitorService implements Service<MonitorService> {
         String statusUrl = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
                 configuration.getStorageAdapter().getMetricsContext()).append("status").toString();
         Request request = this.httpClientBuilder.buildJsonGetRequest(statusUrl, null);
+        int counter = 0;
         while (true) {
             Response response = null;
             try {
@@ -919,12 +920,17 @@ public class MonitorService implements Service<MonitorService> {
                 }
             }
             Thread.sleep(5000L);
+            counter++;
+            if (counter % 12 == 0) {
+                log.warnConnectionDelayed(counter, "metrics", statusUrl);
+            }
         }
 
         if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
             statusUrl = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
                     configuration.getStorageAdapter().getInventoryContext()).append("status").toString();
             request = this.httpClientBuilder.buildJsonGetRequest(statusUrl, null);
+            counter = 0;
             while (true) {
                 Response response = null;
                 try {
@@ -943,6 +949,10 @@ public class MonitorService implements Service<MonitorService> {
                     }
                 }
                 Thread.sleep(5000L);
+                counter++;
+                if (counter % 5 == 0) {
+                    log.warnConnectionDelayed(counter, "inventory", statusUrl);
+                }
             }
         }
     }
