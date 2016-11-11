@@ -46,6 +46,13 @@
     <subsystem>hawkular-inventory-datasources.xml</subsystem>
   </xsl:template>
 
+  <!-- Replace infinispan.xml with hawkular-wildfly-agent-itest-infinispan.xml -->
+  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='infinispan.xml']">
+    <xsl:copy>
+      <xsl:text>hawkular-wildfly-agent-itest-infinispan.xml</xsl:text>
+    </xsl:copy>
+  </xsl:template>
+
   <!-- copy everything else as-is -->
   <xsl:template match="node()|comment()|@*">
     <xsl:copy>

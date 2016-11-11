@@ -69,9 +69,15 @@
 
     <dependency>
       <groupId>org.hawkular.metrics</groupId>
-      <artifactId>hawkular-metrics-component</artifactId>
+      <artifactId>hawkular-metrics-component-dist</artifactId>
       <version>${version.org.hawkular.metrics}</version>
-      <type>war</type>
+      <type>ear</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-clustering-infinispan-extension</artifactId>
+      <version>${version.org.wildfly}</version>
     </dependency>
 
   </dependencies>
@@ -111,6 +117,12 @@
                   <artifactId>hawkular-inventory-feature-pack</artifactId>
                   <type>zip</type>
                   <includes>subsystem-templates/*.xml,configuration/**/*.xml</includes>
+                  <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.wildfly</groupId>
+                  <artifactId>wildfly-clustering-infinispan-extension</artifactId>
+                  <includes>subsystem-templates/*.xml</includes>
                   <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
                 </artifactItem>
               </artifactItems>
@@ -173,6 +185,21 @@
                     <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
                       <pattern>^subsystem-templates/hawkular-nest-(.*)\.xml$</pattern>
                       <replacement>subsystem-templates/hawkular-wildfly-agent-itest-$1.xml</replacement>
+                    </fileMapper>
+                  </fileMappers>
+                </transformationSet>
+
+                <transformationSet>
+                  <dir>${project.build.directory}/feature-pack-resources</dir>
+                  <stylesheet>${basedir}/src/main/xsl/subsystem-templates/hawkular-wildfly-agent-itest-infinispan.xsl</stylesheet>
+                  <includes>
+                    <include>subsystem-templates/infinispan.xml</include>
+                  </includes>
+                  <outputDir>${project.build.directory}/feature-pack-resources</outputDir>
+                  <fileMappers>
+                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
+                      <pattern>^.*$</pattern>
+                      <replacement>subsystem-templates/hawkular-wildfly-agent-itest-infinispan.xml</replacement>
                     </fileMapper>
                   </fileMappers>
                 </transformationSet>
