@@ -99,7 +99,8 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
-            assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 4);
+            // expecting h2, postgres and the mysql driver we added in the previous test
+            assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 3);
             assertResourceExists(mcc, driverAddress, true);
 
             String req = "RemoveJdbcDriverRequest={\"authentication\":" + authentication + ", "
