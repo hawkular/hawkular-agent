@@ -955,7 +955,12 @@
         <resource-type-dmr name="JDBC Driver"
                            resource-name-template="JDBC Driver [%-]"
                            path="/subsystem=datasources/jdbc-driver=*"
-                           parents="WildFly Server,Domain WildFly Server"/>
+                           parents="WildFly Server,Domain WildFly Server" >
+          <resource-config-dmr name="Driver Class"        attribute="driver-class-name" />
+          <resource-config-dmr name="Module Name"         attribute="driver-module-name" />
+          <resource-config-dmr name="Driver Name"         attribute="driver-name" />
+          <resource-config-dmr name="XA DS Class"         attribute="driver-xa-datasource-class-name" />
+        </resource-type-dmr>
       </resource-type-set-dmr>
 
       <resource-type-set-dmr name="Transaction Manager" enabled="true">
