@@ -35,6 +35,13 @@ public interface RemoteDMRAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_NONE)
                     .build();
 
+    SimpleAttributeDefinition PROTOCOL = new SimpleAttributeDefinitionBuilder("protocol",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     SimpleAttributeDefinition HOST = new SimpleAttributeDefinitionBuilder("host",
             ModelType.STRING)
                     .setAllowNull(false)
@@ -115,6 +122,7 @@ public interface RemoteDMRAttributes {
 
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
+            PROTOCOL,
             HOST,
             PORT,
             USERNAME,

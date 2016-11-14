@@ -935,6 +935,7 @@ public class MonitorServiceConfigurationBuilder {
                             RemoteDMRAttributes.SET_AVAIL_ON_SHUTDOWN);
                     Avail setAvailOnShutdown = (setAvailOnShutdownStr == null) ? null
                             : Avail.valueOf(setAvailOnShutdownStr);
+                    String protocol = getString(remoteDMRValueNode, context, RemoteDMRAttributes.PROTOCOL);
                     String host = getString(remoteDMRValueNode, context, RemoteDMRAttributes.HOST);
                     int port = getInt(remoteDMRValueNode, context, RemoteDMRAttributes.PORT);
                     String username = getString(remoteDMRValueNode, context, RemoteDMRAttributes.USERNAME);
@@ -953,7 +954,9 @@ public class MonitorServiceConfigurationBuilder {
                         log.debugf("Using SSL with no security realm - will rely on the JVM truststore: " + name);
                     }
 
-                    String protocol = useSsl ? "https-remoting" : "http-remoting";
+                    if (protocol == null) {
+                        protocol = useSsl ? "https-remoting" : "http-remoting";
+                    }
                     ConnectionData connectionData = new ConnectionData(protocol, host, port, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
                             connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, metricTags,
