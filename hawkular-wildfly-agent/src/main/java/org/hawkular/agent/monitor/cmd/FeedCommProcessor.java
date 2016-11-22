@@ -23,6 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
@@ -81,10 +84,13 @@ public class FeedCommProcessor implements WebSocketListener {
     private final MonitorService discoveryService;
     private final String feedcommUrl;
     private final ExecutorService sendExecutor = Executors.newSingleThreadExecutor();
+    private final ScheduledExecutorService pingExecutor = Executors.newScheduledThreadPool(1);
     private final AtomicReference<ReconnectJobThread> reconnectJobThread = new AtomicReference<>();
 
     private WebSocketCall webSocketCall;
     private WebSocket webSocket;
+
+    private ScheduledFuture<?> pingFuture;
 
     // if this is true, this object should never reconnect
     private boolean destroyed = false;
@@ -127,7 +133,7 @@ public class FeedCommProcessor implements WebSocketListener {
      * @throws Exception on failure
      */
     public void connect() throws Exception {
-        disconnect(); // disconnect to any old connection we had
+        disconnect(); // disconnect from any old connection we had
 
         if (destroyed) {
             return;
@@ -139,12 +145,19 @@ public class FeedCommProcessor implements WebSocketListener {
         webSocketCall.enqueue(this);
     }
 
+    /**
+     * Performs a graceful disconnect with the {@link #disconnectCode} and {@link #disconnectReason}.
+     */
     public void disconnect() {
+        disconnect(disconnectCode, disconnectReason);
+    }
+
+    private void disconnect(int code, String reason) {
         if (webSocket != null) {
             try {
-                webSocket.close(disconnectCode, disconnectReason);
+                webSocket.close(code, reason);
             } catch (Exception e) {
-                log.warnFailedToCloseWebSocket(disconnectCode, disconnectReason, e);
+                log.warnFailedToCloseWebSocket(code, reason, e);
             }
             webSocket = null;
         }
@@ -163,9 +176,11 @@ public class FeedCommProcessor implements WebSocketListener {
      * Call this when you know this processor object will never be used again.
      */
     public void destroy() {
+        log.debugf("Destroying FeedCommProcessor");
         this.destroyed = true;
         stopReconnectJobThread();
         disconnect();
+        destroyPingExecutor();
     }
 
     /**
@@ -188,8 +203,8 @@ public class FeedCommProcessor implements WebSocketListener {
                 try {
                     if (messageWithData.getBinaryData() == null) {
                         String messageString = ApiDeserializer.toHawkularFormat(message);
-                        Buffer buffer = new Buffer();
-                        buffer.writeUtf8(messageString);
+                        @SuppressWarnings("resource")
+                        Buffer buffer = new Buffer().writeUtf8(messageString);
                         RequestBody requestBody = RequestBody.create(WebSocket.TEXT, buffer.readByteArray());
                         FeedCommProcessor.this.webSocket.sendMessage(requestBody);
                     } else {
@@ -233,8 +248,8 @@ public class FeedCommProcessor implements WebSocketListener {
 
         if (messageWithData.getBinaryData() == null) {
             String messageString = ApiDeserializer.toHawkularFormat(message);
-            Buffer buffer = new Buffer();
-            buffer.writeUtf8(messageString);
+            @SuppressWarnings("resource")
+            Buffer buffer = new Buffer().writeUtf8(messageString);
             RequestBody requestBody = RequestBody.create(WebSocket.TEXT, buffer.readByteArray());
             FeedCommProcessor.this.webSocket.sendMessage(requestBody);
         } else {
@@ -273,13 +288,22 @@ public class FeedCommProcessor implements WebSocketListener {
 
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
-        this.webSocket = webSocket;
+        if (response != null && response.body() != null) {
+            try {
+                response.body().close();
+            } catch (Exception ignore) {
+            }
+        }
+
         stopReconnectJobThread();
+        this.webSocket = webSocket;
+        startPinging();
         log.infoOpenedFeedComm(feedcommUrl);
     }
 
     @Override
     public void onClose(int reasonCode, String reason) {
+        stopPinging();
         webSocket = null;
         log.infoClosedFeedComm(feedcommUrl, reasonCode, reason);
 
@@ -303,12 +327,29 @@ public class FeedCommProcessor implements WebSocketListener {
     @Override
     public void onFailure(IOException e, Response response) {
         if (response == null) {
-            // don't flood the log with these at the WARN level - its probably just because the server is down
-            // and we can't reconnect - while the server is down, our reconnect logic will cause this error
-            // to occur periodically. Our reconnect logic will log other messages.
-            log.tracef("Feed communications had a failure - a reconnection is likely required: %s", e);
+            if (e instanceof java.net.ConnectException) {
+                // don't flood the log with these at the WARN level - its probably just because the server is down
+                // and we can't reconnect - while the server is down, our reconnect logic will cause this error
+                // to occur periodically. Our reconnect logic will log other messages.
+                log.tracef("Feed communications had a failure - a reconnection is likely required: %s", e);
+            } else {
+                log.warnFeedCommFailure("<null>", e);
+            }
         } else {
             log.warnFeedCommFailure(response.toString(), e);
+            if (response.body() != null) {
+                try {
+                    response.body().close();
+                } catch (Exception ignore) {
+                }
+            }
+        }
+
+        // refresh our connection in case the network dropped our connection and onClose wasn't called
+        if (reconnectJobThread.get() == null) {
+            stopPinging();
+            disconnect();
+            startReconnectJobThread();
         }
     }
 
@@ -375,7 +416,13 @@ public class FeedCommProcessor implements WebSocketListener {
 
     @Override
     public void onPong(Buffer buffer) {
-        // no-op
+        try {
+            if (!buffer.equals(createPingBuffer())) {
+                log.debugf("Failed to verify WebSocket pong [%s]", buffer.toString());
+            }
+        } finally {
+            buffer.close();
+        }
     }
 
     private void configurationAuthentication(BasicMessage message) {
@@ -405,6 +452,7 @@ public class FeedCommProcessor implements WebSocketListener {
         }
 
         if (newReconnectJob != null) {
+            log.debugf("Starting WebSocket reconnect thread");
             newReconnectJob.start();
         }
     }
@@ -412,6 +460,7 @@ public class FeedCommProcessor implements WebSocketListener {
     private void stopReconnectJobThread() {
         ReconnectJobThread reconnectJob = reconnectJobThread.getAndSet(null);
         if (reconnectJob != null) {
+            log.debugf("Stopping WebSocket reconnect thread");
             reconnectJob.interrupt();
         }
     }
@@ -450,4 +499,68 @@ public class FeedCommProcessor implements WebSocketListener {
             }
         }
     }
+
+    private void startPinging() {
+        synchronized (pingExecutor) {
+            stopPinging(); // cleans up anything left over from previous pinging
+
+            log.debugf("Starting WebSocket ping");
+            pingFuture = pingExecutor.scheduleAtFixedRate(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            if (isConnected()) {
+                                try {
+                                    webSocket.sendPing(createPingBuffer());
+                                } catch (IOException ioe) {
+                                    log.debugf("Failed to send ping. Cause=%s", ioe.toString());
+                                    disconnect(4000, "Ping failed"); // sendPing javadoc says to close on IOException
+                                } catch (IllegalStateException ise) {
+                                    log.debugf("Cannot ping. WebSocket is already closed. Cause=%s", ise.toString());
+                                } catch (Exception e) {
+                                    // Catch other problems so exception is not thrown which would stop the thread.
+                                    // This will cover a race condition where webSocket may be null.
+                                    log.debugf("Cannot ping. Cause=%s", e.toString());
+                                }
+                            }
+                        }
+                    }, 5, 5, TimeUnit.SECONDS);
+        }
+    }
+
+    private void stopPinging() {
+        synchronized (pingExecutor) {
+            if (pingFuture != null) {
+                log.debugf("Stopping WebSocket ping");
+                pingFuture.cancel(true);
+                pingFuture = null;
+            }
+        }
+    }
+
+    /**
+     * Call this when you know the feed comm processor object will never be used again
+     * and thus the ping executor will also never be used again.
+     */
+    private void destroyPingExecutor() {
+        synchronized (pingExecutor) {
+            if (!pingExecutor.isShutdown()) {
+                try {
+                    log.debugf("Shutting down WebSocket ping executor");
+                    pingExecutor.shutdown();
+                    if (!pingExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                        pingExecutor.shutdownNow();
+                    }
+                } catch (Throwable t) {
+                    log.warnf("Cannot shut down WebSocket ping executor. Cause=%s", t.toString());
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("resource")
+    private Buffer createPingBuffer() {
+        return new Buffer().writeUtf8("hawkular-ping");
+    }
+
 }
