@@ -190,7 +190,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         // discovery request queued up. Any other full discovery scan requests will be rejected because they are
         // not needed - the queued discovery scan will do it. This minimizes redundant scans being performed.
         ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
-                "Hawkular WildFly Agent Full Discovery Scan");
+                "Hawkular WildFly Agent Full Discovery Scan-" + endpoint.getName());
         this.fullDiscoveryScanThreadPool = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(1), threadFactory);
     }
