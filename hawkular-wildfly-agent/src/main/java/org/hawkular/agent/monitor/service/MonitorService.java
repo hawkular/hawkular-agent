@@ -21,6 +21,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -106,6 +107,7 @@ import org.jboss.msc.value.InjectedValue;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -909,8 +911,13 @@ public class MonitorService implements Service<MonitorService> {
                 if (response.code() != 200) {
                     log.debugf("Hawkular Metrics is not ready yet: %d/%s", response.code(), response.message());
                 } else {
-                    log.debugf("Hawkular Metrics is ready: %s", response.body().string());
-                    break;
+                    String bodyString = response.body().string();
+                    if (checkReallyUp(bodyString)) {
+                        log.debugf("Hawkular Metrics is ready: %s", bodyString);
+                        break;
+                    } else {
+                        log.debugf("Hawkular Metrics is still starting: %s", bodyString);
+                    }
                 }
             } catch (Exception e) {
                 log.debugf("Hawkular Metrics is not ready yet: %s", e.toString());
@@ -955,6 +962,26 @@ public class MonitorService implements Service<MonitorService> {
                 }
             }
         }
+    }
+
+    /**
+     * If the server returns a 200 OK, we still need to check the content if the server
+     * is really up. This is explained here: https://twitter.com/heiglandreas/status/801137903149654017
+     * @param bodyString String representation of the body
+     * @return true if it is really up, false otherwise (still starting).
+     */
+    private boolean checkReallyUp(String bodyString) {
+
+        ObjectMapper mapper = new ObjectMapper(); // We don't need it later
+        Map result = null;
+        try {
+            result = mapper.readValue(bodyString, Map.class);
+        } catch (IOException e) {
+            return false;
+        }
+        String status = (String) result.get("MetricsService");
+
+        return "STARTED".equals(status);
     }
 
     /**
