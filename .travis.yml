@@ -18,11 +18,11 @@ notifications:
     - chat.freenode.net#hawkular
     on_success: change
 install:
-- mvn -version -B
+- ./mvnw -version -B
 # unshallow is needed by license-maven-plugin
 - git fetch origin --unshallow
 script:
-- mvn -s .travis.maven.settings.xml verify -Pitest -Dfailsafe.useFile=false | grep -vF "[INFO] Downloading:" | grep
+- ./mvnw -s .travis.maven.settings.xml verify -Pitest -Dfailsafe.useFile=false | grep -vF "[INFO] Downloading:" | grep
   -vF "[INFO] Downloaded:"; test ${PIPESTATUS[0]} -eq 0
 env:
   global:
@@ -43,8 +43,8 @@ before_cache:
   fi
 
 after_success:
-- PROJECT_VERSION=`mvn --batch-mode org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['`
+- PROJECT_VERSION=`./mvnw --batch-mode org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['`
 - if [[ "$PROJECT_VERSION" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]];
   then
-    mvn -s .travis.maven.settings.xml deploy -DskipTests -Dlicense.skip=true;
+    ./mvnw -s .travis.maven.settings.xml deploy -DskipTests -Dlicense.skip=true;
   fi

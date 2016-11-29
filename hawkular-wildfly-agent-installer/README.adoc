@@ -9,13 +9,13 @@ Hawkular WildFly Agent Installer is a standalone java application to install Haw
 
 Installer is configured via maven exec plugin so it installs Hawkular WildFly Agent from this repository into local WildFly located in `${org.hawkular.wildfly.home}`
 
-    mvn exec:java -Dorg.hawkular.wildfly.home=/opt/wildfly-9.0.0.Final
+    ./mvnw exec:java -Dorg.hawkular.wildfly.home=/opt/wildfly-9.0.0.Final
 
 == Running As Standalone Java Application
 
 === Building Standalone Jar
 
-    mvn package
+    ./mvnw package
 
 === Running
 
