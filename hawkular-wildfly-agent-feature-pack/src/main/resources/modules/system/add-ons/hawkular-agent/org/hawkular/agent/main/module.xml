@@ -58,6 +58,20 @@
     <artifact name="${net.java.dev.jna:jna-platform}"/>
     <artifact name="${net.java.dev.jna:jna}"/>
 
+    <!-- Jolokia deps -->
+    <artifact name="${commons-codec:commons-codec}" />
+    <artifact name="${org.apache.httpcomponents:httpclient-osgi}" />
+    <artifact name="${org.jolokia:jolokia-client-java}" />
+    <artifact name="${com.googlecode.json-simple:json-simple}" />
+    <!-- I can't find these in mvn dependency:tree but they came when pulling in jolokia -->
+    <!--
+    <artifact name="${commons-logging}" />
+    <artifact name="${fluent-hc}" />
+    <artifact name="${httpclient-cache}" />
+    <artifact name="${httpcore}" />
+    <artifact name="${httpmime}" />
+     -->
+
   </resources>
 
   <dependencies>
@@ -74,6 +88,7 @@
 
     <!-- other dependencies we need -->
     <module name="javaee.api"/> <!-- bus-commons -->
+    <module name="org.apache.commons.logging"/> <!-- jolokia -->
     <module name="org.jboss.as.domain-management"/>
     <module name="org.jboss.as.naming"/>
     <module name="org.jboss.as.network"/>

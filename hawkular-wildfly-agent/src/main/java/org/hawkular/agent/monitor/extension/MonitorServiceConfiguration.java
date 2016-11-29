@@ -29,6 +29,7 @@ import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
+import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 
 /**
@@ -405,18 +406,21 @@ public class MonitorServiceConfiguration {
     private final DiagnosticsConfiguration diagnostics;
     private final StorageAdapterConfiguration storageAdapter;
     private final ProtocolConfiguration<DMRNodeLocation> dmrConfiguration;
+    private final ProtocolConfiguration<JMXNodeLocation> jmxConfiguration;
     private final ProtocolConfiguration<PlatformNodeLocation> platformConfiguration;
 
     public MonitorServiceConfiguration(GlobalConfiguration globalConfiguration,
             DiagnosticsConfiguration diagnostics,
             StorageAdapterConfiguration storageAdapter,
             ProtocolConfiguration<DMRNodeLocation> dmrConfiguration,
+            ProtocolConfiguration<JMXNodeLocation> jmxConfiguration,
             ProtocolConfiguration<PlatformNodeLocation> platformConfiguration) {
         super();
         this.globalConfiguration = globalConfiguration;
         this.diagnostics = diagnostics;
         this.storageAdapter = storageAdapter;
         this.dmrConfiguration = dmrConfiguration;
+        this.jmxConfiguration = jmxConfiguration;
         this.platformConfiguration = platformConfiguration;
     }
 
@@ -470,11 +474,16 @@ public class MonitorServiceConfiguration {
 
     public MonitorServiceConfiguration cloneWith(StorageAdapterConfiguration newStorageAdapter) {
         return new MonitorServiceConfiguration(globalConfiguration,
-                diagnostics, newStorageAdapter, dmrConfiguration, platformConfiguration);
+                diagnostics, newStorageAdapter, dmrConfiguration,
+                jmxConfiguration, platformConfiguration);
     }
 
     public ProtocolConfiguration<DMRNodeLocation> getDmrConfiguration() {
         return dmrConfiguration;
+    }
+
+    public ProtocolConfiguration<JMXNodeLocation> getJmxConfiguration() {
+        return jmxConfiguration;
     }
 
     public ProtocolConfiguration<PlatformNodeLocation> getPlatformConfiguration() {

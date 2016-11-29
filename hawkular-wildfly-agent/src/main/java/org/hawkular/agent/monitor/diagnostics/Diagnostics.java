@@ -36,6 +36,11 @@ public interface Diagnostics {
     ProtocolDiagnostics getDMRDiagnostics();
 
     /**
+     * @return the JMX sampling an discovery related diagnostics
+     */
+    ProtocolDiagnostics getJMXDiagnostics();
+
+    /**
      * @return the platform sampling an discovery related diagnostics
      */
     ProtocolDiagnostics getPlatformDiagnostics();

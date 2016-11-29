@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,31 +25,28 @@ import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class ManagedServersDefinition extends PersistentResourceDefinition {
+public class JMXAvailSetDefinition extends PersistentResourceDefinition {
 
-    public static final ManagedServersDefinition INSTANCE = new ManagedServersDefinition();
+    public static final JMXAvailSetDefinition INSTANCE = new JMXAvailSetDefinition();
 
-    static final String MANAGED_SERVERS = "managed-servers";
+    static final String AVAIL_SET = "avail-set-jmx";
 
-    private ManagedServersDefinition() {
-        super(PathElement.pathElement(MANAGED_SERVERS, "default"),
-                SubsystemExtension.getResourceDescriptionResolver(MANAGED_SERVERS),
-                ManagedServersAdd.INSTANCE,
-                ManagedServersRemove.INSTANCE,
+    private JMXAvailSetDefinition() {
+        super(PathElement.pathElement(AVAIL_SET),
+                SubsystemExtension.getResourceDescriptionResolver(AVAIL_SET),
+                JMXAvailSetAdd.INSTANCE,
+                JMXAvailSetRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ManagedServersAttributes.ATTRIBUTES);
+        return Arrays.asList(JMXAvailSetAttributes.ATTRIBUTES);
     }
 
     @Override
     protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(
-                LocalDMRDefinition.INSTANCE,
-                RemoteDMRDefinition.INSTANCE,
-                RemoteJMXDefinition.INSTANCE);
+        return Arrays.asList(JMXAvailDefinition.INSTANCE);
     }
 }

@@ -39,6 +39,9 @@ import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.protocol.jmx.JMXEndpointService;
+import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
+import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
 import org.hawkular.agent.monitor.protocol.platform.PlatformEndpointService;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformSession;
@@ -61,6 +64,7 @@ public class ProtocolServices {
     public static class Builder {
         private final String feedId;
         private ProtocolService<DMRNodeLocation, DMRSession> dmrProtocolService;
+        private ProtocolService<JMXNodeLocation, JMXSession> jmxProtocolService;
         private ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService;
         private final Map<String, InjectedValue<SSLContext>> sslContexts;
         private final Diagnostics diagnostics;
@@ -74,7 +78,8 @@ public class ProtocolServices {
         }
 
         public ProtocolServices build() {
-            return new ProtocolServices(dmrProtocolService, platformProtocolService, autoDiscoveryScanPeriodSecs);
+            return new ProtocolServices(dmrProtocolService, jmxProtocolService, platformProtocolService,
+                    autoDiscoveryScanPeriodSecs);
         }
 
         public Builder autoDiscoveryScanPeriodSecs(int periodSecs) {
@@ -126,6 +131,38 @@ public class ProtocolServices {
             return this;
         }
 
+        public Builder jmxProtocolService(ProtocolConfiguration<JMXNodeLocation> protocolConfig) {
+
+            ProtocolService.Builder<JMXNodeLocation, JMXSession> builder = ProtocolService.builder("JMX");
+
+            for (EndpointConfiguration server : protocolConfig.getEndpoints().values()) {
+                if (server.isEnabled()) {
+                    final String securityRealm = server.getSecurityRealm();
+                    SSLContext sslContext = null;
+                    if (securityRealm != null) {
+                        InjectedValue<SSLContext> injectedValue = sslContexts.get(securityRealm);
+                        if (injectedValue == null) {
+                            throw new IllegalArgumentException("Unknown security realm: " + securityRealm);
+                        }
+                        sslContext = injectedValue.getOptionalValue();
+                    }
+                    final MonitoredEndpoint<EndpointConfiguration> endpoint = MonitoredEndpoint
+                            .<EndpointConfiguration> of(server, sslContext);
+                    ResourceTypeManager<JMXNodeLocation> resourceTypeManager = new ResourceTypeManager<>(
+                            protocolConfig.getTypeSets().getResourceTypeSets(), server.getResourceTypeSets());
+                    JMXEndpointService endpointService = new JMXEndpointService(feedId, endpoint, resourceTypeManager,
+                            diagnostics.getJMXDiagnostics());
+                    builder.endpointService(endpointService);
+
+                    log.debugf("[%s] created with resource type sets [%s]", endpointService,
+                            server.getResourceTypeSets());
+                }
+            }
+
+            this.jmxProtocolService = builder.build();
+            return this;
+        }
+
         public Builder platformProtocolService(ProtocolConfiguration<PlatformNodeLocation> protocolConfig) {
 
             ProtocolService.Builder<PlatformNodeLocation, PlatformSession> builder = ProtocolService
@@ -168,6 +205,7 @@ public class ProtocolServices {
     }
 
     private final ProtocolService<DMRNodeLocation, DMRSession> dmrProtocolService;
+    private final ProtocolService<JMXNodeLocation, JMXSession> jmxProtocolService;
     private final ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService;
     private final List<ProtocolService<?, ?>> services;
 
@@ -177,11 +215,14 @@ public class ProtocolServices {
 
     public ProtocolServices(
             ProtocolService<DMRNodeLocation, DMRSession> dmrProtocolService,
+            ProtocolService<JMXNodeLocation, JMXSession> jmxProtocolService,
             ProtocolService<PlatformNodeLocation, PlatformSession> platformProtocolService,
             int autoDiscoveryScanPeriodSecs) {
         this.dmrProtocolService = dmrProtocolService;
+        this.jmxProtocolService = jmxProtocolService;
         this.platformProtocolService = platformProtocolService;
-        this.services = Collections.unmodifiableList(Arrays.asList(dmrProtocolService, platformProtocolService));
+        this.services = Collections.unmodifiableList(Arrays.asList(dmrProtocolService, jmxProtocolService,
+                platformProtocolService));
         this.autoDiscoveryScanPeriodSecs = autoDiscoveryScanPeriodSecs;
     }
 
@@ -221,6 +262,10 @@ public class ProtocolServices {
 
     public ProtocolService<DMRNodeLocation, DMRSession> getDmrProtocolService() {
         return dmrProtocolService;
+    }
+
+    public ProtocolService<JMXNodeLocation, JMXSession> getJmxProtocolService() {
+        return jmxProtocolService;
     }
 
     public ProtocolService<PlatformNodeLocation, PlatformSession> getPlatformProtocolService() {

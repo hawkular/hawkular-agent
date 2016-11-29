@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +16,12 @@
  */
 package org.hawkular.agent.monitor.protocol;
 
+import javax.management.ObjectName;
+
 import org.hawkular.agent.monitor.protocol.dmr.DMRLocationResolver;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
+import org.hawkular.agent.monitor.protocol.jmx.JMXLocationResolver;
+import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.Constants;
 import org.hawkular.agent.monitor.protocol.platform.PlatformLocationResolver;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
@@ -50,6 +54,23 @@ public class LocationResolverTest {
         try {
             resolver.findWildcardMatch(multiTargetLocation, singleLocation);
             Assert.fail("Single location was missing 'connection-properties' key - should have failed");
+        } catch (ProtocolException expected) {
+        }
+    }
+
+    @Test
+    public void testFindWildcardMatchJMX() throws Exception {
+        JMXNodeLocation multiTargetLocation = new JMXNodeLocation(
+                new ObjectName("domain:name=value,matchme=*"));
+        JMXNodeLocation singleLocation = new JMXNodeLocation(
+                new ObjectName("domain:name2=value2,name3=value3,matchme=foo,name=value"));
+        JMXLocationResolver resolver = new JMXLocationResolver();
+        Assert.assertEquals("foo", resolver.findWildcardMatch(multiTargetLocation, singleLocation));
+
+        singleLocation = new JMXNodeLocation(new ObjectName("domain:name2=value2,name3=value3,name=value"));
+        try {
+            resolver.findWildcardMatch(multiTargetLocation, singleLocation);
+            Assert.fail("Single location was missing 'matchme' key - should have failed");
         } catch (ProtocolException expected) {
         }
     }

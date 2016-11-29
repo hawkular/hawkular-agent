@@ -19,6 +19,8 @@ package org.hawkular.agent.monitor.log;
 import java.util.Collection;
 import java.util.List;
 
+import javax.management.MalformedObjectNameException;
+
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -231,8 +233,8 @@ public interface MsgLogger extends BasicLogger {
     void warnFailedToLocate(@Cause ProtocolException e, String typeName, String location, String parentLocation);
 
     @LogMessage(level = Level.WARN)
-    @Message(id = 10048, value = "")
-    void warn10048();
+    @Message(id = 10048, value = "Malformed JMX object name: [%s]")
+    void warnMalformedJMXObjectName(String objectName, @Cause MalformedObjectNameException e);
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10049, value = "Could not access resources of endpoint [%s]")
