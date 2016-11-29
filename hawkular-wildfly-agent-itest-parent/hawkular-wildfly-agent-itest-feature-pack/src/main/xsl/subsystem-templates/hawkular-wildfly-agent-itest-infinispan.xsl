@@ -30,6 +30,8 @@
         <local-cache name="data"/>
         <local-cache name="publish"/>
         <local-cache name="schema"/>
+        <local-cache name="dataIds"/>
+        <local-cache name="globalActions"/>
       </cache-container>
       <cache-container name="hawkular-services" default-cache="backfill" statistics-enabled="true">
         <local-cache name="backfill"/>
