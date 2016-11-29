@@ -22,8 +22,8 @@ import java.util.Collection;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
-import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
-import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
+import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
+import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.util.Util;
@@ -37,32 +37,32 @@ import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelNode;
 
-public class RemoteDMRDefinition extends PersistentResourceDefinition {
+public class LocalJMXDefinition extends PersistentResourceDefinition {
 
-    public static final RemoteDMRDefinition INSTANCE = new RemoteDMRDefinition();
+    public static final LocalJMXDefinition INSTANCE = new LocalJMXDefinition();
 
-    static final String REMOTE_DMR = "remote-dmr";
+    static final String LOCAL_JMX = "local-jmx";
 
-    private RemoteDMRDefinition() {
-        super(PathElement.pathElement(REMOTE_DMR),
+    private LocalJMXDefinition() {
+        super(PathElement.pathElement(LOCAL_JMX),
                 SubsystemExtension.getResourceDescriptionResolver(ManagedServersDefinition.MANAGED_SERVERS,
-                        REMOTE_DMR),
-                RemoteDMRAdd.INSTANCE,
-                RemoteDMRRemove.INSTANCE,
+                        LOCAL_JMX),
+                LocalJMXAdd.INSTANCE,
+                LocalJMXRemove.INSTANCE,
                 Flag.RESTART_NONE,
                 Flag.RESTART_NONE);
     }
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(RemoteDMRAttributes.ATTRIBUTES);
+        return Arrays.asList(LocalJMXAttributes.ATTRIBUTES);
     }
 
     @Override
     public void registerAttributes(ManagementResourceRegistration resourceRegistration) {
         Util.registerOnlyRestartAttributes(resourceRegistration, getAttributes());
 
-        resourceRegistration.registerReadWriteAttribute(RemoteDMRAttributes.ENABLED, null,
+        resourceRegistration.registerReadWriteAttribute(LocalJMXAttributes.ENABLED, null,
                 new MonitorServiceWriteAttributeHandler<Void>() {
                     @Override
                     protected boolean applyUpdateToRuntime(
@@ -78,8 +78,8 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
                             return false;
                         }
 
-                        boolean currBool = RemoteDMRAttributes.ENABLED.resolveValue(context, currentValue).asBoolean();
-                        boolean newBool = RemoteDMRAttributes.ENABLED.resolveValue(context, newValue).asBoolean();
+                        boolean currBool = LocalJMXAttributes.ENABLED.resolveValue(context, currentValue).asBoolean();
+                        boolean newBool = LocalJMXAttributes.ENABLED.resolveValue(context, newValue).asBoolean();
                         if (currBool == newBool) {
                             return false; // don't know if this would ever happen, but if it does, nothing changed
                         }
@@ -89,8 +89,8 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
                             return true; // caught service starting up, need to be restarted to pick up this change
                         }
 
-                        ProtocolService<DMRNodeLocation, DMRSession> dmrService = monitorService.getProtocolServices()
-                                .getDmrProtocolService();
+                        ProtocolService<JMXNodeLocation, JMXSession> jmxService = monitorService.getProtocolServices()
+                                .getJmxProtocolService();
                         String thisEndpointName = context.getCurrentAddressValue();
 
                         if (newBool) {
@@ -101,18 +101,17 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
 
                             // create a new endpoint service
                             ProtocolServices newServices = monitorService.createProtocolServicesBuilder()
-                                    .dmrProtocolService(monitorService.getLocalModelControllerClientFactory(),
-                                            config.getDmrConfiguration())
+                                    .jmxProtocolService(config.getJmxConfiguration())
                                     .build();
-                            EndpointService<DMRNodeLocation, DMRSession> endpointService = newServices
-                                    .getDmrProtocolService().getEndpointServices().get(thisEndpointName);
+                            EndpointService<JMXNodeLocation, JMXSession> endpointService = newServices
+                                    .getJmxProtocolService().getEndpointServices().get(thisEndpointName);
 
                             // put the new endpoint service in the original protocol services container
-                            dmrService.add(endpointService);
+                            jmxService.add(endpointService);
                         } else {
                             // remove the endpoint so it is no longer monitored
                             SchedulerService schedulerService = monitorService.getSchedulerService();
-                            dmrService.remove(thisEndpointName, schedulerService);
+                            jmxService.remove(thisEndpointName, schedulerService);
                         }
 
                         return false;

@@ -136,6 +136,11 @@
                 security-realm="HawkularRealm"
                 resource-type-sets="R Resource Type Set" />
 
+    <local-jmx name="Remote JMX"
+               enabled="false"
+               mbean-server-name="mbs"
+               resource-type-sets="R Resource Type Set" />
+
   </managed-servers>
 
   <platform enabled="false">

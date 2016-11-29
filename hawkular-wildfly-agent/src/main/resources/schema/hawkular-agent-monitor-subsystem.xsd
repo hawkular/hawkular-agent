@@ -297,6 +297,7 @@
       <xs:element name="remote-dmr"        type="remoteDmrType"        minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="local-dmr"         type="localDmrType"         minOccurs="0" maxOccurs="1"/>
       <xs:element name="remote-jmx"        type="remoteJmxType"        minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="local-jmx"         type="localJmxType"         minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -334,6 +335,17 @@
     <xs:attribute name="username"              type="xs:string"/>
     <xs:attribute name="password"              type="xs:string"/>
     <xs:attribute name="security-realm"        type="xs:string"/>
+    <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
+    <xs:attribute name="resource-type-sets"    type="xs:string"/>
+    <xs:attribute name="tenant-id"             type="xs:string"/>
+    <xs:attribute name="metric-id-template"    type="xs:string"/>
+    <xs:attribute name="metric-labels"         type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="localJmxType">
+    <xs:attribute name="name"                  type="xs:string" use="required"/>
+    <xs:attribute name="enabled"               type="xs:boolean"/>
+    <xs:attribute name="mbean-server-name"     type="xs:string"/>
     <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
     <xs:attribute name="resource-type-sets"    type="xs:string"/>
     <xs:attribute name="tenant-id"             type="xs:string"/>

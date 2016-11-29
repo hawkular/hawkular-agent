@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.protocol;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +69,9 @@ public class ProtocolService<L, S extends Session<L>> {
     private final String name;
     private final Map<String, EndpointService<L, S>> endpointServices;
 
+    // need to remember the listeners in case new endpoints are added after things have started
+    private final List<InventoryListener> inventoryListeners = Collections.synchronizedList(new ArrayList<>());
+
     public ProtocolService(String name, Map<String, EndpointService<L, S>> endpointServices) {
         this.name = name;
         this.endpointServices = endpointServices;
@@ -111,12 +115,14 @@ public class ProtocolService<L, S extends Session<L>> {
         for (EndpointService<L, S> service : getEndpointServices().values()) {
             service.addInventoryListener(listener);
         }
+        this.inventoryListeners.add(listener);
     }
 
     public void removeInventoryListener(InventoryListener listener) {
         for (EndpointService<L, S> service : getEndpointServices().values()) {
             service.removeInventoryListener(listener);
         }
+        this.inventoryListeners.remove(listener);
     }
 
     /**
@@ -128,6 +134,12 @@ public class ProtocolService<L, S extends Session<L>> {
     public void add(EndpointService<L, S> newEndpointService) {
         if (newEndpointService == null) {
             throw new IllegalArgumentException("New endpoint service must not be null");
+        }
+
+        synchronized (this.inventoryListeners) {
+            for (InventoryListener listener : this.inventoryListeners) {
+                newEndpointService.addInventoryListener(listener);
+            }
         }
 
         endpointServices.put(newEndpointService.getMonitoredEndpoint().getName(), newEndpointService);

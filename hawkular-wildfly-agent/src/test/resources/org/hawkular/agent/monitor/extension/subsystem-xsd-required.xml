@@ -77,6 +77,8 @@
     <remote-jmx name="Remote JMX"
                 url="https://localhost:8080/jolokia"/>
 
+    <local-jmx name="Local JMX" />
+
   </managed-servers>
 
 </subsystem>

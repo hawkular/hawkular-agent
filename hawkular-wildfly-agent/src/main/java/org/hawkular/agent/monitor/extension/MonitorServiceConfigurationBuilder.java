@@ -56,6 +56,7 @@ import org.hawkular.agent.monitor.inventory.TypeSets;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
+import org.hawkular.agent.monitor.protocol.jmx.JMXEndpointService;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.Constants;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformMetricType;
@@ -1283,6 +1284,34 @@ public class MonitorServiceConfigurationBuilder {
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
                             connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, metricTags,
                             null);
+
+                    jmxConfigBuilder.endpoint(endpoint);
+                }
+            }
+
+            if (managedServersValueNode.hasDefined(LocalJMXDefinition.LOCAL_JMX)) {
+                List<Property> localJMXsList = managedServersValueNode.get(LocalJMXDefinition.LOCAL_JMX)
+                        .asPropertyList();
+                for (Property localJMXProperty : localJMXsList) {
+                    String name = localJMXProperty.getName();
+                    ModelNode localJMXValueNode = localJMXProperty.getValue();
+                    boolean enabled = getBoolean(localJMXValueNode, context, LocalJMXAttributes.ENABLED);
+                    String setAvailOnShutdownStr = getString(localJMXValueNode, context,
+                            LocalJMXAttributes.SET_AVAIL_ON_SHUTDOWN);
+                    Avail setAvailOnShutdown = (setAvailOnShutdownStr == null) ? null
+                            : Avail.valueOf(setAvailOnShutdownStr);
+                    String mbsNameStr = getString(localJMXValueNode, context, LocalJMXAttributes.MBEAN_SERVER_NAME);
+                    List<Name> resourceTypeSets = getNameListFromString(localJMXValueNode, context,
+                            LocalJMXAttributes.RESOURCE_TYPE_SETS);
+                    String tenantId = getString(localJMXValueNode, context, LocalJMXAttributes.TENANT_ID);
+                    String metricIdTemplate = getString(localJMXValueNode, context,
+                            RemoteDMRAttributes.METRIC_ID_TEMPLATE);
+                    Map<String, String> metricTags = getMapFromString(localJMXValueNode, context,
+                            RemoteDMRAttributes.METRIC_TAGS);
+
+                    EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
+                            null, null, setAvailOnShutdown, tenantId, metricIdTemplate, metricTags,
+                            Collections.singletonMap(JMXEndpointService.MBEAN_SERVER_NAME_KEY, mbsNameStr));
 
                     jmxConfigBuilder.endpoint(endpoint);
                 }

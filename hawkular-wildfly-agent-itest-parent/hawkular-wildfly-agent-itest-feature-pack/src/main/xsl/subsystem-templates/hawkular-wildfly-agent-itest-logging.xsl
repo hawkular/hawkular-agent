@@ -34,6 +34,9 @@
       <logger category="org.hawkular.inventory.rest.requests">
         <level name="${{hawkular.log.inventory.rest.requests:INFO}}" />
       </logger>
+      <logger category="org.hawkular.agent">
+        <level name="${{hawkular.log.agent:INFO}}" />
+      </logger>
     </xsl:copy>
   </xsl:template>
 
