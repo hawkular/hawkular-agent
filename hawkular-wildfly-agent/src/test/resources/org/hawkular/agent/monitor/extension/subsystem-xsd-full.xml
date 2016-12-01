@@ -147,7 +147,7 @@
                 resource-type-sets="Main"
                 tenant-id=""
                 metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
-                metric-labels="feed=%FeedId,Label One=Value One" />
+                metric-tags="feed=%FeedId,Label One=Value One" />
 
     <local-dmr name="Self"
                enabled="true"
@@ -155,7 +155,7 @@
                resource-type-sets="Main"
                tenant-id="tenantOverride"
                metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
-               metric-labels="feed=%FeedId,Label One=Value One" />
+               metric-tags="feed=%FeedId,Label One=Value One" />
 
     <remote-jmx name="Remote JMX"
                 enabled="true"
@@ -167,7 +167,7 @@
                 resource-type-sets="R Resource Type Set"
                 tenant-id="tenantOverride"
                 metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
-                metric-labels="feed=%FeedId,Label One=Value One" />
+                metric-tags="feed=%FeedId,Label One=Value One" />
 
     <local-jmx name="Local JMX"
                enabled="true"
@@ -176,7 +176,7 @@
                resource-type-sets="R Resource Type Set"
                tenant-id="tenantOverride"
                metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
-               metric-labels="feed=%FeedId,Label One=Value One" />
+               metric-tags="feed=%FeedId,Label One=Value One" />
 
   </managed-servers>
 
