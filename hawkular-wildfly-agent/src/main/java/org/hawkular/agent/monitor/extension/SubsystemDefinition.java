@@ -90,7 +90,10 @@ public class SubsystemDefinition extends PersistentResourceDefinition {
                 ManagedServersDefinition.INSTANCE,
                 DMRResourceTypeSetDefinition.INSTANCE,
                 DMRMetricSetDefinition.INSTANCE,
-                DMRAvailSetDefinition.INSTANCE);
+                DMRAvailSetDefinition.INSTANCE,
+                JMXResourceTypeSetDefinition.INSTANCE,
+                JMXMetricSetDefinition.INSTANCE,
+                JMXAvailSetDefinition.INSTANCE);
     }
 
     @Override

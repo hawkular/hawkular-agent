@@ -33,6 +33,9 @@
       <xs:element name="metric-set-dmr"        type="metricSetDmrType"        minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="avail-set-dmr"         type="availSetDmrType"         minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="resource-type-set-dmr" type="resourceTypeSetDmrType"  minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="metric-set-jmx"        type="metricSetJmxType"        minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="avail-set-jmx"         type="availSetJmxType"         minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="resource-type-set-jmx" type="resourceTypeSetJmxType"  minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="managed-servers"       type="managedServersType"      minOccurs="1" maxOccurs="1"/>
       <xs:element name="platform"              type="platformType"            minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
@@ -211,11 +214,89 @@
     <xs:attribute name="internal-name"  type="xs:string"/>
   </xs:complexType>
 
+  <!-- JMX configuration -->
+
+  <!-- definition of sets of JMX metrics -->
+  <xs:complexType name="metricSetJmxType">
+    <xs:sequence>
+      <xs:element name="metric-jmx" type="metricJmxType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"    type="xs:string" use="required"/>
+    <xs:attribute name="enabled" type="xs:boolean"/>
+  </xs:complexType>
+
+  <xs:complexType name="metricJmxType">
+    <xs:attribute name="name"                type="xs:string" use="required"/>
+    <xs:attribute name="object-name"         type="xs:string"/>
+    <xs:attribute name="attribute"           type="xs:string" use="required"/>
+    <xs:attribute name="metric-type"         type="metricTypeType"/>
+    <xs:attribute name="metric-units"        type="metricUnitsType"/>
+    <xs:attribute name="interval"            type="xs:int"/>
+    <xs:attribute name="time-units"          type="timeUnitsType"/>
+    <xs:attribute name="metric-id-template"  type="xs:string"/>
+    <xs:attribute name="metric-tags"         type="xs:string"/>
+  </xs:complexType>
+
+  <!-- definition of sets of JMX availability checks -->
+  <xs:complexType name="availSetJmxType">
+    <xs:sequence>
+      <xs:element name="avail-jmx" type="availJmxType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"    type="xs:string" use="required"/>
+    <xs:attribute name="enabled" type="xs:boolean"/>
+  </xs:complexType>
+
+  <xs:complexType name="availJmxType">
+    <xs:attribute name="name"               type="xs:string" use="required"/>
+    <xs:attribute name="object-name"        type="xs:string"/>
+    <xs:attribute name="attribute"          type="xs:string"/> <!-- if not specified, existence of resource at path is used for availability status -->
+    <xs:attribute name="interval"           type="xs:int"/>
+    <xs:attribute name="time-units"         type="timeUnitsType"/>
+    <xs:attribute name="up-regex"           type="xs:string"/>
+    <xs:attribute name="metric-id-template" type="xs:string"/>
+    <xs:attribute name="metric-tags"        type="xs:string"/>
+  </xs:complexType>
+
+  <!-- definition of sets of JMX resource types -->
+  <xs:complexType name="resourceTypeSetJmxType">
+    <xs:sequence>
+      <xs:element name="resource-type-jmx" type="resourceTypeJmxType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"    type="xs:string" use="required"/>
+    <xs:attribute name="enabled" type="xs:boolean"/>
+  </xs:complexType>
+
+  <xs:complexType name="resourceTypeJmxType">
+    <xs:sequence>
+      <xs:element name="resource-config-jmx" type="resourceConfigJmxType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="operation-jmx"       type="operationJmxType"      minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"                   type="xs:string" use="required"/>
+    <xs:attribute name="resource-name-template" type="xs:string" use="required"/>
+    <xs:attribute name="object-name"            type="xs:string" use="required"/>
+    <xs:attribute name="parents"                type="xs:string"/>
+    <xs:attribute name="metric-sets"            type="xs:string"/>
+    <xs:attribute name="avail-sets"             type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="resourceConfigJmxType">
+    <xs:attribute name="name"        type="xs:string" use="required"/>
+    <xs:attribute name="object-name" type="xs:string"/>
+    <xs:attribute name="attribute"   type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="operationJmxType">
+    <xs:attribute name="name"           type="xs:string" use="required"/>
+    <xs:attribute name="object-name"    type="xs:string"/>
+    <xs:attribute name="internal-name"  type="xs:string"/>
+  </xs:complexType>
+
   <!-- managed server configuration-->
   <xs:complexType name="managedServersType">
     <xs:sequence>
       <xs:element name="remote-dmr"        type="remoteDmrType"        minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="local-dmr"         type="localDmrType"         minOccurs="0" maxOccurs="1"/>
+      <xs:element name="remote-jmx"        type="remoteJmxType"        minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -238,6 +319,20 @@
     <xs:attribute name="username"              type="xs:string"/>
     <xs:attribute name="password"              type="xs:string"/>
     <xs:attribute name="use-ssl"               type="xs:boolean"/>
+    <xs:attribute name="security-realm"        type="xs:string"/>
+    <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
+    <xs:attribute name="resource-type-sets"    type="xs:string"/>
+    <xs:attribute name="tenant-id"             type="xs:string"/>
+    <xs:attribute name="metric-id-template"    type="xs:string"/>
+    <xs:attribute name="metric-labels"         type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="remoteJmxType">
+    <xs:attribute name="name"                  type="xs:string" use="required"/>
+    <xs:attribute name="enabled"               type="xs:boolean"/>
+    <xs:attribute name="url"                   type="xs:string" use="required"/>
+    <xs:attribute name="username"              type="xs:string"/>
+    <xs:attribute name="password"              type="xs:string"/>
     <xs:attribute name="security-realm"        type="xs:string"/>
     <xs:attribute name="set-avail-on-shutdown" type="xs:string"/>
     <xs:attribute name="resource-type-sets"    type="xs:string"/>

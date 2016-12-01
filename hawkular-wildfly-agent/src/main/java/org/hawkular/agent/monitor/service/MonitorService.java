@@ -267,7 +267,7 @@ public class MonitorService implements Service<MonitorService> {
     private final AvailStorageProxy availStorageProxy = new AvailStorageProxy();
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
 
-    // contains endpoint services for all the different protocols that are supported (dmr, platform)
+    // contains endpoint services for all the different protocols that are supported (dmr, jmx, platform)
     private ProtocolServices protocolServices;
 
     // used to talk to the management interface of the WildFly server the agent is deployed in
@@ -357,6 +357,12 @@ public class MonitorService implements Service<MonitorService> {
 
         // get the security realms for any configured remote servers that require ssl
         for (EndpointConfiguration endpoint : bootConfiguration.getDmrConfiguration().getEndpoints().values()) {
+            String securityRealm = endpoint.getSecurityRealm();
+            if (securityRealm != null) {
+                addSslContext(securityRealm, bldr);
+            }
+        }
+        for (EndpointConfiguration endpoint : bootConfiguration.getJmxConfiguration().getEndpoints().values()) {
             String securityRealm = endpoint.getSecurityRealm();
             if (securityRealm != null) {
                 addSslContext(securityRealm, bldr);
@@ -593,6 +599,7 @@ public class MonitorService implements Service<MonitorService> {
             // build the protocol services
             ProtocolServices ps = createProtocolServicesBuilder()
                     .dmrProtocolService(this.localModelControllerClientFactory, configuration.getDmrConfiguration())
+                    .jmxProtocolService(configuration.getJmxConfiguration())
                     .platformProtocolService(configuration.getPlatformConfiguration())
                     .autoDiscoveryScanPeriodSecs(configuration.getAutoDiscoveryScanPeriodSeconds())
                     .build();
@@ -625,6 +632,7 @@ public class MonitorService implements Service<MonitorService> {
         Set<String> tenantIds = new HashSet<String>();
         List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
         endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
+        endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
         endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
 
         tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID

@@ -25,31 +25,29 @@ import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class ManagedServersDefinition extends PersistentResourceDefinition {
+public class JMXResourceTypeDefinition extends PersistentResourceDefinition {
 
-    public static final ManagedServersDefinition INSTANCE = new ManagedServersDefinition();
+    public static final JMXResourceTypeDefinition INSTANCE = new JMXResourceTypeDefinition();
 
-    static final String MANAGED_SERVERS = "managed-servers";
+    static final String RESOURCE_TYPE = "resource-type-jmx";
 
-    private ManagedServersDefinition() {
-        super(PathElement.pathElement(MANAGED_SERVERS, "default"),
-                SubsystemExtension.getResourceDescriptionResolver(MANAGED_SERVERS),
-                ManagedServersAdd.INSTANCE,
-                ManagedServersRemove.INSTANCE,
+    private JMXResourceTypeDefinition() {
+        super(PathElement.pathElement(RESOURCE_TYPE),
+                SubsystemExtension.getResourceDescriptionResolver(JMXResourceTypeSetDefinition.RESOURCE_TYPE_SET,
+                        RESOURCE_TYPE),
+                JMXResourceTypeAdd.INSTANCE,
+                JMXResourceTypeRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(ManagedServersAttributes.ATTRIBUTES);
+        return Arrays.asList(JMXResourceTypeAttributes.ATTRIBUTES);
     }
 
     @Override
     protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(
-                LocalDMRDefinition.INSTANCE,
-                RemoteDMRDefinition.INSTANCE,
-                RemoteJMXDefinition.INSTANCE);
+        return Arrays.asList(JMXResourceConfigDefinition.INSTANCE, JMXOperationDefinition.INSTANCE);
     }
 }
