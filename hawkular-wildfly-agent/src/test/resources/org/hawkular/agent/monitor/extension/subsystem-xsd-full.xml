@@ -169,6 +169,15 @@
                 metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
                 metric-labels="feed=%FeedId,Label One=Value One" />
 
+    <local-jmx name="Local JMX"
+               enabled="true"
+               mbean-server-name="mbs"
+               set-avail-on-shutdown="UP"
+               resource-type-sets="R Resource Type Set"
+               tenant-id="tenantOverride"
+               metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
+               metric-labels="feed=%FeedId,Label One=Value One" />
+
   </managed-servers>
 
   <platform enabled="true" machine-id="1234567890abcdef" interval="10" time-units="seconds">

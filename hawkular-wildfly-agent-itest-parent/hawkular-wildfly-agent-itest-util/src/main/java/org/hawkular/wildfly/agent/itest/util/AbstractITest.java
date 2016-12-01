@@ -607,11 +607,11 @@ public abstract class AbstractITest {
             if (!accountsAndInventoryReady) {
                 Thread.sleep(10000);
 
-                /*
-                 * Ensure inventory is running by trying to read our tenant - this is what we authenticate with against
-                 * inventory.
-                 */
                 getWithRetries(baseInvUri + "/tenant");
+                while (!getWithRetries(baseMetricsUri + "/status").contains("STARTED")) {
+                    Thread.sleep(2000);
+                }
+
                 accountsAndInventoryReady = true;
             }
         }

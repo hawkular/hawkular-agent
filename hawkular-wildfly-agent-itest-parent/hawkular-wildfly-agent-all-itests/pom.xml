@@ -41,6 +41,7 @@
     <module>hawkular-wildfly-agent-installer-itest</module>
     <module>hawkular-wildfly-agent-domain-itest</module>
     <module>hawkular-wildfly-agent-cmdgw-itest</module>
+    <module>hawkular-wildfly-agent-jmx-itest</module>
   </modules>
 
   <profiles>

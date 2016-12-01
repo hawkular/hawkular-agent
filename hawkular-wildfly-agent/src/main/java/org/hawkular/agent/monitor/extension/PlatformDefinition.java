@@ -78,7 +78,7 @@ public class PlatformDefinition extends PersistentResourceDefinition {
                             ModelNode newValue,
                             ModelNode currentValue,
                             AbstractWriteAttributeHandler.HandbackHolder<Void> handbackHolder)
-                                    throws OperationFailedException {
+                            throws OperationFailedException {
 
                         if (context.isBooting()) {
                             return false;
@@ -91,6 +91,10 @@ public class PlatformDefinition extends PersistentResourceDefinition {
                         }
 
                         MonitorService monitorService = getMonitorService(context);
+                        if (monitorService == null || !monitorService.isMonitorServiceStarted()) {
+                            return true; // caught service starting up, need to be restarted to pick up this change
+                        }
+
                         ProtocolService<PlatformNodeLocation, PlatformSession> platformService = monitorService
                                 .getProtocolServices().getPlatformProtocolService();
                         String thisEndpointName = context.getCurrentAddressValue();
@@ -127,7 +131,7 @@ public class PlatformDefinition extends PersistentResourceDefinition {
                             ModelNode originalValue,
                             ModelNode newBadValue,
                             Void handback)
-                                    throws OperationFailedException {
+                            throws OperationFailedException {
                         // nothing to revert?
                     }
                 });

@@ -23,38 +23,23 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.Driver;
 import org.hawkular.agent.monitor.protocol.LocationResolver;
 import org.hawkular.agent.monitor.protocol.Session;
-import org.jolokia.client.J4pClient;
 
 /**
- * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ * A session for any JMX endpoint (local or remote)
  * @see Session
  */
 public class JMXSession
         extends Session<JMXNodeLocation> {
-    private final J4pClient client;
 
     public JMXSession(String feedId,
             MonitoredEndpoint endpoint,
             ResourceTypeManager<JMXNodeLocation> resourceTypeManager,
             Driver<JMXNodeLocation> driver,
-            LocationResolver<JMXNodeLocation> locationResolver,
-            J4pClient client) {
+            LocationResolver<JMXNodeLocation> locationResolver) {
         super(feedId, endpoint, resourceTypeManager, driver, locationResolver);
-        this.client = client;
     }
 
-    /** @see java.io.Closeable#close() */
     @Override
     public void close() throws IOException {
-        /* we could eventually close the client here if it was closeable */
-    }
-
-    /**
-     * Returns a native client.
-     *
-     * @return a native client
-     */
-    public J4pClient getClient() {
-        return client;
     }
 }
