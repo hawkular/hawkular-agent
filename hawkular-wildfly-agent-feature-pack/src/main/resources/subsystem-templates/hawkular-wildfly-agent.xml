@@ -847,7 +847,7 @@
                          path="/subsystem=datasources/data-source=*"
                          parents="WildFly Server,Domain WildFly Server"
                          metric-sets="Datasource Pool Metrics,Datasource JDBC Metrics">
-        <resource-config-dmr name="Connection URL"   attribute="connection-url" />
+        <resource-config-dmr name="Connection URL"   attribute="connection-url" resolve-expressions="true"/>
         <resource-config-dmr name="Driver Name"      attribute="driver-name" />
         <resource-config-dmr name="Driver Class"     attribute="driver-class" />
         <resource-config-dmr name="Datasource Class" attribute="datasource-class" />
