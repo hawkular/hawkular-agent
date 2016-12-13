@@ -73,10 +73,11 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.squareup.okhttp.Credentials;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+
+import okhttp3.Credentials;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
@@ -206,7 +207,7 @@ public abstract class AbstractITest {
     @AfterMethod
     public void after() {
         // Trigger shutdown of the dispatcher's executor so this process can exit cleanly.
-        client.getDispatcher().getExecutorService().shutdown();
+        client.dispatcher().executorService().shutdown();
     }
 
     protected String getNodeAttribute(ModelControllerClient mcc, ModelNode addressActual, String attributeName) {

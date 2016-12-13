@@ -35,8 +35,8 @@ import org.jboss.as.controller.PathAddress;
 import org.junit.Assert;
 import org.testng.annotations.Test;
 
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>

@@ -69,9 +69,10 @@ import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 
 import com.codahale.metrics.Timer;
-import com.squareup.okhttp.Call;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+
+import okhttp3.Call;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * An {@link InventoryStorage} that syncs inventory that has been discovered.
@@ -522,7 +523,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                             // In either case, the resource no longer exists which is what we want;
                             // any other response code means it is an error and we didn't remove the resource.
                             throw new Exception("status-code=[" + response.code() + "], reason=["
-                                    + response.message() + "], url=[" + request.urlString() + "]");
+                                    + response.message() + "], url=[" + request.url().toString() + "]");
                         }
 
                         log.debugf("Took [%d]ms to remove root resource [%s]", duration, removedResource);
@@ -619,7 +620,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     // HTTP status of 204 means success, anything else is an error
                     if (response.code() != 204) {
                         throw new Exception("status-code=[" + response.code() + "], reason=["
-                                + response.message() + "], url=[" + request.urlString() + "]");
+                                + response.message() + "], url=[" + request.url().toString() + "]");
                     }
 
                     diagnostics.getInventoryRate().mark(totalResourceCount);
@@ -677,7 +678,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     // HTTP status of 204 means success, anything else is an error
                     if (response.code() != 204) {
                         throw new Exception("status-code=[" + response.code() + "], reason=["
-                                + response.message() + "], url=[" + request.urlString() + "]");
+                                + response.message() + "], url=[" + request.url().toString() + "]");
                     }
 
                     diagnostics.getInventoryRate().mark(1);
@@ -734,7 +735,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     // HTTP status of 204 means success, anything else is an error
                     if (response.code() != 204) {
                         throw new Exception("status-code=[" + response.code() + "], reason=["
-                                + response.message() + "], url=[" + request.urlString() + "]");
+                                + response.message() + "], url=[" + request.url().toString() + "]");
                     }
 
                     diagnostics.getInventoryRate().mark(1);

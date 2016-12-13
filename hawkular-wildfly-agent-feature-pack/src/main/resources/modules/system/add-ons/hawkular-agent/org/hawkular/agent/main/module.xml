@@ -29,8 +29,8 @@
     <artifact name="${org.jgrapht:jgrapht-core}"/>
     <artifact name="${org.wildfly.plugins:wildfly-plugin-core}"/>
     <artifact name="${io.dropwizard.metrics:metrics-core}"/>
-    <artifact name="${com.squareup.okhttp:okhttp}"/>
-    <artifact name="${com.squareup.okhttp:okhttp-ws}"/>
+    <artifact name="${com.squareup.okhttp3:okhttp}"/>
+    <artifact name="${com.squareup.okhttp3:okhttp-ws}"/>
     <artifact name="${com.squareup.okio:okio}"/>
 
     <!-- These are pulled in due to hawkular-inventory-json-helper.jar. -->

@@ -31,9 +31,9 @@ import javax.net.ssl.TrustManagerFactory;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.ws.WebSocketCall;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.ws.WebSocketCall;
 
 /**
  * Can be used to generate HTTP clients including those that require SSL.
@@ -59,6 +59,7 @@ public class BaseHttpClientGenerator {
             private SSLContext sslContext;
             private Optional<Integer> connectTimeoutSeconds = Optional.empty();
             private Optional<Integer> readTimeoutSeconds = Optional.empty();
+
             public Builder() {
             }
 
@@ -96,10 +97,12 @@ public class BaseHttpClientGenerator {
                 this.sslContext = s;
                 return this;
             }
+
             public Builder connectTimeout(int connectTimeoutSeconds) {
                 this.connectTimeoutSeconds = Optional.of(connectTimeoutSeconds);
                 return this;
             }
+
             public Builder readTimeout(int readTimeoutSeconds) {
                 this.readTimeoutSeconds = Optional.of(readTimeoutSeconds);
                 return this;
@@ -170,11 +173,13 @@ public class BaseHttpClientGenerator {
     public BaseHttpClientGenerator(Configuration configuration) {
         this.configuration = configuration;
 
-        OkHttpClient httpClient = new OkHttpClient();
+        OkHttpClient.Builder httpClientBldr = new OkHttpClient.Builder();
 
         /* set the timeouts explicitly only if they were set through the config */
-        configuration.getConnectTimeoutSeconds().ifPresent(timeout -> httpClient.setConnectTimeout(timeout.intValue(), TimeUnit.SECONDS));
-        configuration.getReadTimeoutSeconds().ifPresent(timeout -> httpClient.setReadTimeout(timeout.intValue(), TimeUnit.SECONDS));
+        configuration.getConnectTimeoutSeconds()
+                .ifPresent(timeout -> httpClientBldr.connectTimeout(timeout.intValue(), TimeUnit.SECONDS));
+        configuration.getReadTimeoutSeconds()
+                .ifPresent(timeout -> httpClientBldr.readTimeout(timeout.intValue(), TimeUnit.SECONDS));
 
         if (this.configuration.isUseSSL()) {
             SSLContext theSslContextToUse;
@@ -191,7 +196,7 @@ public class BaseHttpClientGenerator {
             }
 
             if (theSslContextToUse != null) {
-                httpClient.setSslSocketFactory(theSslContextToUse.getSocketFactory());
+                httpClientBldr.sslSocketFactory(theSslContextToUse.getSocketFactory());
             }
 
             // does not perform any hostname verification when looking at the remote end's cert
@@ -206,7 +211,7 @@ public class BaseHttpClientGenerator {
             */
         }
 
-        this.httpClient = httpClient;
+        this.httpClient = httpClientBldr.build();
     }
 
     /**

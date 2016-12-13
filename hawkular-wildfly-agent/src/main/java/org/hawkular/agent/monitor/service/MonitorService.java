@@ -108,9 +108,10 @@ import org.jboss.msc.value.InjectedValue;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * The main Agent service.
@@ -1061,7 +1062,7 @@ public class MonitorService implements Service<MonitorService> {
                     httpResponse.body().close();
                 }
             } catch (Exception e) {
-                log.warnCannotRegisterFeed(this.feedId, tenantId, request.urlString(), e.toString());
+                log.warnCannotRegisterFeed(this.feedId, tenantId, request.url().toString(), e.toString());
                 if (keepRetrying) {
                     Thread.sleep(retryMillis);
                 } else {
