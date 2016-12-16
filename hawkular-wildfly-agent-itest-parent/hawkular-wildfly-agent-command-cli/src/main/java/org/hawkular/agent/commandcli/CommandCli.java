@@ -47,17 +47,16 @@ import org.jboss.aesh.cl.parser.CommandLineParserBuilder;
 import org.jboss.aesh.cl.parser.CommandLineParserException;
 import org.jboss.logging.Logger;
 
-import com.squareup.okhttp.Credentials;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
-import com.squareup.okhttp.ResponseBody;
-import com.squareup.okhttp.ws.WebSocket;
-import com.squareup.okhttp.ws.WebSocketCall;
-import com.squareup.okhttp.ws.WebSocketListener;
-
+import okhttp3.Credentials;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okhttp3.ws.WebSocket;
+import okhttp3.ws.WebSocketCall;
+import okhttp3.ws.WebSocketListener;
 import okio.Buffer;
 import okio.BufferedSink;
 
@@ -280,7 +279,7 @@ public class CommandCli {
                     }
                 }
 
-                httpClient.getDispatcher().getExecutorService().shutdown();
+                httpClient.dispatcher().executorService().shutdown();
 
             } catch (Exception e2) {
                 log.errorf(e2, "Cannot fully close websocket");
@@ -307,9 +306,9 @@ public class CommandCli {
 
     private static CliWebSocketListener sendCommand(Config config) throws Exception {
 
-        OkHttpClient httpClient = new OkHttpClient();
-        httpClient.setConnectTimeout(10, TimeUnit.SECONDS);
-        httpClient.setReadTimeout(5, TimeUnit.MINUTES);
+        OkHttpClient httpClient = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(5, TimeUnit.MINUTES).build();
 
         Request request = new Request.Builder()
                 .url(config.serverUrl)

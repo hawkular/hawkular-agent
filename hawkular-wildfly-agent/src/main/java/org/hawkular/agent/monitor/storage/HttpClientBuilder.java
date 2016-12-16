@@ -23,10 +23,10 @@ import javax.net.ssl.SSLContext;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.util.BaseHttpClientGenerator;
 
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Request.Builder;
-import com.squareup.okhttp.RequestBody;
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.Request.Builder;
+import okhttp3.RequestBody;
 
 /**
  * Builds an HTTP client that can be used to talk to the Hawkular server-side.

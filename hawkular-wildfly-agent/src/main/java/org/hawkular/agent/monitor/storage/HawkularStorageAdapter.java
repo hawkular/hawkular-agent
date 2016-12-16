@@ -43,9 +43,10 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
 
-import com.squareup.okhttp.Callback;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class HawkularStorageAdapter implements StorageAdapter {
     private static final MsgLogger log = AgentLoggers.getLogger(HawkularStorageAdapter.class);
@@ -168,7 +169,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
                 @Override
-                public void onFailure(Request request, IOException e) {
+                public void onFailure(Call call, IOException e) {
                     try {
                         log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
                         diagnostics.getStorageErrorRate().mark(1);
@@ -180,12 +181,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 }
 
                 @Override
-                public void onResponse(Response response) throws IOException {
+                public void onResponse(Call call, Response response) throws IOException {
                     try {
                         // HTTP status of 200 means success; anything else is an error
                         if (response.code() != 200) {
                             IOException e = new IOException("status-code=[" + response.code() + "], reason=["
-                                    + response.message() + "], url=[" + request.urlString() + "]");
+                                    + response.message() + "], url=[" + request.url().toString() + "]");
                             log.errorFailedToStoreMetricData(e, jsonPayloadFinal);
                             diagnostics.getStorageErrorRate().mark(1);
                         } else {
@@ -266,7 +267,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             final String jsonPayloadFinal = jsonPayload;
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
                 @Override
-                public void onFailure(Request request, IOException e) {
+                public void onFailure(Call call, IOException e) {
                     try {
                         log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
                         diagnostics.getStorageErrorRate().mark(1);
@@ -278,12 +279,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 }
 
                 @Override
-                public void onResponse(Response response) throws IOException {
+                public void onResponse(Call call, Response response) throws IOException {
                     try {
                         // HTTP status of 200 means success; anything else is an error
                         if (response.code() != 200) {
                             IOException e = new IOException("status-code=[" + response.code() + "], reason=["
-                                    + response.message() + "], url=[" + request.urlString() + "]");
+                                    + response.message() + "], url=[" + request.url().toString() + "]");
                             log.errorFailedToStoreAvailData(e, jsonPayloadFinal);
                             diagnostics.getStorageErrorRate().mark(1);
                         } else {
@@ -343,7 +344,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
                 this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
                     @Override
-                    public void onFailure(Request request, IOException e) {
+                    public void onFailure(Call call, IOException e) {
                         try {
                             log.errorFailedToStoreMetricTags(e, tagsJson);
                             diagnostics.getStorageErrorRate().mark(1);
@@ -355,12 +356,12 @@ public class HawkularStorageAdapter implements StorageAdapter {
                     }
 
                     @Override
-                    public void onResponse(Response response) throws IOException {
+                    public void onResponse(Call call, Response response) throws IOException {
                         try {
                             // HTTP status of 200 means success; anything else is an error
                             if (response.code() != 200) {
                                 IOException e = new IOException("status-code=[" + response.code() + "], reason=["
-                                        + response.message() + "], url=[" + request.urlString() + "]");
+                                        + response.message() + "], url=[" + request.url().toString() + "]");
                                 log.errorFailedToStoreMetricTags(e, tagsJson);
                                 diagnostics.getStorageErrorRate().mark(1);
                             }

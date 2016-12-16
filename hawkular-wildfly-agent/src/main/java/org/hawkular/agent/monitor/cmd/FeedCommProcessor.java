@@ -42,13 +42,13 @@ import org.hawkular.cmdgw.api.Authentication;
 import org.hawkular.cmdgw.api.GenericErrorResponse;
 import org.hawkular.cmdgw.api.GenericErrorResponseBuilder;
 
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
-import com.squareup.okhttp.ResponseBody;
-import com.squareup.okhttp.ws.WebSocket;
-import com.squareup.okhttp.ws.WebSocketCall;
-import com.squareup.okhttp.ws.WebSocketListener;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okhttp3.ws.WebSocket;
+import okhttp3.ws.WebSocketCall;
+import okhttp3.ws.WebSocketListener;
 
 import okio.Buffer;
 import okio.BufferedSink;
