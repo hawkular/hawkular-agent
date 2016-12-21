@@ -9,13 +9,13 @@ Hawkular WildFly Agent Installer is a standalone java application to install Haw
 
 Installer is configured via maven exec plugin so it installs Hawkular WildFly Agent from this repository into local WildFly located in `${org.hawkular.wildfly.home}`
 
-    ./mvnw exec:java -Dorg.hawkular.wildfly.home=/opt/wildfly-9.0.0.Final
+    mvn exec:java -Dorg.hawkular.wildfly.home=/opt/wildfly-9.0.0.Final
 
 == Running As Standalone Java Application
 
 === Building Standalone Jar
 
-    ./mvnw package
+    mvn package
 
 === Running
 
@@ -116,3 +116,14 @@ If needed, the installer can setup a secured connection between the Hawkular Wil
 == Configuration File
 
 Aside from command line options, you can specify the installer configuration through a properties configuration file. https://github.com/hawkular/hawkular-agent/blob/master/hawkular-wildfly-agent-installer/src/main/resources/hawkular-wildfly-agent-installer.properties[An example is here]. You tell the installer about your configuration file via the command line option `--installer-config`.
+
+== Uninstalling
+
+To uninstall the agent follow these steps. NOTE: $WILDFLY_HOME is assumed to be set to the directory where the agent's app server is installed.
+
+1. Run the server in --admin-only mode:
+`$WILDFLY_HOME/bin/standalone.sh --admin-only`
+1. Remove the agent subsystem, the agent extension, and the socket binding that points to the Hawkular Server:
+`$WILDFLY_HOME/bin/jboss-cli.sh --connect --commands=/subsystem=hawkular-wildfly-agent/:remove,/extension=org.hawkular.agent/:remove,/socket-binding-group=standard-sockets/remote-destination-outbound-socket-binding=hawkular/:remove`
+1. Remove the agent binaries:
+`rm -rf $WILDFLY_HOME/modules/system/add-ons/hawkular-agent`
