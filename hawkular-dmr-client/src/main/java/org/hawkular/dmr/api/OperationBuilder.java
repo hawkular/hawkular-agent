@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 package org.hawkular.dmr.api;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -529,7 +530,20 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
 
         @SuppressWarnings("unchecked")
         public T resolveExpressions(boolean resolveExpressions) {
-            baseNode.get(ModelDescriptionConstants.RESOLVE_EXPRESSIONS).set(resolveExpressions);
+            try {
+                Field resolveExpressionField = ModelDescriptionConstants.class.getField("RESOLVE_EXPRESSIONS");
+                String resolveExpressionFieldValue = (String) resolveExpressionField.get(null);
+                baseNode.get(resolveExpressionFieldValue).set(resolveExpressions);
+            } catch (NoSuchFieldException e) {
+                // Attempt to set the resolve-expressions field
+                baseNode.get("resolve-expressions").set(resolveExpressions);
+                if (resolveExpressions) {
+                    log.warnf("The local app server instance does not support resolving expressions.");
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+
             return (T) this;
         }
 

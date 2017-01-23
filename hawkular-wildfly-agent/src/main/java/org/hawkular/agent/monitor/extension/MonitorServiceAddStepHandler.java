@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@
 package org.hawkular.agent.monitor.extension;
 
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.jboss.as.controller.AbstractAddStepHandler;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.msc.service.ServiceName;
@@ -27,7 +27,7 @@ import org.jboss.msc.service.ServiceRegistry;
  * Base class to any add-step handler that requires common functionality like a method
  * to obtain the service.
  */
-public abstract class MonitorServiceAddStepHandler extends AbstractAddStepHandler {
+public abstract class MonitorServiceAddStepHandler extends WildflyCompatibilityUtils.AbstractAddStepHandler {
 
     public MonitorServiceAddStepHandler(AttributeDefinition... attributes) {
         super(attributes);
@@ -39,4 +39,5 @@ public abstract class MonitorServiceAddStepHandler extends AbstractAddStepHandle
         MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
         return service;
     }
+
 }

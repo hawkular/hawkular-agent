@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,6 +63,7 @@ import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformMetricType
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformPath;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
@@ -1340,7 +1341,7 @@ public class MonitorServiceConfigurationBuilder {
         } else if ("/".equals(path)) {
             return PathAddress.EMPTY_ADDRESS;
         } else {
-            return PathAddress.parseCLIStyleAddress(path);
+            return WildflyCompatibilityUtils.parseCLIStyleAddress(path);
         }
     }
 

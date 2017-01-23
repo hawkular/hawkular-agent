@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@ package org.hawkular.agent.monitor.extension;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.jboss.as.controller.AbstractAddStepHandler;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
@@ -30,7 +30,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceTarget;
 
-public class SubsystemAdd extends AbstractAddStepHandler {
+public class SubsystemAdd extends WildflyCompatibilityUtils.AbstractAddStepHandler {
     private static final MsgLogger log = AgentLoggers.getLogger(SubsystemAdd.class);
     static final SubsystemAdd INSTANCE = new SubsystemAdd();
 

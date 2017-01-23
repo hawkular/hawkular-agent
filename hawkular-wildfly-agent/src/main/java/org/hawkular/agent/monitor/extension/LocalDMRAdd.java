@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +25,7 @@ import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
@@ -41,7 +42,6 @@ public class LocalDMRAdd extends MonitorServiceAddStepHandler {
     @Override
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
             throws OperationFailedException {
-
         if (context.isBooting()) {
             return;
         }
@@ -57,7 +57,7 @@ public class LocalDMRAdd extends MonitorServiceAddStepHandler {
         ProtocolServices newServices = monitorService.createProtocolServicesBuilder().dmrProtocolService(
                 monitorService.getLocalModelControllerClientFactory(), config.getDmrConfiguration()).build();
         EndpointService<DMRNodeLocation, DMRSession> endpointService = newServices.getDmrProtocolService()
-                .getEndpointServices().get(context.getCurrentAddressValue());
+                .getEndpointServices().get(WildflyCompatibilityUtils.getCurrentAddressValue(context, operation));
 
         // put the new endpoint service in the original protocol services container
         ProtocolService<DMRNodeLocation, DMRSession> dmrService = monitorService.getProtocolServices()

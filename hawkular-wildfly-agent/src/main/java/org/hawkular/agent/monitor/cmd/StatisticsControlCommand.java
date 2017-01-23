@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,6 +31,7 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.MessageUtils;
@@ -105,22 +106,22 @@ public class StatisticsControlCommand
 
         if (datasources.isPresent()) {
             somethingToDo = true;
-            List<String> dsList = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=datasources"),
+            List<String> dsList = getChildrenNames(WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=datasources"),
                     "data-source", controllerClient);
-            List<String> xaList = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=datasources"),
+            List<String> xaList = getChildrenNames(WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=datasources"),
                     "xa-data-source", controllerClient);
 
             for (String ds : dsList) {
                 String dsAddr = String.format("/subsystem=datasources/data-source=%s", ds);
                 batch.writeAttribute()
-                        .address(PathAddress.parseCLIStyleAddress(dsAddr))
+                        .address(WildflyCompatibilityUtils.parseCLIStyleAddress(dsAddr))
                         .attribute("statistics-enabled", datasources.get().toString())
                         .parentBuilder();
             }
             for (String xa : xaList) {
                 String xaAddr = String.format("/subsystem=datasources/xa-data-source=%s", xa);
                 batch.writeAttribute()
-                        .address(PathAddress.parseCLIStyleAddress(xaAddr))
+                        .address(WildflyCompatibilityUtils.parseCLIStyleAddress(xaAddr))
                         .attribute("statistics-enabled", datasources.get().toString())
                         .parentBuilder();
             }
@@ -129,20 +130,20 @@ public class StatisticsControlCommand
         if (ejb3.isPresent()) {
             somethingToDo = true;
             batch.writeAttribute()
-                    .address(PathAddress.parseCLIStyleAddress("/subsystem=ejb3"))
+                    .address(WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=ejb3"))
                     .attribute("enable-statistics", ejb3.get().toString())
                     .parentBuilder();
         }
 
         if (infinispan.isPresent()) {
             somethingToDo = true;
-            List<String> list = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=infinispan"),
+            List<String> list = getChildrenNames(WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=infinispan"),
                     "cache-container", controllerClient);
 
             for (String name : list) {
                 String addr = String.format("/subsystem=infinispan/cache-container=%s", name);
                 batch.writeAttribute()
-                        .address(PathAddress.parseCLIStyleAddress(addr))
+                        .address(WildflyCompatibilityUtils.parseCLIStyleAddress(addr))
                         .attribute("statistics-enabled", infinispan.get().toString())
                         .parentBuilder();
             }
@@ -150,13 +151,13 @@ public class StatisticsControlCommand
 
         if (messaging.isPresent()) {
             somethingToDo = true;
-            List<String> list = getChildrenNames(PathAddress.parseCLIStyleAddress("/subsystem=messaging-activemq"),
+            List<String> list = getChildrenNames(WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=messaging-activemq"),
                     "server", controllerClient);
 
             for (String name : list) {
                 String addr = String.format("/subsystem=messaging-activemq/server=%s", name);
                 batch.writeAttribute()
-                        .address(PathAddress.parseCLIStyleAddress(addr))
+                        .address(WildflyCompatibilityUtils.parseCLIStyleAddress(addr))
                         .attribute("statistics-enabled", messaging.get().toString())
                         .parentBuilder();
             }
@@ -165,7 +166,7 @@ public class StatisticsControlCommand
         if (transactions.isPresent()) {
             somethingToDo = true;
             batch.writeAttribute()
-                    .address(PathAddress.parseCLIStyleAddress("/subsystem=transactions"))
+                    .address(WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=transactions"))
                     .attribute("enable-statistics", transactions.get().toString())
                     .parentBuilder();
         }
@@ -173,7 +174,7 @@ public class StatisticsControlCommand
         if (web.isPresent()) {
             somethingToDo = true;
             batch.writeAttribute()
-                    .address(PathAddress.parseCLIStyleAddress("/subsystem=undertow"))
+                    .address(WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=undertow"))
                     .attribute("statistics-enabled", web.get().toString())
                     .parentBuilder();
         }
@@ -255,7 +256,7 @@ public class StatisticsControlCommand
 
         try {
             ModelNode result = new OperationBuilder().readAttribute()
-                    .address(PathAddress.parseCLIStyleAddress(addr))
+                    .address(WildflyCompatibilityUtils.parseCLIStyleAddress(addr))
                     .name(attribName)
                     .execute(controllerClient)
                     .assertSuccess()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.extension;
 import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
@@ -45,7 +46,7 @@ public class PlatformRemove extends MonitorServiceRemoveStepHandler {
 
         SchedulerService schedulerService = monitorService.getSchedulerService();
         ProtocolService<?, ?> platformService = monitorService.getProtocolServices().getPlatformProtocolService();
-        String doomedEndpointName = context.getCurrentAddressValue();
+        String doomedEndpointName = WildflyCompatibilityUtils.getCurrentAddressValue(context, operation);
         platformService.remove(doomedEndpointName, schedulerService);
     }
 }

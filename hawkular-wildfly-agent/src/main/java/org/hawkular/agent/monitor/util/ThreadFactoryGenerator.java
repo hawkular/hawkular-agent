@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +16,10 @@
  */
 package org.hawkular.agent.monitor.util;
 
-import static java.security.AccessController.doPrivileged;
-
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.security.AccessControlContext;
 import java.util.concurrent.ThreadFactory;
 
 import org.jboss.threads.JBossThreadFactory;
-import org.wildfly.security.manager.action.GetAccessControlContextAction;
 
 /**
  * @author John Mazzitelli
@@ -34,7 +30,6 @@ public class ThreadFactoryGenerator {
         UncaughtExceptionHandler uncaughtExceptionHandler = null;
         Integer initialPriority = null;
         Long stackSize = null;
-        AccessControlContext acc = doPrivileged(GetAccessControlContextAction.getInstance());
         return new JBossThreadFactory(
                 new ThreadGroup(threadGroupName),
                 daemon,
@@ -42,6 +37,7 @@ public class ThreadFactoryGenerator {
                 namePattern,
                 uncaughtExceptionHandler,
                 stackSize,
-                acc);
+                null); // this last param is ignored according to docs.
+        // see: https://github.com/jbossas/jboss-threads/blob/2.2/src/main/java/org/jboss/threads/JBossThreadFactory.java#L90
     }
 }
