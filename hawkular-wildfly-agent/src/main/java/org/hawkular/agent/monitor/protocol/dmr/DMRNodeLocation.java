@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.protocol.dmr;
 
 import org.hawkular.agent.monitor.inventory.NodeLocation;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.dmr.ModelNode;
 
@@ -46,7 +47,7 @@ public class DMRNodeLocation implements NodeLocation {
 
     public static DMRNodeLocation of(String path, boolean resolveExpressions, boolean includeDefaults) {
         return new DMRNodeLocation(
-                "/".equals(path) ? PathAddress.EMPTY_ADDRESS : PathAddress.parseCLIStyleAddress(path),
+                "/".equals(path) ? PathAddress.EMPTY_ADDRESS : WildflyCompatibilityUtils.parseCLIStyleAddress(path),
                 resolveExpressions, includeDefaults);
     }
 

@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+    Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
     and other contributors as indicated by the @author tags.
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,6 +72,12 @@
     <artifact name="${httpmime}" />
      -->
 
+    <!-- EAP6 -->
+    <artifact name="${com.fasterxml.jackson.core:jackson-core}"/>
+    <artifact name="${com.fasterxml.jackson.core:jackson-databind}"/>
+    <artifact name="${com.fasterxml.jackson.core:jackson-annotations}"/>
+    <artifact name="${org.glassfish:javax.json}"/>
+
   </resources>
 
   <dependencies>
@@ -96,11 +102,12 @@
     <module name="org.jboss.logmanager" services="import"/>
     <module name="org.jboss.threads"/>
     <module name="org.slf4j"/>
-    <module name="org.wildfly.security.manager"/>
+    <!-- <module name="org.wildfly.security.manager"/> --> <!-- Not included with EAP6 -->
     <module name="sun.jdk"/> <!-- codahale needs sun.misc.Unsafe -->
-    <module name="com.fasterxml.jackson.core.jackson-core"/>
-    <module name="com.fasterxml.jackson.core.jackson-databind"/>
-    <module name="com.fasterxml.jackson.core.jackson-annotations"/>
+    <!-- Not included with EAP6 -->
+    <!-- <module name="com.fasterxml.jackson.core.jackson-core"/> -->
+    <!-- <module name="com.fasterxml.jackson.core.jackson-databind"/> -->
+    <!-- <module name="com.fasterxml.jackson.core.jackson-annotations"/> -->
 
     <system export="true">
       <paths>

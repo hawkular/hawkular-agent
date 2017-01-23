@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,7 @@ import org.hawkular.agent.monitor.protocol.platform.PlatformSession;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.AbstractWriteAttributeHandler;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
@@ -97,7 +98,7 @@ public class PlatformDefinition extends PersistentResourceDefinition {
 
                         ProtocolService<PlatformNodeLocation, PlatformSession> platformService = monitorService
                                 .getProtocolServices().getPlatformProtocolService();
-                        String thisEndpointName = context.getCurrentAddressValue();
+                        String thisEndpointName = WildflyCompatibilityUtils.getCurrentAddressValue(context, operation);
 
                         if (newBool) {
                             // add the endpoint so it begins to be monitored
