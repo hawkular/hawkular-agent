@@ -23,32 +23,25 @@
 
   <id>dist</id>
   <formats>
-    <format>jar</format>
+    <format>zip</format>
+    <format>tar.gz</format>
   </formats>
   <includeBaseDirectory>false</includeBaseDirectory>
-  <dependencySets>
-    <dependencySet>
-      <outputDirectory>/</outputDirectory>
-      <outputFileNameMapping>${artifact.artifactId}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
+  <fileSets>
+    <fileSet>
+      <directory>target/hawkular-wildfly-agent-wf-extension-eap6-${project.version}/modules</directory>
+      <outputDirectory/>
       <includes>
-        <include>org.hawkular.agent:hawkular-wildfly-agent-installer</include>
+        <include>**</include>
       </includes>
-      <unpack>true</unpack>
-      <useTransitiveDependencies>false</useTransitiveDependencies>
-      <useProjectArtifact>false</useProjectArtifact>
-    </dependencySet>
-    <dependencySet>
-      <outputDirectory>/</outputDirectory>
-      <outputFileNameMapping>${artifact.artifactId}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
+    </fileSet>
+    <fileSet>
+      <directory>src/main/resources</directory>
+      <outputDirectory/>
       <includes>
-        <include>org.hawkular.agent:hawkular-wildfly-agent-wf-extension</include>
-        <include>org.hawkular.agent:hawkular-wildfly-agent-wf-extension-eap6</include>
+        <include>**</include>
       </includes>
-      <unpack>false</unpack>
-      <useTransitiveDependencies>false</useTransitiveDependencies>
-      <useProjectArtifact>false</useProjectArtifact>
-    </dependencySet>
-  </dependencySets>
+    </fileSet>
+  </fileSets>
 
 </assembly>
-

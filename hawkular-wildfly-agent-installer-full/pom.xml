@@ -44,6 +44,12 @@
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-wf-extension-eap6</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
   </dependencies>
 
   <build>

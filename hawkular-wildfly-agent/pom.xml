@@ -35,20 +35,17 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+      <scope>provided</scope> <!-- this is only provided on later WildFly/EAP versions - EAP 6 is not provided -->
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
+      <scope>provided</scope> <!-- this is only provided on later WildFly/EAP versions - EAP 6 is not provided -->
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>javax.json</artifactId>
-      <version>1.0.4</version>
+      <scope>provided</scope> <!-- this is only provided on later WildFly/EAP versions - EAP 6 is not provided -->
     </dependency>
 
     <dependency>
