@@ -24,6 +24,7 @@
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-wildfly-agent-parent</artifactId>
     <version>0.25.3.Final-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
 
   <artifactId>hawkular-wildfly-agent-wf-extension-eap6</artifactId>
