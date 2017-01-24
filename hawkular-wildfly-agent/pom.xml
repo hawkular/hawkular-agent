@@ -35,17 +35,17 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <scope>provided</scope>
+      <scope>provided</scope> <!-- this is only provided on later WildFly/EAP versions - EAP 6 is not provided -->
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <scope>provided</scope>
+      <scope>provided</scope> <!-- this is only provided on later WildFly/EAP versions - EAP 6 is not provided -->
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <scope>provided</scope>
+      <scope>provided</scope> <!-- this is only provided on later WildFly/EAP versions - EAP 6 is not provided -->
     </dependency>
 
     <dependency>
@@ -113,6 +113,12 @@
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
+      <!-- We need to hardcode this version to ensure that calls like LOG.debugf("x", 1) don't link to
+      void debugf(String format, int arg);
+      Thus breaking compatibility with EAP6 which doesn't have said method.
+      Instead we use 3.1.4.GA to ensure it uses void debugf(String format, Object param1); which is provided
+      on both EAP6 and EAP7 see: https://github.com/hawkular/hawkular-agent/pull/271#discussion_r97190787 -->
+      <version>3.1.4.GA</version>
       <scope>provided</scope>
     </dependency>
 

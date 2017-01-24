@@ -35,6 +35,8 @@
                      username="${hawkular.rest.user}"
                      password="${hawkular.rest.password}" />
 
+    <!-- EAP6 metadata below -->
+
     <metric-set-dmr name="WildFly Memory Metrics" enabled="true">
       <metric-dmr name="Heap Used"
                   interval="30"
@@ -88,67 +90,67 @@
       <metric-dmr name="Aggregated Active Web Sessions"
                   interval="1"
                   time-units="minutes"
-                  path="/deployment=*/subsystem=undertow"
+                  path="/deployment=*/subsystem=web"
                   attribute="active-sessions" />
       <metric-dmr name="Aggregated Max Active Web Sessions"
                   interval="1"
                   time-units="minutes"
-                  path="/deployment=*/subsystem=undertow"
+                  path="/deployment=*/subsystem=web"
                   attribute="max-active-sessions" />
       <metric-dmr name="Aggregated Expired Web Sessions"
                   metric-type="counter"
                   interval="1"
                   time-units="minutes"
-                  path="/deployment=*/subsystem=undertow"
+                  path="/deployment=*/subsystem=web"
                   attribute="expired-sessions" />
       <metric-dmr name="Aggregated Rejected Web Sessions"
                   metric-type="counter"
                   interval="1"
                   time-units="minutes"
-                  path="/deployment=*/subsystem=undertow"
+                  path="/deployment=*/subsystem=web"
                   attribute="rejected-sessions" />
       <metric-dmr name="Aggregated Servlet Request Time"
                   metric-type="counter"
                   interval="1"
                   time-units="minutes"
-                  path="/deployment=*/subsystem=undertow/servlet=*"
-                  attribute="total-request-time" />
+                  path="/deployment=*/subsystem=web/servlet=*"
+                  attribute="processingTime" />
       <metric-dmr name="Aggregated Servlet Request Count"
                   metric-type="counter"
                   interval="1"
                   time-units="minutes"
-                  path="/deployment=*/subsystem=undertow/servlet=*"
-                  attribute="request-count" />
+                  path="/deployment=*/subsystem=web/servlet=*"
+                  attribute="requestCount" />
     </metric-set-dmr>
 
-    <metric-set-dmr name="Undertow Metrics" enabled="true">
+    <metric-set-dmr name="Web Subsystem Metrics" enabled="true">
       <metric-dmr name="Active Sessions"
                   interval="2"
                   time-units="minutes"
-                  path="/subsystem=undertow"
+                  path="/subsystem=web"
                   attribute="active-sessions" />
       <metric-dmr name="Sessions Created"
                   metric-type="counter"
                   interval="2"
                   time-units="minutes"
-                  path="/subsystem=undertow"
+                  path="/subsystem=web"
                   attribute="sessions-created" />
       <metric-dmr name="Expired Sessions"
                   metric-type="counter"
                   interval="2"
                   time-units="minutes"
-                  path="/subsystem=undertow"
+                  path="/subsystem=web"
                   attribute="expired-sessions" />
       <metric-dmr name="Rejected Sessions"
                   metric-type="counter"
                   interval="2"
                   time-units="minutes"
-                  path="/subsystem=undertow"
+                  path="/subsystem=web"
                   attribute="rejected-sessions" />
       <metric-dmr name="Max Active Sessions"
                   interval="2"
                   time-units="minutes"
-                  path="/subsystem=undertow"
+                  path="/subsystem=web"
                   attribute="max-active-sessions" />
     </metric-set-dmr>
 
@@ -158,25 +160,25 @@
                   time-units="minutes"
                   metric-units="milliseconds"
                   path="/"
-                  attribute="max-request-time" />
+                  attribute="maxTime" />
       <metric-dmr name="Min Request Time"
                   interval="5"
                   time-units="minutes"
                   metric-units="milliseconds"
                   path="/"
-                  attribute="min-request-time" />
+                  attribute="min-time" />
       <metric-dmr name="Total Request Time"
                   interval="5"
                   time-units="minutes"
                   metric-units="milliseconds"
                   path="/"
-                  attribute="total-request-time" />
+                  attribute="processingTime" />
       <metric-dmr name="Request Count"
                   metric-type="counter"
                   interval="5"
                   time-units="minutes"
                   path="/"
-                  attribute="request-count" />
+                  attribute="requestCount" />
     </metric-set-dmr>
 
     <metric-set-dmr name="Singleton EJB Metrics" enabled="true">
@@ -389,16 +391,6 @@
                   time-units="seconds"
                   path="/statistics=pool"
                   attribute="AverageCreationTime" />
-      <metric-dmr name="Average Get Time"
-                  interval="30"
-                  time-units="seconds"
-                  path="/statistics=pool"
-                  attribute="AverageGetTime" />
-      <metric-dmr name="Blocking Failure Count"
-                  interval="10"
-                  time-units="minutes"
-                  path="/statistics=pool"
-                  attribute="BlockingFailureCount" />
       <metric-dmr name="Created Count"
                   interval="10"
                   time-units="minutes"
@@ -409,11 +401,6 @@
                   time-units="minutes"
                   path="/statistics=pool"
                   attribute="DestroyedCount" />
-      <metric-dmr name="Idle Count"
-                  interval="10"
-                  time-units="minutes"
-                  path="/statistics=pool"
-                  attribute="IdleCount" />
       <metric-dmr name="In Use Count"
                   interval="30"
                   time-units="seconds"
@@ -424,11 +411,6 @@
                   time-units="minutes"
                   path="/statistics=pool"
                   attribute="MaxCreationTime" />
-      <metric-dmr name="Max Get Time"
-                  interval="10"
-                  time-units="minutes"
-                  path="/statistics=pool"
-                  attribute="MaxGetTime" />
       <metric-dmr name="Max Used Count"
                   interval="10"
                   time-units="minutes"
@@ -459,16 +441,6 @@
                   time-units="minutes"
                   path="/statistics=pool"
                   attribute="TotalCreationTime" />
-      <metric-dmr name="Total Get Time"
-                  interval="10"
-                  time-units="minutes"
-                  path="/statistics=pool"
-                  attribute="TotalGetTime" />
-      <metric-dmr name="Wait Count"
-                  interval="10"
-                  time-units="minutes"
-                  path="/statistics=pool"
-                  attribute="WaitCount" />
     </metric-set-dmr>
 
     <metric-set-dmr name="Transactions Metrics" enabled="true">
@@ -629,8 +601,6 @@
         <resource-config-dmr name="Version"       attribute="product-version" />
         <resource-config-dmr name="Running Mode"  attribute="running-mode" />
         <resource-config-dmr name="Server State"  attribute="server-state" />
-        <resource-config-dmr name="Suspend State" attribute="suspend-state" />
-        <resource-config-dmr name="UUID"          attribute="uuid" />
         <resource-config-dmr name="Home Directory"
                              path="/core-service=server-environment"
                              attribute="home-dir"/>
@@ -649,13 +619,8 @@
           <param name="admin-only" type="bool" description="Whether the server should start in running mode ADMIN_ONLY when it restarts" default-value="false"/>
           <param name="use-current-server-config" type="bool" default-value="false"/>
         </operation-dmr>
-        <operation-dmr name="Resume"   internal-name="resume" />
         <operation-dmr name="Shutdown" internal-name="shutdown" > <!-- shutdown and restart -->
-          <param name="timeout" type="int"    default-value="0"     description="Timeout in seconds to allow active connections to drain"/>
           <param name="restart" type="bool"   default-value="false" description="Should the server be restarted after shutdown?"/>
-        </operation-dmr>
-        <operation-dmr name="Suspend"  internal-name="suspend" >
-          <param name="timeout" type="int" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
         </operation-dmr>
         <operation-dmr name="Deploy"             internal-name="deploy"/>
         <operation-dmr name="Undeploy"           internal-name="undeploy"/>
@@ -674,22 +639,11 @@
         <resource-config-dmr name="Process Type"    attribute="process-type" /> <!-- (Host|Domain) Controller -->
         <resource-config-dmr name="Local Host Name" attribute="local-host-name" />
 
-        <operation-dmr name="Reload Servers"  internal-name="reload-servers" >
-          <param name="blocking" type="bool" description="Wait until the servers are stopped before returning from the operation."/>
-        </operation-dmr>
         <operation-dmr name="Restart Servers" internal-name="restart-servers" >
-          <param name="blocking" type="bool" description="Wait until the servers are stopped before returning from the operation."/>
         </operation-dmr>
-        <operation-dmr name="Resume Servers"  internal-name="resume-servers" />
         <operation-dmr name="Start Servers"   internal-name="start-servers" >
-          <param name="blocking" type="bool" description="Wait until the servers are stopped before returning from the operation."/>
         </operation-dmr>
         <operation-dmr name="Stop Servers"    internal-name="stop-servers" >
-          <param name="blocking" type="bool" description="Wait until the servers are stopped before returning from the operation."/>
-          <param name="timeout" type="int" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
-        </operation-dmr>
-        <operation-dmr name="Suspend Servers" internal-name="suspend-servers" >
-          <param name="timeout" type="int" default-value="0" description="Timeout in seconds to allow active connections to drain"/>
         </operation-dmr>
         <operation-dmr name="Deploy"             internal-name="deploy"/>
         <operation-dmr name="Undeploy"           internal-name="undeploy"/>
@@ -711,22 +665,11 @@
                          parents="Host Controller">
         <resource-config-dmr name="Profile" attribute="profile"/>
 
-        <operation-dmr name="Reload Servers"  internal-name="reload-servers" >
-          <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
-        </operation-dmr>
         <operation-dmr name="Restart Servers" internal-name="restart-servers" >
-          <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
         </operation-dmr>
-        <operation-dmr name="Resume Servers"  internal-name="resume-servers" />
         <operation-dmr name="Start Servers"   internal-name="start-servers" >
-          <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
         </operation-dmr>
         <operation-dmr name="Stop Servers"    internal-name="stop-servers" >
-          <param name="timeout" type="int" description="Timeout in seconds to allow active connections to drain"/>
-          <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
-        </operation-dmr>
-        <operation-dmr name="Suspend Servers" internal-name="suspend-servers" >
-          <param name="timeout" type="int" description="Timeout in seconds to allow active connections to drain"/>
         </operation-dmr>
       </resource-type-dmr>
 
@@ -742,8 +685,6 @@
         <resource-config-dmr name="Host State"           attribute="host-state" />
         <resource-config-dmr name="Running Mode"         attribute="running-mode" />
         <resource-config-dmr name="Server State"         attribute="server-state" />
-        <resource-config-dmr name="Suspend State"        attribute="suspend-state" />
-        <resource-config-dmr name="UUID"                 attribute="uuid" />
         <resource-config-dmr name="Home Directory"
                              path="/core-service=host-environment"
                              attribute="home-dir"/>
@@ -768,8 +709,6 @@
         <resource-config-dmr name="Server Group"   attribute="server-group" />
         <resource-config-dmr name="Running Mode"   attribute="running-mode" />
         <resource-config-dmr name="Server State"   attribute="server-state" />
-        <resource-config-dmr name="Suspend State"  attribute="suspend-state" />
-        <resource-config-dmr name="UUID"           attribute="uuid" />
         <resource-config-dmr name="Hostname"
                              path="/core-service=server-environment"
                              attribute="qualified-host-name"/>
@@ -795,15 +734,10 @@
 
         <operation-dmr name="Destroy" internal-name="destroy" />
         <operation-dmr name="Kill"    internal-name="kill" />
-        <operation-dmr name="Reload"  internal-name="reload" >
-          <param name="server" description="The name of the server."/>
-          <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
-        </operation-dmr>
         <operation-dmr name="Restart" internal-name="restart" >
           <param name="server" description="The name of the server."/>
           <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
         </operation-dmr>
-        <operation-dmr name="Resume"  internal-name="resume" />
         <operation-dmr name="Start"   internal-name="start" >
           <param name="server" description="The name of the server."/>
           <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
@@ -811,10 +745,6 @@
         <operation-dmr name="Stop"    internal-name="stop" >
           <param name="server" description="The name of the server."/>
           <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
-          <param name="timeout" type="int" description="Timeout in seconds to allow active connections to drain"/>
-        </operation-dmr>
-        <operation-dmr name="Suspend" internal-name="suspend" >
-          <param name="timeout" type="int" description="Timeout in seconds to allow active connections to drain"/>
         </operation-dmr>
       </resource-type-dmr>
 
@@ -835,7 +765,7 @@
                          resource-name-template="Deployment [%-]"
                          path="/deployment=*"
                          parents="WildFly Server,Domain WildFly Server"
-                         metric-sets="Undertow Metrics"
+                         metric-sets="Web Subsystem Metrics"
                          avail-sets="Deployment Status">
         <operation-dmr name="Redeploy" internal-name="redeploy" />
         <operation-dmr name="Remove"   internal-name="remove"   />
@@ -846,7 +776,7 @@
                          resource-name-template="SubDeployment [%-]"
                          path="/subdeployment=*"
                          parents="Deployment"
-                         metric-sets="Undertow Metrics">
+                         metric-sets="Web Subsystem Metrics">
       </resource-type-dmr>
 
     </resource-type-set-dmr>
@@ -854,7 +784,7 @@
     <resource-type-set-dmr name="Web Component" enabled="true">
       <resource-type-dmr name="Servlet"
                          resource-name-template="Servlet [%-]"
-                         path="/subsystem=undertow/servlet=*"
+                         path="/subsystem=web/servlet=*"
                          parents="Deployment,SubDeployment"
                          metric-sets="Servlet Metrics" />
     </resource-type-set-dmr>
@@ -891,7 +821,7 @@
                          path="/subsystem=datasources/data-source=*"
                          parents="WildFly Server,Domain WildFly Server"
                          metric-sets="Datasource Pool Metrics,Datasource JDBC Metrics">
-        <resource-config-dmr name="Connection URL"   attribute="connection-url" resolve-expressions="true"/>
+        <resource-config-dmr name="Connection URL"   attribute="connection-url" resolve-expressions="false"/>
         <resource-config-dmr name="Driver Name"      attribute="driver-name" />
         <resource-config-dmr name="Driver Class"     attribute="driver-class" />
         <resource-config-dmr name="Datasource Class" attribute="datasource-class" />
@@ -948,7 +878,7 @@
     <resource-type-set-dmr name="Messaging" enabled="true">
       <resource-type-dmr name="Messaging Server"
                          resource-name-template="Messaging Server [%-]"
-                         path="/subsystem=messaging-activemq/server=*"
+                         path="/subsystem=messaging/hornetq-server=*"
                          parents="WildFly Server,Domain WildFly Server" />
       <resource-type-dmr name="JMS Queue"
                          resource-name-template="JMS Queue [%-]"
@@ -968,7 +898,7 @@
                          path="/socket-binding-group=*"
                          parents="WildFly Server,Host Controller">
         <resource-config-dmr name="Name" attribute="name" />
-        <resource-config-dmr name="Port Offset" attribute="port-offset" resolve-expressions="true"/>
+        <resource-config-dmr name="Port Offset" attribute="port-offset" resolve-expressions="false"/>
         <resource-config-dmr name="Default Interface" attribute="default-interface" />
       </resource-type-dmr>
       <resource-type-dmr name="Socket Binding"
@@ -977,8 +907,8 @@
                          parents="Socket Binding Group">
         <resource-config-dmr name="Name" attribute="name" />
         <resource-config-dmr name="Interface" attribute="interface" />
-        <resource-config-dmr name="Port" attribute="port" resolve-expressions="true"/>
-        <resource-config-dmr name="Multicast Address" attribute="multicast-address" resolve-expressions="true" />
+        <resource-config-dmr name="Port" attribute="port" resolve-expressions="false"/>
+        <resource-config-dmr name="Multicast Address" attribute="multicast-address" resolve-expressions="false" />
         <resource-config-dmr name="Multicast Port" attribute="multicast-port" />
       </resource-type-dmr>
       <resource-type-dmr name="Remote Destination Outbound Socket Binding"
@@ -1007,15 +937,6 @@
                          resource-name-template="JGroups"
                          path="/subsystem=jgroups"
                          parents="WildFly Server,Domain WildFly Server">
-      </resource-type-dmr>
-
-      <resource-type-dmr name="JGroups Channel"
-                         resource-name-template="JGroups Channel [%-]"
-                         path="/channel=*"
-                         parents="JGroups">
-        <resource-config-dmr name="Cluster Name" attribute="cluster" />
-        <resource-config-dmr name="IP Address" attribute="address" />
-        <resource-config-dmr name="Group Membership View" attribute="view" />
       </resource-type-dmr>
 
       <resource-type-dmr name="Infinispan"

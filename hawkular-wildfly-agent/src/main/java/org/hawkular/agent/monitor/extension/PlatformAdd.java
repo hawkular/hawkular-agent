@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@ import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformSession;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
@@ -38,7 +39,6 @@ public class PlatformAdd extends MonitorServiceAddStepHandler {
     @Override
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
             throws OperationFailedException {
-
         if (context.isBooting()) {
             return;
         }
@@ -54,7 +54,7 @@ public class PlatformAdd extends MonitorServiceAddStepHandler {
         ProtocolServices newServices = monitorService.createProtocolServicesBuilder()
                 .platformProtocolService(config.getPlatformConfiguration()).build();
         EndpointService<PlatformNodeLocation, PlatformSession> endpointService = newServices
-                .getPlatformProtocolService().getEndpointServices().get(context.getCurrentAddressValue());
+                .getPlatformProtocolService().getEndpointServices().get(WildflyCompatibilityUtils.getCurrentAddressValue(context, operation));
 
         // put the new endpoint service in the original protocol services container
         ProtocolService<PlatformNodeLocation, PlatformSession> platformService = monitorService.getProtocolServices()

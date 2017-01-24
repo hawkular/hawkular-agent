@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,7 @@ import org.hawkular.agent.monitor.protocol.platform.Constants;
 import org.hawkular.agent.monitor.protocol.platform.PlatformLocationResolver;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformPath;
-import org.jboss.as.controller.PathAddress;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,14 +35,14 @@ public class LocationResolverTest {
     @Test
     public void testFindWildcardMatchDMR() throws Exception {
         DMRNodeLocation multiTargetLocation = new DMRNodeLocation(
-                PathAddress.parseCLIStyleAddress("/subsystem=datasources/data-source=DS/connection-properties=*"));
+                WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=datasources/data-source=DS/connection-properties=*"));
         DMRNodeLocation singleLocation = new DMRNodeLocation(
-                PathAddress.parseCLIStyleAddress("/subsystem=datasources/data-source=DS/connection-properties=foo"));
+                WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=datasources/data-source=DS/connection-properties=foo"));
         DMRLocationResolver resolver = new DMRLocationResolver();
         Assert.assertEquals("foo", resolver.findWildcardMatch(multiTargetLocation, singleLocation));
 
         singleLocation = new DMRNodeLocation(
-                PathAddress.parseCLIStyleAddress("/subsystem=datasources/data-source=DS"));
+                WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=datasources/data-source=DS"));
         try {
             resolver.findWildcardMatch(multiTargetLocation, singleLocation);
             Assert.fail("Single location was missing 'connection-properties' key - should have failed");
@@ -50,7 +50,7 @@ public class LocationResolverTest {
         }
 
         singleLocation = new DMRNodeLocation(
-                PathAddress.parseCLIStyleAddress("/subsystem=datasources/data-source=DS/not-what-we-want=foo"));
+                WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=datasources/data-source=DS/not-what-we-want=foo"));
         try {
             resolver.findWildcardMatch(multiTargetLocation, singleLocation);
             Assert.fail("Single location was missing 'connection-properties' key - should have failed");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@ package org.hawkular.wildfly.agent.installer;
 
 import java.io.Console;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -157,8 +159,8 @@ public class AgentInstaller {
             URL moduleZipUrl;
 
             if (moduleZip == null) {
-                // --module is not supplied so try to download agent module from server
-                File moduleTempFile = downloadModuleZip(getHawkularServerAgentDownloadUrl(installerConfig));
+                // --module-dist is not supplied so try to download agent module from server
+                File moduleTempFile = downloadModuleZip(getHawkularServerAgentDownloadUrl(installerConfig), jbossHome);
                 if (moduleTempFile == null) {
                     throw new IOException("Failed to retrieve module dist from server, You can use option ["
                             + InstallerConfiguration.OPTION_MODULE_DISTRIBUTION
@@ -173,13 +175,23 @@ public class AgentInstaller {
                 if (!resourceUrl.startsWith("/")) {
                     resourceUrl = "/" + resourceUrl;
                 }
+
+                // if the user didn't specify a name, assume the typical name
+                if (resourceUrl.equals("/")) {
+                    if (isEAP6(jbossHome)) {
+                        resourceUrl = "/hawkular-wildfly-agent-wf-extension-eap6.zip";
+                    } else {
+                        resourceUrl = "/hawkular-wildfly-agent-wf-extension.zip";
+                    }
+                }
+
                 moduleZipUrl = AgentInstaller.class.getResource(resourceUrl);
                 if (moduleZipUrl == null) {
                     throw new IOException("Unable to load module.zip from classpath [" + resourceUrl + "]");
                 }
-            } else if (moduleZip.matches("(http|https|file):.*")){
+            } else if (moduleZip.matches("(http|https|file):.*")) {
                 // the module is specified as a URL - we'll download it
-                File moduleTempFile = downloadModuleZip(new URL(moduleZip));
+                File moduleTempFile = downloadModuleZip(new URL(moduleZip), jbossHome);
                 if (moduleTempFile == null) {
                     throw new IOException("Failed to retrieve agent module from server, option ["
                             + InstallerConfiguration.OPTION_MODULE_DISTRIBUTION
@@ -290,8 +302,7 @@ public class AgentInstaller {
                 String securityRealm = createSecurityRealm(keystoreSrcFile.getName(), keystorePass, keyPass, keyAlias);
                 configurationBldr.addXmlEdit(new XmlEdit(targetConfigInfo.getSecurityRealmsXPath(), securityRealm));
                 configurationBldr.addXmlEdit(createStorageAdapter(targetConfigInfo, true, installerConfig));
-            }
-            else {
+            } else {
                 // just going over non-secure HTTP
                 configurationBldr.addXmlEdit(createStorageAdapter(targetConfigInfo, false, installerConfig));
             }
@@ -432,13 +443,12 @@ public class AgentInstaller {
      */
     private static File createSocketBindingSnippet(String host, String port) throws IOException {
         StringBuilder xml = new StringBuilder("<outbound-socket-binding name=\"hawkular\">\n")
-            .append("  <remote-destination host=\""+host+"\" port=\""+port+"\" />\n")
-            .append("</outbound-socket-binding>");
+                .append("  <remote-destination host=\"" + host + "\" port=\"" + port + "\" />\n")
+                .append("</outbound-socket-binding>");
         Path tempFile = Files.createTempFile("hawkular-wildfly-module-installer-outbound-socket-binding", ".xml");
         Files.write(tempFile, xml.toString().getBytes());
         return tempFile.toFile();
     }
-
 
     private static XmlEdit createManagedServers(TargetConfigInfo targetConfigInfo, InstallerConfiguration config) {
         String select = targetConfigInfo.getProfileXPath()
@@ -470,7 +480,8 @@ public class AgentInstaller {
         return new XmlEdit(select, isEnabled).withIsAttributeContent(true).withAttribute("enabled");
     }
 
-    private static URL getHawkularServerAgentDownloadUrl(InstallerConfiguration config) throws MalformedURLException {
+    private static URL getHawkularServerAgentDownloadUrl(InstallerConfiguration config)
+            throws MalformedURLException {
         String serverUrl = String.format("%s/hawkular/wildfly-agent/download", config.getServerUrl());
         return new URL(serverUrl);
     }
@@ -479,10 +490,11 @@ public class AgentInstaller {
      * Downloads the Hawkular WildFly Agent ZIP file from a URL
      *
      * @param url where the agent zip is
+     * @param jbossHome used to determine what kind of agent we need
      * @return absolute path to module downloaded locally or null if it could not be retrieved;
      *         this is a temporary file that should be cleaned once it is used
      */
-    private static File downloadModuleZip(URL url) {
+    private static File downloadModuleZip(URL url, String jbossHome) {
         File tempFile;
 
         try {
@@ -491,12 +503,26 @@ public class AgentInstaller {
             throw new RuntimeException("Cannot create temp file to hold module zip", e);
         }
 
+        if (isEAP6(jbossHome) && url.getProtocol().startsWith("http")) {
+            String param = "appserver=eap6";
+            if (url.getQuery() == null || !url.getQuery().contains(param)) {
+                try {
+                    url = new URL(url.getProtocol(), url.getHost(), url.getPort(),
+                            url.getFile() + (url.getQuery() == null ? "?" : "&") + param);
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException("Cannot append param [" + param + "] to url [" + url + "]", e);
+                }
+            }
+        }
+
+        log.info("Downloading agent module extension from: " + url);
+
         try (FileOutputStream fos = new FileOutputStream(tempFile);
                 InputStream ios = url.openStream()) {
             IOUtils.copyLarge(ios, fos);
             return tempFile;
         } catch (Exception e) {
-            log.warn("Unable to download hawkular wildfly agent ZIP: " + url, e);
+            log.warn("Unable to download hawkular wildfly agent module extension: " + url, e);
             tempFile.delete();
         }
         return null;
@@ -507,5 +533,27 @@ public class AgentInstaller {
             throw new RuntimeException("Cannot print help - options is null");
         }
         System.out.println(options.printHelp());
+    }
+
+    // see if the app server the agent is being installed into is EAP 6.x
+    private static boolean isEAP6(String jbossHome) {
+        try {
+            File manifestFile = new File(jbossHome,
+                    "modules/system/layers/base/org/jboss/as/product/eap/dir/META-INF/MANIFEST.MF");
+            if (manifestFile.canRead()) {
+                try (InputStream ios = new FileInputStream(manifestFile)) {
+                    Manifest manifest = new Manifest(ios);
+                    String version = manifest.getMainAttributes().getValue("JBoss-Product-Release-Version");
+                    return version != null && version.startsWith("6.");
+                }
+            } else {
+                log.debugf("No readable manifest file at [%s], assuming the app server is not EAP 6.x.",
+                        manifestFile.getAbsolutePath());
+                return false; // no manifest file - can't tell what it is
+            }
+        } catch (Exception e) {
+            log.debug("Unable to determine if the app server is EAP 6.x - assuming it is not. Cause: " + e);
+            return false;
+        }
     }
 }

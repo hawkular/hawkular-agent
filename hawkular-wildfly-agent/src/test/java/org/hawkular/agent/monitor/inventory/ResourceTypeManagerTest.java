@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.hawkular.agent.monitor.inventory.TypeSet.TypeSetBuilder;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
-import org.jboss.as.controller.PathAddress;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -291,7 +291,7 @@ public class ResourceTypeManagerTest {
                 .id(new ID(name)) //
                 .name(new Name(name)) //
                 .resourceNameTemplate(name) //
-                .location(new DMRNodeLocation(PathAddress.parseCLIStyleAddress(path))) //
+                .location(new DMRNodeLocation(WildflyCompatibilityUtils.parseCLIStyleAddress(path))) //
                 .parents(Arrays.asList(parents)) //
                 .build();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +26,7 @@ import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
@@ -42,7 +43,6 @@ public class RemoteDMRAdd extends MonitorServiceAddStepHandler {
     @Override
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
             throws OperationFailedException {
-
         if (context.isBooting()) {
             return;
         }
@@ -53,7 +53,7 @@ public class RemoteDMRAdd extends MonitorServiceAddStepHandler {
         }
 
         MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
-        String newEndpointName = context.getCurrentAddressValue();
+        String newEndpointName = WildflyCompatibilityUtils.getCurrentAddressValue(context, operation);
 
         // Register the feed under the tenant of the new managed server.
         // If endpoint has a null tenant then there is nothing to do since it will just reuse the agent's tenant ID
