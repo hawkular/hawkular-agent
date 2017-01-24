@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -93,7 +93,10 @@ public class WildFlyAgentServlet extends HttpServlet {
 
     private static AtomicInteger numActiveDownloads = null;
 
-    private File moduleDownloadFile = null;
+    // there are several modules extensions the download can serve - you ask for one via the appserver query property
+    private static final String APPSERVER_PARAM = "appserver";
+    private static final String LATEST = "latest";
+    private Map<String, File> moduleDownloadFile = new HashMap<String, File>(2);
     private File installerDownloadFile = null;
 
     @Override
@@ -101,9 +104,10 @@ public class WildFlyAgentServlet extends HttpServlet {
         log("Starting the WildFly Agent download servlet");
         numActiveDownloads = new AtomicInteger(0);
         try {
-            log("Agent Module File: " + getAgentModuleDownloadFile());
+            log("Latest Agent Module File: " + getAgentModuleDownloadFile(LATEST));
+            log("EAP6 Agent Module File: " + getAgentModuleDownloadFile("eap6"));
         } catch (Throwable t) {
-            throw new ServletException("Missing Hawkular WildFly Agent module download file", t);
+            throw new ServletException("Missing Hawkular WildFly Agent module download files", t);
         }
         try {
             log("Agent Installer File: " + getAgentInstallerDownloadFile());
@@ -146,7 +150,7 @@ public class WildFlyAgentServlet extends HttpServlet {
 
     private void downloadAgentModule(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            File agentModuleZip = getAgentModuleDownloadFile();
+            File agentModuleZip = getAgentModuleDownloadFile(getValueFromRequestParam(req, APPSERVER_PARAM, LATEST));
             resp.setContentType("application/octet-stream");
             resp.setHeader("Content-Disposition", "attachment; filename=" + agentModuleZip.getName());
             resp.setContentLength((int) agentModuleZip.length());
@@ -287,8 +291,8 @@ public class WildFlyAgentServlet extends HttpServlet {
      * @param properties the map where the property is found; this will be updated with the newly encoded value
      * @param propertyName the name of the property that needs to be encoded
      */
-    private void encode(HashMap<String, String> properties, String propertyName, String encryptionKey, String
-            encryptionSalt, boolean useWeakEncryption) throws Exception {
+    private void encode(HashMap<String, String> properties, String propertyName, String encryptionKey,
+            String encryptionSalt, boolean useWeakEncryption) throws Exception {
         String clearText = properties.get(propertyName);
         if (null == clearText) {
             return;
@@ -391,8 +395,8 @@ public class WildFlyAgentServlet extends HttpServlet {
         }
     }
 
-    private String getValueFromRequestParam(HttpServletRequest req, String key, String
-            defaultValue) throws IOException {
+    private String getValueFromRequestParam(HttpServletRequest req, String key, String defaultValue)
+            throws IOException {
         String value = req.getParameter(key);
         if (value == null || value.isEmpty()) {
             return defaultValue;
@@ -468,23 +472,35 @@ public class WildFlyAgentServlet extends HttpServlet {
         output.flush();
     }
 
-    private File getAgentModuleDownloadFile() throws Exception {
-        if (moduleDownloadFile != null) {
-            if (moduleDownloadFile.exists()) {
-                return moduleDownloadFile;
+    private File getAgentModuleDownloadFile(String appserver) throws Exception {
+        // kind is either: "latest" or "eap6" (null or empty string means "latest")
+        if (appserver == null || appserver.trim().isEmpty()) {
+            appserver = LATEST;
+        }
+
+        if (moduleDownloadFile.get(appserver) != null) {
+            if (moduleDownloadFile.get(appserver).exists()) {
+                return moduleDownloadFile.get(appserver);
             } else {
-                moduleDownloadFile = null; // the file was removed recently - let's look for a new one
+                moduleDownloadFile.remove(appserver); // the file was removed recently - let's look for a new one
             }
+        }
+
+        String fileToFind;
+        if (appserver.equals(LATEST)) {
+            fileToFind = "hawkular-wildfly-agent-wf-extension.zip";
+        } else {
+            fileToFind = "hawkular-wildfly-agent-wf-extension-" + appserver + ".zip";
         }
 
         File configDir = new File(System.getProperty("jboss.server.config.dir"));
         for (File file : configDir.listFiles()) {
-            if (file.getName().startsWith("hawkular-wildfly-agent-wf-extension") && file.getName().endsWith(".zip")) {
-                moduleDownloadFile = file;
-                return moduleDownloadFile;
+            if (file.getName().equals(fileToFind)) {
+                moduleDownloadFile.put(appserver, file);
+                return moduleDownloadFile.get(appserver);
             }
         }
-        throw new FileNotFoundException("Cannot find agent module download in: " + configDir);
+        throw new FileNotFoundException("Cannot find agent download file [" + fileToFind + "] in: " + configDir);
     }
 
     private File getAgentInstallerDownloadFile() throws Exception {

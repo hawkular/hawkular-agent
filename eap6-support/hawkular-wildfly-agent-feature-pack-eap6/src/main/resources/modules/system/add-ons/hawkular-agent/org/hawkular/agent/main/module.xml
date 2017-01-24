@@ -16,6 +16,8 @@
     limitations under the License.
 
 -->
+
+<!-- This module is designed to only run in EAP6 -->
 <module xmlns="urn:jboss:module:1.3" name="org.hawkular.agent">
   <resources>
     <artifact name="${org.hawkular.metrics:hawkular-metrics-clients-common}"/>
@@ -72,6 +74,12 @@
     <artifact name="${httpmime}" />
      -->
 
+    <!-- EAP6 -->
+    <artifact name="${com.fasterxml.jackson.core:jackson-core}"/>
+    <artifact name="${com.fasterxml.jackson.core:jackson-databind}"/>
+    <artifact name="${com.fasterxml.jackson.core:jackson-annotations}"/>
+    <artifact name="${org.glassfish:javax.json}"/>
+
   </resources>
 
   <dependencies>
@@ -96,11 +104,12 @@
     <module name="org.jboss.logmanager" services="import"/>
     <module name="org.jboss.threads"/>
     <module name="org.slf4j"/>
-    <module name="org.wildfly.security.manager"/>
+    <!-- <module name="org.wildfly.security.manager"/> --> <!-- Not included with EAP6 -->
     <module name="sun.jdk"/> <!-- codahale needs sun.misc.Unsafe -->
-    <module name="com.fasterxml.jackson.core.jackson-core"/>
-    <module name="com.fasterxml.jackson.core.jackson-databind"/>
-    <module name="com.fasterxml.jackson.core.jackson-annotations"/>
+    <!-- Not included with EAP6 -->
+    <!-- <module name="com.fasterxml.jackson.core.jackson-core"/> -->
+    <!-- <module name="com.fasterxml.jackson.core.jackson-databind"/> -->
+    <!-- <module name="com.fasterxml.jackson.core.jackson-annotations"/> -->
 
     <system export="true">
       <paths>
