@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!--
 
-    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+    Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
     and other contributors as indicated by the @author tags.
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -299,6 +299,40 @@
                   time-units="minutes"
                   path="/"
                   attribute="pool-remove-count" />
+    </metric-set-dmr>
+
+    <metric-set-dmr name="Stateful Session EJB Metrics" enabled="true">
+      <metric-dmr name="Execution Time"
+                  interval="5"
+                  time-units="minutes"
+                  path="/"
+                  attribute="execution-time" />
+      <metric-dmr name="Invocations"
+                  metric-type="counter"
+                  interval="5"
+                  time-units="minutes"
+                  path="/"
+                  attribute="invocations" />
+      <metric-dmr name="Peak Concurrent Invocations"
+                  interval="5"
+                  time-units="minutes"
+                  path="/"
+                  attribute="peak-concurrent-invocations" />
+      <metric-dmr name="Wait Time"
+                  interval="5"
+                  time-units="minutes"
+                  path="/"
+                  attribute="wait-time" />
+      <metric-dmr name="Cache Size"
+                  interval="5"
+                  time-units="minutes"
+                  path="/"
+                  attribute="cache-size" />
+      <metric-dmr name="Total Size"
+                  interval="5"
+                  time-units="minutes"
+                  path="/"
+                  attribute="total-size" />
     </metric-set-dmr>
 
     <metric-set-dmr name="Datasource JDBC Metrics" enabled="true">
@@ -762,16 +796,20 @@
         <operation-dmr name="Destroy" internal-name="destroy" />
         <operation-dmr name="Kill"    internal-name="kill" />
         <operation-dmr name="Reload"  internal-name="reload" >
+          <param name="server" description="The name of the server."/>
           <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
         </operation-dmr>
         <operation-dmr name="Restart" internal-name="restart" >
+          <param name="server" description="The name of the server."/>
           <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
         </operation-dmr>
         <operation-dmr name="Resume"  internal-name="resume" />
         <operation-dmr name="Start"   internal-name="start" >
+          <param name="server" description="The name of the server."/>
           <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
         </operation-dmr>
         <operation-dmr name="Stop"    internal-name="stop" >
+          <param name="server" description="The name of the server."/>
           <param name="blocking" type="bool" default-value="false" description="Wait until the servers are stopped before returning from the operation."/>
           <param name="timeout" type="int" description="Timeout in seconds to allow active connections to drain"/>
         </operation-dmr>
@@ -839,6 +877,12 @@
                          path="/subsystem=ejb3/stateless-session-bean=*"
                          parents="Deployment,SubDeployment"
                          metric-sets="Stateless Session EJB Metrics" />
+
+      <resource-type-dmr name="Stateful Session EJB"
+                         resource-name-template="Stateful Session EJB [%-]"
+                         path="/subsystem=ejb3/stateful-session-bean=*"
+                         parents="Deployment,SubDeployment"
+                         metric-sets="Stateful Session EJB Metrics" />
     </resource-type-set-dmr>
 
     <resource-type-set-dmr name="Datasource" enabled="true">
