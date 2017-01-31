@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,7 @@ import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
-public class SubsystemDefinition extends PersistentResourceDefinition {
+public class SubsystemDefinition extends MonitorPersistentResourceDefinition {
 
     public static final SubsystemDefinition INSTANCE = new SubsystemDefinition();
 

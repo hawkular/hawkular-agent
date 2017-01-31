@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class JMXResourceTypeDefinition extends PersistentResourceDefinition {
+public class JMXResourceTypeDefinition extends MonitorPersistentResourceDefinition {
 
     public static final JMXResourceTypeDefinition INSTANCE = new JMXResourceTypeDefinition();
 
