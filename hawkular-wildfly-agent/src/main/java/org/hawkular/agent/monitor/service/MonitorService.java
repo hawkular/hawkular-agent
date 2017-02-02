@@ -235,8 +235,8 @@ public class MonitorService implements Service<MonitorService> {
     private final Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues = new HashMap<>();
 
     private boolean started = false;
-
     private PropertyChangeListener serverStateListener;
+    private final AtomicReference<Thread> startThread = new AtomicReference<Thread>();
 
     // Declared config found in standalone.xml. Only used to build the runtime configuration (see #configuration).
     private final MonitorServiceConfiguration bootConfiguration;
@@ -460,8 +460,6 @@ public class MonitorService implements Service<MonitorService> {
 
     @Override
     public void start(final StartContext startContext) throws StartException {
-        final AtomicReference<Thread> startThread = new AtomicReference<Thread>();
-
         // deferred startup: must wait for server to be running before we can monitor the subsystems
         ControlledProcessStateService stateService = processStateValue.getValue();
         serverStateListener = new PropertyChangeListener() {
@@ -511,6 +509,27 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         try {
+            Thread currentStartThread;
+            synchronized (startThread) {
+                currentStartThread = startThread.get();
+                if (currentStartThread != null && currentStartThread != Thread.currentThread()) {
+                    startThread.set(Thread.currentThread());
+                } else {
+                    currentStartThread = null;
+                }
+            }
+            if (currentStartThread != null) {
+                log.infoInterruptStartAndStartAgain();
+                while (currentStartThread.isAlive()) {
+                    currentStartThread.interrupt();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                }
+            }
+
             log.infoStarting();
 
             this.configuration = buildRuntimeConfiguration(
