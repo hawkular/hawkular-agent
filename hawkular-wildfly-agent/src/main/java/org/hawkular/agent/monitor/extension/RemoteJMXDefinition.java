@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,12 +32,11 @@ import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathElement;
-import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelNode;
 
-public class RemoteJMXDefinition extends PersistentResourceDefinition {
+public class RemoteJMXDefinition extends MonitorPersistentResourceDefinition {
 
     public static final RemoteJMXDefinition INSTANCE = new RemoteJMXDefinition();
 
@@ -60,7 +59,7 @@ public class RemoteJMXDefinition extends PersistentResourceDefinition {
 
     @Override
     public void registerAttributes(ManagementResourceRegistration resourceRegistration) {
-        Util.registerOnlyRestartAttributes(resourceRegistration, getAttributes());
+        super.registerAttributes(resourceRegistration);
 
         resourceRegistration.registerReadWriteAttribute(RemoteJMXAttributes.ENABLED, null,
                 new MonitorServiceWriteAttributeHandler<Void>() {
@@ -77,6 +76,9 @@ public class RemoteJMXDefinition extends PersistentResourceDefinition {
                         if (context.isBooting()) {
                             return false;
                         }
+
+                        super.applyUpdateToRuntime(context, operation, attributeName, newValue, currentValue,
+                                handbackHolder);
 
                         boolean currBool = RemoteJMXAttributes.ENABLED.resolveValue(context, currentValue).asBoolean();
                         boolean newBool = RemoteJMXAttributes.ENABLED.resolveValue(context, newValue).asBoolean();

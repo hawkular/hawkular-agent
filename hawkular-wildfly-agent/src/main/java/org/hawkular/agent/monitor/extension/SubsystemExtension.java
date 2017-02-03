@@ -33,7 +33,7 @@ public class SubsystemExtension implements Extension {
     static final int MAJOR_VERSION = 1;
     static final int MINOR_VERSION = 0;
     static final int MICRO_VERSION = 0;
-    static final ServiceName SERVICE_NAME = ServiceName.of("org.hawkular.agent.").append(SUBSYSTEM_NAME);
+    public static final ServiceName SERVICE_NAME = ServiceName.of("org.hawkular.agent.").append(SUBSYSTEM_NAME);
 
     private static final String RESOURCE_NAME = SubsystemExtension.class.getPackage().getName() + ".LocalDescriptions";
 

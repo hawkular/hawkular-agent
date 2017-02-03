@@ -361,4 +361,8 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10079, value = "Agent being asked to start when it is already starting up. "
             + "Will shutdown and try the startup again.")
     void infoInterruptStartAndStartAgain();
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10080, value = "Agent has been configured to be immutable")
+    void infoAgentIsImmutable();
 }

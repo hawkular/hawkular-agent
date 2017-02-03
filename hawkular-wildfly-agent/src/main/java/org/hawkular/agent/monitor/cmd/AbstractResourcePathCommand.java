@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,8 +49,8 @@ import org.jboss.dmr.Property;
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public abstract class AbstractResourcePathCommand<REQ extends ResourcePathRequest, //
-RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
+public abstract class AbstractResourcePathCommand<REQ extends ResourcePathRequest, RESP extends ResourcePathResponse>
+        implements Command<REQ, RESP> {
     private static final MsgLogger log = AgentLoggers.getLogger(AbstractResourcePathCommand.class);
 
     /**
@@ -107,10 +107,11 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             validate(modelNodePath, envelope);
 
             String managedServerName = idParts.getManagedServerName();
-            EndpointService<DMRNodeLocation, DMRSession> //
-            endpointService =
-                    context.getDiscoveryService().getProtocolServices().getDmrProtocolService().getEndpointServices()
-                            .get(managedServerName);
+            EndpointService<DMRNodeLocation, DMRSession> endpointService = context.getDiscoveryService()
+                    .getProtocolServices()
+                    .getDmrProtocolService()
+                    .getEndpointServices()
+                    .get(managedServerName);
             if (endpointService == null) {
                 throw new IllegalArgumentException(String.format(
                         "Cannot perform [%s] on a [%s] given by inventory path [%s]: unknown managed server [%s]",
@@ -119,12 +120,18 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
 
             validate(envelope, endpointService.getMonitoredEndpoint());
 
+            if (modifiesResource()) {
+                if (context.getDiscoveryService().isImmutable()) {
+                    throw new IllegalStateException("Command not allowed because the agent is immutable");
+                }
+            }
+
             DMRSession session = endpointService.openSession();
 
             controllerClient = session.getClient();
 
-            binaryData =
-                    execute(controllerClient, endpointService, modelNodePath, envelope, response, context, session);
+            binaryData = execute(controllerClient, endpointService, modelNodePath, envelope, response, context,
+                    session);
             success(envelope, response);
 
         } catch (Throwable t) {
@@ -168,7 +175,7 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
             EndpointService<DMRNodeLocation, DMRSession> endpointService,
             String modelNodePath, BasicMessageWithExtraData<REQ> envelope, RESP response, CommandContext context,
             DMRSession dmrContext)
-                    throws Exception;
+            throws Exception;
 
     /**
      * {@code modelNodePath} validation for subclasses.
@@ -247,5 +254,17 @@ RESP extends ResourcePathResponse> implements Command<REQ, RESP> {
                     nameFromPath, newName);
             throw new IllegalArgumentException(msg);
         }
+    }
+
+    /**
+     * If the command may permanently modify the managed resource, this method should return true which means the command
+     * will be aborted if the agent is configured to be immutable. This method implementation always returns true.
+     * Subclasses are free to override this and return false if the command never modifies the managed resource.
+     *
+     * @return true if the operation may modify something on the managed resource permanently
+     * @see #execute(BasicMessageWithExtraData, CommandContext)
+     */
+    protected boolean modifiesResource() {
+        return true;
     }
 }

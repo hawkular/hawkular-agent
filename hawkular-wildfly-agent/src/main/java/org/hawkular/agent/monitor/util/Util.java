@@ -41,6 +41,7 @@ import org.hawkular.agent.monitor.extension.MonitorServiceConfigurationBuilder;
 import org.hawkular.agent.monitor.extension.SubsystemExtension;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.inventory.json.InventoryJacksonConfig;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
@@ -53,6 +54,8 @@ import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceRegistry;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -308,12 +311,32 @@ public class Util {
                 restartResourceServicesAttributes.add(attribDef);
             }
         }
-        ReloadRequiredWriteAttributeHandler handler = new ReloadRequiredWriteAttributeHandler(
-                restartAllServicesAttributes);
-        RestartParentWriteAttributeHandler restartParentHandler =
+
+        class CustomWriteAttributeHandler extends ReloadRequiredWriteAttributeHandler {
+            public CustomWriteAttributeHandler(Collection<AttributeDefinition> attribs) {
+                super(attribs);
+            }
+
+            @Override
+            public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
+                if (!context.isBooting()) {
+                    ServiceName name = SubsystemExtension.SERVICE_NAME;
+                    ServiceRegistry serviceRegistry = context.getServiceRegistry(true);
+                    MonitorService agent = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
+                    if (agent.isImmutable()) {
+                        throw new OperationFailedException(
+                                "The agent is configured to be immutable - no changes are allowed.");
+                    }
+                }
+
+                super.execute(context, operation);
+            }
+        }
+
+        ReloadRequiredWriteAttributeHandler handler = new CustomWriteAttributeHandler(restartAllServicesAttributes);
+        RestartParentWriteAttributeHandler restartParentHandler = //
                 new WildflyCompatibilityUtils.EAP6MonitorServiceRestartParentAttributeHandler(
                         restartResourceServicesAttributes);
-
 
         for (AttributeDefinition attribDef : restartAllServicesAttributes) {
             resourceRegistration.registerReadWriteAttribute(attribDef, null, handler);

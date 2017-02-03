@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ import java.util.List;
  */
 public final class Operation<L> extends NodeLocationProvider<L> {
 
+    private final boolean modifies;
     private final String internalName;
     private final List<OperationParam> parameters;
 
@@ -51,11 +52,14 @@ public final class Operation<L> extends NodeLocationProvider<L> {
      * @param internalName the actual name of the operation as it is known to the actual resource being managed.
      *                      This is the name that is used when telling the managed resource what operation to invoke.
      *                      It may or may not be the same as <code>name</code>.
+     * @param modifies if true this means the operation can modify the remote resource
      * @param params Additional params for this operation definition, e.g. coming from operation-dmr. Can be null.
      */
-    public Operation(ID id, Name name, L location, String internalName, List<OperationParam> params) {
+    public Operation(ID id, Name name, L location, String internalName, boolean modifies,
+            List<OperationParam> params) {
         super(id, name, location);
         this.internalName = internalName;
+        this.modifies = modifies;
         if (params != null && !params.isEmpty()) {
             parameters = Collections.unmodifiableList(new ArrayList<>(params));
         } else {
@@ -71,6 +75,15 @@ public final class Operation<L> extends NodeLocationProvider<L> {
      */
     public String getInternalName() {
         return internalName;
+    }
+
+    /**
+     * @return if true this means the operation can modify the remote resource - either its configuration
+     *         settings or (if applicable) its deployments. If an agent is configured as "immutable"
+     *         these operations with modifies=true will not be allowed to execute.
+     */
+    public boolean getModifies() {
+        return modifies;
     }
 
     /**

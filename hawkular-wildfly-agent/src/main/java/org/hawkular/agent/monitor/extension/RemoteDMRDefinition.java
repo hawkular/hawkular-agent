@@ -33,12 +33,11 @@ import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathElement;
-import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelNode;
 
-public class RemoteDMRDefinition extends PersistentResourceDefinition {
+public class RemoteDMRDefinition extends MonitorPersistentResourceDefinition {
 
     public static final RemoteDMRDefinition INSTANCE = new RemoteDMRDefinition();
 
@@ -61,7 +60,7 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
 
     @Override
     public void registerAttributes(ManagementResourceRegistration resourceRegistration) {
-        Util.registerOnlyRestartAttributes(resourceRegistration, getAttributes());
+        super.registerAttributes(resourceRegistration);
 
         resourceRegistration.registerReadWriteAttribute(RemoteDMRAttributes.ENABLED, null,
                 new MonitorServiceWriteAttributeHandler<Void>() {
@@ -78,6 +77,9 @@ public class RemoteDMRDefinition extends PersistentResourceDefinition {
                         if (context.isBooting()) {
                             return false;
                         }
+
+                        super.applyUpdateToRuntime(context, operation, attributeName, newValue, currentValue,
+                                handbackHolder);
 
                         boolean currBool = RemoteDMRAttributes.ENABLED.resolveValue(context, currentValue).asBoolean();
                         boolean newBool = RemoteDMRAttributes.ENABLED.resolveValue(context, newValue).asBoolean();
