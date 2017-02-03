@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -356,4 +356,9 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.WARN)
     @Message(id = 10078, value = "Tried %d times to reach the server %s endpoint at %s. Is it up?")
     void warnConnectionDelayed(int count, String what, String url);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10079, value = "Agent being asked to start when it is already starting up. "
+            + "Will shutdown and try the startup again.")
+    void infoInterruptStartAndStartAgain();
 }
