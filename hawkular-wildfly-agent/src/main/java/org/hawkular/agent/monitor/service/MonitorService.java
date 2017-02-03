@@ -78,6 +78,7 @@ import org.hawkular.inventory.api.model.Feed;
 import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
+import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.domain.management.SecurityRealm;
@@ -376,50 +377,6 @@ public class MonitorService implements Service<MonitorService> {
         // Note that if we are running in host controller or similiar, JNDI binding is not available.
         String jndiName = bootConfiguration.getApiJndi();
         boolean bindJndi = (jndiName == null || jndiName.isEmpty() || processType.isManagedDomain()) ? false : true;
-        /**
-         * Currently, when trying to re-bind the jndi it triggers... Need to work this out when everything else is done.
-         12:59:09,467 ERROR [org.jboss.as.controller.management-operation] (management-handler-thread - 2) WFLYCTL0013: Operation ("write-attribute") failed - address: ([("subsystem" => "hawkular-wildfly-agent")]): org.jboss.msc.service.DuplicateServiceException: Service jboss.naming.context.java.global.hawkular.agent.api is already registered
-         at org.jboss.msc.service.ServiceRegistrationImpl.setInstance(ServiceRegistrationImpl.java:158)
-         at org.jboss.msc.service.ServiceControllerImpl.startInstallation(ServiceControllerImpl.java:235)
-         at org.jboss.msc.service.ServiceContainerImpl.install(ServiceContainerImpl.java:768)
-         at org.jboss.msc.service.ServiceTargetImpl.install(ServiceTargetImpl.java:223)
-         at org.jboss.msc.service.ServiceControllerImpl$ChildServiceTarget.install(ServiceControllerImpl.java:2555)
-         at org.jboss.msc.service.ServiceTargetImpl.install(ServiceTargetImpl.java:223)
-         at org.jboss.msc.service.ServiceControllerImpl$ChildServiceTarget.install(ServiceControllerImpl.java:2555)
-         at org.jboss.msc.service.ServiceBuilderImpl.install(ServiceBuilderImpl.java:317)
-         at org.jboss.as.controller.OperationContextImpl.installService(OperationContextImpl.java:2003)
-         at org.jboss.as.controller.OperationContextImpl.access$500(OperationContextImpl.java:132)
-         at org.jboss.as.controller.OperationContextImpl$2$1.installService(OperationContextImpl.java:747)
-         at org.jboss.as.controller.OperationContextImpl$ContextServiceBuilder.install(OperationContextImpl.java:2289)
-         at org.hawkular.agent.monitor.service.MonitorService.addDependencies(MonitorService.java:433)
-         at org.hawkular.agent.monitor.extension.SubsystemAdd.createService(SubsystemAdd.java:66)
-         at org.hawkular.agent.monitor.extension.SubsystemAdd.performRuntime(SubsystemAdd.java:53)
-         at org.hawkular.agent.monitor.extension.MonitorServiceRestartParentAttributeHandler.recreateParentService(MonitorServiceRestartParentAttributeHandler.java:63)
-         at org.jboss.as.controller.RestartParentWriteAttributeHandler.applyUpdateToRuntime(RestartParentWriteAttributeHandler.java:72)
-         at org.jboss.as.controller.AbstractWriteAttributeHandler$1.execute(AbstractWriteAttributeHandler.java:104)
-         at org.jboss.as.controller.AbstractOperationContext.executeStep(AbstractOperationContext.java:921)
-         at org.jboss.as.controller.AbstractOperationContext.processStages(AbstractOperationContext.java:664)
-         at org.jboss.as.controller.AbstractOperationContext.executeOperation(AbstractOperationContext.java:383)
-         at org.jboss.as.controller.OperationContextImpl.executeOperation(OperationContextImpl.java:1390)
-         at org.jboss.as.controller.ModelControllerImpl.internalExecute(ModelControllerImpl.java:419)
-         at org.jboss.as.controller.ModelControllerImpl.lambda$execute$1(ModelControllerImpl.java:240)
-         at org.wildfly.security.auth.server.SecurityIdentity.runAs(SecurityIdentity.java:193)
-         at org.jboss.as.controller.ModelControllerImpl.execute(ModelControllerImpl.java:240)
-         at org.jboss.as.controller.remote.ModelControllerClientOperationHandler$ExecuteRequestHandler.doExecute(ModelControllerClientOperationHandler.java:217)
-         at org.jboss.as.controller.remote.ModelControllerClientOperationHandler$ExecuteRequestHandler.access$400(ModelControllerClientOperationHandler.java:137)
-         at org.jboss.as.controller.remote.ModelControllerClientOperationHandler$ExecuteRequestHandler$1$1.run(ModelControllerClientOperationHandler.java:161)
-         at org.jboss.as.controller.remote.ModelControllerClientOperationHandler$ExecuteRequestHandler$1$1.run(ModelControllerClientOperationHandler.java:157)
-         at org.wildfly.security.auth.server.SecurityIdentity.runAs(SecurityIdentity.java:212)
-         at org.jboss.as.controller.AccessAuditContext.doAs(AccessAuditContext.java:185)
-         at org.jboss.as.controller.remote.ModelControllerClientOperationHandler$ExecuteRequestHandler$1.execute(ModelControllerClientOperationHandler.java:157)
-         at org.jboss.as.protocol.mgmt.ManagementRequestContextImpl$1.doExecute(ManagementRequestContextImpl.java:70)
-         at org.jboss.as.protocol.mgmt.ManagementRequestContextImpl$AsyncTaskRunner.run(ManagementRequestContextImpl.java:160)
-         at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
-         at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
-         at java.lang.Thread.run(Thread.java:745)
-         at org.jboss.threads.JBossThread.run(JBossThread.java:320)
-         */
-        bindJndi = false;
         if (bindJndi) {
             class JndiBindListener extends AbstractServiceListener<Object> {
                 private final String jndiName;
@@ -468,7 +425,6 @@ public class MonitorService implements Service<MonitorService> {
                             ServiceBasedNamingStore.class,
                             namingStoreInjector)
                     .addListener(new JndiBindListener(jndiName, jndiObjectClassName));
-
             // our monitor service will depend on the binder service
             bldr.addDependency(binderServiceName);
 
@@ -477,6 +433,16 @@ public class MonitorService implements Service<MonitorService> {
         }
 
         return; // deps added
+    }
+
+    public void removeInstalledServices(OperationContext context) {
+        String jndiName = bootConfiguration.getApiJndi();
+        boolean bindJndi = (jndiName == null || jndiName.isEmpty() || processType.isManagedDomain()) ? false : true;
+        if (bindJndi) {
+            ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(jndiName);
+            context.removeService(bindInfo.getBinderServiceName());
+        }
+
     }
 
     private void addSslContext(String securityRealm, ServiceBuilder<MonitorService> bldr) {

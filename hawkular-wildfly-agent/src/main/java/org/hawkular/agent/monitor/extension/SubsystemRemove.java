@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +16,12 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.jboss.as.controller.AbstractRemoveStepHandler;
+import org.hawkular.agent.monitor.service.MonitorService;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceName;
-
-public class SubsystemRemove extends AbstractRemoveStepHandler {
+public class SubsystemRemove extends MonitorServiceRemoveStepHandler {
 
     static final SubsystemRemove INSTANCE = new SubsystemRemove();
 
@@ -32,6 +31,13 @@ public class SubsystemRemove extends AbstractRemoveStepHandler {
     @Override
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
             throws OperationFailedException {
+
+        MonitorService monitorService = getMonitorService(context);
+        if (monitorService == null) {
+            return; // the agent wasn't enabled, nothing to do
+        }
+
+        monitorService.removeInstalledServices(context);
 
         ServiceName name = SubsystemExtension.SERVICE_NAME;
         context.removeService(name);
