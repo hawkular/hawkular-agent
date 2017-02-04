@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration;
 import org.hawkular.agent.monitor.extension.MonitorServiceConfigurationBuilder;
-import org.hawkular.agent.monitor.extension.MonitorServiceRestartParentAttributeHandler;
 import org.hawkular.agent.monitor.extension.SubsystemExtension;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -310,9 +309,9 @@ public class Util {
         }
         ReloadRequiredWriteAttributeHandler handler = new ReloadRequiredWriteAttributeHandler(
                 restartAllServicesAttributes);
-        RestartParentWriteAttributeHandler restartParentHandler = new MonitorServiceRestartParentAttributeHandler(
-                restartResourceServicesAttributes
-        );
+        RestartParentWriteAttributeHandler restartParentHandler =
+                new WildflyCompatibilityUtils.EAP6MonitorServiceRestartParentAttributeHandler(
+                        restartResourceServicesAttributes);
 
 
         for (AttributeDefinition attribDef : restartAllServicesAttributes) {
