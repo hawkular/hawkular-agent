@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,7 +49,6 @@ import okhttp3.ResponseBody;
 import okhttp3.ws.WebSocket;
 import okhttp3.ws.WebSocketCall;
 import okhttp3.ws.WebSocketListener;
-
 import okio.Buffer;
 import okio.BufferedSink;
 
@@ -332,6 +331,8 @@ public class FeedCommProcessor implements WebSocketListener {
                 // and we can't reconnect - while the server is down, our reconnect logic will cause this error
                 // to occur periodically. Our reconnect logic will log other messages.
                 log.tracef("Feed communications had a failure - a reconnection is likely required: %s", e);
+            } else if (e.getMessage() != null && e.getMessage().toLowerCase().contains("socket closed")) {
+                log.debugf("Feed communications channel has been shutdown: " + e);
             } else {
                 log.warnFeedCommFailure("<null>", e);
             }
