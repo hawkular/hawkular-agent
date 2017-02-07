@@ -139,18 +139,17 @@ public class AgentInstaller {
                     hawkularServerPort = "80";
                 }
             } catch (MalformedURLException mue) {
-                // its possible the user passed a URL with a WildFly expression like
-                // "http://${jboss.bind.address:localhost}:8080". Try to parse something like that.
-                Matcher m = Pattern.compile("(https?)://(.*):(\\d+)").matcher(installerConfig.getServerUrl());
-                if (!m.matches()) {
-                    throw mue;
-                }
-                try {
+                // It is possible the user passed a URL with a WildFly expression like:
+                // "http://${jboss.bind.address:localhost}:8080" or "${protocol}://${addr:localhost}:${port:8080}"
+                // Here we try to parse something like that.
+                Matcher m = Pattern.compile("(https?|\\$\\{.+\\})://(.+):(\\d+|\\$\\{.+\\})")
+                        .matcher(installerConfig.getServerUrl());
+                if (m.matches() && m.groupCount() == 3) {
                     hawkularServerProtocol = m.group(1);
                     hawkularServerHost = m.group(2);
                     hawkularServerPort = m.group(3);
-                } catch (Exception e) {
-                    throw mue;
+                } else {
+                    throw new Exception("Server URL cannot be parsed.", mue);
                 }
             }
 
@@ -250,18 +249,29 @@ public class AgentInstaller {
                 targetConfigInfo = new StandaloneTargetConfigInfo();
             }
 
-            // If we are to talk to the Hawkular Server over HTTPS, we need to set up some additional things
+            // If we are to talk to the Hawkular Server over HTTPS, we need to set up some additional things.
+            // We may not know the protocol if the user supplied the URL in the form ${some-env}://host:port.
+            // In this case, do our best and assume the user knows what they are doing (that is, if no keystore
+            // info is supplied, the user must know he isn't going to be using https so allow that to happen).
+            String keystorePath = installerConfig.getKeystorePath();
+            String keystorePass = installerConfig.getKeystorePassword();
+            String keyPass = installerConfig.getKeyPassword();
+            String keyAlias = installerConfig.getKeyAlias();
+
+            // If protocol is explicitly defined as https, this if-stmt merely performs some helpful things
+            // like abort to remind the user to provide required keystore info.
+            // If we cannot tell if https is to be used, we keep going but these helpful things
+            // are not performed and the user must ensure they provide this information if they expect to use https.
             if (hawkularServerProtocol.equals("https")) {
-                String keystorePath = installerConfig.getKeystorePath();
-                String keystorePass = installerConfig.getKeystorePassword();
-                String keyPass = installerConfig.getKeyPassword();
-                String keyAlias = installerConfig.getKeyAlias();
                 if (keystorePath == null || keyAlias == null) {
                     throw new Exception(String.format("When using https protocol, the following keystore "
                             + "command line options are required: %s, %s",
                             InstallerConfiguration.OPTION_KEYSTORE_PATH, InstallerConfiguration.OPTION_KEY_ALIAS));
                 }
+            }
 
+            // if keystore path is specified, it means the user expects to use https, so do some extra things
+            if (keystorePath != null) {
                 // password fields are not required, but if not supplied we'll ask user
                 if (keystorePass == null) {
                     keystorePass = readPasswordFromStdin("Keystore password:");
@@ -280,39 +290,47 @@ public class AgentInstaller {
                     }
                 }
 
-                // if given keystore path is not already present within server-config directory, copy it
                 File keystoreSrcFile = new File(keystorePath);
                 if (!(keystoreSrcFile.isFile() && keystoreSrcFile.canRead())) {
                     throw new FileNotFoundException("Cannot read " + keystoreSrcFile.getAbsolutePath());
                 }
+
                 File targetConfigDir;
                 if (new File(targetConfig).isAbsolute()) {
                     targetConfigDir = new File(targetConfig).getParentFile();
                 } else {
                     targetConfigDir = new File(jbossHome, targetConfig).getParentFile();
                 }
+
                 Path keystoreDst = Paths.get(targetConfigDir.getAbsolutePath()).resolve(keystoreSrcFile.getName());
+
                 // never overwrite target keystore
                 if (!keystoreDst.toFile().exists()) {
                     log.info("Copy [" + keystoreSrcFile.getAbsolutePath() + "] to [" + keystoreDst.toString() + "]");
                     Files.copy(Paths.get(keystoreSrcFile.getAbsolutePath()), keystoreDst);
                 }
 
-                // setup security-realm and storage-adapter (within hawkular-wildfly-agent subsystem)
                 String securityRealm = createSecurityRealm(keystoreSrcFile.getName(), keystorePass, keyPass, keyAlias);
                 configurationBldr.addXmlEdit(new XmlEdit(targetConfigInfo.getSecurityRealmsXPath(), securityRealm));
-                configurationBldr.addXmlEdit(createStorageAdapter(targetConfigInfo, true, installerConfig));
-            } else {
-                // just going over non-secure HTTP
-                configurationBldr.addXmlEdit(createStorageAdapter(targetConfigInfo, false, installerConfig));
             }
 
+            // setup storage-adapter (within hawkular-wildfly-agent subsystem)
+            configurationBldr
+                    .addXmlEdit(createStorageAdapter(targetConfigInfo, (keystorePath != null), installerConfig));
+
+            // create managed servers and other things
             configurationBldr.addXmlEdit(createManagedServers(targetConfigInfo, installerConfig));
             configurationBldr.addXmlEdit(setEnableFlag(targetConfigInfo, installerConfig));
+
             configurationBldr.modulesHome("modules");
 
-            // TODO remove if-stmt when WFCORE-1505 is fixed - domain mode can't use outbound bindings
-            if (!(targetConfigInfo instanceof StandaloneTargetConfigInfo)) {
+            // It is possible the user wants to define the protocol via WildFly env. var. in server URL,
+            // e.g. --server-url=${protocol-to-use}://${host:localhost}:8080
+            // In that case,we have to use the url attribute, not the outbound socket binding.
+            // TODO due to WFCORE-1505 - domain mode can't use outbound bindings
+            boolean useOutboundSocketBinding = (hawkularServerProtocol.startsWith("http")) &&
+                    (targetConfigInfo instanceof StandaloneTargetConfigInfo);
+            if (!useOutboundSocketBinding) {
                 configurationBldr.socketBinding(null);
             }
 
@@ -418,12 +436,17 @@ public class AgentInstaller {
             xml.append(" password=\"" + installerConfig.getPassword() + "\"");
         }
 
-        // xml.append(" serverOutboundSocketBindingRef=\"hawkular\"");
-        // TODO remove if-stmt and uncomment above when WFCORE-1505 is fixed - domain mode can't use outbound bindings
-        if (targetConfigInfo instanceof StandaloneTargetConfigInfo) {
+        // It is possible the user wants to define the protocol via WildFly env. var. in server URL,
+        // e.g. --server-url=${protocol-to-use}://${host:localhost}:8080
+        // In that case,we have to use the url attribute, not the outbound socket binding.
+        // TODO due to WFCORE-1505 - domain mode can't use outbound bindings
+        String serverUrl = installerConfig.getServerUrl();
+        boolean useOutboundSocketBinding = (serverUrl.startsWith("http")) &&
+                (targetConfigInfo instanceof StandaloneTargetConfigInfo);
+        if (useOutboundSocketBinding) {
             xml.append(" server-outbound-socket-binding-ref=\"hawkular\"");
         } else {
-            xml.append(" url=\"").append(installerConfig.getServerUrl()).append("\"");
+            xml.append(" url=\"").append(serverUrl).append("\"");
         }
 
         xml.append("/>");
@@ -481,9 +504,18 @@ public class AgentInstaller {
     }
 
     private static URL getHawkularServerAgentDownloadUrl(InstallerConfiguration config)
-            throws MalformedURLException {
-        String serverUrl = String.format("%s/hawkular/wildfly-agent/download", config.getServerUrl());
-        return new URL(serverUrl);
+            throws Exception {
+        try {
+            String serverUrl = String.format("%s/hawkular/wildfly-agent/download", config.getDownloadServerUrl());
+            return new URL(serverUrl);
+        } catch (MalformedURLException e) {
+            throw new Exception(
+                    "Invalid download URL. Use --" + InstallerConfiguration.OPTION_DOWNLOAD_SERVER_URL
+                            + " to specify where the installer can download the module distribution. "
+                            + "Or provide a module distribution to the installer via --"
+                            + InstallerConfiguration.OPTION_MODULE_DISTRIBUTION,
+                    e);
+        }
     }
 
     /**

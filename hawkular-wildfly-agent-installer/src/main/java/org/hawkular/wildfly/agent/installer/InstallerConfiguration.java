@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,6 +51,7 @@ public class InstallerConfiguration {
     static final String OPTION_TARGET_CONFIG = "target-config";
     static final String OPTION_SUBSYSTEM_SNIPPET = "subsystem-snippet";
     static final String OPTION_SERVER_URL = "server-url";
+    static final String OPTION_DOWNLOAD_SERVER_URL = "download-server-url";
     static final String OPTION_KEYSTORE_PATH = "keystore-path";
     static final String OPTION_KEYSTORE_PASSWORD = "keystore-password";
     static final String OPTION_KEY_PASSWORD = "key-password";
@@ -123,7 +124,15 @@ public class InstallerConfiguration {
                 .name(InstallerConfiguration.OPTION_SERVER_URL)
                 .optionType(OptionType.NORMAL)
                 .type(String.class)
-                .description("Server URL where the agent will send its monitoring data")
+                .description("Server URL where the agent will send its monitoring data. "
+                        + "This is a string to be set as the storage adapter URL.")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_DOWNLOAD_SERVER_URL)
+                .optionType(OptionType.NORMAL)
+                .type(String.class)
+                .description("Server URL from which the installer will download content it may need. If not "
+                        + "specified and the installer needs to download something then --server-url will be used.")
                 .create());
         cmd.addOption(new ProcessedOptionBuilder()
                 .name(InstallerConfiguration.OPTION_TARGET_CONFIG)
@@ -271,6 +280,7 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_TENANT_ID);
         setProperty(properties, commandLine, OPTION_METRICS_ONLY_MODE);
         setProperty(properties, commandLine, OPTION_SERVER_URL);
+        setProperty(properties, commandLine, OPTION_DOWNLOAD_SERVER_URL);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PATH);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PASSWORD);
         setProperty(properties, commandLine, OPTION_KEY_PASSWORD);
@@ -327,6 +337,11 @@ public class InstallerConfiguration {
 
     public String getServerUrl() {
         return properties.getProperty(OPTION_SERVER_URL);
+    }
+
+    public String getDownloadServerUrl() {
+        String url = properties.getProperty(OPTION_DOWNLOAD_SERVER_URL);
+        return (url != null) ? url : getServerUrl();
     }
 
     public String getKeystorePath() {
