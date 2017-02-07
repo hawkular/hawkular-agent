@@ -22,7 +22,6 @@ import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
@@ -42,7 +41,9 @@ public class SubsystemAdd extends WildflyCompatibilityUtils.AbstractAddStepHandl
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
             throws OperationFailedException {
 
-        ModelNode subsystemConfig = Resource.Tools.readModel(context.readResource(PathAddress.EMPTY_ADDRESS));
+        ModelNode subsystemConfig = Resource.Tools.readModel(context.readResourceFromRoot(
+                WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=" + SubsystemExtension.SUBSYSTEM_NAME)
+        ));
         MonitorServiceConfiguration config = new MonitorServiceConfigurationBuilder(subsystemConfig, context).build();
 
         if (!config.isSubsystemEnabled()) {
