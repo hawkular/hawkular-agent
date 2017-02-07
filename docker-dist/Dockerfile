@@ -34,7 +34,12 @@ WORKDIR /tmp
 RUN java -jar installer.jar --enabled true --server-url ${HAWKULAR_SERVER} \
   --module-dist classpath:hawkular-wildfly-agent-wf-extension.zip --username '${env.HAWKULAR_AGENT_USER}' \
   --password '${env.HAWKULAR_AGENT_PASSWORD}' --target-location /opt/jboss/wildfly \
-  --feed-id='${hawkular.agent.machine.id}'
+  --feed-id='${hawkular.agent.machine.id}' 
 
+USER root
+RUN chown -R jboss:0 /opt/jboss/wildfly/standalone && \
+    chmod -R ug+rw /opt/jboss/wildfly/standalone
+
+USER jboss
 CMD /opt/jboss/wildfly/bin/standalone.sh
 
