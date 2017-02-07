@@ -15,17 +15,16 @@
 # limitations under the License.
 #
 
-FROM jboss/wildfly:10.0.0.Final
+FROM jboss/wildfly:10.1.0.Final
 
 MAINTAINER Heiko W. Rupp <hrupp@redhat.com>
 
 ADD target/installer.jar /tmp/
 ADD test-simple.war /opt/jboss/wildfly/standalone/deployments/
-ADD src/main/resources/startcmd.sh /
+ADD src/main/resources/standalone.conf /opt/jboss/wildfly/bin
 
 ENV HAWKULAR_SERVER http://hawkular:8080
-ENV HAWKULAR_USER jdoe
-ENV HAWKULAR_PASSWORD password
+ENV HAWKULAR_AGENT_USER=jdoe HAWKULAR_AGENT_PASSWORD=password
 ENV JAVA_OPTS="-Xmx256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m"
 
 EXPOSE 8080 9090
@@ -33,9 +32,9 @@ EXPOSE 8080 9090
 WORKDIR /tmp
 
 RUN java -jar installer.jar --enabled true --server-url ${HAWKULAR_SERVER} \
-  --module-dist classpath:hawkular-wildfly-agent-wf-extension.zip --username ${HAWKULAR_USER} \
-  --password ${HAWKULAR_PASSWORD} --target-location /opt/jboss/wildfly \
-  --feed-id='${hawkular.rest.feedId}'
+  --module-dist classpath:hawkular-wildfly-agent-wf-extension.zip --username '${env.HAWKULAR_AGENT_USER}' \
+  --password '${env.HAWKULAR_AGENT_PASSWORD}' --target-location /opt/jboss/wildfly \
+  --feed-id='${hawkular.agent.machine.id}'
 
+CMD /opt/jboss/wildfly/bin/standalone.sh
 
-CMD /startcmd.sh
