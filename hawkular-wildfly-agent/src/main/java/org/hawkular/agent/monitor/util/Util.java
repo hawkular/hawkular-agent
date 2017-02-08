@@ -69,6 +69,7 @@ public class Util {
 
     private static final String ENCODING_UTF_8 = "utf-8";
     private static final int BUFFER_SIZE = 128;
+    private static final String HAWKULAR_AGENT_MACHINE_ID = "hawkular.agent.machine.id";
     private static ObjectMapper mapper;
     private static String systemId;
 
@@ -234,7 +235,7 @@ public class Util {
      * closed when this method returns. WARNING: do not slurp large streams to avoid out-of-memory errors.
      *
      * @param input the input stream to slup
-     * @param the encoding to use when reading from {@code input}
+     * @param encoding the encoding to use when reading from {@code input}
      * @return the input stream data as a String
      * @throws IOException in IO problems
      */
@@ -340,10 +341,20 @@ public class Util {
 
     /**
      * Tries to determine the system ID for the machine where this JVM is located.
+     * First check if the user explicitly set it. If not try to read it from
+     * /etc/machine-id
      *
      * @return system ID or null if cannot determine
      */
     public static String getSystemId() {
+
+        if (systemId == null) {
+            systemId = System.getProperty(HAWKULAR_AGENT_MACHINE_ID);
+            if (systemId != null) {
+                log.infof("MachineId was explicitly set to [%s]", systemId);
+            }
+        }
+
         if (systemId == null) {
             File machineIdFile = new File("/etc/machine-id");
             if (machineIdFile.exists() && machineIdFile.canRead()) {
