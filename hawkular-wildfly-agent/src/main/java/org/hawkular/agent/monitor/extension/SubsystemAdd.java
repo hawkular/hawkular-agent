@@ -22,7 +22,9 @@ import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
+import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.ProcessType;
+import org.jboss.as.controller.RunningMode;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceBuilder;
@@ -41,9 +43,31 @@ public class SubsystemAdd extends WildflyCompatibilityUtils.AbstractAddStepHandl
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
             throws OperationFailedException {
 
-        ModelNode subsystemConfig = Resource.Tools.readModel(context.readResourceFromRoot(
-                WildflyCompatibilityUtils.parseCLIStyleAddress("/subsystem=" + SubsystemExtension.SUBSYSTEM_NAME)
-        ));
+        if (context.getRunningMode() == RunningMode.ADMIN_ONLY) {
+            log.infoSubsystemDisabled();
+            return;
+        }
+
+        // Our current address is either the top subsystem or one of its children. But we need the
+        // top subsystem address so we can get the full configuration.
+        // We may be running in standalone or domain mode - support both.
+        PathAddress agentSubsystemAddress = null;
+        PathAddress currentAddress = context.getCurrentAddress();
+        while (currentAddress.size() > 0 && agentSubsystemAddress == null) {
+            if ("subsystem".equals(currentAddress.getLastElement().getKey()) &&
+                    SubsystemExtension.SUBSYSTEM_NAME.equals(currentAddress.getLastElement().getValue())) {
+                agentSubsystemAddress = currentAddress;
+            } else {
+                currentAddress = currentAddress.getParent();
+            }
+        }
+
+        if (agentSubsystemAddress == null) {
+            throw new OperationFailedException(
+                    "Cannot get agent subsystem address from: " + context.getCurrentAddress());
+        }
+
+        ModelNode subsystemConfig = Resource.Tools.readModel(context.readResourceFromRoot(agentSubsystemAddress));
         MonitorServiceConfiguration config = new MonitorServiceConfigurationBuilder(subsystemConfig, context).build();
 
         if (!config.isSubsystemEnabled()) {
