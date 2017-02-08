@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,6 +48,7 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.ReloadRequiredWriteAttributeHandler;
+import org.jboss.as.controller.RestartParentWriteAttributeHandler;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
@@ -297,17 +298,27 @@ public class Util {
             ManagementResourceRegistration resourceRegistration,
             Collection<AttributeDefinition> allAttributes) {
         Collection<AttributeDefinition> restartResourceServicesAttributes = new ArrayList<>();
+        Collection<AttributeDefinition> restartAllServicesAttributes = new ArrayList<>();
         for (AttributeDefinition attribDef : allAttributes) {
-            if (attribDef.getFlags().contains(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                    || attribDef.getFlags().contains(AttributeAccess.Flag.RESTART_JVM)
+            if (attribDef.getFlags().contains(AttributeAccess.Flag.RESTART_JVM)
                     || attribDef.getFlags().contains(AttributeAccess.Flag.RESTART_ALL_SERVICES)) {
+                restartAllServicesAttributes.add(attribDef);
+            } else if (attribDef.getFlags().contains(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)) {
                 restartResourceServicesAttributes.add(attribDef);
             }
         }
         ReloadRequiredWriteAttributeHandler handler = new ReloadRequiredWriteAttributeHandler(
-                restartResourceServicesAttributes);
-        for (AttributeDefinition attribDef : restartResourceServicesAttributes) {
+                restartAllServicesAttributes);
+        RestartParentWriteAttributeHandler restartParentHandler =
+                new WildflyCompatibilityUtils.EAP6MonitorServiceRestartParentAttributeHandler(
+                        restartResourceServicesAttributes);
+
+
+        for (AttributeDefinition attribDef : restartAllServicesAttributes) {
             resourceRegistration.registerReadWriteAttribute(attribDef, null, handler);
+        }
+        for (AttributeDefinition attribDef : restartResourceServicesAttributes) {
+            resourceRegistration.registerReadWriteAttribute(attribDef, null, restartParentHandler);
         }
     }
 

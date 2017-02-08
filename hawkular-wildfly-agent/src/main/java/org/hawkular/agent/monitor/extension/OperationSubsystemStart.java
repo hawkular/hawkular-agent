@@ -38,7 +38,7 @@ public class OperationSubsystemStart implements OperationStepHandler {
 
             boolean restart = model.get("restart").asBoolean(false);
             if (restart) {
-                LOGGER.debug("Asked to restart the Hawkualr Monitor service. Will stop it, then restart it now.");
+                LOGGER.debug("Asked to restart the Hawkular Monitor service. Will stop it, then restart it now.");
                 service.stopMonitorService();
             } else {
                 LOGGER.debug("Asked to start the Hawkular Monitor service");

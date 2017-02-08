@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,6 +31,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.Avail;
@@ -80,33 +82,49 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
     private class InventoryListenerSupport {
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
+        private final ReadWriteLock inventoryListenerRWLock = new ReentrantReadWriteLock();
 
         public void fireResourcesAdded(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
-                LOG.debugf("Firing inventory event for [%d] added/modified resources", resources.size());
-                InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
-                for (InventoryListener inventoryListener : inventoryListeners) {
-                    inventoryListener.resourcesAdded(event);
+                inventoryListenerRWLock.readLock().lock();
+                try {
+                    LOG.debugf("Firing inventory event for [%d] added/modified resources", resources.size());
+                    InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
+                    for (InventoryListener inventoryListener : inventoryListeners) {
+                        inventoryListener.resourcesAdded(event);
+                    }
+                } finally {
+                    inventoryListenerRWLock.readLock().unlock();
                 }
             }
         }
 
         public void fireResourcesRemoved(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
-                LOG.debugf("Firing inventory event for [%d] removed resources", resources.size());
-                InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
-                for (InventoryListener inventoryListener : inventoryListeners) {
-                    inventoryListener.resourcesRemoved(event);
+                inventoryListenerRWLock.readLock().lock();
+                try {
+                    LOG.debugf("Firing inventory event for [%d] removed resources", resources.size());
+                    InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
+                    for (InventoryListener inventoryListener : inventoryListeners) {
+                        inventoryListener.resourcesRemoved(event);
+                    }
+                } finally {
+                    inventoryListenerRWLock.readLock().unlock();
                 }
             }
         }
 
         public void fireDiscoveryComplete() {
-            LOG.debugf("Firing inventory event for discovery complete");
-            DiscoveryEvent<L> event = new DiscoveryEvent<L>(EndpointService.this, getResourceManager(),
-                    getResourceTypeManager());
-            for (InventoryListener inventoryListener : inventoryListeners) {
-                inventoryListener.discoveryCompleted(event);
+            inventoryListenerRWLock.readLock().lock();
+            try {
+                LOG.debugf("Firing inventory event for discovery complete");
+                DiscoveryEvent<L> event = new DiscoveryEvent<L>(EndpointService.this, getResourceManager(),
+                        getResourceTypeManager());
+                for (InventoryListener inventoryListener : inventoryListeners) {
+                    inventoryListener.discoveryCompleted(event);
+                }
+            } finally {
+                inventoryListenerRWLock.readLock().unlock();
             }
         }
     }
@@ -226,9 +244,14 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      * @param listener to add
      */
     public void addInventoryListener(InventoryListener listener) {
-        status.assertInitialOrStopped(getClass(), "addInventoryListener()");
-        this.inventoryListenerSupport.inventoryListeners.add(listener);
-        LOG.debugf("Added inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
+        this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().lock();
+        try {
+            status.assertInitialOrStopped(getClass(), "addInventoryListener()");
+            this.inventoryListenerSupport.inventoryListeners.add(listener);
+            LOG.debugf("Added inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
+        } finally {
+            this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().unlock();
+        }
     }
 
     /**
@@ -237,9 +260,14 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      * @param listener to remove
      */
     public void removeInventoryListener(InventoryListener listener) {
-        status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
-        this.inventoryListenerSupport.inventoryListeners.remove(listener);
-        LOG.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
+        this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().lock();
+        try {
+            status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
+            this.inventoryListenerSupport.inventoryListeners.remove(listener);
+            LOG.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
+        } finally {
+            this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().unlock();
+        }
     }
 
     /**

@@ -20,8 +20,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collection;
 import java.util.List;
 
+import org.hawkular.agent.monitor.extension.MonitorServiceRestartParentAttributeHandler;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -189,6 +191,16 @@ public class WildflyCompatibilityUtils {
         return parsedAddress;
     }
 
+    public static PathAddress getCurrentAddress(OperationContext context, ModelNode operation) {
+        try {
+            return context.getCurrentAddress();
+        } catch (NoSuchMethodError _nsme) {
+            return PathAddress.pathAddress(
+                    operation.require(ModelDescriptionConstants.OP_ADDR)
+            );
+        }
+    }
+
     public static String getCurrentAddressValue(OperationContext context, ModelNode operation) {
         try {
             return context.getCurrentAddressValue();
@@ -255,5 +267,24 @@ public class WildflyCompatibilityUtils {
         protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model)
                 throws OperationFailedException {
         }
+    }
+
+    public static class EAP6MonitorServiceRestartParentAttributeHandler
+            extends MonitorServiceRestartParentAttributeHandler {
+
+        public EAP6MonitorServiceRestartParentAttributeHandler(AttributeDefinition... definitions) {
+            super(definitions);
+        }
+
+        public EAP6MonitorServiceRestartParentAttributeHandler(Collection<AttributeDefinition> definitions) {
+            super(definitions.toArray(new AttributeDefinition[definitions.size()]));
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        protected void recreateParentService(OperationContext context, PathAddress parentAddress, ModelNode parentModel, ServiceVerificationHandler verificationHandler) throws OperationFailedException {
+            recreateParentService(context, parentAddress, parentModel);
+        }
+
     }
 }
