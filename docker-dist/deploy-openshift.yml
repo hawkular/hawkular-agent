@@ -83,7 +83,6 @@ items:
         from:
           kind: ImageStreamTag
           name: hawkfly:latest
-          namespace: hagent
       type: ImageChange
 - apiVersion: v1
   kind: Service
