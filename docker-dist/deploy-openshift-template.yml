@@ -1,6 +1,42 @@
+#
+# Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
+# and other contributors as indicated by the @author tags.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 apiVersion: v1
-kind: List
-items:
+kind: Template
+metadata:
+  name: hawkfly
+  annotations:
+    openshift.io/display-name: Hawkfly
+    description: WildFly server with embedded Hawkular-agent
+    #iconClass: icon-app-code https://github.com/openshift/openshift-docs/issues/1329
+    iconClass: wildfly
+    tags: hawkular
+parameters:
+- name: HAWKULAR_SERVER_IP
+  description: The IP / hostname of the Hawkular Server
+- name: HAWKULAR_SERVER_PORT
+  description: The port where the Hawkular Server listens for agents
+  value: "8080"
+- name: HAWKFLY_IMAGE
+  description: The image to use
+  value: pilhuhn/hawkfly
+labels:
+  template: hawkfly
+objects:
 - apiVersion: v1
   kind: ImageStream
   metadata:
@@ -8,7 +44,7 @@ items:
       app: hawkfly
     name: hawkfly
   spec:
-    dockerImageRepository: pilhuhn/hawkfly
+    dockerImageRepository: ${HAWKFLY_IMAGE}
 - apiVersion: v1
   kind: Secret
   metadata:
@@ -46,9 +82,9 @@ items:
         containers:
         - env:
           - name: HAWKULAR_SERVER_ADDR
-            value: 172.31.7.7
+            value: ${HAWKULAR_SERVER_IP}
           - name: HAWKULAR_SERVER_PORT
-            value: "8080"
+            value: ${HAWKULAR_SERVER_PORT}
           - name: HAWKULAR_USER
             valueFrom:
               secretKeyRef:
