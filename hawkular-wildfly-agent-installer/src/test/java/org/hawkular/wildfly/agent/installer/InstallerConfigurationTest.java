@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +30,16 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class InstallerConfigurationTest {
+    @Test
+    public void testMissingDownloadServerUrl() throws Exception {
+        ProcessedCommand<?> options = InstallerConfiguration.buildCommandLineOptions();
+        CommandLineParser<?> parser = new CommandLineParserBuilder().processedCommand(options).create();
+        CommandLine<?> commandLine = parser
+                .parse(args("--server-url=http://host:5432"));
+        InstallerConfiguration config = new InstallerConfiguration(commandLine);
+        Assert.assertEquals("http://host:5432", config.getDownloadServerUrl());
+    }
+
     @Test
     public void testSysPropArguments() throws Exception {
         ProcessedCommand<?> options = InstallerConfiguration.buildCommandLineOptions();
@@ -99,6 +109,7 @@ public class InstallerConfigurationTest {
                         "--target-config", "standalone/configuration/OVERRIDE.xml",
                         "--subsystem-snippet", "subdir/subsystem-snippetOVERRIDE.xml",
                         "--server-url", "http://OVERRIDE:8080",
+                        "--download-server-url", "http://OVERRIDE-DOWNLOAD:8080",
                         "--managed-server-name", "MyLocalNameOVERRIDE",
                         "--keystore-path", "/tmp/OVERRIDE/path",
                         "--keystore-password", "OVERRIDE-keystore-password",
@@ -107,14 +118,14 @@ public class InstallerConfigurationTest {
                         "--username", "OVERRIDE-username",
                         "--password", "OVERRIDE-password",
                         "--module-dist", "/OVERRIDE/dist.zip",
-                        "--managed-server-resource-type-sets", "\"OVERRIDE First Type,Second Type\""
-                ));
+                        "--managed-server-resource-type-sets", "\"OVERRIDE First Type,Second Type\""));
         InstallerConfiguration installerConfig = new InstallerConfiguration(commandLine);
         Assert.assertFalse(installerConfig.isEnabled());
         Assert.assertEquals("/opt/wildfly/OVERRIDE", installerConfig.getTargetLocation());
         Assert.assertEquals("standalone/configuration/OVERRIDE.xml", installerConfig.getTargetConfig());
         Assert.assertEquals("subdir/subsystem-snippetOVERRIDE.xml", installerConfig.getSubsystemSnippet());
         Assert.assertEquals("http://OVERRIDE:8080", installerConfig.getServerUrl());
+        Assert.assertEquals("http://OVERRIDE-DOWNLOAD:8080", installerConfig.getDownloadServerUrl());
         Assert.assertEquals("MyLocalNameOVERRIDE", installerConfig.getManagedServerName());
         Assert.assertEquals("/tmp/OVERRIDE/path", installerConfig.getKeystorePath());
         Assert.assertEquals("OVERRIDE-keystore-password", installerConfig.getKeystorePassword());
@@ -208,6 +219,7 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("standalone/configuration/test.xml", installerConfig.getTargetConfig());
         Assert.assertEquals("subdir/subsystem-snippet.xml", installerConfig.getSubsystemSnippet());
         Assert.assertEquals("http://test:8080", installerConfig.getServerUrl());
+        Assert.assertEquals("http://test-download:8080", installerConfig.getDownloadServerUrl());
         Assert.assertEquals("MyLocalName", installerConfig.getManagedServerName());
         Assert.assertEquals("/tmp/test/path", installerConfig.getKeystorePath());
         Assert.assertEquals("test-keystore-password", installerConfig.getKeystorePassword());
