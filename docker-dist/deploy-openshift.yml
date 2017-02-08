@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: hawkfly
+    name: hawkfly
+  spec:
+    dockerImageRepository: pilhuhn/hawkfly
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: hawkfly-secret
+  type: Opaque
+  data:
+    user: amRvZQ==
+    password: cGFzc3dvcmQ=
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: hawkfly
+    name: hawkfly
+  spec:
+    replicas: 1
+    selector:
+      app: hawkfly
+      deploymentconfig: hawkfly
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: hawkfly
+          deploymentconfig: hawkfly
+      spec:
+        containers:
+        - env:
+          - name: HAWKULAR_SERVER_ADDR
+            value: 172.31.7.7
+          - name: HAWKULAR_SERVER_PORT
+            value: "8080"
+          - name: HAWKULAR_USER
+            valueFrom:
+              secretKeyRef:
+                name: hawkfly-secret
+                key: user
+          - name: HAWKULAR_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: hawkfly-secret
+                key: password
+          image: pilhuhn/hawkfly
+          imagePullPolicy: Always
+          name: hawkfly
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 9090
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - hawkfly
+        from:
+          kind: ImageStreamTag
+          name: hawkfly:latest
+          namespace: hagent
+      type: ImageChange
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: hawkfly
+    name: hawkfly
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: 9090-tcp
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
+    selector:
+      deploymentconfig: hawkfly
+    sessionAffinity: None
+    type: ClusterIP
