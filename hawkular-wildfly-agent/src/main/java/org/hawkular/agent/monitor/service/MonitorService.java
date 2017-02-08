@@ -76,6 +76,7 @@ import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.hawkular.inventory.api.model.Feed;
 import org.jboss.as.controller.ControlledProcessState;
+import org.jboss.as.controller.ControlledProcessState.State;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.OperationContext;
@@ -179,8 +180,8 @@ public class MonitorService implements Service<MonitorService> {
                         port = socketBinding.getAbsolutePort();
                     } else {
                         OutboundSocketBinding serverBinding = serverOutboundSocketBindingValue.getValue();
-                        address = WildflyCompatibilityUtils.
-                                outboundSocketBindingGetResolvedDestinationAddress(serverBinding).getHostName();
+                        address = WildflyCompatibilityUtils
+                                .outboundSocketBindingGetResolvedDestinationAddress(serverBinding).getHostName();
                         port = serverBinding.getDestinationPort();
                     }
                     String protocol = (bootStorageAdapter.isUseSSL()) ? "https" : "http";
@@ -410,11 +411,12 @@ public class MonitorService implements Service<MonitorService> {
             Object jndiObject = getHawkularMonitorContext();
             ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(jndiName);
             BinderService binderService = new BinderService(bindInfo.getBindName());
-            Injector<ManagedReferenceFactory> managedObjectInjector =
-                    WildflyCompatibilityUtils.getManagedObjectInjectorFromBinderService(binderService);
-            Injector<ServiceBasedNamingStore> namingStoreInjector =
-                    WildflyCompatibilityUtils.getNamingStoreInjectorFromBinderService(binderService);
-            ManagedReferenceFactory valueMRF = WildflyCompatibilityUtils.getImmediateManagedReferenceFactory(jndiObject);
+            Injector<ManagedReferenceFactory> managedObjectInjector = WildflyCompatibilityUtils
+                    .getManagedObjectInjectorFromBinderService(binderService);
+            Injector<ServiceBasedNamingStore> namingStoreInjector = WildflyCompatibilityUtils
+                    .getNamingStoreInjectorFromBinderService(binderService);
+            ManagedReferenceFactory valueMRF = WildflyCompatibilityUtils
+                    .getImmediateManagedReferenceFactory(jndiObject);
             String jndiObjectClassName = HawkularWildFlyAgentContext.class.getName();
             ServiceName binderServiceName = bindInfo.getBinderServiceName();
             ServiceBuilder<?> binderBuilder = target
@@ -470,30 +472,11 @@ public class MonitorService implements Service<MonitorService> {
 
     @Override
     public void start(final StartContext startContext) throws StartException {
-        // deferred startup: must wait for server to be running before we can monitor the subsystems
-        ControlledProcessStateService stateService = processStateValue.getValue();
-        serverStateListener = new PropertyChangeListener() {
+        class CustomPropertyChangeListener implements PropertyChangeListener {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
                 if (ControlledProcessState.State.RUNNING.equals(evt.getNewValue())) {
-                    // see HWKAGENT-74 for why we need to do this in a separate thread
-                    Thread newThread = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                startMonitorService();
-                            } catch (Throwable t) {
-                            }
-                        }
-                    }, "Hawkular WildFly Agent Startup Thread");
-                    newThread.setDaemon(true);
-
-                    Thread oldThread = startThread.getAndSet(newThread);
-                    if (oldThread != null) {
-                        oldThread.interrupt();
-                    }
-
-                    newThread.start();
+                    startNow();
                 } else if (ControlledProcessState.State.STOPPING.equals(evt.getNewValue())) {
                     Thread oldThread = startThread.get();
                     if (oldThread != null) {
@@ -501,8 +484,41 @@ public class MonitorService implements Service<MonitorService> {
                     }
                 }
             }
-        };
+
+            private void startNow() {
+                // see HWKAGENT-74 for why we need to do this in a separate thread
+                Thread newThread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            startMonitorService();
+                        } catch (Throwable t) {
+                        }
+                    }
+                }, "Hawkular WildFly Agent Startup Thread");
+                newThread.setDaemon(true);
+
+                Thread oldThread = startThread.getAndSet(newThread);
+                if (oldThread != null) {
+                    oldThread.interrupt();
+                }
+
+                newThread.start();
+            }
+        }
+
+        // deferred startup: must wait for server to be running before we can monitor the subsystems
+        ControlledProcessStateService stateService = processStateValue.getValue();
+        CustomPropertyChangeListener listener = new CustomPropertyChangeListener();
+        serverStateListener = listener;
         stateService.addPropertyChangeListener(serverStateListener);
+
+        // if the server is already started, we need to restart now. Otherwise, we'll start when the
+        // server tells us it is running in our change listener above.
+        if (stateService.getCurrentState() == State.RUNNING) {
+            listener.startNow();
+        }
+
     }
 
     @Override
