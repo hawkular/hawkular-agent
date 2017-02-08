@@ -86,8 +86,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         public void fireResourcesAdded(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
+                inventoryListenerRWLock.readLock().lock();
                 try {
-                    inventoryListenerRWLock.readLock().lock();
                     LOG.debugf("Firing inventory event for [%d] added/modified resources", resources.size());
                     InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
                     for (InventoryListener inventoryListener : inventoryListeners) {
@@ -101,8 +101,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
         public void fireResourcesRemoved(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
+                inventoryListenerRWLock.readLock().lock();
                 try {
-                    inventoryListenerRWLock.readLock().lock();
                     LOG.debugf("Firing inventory event for [%d] removed resources", resources.size());
                     InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
                     for (InventoryListener inventoryListener : inventoryListeners) {
@@ -115,8 +115,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
 
         public void fireDiscoveryComplete() {
+            inventoryListenerRWLock.readLock().lock();
             try {
-                inventoryListenerRWLock.readLock().lock();
                 LOG.debugf("Firing inventory event for discovery complete");
                 DiscoveryEvent<L> event = new DiscoveryEvent<L>(EndpointService.this, getResourceManager(),
                         getResourceTypeManager());
@@ -244,8 +244,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      * @param listener to add
      */
     public void addInventoryListener(InventoryListener listener) {
+        this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().lock();
         try {
-            this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().lock();
             status.assertInitialOrStopped(getClass(), "addInventoryListener()");
             this.inventoryListenerSupport.inventoryListeners.add(listener);
             LOG.debugf("Added inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
@@ -260,8 +260,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      * @param listener to remove
      */
     public void removeInventoryListener(InventoryListener listener) {
+        this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().lock();
         try {
-            this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().lock();
             status.assertInitialOrStopped(getClass(), "removeInventoryListener()");
             this.inventoryListenerSupport.inventoryListeners.remove(listener);
             LOG.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
