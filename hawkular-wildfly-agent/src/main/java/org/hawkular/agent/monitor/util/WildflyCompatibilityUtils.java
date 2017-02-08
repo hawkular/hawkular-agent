@@ -191,6 +191,16 @@ public class WildflyCompatibilityUtils {
         return parsedAddress;
     }
 
+    public static PathAddress getCurrentAddress(OperationContext context, ModelNode operation) {
+        try {
+            return context.getCurrentAddress();
+        } catch (NoSuchMethodError _nsme) {
+            return PathAddress.pathAddress(
+                    operation.require(ModelDescriptionConstants.OP_ADDR)
+            );
+        }
+    }
+
     public static String getCurrentAddressValue(OperationContext context, ModelNode operation) {
         try {
             return context.getCurrentAddressValue();

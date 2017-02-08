@@ -52,7 +52,7 @@ public class SubsystemAdd extends WildflyCompatibilityUtils.AbstractAddStepHandl
         // top subsystem address so we can get the full configuration.
         // We may be running in standalone or domain mode - support both.
         PathAddress agentSubsystemAddress = null;
-        PathAddress currentAddress = context.getCurrentAddress();
+        PathAddress currentAddress = WildflyCompatibilityUtils.getCurrentAddress(context, operation);
         while (currentAddress.size() > 0 && agentSubsystemAddress == null) {
             if ("subsystem".equals(currentAddress.getLastElement().getKey()) &&
                     SubsystemExtension.SUBSYSTEM_NAME.equals(currentAddress.getLastElement().getValue())) {
@@ -64,7 +64,7 @@ public class SubsystemAdd extends WildflyCompatibilityUtils.AbstractAddStepHandl
 
         if (agentSubsystemAddress == null) {
             throw new OperationFailedException(
-                    "Cannot get agent subsystem address from: " + context.getCurrentAddress());
+                    "Cannot get agent subsystem address from: " + WildflyCompatibilityUtils.getCurrentAddress(context, operation));
         }
 
         ModelNode subsystemConfig = Resource.Tools.readModel(context.readResourceFromRoot(agentSubsystemAddress));

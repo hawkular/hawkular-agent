@@ -23,6 +23,7 @@ import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.RestartParentWriteAttributeHandler;
+import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
@@ -61,6 +62,8 @@ public class MonitorServiceRestartParentAttributeHandler extends RestartParentWr
     @Override
     protected void recreateParentService(OperationContext context, PathAddress parentAddress, ModelNode parentModel)
             throws OperationFailedException {
-        SubsystemAdd.INSTANCE.performRuntime(context, null, parentModel);
+        SubsystemAdd.INSTANCE.performRuntime(context,
+                new ModelNode().set(ModelDescriptionConstants.OP_ADDR, parentAddress.toModelNode()),
+                parentModel);
     }
 }
