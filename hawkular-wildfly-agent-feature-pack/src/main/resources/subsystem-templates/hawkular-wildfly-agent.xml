@@ -23,6 +23,7 @@
   <subsystem xmlns="urn:org.hawkular.agent:agent:1.0"
              enabled="${hawkular.agent.enabled:true}"
              immutable="${hawkular.agent.immutable:false}"
+             in-container="${hawkular.agent.in-container:false}"
              auto-discovery-scan-period-secs="600">
 
     <diagnostics enabled="true"
@@ -827,6 +828,7 @@
                          path="/subsystem=hawkular-wildfly-agent"
                          parents="WildFly Server,Domain WildFly Server,Domain Host">
         <resource-config-dmr name="Immutable" attribute="immutable" resolve-expressions="true"/>
+        <resource-config-dmr name="In Container" attribute="in-container" resolve-expressions="true"/>
 
         <operation-dmr name="Status"                   internal-name="status" />
         <operation-dmr name="Inventory Discovery Scan" internal-name="fullDiscoveryScan" />

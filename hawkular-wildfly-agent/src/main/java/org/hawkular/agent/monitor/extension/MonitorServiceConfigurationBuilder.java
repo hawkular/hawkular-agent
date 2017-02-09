@@ -917,6 +917,7 @@ public class MonitorServiceConfigurationBuilder {
             throws OperationFailedException {
         boolean subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
         boolean immutable = getBoolean(config, context, SubsystemAttributes.IMMUTABLE);
+        boolean inContainer = getBoolean(config, context, SubsystemAttributes.IN_CONTAINER);
         String apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
         int autoDiscoveryScanPeriodSecs = getInt(config, context,
                 SubsystemAttributes.AUTO_DISCOVERY_SCAN_PERIOD_SECONDS);
@@ -928,7 +929,7 @@ public class MonitorServiceConfigurationBuilder {
         int availDispatcherMaxBatchSize = getInt(config, context, SubsystemAttributes.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
         int pingDispatcherPeriodSeconds = getInt(config, context, SubsystemAttributes.PING_DISPATCHER_PERIOD_SECONDS);
 
-        return new GlobalConfiguration(subsystemEnabled, immutable, apiJndi, autoDiscoveryScanPeriodSecs,
+        return new GlobalConfiguration(subsystemEnabled, immutable, inContainer, apiJndi, autoDiscoveryScanPeriodSecs,
                 numDmrSchedulerThreads, metricDispatcherBufferSize, metricDispatcherMaxBatchSize,
                 availDispatcherBufferSize, availDispatcherMaxBatchSize, pingDispatcherPeriodSeconds);
     }
