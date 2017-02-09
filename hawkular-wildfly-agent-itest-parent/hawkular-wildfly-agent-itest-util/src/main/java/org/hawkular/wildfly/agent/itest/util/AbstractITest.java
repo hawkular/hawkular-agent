@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -220,6 +220,24 @@ public abstract class AbstractITest {
                 .getResultNode()
                 .asString();
         return actualAttributeValue;
+    }
+
+    protected void writeNodeAttribute(ModelControllerClient mcc, ModelNode addressActual, String attributeName,
+            String value) {
+        OperationBuilder.writeAttribute()
+                .address(addressActual)
+                .attribute(attributeName, value)
+                .execute(mcc)
+                .assertSuccess();
+    }
+
+    protected void writeNodeAttribute(ModelControllerClient mcc, ModelNode addressActual, String attributeName,
+            Integer value) {
+        OperationBuilder.writeAttribute()
+                .address(addressActual)
+                .attribute(attributeName, value)
+                .execute(mcc)
+                .assertSuccess();
     }
 
     protected void assertNodeAttributeEquals(ModelControllerClient mcc, ModelNode addressActual, String attributeName,
@@ -546,6 +564,7 @@ public abstract class AbstractITest {
 
     protected static ModelControllerClient newModelControllerClient(final String host, final int managementPort) {
         final CallbackHandler callbackHandler = new CallbackHandler() {
+            @Override
             public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
                 for (Callback current : callbacks) {
                     if (current instanceof NameCallback) {

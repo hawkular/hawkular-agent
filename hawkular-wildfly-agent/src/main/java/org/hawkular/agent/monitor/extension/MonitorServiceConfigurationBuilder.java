@@ -101,11 +101,11 @@ public class MonitorServiceConfigurationBuilder {
         TypeSets.Builder<DMRNodeLocation> dmrTypeSetsBuilder = TypeSets.builder();
         TypeSets.Builder<JMXNodeLocation> jmxTypeSetsBuilder = TypeSets.builder();
 
-        determineMetricSetDmr(config, context, dmrTypeSetsBuilder);
-        determineAvailSetDmr(config, context, dmrTypeSetsBuilder);
+        determineMetricSetDmr(config, context, dmrTypeSetsBuilder, globalConfiguration);
+        determineAvailSetDmr(config, context, dmrTypeSetsBuilder, globalConfiguration);
 
-        determineMetricSetJmx(config, context, jmxTypeSetsBuilder);
-        determineAvailSetJmx(config, context, jmxTypeSetsBuilder);
+        determineMetricSetJmx(config, context, jmxTypeSetsBuilder, globalConfiguration);
+        determineAvailSetJmx(config, context, jmxTypeSetsBuilder, globalConfiguration);
 
         // make sure to call this AFTER the metric sets and avail sets have been determined
         determineResourceTypeSetDmr(config, context, dmrTypeSetsBuilder);
@@ -138,11 +138,12 @@ public class MonitorServiceConfigurationBuilder {
 
     private static void determineMetricSetDmr(ModelNode config,
             OperationContext context,
-            org.hawkular.agent.monitor.inventory.TypeSets.Builder<DMRNodeLocation>//
-            typeSetsBuilder)
+            org.hawkular.agent.monitor.inventory.TypeSets.Builder<DMRNodeLocation> typeSetsBuilder,
+            GlobalConfiguration globalConfiguration)
             throws OperationFailedException {
 
         boolean enabled = false;
+        long minInterval = globalConfiguration.getMinCollectionIntervalSeconds();
 
         if (config.hasDefined(DMRMetricSetDefinition.METRIC_SET)) {
             List<Property> metricSetsList = config.get(DMRMetricSetDefinition.METRIC_SET).asPropertyList();
@@ -176,16 +177,29 @@ public class MonitorServiceConfigurationBuilder {
                         AttributeLocation<DMRNodeLocation> location = new AttributeLocation<>(
                                 new DMRNodeLocation(pathAddress, re, id),
                                 attributeString);
+
+                        Interval interval = new Interval(
+                                getInt(metricValueNode, context, DMRMetricAttributes.INTERVAL),
+                                getTimeUnit(metricValueNode, context, DMRMetricAttributes.TIME_UNITS));
+                        long intervalSecs = interval.seconds();
+                        if (intervalSecs > 0 && intervalSecs < minInterval) {
+                            log.warnf("Metric [%s] interval being changed from [%s]s to minimum of [%s]s",
+                                    metricName, intervalSecs, minInterval);
+                            interval = new Interval((int) minInterval, TimeUnit.SECONDS);
+                        }
+
                         MetricType<DMRNodeLocation> metric = new MetricType<>(
                                 new ID(metricId),
                                 new Name(metricName),
                                 location,
-                                new Interval(getInt(metricValueNode, context, DMRMetricAttributes.INTERVAL),
-                                        getTimeUnit(metricValueNode, context, DMRMetricAttributes.TIME_UNITS)),
+                                interval,
                                 getMeasurementUnit(metricValueNode, context, DMRMetricAttributes.METRIC_UNITS),
                                 getMetricType(metricValueNode, context, DMRMetricAttributes.METRIC_TYPE),
                                 metricIdTemplate,
                                 metricTags);
+                        if (metric.isDisabled()) {
+                            log.debugf("Metric [%s] is Disabled for collection.", metric.getName());
+                        }
                         typeSetBuilder.type(metric);
                     }
                 }
@@ -229,10 +243,12 @@ public class MonitorServiceConfigurationBuilder {
 
     private static void determineAvailSetDmr(ModelNode config,
             OperationContext context,
-            TypeSets.Builder<DMRNodeLocation> typeSetsBuilder)
+            TypeSets.Builder<DMRNodeLocation> typeSetsBuilder,
+            GlobalConfiguration globalConfiguration)
             throws OperationFailedException {
 
         boolean enabled = false;
+        long minInterval = globalConfiguration.getMinCollectionIntervalSeconds();
 
         if (config.hasDefined(DMRAvailSetDefinition.AVAIL_SET)) {
             List<Property> availSetsList = config.get(DMRAvailSetDefinition.AVAIL_SET).asPropertyList();
@@ -266,15 +282,27 @@ public class MonitorServiceConfigurationBuilder {
                                 new DMRNodeLocation(pathAddress, re, id),
                                 attributeString);
 
+                        Interval interval = new Interval(
+                                getInt(availValueNode, context, DMRMetricAttributes.INTERVAL),
+                                getTimeUnit(availValueNode, context, DMRMetricAttributes.TIME_UNITS));
+                        long intervalSecs = interval.seconds();
+                        if (intervalSecs > 0 && intervalSecs < minInterval) {
+                            log.warnf("Avail [%s] interval being changed from [%s]s to minimum of [%s]s",
+                                    availName, intervalSecs, minInterval);
+                            interval = new Interval((int) minInterval, TimeUnit.SECONDS);
+                        }
+
                         AvailType<DMRNodeLocation> avail = new AvailType<DMRNodeLocation>(
                                 new ID(availId),
                                 new Name(availName),
                                 location,
-                                new Interval(getInt(availValueNode, context, DMRAvailAttributes.INTERVAL),
-                                        getTimeUnit(availValueNode, context, DMRAvailAttributes.TIME_UNITS)),
+                                interval,
                                 Pattern.compile(getString(availValueNode, context, DMRAvailAttributes.UP_REGEX)),
                                 metricIdTemplate,
                                 metricTags);
+                        if (avail.isDisabled()) {
+                            log.debugf("Avail [%s] is Disabled for collection.", avail.getName());
+                        }
                         typeSetBuilder.type(avail);
                     }
                     TypeSet<AvailType<DMRNodeLocation>> typeSet = typeSetBuilder.build();
@@ -290,10 +318,12 @@ public class MonitorServiceConfigurationBuilder {
 
     private static void determineMetricSetJmx(ModelNode config,
             OperationContext context,
-            TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
+            TypeSets.Builder<JMXNodeLocation> typeSetsBuilder,
+            GlobalConfiguration globalConfiguration)
             throws OperationFailedException {
 
         boolean enabled = false;
+        long minInterval = globalConfiguration.getMinCollectionIntervalSeconds();
 
         if (config.hasDefined(JMXMetricSetDefinition.METRIC_SET)) {
             List<Property> metricSetsList = config.get(JMXMetricSetDefinition.METRIC_SET).asPropertyList();
@@ -325,16 +355,28 @@ public class MonitorServiceConfigurationBuilder {
                                     new JMXNodeLocation(objectName),
                                     getString(metricValueNode, context, JMXMetricAttributes.ATTRIBUTE));
 
+                            Interval interval = new Interval(
+                                    getInt(metricValueNode, context, DMRMetricAttributes.INTERVAL),
+                                    getTimeUnit(metricValueNode, context, DMRMetricAttributes.TIME_UNITS));
+                            long intervalSecs = interval.seconds();
+                            if (intervalSecs > 0 && intervalSecs < minInterval) {
+                                log.warnf("Metric [%s] interval being changed from [%s]s to minimum of [%s]s",
+                                        metricName, intervalSecs, minInterval);
+                                interval = new Interval((int) minInterval, TimeUnit.SECONDS);
+                            }
+
                             MetricType<JMXNodeLocation> metric = new MetricType<JMXNodeLocation>(
                                     new ID(metricId),
                                     new Name(metricName),
                                     location,
-                                    new Interval(getInt(metricValueNode, context, JMXMetricAttributes.INTERVAL),
-                                            getTimeUnit(metricValueNode, context, JMXMetricAttributes.TIME_UNITS)),
+                                    interval,
                                     getMeasurementUnit(metricValueNode, context, JMXMetricAttributes.METRIC_UNITS),
                                     getMetricType(metricValueNode, context, JMXMetricAttributes.METRIC_TYPE),
                                     metricIdTemplate,
                                     metricTags);
+                            if (metric.isDisabled()) {
+                                log.debugf("Metric [%s] is Disabled for collection.", metric.getName());
+                            }
                             typeSetBuilder.type(metric);
                         } catch (MalformedObjectNameException e) {
                             log.warnMalformedJMXObjectName(objectName, e);
@@ -354,10 +396,12 @@ public class MonitorServiceConfigurationBuilder {
 
     private static void determineAvailSetJmx(ModelNode config,
             OperationContext context,
-            TypeSets.Builder<JMXNodeLocation> typeSetsBuilder)
+            TypeSets.Builder<JMXNodeLocation> typeSetsBuilder,
+            GlobalConfiguration globalConfiguration)
             throws OperationFailedException {
 
         boolean enabled = false;
+        long minInterval = globalConfiguration.getMinCollectionIntervalSeconds();
 
         if (config.hasDefined(JMXAvailSetDefinition.AVAIL_SET)) {
             List<Property> availSetsList = config.get(JMXAvailSetDefinition.AVAIL_SET).asPropertyList();
@@ -388,15 +432,27 @@ public class MonitorServiceConfigurationBuilder {
                                     new JMXNodeLocation(objectName),
                                     getString(availValueNode, context, JMXAvailAttributes.ATTRIBUTE));
 
+                            Interval interval = new Interval(
+                                    getInt(availValueNode, context, DMRMetricAttributes.INTERVAL),
+                                    getTimeUnit(availValueNode, context, DMRMetricAttributes.TIME_UNITS));
+                            long intervalSecs = interval.seconds();
+                            if (intervalSecs > 0 && intervalSecs < minInterval) {
+                                log.warnf("Avail [%s] interval being changed from [%s]s to minimum of [%s]s",
+                                        availName, intervalSecs, minInterval);
+                                interval = new Interval((int) minInterval, TimeUnit.SECONDS);
+                            }
+
                             AvailType<JMXNodeLocation> avail = new AvailType<JMXNodeLocation>(
                                     new ID(availId),
                                     new Name(availName),
                                     location,
-                                    new Interval(getInt(availValueNode, context, JMXAvailAttributes.INTERVAL),
-                                            getTimeUnit(availValueNode, context, JMXAvailAttributes.TIME_UNITS)),
+                                    interval,
                                     Pattern.compile(getString(availValueNode, context, JMXAvailAttributes.UP_REGEX)),
                                     metricIdTemplate,
                                     metricTags);
+                            if (avail.isDisabled()) {
+                                log.debugf("Avail [%s] is Disabled for collection.", avail.getName());
+                            }
                             typeSetBuilder.type(avail);
                         } catch (MalformedObjectNameException e) {
                             log.warnMalformedJMXObjectName(objectName, e);
@@ -921,6 +977,8 @@ public class MonitorServiceConfigurationBuilder {
         String apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
         int autoDiscoveryScanPeriodSecs = getInt(config, context,
                 SubsystemAttributes.AUTO_DISCOVERY_SCAN_PERIOD_SECONDS);
+        int minCollectionIntervalSecs = getInt(config, context,
+                SubsystemAttributes.MIN_COLLECTION_INTERVAL_SECS);
         int numDmrSchedulerThreads = getInt(config, context, SubsystemAttributes.NUM_DMR_SCHEDULER_THREADS);
         int metricDispatcherBufferSize = getInt(config, context, SubsystemAttributes.METRIC_DISPATCHER_BUFFER_SIZE);
         int metricDispatcherMaxBatchSize = getInt(config, context,
@@ -930,8 +988,9 @@ public class MonitorServiceConfigurationBuilder {
         int pingDispatcherPeriodSeconds = getInt(config, context, SubsystemAttributes.PING_DISPATCHER_PERIOD_SECONDS);
 
         return new GlobalConfiguration(subsystemEnabled, immutable, inContainer, apiJndi, autoDiscoveryScanPeriodSecs,
-                numDmrSchedulerThreads, metricDispatcherBufferSize, metricDispatcherMaxBatchSize,
-                availDispatcherBufferSize, availDispatcherMaxBatchSize, pingDispatcherPeriodSeconds);
+                minCollectionIntervalSecs, numDmrSchedulerThreads, metricDispatcherBufferSize,
+                metricDispatcherMaxBatchSize, availDispatcherBufferSize, availDispatcherMaxBatchSize,
+                pingDispatcherPeriodSeconds);
     }
 
     private static void determineResourceTypeSetDmr(ModelNode config,

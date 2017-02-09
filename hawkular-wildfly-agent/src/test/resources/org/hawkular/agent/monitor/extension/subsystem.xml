@@ -20,6 +20,7 @@
            enabled="false"
            immutable="true"
            auto-discovery-scan-period-secs="3601"
+           min-collection-interval-secs="15"
            metric-dispatcher-buffer-size="201"
            metric-dispatcher-max-batch-size="51"
            avail-dispatcher-buffer-size="101"

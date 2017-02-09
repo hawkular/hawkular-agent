@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+    Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
     and other contributors as indicated by the @author tags.
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,7 @@
            api-jndi-name="jndi:name"
            num-dmr-scheduler-threads="1"
            auto-discovery-scan-period-secs="3601"
+           min-collection-interval-secs="15"
            metric-dispatcher-buffer-size="201"
            metric-dispatcher-max-batch-size="51"
            avail-dispatcher-buffer-size="101"

@@ -222,6 +222,7 @@ public class MonitorServiceConfiguration {
         private final boolean inContainer;
         private final String apiJndi;
         private final int autoDiscoveryScanPeriodSeconds;
+        private final int minCollectionIntervalSeconds;
         private final int numDmrSchedulerThreads;
         private final int metricDispatcherBufferSize;
         private final int metricDispatcherMaxBatchSize;
@@ -230,7 +231,7 @@ public class MonitorServiceConfiguration {
         private final int pingDispatcherPeriodSeconds;
 
         public GlobalConfiguration(boolean subsystemEnabled, boolean immutable, boolean inContainer, String apiJndi,
-                int autoDiscoveryScanPeriodSeconds, int numDmrSchedulerThreads,
+                int autoDiscoveryScanPeriodSeconds, int minCollectionIntervalSeconds, int numDmrSchedulerThreads,
                 int metricDispatcherBufferSize, int metricDispatcherMaxBatchSize, int availDispatcherBufferSize,
                 int availDispatcherMaxBatchSize, int pingDispatcherPeriodSeconds) {
             super();
@@ -239,6 +240,7 @@ public class MonitorServiceConfiguration {
             this.inContainer = inContainer;
             this.apiJndi = apiJndi;
             this.autoDiscoveryScanPeriodSeconds = autoDiscoveryScanPeriodSeconds;
+            this.minCollectionIntervalSeconds = minCollectionIntervalSeconds;
             this.numDmrSchedulerThreads = numDmrSchedulerThreads;
             this.metricDispatcherBufferSize = metricDispatcherBufferSize;
             this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
@@ -247,6 +249,45 @@ public class MonitorServiceConfiguration {
             this.pingDispatcherPeriodSeconds = pingDispatcherPeriodSeconds;
         }
 
+        public boolean isSubsystemEnabled() {
+            return subsystemEnabled;
+        }
+
+        public String getApiJndi() {
+            return apiJndi;
+        }
+
+        public int getAutoDiscoveryScanPeriodSeconds() {
+            return autoDiscoveryScanPeriodSeconds;
+        }
+
+        public int getMinCollectionIntervalSeconds() {
+            return minCollectionIntervalSeconds;
+        }
+
+        public int getNumDmrSchedulerThreads() {
+            return numDmrSchedulerThreads;
+        }
+
+        public int getMetricDispatcherBufferSize() {
+            return metricDispatcherBufferSize;
+        }
+
+        public int getMetricDispatcherMaxBatchSize() {
+            return metricDispatcherMaxBatchSize;
+        }
+
+        public int getAvailDispatcherBufferSize() {
+            return availDispatcherBufferSize;
+        }
+
+        public int getAvailDispatcherMaxBatchSize() {
+            return availDispatcherMaxBatchSize;
+        }
+
+        public int getPingDispatcherPeriodSeconds() {
+            return pingDispatcherPeriodSeconds;
+        }
     }
 
     public static class ProtocolConfiguration<L> {
@@ -458,6 +499,10 @@ public class MonitorServiceConfiguration {
 
     public int getAutoDiscoveryScanPeriodSeconds() {
         return globalConfiguration.autoDiscoveryScanPeriodSeconds;
+    }
+
+    public int getMinCollectionIntervalSeconds() {
+        return globalConfiguration.minCollectionIntervalSeconds;
     }
 
     public int getNumDmrSchedulerThreads() {

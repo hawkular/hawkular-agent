@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,17 +37,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class ScheduledCollectionsQueueTest {
-
-    @Test
-    public void testInvalidInterval() throws InterruptedException {
-        createMetricType("goodInterval", 1000);
-
-        try {
-            createMetricType("badInterval", 500);
-            Assert.fail("Should have thrown exception due to the interval being too small");
-        } catch (IllegalArgumentException expected) {
-        }
-    }
 
     @Test
     public void testUnschedule() throws InterruptedException {
