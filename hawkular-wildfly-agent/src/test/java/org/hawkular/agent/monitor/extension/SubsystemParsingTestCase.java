@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,6 +50,30 @@ public class SubsystemParsingTestCase extends SubsystemBaseParsingTestCase {
      */
     @Test
     public void testParseSubsystem() throws Exception {
+        //Parse the subsystem xml into operations
+        String subsystemXml = getSubsystemXml();
+        List<ModelNode> operations = super.parse(subsystemXml);
+
+        ///Check that we have the expected number of operations
+        final int expectedOperations = 36;
+        Assert.assertEquals("Wrong operations: " + operations, expectedOperations, operations.size());
+
+        //Check that each operation has the correct content
+        ModelNode addSubsystem = operations.get(0);
+        Assert.assertEquals(ADD, addSubsystem.get(OP).asString());
+        PathAddress addr = PathAddress.pathAddress(addSubsystem.get(OP_ADDR));
+        Assert.assertEquals(1, addr.size());
+        PathElement element = addr.getElement(0);
+        Assert.assertEquals(SUBSYSTEM, element.getKey());
+        Assert.assertEquals(SubsystemExtension.SUBSYSTEM_NAME, element.getValue());
+
+    }
+
+    /**
+     * Tests that the xml is parsed into the correct operations
+     */
+    @Test
+    public void testParseSubsystemOperations() throws Exception {
         //Parse the subsystem xml into operations
         String subsystemXml = getSubsystemXml();
         List<ModelNode> operations = super.parse(subsystemXml);

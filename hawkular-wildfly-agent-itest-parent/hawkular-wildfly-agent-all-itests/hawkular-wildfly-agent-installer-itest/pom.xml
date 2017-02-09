@@ -116,7 +116,8 @@
         <!-- $plain-wildfly.management.http.port must be equal to $plain-wildfly.port.offset + 9990 -->
         <plain-wildfly.management.http.port>9995</plain-wildfly.management.http.port>
 
-        <hawkular.log>INFO</hawkular.log>
+        <hawkular.log.root>INFO</hawkular.log.root>
+        <hawkular.log.console>INFO</hawkular.log.console>
         <hawkular.log.agent>INFO</hawkular.log.agent>
         <hawkular.log.bus>INFO</hawkular.log.bus>
         <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
@@ -288,7 +289,8 @@
                     <javaOpt>-Dhawkular.agent.enabled=false</javaOpt>
                     <javaOpt>-Dhawkular.rest.user=dummy</javaOpt>
                     <javaOpt>-Dhawkular.rest.password=dummy</javaOpt>
-                    <javaOpt>-Dhawkular.log=${hawkular.log}</javaOpt>
+                    <javaOpt>-Dhawkular.log.root=${hawkular.log.root}</javaOpt>
+                    <javaOpt>-Dhawkular.log.console=${hawkular.log.console}</javaOpt>
                     <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
                     <javaOpt>-Dhawkular.log.bus=${hawkular.log.bus}</javaOpt>
                     <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>

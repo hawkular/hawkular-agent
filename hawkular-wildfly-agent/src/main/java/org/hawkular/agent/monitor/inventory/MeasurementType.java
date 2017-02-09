@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,10 +39,6 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
         this.interval = interval;
         this.metricIdTemplate = metricIdTemplate;
         this.metricTags = (metricTags != null) ? Collections.unmodifiableMap(metricTags) : Collections.emptyMap();
-
-        if (interval.seconds() < 1) {
-            throw new IllegalArgumentException("Interval is too small: " + interval);
-        }
     }
 
     /**
@@ -50,6 +46,13 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
      */
     public Interval getInterval() {
         return interval;
+    }
+
+    /**
+     * @return true if collection is disabled for this MeasurementType
+     */
+    public boolean isDisabled() {
+        return interval.seconds() <= 0;
     }
 
     /**

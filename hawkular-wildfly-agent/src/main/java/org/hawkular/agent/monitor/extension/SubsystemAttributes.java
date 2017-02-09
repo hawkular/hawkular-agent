@@ -69,6 +69,14 @@ public interface SubsystemAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition MIN_COLLECTION_INTERVAL_SECS = new SimpleAttributeDefinitionBuilder(
+            "min-collection-interval-secs", ModelType.INT)
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(30))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     SimpleAttributeDefinition NUM_DMR_SCHEDULER_THREADS = new SimpleAttributeDefinitionBuilder(
             "num-dmr-scheduler-threads", ModelType.INT)
                     .setAllowNull(true)
@@ -122,6 +130,7 @@ public interface SubsystemAttributes {
             IN_CONTAINER,
             API_JNDI,
             AUTO_DISCOVERY_SCAN_PERIOD_SECONDS,
+            MIN_COLLECTION_INTERVAL_SECS,
             NUM_DMR_SCHEDULER_THREADS,
             METRIC_DISPATCHER_BUFFER_SIZE,
             METRIC_DISPATCHER_MAX_BATCH_SIZE,

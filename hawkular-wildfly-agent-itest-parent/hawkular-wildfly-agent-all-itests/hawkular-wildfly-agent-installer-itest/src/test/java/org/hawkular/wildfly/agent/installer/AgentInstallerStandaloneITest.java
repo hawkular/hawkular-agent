@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,8 @@ import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.client.ModelControllerClient;
+import org.jboss.dmr.ModelNode;
 import org.junit.Assert;
 import org.testng.annotations.Test;
 
@@ -52,8 +54,25 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP })
+    public void configureAgent() throws Throwable {
+        // Test metric collection disable by immediately disabling a datasource metric, we'll check later
+        // to ensure no data points were reported for the metric.
+        ModelNode addressActual = PathAddress
+                .parseCLIStyleAddress(
+                        "/subsystem=hawkular-wildfly-agent/metric-set-dmr=Datasource Pool Metrics/metric-dmr=Active Count")
+                .toModelNode();
+        // Note that we want to update the plain wildfly, this is where we installed the agent and collect metrics
+        ModelControllerClient mcc = newPlainWildFlyModelControllerClient(getPlainWildFlyClientConfig());
+        assertNodeAttributeEquals(mcc, addressActual, "interval", "30");
+        // this update should automatically trigger an agent restart, the operation is flagged to re-read the config
+        writeNodeAttribute(mcc, addressActual, "interval", "0");
+        assertNodeAttributeEquals(mcc, addressActual, "interval", "0");
+    }
+
+    @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
     public void wfStarted() throws Throwable {
         waitForAccountsAndInventory();
+
         // System.out.println("wfFeedId = " + wfFeedId);
         Assert.assertNotNull("wfFeedId should not be null", wfClientConfig.getFeedId());
     }
@@ -170,6 +189,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
     @Test(dependsOnMethods = { "datasourcesAddedToInventory" })
     public void datasourceMetricsCollected() throws Throwable {
+        long startTime = System.currentTimeMillis(); // limit to new metric data points
         String lastUrl = "";
         int second = 1000;
         int timeOutSeconds = 60;
@@ -178,17 +198,47 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
             Response gaugesResponse = client.newCall(request).execute();
 
             if (gaugesResponse.code() == 200 && !gaugesResponse.body().string().isEmpty()) {
+                boolean found = false;
+
                 for (String datasourceName : getDatasourceNames()) {
+                    // enabled
                     String id = "MI~R~[" + wfClientConfig.getFeedId() + "/Local~/subsystem=datasources/data-source="
                             + datasourceName
                             + "]~MT~Datasource Pool Metrics~Available Count";
                     id = Util.urlEncodeQuery(id);
-                    String url = baseMetricsUri + "/gauges/stats?buckets=1&metrics=" + id;
+                    String url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
                     lastUrl = url;
-                    //System.out.println("url = " + url);
                     Response gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
-                    if (gaugeResponse.code() == 200 && !gaugeResponse.body().string().isEmpty()) {
+                    if (gaugeResponse.code() == 200) {
+                        String body = gaugeResponse.body().string();
+                        //System.out.println("ActiveBody=" + body);
                         /* this should be enough to prove that some metric was written successfully */
+                        if (body.contains("\"empty\":false")) {
+                            found = true;
+                        }
+                    }
+
+                    // disabled
+                    id = "MI~R~[" + wfClientConfig.getFeedId() + "/Local~/subsystem=datasources/data-source="
+                            + datasourceName
+                            + "]~MT~Datasource Pool Metrics~Active Count";
+                    id = Util.urlEncodeQuery(id);
+                    url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
+                    //System.out.println("url = " + url);
+                    gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
+                    if (gaugeResponse.code() == 200) {
+                        String body = gaugeResponse.body().string();
+                        // System.out.println("DisabledBody=" + body);
+                        /* this should be enough to prove that the metric was not disabled */
+                        if (body.contains("\"empty\":false")) {
+                            String msg = String.format("Disabled Gauge gathered after [%d]s. url=[%s], data=%s",
+                                    timeOutSeconds, url, body);
+                            Assert.fail(msg);
+                        }
+                    }
+
+                    // if enabled metric collected and disabled metric not collected then we should be good.
+                    if (found) {
                         return;
                     }
                 }
@@ -216,9 +266,13 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
                 String url = baseMetricsUri + "/availability/" + id + "/raw";
                 //System.out.println("url = " + url);
                 availabilityResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
-                if (availabilityResponse.code() == 200 && !availabilityResponse.body().string().isEmpty()) {
+                if (availabilityResponse.code() == 200) {
+                    String body = availabilityResponse.body().string();
+                    System.out.println("AvailResponse ===>" + body);
                     /* this should be enough to prove that some metric was written successfully */
-                    return;
+                    if (body.contains("\"value\":\"up\"")) {
+                        return;
+                    }
                 } else {
                     System.out.println("code = " + availabilityResponse.code());
                 }

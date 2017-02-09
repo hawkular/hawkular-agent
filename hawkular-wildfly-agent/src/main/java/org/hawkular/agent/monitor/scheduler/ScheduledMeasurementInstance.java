@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,6 +46,9 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
         Set<ScheduledMeasurementInstance<LL, MetricType<LL>>> set = new HashSet<>(resource.getMetrics().size());
         Collection<MeasurementInstance<LL, MetricType<LL>>> metrics = resource.getMetrics();
         for (MeasurementInstance<LL, MetricType<LL>> metric : metrics) {
+            if (metric.getType().isDisabled()) {
+                continue;
+            }
             ScheduledMeasurementInstance<LL, MetricType<LL>> meas;
             meas = new ScheduledMeasurementInstance<LL, MetricType<LL>>(resource, metric);
             meas.setNextCollectionTime(metric.getType().getInterval().millis() + now);
@@ -67,6 +70,9 @@ public class ScheduledMeasurementInstance<L, T extends MeasurementType<L>>
         Set<ScheduledMeasurementInstance<LL, AvailType<LL>>> set = new HashSet<>(resource.getAvails().size());
         Collection<MeasurementInstance<LL, AvailType<LL>>> avails = resource.getAvails();
         for (MeasurementInstance<LL, AvailType<LL>> avail : avails) {
+            if (avail.getType().isDisabled()) {
+                continue;
+            }
             ScheduledMeasurementInstance<LL, AvailType<LL>> meas;
             meas = new ScheduledMeasurementInstance<LL, AvailType<LL>>(resource, avail);
             meas.setNextCollectionTime(avail.getType().getInterval().millis() + now);

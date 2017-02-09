@@ -93,7 +93,8 @@
                enabled="true"
                immutable="true"
                in-container="${hawkular.agent.in-container:false}"
-               auto-discovery-scan-period-secs="600">
+               auto-discovery-scan-period-secs="600"
+               min-collection-interval-secs="${hawkular.agent.minCollectionIntervalSecs:30}">
 
       <diagnostics enabled="${hawkular.diagnostics.enabled:true}"
                    report-to="LOG"

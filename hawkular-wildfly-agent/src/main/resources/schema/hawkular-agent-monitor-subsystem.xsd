@@ -43,6 +43,7 @@
     <xs:attribute name="immutable"                        type="xs:boolean"/>
     <xs:attribute name="api-jndi-name"                    type="xs:string"/>
     <xs:attribute name="auto-discovery-scan-period-secs"  type="xs:int"/>
+    <xs:attribute name="min-collection-interval-secs"     type="xs:int"/>
     <xs:attribute name="num-dmr-scheduler-threads"        type="xs:int"/>
     <xs:attribute name="metric-dispatcher-buffer-size"    type="xs:int"/>
     <xs:attribute name="metric-dispatcher-max-batch-size" type="xs:int"/>
