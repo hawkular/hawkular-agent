@@ -44,6 +44,14 @@ public interface SubsystemAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition IN_CONTAINER = new SimpleAttributeDefinitionBuilder("in-container",
+            ModelType.BOOLEAN)
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(false))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     SimpleAttributeDefinition API_JNDI = new SimpleAttributeDefinitionBuilder("api-jndi-name",
             ModelType.STRING)
                     .setAllowNull(true)
@@ -111,6 +119,7 @@ public interface SubsystemAttributes {
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
             IMMUTABLE,
+            IN_CONTAINER,
             API_JNDI,
             AUTO_DISCOVERY_SCAN_PERIOD_SECONDS,
             NUM_DMR_SCHEDULER_THREADS,

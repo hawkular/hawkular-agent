@@ -219,6 +219,7 @@ public class MonitorServiceConfiguration {
 
         private final boolean subsystemEnabled;
         private final boolean immutable;
+        private final boolean inContainer;
         private final String apiJndi;
         private final int autoDiscoveryScanPeriodSeconds;
         private final int numDmrSchedulerThreads;
@@ -228,13 +229,14 @@ public class MonitorServiceConfiguration {
         private final int availDispatcherMaxBatchSize;
         private final int pingDispatcherPeriodSeconds;
 
-        public GlobalConfiguration(boolean subsystemEnabled, boolean immutable, String apiJndi,
+        public GlobalConfiguration(boolean subsystemEnabled, boolean immutable, boolean inContainer, String apiJndi,
                 int autoDiscoveryScanPeriodSeconds, int numDmrSchedulerThreads,
                 int metricDispatcherBufferSize, int metricDispatcherMaxBatchSize, int availDispatcherBufferSize,
                 int availDispatcherMaxBatchSize, int pingDispatcherPeriodSeconds) {
             super();
             this.subsystemEnabled = subsystemEnabled;
             this.immutable = immutable;
+            this.inContainer = inContainer;
             this.apiJndi = apiJndi;
             this.autoDiscoveryScanPeriodSeconds = autoDiscoveryScanPeriodSeconds;
             this.numDmrSchedulerThreads = numDmrSchedulerThreads;
@@ -444,6 +446,10 @@ public class MonitorServiceConfiguration {
 
     public boolean isImmutable() {
         return globalConfiguration.immutable;
+    }
+
+    public boolean isInContainer() {
+        return globalConfiguration.inContainer;
     }
 
     public String getApiJndi() {
