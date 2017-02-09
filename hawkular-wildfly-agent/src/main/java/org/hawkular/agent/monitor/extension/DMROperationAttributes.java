@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,8 +40,17 @@ public interface DMROperationAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition MODIFIES = new SimpleAttributeDefinitionBuilder("modifies",
+            ModelType.BOOLEAN)
+                    .setAllowNull(true)
+                    .setDefaultValue(new ModelNode(false))
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     AttributeDefinition[] ATTRIBUTES = {
             PATH,
-            INTERNAL_NAME
+            INTERNAL_NAME,
+            MODIFIES
     };
 }

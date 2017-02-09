@@ -39,7 +39,7 @@ import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelNode;
 
-public class PlatformDefinition extends PersistentResourceDefinition {
+public class PlatformDefinition extends MonitorPersistentResourceDefinition {
 
     public static final PlatformDefinition INSTANCE = new PlatformDefinition();
 
@@ -67,7 +67,7 @@ public class PlatformDefinition extends PersistentResourceDefinition {
 
     @Override
     public void registerAttributes(ManagementResourceRegistration resourceRegistration) {
-        Util.registerOnlyRestartAttributes(resourceRegistration, getAttributes());
+        super.registerAttributes(resourceRegistration);
 
         resourceRegistration.registerReadWriteAttribute(PlatformAttributes.ENABLED, null,
                 new MonitorServiceWriteAttributeHandler<Void>() {
@@ -84,6 +84,9 @@ public class PlatformDefinition extends PersistentResourceDefinition {
                         if (context.isBooting()) {
                             return false;
                         }
+
+                        super.applyUpdateToRuntime(context, operation, attributeName, newValue, currentValue,
+                                handbackHolder);
 
                         boolean currBool = PlatformAttributes.ENABLED.resolveValue(context, currentValue).asBoolean();
                         boolean newBool = PlatformAttributes.ENABLED.resolveValue(context, newValue).asBoolean();

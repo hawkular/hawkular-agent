@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,7 +51,6 @@ public class ExecuteOperationCommand extends
         super("Execute Operation", "DMR Node");
     }
 
-    /** @see org.hawkular.agent.monitor.cmd.AbstractResourcePathCommand#createResponse() */
     @Override
     protected ExecuteOperationResponse createResponse() {
         return new ExecuteOperationResponse();
@@ -64,6 +63,16 @@ public class ExecuteOperationCommand extends
 
     @Override
     protected void validate(String modelNodePath, BasicMessageWithExtraData<ExecuteOperationRequest> envelope) {
+    }
+
+    @Override
+    protected void validate(BasicMessageWithExtraData<ExecuteOperationRequest> envelope,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
+    }
+
+    @Override
+    protected boolean modifiesResource() {
+        return false; // we don't know yet - assume it won't modify anything - we'll do the real check in execute
     }
 
     @Override
@@ -98,6 +107,12 @@ public class ExecuteOperationCommand extends
             if (requestedOpName.equals(op.getName().getNameString())) {
                 opLocation = dmrContext.getLocationResolver().absolutize(resource.getLocation(), op.getLocation());
                 actualOperationName = op.getInternalName();
+                if (op.getModifies()) {
+                    if (context.getDiscoveryService().isImmutable()) {
+                        throw new IllegalStateException(
+                                "Operation [" + requestedOpName + "] not allowed because the agent is immutable");
+                    }
+                }
                 break;
             }
         }
@@ -131,10 +146,4 @@ public class ExecuteOperationCommand extends
 
         return null;
     }
-
-    @Override
-    protected void validate(BasicMessageWithExtraData<ExecuteOperationRequest> envelope,
-            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint) {
-    }
-
 }

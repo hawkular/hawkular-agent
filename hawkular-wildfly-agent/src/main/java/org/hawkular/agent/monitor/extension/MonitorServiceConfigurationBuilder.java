@@ -916,6 +916,7 @@ public class MonitorServiceConfigurationBuilder {
     private static GlobalConfiguration determineGlobalConfig(ModelNode config, OperationContext context)
             throws OperationFailedException {
         boolean subsystemEnabled = getBoolean(config, context, SubsystemAttributes.ENABLED);
+        boolean immutable = getBoolean(config, context, SubsystemAttributes.IMMUTABLE);
         String apiJndi = getString(config, context, SubsystemAttributes.API_JNDI);
         int autoDiscoveryScanPeriodSecs = getInt(config, context,
                 SubsystemAttributes.AUTO_DISCOVERY_SCAN_PERIOD_SECONDS);
@@ -927,7 +928,7 @@ public class MonitorServiceConfigurationBuilder {
         int availDispatcherMaxBatchSize = getInt(config, context, SubsystemAttributes.AVAIL_DISPATCHER_MAX_BATCH_SIZE);
         int pingDispatcherPeriodSeconds = getInt(config, context, SubsystemAttributes.PING_DISPATCHER_PERIOD_SECONDS);
 
-        return new GlobalConfiguration(subsystemEnabled, apiJndi, autoDiscoveryScanPeriodSecs,
+        return new GlobalConfiguration(subsystemEnabled, immutable, apiJndi, autoDiscoveryScanPeriodSecs,
                 numDmrSchedulerThreads, metricDispatcherBufferSize, metricDispatcherMaxBatchSize,
                 availDispatcherBufferSize, availDispatcherMaxBatchSize, pingDispatcherPeriodSeconds);
     }
@@ -993,11 +994,14 @@ public class MonitorServiceConfigurationBuilder {
                                         DMROperationAttributes.PATH);
                                 String internalName = getString(operationValueNode, context,
                                         DMROperationAttributes.INTERNAL_NAME);
+                                boolean modifies = getBoolean(operationValueNode, context,
+                                        DMROperationAttributes.MODIFIES);
                                 Operation<DMRNodeLocation> op = new Operation<>(
                                         ID.NULL_ID,
                                         new Name(name),
                                         new DMRNodeLocation(pathAddress),
                                         internalName,
+                                        modifies,
                                         params);
                                 resourceTypeBuilder.operation(op);
                             }
@@ -1112,6 +1116,8 @@ public class MonitorServiceConfigurationBuilder {
                                                     JMXOperationAttributes.OBJECT_NAME)),
                                             getString(operationValueNode, context,
                                                     JMXOperationAttributes.INTERNAL_NAME),
+                                            getBoolean(operationValueNode, context,
+                                                    JMXOperationAttributes.MODIFIES),
                                             null);
                                     resourceTypeBuilder.operation(op);
                                 }

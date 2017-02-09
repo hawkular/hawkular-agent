@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -218,6 +218,7 @@ public class MonitorServiceConfiguration {
     public static class GlobalConfiguration {
 
         private final boolean subsystemEnabled;
+        private final boolean immutable;
         private final String apiJndi;
         private final int autoDiscoveryScanPeriodSeconds;
         private final int numDmrSchedulerThreads;
@@ -227,12 +228,13 @@ public class MonitorServiceConfiguration {
         private final int availDispatcherMaxBatchSize;
         private final int pingDispatcherPeriodSeconds;
 
-        public GlobalConfiguration(boolean subsystemEnabled, String apiJndi, int autoDiscoveryScanPeriodSeconds,
-                int numDmrSchedulerThreads,
+        public GlobalConfiguration(boolean subsystemEnabled, boolean immutable, String apiJndi,
+                int autoDiscoveryScanPeriodSeconds, int numDmrSchedulerThreads,
                 int metricDispatcherBufferSize, int metricDispatcherMaxBatchSize, int availDispatcherBufferSize,
                 int availDispatcherMaxBatchSize, int pingDispatcherPeriodSeconds) {
             super();
             this.subsystemEnabled = subsystemEnabled;
+            this.immutable = immutable;
             this.apiJndi = apiJndi;
             this.autoDiscoveryScanPeriodSeconds = autoDiscoveryScanPeriodSeconds;
             this.numDmrSchedulerThreads = numDmrSchedulerThreads;
@@ -438,6 +440,10 @@ public class MonitorServiceConfiguration {
 
     public boolean isSubsystemEnabled() {
         return globalConfiguration.subsystemEnabled;
+    }
+
+    public boolean isImmutable() {
+        return globalConfiguration.immutable;
     }
 
     public String getApiJndi() {

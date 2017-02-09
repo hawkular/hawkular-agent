@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,11 +22,15 @@ import org.hawkular.agent.monitor.service.MonitorService;
 import org.jboss.as.controller.AbstractWriteAttributeHandler;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 
 /**
  * Base class to all the write attribute handlers. Simply provides a method to obtain the service.
+ * Subclasses should also call {@link #applyUpdateToRuntime()} to ensure the agent is allowed
+ * to write the attribute.
  *
  * @param <T> used to assist in the revert functionality. Can be <code>Void</code> if not needed.
  */
@@ -47,4 +51,19 @@ public abstract class MonitorServiceWriteAttributeHandler<T> extends AbstractWri
         return service;
     }
 
+    @Override
+    protected boolean applyUpdateToRuntime(OperationContext context, ModelNode operation, String attributeName,
+            ModelNode resolvedValue, ModelNode currentValue,
+            org.jboss.as.controller.AbstractWriteAttributeHandler.HandbackHolder<T> handbackHolder)
+            throws OperationFailedException {
+
+        if (!context.isBooting()) {
+            MonitorService agent = getMonitorService(context);
+            if (agent.isImmutable()) {
+                throw new OperationFailedException("The agent is configured to be immutable - no changes are allowed");
+            }
+        }
+
+        return false; // assume no reload required
+    }
 }

@@ -148,6 +148,9 @@ public class MonitorService implements Service<MonitorService> {
 
         log.infoStorageAdapterMode(bootStorageAdapter.getType());
         log.infoTenantId(bootStorageAdapter.getTenantId());
+        if (bootConfiguration.isImmutable()) {
+            log.infoAgentIsImmutable();
+        }
 
         if (bootStorageAdapter.getUrl() != null) {
             return bootConfiguration;
@@ -1163,4 +1166,11 @@ public class MonitorService implements Service<MonitorService> {
         return protocolServices;
     }
 
+    /**
+     * @return true if the agent is to be considered immutable and no config changes are allowed. This should
+     *         also disallow operation execution on managed resources if those operations modify the remote resource.
+     */
+    public boolean isImmutable() {
+        return this.configuration.isImmutable();
+    }
 }
