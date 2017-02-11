@@ -22,6 +22,7 @@ import org.hawkular.agent.monitor.service.MonitorService;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
+import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.RestartParentWriteAttributeHandler;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
@@ -31,6 +32,12 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 
 public class MonitorServiceRestartParentAttributeHandler extends RestartParentWriteAttributeHandler {
+
+    private static final OperationContext.AttachmentKey<Integer> RECREATE_COUNTER =
+            OperationContext.AttachmentKey.create(Integer.class);
+
+    private static final OperationContext.AttachmentKey<Integer> REMOVE_COUNTER =
+            OperationContext.AttachmentKey.create(Integer.class);
 
     public MonitorServiceRestartParentAttributeHandler(AttributeDefinition... definitions) {
         super("subsystem", definitions);
@@ -58,15 +65,39 @@ public class MonitorServiceRestartParentAttributeHandler extends RestartParentWr
     @Override
     protected void removeServices(OperationContext context, ServiceName parentService, ModelNode parentModel)
             throws OperationFailedException {
-        SubsystemRemove.INSTANCE.performRuntime(context, null, parentModel);
+        incrementAttachedCounter(context, REMOVE_COUNTER);
+        context.addStep(new OperationStepHandler() {
+            @Override
+            public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
+                Integer counter = decrementAttachedCounter(context, REMOVE_COUNTER);
+                if (counter == 0) {
+                    SubsystemRemove.INSTANCE.performRuntime(context, null, parentModel);
+                } else if (counter < 0) {
+                    throw new OperationFailedException("The removeServices step got added more times than needed - " +
+                            "This shouldn't happen.");
+                }
+            }
+        }, OperationContext.Stage.RUNTIME);
     }
 
     @Override
     protected void recreateParentService(OperationContext context, PathAddress parentAddress, ModelNode parentModel)
             throws OperationFailedException {
-        SubsystemAdd.INSTANCE.performRuntime(context,
-                new ModelNode().set(ModelDescriptionConstants.OP_ADDR, parentAddress.toModelNode()),
-                parentModel);
+        incrementAttachedCounter(context, RECREATE_COUNTER);
+        context.addStep(new OperationStepHandler() {
+            @Override
+            public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
+                Integer counter = decrementAttachedCounter(context, RECREATE_COUNTER);
+                if (counter == 0) {
+                    SubsystemAdd.INSTANCE.performRuntime(context,
+                            new ModelNode().set(ModelDescriptionConstants.OP_ADDR, parentAddress.toModelNode()),
+                            parentModel);
+                } else if (counter < 0) {
+                    throw new OperationFailedException("The recreateParentService step got added more times than needed - " +
+                            "This shouldn't happen.");
+                }
+            }
+        }, OperationContext.Stage.RUNTIME);
     }
 
     @Override
@@ -92,4 +123,25 @@ public class MonitorServiceRestartParentAttributeHandler extends RestartParentWr
         MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
         return service;
     }
+
+    private Integer incrementAttachedCounter(OperationContext context, OperationContext.AttachmentKey<Integer> key) {
+        Integer value = context.getAttachment(key);
+        if (value == null) {
+            value = 0;
+        }
+        value = value + 1;
+        context.attach(key, value);
+        return value;
+    }
+
+    private Integer decrementAttachedCounter(OperationContext context, OperationContext.AttachmentKey<Integer> key) {
+        Integer value = context.getAttachment(key);
+        if (value == null) {
+            return null;
+        }
+        value = value - 1;
+        context.attach(key, value);
+        return value;
+    }
+
 }
