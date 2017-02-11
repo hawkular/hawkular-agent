@@ -17,20 +17,26 @@
 package org.hawkular.agent.monitor.extension;
 
 import java.util.Collection;
+import java.util.NoSuchElementException;
 
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
+import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.RestartParentWriteAttributeHandler;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
+import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 
 public class MonitorServiceRestartParentAttributeHandler extends RestartParentWriteAttributeHandler {
+
+    private static final OperationContext.AttachmentKey<Integer> RESTART_COUNTER =
+            OperationContext.AttachmentKey.create(Integer.class);
 
     public MonitorServiceRestartParentAttributeHandler(AttributeDefinition... definitions) {
         super("subsystem", definitions);
@@ -82,8 +88,56 @@ public class MonitorServiceRestartParentAttributeHandler extends RestartParentWr
             }
         }
 
-        return super.applyUpdateToRuntime(context, operation, attributeName, resolvedValue, currentValue,
-                handbackHolder);
+        final PathAddress address = getParentAddress(context.getCurrentAddress());
+        final ServiceName serviceName = getParentServiceName(address);
+        ServiceController<?> service = serviceName != null ?
+                context.getServiceRegistry(false).getService(serviceName) : null;
+
+        // No parent service, nothing to do
+        if (service == null) {
+            return false;
+        }
+
+        boolean restartServices = isResourceServiceRestartAllowed(context, service);
+
+        if (restartServices) {
+            final Integer ZERO = Integer.valueOf(0);
+            Integer previous = context.getAttachment(RESTART_COUNTER);
+            if (previous == null) {
+                previous = ZERO;
+            }
+            context.attach(RESTART_COUNTER, previous + 1);
+            context.addStep(new OperationStepHandler() {
+                @Override
+                public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
+                    Integer current = context.getAttachment(RESTART_COUNTER);
+                    if (current != null) {
+                        if (current > 0) {
+                            current = current - 1;
+                            context.attach(RESTART_COUNTER, current);
+                            if (current == 0) {
+                                ModelNode parentModel = getModel(context, address);
+                                if (parentModel != null && context.markResourceRestarted(address, this)) {
+                                    removeServices(context, serviceName, parentModel);
+                                    recreateParentService(context, address, parentModel);
+                                }
+                            }
+                        }
+                    }
+                }
+            }, OperationContext.Stage.RUNTIME);
+        }
+        // Fall back to server wide reload
+        return !restartServices;
+    }
+
+    private ModelNode getModel(OperationContext ctx, PathAddress address) {
+        try {
+            Resource resource = ctx.readResourceFromRoot(address);
+            return Resource.Tools.readModel(resource);
+        } catch (NoSuchElementException e) {
+            return null;
+        }
     }
 
     protected MonitorService getMonitorService(OperationContext opContext) {
