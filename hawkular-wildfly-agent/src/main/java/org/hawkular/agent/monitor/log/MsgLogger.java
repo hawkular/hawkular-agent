@@ -365,4 +365,8 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.INFO)
     @Message(id = 10080, value = "Agent has been configured to be immutable")
     void infoAgentIsImmutable();
+
+    @LogMessage(level = Level.WARN)
+    @Message(id = 10081, value = "Cannot get Hawkular Server status - does the agent have proper credentials? (%d/%s)")
+    void warnBadHawkularCredentials(int code, String message);
 }
