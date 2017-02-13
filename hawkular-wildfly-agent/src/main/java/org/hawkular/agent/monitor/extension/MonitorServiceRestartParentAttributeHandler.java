@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.extension;
 import java.util.Collection;
 
 import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -76,6 +77,7 @@ public class MonitorServiceRestartParentAttributeHandler extends RestartParentWr
                     throw new OperationFailedException("The removeServices step got added more times than needed - " +
                             "This shouldn't happen.");
                 }
+                WildflyCompatibilityUtils.operationContextStepCompleted(context);
             }
         }, OperationContext.Stage.RUNTIME);
     }
@@ -96,6 +98,7 @@ public class MonitorServiceRestartParentAttributeHandler extends RestartParentWr
                     throw new OperationFailedException("The recreateParentService step got added more times than needed - " +
                             "This shouldn't happen.");
                 }
+                WildflyCompatibilityUtils.operationContextStepCompleted(context);
             }
         }, OperationContext.Stage.RUNTIME);
     }
