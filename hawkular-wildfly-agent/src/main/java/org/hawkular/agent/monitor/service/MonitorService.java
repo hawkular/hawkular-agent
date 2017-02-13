@@ -972,7 +972,11 @@ public class MonitorService implements Service<MonitorService> {
             try {
                 response = httpclient.newCall(request).execute();
                 if (response.code() != 200) {
-                    log.debugf("Hawkular Metrics is not ready yet: %d/%s", response.code(), response.message());
+                    if (response.code() != 401) {
+                        log.debugf("Hawkular Metrics is not ready yet: %d/%s", response.code(), response.message());
+                    } else {
+                        log.warnBadHawkularCredentials(response.code(), response.message());
+                    }
                 } else {
                     String bodyString = response.body().string();
                     if (checkReallyUp(bodyString)) {
@@ -1006,7 +1010,12 @@ public class MonitorService implements Service<MonitorService> {
                 try {
                     response = httpclient.newCall(request).execute();
                     if (response.code() != 200) {
-                        log.debugf("Hawkular Inventory is not ready yet: %d/%s", response.code(), response.message());
+                        if (response.code() != 401) {
+                            log.debugf("Hawkular Inventory is not ready yet: %d/%s", response.code(),
+                                    response.message());
+                        } else {
+                            log.warnBadHawkularCredentials(response.code(), response.message());
+                        }
                     } else {
                         log.debugf("Hawkular Inventory is ready: %s", response.body().string());
                         break;
