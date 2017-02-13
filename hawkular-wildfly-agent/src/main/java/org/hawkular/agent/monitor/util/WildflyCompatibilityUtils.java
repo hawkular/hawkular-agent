@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceRestartParentAttributeHandler;
+import org.hawkular.inventory.api.Log;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -286,5 +287,24 @@ public class WildflyCompatibilityUtils {
             recreateParentService(context, parentAddress, parentModel);
         }
 
+    }
+
+    public static void operationContextStepCompleted(OperationContext context) {
+        // This method is now deprecated, but we are required to call it under EAP6.4 to mark an Step
+        // as completed else we will get: "Operation handler failed to complete"
+        // Since is deprecated we would like to know if it still exists before calling it.
+        Method stepCompletedMethod = null;
+        try {
+            stepCompletedMethod = OperationContext.class.getMethod("stepCompleted");
+            stepCompletedMethod.invoke(context);
+        } catch (ReflectiveOperationException roe) {
+            if (stepCompletedMethod != null) {
+                // The method exists, but for some reason we couldn't invoke it. If we are on EAP6.4 we are most
+                // likely see errors.
+                Log.LOGGER.warn("We couldn't execute stepCompleted", roe);
+            } else {
+                // We couldn't find this method, lets just ignore this exception.
+            }
+        }
     }
 }
