@@ -41,6 +41,7 @@
     </xs:sequence>
     <xs:attribute name="enabled"                          type="xs:boolean"/>
     <xs:attribute name="immutable"                        type="xs:boolean"/>
+    <xs:attribute name="in-container"                     type="xs:boolean"/>
     <xs:attribute name="api-jndi-name"                    type="xs:string"/>
     <xs:attribute name="auto-discovery-scan-period-secs"  type="xs:int"/>
     <xs:attribute name="min-collection-interval-secs"     type="xs:int"/>
