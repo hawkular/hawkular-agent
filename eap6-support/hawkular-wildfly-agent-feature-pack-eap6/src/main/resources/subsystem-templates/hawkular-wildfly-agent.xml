@@ -616,6 +616,14 @@
         <resource-config-dmr name="Bound Address"
                              path="/socket-binding-group=standard-sockets/socket-binding=http"
                              attribute="bound-address" />
+        <resource-config-dmr name="Immutable"
+                             path="/subsystem=hawkular-wildfly-agent"
+                             attribute="immutable"
+                             resolve-expressions="true"/>
+        <resource-config-dmr name="In Container"
+                             path="/subsystem=hawkular-wildfly-agent"
+                             attribute="in-container"
+                             resolve-expressions="true"/>
 
         <operation-dmr name="JDR"      internal-name="generate-jdr-report" path="/subsystem=jdr" />
         <operation-dmr name="Reload"   internal-name="reload" modifies="true">
