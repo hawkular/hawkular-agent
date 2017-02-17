@@ -239,12 +239,11 @@ public class MonitorService implements Service<MonitorService> {
     // key=securityRealm name as a String
     private final Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues = new HashMap<>();
 
-    private boolean started = false;
+    private AtomicReference<ServiceStatus> agentServiceStatus = new AtomicReference<>(ServiceStatus.INITIAL);
     private PropertyChangeListener serverStateListener;
-    private final AtomicReference<Thread> startThread = new AtomicReference<Thread>();
 
     // Declared config found in standalone.xml. Only used to build the runtime configuration (see #configuration).
-    private final MonitorServiceConfiguration bootConfiguration;
+    private MonitorServiceConfiguration bootConfiguration;
 
     // Indicates if we are running in a standalone server or in a host controller (or something similar)
     private final ProcessType processType;
@@ -391,6 +390,7 @@ public class MonitorService implements Service<MonitorService> {
                     this.jndiObjectClassName = jndiObjectClassName;
                 }
 
+                @Override
                 public void transition(final ServiceController<? extends Object> controller,
                         final ServiceController.Transition transition) {
                     switch (transition) {
@@ -466,19 +466,30 @@ public class MonitorService implements Service<MonitorService> {
     }
 
     /**
-     * @return true if this service is {@link #startMonitorService() started};
-     *         false if this service is {@link #stopMonitorService() stopped}.
+     * @return the status of the agent service. Will let you know if this service
+     *         is {@link #startMonitorService() started} or {@link #stopMonitorService() stopped}.
      */
-    public boolean isMonitorServiceStarted() {
-        return started;
+    public ServiceStatus getMonitorServiceStatus() {
+        synchronized (agentServiceStatus) {
+            return agentServiceStatus.get();
+        }
+    }
+
+    private void setMonitorServiceStatus(ServiceStatus newStatus) {
+        synchronized (agentServiceStatus) {
+            agentServiceStatus.set(newStatus);
+            agentServiceStatus.notify();
+        }
     }
 
     @Override
     public void start(final StartContext startContext) throws StartException {
+        final AtomicReference<Thread> startThread = new AtomicReference<Thread>();
+
         class CustomPropertyChangeListener implements PropertyChangeListener {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
-                if (ControlledProcessState.State.RUNNING.equals(evt.getNewValue())) {
+                if (isRunning(evt.getNewValue())) {
                     startNow();
                 } else if (ControlledProcessState.State.STOPPING.equals(evt.getNewValue())) {
                     Thread oldThread = startThread.get();
@@ -496,6 +507,7 @@ public class MonitorService implements Service<MonitorService> {
                         try {
                             startMonitorService();
                         } catch (Throwable t) {
+                            log.debug("Agent start thread aborted within startMonitorService", t);
                         }
                     }
                 }, "Hawkular WildFly Agent Startup Thread");
@@ -508,20 +520,22 @@ public class MonitorService implements Service<MonitorService> {
 
                 newThread.start();
             }
-        }
 
+            private boolean isRunning(Object state) {
+                return state == State.RUNNING || state == State.RELOAD_REQUIRED || state == State.RESTART_REQUIRED;
+            }
+
+        }
         // deferred startup: must wait for server to be running before we can monitor the subsystems
         ControlledProcessStateService stateService = processStateValue.getValue();
         CustomPropertyChangeListener listener = new CustomPropertyChangeListener();
         serverStateListener = listener;
         stateService.addPropertyChangeListener(serverStateListener);
-
         // if the server is already started, we need to restart now. Otherwise, we'll start when the
         // server tells us it is running in our change listener above.
-        if (stateService.getCurrentState() == State.RUNNING) {
+        if (listener.isRunning(stateService.getCurrentState())) {
             listener.startNow();
         }
-
     }
 
     @Override
@@ -533,33 +547,72 @@ public class MonitorService implements Service<MonitorService> {
      * Starts this service. If the service is already started, this method is a no-op.
      */
     public void startMonitorService() {
-        if (isMonitorServiceStarted()) {
-            return; // we are already started
-        }
+        startMonitorService(null);
+    }
 
-        try {
-            Thread currentStartThread;
-            synchronized (startThread) {
-                currentStartThread = startThread.get();
-                if (currentStartThread != null && currentStartThread != Thread.currentThread()) {
-                    startThread.set(Thread.currentThread());
-                } else {
-                    currentStartThread = null;
-                }
-            }
-            if (currentStartThread != null) {
-                log.infoInterruptStartAndStartAgain();
-                while (currentStartThread.isAlive()) {
-                    currentStartThread.interrupt();
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        return;
+    /**
+     * Starts this service. If the service is already started, this method is a no-op.
+     *
+     * @param newBootConfiguration if not null is used to build the runtime configuration. Use this to reflect
+     * changes in the persisted configuration (standalone.xml) since service creation.
+     */
+    public void startMonitorService(MonitorServiceConfiguration newBootConfiguration) {
+        synchronized (agentServiceStatus) {
+
+            boolean processStatus = true;
+            while (processStatus) {
+                switch (agentServiceStatus.get()) {
+                    case RUNNING: {
+                        return; // we are already started
+                    }
+                    case STARTING: {
+                        // Let our current thread simply wait for the agent to start since some other thread is starting this service.
+                        // We abort if we find the agent in the STOPPED state since that means the startup failed for some reason.
+                        log.infoAlreadyStarting();
+                        while (agentServiceStatus.get() != ServiceStatus.RUNNING
+                                && agentServiceStatus.get() != ServiceStatus.STOPPED) {
+                            try {
+                                agentServiceStatus.wait(30000L);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                        }
+                        return; // we are either running or the startup failed; either way, return
+                    }
+                    case STOPPING: {
+                        // In the process of stopping; we want to restart but only after fully stopped.
+                        // Once leaving the STOPPING state, we go back up and do what is appropriate for the new status.
+                        log.infoAgentWillStartAfterStopping();
+                        while (agentServiceStatus.get() == ServiceStatus.STOPPING) {
+                            try {
+                                agentServiceStatus.wait(30000L);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                        }
+                        processStatus = true;
+                        break;
+                    }
+                    case STOPPED:
+                    case INITIAL: {
+                        processStatus = false;
+                        break; // this is the normal case - we are stopped and we are being asked to start now
                     }
                 }
             }
 
+            // let's begin starting the agent now
+            setMonitorServiceStatus(ServiceStatus.STARTING);
+        }
+
+        try {
             log.infoStarting();
+
+            if (null != newBootConfiguration) {
+                this.bootConfiguration = newBootConfiguration;
+            }
 
             this.configuration = buildRuntimeConfiguration(
                     this.bootConfiguration,
@@ -665,7 +718,7 @@ public class MonitorService implements Service<MonitorService> {
             // start all protocol services - this should perform the initial discovery scans
             protocolServices.start();
 
-            started = true;
+            setMonitorServiceStatus(ServiceStatus.RUNNING);
 
         } catch (Throwable t) {
             if (t instanceof InterruptedException) {
@@ -675,7 +728,6 @@ public class MonitorService implements Service<MonitorService> {
             log.errorFailedToStartAgent(t);
 
             // artificially shutdown the agent - agent will be disabled now
-            started = true;
             stopMonitorService();
         }
     }
@@ -704,9 +756,24 @@ public class MonitorService implements Service<MonitorService> {
      * Stops this service. If the service is already stopped, this method is a no-op.
      */
     public void stopMonitorService() {
-        if (!isMonitorServiceStarted()) {
-            log.infoStoppedAlready();
-            return; // we are already stopped
+        synchronized (agentServiceStatus) {
+            if (agentServiceStatus.get() == ServiceStatus.STOPPED) {
+                log.infoStoppedAlready();
+                return; // we are already stopped
+            } else if (agentServiceStatus.get() == ServiceStatus.STOPPING) {
+                // some other thread is already stopping the agent - wait for that to finish and just return
+                while (agentServiceStatus.get() == ServiceStatus.STOPPING) {
+                    try {
+                        agentServiceStatus.wait(30000L);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                    return;
+                }
+            }
+
+            setMonitorServiceStatus(ServiceStatus.STOPPING);
         }
 
         log.infoStopping();
@@ -790,7 +857,7 @@ public class MonitorService implements Service<MonitorService> {
         } catch (Throwable t) {
             log.warnFailedToStopAgent(t);
         } finally {
-            started = false;
+            setMonitorServiceStatus(ServiceStatus.STOPPED);
         }
     }
 
@@ -799,7 +866,7 @@ public class MonitorService implements Service<MonitorService> {
             long now = System.currentTimeMillis();
             Set<AvailDataPoint> datapoints = new HashSet<AvailDataPoint>();
             for (EndpointService<?, ?> endpointService : availsToChange.keySet()) {
-                EndpointConfiguration config = (EndpointConfiguration) endpointService.getMonitoredEndpoint()
+                EndpointConfiguration config = endpointService.getMonitoredEndpoint()
                         .getEndpointConfiguration();
                 Avail setAvailOnShutdown = config.getSetAvailOnShutdown();
                 if (setAvailOnShutdown != null) {
@@ -822,7 +889,7 @@ public class MonitorService implements Service<MonitorService> {
         Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> avails = new HashMap<>();
         for (ProtocolService<?, ?> protocolService : protocolServices.getServices()) {
             for (EndpointService<?, ?> endpointService : protocolService.getEndpointServices().values()) {
-                EndpointConfiguration config = (EndpointConfiguration) endpointService.getMonitoredEndpoint()
+                EndpointConfiguration config = endpointService.getMonitoredEndpoint()
                         .getEndpointConfiguration();
                 Avail setAvailOnShutdown = config.getSetAvailOnShutdown();
                 if (setAvailOnShutdown != null) {

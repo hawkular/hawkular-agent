@@ -16,6 +16,9 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ALLOW_RESOURCE_SERVICE_RESTART;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OPERATION_HEADERS;
+
 import java.util.Collection;
 
 import org.hawkular.agent.monitor.service.MonitorService;
@@ -34,11 +37,11 @@ import org.jboss.msc.service.ServiceRegistry;
 
 public class MonitorServiceRestartParentAttributeHandler extends RestartParentWriteAttributeHandler {
 
-    private static final OperationContext.AttachmentKey<Integer> RECREATE_COUNTER =
-            OperationContext.AttachmentKey.create(Integer.class);
+    private static final OperationContext.AttachmentKey<Integer> RECREATE_COUNTER = OperationContext.AttachmentKey
+            .create(Integer.class);
 
-    private static final OperationContext.AttachmentKey<Integer> REMOVE_COUNTER =
-            OperationContext.AttachmentKey.create(Integer.class);
+    private static final OperationContext.AttachmentKey<Integer> REMOVE_COUNTER = OperationContext.AttachmentKey
+            .create(Integer.class);
 
     public MonitorServiceRestartParentAttributeHandler(AttributeDefinition... definitions) {
         super("subsystem", definitions);
@@ -51,11 +54,6 @@ public class MonitorServiceRestartParentAttributeHandler extends RestartParentWr
     @Override
     protected ServiceName getParentServiceName(PathAddress parentAddress) {
         return SubsystemExtension.SERVICE_NAME;
-    }
-
-    @Override
-    protected boolean isResourceServiceRestartAllowed(OperationContext context, ServiceController<?> service) {
-        return true;
     }
 
     @Override
@@ -95,12 +93,20 @@ public class MonitorServiceRestartParentAttributeHandler extends RestartParentWr
                             new ModelNode().set(ModelDescriptionConstants.OP_ADDR, parentAddress.toModelNode()),
                             parentModel);
                 } else if (counter < 0) {
-                    throw new OperationFailedException("The recreateParentService step got added more times than needed - " +
-                            "This shouldn't happen.");
+                    throw new OperationFailedException(
+                            "The recreateParentService step got added more times than needed - " +
+                                    "This shouldn't happen.");
                 }
                 WildflyCompatibilityUtils.operationContextStepCompleted(context);
             }
         }, OperationContext.Stage.RUNTIME);
+    }
+
+    // By default we always allow a restart
+    @Override
+    protected boolean isResourceServiceRestartAllowed(final OperationContext context,
+            final ServiceController<?> service) {
+        return true;
     }
 
     @Override
@@ -116,8 +122,33 @@ public class MonitorServiceRestartParentAttributeHandler extends RestartParentWr
             }
         }
 
-        return super.applyUpdateToRuntime(context, operation, attributeName, resolvedValue, currentValue,
-                handbackHolder);
+        // When updating agent config we by default allow immediate restarts, the caller does not have to be aware
+        // of which attributes may or may not force the restart.  In some situations, namely updates made by
+        // an agent command like UpdateCollectionIntervalsCommand, we need to defer the restart because otherwise
+        // the command response will never be sent back.  To defer the restart the operation must explicitly
+        // have the header ALLOW_RESOURCE_SERVICE_RESTART=false (note, each operation in a composite must assign
+        // it individually). In this situation not only do we want to defer the restart, we want to avoid setting
+        // the server to 'reload-required'.  To do this we temporarily mark the parent as restarted, and we must
+        // also return false from this method.
+        ModelNode headers = operation.has(OPERATION_HEADERS) ? operation.get(OPERATION_HEADERS) : null;
+        boolean restartAllowedOptionSet = (headers != null) && headers.hasDefined(ALLOW_RESOURCE_SERVICE_RESTART);
+        boolean restartAllowed = !restartAllowedOptionSet || headers.get(ALLOW_RESOURCE_SERVICE_RESTART).asBoolean();
+        Object tempOwner = null;
+        PathAddress address = null;
+        try {
+            if (!restartAllowed) {
+                address = getParentAddress(WildflyCompatibilityUtils.getCurrentAddress(context, operation));
+                tempOwner = new Object();
+                context.markResourceRestarted(address, tempOwner);
+            }
+            super.applyUpdateToRuntime(context, operation, attributeName, resolvedValue, currentValue, handbackHolder);
+
+        } finally {
+            if (!restartAllowed && null != address && null != tempOwner) {
+                context.revertResourceRestarted(address, tempOwner);
+            }
+        }
+        return false;
     }
 
     protected MonitorService getMonitorService(OperationContext opContext) {

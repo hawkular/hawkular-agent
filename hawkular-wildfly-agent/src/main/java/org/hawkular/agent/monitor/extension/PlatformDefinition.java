@@ -27,6 +27,7 @@ import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformSession;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.AbstractWriteAttributeHandler;
@@ -95,7 +96,8 @@ public class PlatformDefinition extends MonitorPersistentResourceDefinition {
                         }
 
                         MonitorService monitorService = getMonitorService(context);
-                        if (monitorService == null || !monitorService.isMonitorServiceStarted()) {
+                        if (monitorService == null
+                                || monitorService.getMonitorServiceStatus() == ServiceStatus.STARTING) {
                             return true; // caught service starting up, need to be restarted to pick up this change
                         }
 

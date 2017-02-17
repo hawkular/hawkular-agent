@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,5 +34,12 @@ public enum ServiceStatus {
             throw new IllegalStateException("[" + cl.getName() + "] must be in state [" + RUNNING + "] rather than ["
                     + this + "] to perform [" + action + "]");
         }
+    }
+
+    /**
+     * @return true if the service is stopped or will be stopped soon. Initial mode is considered stopped.
+     */
+    public boolean isStoppingOrStopped() {
+        return this == STOPPING || this == STOPPED || this == INITIAL;
     }
 }

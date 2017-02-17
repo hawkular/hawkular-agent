@@ -61,7 +61,11 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         protected final ModelNode baseNode = new ModelNode();
 
         public T allowResourceServiceRestart() {
-            return operationHeader(ModelDescriptionConstants.ALLOW_RESOURCE_SERVICE_RESTART, true);
+            return allowResourceServiceRestart(true);
+        }
+
+        public T allowResourceServiceRestart(boolean allow) {
+            return operationHeader(ModelDescriptionConstants.ALLOW_RESOURCE_SERVICE_RESTART, allow);
         }
 
         public ModelNode build() {
@@ -341,6 +345,12 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
                     (CompositeOperationBuilder<CompositeOperationBuilder<?>>) this);
         }
 
+        @SuppressWarnings("unchecked")
+        public ByNameOperationBuilder<ByNameOperationBuilder<?>> byNameOperation(String operationName) {
+            return new ByNameOperationBuilder<>(
+                    (CompositeOperationBuilder<CompositeOperationBuilder<?>>) this, operationName);
+        }
+
     }
 
     public static class MapPutOperationBuilder<T extends MapPutOperationBuilder<?>>
@@ -562,6 +572,7 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
             return (T) this;
         }
 
+        @Override
         protected StringListOperationResult<StringListOperationResult<?>> createResult(ModelNode request,
                 ModelNode result) {
             return new StringListOperationResult<StringListOperationResult<?>>(request, result);

@@ -46,9 +46,16 @@ public class SubsystemDefinition extends MonitorPersistentResourceDefinition {
                     .setDefaultValue(new ModelNode(false))
                     .build();
 
+    static final SimpleAttributeDefinition OPPARAM_REFRESH = new SimpleAttributeDefinitionBuilder(
+            "refresh", ModelType.BOOLEAN)
+                    .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode(false))
+                    .build();
+
     static final SimpleOperationDefinition OP_START = new SimpleOperationDefinitionBuilder(
             "start", SubsystemExtension.getResourceDescriptionResolver())
                     .addParameter(OPPARAM_RESTART)
+                    .addParameter(OPPARAM_REFRESH)
                     .build();
 
     static final SimpleOperationDefinition OP_STOP = new SimpleOperationDefinitionBuilder(
