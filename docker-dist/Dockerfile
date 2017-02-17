@@ -17,10 +17,10 @@
 
 FROM jboss/wildfly:10.1.0.Final
 
-MAINTAINER Heiko W. Rupp <hrupp@redhat.com>
+MAINTAINER Heiko W. Rupp <hawkular-dev@lists.jboss.org>
 
 ADD target/installer.jar /tmp/
-ADD test-simple.war /opt/jboss/wildfly/standalone/deployments/
+# ADD test-simple.war /opt/jboss/wildfly/standalone/deployments/
 ADD src/main/resources/standalone.conf /opt/jboss/wildfly/bin
 
 ENV HAWKULAR_SERVER_ADDR hawkular
@@ -35,7 +35,7 @@ WORKDIR /tmp
 RUN java -jar installer.jar --enabled true --server-url 'http://${env.HAWKULAR_SERVER_ADDR}:${env.HAWKULAR_SERVER_PORT}' \
   --module-dist classpath:hawkular-wildfly-agent-wf-extension.zip --username '${env.HAWKULAR_AGENT_USER}' \
   --password '${env.HAWKULAR_AGENT_PASSWORD}' --target-location /opt/jboss/wildfly \
-  --feed-id='${hawkular.agent.machine.id}' 
+  --feed-id='${hawkular.agent.machine.id}'
 
 USER root
 RUN chown -R jboss:0 /opt/jboss/wildfly/standalone && \
