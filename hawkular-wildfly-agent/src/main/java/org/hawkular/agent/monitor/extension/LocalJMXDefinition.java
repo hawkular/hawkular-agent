@@ -26,6 +26,7 @@ import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.agent.monitor.util.Util;
 import org.jboss.as.controller.AbstractWriteAttributeHandler;
 import org.jboss.as.controller.AttributeDefinition;
@@ -87,7 +88,8 @@ public class LocalJMXDefinition extends MonitorPersistentResourceDefinition {
                         }
 
                         MonitorService monitorService = getMonitorService(context);
-                        if (monitorService == null || !monitorService.isMonitorServiceStarted()) {
+                        if (monitorService == null
+                                || monitorService.getMonitorServiceStatus() == ServiceStatus.STARTING) {
                             return true; // caught service starting up, need to be restarted to pick up this change
                         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +30,7 @@ import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -46,7 +47,8 @@ public class OperationInventoryReport implements OperationStepHandler {
             ServiceName name = SubsystemExtension.SERVICE_NAME;
             ServiceRegistry serviceRegistry = opContext.getServiceRegistry(true);
             MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
-            if (service.isMonitorServiceStarted()) {
+            ServiceStatus status = service.getMonitorServiceStatus();
+            if (status == ServiceStatus.RUNNING) {
                 ModelNode result = opContext.getResult();
                 List<ProtocolService<?, ?>> protocolServices = service.getProtocolServices().getServices();
                 for (ProtocolService<?, ?> protocolService : protocolServices) {
@@ -79,7 +81,7 @@ public class OperationInventoryReport implements OperationStepHandler {
                     }
                 }
             } else {
-                throw new OperationFailedException("Agent is not started");
+                throw new OperationFailedException("Agent is not running - status is [" + status + "]");
             }
         } catch (OperationFailedException ofe) {
             throw ofe;

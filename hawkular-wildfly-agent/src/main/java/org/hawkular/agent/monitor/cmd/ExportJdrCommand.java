@@ -20,6 +20,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.ID;
@@ -95,11 +99,19 @@ public class ExportJdrCommand extends AbstractResourcePathCommand<ExportJdrReque
         MessageUtils.prepareResourcePathResponse(request, response);
 
         BinaryData binaryData = null;
+        ModelNode resultNode = null;
+        // Workaround for https://issues.jboss.org/browse/WFLY-8161 (part1)
+        Map<String, String> pwPropCache = cachePasswordSysProps();
 
-        ModelNode resultNode = OperationBuilder.byName(actualOperationName) //
-                .address(opLocation.getPathAddress())
-                .execute(dmrContext.getClient()).assertSuccess() //
-                .getResultNode();
+        try {
+            resultNode = OperationBuilder.byName(actualOperationName) //
+                    .address(opLocation.getPathAddress())
+                    .execute(dmrContext.getClient()).assertSuccess() //
+                    .getResultNode();
+        } finally {
+            // Workaround for https://issues.jboss.org/browse/WFLY-8161 (part2)
+            restorePasswordSysProps(pwPropCache);
+        }
 
         String reportLocation = resultNode.get("report-location").asString();
 
@@ -133,4 +145,23 @@ public class ExportJdrCommand extends AbstractResourcePathCommand<ExportJdrReque
         return new ExportJdrResponse();
     }
 
+    private Map<String, String> cachePasswordSysProps() {
+        Map<String, String> cache = new HashMap<>();
+
+        Properties props = System.getProperties();
+        Enumeration<?> names = props.propertyNames();
+        while (names.hasMoreElements()) {
+            String name = (String) names.nextElement();
+            if (name.matches(".*password.*")) {
+                cache.put(name, props.getProperty(name));
+            }
+        }
+        return cache;
+    }
+
+    private void restorePasswordSysProps(Map<String, String> cache) {
+        for (Map.Entry<String, String> entry : cache.entrySet()) {
+            System.setProperty(entry.getKey(), entry.getValue());
+        }
+    }
 }

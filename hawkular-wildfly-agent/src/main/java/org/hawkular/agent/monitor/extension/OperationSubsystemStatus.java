@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.extension;
 
 import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -29,17 +30,17 @@ public class OperationSubsystemStatus implements OperationStepHandler {
 
     @Override
     public void execute(OperationContext opContext, ModelNode model) throws OperationFailedException {
-        boolean isStarted = false;
+        ServiceStatus status = null;
         try {
             ServiceName name = SubsystemExtension.SERVICE_NAME;
             ServiceRegistry serviceRegistry = opContext.getServiceRegistry(true);
             MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
-            isStarted = service.isMonitorServiceStarted();
+            status = service.getMonitorServiceStatus();
         } catch (ServiceNotFoundException snfe) {
             // it just isn't deployed, so obviously, it isn't started
-            isStarted = false;
+            status = ServiceStatus.STOPPED;
         }
-        opContext.getResult().set(isStarted ? "STARTED" : "STOPPED");
+        opContext.getResult().set(status == null ? "UNKNOWN" : status.name());
         opContext.stepCompleted();
     }
 }

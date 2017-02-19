@@ -67,6 +67,9 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         // this update should automatically trigger an agent restart, the operation is flagged to re-read the config
         writeNodeAttribute(mcc, addressActual, "interval", "0");
         assertNodeAttributeEquals(mcc, addressActual, "interval", "0");
+
+        // Don't proceed with other tests until we're sure the shutdown has initiated
+        Thread.sleep(2000);
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
@@ -189,7 +192,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
     @Test(dependsOnMethods = { "datasourcesAddedToInventory" })
     public void datasourceMetricsCollected() throws Throwable {
-        long startTime = System.currentTimeMillis(); // limit to new metric data points
+        long startTime = System.currentTimeMillis();
         String lastUrl = "";
         int second = 1000;
         int timeOutSeconds = 60;
@@ -231,8 +234,8 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
                         // System.out.println("DisabledBody=" + body);
                         /* this should be enough to prove that the metric was not disabled */
                         if (body.contains("\"empty\":false")) {
-                            String msg = String.format("Disabled Gauge gathered after [%d]s. url=[%s], data=%s",
-                                    timeOutSeconds, url, body);
+                            String msg = String.format("Disabled Gauge gathered after [%d]ms. url=[%s], data=%s",
+                                    (System.currentTimeMillis() - startTime), url, body);
                             Assert.fail(msg);
                         }
                     }

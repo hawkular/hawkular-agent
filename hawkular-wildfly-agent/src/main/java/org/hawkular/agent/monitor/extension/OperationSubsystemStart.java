@@ -16,10 +16,16 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.hawkular.agent.monitor.service.MonitorService;
+import org.hawkular.agent.monitor.service.ServiceStatus;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
+import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.registry.Resource;
 import org.jboss.dmr.ModelNode;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceName;
@@ -31,31 +37,58 @@ public class OperationSubsystemStart implements OperationStepHandler {
 
     @Override
     public void execute(OperationContext opContext, ModelNode model) throws OperationFailedException {
+
+        final AtomicReference<Thread> newThread = new AtomicReference<>();
+
         try {
             ServiceName name = SubsystemExtension.SERVICE_NAME;
             ServiceRegistry serviceRegistry = opContext.getServiceRegistry(true);
             MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
 
-            boolean restart = model.get("restart").asBoolean(false);
-            if (restart) {
-                LOGGER.debug("Asked to restart the Hawkular Monitor service. Will stop it, then restart it now.");
-                service.stopMonitorService();
-            } else {
-                LOGGER.debug("Asked to start the Hawkular Monitor service");
-            }
-            if (!service.isMonitorServiceStarted()) {
-                Thread newThread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        service.startMonitorService();
+            final boolean refresh = model.get("refresh").asBoolean(false);
+            final boolean restart = refresh || model.get("restart").asBoolean(false);
+            final long delay = model.get("delay").asLong(0L);
+            final PathAddress address = refresh ? WildflyCompatibilityUtils.getCurrentAddress(opContext, model) : null;
+            final ModelNode config = refresh ? Resource.Tools.readModel(opContext.readResourceFromRoot(address))
+                    : null;
+            final MonitorServiceConfiguration newConfig = refresh
+                    ? new MonitorServiceConfigurationBuilder(config, opContext).build() : null;
+
+            newThread.set(new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (delay > 0) {
+                            Thread.sleep(delay);
+                        }
+
+                        if (restart) {
+                            LOGGER.warnf("Stopping Hawkular Monitor Service now, %s requested.",
+                                    refresh ? "refresh" : "restart");
+                            service.stopMonitorService();
+                        }
+
+                        if (service.getMonitorServiceStatus() == ServiceStatus.RUNNING) {
+                            LOGGER.warn("Skipping Hawkular Monitor Service start, it is already started.");
+                        } else {
+                            LOGGER.warn("Starting Hawkular Monitor Service now.");
+                            service.startMonitorService(newConfig);
+                        }
+                    } catch (Exception e) {
+                        LOGGER.warn("Aborting start of the Hawkular Monitor service: " + e);
+                        return;
                     }
-                }, "Hawkular WildFly Agent Operation Start Thread");
-                newThread.setDaemon(true);
-                newThread.start();
-            }
+                }
+            }, "Hawkular WildFly Agent Operation Start Thread"));
+            newThread.get().setDaemon(true);
+            newThread.get().start();
+
         } catch (ServiceNotFoundException snfe) {
             throw new OperationFailedException("Cannot restart Hawkular Monitor service - it is disabled", snfe);
         } catch (Exception e) {
+            if (newThread.get() != null) {
+                newThread.get().interrupt();
+            }
             throw new OperationFailedException("Cannot restart Hawkular Monitor service", e);
         }
 

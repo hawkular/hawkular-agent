@@ -358,9 +358,8 @@ public interface MsgLogger extends BasicLogger {
     void warnConnectionDelayed(int count, String what, String url);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10079, value = "Agent being asked to start when it is already starting up. "
-            + "Will shutdown and try the startup again.")
-    void infoInterruptStartAndStartAgain();
+    @Message(id = 10079, value = "Agent being asked to start when it is already starting up. Will wait.")
+    void infoAlreadyStarting();
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10080, value = "Agent has been configured to be immutable")
@@ -369,4 +368,8 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.WARN)
     @Message(id = 10081, value = "Cannot get Hawkular Server status - does the agent have proper credentials? (%d/%s)")
     void warnBadHawkularCredentials(int code, String message);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10082, value = "Agent being asked to start but is currently stopping. Will wait and then restart.")
+    void infoAgentWillStartAfterStopping();
 }
