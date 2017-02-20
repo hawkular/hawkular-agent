@@ -96,7 +96,7 @@ public class ScheduledCollectionsQueueTest {
     public void testSimpleMultipleSchedules() throws InterruptedException {
         ScheduledCollectionsQueue<DMRNodeLocation, MetricType<DMRNodeLocation>> q = new ScheduledCollectionsQueue<>();
 
-        int collInterval = 1000;
+        int collInterval = 5000;
         MetricType<DMRNodeLocation> metricType1 = createMetricType("metricTypeName1", collInterval);
         MetricType<DMRNodeLocation> metricType2 = createMetricType("metricTypeName2", collInterval);
         MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>> measInstance1;
@@ -115,7 +115,7 @@ public class ScheduledCollectionsQueueTest {
         // let's see that the queue gives us the right answers
         long nextExpectedCollectionTime = q.getNextExpectedCollectionTime();
         Assert.assertTrue(nextExpectedCollectionTime > System.currentTimeMillis());
-        Thread.sleep(collInterval + 100); // wait for the collection time to pass
+        Thread.sleep(collInterval + 2000); // wait for the collection time to pass
         Set<MeasurementInstance<DMRNodeLocation, MetricType<DMRNodeLocation>>> scheduledSet = q.popNextScheduledSet();
         Assert.assertEquals(2, scheduledSet.size());
         Assert.assertTrue(scheduledSet.contains(schedule1.getMeasurementInstance()));
