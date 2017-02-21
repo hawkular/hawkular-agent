@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-swarm-agent-parent</artifactId>
-    <version>0.27.1.Final-SNAPSHOT</version>
+    <version>0.28.0.Final</version>
   </parent>
 
   <groupId>org.hawkular.agent</groupId>
