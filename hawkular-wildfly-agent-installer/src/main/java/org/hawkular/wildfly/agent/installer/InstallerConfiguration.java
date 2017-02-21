@@ -46,6 +46,7 @@ public class InstallerConfiguration {
 
     // these are command line options that can also be defined in the config .properties file
     static final String OPTION_ENABLED = "enabled";
+    static final String OPTION_CONFIG_ONLY = "config-only";
     static final String OPTION_TARGET_LOCATION = "target-location";
     static final String OPTION_MODULE_DISTRIBUTION = "module-dist";
     static final String OPTION_TARGET_CONFIG = "target-config";
@@ -107,6 +108,13 @@ public class InstallerConfiguration {
                 .optionType(OptionType.NORMAL)
                 .type(String.class)
                 .description("Indicates if the agent should be enabled at startup")
+                .create());
+        cmd.addOption(new ProcessedOptionBuilder()
+                .name(InstallerConfiguration.OPTION_CONFIG_ONLY)
+                .optionType(OptionType.NORMAL)
+                .type(Boolean.class)
+                .description("Skip installation of the add-ons modules, and only update the "
+                        + "server config (e.g. standalone.xml).")
                 .create());
         cmd.addOption(new ProcessedOptionBuilder()
                 .name(InstallerConfiguration.OPTION_TARGET_LOCATION)
@@ -271,6 +279,7 @@ public class InstallerConfiguration {
 
         // now we override the defaults with options the user provided us
         setProperty(properties, commandLine, OPTION_ENABLED);
+        setProperty(properties, commandLine, OPTION_CONFIG_ONLY);
         setProperty(properties, commandLine, OPTION_TARGET_LOCATION);
         setProperty(properties, commandLine, OPTION_MODULE_DISTRIBUTION);
         setProperty(properties, commandLine, OPTION_TARGET_CONFIG);
@@ -317,6 +326,10 @@ public class InstallerConfiguration {
 
     public boolean isEnabled() {
         return Boolean.parseBoolean(properties.getProperty(OPTION_ENABLED, "true"));
+    }
+
+    public boolean isConfigOnly() {
+        return Boolean.parseBoolean(properties.getProperty(OPTION_CONFIG_ONLY, "false"));
     }
 
     public String getTargetLocation() {

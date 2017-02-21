@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,8 +18,10 @@ package org.hawkular.wildfly.module.installer;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.jboss.logging.Logger;
 
 /**
@@ -31,6 +33,10 @@ public class ExtensionDeployer {
     private File targetServerConfigAbsolute;
     private File sourceServerConfigBackupAbsolute;
     private File modulesHomeAbsolute;
+
+    private static final String DEFAULT_MODULE_ID = "org.hawkular.agent";
+
+    private static final String DEFAULT_MODULE_RELATIVE_PATH = "/system/add-ons/hawkular-agent/";
 
     public void install(DeploymentConfiguration configuration) throws ExtensionDeploymentException {
         log.debug("Validating configuration");
@@ -53,12 +59,25 @@ public class ExtensionDeployer {
             } catch (Exception e) {
                 throw new ExtensionDeploymentException("Failed to install module", e);
             }
+        } else {
+            try {
+                // check if the module has already been installed
+                File agentModulePath = new File(modulesHomeAbsolute, DEFAULT_MODULE_RELATIVE_PATH);
+                if (agentModulePath.exists()) {
+                    List<File> installedFiles = new ArrayList<File>(FileUtils.listFiles(agentModulePath, null, true));
+                    resolvedOptions = resolveBundledXmlSnippets(installedFiles, configuration);
+                }
+            } catch (Exception e) {
+                throw new ExtensionDeploymentException("Failed to locate installed module", e);
+            }
         }
 
         try {
             RegisterModuleConfiguration options = new RegisterModuleConfiguration();
             if (module != null) {
                 options.withExtension(module.getModuleId());
+            } else {
+                options.withExtension(DEFAULT_MODULE_ID);
             }
 
             if (configuration.getConfigType() != null) {

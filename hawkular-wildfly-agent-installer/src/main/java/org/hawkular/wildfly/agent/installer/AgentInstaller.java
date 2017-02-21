@@ -157,7 +157,9 @@ public class AgentInstaller {
 
             URL moduleZipUrl;
 
-            if (moduleZip == null) {
+            if (installerConfig.isConfigOnly()) {
+                moduleZipUrl = null;
+            } else if (moduleZip == null) {
                 // --module-dist is not supplied so try to download agent module from server
                 File moduleTempFile = downloadModuleZip(getHawkularServerAgentDownloadUrl(installerConfig), jbossHome);
                 if (moduleTempFile == null) {
