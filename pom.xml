@@ -48,6 +48,7 @@
     <module>hawkular-wildfly-agent-installer-full</module>
     <module>hawkular-wildfly-agent-dist</module>
     <module>hawkular-swarm-agents</module>
+    <module>docker-dist</module>
   </modules>
 
   <scm>

@@ -1,0 +1,47 @@
+#
+# Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
+# and other contributors as indicated by the @author tags.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+FROM jboss/wildfly:10.1.0.Final
+
+MAINTAINER Heiko W. Rupp <hawkular-dev@lists.jboss.org>
+
+ADD target/installer.jar /tmp/
+# ADD test-simple.war /opt/jboss/wildfly/standalone/deployments/
+ADD src/main/resources/standalone.conf /opt/jboss/wildfly/bin
+
+ENV HAWKULAR_SERVER_ADDR hawkular
+ENV HAWKULAR_SERVER_PORT 8080
+ENV HAWKULAR_AGENT_USER=jdoe HAWKULAR_AGENT_PASSWORD=password
+ENV JAVA_OPTS="-Xmx256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m"
+
+EXPOSE 8080 9090
+
+WORKDIR /tmp
+
+RUN java -jar installer.jar --enabled true --server-url 'http://${env.HAWKULAR_SERVER_ADDR}:${env.HAWKULAR_SERVER_PORT}' \
+  --module-dist classpath:hawkular-wildfly-agent-wf-extension.zip --username '${env.HAWKULAR_AGENT_USER}' \
+  --password '${env.HAWKULAR_AGENT_PASSWORD}' --target-location /opt/jboss/wildfly \
+  --feed-id='${hawkular.agent.machine.id}'
+
+USER root
+RUN chown -R jboss:0 /opt/jboss/wildfly/standalone && \
+    chmod -R ug+rw /opt/jboss/wildfly/standalone && \
+    rm /tmp/installer.jar
+
+USER jboss
+CMD /opt/jboss/wildfly/bin/standalone.sh
+
