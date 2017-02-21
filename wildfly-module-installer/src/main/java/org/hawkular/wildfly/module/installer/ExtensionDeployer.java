@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,8 +18,10 @@ package org.hawkular.wildfly.module.installer;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.jboss.logging.Logger;
 
 /**
@@ -53,26 +55,39 @@ public class ExtensionDeployer {
             } catch (Exception e) {
                 throw new ExtensionDeploymentException("Failed to install module", e);
             }
+        } else {
+            try {
+                // check if the module has already been installed
+                File agentModulePath = new File(modulesHomeAbsolute, configuration.getDefaultModuleRelativePath());
+                if (agentModulePath.exists()) {
+                    List<File> installedFiles = new ArrayList<File>(FileUtils.listFiles(agentModulePath, null, true));
+                    resolvedOptions = resolveBundledXmlSnippets(installedFiles, configuration);
+                }
+            } catch (Exception e) {
+                throw new ExtensionDeploymentException("Failed to locate installed module", e);
+            }
         }
 
         try {
             RegisterModuleConfiguration options = new RegisterModuleConfiguration();
             if (module != null) {
                 options.withExtension(module.getModuleId());
+            } else {
+                options.withExtension(configuration.getDefaultModuleId());
             }
 
             if (configuration.getConfigType() != null) {
                 options.configType(configuration.getConfigType());
             }
             options
-                .targetServerConfig(targetServerConfigAbsolute)
-                .sourceServerConfig(sourceServerConfigBackupAbsolute)
-                .subsystem(configuration.getSubsystem())
-                .socketBinding(configuration.getSocketBinding())
-                .socketBindingGroups(configuration.getSocketBindingGroups())
-                .xmlEdits(configuration.getEdit())
-                .profiles(configuration.getProfiles())
-                .failNoMatch(configuration.isFailNoMatch());
+                    .targetServerConfig(targetServerConfigAbsolute)
+                    .sourceServerConfig(sourceServerConfigBackupAbsolute)
+                    .subsystem(configuration.getSubsystem())
+                    .socketBinding(configuration.getSocketBinding())
+                    .socketBindingGroups(configuration.getSocketBindingGroups())
+                    .xmlEdits(configuration.getEdit())
+                    .profiles(configuration.getProfiles())
+                    .failNoMatch(configuration.isFailNoMatch());
 
             resolvedOptions.extend(options);
             log.debugf("Proceeding with \n%s", resolvedOptions);
@@ -165,7 +180,7 @@ public class ExtensionDeployer {
         }
         if (!(sourceServerConfigBackupAbsolute.getParentFile().exists()
                 && targetServerConfigAbsolute.getParentFile().isDirectory() && targetServerConfigAbsolute
-                .getParentFile().canWrite())) {
+                        .getParentFile().canWrite())) {
             throw new ExtensionDeploymentException(
                     "sourceServerConfig = "
                             + configuration.getSourceServerConfig()
@@ -178,7 +193,7 @@ public class ExtensionDeployer {
             // auto-detect modulesHome
             File wfHome = Paths.get(jbossHome.getAbsolutePath(), "modules", "system", "layers", "base").toFile();
             if (!wfHome.exists()) {
-                wfHome = Paths.get(jbossHome.getAbsolutePath(),"modules").toFile();
+                wfHome = Paths.get(jbossHome.getAbsolutePath(), "modules").toFile();
             }
             modulesHomeAbsolute = wfHome;
         } else {
