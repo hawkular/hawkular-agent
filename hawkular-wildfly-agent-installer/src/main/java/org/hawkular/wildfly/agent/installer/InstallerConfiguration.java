@@ -111,7 +111,7 @@ public class InstallerConfiguration {
                 .create());
         cmd.addOption(new ProcessedOptionBuilder()
                 .name(InstallerConfiguration.OPTION_CONFIG_ONLY)
-                .optionType(OptionType.NORMAL)
+                .optionType(OptionType.BOOLEAN)
                 .type(Boolean.class)
                 .description("Skip installation of the add-ons modules, and only update the "
                         + "server config (e.g. standalone.xml).")
