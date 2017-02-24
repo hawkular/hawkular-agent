@@ -147,6 +147,17 @@
                 </configuration>
               </execution>
               <execution>
+                <id>server-provisioning-wildfly-hawkular-agent-module</id>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+                <phase>compile</phase>
+                <configuration>
+                  <config-file>server-provisioning-plain-wildfly.xml</config-file>
+                  <server-name>wildfly-hawkular-agent-module</server-name>
+                </configuration>
+              </execution>
+              <execution>
                 <id>server-provisioning-hawkular</id>
                 <goals>
                   <goal>build</goal>
@@ -155,6 +166,32 @@
                 <configuration>
                   <config-file>server-provisioning-hawkular.xml</config-file>
                   <server-name>hawkular</server-name>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>extract-hawkular-agent-module</id>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <phase>compile</phase>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.hawkular.agent</groupId>
+                      <artifactId>hawkular-wildfly-agent-wf-extension</artifactId>
+                      <version>${project.version}</version>
+                      <type>zip</type>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/wildfly-hawkular-agent-module/modules</outputDirectory>
+                      <destFileName>optional-new-name.jar</destFileName>
+                    </artifactItem>
+                  </artifactItems>
                 </configuration>
               </execution>
             </executions>
@@ -214,6 +251,8 @@
                 <plain-wildfly.bind.address>${plain-wildfly.bind.address}</plain-wildfly.bind.address>
                 <plain-wildfly.management.http.port>${plain-wildfly.management.http.port}</plain-wildfly.management.http.port>
                 <plain-wildfly.port.offset>${plain-wildfly.port.offset}</plain-wildfly.port.offset>
+
+                <wildfly-hawkular-agent-module.home.dir>${project.build.directory}/wildfly-hawkular-agent-module</wildfly-hawkular-agent-module.home.dir>
 
                 <!-- output over-the-wire traffic -->
                 <org.apache.commons.logging.Log>
