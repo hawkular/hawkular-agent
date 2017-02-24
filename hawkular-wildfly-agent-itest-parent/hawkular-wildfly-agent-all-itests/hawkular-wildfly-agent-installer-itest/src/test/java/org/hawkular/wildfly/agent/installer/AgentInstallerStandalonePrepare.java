@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,7 +52,7 @@ public class AgentInstallerStandalonePrepare extends AbstractITest {
     @Test
     public void installAgent() throws Throwable {
 
-        assertAgentInStandalone(false);
+        assertAgentInStandalone(false, wfHome);
         File agentModuleXml = new File(wfHome,
                 "modules/system/add-ons/hawkular-agent/org/hawkular/agent/main/module.xml");
         Assert.assertFalse(agentModuleXml.exists(), "[" + agentModuleXml.getAbsolutePath() + "] should not exist");
@@ -72,11 +72,38 @@ public class AgentInstallerStandalonePrepare extends AbstractITest {
         });
 
         Assert.assertTrue(agentModuleXml.exists(), "[" + agentModuleXml.getAbsolutePath() + "] should exist");
-        assertAgentInStandalone(true);
+        assertAgentInStandalone(true, wfHome);
 
     }
 
-    private void assertAgentInStandalone(boolean agentAvailableExpected) throws UnsupportedEncodingException,
+    @Test
+    public void installAgentConfigOnly() throws Throwable {
+
+        String agentExtensionZipPath = System.getProperty("hawkular-wildfly-agent-wf-extension.zip.path");
+        Assert.assertTrue(new File(agentExtensionZipPath).exists(),
+                "${hawkular-wildfly-agent-wf-extension.zip.path} [" + agentExtensionZipPath + "] does not exist");
+
+        String wfHomeProperty = System.getProperty("wildfly-hawkular-agent-module.home.dir");
+        Assert.assertNotNull(wfHomeProperty);
+        File wfHome = new File(wfHomeProperty);
+
+        File agentModuleXml = new File(wfHome,
+                "modules/system/add-ons/hawkular-agent/org/hawkular/agent/main/module.xml");
+        Assert.assertTrue(agentModuleXml.exists(), "[" + agentModuleXml.getAbsolutePath() + "] should not exist");
+
+        AgentInstaller.main(new String[] {
+                "--target-location=" + wfHome.getAbsolutePath(),
+                "--server-url=http://" + hawkularHost + ":" + hawkularHttpPort,
+                "--username=" + testUser,
+                "--password=" + testPasword,
+                "--config-only"
+        });
+
+        assertAgentInStandalone(true, wfHome);
+
+    }
+
+    private void assertAgentInStandalone(boolean agentAvailableExpected, File wfHome) throws UnsupportedEncodingException,
             FileNotFoundException, IOException, SAXException, ParserConfigurationException, XPathExpressionException {
         XPath xPath = XPathFactory.newInstance().newXPath();
         File standaloneXml = new File(wfHome, "standalone/configuration/standalone.xml");
