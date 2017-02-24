@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,18 +17,21 @@
 package org.hawkular.agent.monitor.cmd;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.X509TrustManager;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.util.BaseHttpClientGenerator;
 
 public class WebSocketClientBuilder extends BaseHttpClientGenerator {
 
-    public WebSocketClientBuilder(StorageAdapterConfiguration storageAdapter, SSLContext sslContext) {
+    public WebSocketClientBuilder(StorageAdapterConfiguration storageAdapter, SSLContext sslContext,
+                                  X509TrustManager x509TrustManager) {
         super(new BaseHttpClientGenerator.Configuration.Builder()
                 .username(storageAdapter.getUsername())
                 .password(storageAdapter.getPassword())
                 .useSsl(storageAdapter.isUseSSL())
                 .sslContext(sslContext)
+                .x509TrustManager(x509TrustManager)
                 .keystorePath(storageAdapter.getKeystorePath())
                 .keystorePassword(storageAdapter.getKeystorePassword())
                 .connectTimeout(storageAdapter.getConnectTimeoutSeconds())

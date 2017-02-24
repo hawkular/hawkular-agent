@@ -113,8 +113,6 @@ public class InstallerConfigurationTest {
                         "--managed-server-name", "MyLocalNameOVERRIDE",
                         "--keystore-path", "/tmp/OVERRIDE/path",
                         "--keystore-password", "OVERRIDE-keystore-password",
-                        "--key-password", "OVERRIDE-key-password",
-                        "--key-alias", "OVERRIDE-alias",
                         "--username", "OVERRIDE-username",
                         "--password", "OVERRIDE-password",
                         "--module-dist", "/OVERRIDE/dist.zip",
@@ -129,8 +127,6 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("MyLocalNameOVERRIDE", installerConfig.getManagedServerName());
         Assert.assertEquals("/tmp/OVERRIDE/path", installerConfig.getKeystorePath());
         Assert.assertEquals("OVERRIDE-keystore-password", installerConfig.getKeystorePassword());
-        Assert.assertEquals("OVERRIDE-key-password", installerConfig.getKeyPassword());
-        Assert.assertEquals("OVERRIDE-alias", installerConfig.getKeyAlias());
         Assert.assertEquals("OVERRIDE-username", installerConfig.getUsername());
         Assert.assertEquals("OVERRIDE-password", installerConfig.getPassword());
         Assert.assertEquals("/OVERRIDE/dist.zip", installerConfig.getModuleDistribution());
@@ -223,8 +219,6 @@ public class InstallerConfigurationTest {
         Assert.assertEquals("MyLocalName", installerConfig.getManagedServerName());
         Assert.assertEquals("/tmp/test/path", installerConfig.getKeystorePath());
         Assert.assertEquals("test-keystore-password", installerConfig.getKeystorePassword());
-        Assert.assertEquals("test-key-password", installerConfig.getKeyPassword());
-        Assert.assertEquals("test-alias", installerConfig.getKeyAlias());
         Assert.assertEquals("test-username", installerConfig.getUsername());
         Assert.assertEquals("test-password", installerConfig.getPassword());
         Assert.assertEquals("/test/dist.zip", installerConfig.getModuleDistribution());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,9 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -57,6 +59,7 @@ public class BaseHttpClientGenerator {
             private String keystorePath;
             private String keystorePassword;
             private SSLContext sslContext;
+            private X509TrustManager x509TrustManager;
             private Optional<Integer> connectTimeoutSeconds = Optional.empty();
             private Optional<Integer> readTimeoutSeconds = Optional.empty();
 
@@ -65,7 +68,7 @@ public class BaseHttpClientGenerator {
 
             public Configuration build() {
                 return new Configuration(username, password, useSSL, keystorePath, keystorePassword, sslContext,
-                        connectTimeoutSeconds, readTimeoutSeconds);
+                        x509TrustManager, connectTimeoutSeconds, readTimeoutSeconds);
             }
 
             public Builder username(String s) {
@@ -98,6 +101,11 @@ public class BaseHttpClientGenerator {
                 return this;
             }
 
+            public Builder x509TrustManager(X509TrustManager x509TrustManager) {
+                this.x509TrustManager = x509TrustManager;
+                return this;
+            }
+
             public Builder connectTimeout(int connectTimeoutSeconds) {
                 this.connectTimeoutSeconds = Optional.of(connectTimeoutSeconds);
                 return this;
@@ -115,11 +123,13 @@ public class BaseHttpClientGenerator {
         private final String keystorePath;
         private final String keystorePassword;
         private final SSLContext sslContext;
+        private final X509TrustManager x509TrustManager;
         private final Optional<Integer> connectTimeoutSeconds;
         private final Optional<Integer> readTimeoutSeconds;
 
         private Configuration(String username, String password, boolean useSSL, String keystorePath,
-                String keystorePassword, SSLContext sslContext, Optional<Integer> connectTimeoutSeconds,
+                String keystorePassword, SSLContext sslContext, X509TrustManager x509TrustManager,
+                Optional<Integer> connectTimeoutSeconds,
                 Optional<Integer> readTimeoutSeconds) {
             this.username = username;
             this.password = password;
@@ -127,6 +137,7 @@ public class BaseHttpClientGenerator {
             this.keystorePath = keystorePath;
             this.keystorePassword = keystorePassword;
             this.sslContext = sslContext;
+            this.x509TrustManager = x509TrustManager;
             this.connectTimeoutSeconds = connectTimeoutSeconds;
             this.readTimeoutSeconds = readTimeoutSeconds;
         }
@@ -153,6 +164,10 @@ public class BaseHttpClientGenerator {
 
         public SSLContext getSslContext() {
             return sslContext;
+        }
+
+        public X509TrustManager getX509TrustManager() {
+            return x509TrustManager;
         }
 
         public Optional<Integer> getConnectTimeoutSeconds() {
@@ -183,20 +198,38 @@ public class BaseHttpClientGenerator {
 
         if (this.configuration.isUseSSL()) {
             SSLContext theSslContextToUse;
+            X509TrustManager theTrustManagerToUse = null;
 
             if (this.configuration.getSslContext() == null) {
                 if (this.configuration.getKeystorePath() != null) {
-                    theSslContextToUse = buildSSLContext(this.configuration.getKeystorePath(),
+                    KeyStore keystore = loadKeystore(this.configuration.getKeystorePath(),
                             this.configuration.getKeystorePassword());
+                    TrustManager[] trustManagers = buildTrustManagers(keystore);
+                    theSslContextToUse = buildSSLContext(keystore,
+                            this.configuration.getKeystorePassword(), trustManagers);
+
+                    for (TrustManager tm : trustManagers) {
+                        if (tm instanceof X509TrustManager) {
+                            theTrustManagerToUse = (X509TrustManager) tm;
+                            break;
+                        }
+                    }
+
                 } else {
                     theSslContextToUse = null; // rely on the JVM default
                 }
             } else {
                 theSslContextToUse = this.configuration.getSslContext();
+                theTrustManagerToUse = this.configuration.getX509TrustManager();
             }
 
-            if (theSslContextToUse != null) {
-                httpClientBldr.sslSocketFactory(theSslContextToUse.getSocketFactory());
+            if (theSslContextToUse != null && theTrustManagerToUse != null) {
+                httpClientBldr.sslSocketFactory(
+                        new WildflyCompatibilityUtils.EAP6WrappedSSLSocketFactory(
+                                theSslContextToUse.getSocketFactory()),
+                        theTrustManagerToUse);
+            } else if (theSslContextToUse != null) {
+                log.error("We have a SSLContext without a X509TrustManager.");
             }
 
             // does not perform any hostname verification when looking at the remote end's cert
@@ -265,21 +298,37 @@ public class BaseHttpClientGenerator {
         return Util.base64Encode(this.configuration.getUsername() + ":" + this.configuration.getPassword());
     }
 
-    private SSLContext buildSSLContext(String keystorePath, String keystorePassword) {
+    private KeyStore loadKeystore(String keystorePath, String keystorePassword) {
         try {
-            KeyStore keyStore = readKeyStore(keystorePath, keystorePassword);
+            return readKeyStore(keystorePath, keystorePassword);
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Cannot load keystore [%s]", keystorePath), e);
+        }
+    }
+
+    private SSLContext buildSSLContext(KeyStore keyStore, String keystorePassword, TrustManager[] trustManagers) {
+        try {
+
             SSLContext sslContext = SSLContext.getInstance("SSL");
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
-                    TrustManagerFactory.getDefaultAlgorithm());
-            trustManagerFactory.init(keyStore);
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory
                     .getDefaultAlgorithm());
             keyManagerFactory.init(keyStore, keystorePassword.toCharArray());
-            sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(),
+            sslContext.init(keyManagerFactory.getKeyManagers(), trustManagers,
                     new SecureRandom());
             return sslContext;
         } catch (Exception e) {
-            throw new RuntimeException(String.format("Cannot create SSL context from keystore [%s]", keystorePath), e);
+            throw new RuntimeException(String.format("Cannot create SSL context from keystore"), e);
+        }
+    }
+
+    private TrustManager[] buildTrustManagers(KeyStore keyStore) {
+        try {
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                    TrustManagerFactory.getDefaultAlgorithm());
+            trustManagerFactory.init(keyStore);
+            return trustManagerFactory.getTrustManagers();
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot build TrustManager", e);
         }
     }
 

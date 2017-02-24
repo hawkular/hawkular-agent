@@ -36,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
@@ -84,6 +86,7 @@ import org.jboss.as.controller.ProcessType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.domain.management.SecurityRealm;
 import org.jboss.as.domain.management.security.SSLContextService;
+import org.jboss.as.domain.management.security.SecurityRealmService;
 import org.jboss.as.host.controller.DomainModelControllerService;
 import org.jboss.as.host.controller.HostControllerEnvironment;
 import org.jboss.as.naming.ManagedReferenceFactory;
@@ -100,6 +103,7 @@ import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -230,6 +234,23 @@ public class MonitorService implements Service<MonitorService> {
         return result;
     }
 
+    private static X509TrustManager getX509TrustManager(MonitorServiceConfiguration configuration,
+            Map<String, InjectedValue<TrustManager[]>> trustOnlyTrustManagersValue) {
+        X509TrustManager result = null;
+        String bootSecurityRealm = configuration.getStorageAdapter().getSecurityRealm();
+        if (bootSecurityRealm != null) {
+            TrustManager[] tms = trustOnlyTrustManagersValue.get(bootSecurityRealm).getOptionalValue();
+            if (tms != null) {
+                for (TrustManager tm : tms) {
+                    if (tm instanceof X509TrustManager) {
+                        result = (X509TrustManager) tm;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
     private final InjectedValue<ModelController> modelControllerValue = new InjectedValue<>();
     private final InjectedValue<ServerEnvironment> serverEnvironmentValue = new InjectedValue<>();
     private final InjectedValue<ControlledProcessStateService> processStateValue = new InjectedValue<>();
@@ -238,6 +259,7 @@ public class MonitorService implements Service<MonitorService> {
     private final InjectedValue<OutboundSocketBinding> serverOutboundSocketBindingValue = new InjectedValue<>();
     // key=securityRealm name as a String
     private final Map<String, InjectedValue<SSLContext>> trustOnlySSLContextValues = new HashMap<>();
+    private final Map<String, InjectedValue<TrustManager[]>> trustOnlyTrustManagersValue = new HashMap<>();
 
     private AtomicReference<ServiceStatus> agentServiceStatus = new AtomicReference<>(ServiceStatus.INITIAL);
     private PropertyChangeListener serverStateListener;
@@ -526,6 +548,16 @@ public class MonitorService implements Service<MonitorService> {
             }
 
         }
+
+        ServiceContainer serviceContainer = startContext.getController().getServiceContainer();
+        for (String realmName : trustOnlySSLContextValues.keySet()) {
+            ServiceName sn = SSLContextService.ServiceUtil.createServiceName(
+                    SecurityRealmService.ServiceUtil.createServiceName(realmName),
+                    true);
+            SSLContextService sslContextService = (SSLContextService) (serviceContainer.getRequiredService(sn).getService());
+            trustOnlyTrustManagersValue.put(realmName, sslContextService.getTrustManagerInjector());
+        }
+
         // deferred startup: must wait for server to be running before we can monitor the subsystems
         ControlledProcessStateService stateService = processStateValue.getValue();
         CustomPropertyChangeListener listener = new CustomPropertyChangeListener();
@@ -627,7 +659,10 @@ public class MonitorService implements Service<MonitorService> {
 
             // prepare the builder that will create our HTTP/REST clients to the hawkular server infrastructure
             SSLContext ssl = getSslContext(this.configuration, this.trustOnlySSLContextValues);
-            this.httpClientBuilder = new HttpClientBuilder(this.configuration.getStorageAdapter(), ssl);
+            X509TrustManager x509TrustManager = getX509TrustManager(this.configuration,
+                    this.trustOnlyTrustManagersValue);
+            this.httpClientBuilder = new HttpClientBuilder(this.configuration.getStorageAdapter(), ssl,
+                    x509TrustManager);
 
             // get our self identifiers
             this.localModelControllerClientFactory = ModelControllerClientFactory
@@ -669,7 +704,7 @@ public class MonitorService implements Service<MonitorService> {
                     // try to connect to the server via command-gateway channel; keep going on error
                     try {
                         this.webSocketClientBuilder = new WebSocketClientBuilder(
-                                this.configuration.getStorageAdapter(), ssl);
+                                this.configuration.getStorageAdapter(), ssl, x509TrustManager);
                         this.feedComm = new FeedCommProcessor(this.webSocketClientBuilder, this.configuration,
                                 this.feedId, this);
                         this.feedComm.connect();
