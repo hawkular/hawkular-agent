@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,8 +64,6 @@ import org.hawkular.inventory.api.model.OperationType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.api.model.StructuredData.InnerMapBuilder;
 import org.hawkular.inventory.api.model.StructuredData.MapBuilder;
-import org.hawkular.inventory.api.model.SyncConfiguration;
-import org.hawkular.inventory.api.model.SyncRequest;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.inventory.paths.DataRole;
 
@@ -476,7 +475,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
     @Override
     public <L> void resourcesAdded(InventoryEvent<L> event) {
         // We don't do anything here - the real work will be done when discovery is completed.
-        return;
     }
 
     @Override
@@ -498,16 +496,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     // The final URL should be in the form: entity/<resource_canonical_path>
                     // for example: entity/t;hawkular/f;myfeed/r;resource_id
+                    //  => NOW strings/inventory.myfeed.r.resource_id
 
-                    CanonicalPath resourceCanonicalPath = CanonicalPath.of()
-                            .tenant(tenantIdToUse)
-                            .feed(feedId)
-                            .resource(removedResource.getID().getIDString())
-                            .get();
-
-                    StringBuilder deleteUrl = Util.getContextUrlString(config.getUrl(), config.getInventoryContext());
-                    deleteUrl.append("entity")
-                            .append(resourceCanonicalPath.toString());
+                    InventoryMetric metric = InventoryMetric.resource(feedId, removedResource.getID().getIDString());
+                    StringBuilder deleteUrl = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
+                            .append("strings/")
+                            .append(metric.name());
 
                     Request request = httpClientBuilder.buildJsonDeleteRequest(deleteUrl.toString(),
                             getTenantHeader(tenantIdToUse));
@@ -540,13 +534,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             }
         }
-        return;
     }
 
-    // FIXME: This really shouldn't be synchronized but it seems to workaround inventory/titan issues.
-    //        Once Titan is fixed/replaced, we need to delete the "synchronized" keyword here.
     @Override
-    public synchronized <L> void discoveryCompleted(DiscoveryEvent<L> event) {
+    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
         ResourceManager<L> resourceManager = event.getResourceManager();
         ResourceTypeManager<L> resourceTypeManager = event.getResourceTypeManager();
         MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
@@ -585,23 +576,21 @@ public class AsyncInventoryStorage implements InventoryStorage {
         resourceManager.getResourcesBreadthFirst().forEach(r -> r.setPersisted(true));
     }
 
-    private <L> void performResourceSync(
+    private void performResourceSync(
             InventoryStructure<org.hawkular.inventory.api.model.Resource.Blueprint> resourceStructure,
             String tenantIdToUse,
             int totalResourceCount) {
 
         if (resourceStructure.getRoot() != null) {
             try {
-                SyncConfiguration syncConfig = SyncConfiguration.builder().withAllTypes().build();
-                SyncRequest<org.hawkular.inventory.api.model.Resource.Blueprint> sync;
-                sync = new SyncRequest<>(syncConfig, resourceStructure);
-
-                StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
-                        AsyncInventoryStorage.this.config.getInventoryContext());
-                url.append("sync");
-                url.append("/f;").append(this.feedId);
-                url.append("/r;").append(Util.urlEncode(resourceStructure.getRoot().getId()));
-                String jsonPayload = Util.toJson(sync);
+                InventoryMetric metric = InventoryMetric.resource(feedId, resourceStructure.getRoot().getId());
+                // TODO: tag only once
+                initMetric(tenantIdToUse, metric);
+                StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
+                        .append("strings/")
+                        .append(metric.name())
+                        .append("/raw");
+                String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), resourceStructure)));
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
                 log.tracef("Syncing [%d] resources to inventory: headers=[%s] body=[%s]",
@@ -617,8 +606,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     log.tracef("Received sync response from inventory: code [%d]", response.code());
 
-                    // HTTP status of 204 means success, anything else is an error
-                    if (response.code() != 204) {
+                    // HTTP status of 200 means success, anything else is an error
+                    if (response.code() != 200) {
                         throw new Exception("status-code=[" + response.code() + "], reason=["
                                 + response.message() + "], url=[" + request.url().toString() + "]");
                     }
@@ -641,26 +630,22 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 diagnostics.getStorageErrorRate().mark(1);
             }
         }
-
-        return;
     }
 
-    private <L> void performResourceTypeSync(
+    private void performResourceTypeSync(
             Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint> resourceTypeStructure,
             String tenantIdToUse) {
-
         if (resourceTypeStructure.getRoot() != null) {
             try {
-                SyncConfiguration syncConfig = SyncConfiguration.builder().withAllTypes().build();
-                SyncRequest<org.hawkular.inventory.api.model.ResourceType.Blueprint> sync;
-                sync = new SyncRequest<>(syncConfig, resourceTypeStructure);
-
+                InventoryMetric metric = InventoryMetric.resourceType(feedId, resourceTypeStructure.getRoot().getId());
+                // TODO: tag only once
+                initMetric(tenantIdToUse, metric);
                 StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
-                        AsyncInventoryStorage.this.config.getInventoryContext());
-                url.append("sync");
-                url.append("/f;").append(this.feedId);
-                url.append("/rt;").append(Util.urlEncode(resourceTypeStructure.getRoot().getId()));
-                String jsonPayload = Util.toJson(sync);
+                        AsyncInventoryStorage.this.config.getMetricsContext())
+                        .append("strings/")
+                        .append(metric.name())
+                        .append("/raw");
+                String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), resourceTypeStructure)));
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
                 log.tracef("Syncing resource type to inventory: headers=[%s] body=[%s]", headers, jsonPayload);
@@ -675,8 +660,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     log.tracef("Received sync response from inventory: code [%d]", response.code());
 
-                    // HTTP status of 204 means success, anything else is an error
-                    if (response.code() != 204) {
+                    // HTTP status of 200 means success, anything else is an error
+                    if (response.code() != 200) {
                         throw new Exception("status-code=[" + response.code() + "], reason=["
                                 + response.message() + "], url=[" + request.url().toString() + "]");
                     }
@@ -698,26 +683,24 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 diagnostics.getStorageErrorRate().mark(1);
             }
         }
-
-        return;
     }
 
-    private <L> void performMetricTypeSync(
+    private void performMetricTypeSync(
             Offline<org.hawkular.inventory.api.model.MetricType.Blueprint> metricTypeStructure,
             String tenantIdToUse) {
 
         if (metricTypeStructure.getRoot() != null) {
             try {
-                SyncConfiguration syncConfig = SyncConfiguration.builder().withAllTypes().build();
-                SyncRequest<org.hawkular.inventory.api.model.MetricType.Blueprint> sync;
-                sync = new SyncRequest<>(syncConfig, metricTypeStructure);
-
+                InventoryMetric metric = InventoryMetric.metricType(feedId, metricTypeStructure.getRoot().getId());
+                // TODO: tag only once
+                initMetric(tenantIdToUse, metric);
                 StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
-                        AsyncInventoryStorage.this.config.getInventoryContext());
-                url.append("sync");
-                url.append("/f;").append(this.feedId);
-                url.append("/mt;").append(Util.urlEncode(metricTypeStructure.getRoot().getId()));
-                String jsonPayload = Util.toJson(sync);
+                        AsyncInventoryStorage.this.config.getMetricsContext())
+                        .append("strings/")
+                        .append(metric.name())
+                        .append("/raw");
+                String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), metricTypeStructure)));
+                System.out.println("JSON PAYLOAD: " + jsonPayload);
                 Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
                 log.tracef("Syncing metric type to inventory: headers=[%s] body=[%s]", headers, jsonPayload);
@@ -732,8 +715,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     log.tracef("Received sync response from inventory: code [%d]", response.code());
 
-                    // HTTP status of 204 means success, anything else is an error
-                    if (response.code() != 204) {
+                    // HTTP status of 200 means success, anything else is an error
+                    if (response.code() != 200) {
                         throw new Exception("status-code=[" + response.code() + "], reason=["
                                 + response.message() + "], url=[" + request.url().toString() + "]");
                     }
@@ -755,8 +738,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 diagnostics.getStorageErrorRate().mark(1);
             }
         }
-
-        return;
     }
 
     /**
@@ -770,5 +751,27 @@ public class AsyncInventoryStorage implements InventoryStorage {
             throw new IllegalArgumentException("tenantId must not be null");
         }
         return Collections.singletonMap("Hawkular-Tenant", tenantId);
+    }
+
+    private void initMetric(String tenant, InventoryMetric metric) throws IOException {
+        System.out.println("Tagging " + tenant + " / " + metric);
+        // FIXME: better json
+        String json = "{\"id\": \"" + metric.name() + "\"," +
+                "\"dataRetention\": 90," +
+                "\"tags\": {" +
+                "\"module\": \"inventory\"," +
+                "\"feed\": \"" + metric.getFeed() + "\"," +
+                "\"type\": \"" + metric.getType() + "\"" +
+                "}}";
+        StringBuilder url = Util.getContextUrlString(AsyncInventoryStorage.this.config.getUrl(),
+                AsyncInventoryStorage.this.config.getMetricsContext())
+                .append("strings");
+        Map<String, String> headers = getTenantHeader(tenant);
+
+        // FIXME: manage errors...
+        Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), headers, json);
+        Call call = this.httpClientBuilder.getHttpClient().newCall(request);
+        Response response = call.execute();
+        System.out.println("Tagging response code: " + response.code());
     }
 }
