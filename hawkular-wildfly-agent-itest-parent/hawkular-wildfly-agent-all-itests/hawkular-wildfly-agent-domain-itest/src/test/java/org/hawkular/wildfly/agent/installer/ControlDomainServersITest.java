@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,9 +46,8 @@ public class ControlDomainServersITest extends AbstractITest {
         }
 
         CanonicalPath wfPath = getHostController(clientConfig);
-        Resource agent = getResource(
-                "/traversal/f;" + clientConfig.getFeedId() + "/type=rt;"
-                + "id=Domain WildFly Server Controller/rl;defines/type=r",
+        // FIXME
+        Resource agent = getResource(clientConfig.getFeedId(), "rt", "Domain WildFly Server Controller",
                 (r -> r.getId().contains(serverToTest)));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,9 +34,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
-        Resource agent = getResource(
-                "/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=Hawkular%20WildFly%20Agent/rl;defines/type=r",
+        Resource agent = getResource(hawkularFeedId, "rt", "Hawkular%20WildFly%20Agent",
                 (r -> r.getId() != null));
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "

@@ -122,8 +122,8 @@ public abstract class AbstractITest {
         int hawkularPortOffset = Integer.parseInt(System.getProperty("hawkular.port.offset", "0"));
         hawkularHttpPort = hawkularPortOffset + 8080;
         hawkularManagementPort = hawkularPortOffset + 9990;
-        baseInvUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/inventory";
         baseMetricsUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/metrics";
+        baseInvUri = baseMetricsUri + "/strings";
         baseGwUri = "ws://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/command-gateway";
         authentication = "{\"username\":\"" + testUser + "\",\"password\":\"" + testPasword + "\"}";
         System.out.println("using REST user [" + testUser + "] with password [" + testPasword + "]");
@@ -308,13 +308,13 @@ public abstract class AbstractITest {
 
     }
 
-    protected Resource getResource(String listPath, Predicate<Resource> predicate) throws Throwable {
-        return getResource(listPath, predicate, ATTEMPT_COUNT, ATTEMPT_DELAY);
+    protected Resource getResource(String feedId, String type, String id, Predicate<Resource> predicate) throws Throwable {
+        return getResource(feedId, type, id, predicate, ATTEMPT_COUNT, ATTEMPT_DELAY);
     }
 
-    protected Resource getResource(String listPath, Predicate<Resource> predicate, int attemptCount, long attemptDelay)
+    protected Resource getResource(String feedId, String type, String id, Predicate<Resource> predicate, int attemptCount, long attemptDelay)
             throws Throwable {
-        String url = baseInvUri + listPath;
+        String url = baseInvUri + "/inventory." + feedId + "." + type + "." + id + "/raw";
         Throwable e = null;
         for (int i = 0; i < attemptCount; i++) {
             try {
@@ -345,13 +345,13 @@ public abstract class AbstractITest {
         }
     }
 
-    protected List<Resource> getResources(String path, int minCount) throws Throwable {
-        return getResources(path, minCount, ATTEMPT_COUNT, ATTEMPT_DELAY);
+    protected List<Resource> getResources(String feedId, String type, int minCount) throws Throwable {
+        return getResources(feedId, type, minCount, ATTEMPT_COUNT, ATTEMPT_DELAY);
     }
 
-    protected List<Resource> getResources(String path, int minCount, int attemptCount, long attemptDelay)
+    protected List<Resource> getResources(String feedId, String type, int minCount, int attemptCount, long attemptDelay)
             throws Throwable {
-        String url = baseInvUri + path;
+        String url = baseMetricsUri + "/metrics?type=string&id=inventory." + feedId + "." + type + ".*";
         Throwable e = null;
         for (int i = 0; i < attemptCount; i++) {
             try {
@@ -382,9 +382,9 @@ public abstract class AbstractITest {
     }
 
     // expects entity not traversal path URL
-    protected ResourceType getResourceType(String path, int attemptCount, long attemptDelay)
+    protected ResourceType getResourceType(String feedId, String type, int attemptCount, long attemptDelay)
             throws Throwable {
-        String url = baseInvUri + path;
+        String url = baseInvUri + "/inventory." + feedId + ".rt." + type + "/raw";
         Throwable e = null;
         for (int i = 0; i < attemptCount; i++) {
             try {
@@ -510,17 +510,17 @@ public abstract class AbstractITest {
         }
     }
 
-    protected void assertResourceNotInInventory(String listPath, Predicate<Resource> predicate, int attemptCount,
+    protected void assertResourceNotInInventory(String feedId, String type, String id, Predicate<Resource> predicate, int attemptCount,
             long attemptDelay) throws Throwable {
         try {
             for (int i = 0; i < attemptCount; i++) {
-                getResource(listPath, predicate, 1, 1);
+                getResource(feedId, type, id, predicate, 1, 1);
                 Thread.sleep(attemptDelay);
             }
         } catch (AssertionError expected) {
             return;
         }
-        Assert.fail("resource is still in inventory. listPath=" + listPath);
+        Assert.fail("resource is still in inventory. id=" + id);
     }
 
     protected Request.Builder newAuthRequest() {
@@ -558,7 +558,7 @@ public abstract class AbstractITest {
     /**
      * @return Client to the Hawkular WildFly Server.
      *
-     * @see #getPlainWildFlyConfig()
+     * @see #getPlainWildFlyClientConfig()
      */
     protected static ModelControllerClient newPlainWildFlyModelControllerClient(WildFlyClientConfig config) {
         return newModelControllerClient(config.getHost(), config.getManagementPort());
@@ -629,7 +629,6 @@ public abstract class AbstractITest {
             if (!accountsAndInventoryReady) {
                 Thread.sleep(10000);
 
-                getWithRetries(baseInvUri + "/tenant");
                 while (!getWithRetries(baseMetricsUri + "/status").contains("STARTED")) {
                     Thread.sleep(2000);
                 }
@@ -691,7 +690,7 @@ public abstract class AbstractITest {
      * @throws Throwable
      */
     protected CanonicalPath getHawkularWildFlyServerResourcePath() throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + hawkularFeedId + "/type=r", 2);
+        List<Resource> servers = getResources(hawkularFeedId, "r", 2);
         List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
                 .collect(Collectors.toList());
         AssertJUnit.assertEquals(1, wfs.size());
@@ -706,7 +705,7 @@ public abstract class AbstractITest {
      * @throws Throwable
      */
     protected CanonicalPath getHostController(WildFlyClientConfig hostControllerClientConfig) throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + hostControllerClientConfig.getFeedId() + "/type=r", 2);
+        List<Resource> servers = getResources(hostControllerClientConfig.getFeedId(), "r", 2);
         List<Resource> hcs = servers.stream().filter(s -> "Host Controller".equals(s.getType().getId()))
                 .collect(Collectors.toList());
         AssertJUnit.assertEquals(1, hcs.size());

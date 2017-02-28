@@ -68,9 +68,8 @@ public class ImmutableITest extends AbstractCommandITest {
 
             Assert.assertTrue(waitForAgent(mcc), "Expected agent to be started.");
 
-            Resource agent = getResource(
-                    "/traversal/f;" + hawkularFeedId + "/type=rt;"
-                            + "id=Hawkular%20WildFly%20Agent/rl;defines/type=r",
+            // FIXME
+            Resource agent = getResource(hawkularFeedId, "rt", "Hawkular%20WildFly%20Agent",
                     (r -> r.getId() != null));
 
             String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,13 +50,12 @@ public class AgentInstallerDomainITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    // FIXME: lost traversal
     public void hostsInInventory() throws Throwable {
 
         Collection<String> dmrHostNames = getHostNames();
         for (String hostName : dmrHostNames) {
-            Resource host = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain Host/rl;defines/type=r",
+            Resource host = getResource(wfClientConfig.getFeedId(), "rt", "Domain Host",
                     (r -> r.getName().contains(hostName)));
             System.out.println("domain host in inventory=" + host);
         }
@@ -85,13 +84,12 @@ public class AgentInstallerDomainITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    // FIXME: lost traversal
     public void serversInInventory() throws Throwable {
 
         Collection<String> dmrServerNames = getServerNames();
         for (String serverName : dmrServerNames) {
-            Resource server = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain WildFly Server/rl;defines/type=r",
+            Resource server = getResource(wfClientConfig.getFeedId(), "rt", "Domain WildFly Server",
                     (r -> r.getName().contains(serverName)));
             System.out.println("domain server in inventory=" + server);
         }
@@ -104,13 +102,12 @@ public class AgentInstallerDomainITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    // FIXME: lost traversal
     public void serverGroupsInInventory() throws Throwable {
 
         Collection<String> dmrServerGroupNames = getServerGroupNames();
         for (String groupName : dmrServerGroupNames) {
-            Resource group = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain Server Group/rl;defines/type=r",
+            Resource group = getResource(wfClientConfig.getFeedId(), "rt", "Domain Server Group",
                     (r -> r.getName().contains(groupName)));
             System.out.println("domain server group in inventory=" + group);
         }
@@ -192,13 +189,12 @@ public class AgentInstallerDomainITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    // FIXME: lost traversal
     public void profilesInInventory() throws Throwable {
 
         Collection<String> dmrProfileNames = getProfileNames();
         for (String profileName : dmrProfileNames) {
-            Resource profile = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain Profile/rl;defines/type=r",
+            Resource profile = getResource(wfClientConfig.getFeedId(), "rt", "Domain Profile",
                     (r -> r.getName().contains(profileName)));
             System.out.println("domain profile in inventory=" + profile);
         }
@@ -212,13 +208,12 @@ public class AgentInstallerDomainITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    // FIXME: lost traversal
     public void socketBindingGroupsInInventory() throws Throwable {
 
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
         for (String sbgName : dmrSBGNames) {
-            Resource sbg = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Socket Binding Group/rl;defines/type=r",
+            Resource sbg = getResource(wfClientConfig.getFeedId(), "rt", "Socket Binding Group",
                     (r -> r.getName().contains(sbgName)));
             System.out.println("socket binding group in inventory=" + sbg);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,12 +38,12 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
     public static final String GROUP = "LocalAndRemoteJmxITest";
 
     @Test(groups = { GROUP })
+    // FIXME: lost traversal
     public void testDmrResources() throws Throwable {
         waitForAccountsAndInventory();
 
         // make sure the agent is there - this comes from the DMR managed server - just making sure that still works
-        Resource agent = getResource(
-                "/traversal/f;" + hawkularFeedId + "/type=rt;id=Hawkular%20WildFly%20Agent/rl;defines/type=r",
+        Resource agent = getResource(hawkularFeedId, "rt", "Hawkular%20WildFly%20Agent",
                 (r -> r.getId() != null));
         Assert.assertNotNull(agent);
         Assert.assertEquals(agent.getName(), "Hawkular WildFly Agent");
@@ -53,10 +53,10 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testDmrResources" })
+    // FIXME: lost traversal
     public void testLocalJmxResources() throws Throwable {
         // make sure the JMX resource is there
-        Resource runtime = getResource(
-                "/traversal/f;" + hawkularFeedId + "/type=rt;id=Runtime%20MBean/rl;defines/type=r",
+        Resource runtime = getResource(hawkularFeedId, "rt", "Runtime%20MBean",
                 (r -> r.getId().equals("Local JMX~java.lang:type=Runtime")));
         Assert.assertNotNull(runtime);
         Assert.assertEquals(runtime.getName(), "JMX [Local JMX][Runtime]");
@@ -88,10 +88,10 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testLocalJmxResources" })
+    // FIXME: lost traversal
     public void testRemoteJmxResources() throws Throwable {
         // make sure the JMX resource is there
-        Resource runtime = getResource(
-                "/traversal/f;" + hawkularFeedId + "/type=rt;id=Runtime%20MBean/rl;defines/type=r",
+        Resource runtime = getResource(hawkularFeedId, "rt", "Runtime%20MBean",
                 (r -> r.getId().equals("Remote JMX~java.lang:type=Runtime")));
         Assert.assertNotNull(runtime);
         Assert.assertEquals(runtime.getName(), "JMX [Remote JMX][Runtime]");

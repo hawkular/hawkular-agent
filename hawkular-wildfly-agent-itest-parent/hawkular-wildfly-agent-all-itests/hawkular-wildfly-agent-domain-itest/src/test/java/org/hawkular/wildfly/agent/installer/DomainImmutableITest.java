@@ -69,9 +69,8 @@ public class DomainImmutableITest extends AbstractITest {
 
             Assert.assertTrue(waitForAgent(mcc, hostAgentAddress), "Expected host agent to be started.");
 
-            Resource agent = getResource(
-                    "/traversal/f;" + clientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain WildFly Server Controller/rl;defines/type=r",
+            // FIXME
+            Resource agent = getResource(clientConfig.getFeedId(), "rt", "Domain WildFly Server Controller",
                     (r -> r.getId().contains(serverToTest)));
 
             String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "

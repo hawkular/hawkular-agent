@@ -48,4 +48,38 @@ public class InventoryIdUtilTest {
         Assert.assertEquals("testmanagedserver", parts.getManagedServerName());
         Assert.assertEquals("~/~test/~id/~path", parts.getIdPart());
     }
+//
+//    public static void main(String[] args) throws IOException {
+//        OkHttpClient httpClient = new OkHttpClient.Builder()
+//                .build();
+//        RequestBody body = RequestBody.create(MediaType.parse("application/json"),
+//                "[{\"timestamp\": " + System.currentTimeMillis() + ", \"value\": \"toto\"}]");
+//        Request request = new Request.Builder()
+//                .url("http://localhost:8080/hawkular/metrics/strings/aaa/raw")
+//                .addHeader("Hawkular-Tenant", "test")
+//                .addHeader("Content-Type", "application/json")
+//                .post(body)
+//                .build();
+//
+//        Response response = httpClient.newCall(request).execute();
+//
+//        System.out.println("POST");
+//        System.out.println(response.toString());
+//
+//        request = new Request.Builder()
+//                .url("http://localhost:8080/hawkular/metrics/strings/aaa/raw")
+//                .addHeader("Hawkular-Tenant", "test")
+//                .addHeader("Accept", "application/json")
+////                .addHeader("Accept-Encoding", "gzip")
+//                .get()
+//                .build();
+//        response = httpClient.newCall(request).execute();
+//
+//        System.out.println("GET");
+//        System.out.println(response.headers());
+//        System.out.println(response.body().string());
+//
+//        System.out.println("(NETWORK)");
+//        System.out.println(response.networkResponse().headers());
+//    }
 }

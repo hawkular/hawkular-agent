@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -257,6 +257,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateDatasource" })
+    // FIXME: lost traversal
     public void testRemoveDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -270,8 +271,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                    + "id=Datasource/rl;defines/type=r",
+            getResource(hawkularFeedId, "rt", "Datasource",
                     (r -> r.getId().contains(datasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
@@ -298,14 +298,14 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/traversal/f;"  + hawkularFeedId + "/type=rt;"
-                    + "id=Datasource/rl;defines/type=r",
+            assertResourceNotInInventory(hawkularFeedId, "rt", "Datasource",
                     (r -> r.getId().contains(datasourceName)), 10, 5000);
 
         }
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateXaDatasource" })
+    // FIXME: lost traversal
     public void testRemoveXaDatasource() throws Throwable {
         waitForAccountsAndInventory();
 
@@ -319,8 +319,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/traversal/f;" + hawkularFeedId +  "/type=rt;"
-                    + "id=XA%20Datasource/rl;defines/type=r",
+            getResource(hawkularFeedId, "rt", "XA%20Datasource",
                     (r -> r.getId().contains(xaDatasourceName)));
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
@@ -347,8 +346,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/traversal/f;" + hawkularFeedId +  "/type=rt;"
-                    + "id=XA%20Datasource/rl;defines/type=r",
+            assertResourceNotInInventory(hawkularFeedId, "rt", "XA%20Datasource",
                     (r -> r.getId().contains(xaDatasourceName)), 10, 5000);
         }
     }

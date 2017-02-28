@@ -107,13 +107,12 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    // FIXME: lost traversal
     public void socketBindingGroupsInInventory() throws Throwable {
 
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
         for (String sbgName : dmrSBGNames) {
-            Resource sbg = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                            "id=Socket Binding Group/rl;defines/type=r",
+            Resource sbg = getResource(wfClientConfig.getFeedId(), "rt", "Socket Binding Group",
                     (r -> r.getName().contains(sbgName)));
             System.out.println("socket binding group in inventory=" + sbg);
         }
@@ -125,9 +124,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         // there is only one group - get the names of all the bindings (incoming and outbound) in that group
         Collection<String> dmrBindingNames = getSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
-            Resource binding = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                            "id=Socket Binding/rl;defines/type=r",
+            Resource binding = getResource(wfClientConfig.getFeedId(), "rt", "Socket Binding",
                     (r -> r.getName().contains(bindingName)));
             System.out.println("socket binding in inventory=" + binding);
         }
@@ -144,9 +141,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
         dmrBindingNames = getOutboundSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
-            Resource binding = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                            "id=Remote Destination Outbound Socket Binding/rl;defines/type=r",
+            Resource binding = getResource(wfClientConfig.getFeedId(), "rt", "Remote Destination Outbound Socket Binding",
                     (r -> r.getName().contains(bindingName)));
             System.out.println("outbound socket binding in inventory=" + binding);
         }
@@ -158,11 +153,11 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
+    // FIXME: lost traversal
     public void datasourcesAddedToInventory() throws Throwable {
 
         for (String datasourceName : getDatasourceNames()) {
-            Resource ds = getResource("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                    + "id=Datasource/rl;defines/type=r",
+            Resource ds = getResource(wfClientConfig.getFeedId(), "rt", "Datasource",
                     (r -> r.getId().contains(datasourceName)));
             System.out.println("ds = " + ds);
         }
@@ -306,7 +301,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     }
 
     private CanonicalPath getWildFlyServerResourcePath() throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + wfClientConfig.getFeedId() + "/type=r", 2);
+        List<Resource> servers = getResources(wfClientConfig.getFeedId(), "r", 2);
         List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
                 .collect(Collectors.toList());
         Assert.assertEquals(1, wfs.size());
@@ -327,14 +322,13 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     }
 
     private CanonicalPath getOperatingSystemResourceTypePath() throws Throwable {
-        ResourceType osType = getResourceType(
-                "/entity/f;" + wfClientConfig.getFeedId() + "/rt;Platform_Operating%20System", 1, 1);
+        ResourceType osType = getResourceType(wfClientConfig.getFeedId(), "Platform_Operating%20System", 1, 1);
         Assert.assertNotNull(osType);
         return osType.getPath();
     }
 
     private CanonicalPath getOperatingSystemResourcePath() throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + wfClientConfig.getFeedId() + "/type=r", 2);
+        List<Resource> servers = getResources(wfClientConfig.getFeedId(), "r", 2);
         List<Resource> os = servers.stream().filter(s -> "Platform_Operating System".equals(s.getType().getId()))
                 .collect(Collectors.toList());
         Assert.assertEquals(1, os.size());

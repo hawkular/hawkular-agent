@@ -44,7 +44,6 @@
                    keystore-path="keystorePath"
                    keystore-password="keystorePassword"
                    server-outbound-socket-binding-ref="serverOutboundSocketBindingRef"
-                   inventory-context="inventoryContext"
                    metrics-context="metricsContext"
                    feedcomm-context="feedcommContext"
                    connect-timeout-secs="16"

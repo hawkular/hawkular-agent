@@ -36,19 +36,18 @@ public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
     }
 
     @Test(groups = { GROUP }, dependsOnGroups = { DatasourceCommandITest.GROUP })
+    // FIXME: lost traversal
     public void testAgentFromJNDI() throws Throwable {
         waitForAccountsAndInventory();
 
         // this should not exist yet
-        assertResourceNotInInventory("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=MyAppResourceType/rl;defines/type=r",
+        assertResourceNotInInventory(hawkularFeedId, "rt", "MyAppResourceType",
                 (r -> r.getId().contains("ITest Resource ID")), 5, 5000);
 
         String createResource = getWithRetries(getExampleJndiWarCreateResourceUrl("ITest Resource ID"), 1, 1);
 
         // see that the new resource has been persisted to hawkular-inventory
-        getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=MyAppResourceType/rl;defines/type=r",
+        getResource(hawkularFeedId, "rt", "MyAppResourceType",
                 (r -> r.getId().contains("ITest Resource ID")));
 
         String metric = getWithRetries(getExampleJndiWarSendMetricUrl("ITest Metric Key", 123.0), 1, 1);
@@ -57,8 +56,7 @@ public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
         String removeResource = getWithRetries(getExampleJndiWarRemoveResourceUrl("ITest Resource ID"), 1, 1);
 
         // this should not exist anymore
-        assertResourceNotInInventory("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=MyAppResourceType/rl;defines/type=r",
+        assertResourceNotInInventory(hawkularFeedId, "rt", "MyAppResourceType",
                 (r -> r.getId().contains("ITest Resource ID")), 5, 5000);
 
     }
