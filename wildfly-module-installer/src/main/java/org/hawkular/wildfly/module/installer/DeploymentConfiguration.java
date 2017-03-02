@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -108,6 +108,16 @@ public class DeploymentConfiguration {
      */
     private boolean failNoMatch;
 
+    /**
+     * What the subsystem extension's module ID is (used when in config-only mode).
+     */
+    private String defaultModuleId;
+
+    /**
+     * Where the subsystem extension's binaries should be located (used when in config-only mode).
+     */
+    private String defaultModuleRelativePath;
+
     public Set<String> getProfiles() {
         return profiles;
     }
@@ -171,6 +181,14 @@ public class DeploymentConfiguration {
         return failNoMatch;
     }
 
+    public String getDefaultModuleId() {
+        return defaultModuleId;
+    }
+
+    public String getDefaultModuleRelativePath() {
+        return defaultModuleRelativePath;
+    }
+
     public void setModule(URL module) {
         this.module = module;
     }
@@ -213,6 +231,14 @@ public class DeploymentConfiguration {
 
     public void setFailNoMatch(boolean failNoMatch) {
         this.failNoMatch = failNoMatch;
+    }
+
+    public void setDefaultModuleId(String defaultModuleId) {
+        this.defaultModuleId = defaultModuleId;
+    }
+
+    public void setDefaultModuleRelativePath(String defaultModuleRelativePath) {
+        this.defaultModuleRelativePath = defaultModuleRelativePath;
     }
 
     public static class Builder {
@@ -283,6 +309,16 @@ public class DeploymentConfiguration {
             return this;
         }
 
+        public Builder defaultModuleId(String defaultModuleId) {
+            configuration.setDefaultModuleId(defaultModuleId);
+            return this;
+        }
+
+        public Builder defaultModuleRelativePath(String defaultModuleRelativePath) {
+            configuration.setDefaultModuleRelativePath(defaultModuleRelativePath);
+            return this;
+        }
+
         public DeploymentConfiguration build() {
             // add defaults if needed
             if (configuration.getConfigType() == ConfigType.DOMAIN && configuration.getProfiles().isEmpty()) {
@@ -295,6 +331,7 @@ public class DeploymentConfiguration {
         }
 
     }
+
     /**
      * create Configuration Builder
      * @return Configuration Builder

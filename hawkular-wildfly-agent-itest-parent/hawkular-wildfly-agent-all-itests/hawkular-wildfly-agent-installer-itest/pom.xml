@@ -116,6 +116,8 @@
         <!-- $plain-wildfly.management.http.port must be equal to $plain-wildfly.port.offset + 9990 -->
         <plain-wildfly.management.http.port>9995</plain-wildfly.management.http.port>
 
+        <wildfly-for-config-only-install-tests.home.dir>${project.build.directory}/wildfly-for-config-only-install-tests</wildfly-for-config-only-install-tests.home.dir>
+
         <hawkular.log.root>INFO</hawkular.log.root>
         <hawkular.log.console>INFO</hawkular.log.console>
         <hawkular.log.agent>INFO</hawkular.log.agent>
@@ -130,7 +132,7 @@
 
       <build>
         <plugins>
-          <!-- install the plain wildfly server and the hawkular server -->
+          <!-- install the plain wildfly server, the wildfly for config-only tests, and the hawkular server -->
           <plugin>
             <groupId>org.wildfly.build</groupId>
             <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
@@ -147,6 +149,17 @@
                 </configuration>
               </execution>
               <execution>
+                <id>server-provisioning-wildfly-for-config-only-install-tests</id>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+                <phase>compile</phase>
+                <configuration>
+                  <config-file>server-provisioning-plain-wildfly.xml</config-file>
+                  <server-name>wildfly-for-config-only-install-tests</server-name>
+                </configuration>
+              </execution>
+              <execution>
                 <id>server-provisioning-hawkular</id>
                 <goals>
                   <goal>build</goal>
@@ -155,6 +168,32 @@
                 <configuration>
                   <config-file>server-provisioning-hawkular.xml</config-file>
                   <server-name>hawkular</server-name>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- deploys the agent wf-extension into the wildfly that is to be used for the config-only tests -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>extract-hawkular-agent-for-config-only-installer-tests</id>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <phase>compile</phase>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.hawkular.agent</groupId>
+                      <artifactId>hawkular-wildfly-agent-wf-extension</artifactId>
+                      <version>${project.version}</version>
+                      <type>zip</type>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${wildfly-for-config-only-install-tests.home.dir}/modules</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
                 </configuration>
               </execution>
             </executions>
@@ -214,6 +253,8 @@
                 <plain-wildfly.bind.address>${plain-wildfly.bind.address}</plain-wildfly.bind.address>
                 <plain-wildfly.management.http.port>${plain-wildfly.management.http.port}</plain-wildfly.management.http.port>
                 <plain-wildfly.port.offset>${plain-wildfly.port.offset}</plain-wildfly.port.offset>
+
+                <wildfly-for-config-only-install-tests.home.dir>${wildfly-for-config-only-install-tests.home.dir}</wildfly-for-config-only-install-tests.home.dir>
 
                 <!-- output over-the-wire traffic -->
                 <org.apache.commons.logging.Log>
