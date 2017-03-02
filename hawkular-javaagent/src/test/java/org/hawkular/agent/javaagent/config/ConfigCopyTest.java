@@ -1,0 +1,92 @@
+/*
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
+ * and other contributors as indicated by the @author tags.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.hawkular.agent.javaagent.config;
+
+import java.io.File;
+import java.net.URL;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+/**
+ * This tests the copy constructors in all the YAML POJOs.
+ */
+public class ConfigCopyTest {
+
+    @Test
+    public void testEmpty() throws Exception {
+        Configuration config = loadTestConfigFile("/empty.yaml");
+        Configuration clone = new Configuration(config);
+        Assert.assertEquals(clone.subsystem.enabled, config.subsystem.enabled);
+    }
+
+    @Test
+    public void testRealConfig() throws Exception {
+        Configuration config = loadTestConfigFile("/real-config.yaml");
+        Configuration clone = new Configuration(config);
+        Assert.assertEquals(clone.subsystem.enabled, config.subsystem.enabled);
+        Assert.assertEquals(clone.storageAdapter.url, config.storageAdapter.url);
+        Assert.assertEquals(clone.diagnostics.enabled, config.diagnostics.enabled);
+        Assert.assertEquals(clone.dmrMetricSets.length, config.dmrMetricSets.length);
+        Assert.assertEquals(clone.dmrAvailSets.length, config.dmrAvailSets.length);
+        Assert.assertEquals(clone.dmrResourceTypeSets.length, config.dmrResourceTypeSets.length);
+        Assert.assertEquals(clone.jmxMetricSets.length, config.jmxMetricSets.length);
+        Assert.assertEquals(clone.jmxAvailSets.length, config.jmxAvailSets.length);
+        Assert.assertEquals(clone.jmxResourceTypeSets.length, config.jmxResourceTypeSets.length);
+        Assert.assertEquals(clone.managedServers.localDmr.name, config.managedServers.localDmr.name);
+        Assert.assertEquals(clone.managedServers.localJmx.name, config.managedServers.localJmx.name);
+        Assert.assertEquals(clone.managedServers.remoteDmrs[0].name, config.managedServers.remoteDmrs[0].name);
+        Assert.assertEquals(clone.managedServers.remoteJmxs[0].name, config.managedServers.remoteJmxs[0].name);
+        Assert.assertEquals(clone.platform.enabled, config.platform.enabled);
+        Assert.assertEquals(clone.platform.fileStores.enabled, config.platform.fileStores.enabled);
+        Assert.assertEquals(clone.platform.memory.enabled, config.platform.memory.enabled);
+        Assert.assertEquals(clone.platform.processors.enabled, config.platform.processors.enabled);
+        Assert.assertEquals(clone.platform.powerSources.enabled, config.platform.powerSources.enabled);
+    }
+
+    @Test
+    public void testConvertConfig() throws Exception {
+        Configuration config = loadTestConfigFile("/test-convert.yaml");
+        Configuration clone = new Configuration(config);
+        Assert.assertEquals(clone.subsystem.enabled, config.subsystem.enabled);
+        Assert.assertEquals(clone.storageAdapter.url, config.storageAdapter.url);
+        Assert.assertEquals(clone.diagnostics.enabled, config.diagnostics.enabled);
+        Assert.assertEquals(clone.dmrMetricSets.length, config.dmrMetricSets.length);
+        Assert.assertEquals(clone.dmrAvailSets.length, config.dmrAvailSets.length);
+        Assert.assertEquals(clone.dmrResourceTypeSets.length, config.dmrResourceTypeSets.length);
+        Assert.assertEquals(clone.jmxMetricSets.length, config.jmxMetricSets.length);
+        Assert.assertEquals(clone.jmxAvailSets.length, config.jmxAvailSets.length);
+        Assert.assertEquals(clone.jmxResourceTypeSets.length, config.jmxResourceTypeSets.length);
+        Assert.assertEquals(clone.managedServers.localDmr.name, config.managedServers.localDmr.name);
+        Assert.assertEquals(clone.managedServers.localJmx.name, config.managedServers.localJmx.name);
+        Assert.assertEquals(clone.managedServers.remoteDmrs[0].name, config.managedServers.remoteDmrs[0].name);
+        Assert.assertEquals(clone.managedServers.remoteJmxs[0].name, config.managedServers.remoteJmxs[0].name);
+        Assert.assertEquals(clone.platform.enabled, config.platform.enabled);
+        Assert.assertEquals(clone.platform.fileStores.enabled, config.platform.fileStores.enabled);
+        Assert.assertEquals(clone.platform.memory.enabled, config.platform.memory.enabled);
+        Assert.assertEquals(clone.platform.processors.enabled, config.platform.processors.enabled);
+        Assert.assertEquals(clone.platform.powerSources.enabled, config.platform.powerSources.enabled);
+    }
+
+    private Configuration loadTestConfigFile(String path) throws Exception {
+        URL url = ConfigCopyTest.class.getResource(path);
+        Assert.assertNotNull("yaml config file not found", url);
+        File file = new File(url.toURI());
+        ConfigManager configManager = new ConfigManager(file);
+        return configManager.getConfiguration(false);
+    }
+}

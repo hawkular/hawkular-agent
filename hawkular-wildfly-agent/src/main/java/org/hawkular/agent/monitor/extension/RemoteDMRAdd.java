@@ -16,17 +16,18 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
-import org.hawkular.agent.monitor.log.AgentLoggers;
-import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.hawkular.agent.monitor.util.Util;
-import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
+import org.hawkular.agent.wildfly.log.AgentLoggers;
+import org.hawkular.agent.wildfly.log.MsgLogger;
+import org.hawkular.agent.wildfly.util.Util;
+import org.hawkular.agent.wildfly.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
@@ -52,7 +53,7 @@ public class RemoteDMRAdd extends MonitorServiceAddStepHandler {
             return; // the agent wasn't enabled, nothing to do
         }
 
-        MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
+        AgentCoreEngineConfiguration config = Util.getMonitorServiceConfiguration(context);
         String newEndpointName = WildflyCompatibilityUtils.getCurrentAddressValue(context, operation);
 
         // Register the feed under the tenant of the new managed server.

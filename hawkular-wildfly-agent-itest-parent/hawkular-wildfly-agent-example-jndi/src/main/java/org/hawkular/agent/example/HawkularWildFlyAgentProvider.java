@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,7 @@ import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.AvailStorage;
 import org.hawkular.agent.monitor.api.DiscoveryEvent;
-import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
+import org.hawkular.agent.monitor.api.HawkularAgentContext;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricStorage;
@@ -45,7 +45,7 @@ public class HawkularWildFlyAgentProvider {
     static final String TENANT_ID = null; // reuse the agent's global tenant
 
     @javax.annotation.Resource(name = AGENT_JNDI)
-    private HawkularWildFlyAgentContext hawkularAgent;
+    private HawkularAgentContext hawkularAgent;
 
     private MyAppSamplingService myAppSamplingService;
     private MyAppInventory myAppInventory;
@@ -67,7 +67,7 @@ public class HawkularWildFlyAgentProvider {
      * @param metricType the type of metric (e.g. gauge or counter)
      */
     public void sendMetric(String metricKey, Double metricValue, MetricType metricType) {
-        HawkularWildFlyAgentContext hawkularWildFlyAgent = getHawkularWildFlyAgent();
+        HawkularAgentContext hawkularWildFlyAgent = getHawkularWildFlyAgent();
         MetricStorage metricStorage = hawkularWildFlyAgent.getMetricStorage();
 
         MetricDataPayloadBuilder payloadBuilder = metricStorage.createMetricDataPayloadBuilder();
@@ -82,7 +82,7 @@ public class HawkularWildFlyAgentProvider {
      * @param metricValue the string value of the metric
      */
     public void sendStringMetric(String metricKey, String metricValue) {
-        HawkularWildFlyAgentContext hawkularWildFlyAgent = getHawkularWildFlyAgent();
+        HawkularAgentContext hawkularWildFlyAgent = getHawkularWildFlyAgent();
         MetricStorage metricStorage = hawkularWildFlyAgent.getMetricStorage();
 
         MetricDataPayloadBuilder payloadBuilder = metricStorage.createMetricDataPayloadBuilder();
@@ -97,7 +97,7 @@ public class HawkularWildFlyAgentProvider {
      * @param availValue the value of the availability
      */
     public void sendAvail(String availKey, Avail availValue) {
-        HawkularWildFlyAgentContext hawkularWildFlyAgent = getHawkularWildFlyAgent();
+        HawkularAgentContext hawkularWildFlyAgent = getHawkularWildFlyAgent();
         AvailStorage availStorage = hawkularWildFlyAgent.getAvailStorage();
 
         AvailDataPayloadBuilder payloadBuilder = availStorage.createAvailDataPayloadBuilder();
@@ -157,7 +157,7 @@ public class HawkularWildFlyAgentProvider {
         getHawkularWildFlyAgent().getInventoryStorage().discoveryCompleted(dEvent);
     }
 
-    private HawkularWildFlyAgentContext getHawkularWildFlyAgent() throws UnsupportedOperationException {
+    private HawkularAgentContext getHawkularWildFlyAgent() throws UnsupportedOperationException {
         if (hawkularAgent == null) {
             throw new UnsupportedOperationException(
                     "The Hawkular WildFly Agent is either disabled or not deployed "

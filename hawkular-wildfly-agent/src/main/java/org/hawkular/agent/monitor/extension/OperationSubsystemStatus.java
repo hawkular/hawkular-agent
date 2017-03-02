@@ -35,7 +35,7 @@ public class OperationSubsystemStatus implements OperationStepHandler {
             ServiceName name = SubsystemExtension.SERVICE_NAME;
             ServiceRegistry serviceRegistry = opContext.getServiceRegistry(true);
             MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
-            status = service.getMonitorServiceStatus();
+            status = service.getStatus();
         } catch (ServiceNotFoundException snfe) {
             // it just isn't deployed, so obviously, it isn't started
             status = ServiceStatus.STOPPED;

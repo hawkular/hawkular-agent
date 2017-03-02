@@ -77,6 +77,18 @@
     </dependency>
 
     <dependency>
+      <groupId>org.wildfly.core</groupId>
+      <artifactId>wildfly-controller</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly.core</groupId>
+      <artifactId>wildfly-controller-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.wildfly.plugins</groupId>
       <artifactId>wildfly-plugin-core</artifactId>
       <version>${version.wildfly-maven-plugin}</version>

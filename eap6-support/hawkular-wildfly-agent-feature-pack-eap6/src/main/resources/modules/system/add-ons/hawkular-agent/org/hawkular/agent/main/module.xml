@@ -23,6 +23,7 @@
     <artifact name="${org.hawkular.metrics:hawkular-metrics-clients-common}"/>
     <artifact name="${org.hawkular.commons:hawkular-bus-common}"/>
     <artifact name="${org.hawkular.agent:hawkular-dmr-client}"/>
+    <artifact name="${org.hawkular.agent:hawkular-agent-core}"/>
     <artifact name="${org.hawkular.agent:hawkular-wildfly-agent}"/>
     <artifact name="${org.hawkular.commons:hawkular-command-gateway-api}"/>
     <artifact name="${org.hawkular.commons:hawkular-inventory-paths}"/>

@@ -36,12 +36,16 @@
 
   <modules>
     <module>hawkular-dmr-client</module>
+    <module>hawkular-agent-command-cli</module>
+    <module>hawkular-agent-core</module>
+    <module>hawkular-javaagent</module>
     <module>hawkular-wildfly-agent</module>
     <module>hawkular-wildfly-agent-download</module>
     <module>hawkular-wildfly-agent-feature-pack</module>
     <module>hawkular-wildfly-agent-wf-extension</module>
     <module>eap6-support/hawkular-wildfly-agent-feature-pack-eap6</module>
     <module>eap6-support/hawkular-wildfly-agent-wf-extension-eap6</module>
+    <module>hawkular-javaagent-itest-parent</module>
     <module>hawkular-wildfly-agent-itest-parent</module>
     <module>wildfly-module-installer</module>
     <module>hawkular-wildfly-agent-installer</module>
@@ -71,6 +75,10 @@
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.5</version.org.jolokia>
+
+    <!-- TODO REMOVE THIS ONCE PARENT-POM IS UPGRADE AND WE PICK IT UP FROM THERE -->
+    <version.wildfly-maven-plugin>1.1.0.Final</version.wildfly-maven-plugin>
+
   </properties>
 
   <dependencyManagement>
@@ -85,6 +93,12 @@
         <groupId>com.github.dblock</groupId>
         <artifactId>oshi-core</artifactId>
         <version>${version.com.github.dblock}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-yaml</artifactId>
+        <version>${version.com.fasterxml.jackson.core}</version>
       </dependency>
 
       <dependency>

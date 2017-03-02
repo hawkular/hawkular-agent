@@ -31,13 +31,14 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.DiagnosticsReportTo;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.GlobalConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.ProtocolConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageAdapterConfiguration;
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.StorageReportTo;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsReportTo;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.GlobalConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.ProtocolConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageAdapterConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
@@ -53,8 +54,6 @@ import org.hawkular.agent.monitor.inventory.ResourceType.Builder;
 import org.hawkular.agent.monitor.inventory.TypeSet;
 import org.hawkular.agent.monitor.inventory.TypeSet.TypeSetBuilder;
 import org.hawkular.agent.monitor.inventory.TypeSets;
-import org.hawkular.agent.monitor.log.AgentLoggers;
-import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXEndpointService;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
@@ -64,6 +63,8 @@ import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceTy
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformPath;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
+import org.hawkular.agent.wildfly.log.AgentLoggers;
+import org.hawkular.agent.wildfly.log.MsgLogger;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
@@ -73,7 +74,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 
 /**
- * Builds a {@link MonitorServiceConfiguration} object from the service's model.
+ * Builds a {@link AgentCoreEngineConfiguration} object from the service's model.
  */
 public class MonitorServiceConfigurationBuilder {
     private static final MsgLogger log = AgentLoggers.getLogger(MonitorServiceConfigurationBuilder.class);
@@ -129,9 +130,9 @@ public class MonitorServiceConfigurationBuilder {
 
     }
 
-    public MonitorServiceConfiguration build() {
+    public AgentCoreEngineConfiguration build() {
 
-        return new MonitorServiceConfiguration(globalConfiguration,
+        return new AgentCoreEngineConfiguration(globalConfiguration,
                 diagnostics, storageAdapter, dmrConfigBuilder.build(), jmxConfigBuilder.build(),
                 platformConfigBuilder.build());
     }
@@ -896,7 +897,7 @@ public class MonitorServiceConfigurationBuilder {
         ModelNode diagnosticsValueNode = asPropertyList.get(0).getValue();
 
         String reportToStr = getString(diagnosticsValueNode, context, DiagnosticsAttributes.REPORT_TO);
-        DiagnosticsReportTo reportTo = MonitorServiceConfiguration.DiagnosticsReportTo.valueOf(reportToStr
+        DiagnosticsReportTo reportTo = AgentCoreEngineConfiguration.DiagnosticsReportTo.valueOf(reportToStr
                 .toUpperCase());
         boolean enabled = getBoolean(diagnosticsValueNode, context, DiagnosticsAttributes.ENABLED);
         int interval = getInt(diagnosticsValueNode, context, DiagnosticsAttributes.INTERVAL);
@@ -943,7 +944,7 @@ public class MonitorServiceConfigurationBuilder {
         String username = getString(storageAdapterConfig, context, StorageAttributes.USERNAME);
         String password = getString(storageAdapterConfig, context, StorageAttributes.PASSWORD);
         String typeStr = getString(storageAdapterConfig, context, StorageAttributes.TYPE);
-        StorageReportTo type = MonitorServiceConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
+        StorageReportTo type = AgentCoreEngineConfiguration.StorageReportTo.valueOf(typeStr.toUpperCase());
         int connectTimeoutSeconds = getInt(storageAdapterConfig, context, StorageAttributes.CONNECT_TIMEOUT_SECONDS);
         int readTimeoutSeconds = getInt(storageAdapterConfig, context, StorageAttributes.READ_TIMEOUT_SECONDS);
 

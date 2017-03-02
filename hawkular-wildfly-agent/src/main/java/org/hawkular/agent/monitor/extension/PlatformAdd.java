@@ -16,14 +16,15 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformSession;
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.hawkular.agent.monitor.util.Util;
-import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
+import org.hawkular.agent.wildfly.util.Util;
+import org.hawkular.agent.wildfly.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
@@ -48,13 +49,14 @@ public class PlatformAdd extends MonitorServiceAddStepHandler {
             return; // the agent wasn't enabled, nothing to do
         }
 
-        MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
+        AgentCoreEngineConfiguration config = Util.getMonitorServiceConfiguration(context);
 
         // create a new endpoint service
         ProtocolServices newServices = monitorService.createProtocolServicesBuilder()
                 .platformProtocolService(config.getPlatformConfiguration()).build();
         EndpointService<PlatformNodeLocation, PlatformSession> endpointService = newServices
-                .getPlatformProtocolService().getEndpointServices().get(WildflyCompatibilityUtils.getCurrentAddressValue(context, operation));
+                .getPlatformProtocolService().getEndpointServices()
+                .get(WildflyCompatibilityUtils.getCurrentAddressValue(context, operation));
 
         // put the new endpoint service in the original protocol services container
         ProtocolService<PlatformNodeLocation, PlatformSession> platformService = monitorService.getProtocolServices()

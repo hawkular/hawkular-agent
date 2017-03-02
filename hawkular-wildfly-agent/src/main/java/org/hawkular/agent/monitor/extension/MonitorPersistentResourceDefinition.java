@@ -16,7 +16,7 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.agent.wildfly.util.Util;
 import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.PersistentResourceDefinition;
@@ -27,11 +27,11 @@ import org.jboss.as.controller.registry.OperationEntry;
 public abstract class MonitorPersistentResourceDefinition extends PersistentResourceDefinition {
 
     protected MonitorPersistentResourceDefinition(PathElement pathElement,
-                                           ResourceDescriptionResolver descriptionResolver,
-                                           OperationStepHandler addHandler,
-                                           OperationStepHandler removeHandler,
-                                           OperationEntry.Flag addRestartLevel,
-                                           OperationEntry.Flag removeRestartLevel) {
+            ResourceDescriptionResolver descriptionResolver,
+            OperationStepHandler addHandler,
+            OperationStepHandler removeHandler,
+            OperationEntry.Flag addRestartLevel,
+            OperationEntry.Flag removeRestartLevel) {
         super(pathElement, descriptionResolver, addHandler, removeHandler, addRestartLevel, removeRestartLevel);
     }
 

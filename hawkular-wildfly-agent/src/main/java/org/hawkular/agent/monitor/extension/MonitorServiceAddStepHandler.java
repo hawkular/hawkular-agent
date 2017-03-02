@@ -17,7 +17,7 @@
 package org.hawkular.agent.monitor.extension;
 
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
+import org.hawkular.agent.wildfly.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.msc.service.ServiceName;

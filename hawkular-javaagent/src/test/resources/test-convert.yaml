@@ -1,0 +1,305 @@
+#
+# Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
+# and other contributors as indicated by the @author tags.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+subsystem:
+  enabled: true
+  auto-discovery-scan-period-secs: 111
+  min-collection-interval-secs: 222
+  ping-period-secs: 333
+
+security-realm:
+- name: h-server
+  keystore-path:     kpath
+  keystore-password: kpass
+
+- name: my-realm
+  keystore-path:     my/realm/kpath
+  keystore-password: myrealmkpass
+
+storage-adapter:
+  type:           METRICS
+  url:            http://hawkular:8181
+  tenant-id:      custom tenant
+  username:       the user
+  password:       the pass
+  feed-id:        the feed
+  security-realm: h-server
+
+# DMR
+
+metric-set-dmr:
+- name: first metric set d
+  metric-dmr:
+  - name: first metric d
+    path: /metric=one
+    attribute: attrib1
+    interval: 12345
+    time-units: milliseconds
+    metric-units: megabytes
+    metric-type: counter
+    metric-id-template: the template
+    metric-tags:
+      tag1: value1
+      tag2: value2
+  - name: second metric d
+    path: /metric=two
+    attribute: attrib1
+    interval: 12345
+    time-units: milliseconds
+    metric-units: megabytes
+    metric-type: gauge
+    metric-id-template: the template
+    metric-tags:
+      tag1: value1
+      tag2: value2
+- name: second metric set d
+  metric-dmr:
+  - name: third metric d
+    path: /metric=three
+    attribute: attrib1
+    metric-type: gauge
+  - name: fourth metric d
+    path: /metric=four
+    attribute: attrib1
+
+avail-set-dmr:
+- name: first avail set d
+  avail-dmr:
+  - name: first avail d
+    path: /avail=one
+    attribute: attrib1
+    up-regex: "[up.*]"
+    interval: 12345
+    time-units: milliseconds
+    metric-id-template: the template
+    metric-tags:
+      tag1: value1
+      tag2: value2
+  - name: second avail d
+    path: /avail=two
+    attribute: attrib1
+    up-regex: "[up.*]"
+    interval: 12345
+    time-units: milliseconds
+    metric-id-template: the template
+    metric-tags:
+      tag1: value1
+      tag2: value2
+- name: second avail set d
+  avail-dmr:
+  - name: third avail d
+    path: /avail=three
+    attribute: attrib1
+    up-regex: "[up.*]"
+  - name: fourth avail d
+    path: /avail=four
+    attribute: attrib1
+    up-regex: "[up.*]"
+
+resource-type-set-dmr:
+- name: first resource type set d
+  resource-type-dmr:
+  - name: first resource type d
+    path: /hello=world
+    resource-config-dmr:
+    - name: first resconfig d
+      attribute: attrib1#subattrib1
+    - name: second resconfig d
+      path: /config=two
+      attribute: attrib2#subattrib2
+  - name: second resource type d
+    path: /hello=world
+- name: second resource type set d
+  resource-type-dmr:
+  - name: third resource type d
+    path: /hello=world/resource=third
+  - name: fourth resource type d
+    path: /hello=world/resource=fourth
+
+# JMX
+
+metric-set-jmx:
+- name: first metric set
+  metric-jmx:
+  - name: first metric
+    object-name: domain:metric=one
+    attribute: attrib1
+    interval: 12345
+    time-units: seconds
+    metric-units: bytes
+    metric-type: gauge
+    metric-id-template: the template
+    metric-tags:
+      tag1: value1
+      tag2: value2
+  - name: second metric
+    object-name: domain:metric=two
+    attribute: attrib1
+    interval: 12345
+    time-units: seconds
+    metric-units: bytes
+    metric-type: gauge
+    metric-id-template: the template
+    metric-tags:
+      tag1: value1
+      tag2: value2
+- name: second metric set
+  metric-jmx:
+  - name: third metric
+    object-name: domain:metric=three
+    attribute: attrib1
+    metric-type: gauge
+  - name: fourth metric
+    object-name: domain:metric=four
+    attribute: attrib1
+    metric-type: gauge
+
+avail-set-jmx:
+- name: first avail set
+  avail-jmx:
+  - name: first avail
+    object-name: domain:avail=one
+    attribute: attrib1
+    up-regex: "[up.*]"
+    interval: 12345
+    time-units: seconds
+    metric-id-template: the template
+    metric-tags:
+      tag1: value1
+      tag2: value2
+  - name: second avail
+    object-name: domain:avail=two
+    attribute: attrib1
+    up-regex: "[up.*]"
+    interval: 12345
+    time-units: seconds
+    metric-id-template: the template
+    metric-tags:
+      tag1: value1
+      tag2: value2
+- name: second avail set
+  avail-jmx:
+  - name: third avail
+    object-name: domain:avail=three
+    attribute: attrib1
+    up-regex: "[up.*]"
+  - name: fourth avail
+    object-name: domain:avail=four
+    attribute: attrib1
+    up-regex: "[up.*]"
+
+resource-type-set-jmx:
+- name: first resource type set
+  resource-type-jmx:
+  - name: first resource type
+    object-name: domain:type=one
+    resource-name-template: AAA %type%
+    resource-config-jmx:
+    - name: first resconfig
+      object-name: domain:config=one
+      attribute: attrib1#subattrib1
+    - name: second resconfig
+      object-name: domain:config=two
+      attribute: attrib2#subattrib2
+  - name: second resource type
+    object-name: domain:type=two
+    resource-name-template: BBB %type%
+- name: second resource type set
+  resource-type-jmx:
+  - name: third resource type
+    object-name: domain:type=three
+    resource-name-template: CCC %type%
+  - name: fourth resource type
+    object-name: domain:type=four
+    resource-name-template: DDD %type%
+
+# MANAGED SERVERS
+
+managed-servers:
+  local-dmr:
+    name:               Test Local DMR
+    enabled:            true
+    resource-type-sets:
+    - first resource type set d
+    - second resource type set d
+
+  local-jmx:
+    name:               Test Local JMX
+    enabled:            true
+    resource-type-sets:
+    - first resource type set
+    - second resource type set
+
+  remote-dmr:
+  - name:               Test Remote DMR
+    enabled:            true
+    host:               localhost
+    port:               9999
+    use-ssl:            true
+    security-realm:     my-realm
+    resource-type-sets:
+    - first resource type set d
+    - second resource type set d
+  - name:               Test Remote DMR 2
+    enabled:            true
+    host:               localhost2
+    port:               8888
+    resource-type-sets:
+    - first resource type set d
+    - second resource type set d
+
+  remote-jmx:
+  - name:               Test Remote JMX
+    enabled:            true
+    url:                https://localhost:8080/jolokia-war
+    security-realm:     my-realm
+    resource-type-sets:
+    - first resource type set
+    - second resource type set
+  - name:               Test Remote JMX 2
+    enabled:            true
+    url:                http://localhost:9090/jolokia-war
+    resource-type-sets:
+    - first resource type set
+    - second resource type set
+
+platform:
+  enabled:      true
+  interval:     12345
+  time-units:   seconds
+  machine-id:   my-machine-id-here
+
+  file-stores:
+    enabled:    true
+    interval:   11111
+    time-units: milliseconds
+
+  memory:
+    enabled:    true
+    interval:   22222
+    time-units: seconds
+
+  processors:
+    enabled:    true
+    interval:   33333
+    time-units: minutes
+
+  power-sources:
+    enabled:    false
+    interval:   44444
+    time-units: minutes
