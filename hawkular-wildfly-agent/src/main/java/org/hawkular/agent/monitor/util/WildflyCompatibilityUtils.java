@@ -16,12 +16,17 @@
  */
 package org.hawkular.agent.monitor.util;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
+
+import javax.net.ssl.SSLSocketFactory;
 
 import org.hawkular.agent.monitor.extension.MonitorServiceRestartParentAttributeHandler;
 import org.hawkular.inventory.api.Log;
@@ -287,6 +292,62 @@ public class WildflyCompatibilityUtils {
             recreateParentService(context, parentAddress, parentModel);
         }
 
+    }
+
+    public static class EAP6WrappedSSLSocketFactory extends SSLSocketFactory {
+        private final SSLSocketFactory wrapped;
+
+        public EAP6WrappedSSLSocketFactory(SSLSocketFactory wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        @Override
+        public String[] getDefaultCipherSuites() {
+            return wrapped.getDefaultCipherSuites();
+        }
+
+        @Override
+        public String[] getSupportedCipherSuites() {
+            return wrapped.getSupportedCipherSuites();
+        }
+
+        @Override
+        public Socket createSocket(Socket socket, String s, int i, boolean b) throws IOException {
+            Socket newSocket = wrapped.createSocket(socket, s, i, b);
+            if (newSocket == null) {
+                try {
+                    Field innerWrappedField = wrapped.getClass().getDeclaredField("wrapped");
+                    innerWrappedField.setAccessible(true);
+                    SSLSocketFactory innerWrapped = (SSLSocketFactory) innerWrappedField.get(wrapped);
+                    newSocket = innerWrapped.createSocket(socket, s, i , b);
+                } catch (NoSuchFieldException e) {
+                    throw new RuntimeException(e);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return newSocket;
+        }
+
+        @Override
+        public Socket createSocket(String s, int i) throws IOException, UnknownHostException {
+            return wrapped.createSocket(s, i);
+        }
+
+        @Override
+        public Socket createSocket(String s, int i, InetAddress inetAddress, int i1) throws IOException, UnknownHostException {
+            return wrapped.createSocket(s, i, inetAddress, i1);
+        }
+
+        @Override
+        public Socket createSocket(InetAddress inetAddress, int i) throws IOException {
+            return wrapped.createSocket(inetAddress, i);
+        }
+
+        @Override
+        public Socket createSocket(InetAddress inetAddress, int i, InetAddress inetAddress1, int i1) throws IOException {
+            return wrapped.createSocket(inetAddress, i, inetAddress1, i1);
+        }
     }
 
     public static void operationContextStepCompleted(OperationContext context) {

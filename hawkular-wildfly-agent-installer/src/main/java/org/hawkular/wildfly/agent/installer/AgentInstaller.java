@@ -259,18 +259,16 @@ public class AgentInstaller {
             // info is supplied, the user must know he isn't going to be using https so allow that to happen).
             String keystorePath = installerConfig.getKeystorePath();
             String keystorePass = installerConfig.getKeystorePassword();
-            String keyPass = installerConfig.getKeyPassword();
-            String keyAlias = installerConfig.getKeyAlias();
 
             // If protocol is explicitly defined as https, this if-stmt merely performs some helpful things
             // like abort to remind the user to provide required keystore info.
             // If we cannot tell if https is to be used, we keep going but these helpful things
             // are not performed and the user must ensure they provide this information if they expect to use https.
             if (hawkularServerProtocol.equals("https")) {
-                if (keystorePath == null || keyAlias == null) {
+                if (keystorePath == null) {
                     throw new Exception(String.format("When using https protocol, the following keystore "
-                            + "command line options are required: %s, %s",
-                            InstallerConfiguration.OPTION_KEYSTORE_PATH, InstallerConfiguration.OPTION_KEY_ALIAS));
+                            + "command line option is required: %s",
+                            InstallerConfiguration.OPTION_KEYSTORE_PATH));
                 }
             }
 
@@ -282,14 +280,6 @@ public class AgentInstaller {
                     if (keystorePass == null || keystorePass.isEmpty()) {
                         keystorePass = "";
                         log.warn(InstallerConfiguration.OPTION_KEYSTORE_PASSWORD
-                                + " was not provided; using empty password");
-                    }
-                }
-                if (keyPass == null) {
-                    keyPass = readPasswordFromStdin("Key password:");
-                    if (keyPass == null || keyPass.isEmpty()) {
-                        keyPass = "";
-                        log.warn(InstallerConfiguration.OPTION_KEY_PASSWORD
                                 + " was not provided; using empty password");
                     }
                 }
@@ -314,7 +304,7 @@ public class AgentInstaller {
                     Files.copy(Paths.get(keystoreSrcFile.getAbsolutePath()), keystoreDst);
                 }
 
-                String securityRealm = createSecurityRealm(keystoreSrcFile.getName(), keystorePass, keyPass, keyAlias);
+                String securityRealm = createSecurityRealm(keystoreSrcFile.getName(), keystorePass);
                 configurationBldr.addXmlEdit(new XmlEdit(targetConfigInfo.getSecurityRealmsXPath(), securityRealm));
             }
 
@@ -381,20 +371,15 @@ public class AgentInstaller {
      *
      * @param keystoreFile location of the keystore file
      * @param keystorePass the password to access the keystore file
-     * @param keyPass the password to access the data for the given alias
-     * @param keyAlias the alias specifying the identifying security information
      * @return XML snippet
      */
-    private static String createSecurityRealm(String keystoreFile, String keystorePass,
-            String keyPass, String keyAlias) {
+    private static String createSecurityRealm(String keystoreFile, String keystorePass) {
         return new StringBuilder("<security-realm name=\"" + SECURITY_REALM_NAME + "\">")
-                .append("<server-identities><ssl>")
-                .append("<keystore path=\"" + keystoreFile + "\"")
+                .append("<authentication>")
+                .append("<truststore path=\"" + keystoreFile + "\"")
                 .append(" relative-to=\"jboss.server.config.dir\"")
                 .append(" keystore-password=\"" + keystorePass + "\"")
-                .append(" key-password=\"" + keyPass + "\"")
-                .append(" alias=\"" + keyAlias + "\"")
-                .append(" /></ssl></server-identities></security-realm>").toString();
+                .append(" /></authentication></security-realm>").toString();
     }
 
     /**

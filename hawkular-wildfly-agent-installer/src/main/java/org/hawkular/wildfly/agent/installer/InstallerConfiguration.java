@@ -55,8 +55,6 @@ public class InstallerConfiguration {
     static final String OPTION_DOWNLOAD_SERVER_URL = "download-server-url";
     static final String OPTION_KEYSTORE_PATH = "keystore-path";
     static final String OPTION_KEYSTORE_PASSWORD = "keystore-password";
-    static final String OPTION_KEY_PASSWORD = "key-password";
-    static final String OPTION_KEY_ALIAS = "key-alias";
     static final String OPTION_USERNAME = "username";
     static final String OPTION_PASSWORD = "password";
     static final String OPTION_MANAGED_SERVER_NAME = "managed-server-name";
@@ -209,20 +207,6 @@ public class InstallerConfiguration {
                         + " protocol is https and this option is not passed, installer will ask for password")
                 .create());
         cmd.addOption(new ProcessedOptionBuilder()
-                .name(InstallerConfiguration.OPTION_KEY_PASSWORD)
-                .optionType(OptionType.NORMAL)
-                .type(String.class)
-                .description("Key password. When " + InstallerConfiguration.OPTION_SERVER_URL
-                        + " protocol is https and this option is not passed, installer will ask for password")
-                .create());
-        cmd.addOption(new ProcessedOptionBuilder()
-                .name(InstallerConfiguration.OPTION_KEY_ALIAS)
-                .optionType(OptionType.NORMAL)
-                .type(String.class)
-                .description("Key alias. Required when " + InstallerConfiguration.OPTION_SERVER_URL
-                        + " protocol is https")
-                .create());
-        cmd.addOption(new ProcessedOptionBuilder()
                 .name(InstallerConfiguration.OPTION_USERNAME)
                 .optionType(OptionType.NORMAL)
                 .type(String.class)
@@ -292,8 +276,6 @@ public class InstallerConfiguration {
         setProperty(properties, commandLine, OPTION_DOWNLOAD_SERVER_URL);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PATH);
         setProperty(properties, commandLine, OPTION_KEYSTORE_PASSWORD);
-        setProperty(properties, commandLine, OPTION_KEY_PASSWORD);
-        setProperty(properties, commandLine, OPTION_KEY_ALIAS);
         setProperty(properties, commandLine, OPTION_USERNAME);
         setProperty(properties, commandLine, OPTION_PASSWORD);
         setProperty(properties, commandLine, OPTION_MANAGED_RESOURCE_TYPE_SETS);
@@ -308,7 +290,6 @@ public class InstallerConfiguration {
 
     public void decodeProperties(String encryptionKey, byte[] salt) throws Exception {
         decodeProperty(properties, OPTION_KEYSTORE_PASSWORD, encryptionKey, salt);
-        decodeProperty(properties, OPTION_KEY_PASSWORD, encryptionKey, salt);
         decodeProperty(properties, OPTION_PASSWORD, encryptionKey, salt);
     }
 
@@ -363,14 +344,6 @@ public class InstallerConfiguration {
 
     public String getKeystorePassword() {
         return properties.getProperty(OPTION_KEYSTORE_PASSWORD);
-    }
-
-    public String getKeyPassword() {
-        return properties.getProperty(OPTION_KEY_PASSWORD);
-    }
-
-    public String getKeyAlias() {
-        return properties.getProperty(OPTION_KEY_ALIAS);
     }
 
     public String getUsername() {

@@ -82,8 +82,6 @@ public class WildFlyAgentServlet extends HttpServlet {
     private static final String AGENT_INSTALLER_PROPERTY_PASSWORD = "password";
     private static final String AGENT_INSTALLER_PROPERTY_KEYSTORE_PATH = "keystore-path";
     private static final String AGENT_INSTALLER_PROPERTY_KEYSTORE_PASSWORD = "keystore-password";
-    private static final String AGENT_INSTALLER_PROPERTY_KEY_PASSWORD = "key-password";
-    private static final String AGENT_INSTALLER_PROPERTY_KEY_ALIAS = "key-alias";
 
     // the error code that will be returned if the server has been configured to disable agent updates
     private static final int ERROR_CODE_AGENT_UPDATE_DISABLED = HttpServletResponse.SC_FORBIDDEN;
@@ -202,12 +200,8 @@ public class WildFlyAgentServlet extends HttpServlet {
                     getValueFromRequestParam(req, AGENT_INSTALLER_PROPERTY_PASSWORD, null));
             newProperties.put(AGENT_INSTALLER_PROPERTY_KEYSTORE_PATH,
                     getValueFromRequestParam(req, AGENT_INSTALLER_PROPERTY_KEYSTORE_PATH, null));
-            newProperties.put(AGENT_INSTALLER_PROPERTY_KEY_ALIAS,
-                    getValueFromRequestParam(req, AGENT_INSTALLER_PROPERTY_KEY_ALIAS, null));
             newProperties.put(AGENT_INSTALLER_PROPERTY_KEYSTORE_PASSWORD,
                     getValueFromRequestParam(req, AGENT_INSTALLER_PROPERTY_KEYSTORE_PASSWORD, null));
-            newProperties.put(AGENT_INSTALLER_PROPERTY_KEY_PASSWORD,
-                    getValueFromRequestParam(req, AGENT_INSTALLER_PROPERTY_KEY_PASSWORD, null));
 
             // If an encryption key was provided, encode the passwords in the .properties file.
             // The installer must be given this encryption key by the user in order to install the agent.
@@ -222,8 +216,6 @@ public class WildFlyAgentServlet extends HttpServlet {
                 }
 
                 encode(newProperties, AGENT_INSTALLER_PROPERTY_KEYSTORE_PASSWORD,
-                        encryptionKey, encryptionSalt, useWeakEncryption);
-                encode(newProperties, AGENT_INSTALLER_PROPERTY_KEY_PASSWORD,
                         encryptionKey, encryptionSalt, useWeakEncryption);
                 encode(newProperties, AGENT_INSTALLER_PROPERTY_PASSWORD,
                         encryptionKey, encryptionSalt, useWeakEncryption);
