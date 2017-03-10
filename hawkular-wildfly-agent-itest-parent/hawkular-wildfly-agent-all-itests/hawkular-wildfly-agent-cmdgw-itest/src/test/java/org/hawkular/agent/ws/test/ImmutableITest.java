@@ -16,13 +16,14 @@
  */
 package org.hawkular.agent.ws.test;
 
+import java.util.Map;
+
 import org.hamcrest.CoreMatchers;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent.ExpectedMessage;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.PatternMatcher;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
@@ -68,12 +69,14 @@ public class ImmutableITest extends AbstractCommandITest {
 
             Assert.assertTrue(waitForAgent(mcc), "Expected agent to be started.");
 
-            // FIXME
-            Resource agent = getResource(hawkularFeedId, "rt", "Hawkular%20WildFly%20Agent",
-                    (r -> r.getId() != null));
+            CanonicalPath agentPath = getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+                    .entrySet().stream()
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .get();
 
             String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + agent.getPath().toString() + "\","
+                    + "\"resourcePath\":\"" + agentPath.toString() + "\","
                     + "\"metricTypes\":{\"WildFly Memory Metrics~Heap Max\":\"77\"}"
                     + "}";
             String response = ".*\"status\":\"ERROR\""

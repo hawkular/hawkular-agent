@@ -227,9 +227,8 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         // this should exist
-        // FIXME
-        getResource(hawkularFeedId, "rt", "Deployment",
-                (r -> r.getId().contains("hawkular-wildfly-agent-helloworld-war.war")), 10, 5000);
+        waitForResourceContaining(hawkularFeedId, "Deployment", "hawkular-wildfly-agent-helloworld-war.war",
+                5000, 10);
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         File applicationFile = getTestApplicationFile();
@@ -267,8 +266,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         }
 
         // this should be gone now, let's make sure it does get deleted from h-inventory
-        // FIXME
-        assertResourceNotInInventory(hawkularFeedId, "rt", "Deployment",
-                (r -> r.getId().contains("hawkular-wildfly-agent-helloworld-war.war")), 10, 5000);
+        waitForNoResourceContaining(hawkularFeedId, "Deployment", "hawkular-wildfly-agent-helloworld-war.war",
+                5000, 10);
     }
 }

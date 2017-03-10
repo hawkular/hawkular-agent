@@ -16,9 +16,10 @@
  */
 package org.hawkular.agent.ws.test;
 
+import java.util.Map;
+
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.Assert;
@@ -52,21 +53,24 @@ public class UpdateCollectionIntervalsCommandITest extends AbstractCommandITest 
                     "interval",
                     "30");
 
-            // FIXME
-            Resource agent = getResource(hawkularFeedId, "rt", "Hawkular%20WildFly%20Agent",
-                    (r -> r.getId() != null));
+            CanonicalPath agentPath = getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+                    .entrySet().stream()
+//                .filter(e -> ((Entity.Blueprint)(e.getValue())).getId() != null)
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .get();
 
             String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + agent.getPath().toString() + "\","
+                    + "\"resourcePath\":\"" + agentPath.toString() + "\","
                     + "\"metricTypes\":{\"WildFly Memory Metrics~NonHeap Used\":\"0\",\"Unknown~Metric\":\"666\"},"
                     + "\"availTypes\":{\"Server Availability~Server Availability\":\"0\",\"Unknown~Avail\":\"666\"}"
                     + "}";
             String response = "UpdateCollectionIntervalsResponse={"
-                    + "\"resourcePath\":\"" + agent.getPath() + "\","
+                    + "\"resourcePath\":\"" + agentPath + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
                     + "\"message\":\"Performed [Update Collection Intervals] on a [Agent[DMR]] given by Inventory path ["
-                    + agent.getPath() + "]\""
+                    + agentPath + "]\""
                     + "}";
 
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()

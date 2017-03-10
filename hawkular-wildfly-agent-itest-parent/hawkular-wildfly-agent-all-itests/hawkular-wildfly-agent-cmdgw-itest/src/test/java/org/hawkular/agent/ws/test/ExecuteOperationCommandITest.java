@@ -16,8 +16,9 @@
  */
 package org.hawkular.agent.ws.test;
 
+import java.util.Map;
+
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.dmr.ModelNode;
 import org.testng.Assert;
@@ -34,20 +35,24 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
-        Resource agent = getResource(hawkularFeedId, "rt", "Hawkular%20WildFly%20Agent",
-                (r -> r.getId() != null));
+        CanonicalPath agentPath = getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+                .entrySet().stream()
+//                .filter(e -> ((Entity.Blueprint)(e.getValue())).getId() != null)
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .get();
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agent.getPath().toString() + "\","
+                + "\"resourcePath\":\"" + agentPath.toString() + "\","
                 + "\"operationName\":\"Inventory Discovery Scan\""
                 + "}";
         String response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"Inventory Discovery Scan\","
-                + "\"resourcePath\":\"" + agent.getPath() + "\","
+                + "\"resourcePath\":\"" + agentPath + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [Inventory Discovery Scan] on a [DMR Node] given by Inventory path ["
-                + agent.getPath() + "]\""
+                + agentPath + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")

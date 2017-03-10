@@ -23,7 +23,7 @@ import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.CoreJBossASClient;
 import org.hawkular.dmrclient.FailureException;
 import org.hawkular.dmrclient.JBossASClient;
-import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
@@ -38,14 +38,12 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
     public static final String GROUP = "LocalAndRemoteJmxITest";
 
     @Test(groups = { GROUP })
-    // FIXME: lost traversal
     public void testDmrResources() throws Throwable {
         waitForAccountsAndInventory();
 
         // make sure the agent is there - this comes from the DMR managed server - just making sure that still works
-        Resource agent = getResource(hawkularFeedId, "rt", "Hawkular%20WildFly%20Agent",
-                (r -> r.getId() != null));
-        Assert.assertNotNull(agent);
+        Entity.Blueprint agent = (Entity.Blueprint) getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+                .values().stream().findFirst().get();
         Assert.assertEquals(agent.getName(), "Hawkular WildFly Agent");
 
         setMetricTagsOnJmxManagedServers();
@@ -53,12 +51,11 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testDmrResources" })
-    // FIXME: lost traversal
     public void testLocalJmxResources() throws Throwable {
         // make sure the JMX resource is there
-        Resource runtime = getResource(hawkularFeedId, "rt", "Runtime%20MBean",
-                (r -> r.getId().equals("Local JMX~java.lang:type=Runtime")));
-        Assert.assertNotNull(runtime);
+        Entity.Blueprint runtime = (Entity.Blueprint) waitForResourceContaining(
+                hawkularFeedId, "Runtime MBean", "Local JMX~java.lang:type=Runtime", 5000, 5)
+                .getValue();
         Assert.assertEquals(runtime.getName(), "JMX [Local JMX][Runtime]");
 
         // makes sure the resources are in the agent's internal inventory
@@ -91,9 +88,9 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
     // FIXME: lost traversal
     public void testRemoteJmxResources() throws Throwable {
         // make sure the JMX resource is there
-        Resource runtime = getResource(hawkularFeedId, "rt", "Runtime%20MBean",
-                (r -> r.getId().equals("Remote JMX~java.lang:type=Runtime")));
-        Assert.assertNotNull(runtime);
+        Entity.Blueprint runtime = (Entity.Blueprint) waitForResourceContaining(
+                hawkularFeedId, "Runtime MBean", "Remote JMX~java.lang:type=Runtime", 5000, 5)
+                .getValue();
         Assert.assertEquals(runtime.getName(), "JMX [Remote JMX][Runtime]");
 
         // makes sure the resources are in the agent's internal inventory
@@ -235,14 +232,14 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
         }
     }
 
-    private void setEnabledFlagOnJmxManagedServers(boolean flag) throws Throwable {
+    private void enableJmxManagedServers() throws Throwable {
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             CoreJBossASClient c = new CoreJBossASClient(mcc);
 
             // We want to enable by the remote JMX managed server and the local JMX managed server.
             // The default agent configuration already has these managed servers defined with some basic
             // metadata - we just want to enabled them since they are disabled by default.
-            String flagStr = String.valueOf(flag);
+            String flagStr = String.valueOf(true);
             String rAddr = "/subsystem=hawkular-wildfly-agent/managed-servers=default/remote-jmx=Remote JMX";
             String lAddr = "/subsystem=hawkular-wildfly-agent/managed-servers=default/local-jmx=Local JMX";
             ModelNode rReq = JBossASClient.createWriteAttributeRequest("enabled", flagStr, Address.parse(rAddr));
@@ -263,13 +260,4 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
             }
         }
     }
-
-    private void enableJmxManagedServers() throws Throwable {
-        setEnabledFlagOnJmxManagedServers(true);
-    }
-
-    private void disableJmxManagedServers() throws Throwable {
-        setEnabledFlagOnJmxManagedServers(false);
-    }
-
 }

@@ -32,8 +32,6 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
 
 public class RemoteJMXAdd extends MonitorServiceAddStepHandler {
-    private static final MsgLogger log = AgentLoggers.getLogger(RemoteJMXAdd.class);
-
     public static final RemoteJMXAdd INSTANCE = new RemoteJMXAdd();
 
     private RemoteJMXAdd() {
@@ -59,19 +57,7 @@ public class RemoteJMXAdd extends MonitorServiceAddStepHandler {
         // Register the feed under the tenant of the new managed server.
         // If endpoint has a null tenant then there is nothing to do since it will just reuse the agent's tenant ID
         EndpointConfiguration endpointConfig = config.getJmxConfiguration().getEndpoints().get(newEndpointName);
-        boolean isEnabled = endpointConfig.isEnabled();
-
-        String newTenantId = endpointConfig.getTenantId();
-        if (newTenantId != null) {
-            try {
-                monitorService.registerFeed(newTenantId, 0);
-            } catch (Exception e) {
-                isEnabled = false;
-                log.warnCannotRegisterFeedForNewManagedServer(newTenantId, newEndpointName, e.toString());
-            }
-        }
-
-        if (isEnabled) {
+        if (endpointConfig.isEnabled()) {
             // create a new endpoint service
             ProtocolServices newServices = monitorService.createProtocolServicesBuilder()
                     .jmxProtocolService(config.getJmxConfiguration()).build();
