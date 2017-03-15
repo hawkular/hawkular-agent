@@ -16,10 +16,11 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.log.AgentLoggers;
-import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
+import org.hawkular.agent.wildfly.log.AgentLoggers;
+import org.hawkular.agent.wildfly.log.MsgLogger;
+import org.hawkular.agent.wildfly.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
@@ -64,13 +65,14 @@ public class SubsystemAdd extends WildflyCompatibilityUtils.AbstractAddStepHandl
 
         if (agentSubsystemAddress == null) {
             throw new OperationFailedException(
-                    "Cannot get agent subsystem address from: " + WildflyCompatibilityUtils.getCurrentAddress(context, operation));
+                    "Cannot get agent subsystem address from: "
+                            + WildflyCompatibilityUtils.getCurrentAddress(context, operation));
         }
 
         ModelNode subsystemConfig = Resource.Tools.readModel(context.readResourceFromRoot(agentSubsystemAddress));
-        MonitorServiceConfiguration config = new MonitorServiceConfigurationBuilder(subsystemConfig, context).build();
+        AgentCoreEngineConfiguration config = new MonitorServiceConfigurationBuilder(subsystemConfig, context).build();
 
-        if (!config.isSubsystemEnabled()) {
+        if (!config.getGlobalConfiguration().isSubsystemEnabled()) {
             log.infoSubsystemDisabled();
             return;
         }
@@ -78,7 +80,7 @@ public class SubsystemAdd extends WildflyCompatibilityUtils.AbstractAddStepHandl
         createService(context.getServiceTarget(), config, context.getProcessType());
     }
 
-    private void createService(final ServiceTarget target, final MonitorServiceConfiguration configuration,
+    private void createService(final ServiceTarget target, final AgentCoreEngineConfiguration configuration,
             ProcessType processType) {
 
         // create and configure the service itself

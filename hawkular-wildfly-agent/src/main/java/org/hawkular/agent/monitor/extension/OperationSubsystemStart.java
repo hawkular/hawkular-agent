@@ -18,9 +18,10 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.service.ServiceStatus;
-import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
+import org.hawkular.agent.wildfly.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
@@ -51,7 +52,7 @@ public class OperationSubsystemStart implements OperationStepHandler {
             final PathAddress address = refresh ? WildflyCompatibilityUtils.getCurrentAddress(opContext, model) : null;
             final ModelNode config = refresh ? Resource.Tools.readModel(opContext.readResourceFromRoot(address))
                     : null;
-            final MonitorServiceConfiguration newConfig = refresh
+            final AgentCoreEngineConfiguration newConfig = refresh
                     ? new MonitorServiceConfigurationBuilder(config, opContext).build() : null;
 
             newThread.set(new Thread(new Runnable() {
@@ -65,14 +66,14 @@ public class OperationSubsystemStart implements OperationStepHandler {
                         if (restart) {
                             LOGGER.warnf("Stopping Hawkular Monitor Service now, %s requested.",
                                     refresh ? "refresh" : "restart");
-                            service.stopMonitorService();
+                            service.stopHawkularAgent();
                         }
 
-                        if (service.getMonitorServiceStatus() == ServiceStatus.RUNNING) {
+                        if (service.getStatus() == ServiceStatus.RUNNING) {
                             LOGGER.warn("Skipping Hawkular Monitor Service start, it is already started.");
                         } else {
                             LOGGER.warn("Starting Hawkular Monitor Service now.");
-                            service.startMonitorService(newConfig);
+                            service.startHawkularAgent(newConfig);
                         }
                     } catch (Exception e) {
                         LOGGER.warn("Aborting start of the Hawkular Monitor service: " + e);

@@ -34,7 +34,7 @@ public class OperationFullDiscoveryScan implements OperationStepHandler {
             ServiceName name = SubsystemExtension.SERVICE_NAME;
             ServiceRegistry serviceRegistry = opContext.getServiceRegistry(true);
             MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
-            ServiceStatus status = service.getMonitorServiceStatus();
+            ServiceStatus status = service.getStatus();
             if (status == ServiceStatus.RUNNING) {
                 long start = System.currentTimeMillis();
                 service.getProtocolServices().discoverAll();

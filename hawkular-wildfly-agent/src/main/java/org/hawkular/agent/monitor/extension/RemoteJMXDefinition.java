@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.extension;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
@@ -27,7 +28,7 @@ import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
 import org.hawkular.agent.monitor.scheduler.SchedulerService;
 import org.hawkular.agent.monitor.service.MonitorService;
 import org.hawkular.agent.monitor.service.ServiceStatus;
-import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.agent.wildfly.util.Util;
 import org.jboss.as.controller.AbstractWriteAttributeHandler;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
@@ -88,8 +89,7 @@ public class RemoteJMXDefinition extends MonitorPersistentResourceDefinition {
                         }
 
                         MonitorService monitorService = getMonitorService(context);
-                        if (monitorService == null
-                                || monitorService.getMonitorServiceStatus() == ServiceStatus.STARTING) {
+                        if (monitorService == null || monitorService.getStatus() == ServiceStatus.STARTING) {
                             return true; // caught service starting up, need to be restarted to pick up this change
                         }
 
@@ -101,7 +101,7 @@ public class RemoteJMXDefinition extends MonitorPersistentResourceDefinition {
                             // add the endpoint so it begins to be monitored
 
                             // first get our subsystem config
-                            MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
+                            AgentCoreEngineConfiguration config = Util.getMonitorServiceConfiguration(context);
 
                             // create a new endpoint service
                             ProtocolServices newServices = monitorService.createProtocolServicesBuilder()

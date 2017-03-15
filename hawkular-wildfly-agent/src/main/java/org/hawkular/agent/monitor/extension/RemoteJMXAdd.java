@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +16,17 @@
  */
 package org.hawkular.agent.monitor.extension;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
-import org.hawkular.agent.monitor.log.AgentLoggers;
-import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.agent.wildfly.log.AgentLoggers;
+import org.hawkular.agent.wildfly.log.MsgLogger;
+import org.hawkular.agent.wildfly.util.Util;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
@@ -52,7 +53,7 @@ public class RemoteJMXAdd extends MonitorServiceAddStepHandler {
             return; // the agent wasn't enabled, nothing to do
         }
 
-        MonitorServiceConfiguration config = Util.getMonitorServiceConfiguration(context);
+        AgentCoreEngineConfiguration config = Util.getMonitorServiceConfiguration(context);
         String newEndpointName = context.getCurrentAddressValue();
 
         // Register the feed under the tenant of the new managed server.

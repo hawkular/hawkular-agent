@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.hawkular.agent.monitor.extension.MonitorServiceConfiguration.EndpointConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Resource;
@@ -47,7 +47,7 @@ public class OperationInventoryReport implements OperationStepHandler {
             ServiceName name = SubsystemExtension.SERVICE_NAME;
             ServiceRegistry serviceRegistry = opContext.getServiceRegistry(true);
             MonitorService service = (MonitorService) serviceRegistry.getRequiredService(name).getValue();
-            ServiceStatus status = service.getMonitorServiceStatus();
+            ServiceStatus status = service.getStatus();
             if (status == ServiceStatus.RUNNING) {
                 ModelNode result = opContext.getResult();
                 List<ProtocolService<?, ?>> protocolServices = service.getProtocolServices().getServices();

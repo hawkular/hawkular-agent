@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.extension;
 
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
@@ -30,8 +31,8 @@ public interface StorageAttributes {
             ModelType.STRING)
                     .setAllowNull(true)
                     .setAllowExpression(true)
-                    .setDefaultValue(new ModelNode(MonitorServiceConfiguration.StorageReportTo.HAWKULAR.name()))
-                    .setValidator(EnumValidator.create(MonitorServiceConfiguration.StorageReportTo.class, false, true))
+                    .setDefaultValue(new ModelNode(AgentCoreEngineConfiguration.StorageReportTo.HAWKULAR.name()))
+                    .setValidator(EnumValidator.create(AgentCoreEngineConfiguration.StorageReportTo.class, false, true))
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 

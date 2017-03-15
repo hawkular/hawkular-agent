@@ -1,0 +1,14 @@
+{
+    "deployment-name" => undefined,
+    "driver-class-name" => "com.mysql.jdbc.Driver",
+    "driver-datasource-class-name" => undefined,
+    "driver-major-version" => 5,
+    "driver-minor-version" => 1,
+    "driver-module-name" => "com.mysql",
+    "driver-name" => "mysql",
+    "driver-xa-datasource-class-name" => undefined,
+    "jdbc-compliant" => undefined,
+    "module-slot" => undefined,
+    "profile" => undefined,
+    "xa-datasource-class" => undefined
+}

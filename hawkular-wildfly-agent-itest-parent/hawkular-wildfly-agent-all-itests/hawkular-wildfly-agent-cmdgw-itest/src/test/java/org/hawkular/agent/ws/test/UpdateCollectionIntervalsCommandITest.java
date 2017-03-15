@@ -66,7 +66,7 @@ public class UpdateCollectionIntervalsCommandITest extends AbstractCommandITest 
                     + "\"resourcePath\":\"" + agent.getPath() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Performed [Update Collection Intervals] on a [DMR Nodes] given by Inventory path ["
+                    + "\"message\":\"Performed [Update Collection Intervals] on a [Agent[DMR]] given by Inventory path ["
                     + agent.getPath() + "]\""
                     + "}";
 

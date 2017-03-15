@@ -1,0 +1,176 @@
+#
+# Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
+# and other contributors as indicated by the @author tags.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+subsystem:
+  enabled:                         true
+  auto-discovery-scan-period-secs: 600
+
+security-realm:
+- name: h-server-security-realm
+  keystore-path:           /my/keystore/path
+  keystore-password:       my keystore password
+- name: some-truststore
+  keystore-path:           /my/truststore/path
+  keystore-password:       my truststore password
+  key-password:            my key password
+#  keystore-type:           jks
+#  key-manager-algorithm:   SunX509
+#  trust-manager-algorithm: PKIX
+#  ssl-protocol:            TLSv1
+
+diagnostics:
+  enabled:    true
+  report-to:  STORAGE
+  interval:   1234
+  time-units: seconds
+
+storage-adapter:
+  type:                 HAWKULAR
+  url:                  http://127.0.0.1:8080
+  tenant-id:            hawkular
+  username:             jdoe
+  password:             password
+  feed-id:              autogenerate
+  security-realm:       h-server-security-realm
+  inventory-context:    /my-inventory
+  metrics-context:      /my-metrics
+  feedcomm-context:     /my-feedcomm
+  connect-timeout-secs: 123
+  read-timeout-secs:    456
+
+metric-set-dmr:
+- name: Some DMR Set
+  metric-dmr:
+  - name:         Full DMR Details
+    interval:     30
+    time-units:   seconds
+    metric-units: bytes
+    metric-type:  gauge
+    path:         /core-service=platform-mbean/type=memory
+    attribute:    heap-memory-usage#used
+    resolve-expressions: true
+    include-defaults:    true
+    metric-id-template:  metric ID template here
+    metric-tags:
+      foo: bar
+  - name:      Minimal DMR Details
+    path:      "/parent=*/child=*"
+    attribute: some-attrib#subattrib
+
+metric-set-jmx:
+- name: Some JMX Set
+  metric-jmx:
+  - name:         Full JMX Details
+    interval:     30
+    time-units:   seconds
+    metric-units: bytes
+    metric-type:  gauge
+    object-name:  domain:type=mbean
+    attribute:    heap-memory-usage#used
+    metric-id-template:  metric ID template here
+    metric-tags:
+      foo: bar
+  - name:        Minimal JMX Details
+    object-name: domain:type=mbean
+    attribute:   some-attrib#subattrib
+
+managed-servers:
+  local-dmr:
+    name:                  Local WildFly
+    enabled:               false
+    tenant-id:             local wildfly tenant
+    resource-type-sets:
+    - LocalTypeSet1
+    - TypeSet2
+    metric-id-template:    local feed id is %FeedId and metric name is %MetricName
+    metric-tags:
+      localdmrtag1: val1
+      dmrtag2: val2
+    set-avail-on-shutdown: DOWN
+
+  remote-dmr:
+  - name:                  Remote WildFly
+    enabled:               false
+    host:                  localhost
+    port:                  9999
+    use-ssl:               true
+    security-realm:        remote security realm name
+    tenant-id:             remote wildfly tenant
+    resource-type-sets:
+    - RemoteTypeSet1
+    - TypeSet2
+    metric-id-template:    remote feed id is %FeedId and metric name is %MetricName
+    metric-tags:
+      remotedmrtag1: val1
+      dmrtag2: val2
+    set-avail-on-shutdown: DOWN
+
+  local-jmx:
+    name:                  Local JMX
+    enabled:               false
+    tenant-id:             jmx local wildfly tenant
+    resource-type-sets:
+    - jmx LocalTypeSet1
+    - jmx TypeSet2
+    metric-id-template:    jmx local feed id is %FeedId and metric name is %MetricName
+    metric-tags:
+      localjmxtag1: val1
+      jmxtag2: val2
+    set-avail-on-shutdown: UNKNOWN
+    mbean-server-name:     some-mbs-name
+
+  remote-jmx:
+  - name:                  Remote JMX
+    enabled:               false
+    url:                   http://localhost:8080/jolokia-war
+    security-realm:        jmx remote security realm name
+    tenant-id:             jmx remote wildfly tenant
+    resource-type-sets:
+    - jmx RemoteTypeSet1
+    - jmx TypeSet2
+    metric-id-template:    jmx remote feed id is %FeedId and metric name is %MetricName
+    metric-tags:
+      remotejmxtag1: val1
+      jmxtag2: val2
+    set-avail-on-shutdown: UNKNOWN
+
+platform:
+  enabled:      true
+  interval:     1234
+  time-units:   seconds
+  machine-id:   my-machine-id-here
+
+  file-stores:
+    enabled:    true
+    interval:   5000
+    time-units: milliseconds
+
+  memory:
+    enabled:    true
+    interval:   30
+    time-units: seconds
+
+  processors:
+    enabled:    true
+    interval:   1
+    time-units: minutes
+
+  power-sources:
+    enabled:    false
+    interval:   5
+    time-units: minutes

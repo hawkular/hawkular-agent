@@ -40,8 +40,8 @@ public class OperationSubsystemStop implements OperationStepHandler {
             // it just isn't deployed, so obviously it is already stopped. Just keep going.
         }
 
-        if (service != null && !service.getMonitorServiceStatus().isStoppingOrStopped()) {
-            service.stopMonitorService();
+        if (service != null && !service.getStatus().isStoppingOrStopped()) {
+            service.stopHawkularAgent();
         }
 
         opContext.stepCompleted();

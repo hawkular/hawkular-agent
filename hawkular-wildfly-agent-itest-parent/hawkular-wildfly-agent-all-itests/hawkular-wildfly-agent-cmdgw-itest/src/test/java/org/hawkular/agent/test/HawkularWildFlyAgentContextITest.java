@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +16,13 @@
  */
 package org.hawkular.agent.test;
 
-import org.hawkular.agent.monitor.api.HawkularWildFlyAgentContext;
+import org.hawkular.agent.monitor.api.HawkularAgentContext;
 import org.hawkular.agent.ws.test.AbstractCommandITest;
 import org.hawkular.agent.ws.test.DatasourceCommandITest;
 import org.testng.annotations.Test;
 
 /**
- * Tests accessing the {@link HawkularWildFlyAgentContext} API that is obtained via JNDI.
+ * Tests accessing the {@link HawkularAgentContext} API that is obtained via JNDI.
  * This assumes the example-jndi WAR is deployed in the test app server.
  */
 public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
