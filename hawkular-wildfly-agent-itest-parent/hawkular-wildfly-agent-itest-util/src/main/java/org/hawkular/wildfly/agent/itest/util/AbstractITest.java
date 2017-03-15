@@ -320,6 +320,7 @@ public abstract class AbstractITest {
         String metric = Util.urlEncode("inventory." + feedId + "." + type + "." + id);
         String url = baseInvUri + "/" + metric + "/raw?limit=1&order=DESC";
         String response = getWithRetries(url);
+        // System.err.println("Response body: " + response);
         return Optional.of(response)
                 .filter(r -> !r.isEmpty())
                 .flatMap(this::extractStructureFromResponse);
@@ -343,22 +344,21 @@ public abstract class AbstractITest {
             return Optional.empty();
         }
         String feed = upDown.next().getSegment().getElementId();
-        System.err.println("FEED: " + feed);
+        // System.err.println("FEED: " + feed);
         if (!upDown.hasNext()) {
             return Optional.empty();
         }
         CanonicalPath itemPath = upDown.next();
-        System.err.println("ITEM: " + itemPath.toString());
-        System.err.println("getInventoryStructure(" + feed + ", " + itemPath.getSegment().getElementType().getSerialized() + ", " + itemPath.getSegment().getElementId());
+        // System.err.println("ITEM: " + itemPath.toString());
+        // System.err.println("getInventoryStructure(" + feed + ", " + itemPath.getSegment().getElementType().getSerialized() + ", " + itemPath.getSegment().getElementId());
         Optional<InventoryStructure> inventoryStructure = getInventoryStructure(
                 feed,
                 itemPath.getSegment().getElementType().getSerialized(),
                 itemPath.getSegment().getElementId());
-        System.err.println("Is present? " + inventoryStructure.isPresent());
         return inventoryStructure.map(struct -> {
-            System.err.println("RELATIVE: " + path.relativeTo(itemPath));
+            // System.err.println("RELATIVE: " + path.relativeTo(itemPath));
             Blueprint bp = struct.get(path.relativeTo(itemPath));
-            System.err.println("bp=" + bp);
+            // System.err.println("bp=" + bp);
             return bp;
         });
     }
@@ -369,14 +369,9 @@ public abstract class AbstractITest {
         String url = baseMetricsUri + "/metrics?type=string&tags=module:inventory,type:r,feed:" + feedId
                 + "," + tagType + ":*";
         String response = getWithRetries(newAuthRequest().url(url).get().build());
-        System.err.println("response=" + response);
+        // System.err.println("response=" + response);
         if (response.isEmpty()) {
             return new HashMap<>();
-        }
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
         // The response contains all metrics that contain at least one resource of the required type
         // It also contains the relative path, from metric's root, of concerned resources
@@ -400,13 +395,13 @@ public abstract class AbstractITest {
         String ids = metricsToFetch.keySet().stream()
                 .map(m -> "\"" + m + "\"")
                 .collect(Collectors.joining(","));
-        System.out.println("ids=" + ids);
+        // System.out.println("ids=" + ids);
         String params = "{\"ids\":[" + ids + "],\"limit\":1,\"order\":\"DESC\"}";
         response = getWithRetries(newAuthRequest()
                 .url(url)
                 .post(RequestBody.create(MediaType.parse("application/json"), params))
                 .build());
-        System.err.println("response=" + response);
+        // System.err.println("response=" + response);
         if (response.isEmpty()) {
             return new HashMap<>();
         }
@@ -417,17 +412,17 @@ public abstract class AbstractITest {
         CanonicalPath feedPath = feedPath(feedId);
         structures.forEach((metric,structure) -> {
             CanonicalPath rootPath = feedPath.modified().extend(SegmentType.r, structure.getRoot().getId()).get();
-            System.out.println("Root path: " + rootPath);
+            // System.out.println("Root path: " + rootPath);
             String[] resourcePaths = metricsToFetch.get(metric);
             for (String resourcePath : resourcePaths) {
-                System.out.println("Resource path: " + resourcePath);
+                // System.out.println("Resource path: " + resourcePath);
                 RelativePath relativePath = RelativePath.fromString(resourcePath);
-                System.out.println("Relative path: " + relativePath);
+                // System.out.println("Relative path: " + relativePath);
                 Blueprint bp = structure.get(relativePath);
                 if (bp != null) {
                     CanonicalPath absolutePath = relativePath.applyTo(rootPath);
                     matchingResources.put(absolutePath, bp);
-                    System.out.println("Added resource: " + absolutePath);
+                    // System.out.println("Added resource: " + absolutePath);
                 }
             }
         });
@@ -447,8 +442,16 @@ public abstract class AbstractITest {
                             "Got code " + response.code() + " and message [" + response.message() + "] retries: " +
                                     request.url());
                     AssertJUnit.assertTrue(response.code() == 200 || response.code() == 204);
-                    System.out.println("Got after " + (i + 1) + " retries: " + request.url());
-                    return response.body().string();
+//                    System.out.println("Got after " + (i + 1) + " retries: " + request.url());
+                    String responseBody = response.body().string();
+//                    System.err.println("Response size: " + responseBody.length());
+//                    ByteArrayOutputStream obj=new ByteArrayOutputStream();
+//                    GZIPOutputStream gzip = new GZIPOutputStream(obj);
+//                    gzip.write(responseBody.getBytes("UTF-8"));
+//                    gzip.close();
+//                    byte[] gzipped = obj.toByteArray();
+//                    System.err.println("Compressed size: " + gzipped.length);
+                    return responseBody;
                 }
             } catch (Throwable t) {
                 /* some initial attempts may fail */

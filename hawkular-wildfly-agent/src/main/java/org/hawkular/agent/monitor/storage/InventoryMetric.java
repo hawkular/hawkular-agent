@@ -16,8 +16,6 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import org.hawkular.agent.monitor.util.Util;
-
 /**
  * @author Joel Takvorian
  */
@@ -29,7 +27,7 @@ public class InventoryMetric {
     public InventoryMetric(String feed, String type, String id) {
         this.feed = feed;
         this.type = type;
-        this.id = Util.urlEncode(id);
+        this.id = id;
     }
 
     public static InventoryMetric resource(String feed, String id) {

@@ -496,13 +496,14 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     // The final URL should be in the form: strings/inventory.<feedid>.r.<resource_id>
                     InventoryMetric metric = InventoryMetric.resource(feedId, removedResource.getID().getIDString());
+//                    System.out.println("---- REMOVING METRIC: " + metric.name());
                     // Post empty data
                     String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), "")));
                     postInventoryData(metric, jsonPayload, tenantIdToUse, 0);
                     // Remove "feed" tag
                     StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
                             .append("strings/")
-                            .append(metric.name())
+                            .append(Util.urlEncode(metric.name()))
                             .append("/tags/feed");
                     Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
@@ -604,7 +605,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     ((org.hawkular.inventory.api.model.Resource.Blueprint)bp).getResourceTypePath());
             Collection<String> idsForType = resourcesPerType.computeIfAbsent(resourceTypePath.getSegment().getElementId(),
                     k -> new ArrayList<>());
-            System.out.println("NODE PATH=" + nodePath);
             idsForType.add(nodePath.toString());
         }
         // Process children
@@ -660,7 +660,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             throws Exception {
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
                 .append("strings/")
-                .append(metric.name())
+                .append(Util.urlEncode(metric.name()))
                 .append("/raw");
         Map<String, String> headers = getTenantHeader(tenantId);
 
@@ -713,6 +713,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         //  If metric already exists (conflict), tags should however be updated (especially the "rt.xxx" tags)
         //  If metric doesn't exist, it must be created/tagged/configured with retention
         // FIXME: better json
+//        System.out.println("CREATING METRIC: " + metric.name());
         String json = "{\"id\": \"" + metric.name() + "\"," +
                 "\"dataRetention\": 90," +
                 "\"tags\": {" +
