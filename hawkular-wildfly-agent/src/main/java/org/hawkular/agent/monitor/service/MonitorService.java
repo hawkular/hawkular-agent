@@ -163,7 +163,6 @@ public class MonitorService extends AgentCoreEngine implements Service<MonitorSe
                             useUrl,
                             bootStorageAdapter.isUseSSL(),
                             bootStorageAdapter.getServerOutboundSocketBindingRef(),
-                            bootStorageAdapter.getInventoryContext(),
                             bootStorageAdapter.getMetricsContext(),
                             bootStorageAdapter.getFeedcommContext(),
                             bootStorageAdapter.getKeystorePath(),

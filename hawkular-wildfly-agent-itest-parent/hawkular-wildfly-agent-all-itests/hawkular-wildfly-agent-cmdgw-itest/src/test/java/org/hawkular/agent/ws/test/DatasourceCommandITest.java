@@ -109,7 +109,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
 
         }
-        System.err.println("waitForResourceContaining: Datasource");
         // Make sure it's in inventory
         waitForResourceContaining(hawkularFeedId, "Datasource", datasourceName,
                 5000, 10);
@@ -156,7 +155,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
 
         }
-        System.err.println("waitForResourceContaining: XA Datasource");
         // Make sure it's in inventory
         waitForResourceContaining(hawkularFeedId, "XA Datasource", xaDatasourceName,
                 5000, 10);

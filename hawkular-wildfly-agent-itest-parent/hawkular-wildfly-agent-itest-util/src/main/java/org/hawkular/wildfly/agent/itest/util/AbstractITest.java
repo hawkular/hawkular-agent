@@ -409,7 +409,7 @@ public abstract class AbstractITest {
         // Now find each collected resource path in their belonging InventoryStructure
         Map<String, InventoryStructure<?>> structures = extractStructuresFromResponse(response);
         Map<CanonicalPath, Blueprint> matchingResources = new HashMap<>();
-        CanonicalPath feedPath = feedPath(feedId);
+        CanonicalPath feedPath = feedPath(feedId).get();
         structures.forEach((metric,structure) -> {
             CanonicalPath rootPath = feedPath.modified().extend(SegmentType.r, structure.getRoot().getId()).get();
             // System.out.println("Root path: " + rootPath);
@@ -454,7 +454,7 @@ public abstract class AbstractITest {
                     return responseBody;
                 }
             } catch (Throwable t) {
-                /* some initial attempts may fail */
+                // some initial attempts may fail so we continue
                 e = t;
             }
             System.out.println("URL [" + request.url() + "] not ready yet on " + (i + 1) + " of " + ATTEMPT_COUNT
@@ -465,9 +465,9 @@ public abstract class AbstractITest {
     }
 
     protected Request.Builder newAuthRequest() {
-        return new Request.Builder()//
-                .addHeader("Authorization", authHeader)//
-                .addHeader("Accept", "application/json")//
+        return new Request.Builder()
+                .addHeader("Authorization", authHeader)
+                .addHeader("Accept", "application/json")
                 .addHeader("Hawkular-Tenant", getTenantId());
     }
 
@@ -655,8 +655,8 @@ public abstract class AbstractITest {
         return app;
     }
 
-    protected CanonicalPath feedPath(String feedId) {
-        return CanonicalPath.of().tenant(getTenantId()).feed(feedId).get();
+    protected CanonicalPath.FeedBuilder feedPath(String feedId) {
+        return CanonicalPath.of().tenant(getTenantId()).feed(feedId);
     }
 
     protected Map.Entry<CanonicalPath, Blueprint> waitForResourceContaining(String feed, String rType, String containing, long sleep, int attempts)

@@ -117,7 +117,6 @@ public class ConfigConverter {
                 config.getStorageAdapter().getUrl(),
                 config.getStorageAdapter().useSSL(),
                 null, // we don't use socket binding ref
-                config.getStorageAdapter().getInventoryContext(),
                 config.getStorageAdapter().getMetricsContext(),
                 config.getStorageAdapter().getFeedcommContext(),
                 null, // we use security realm exclusively

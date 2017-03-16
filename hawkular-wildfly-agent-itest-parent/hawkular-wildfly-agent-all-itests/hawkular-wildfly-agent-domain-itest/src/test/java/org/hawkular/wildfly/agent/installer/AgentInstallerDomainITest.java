@@ -70,10 +70,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
 
         // make sure the Domain Host operations are OK
         // SHUTDOWN
-        CanonicalPath shutdownPath = feedPath(wfClientConfig.getFeedId()).modified()
-                .extend(SegmentType.rt, "Domain Host")
-                .extend(SegmentType.ot, "Shutdown")
-                .get();
+        CanonicalPath shutdownPath = feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Host").operationType("Shutdown").get();
         OperationType.Blueprint op = (OperationType.Blueprint) getBlueprintFromCP(shutdownPath).get();
         Assert.assertEquals("Shutdown", op.getId());
 
@@ -86,10 +84,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // RELOAD
-        CanonicalPath reloadPath = feedPath(wfClientConfig.getFeedId()).modified()
-                .extend(SegmentType.rt, "Domain Host")
-                .extend(SegmentType.ot, "Reload")
-                .get();
+        CanonicalPath reloadPath = feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Host").operationType("Reload").get();
         op = (OperationType.Blueprint) getBlueprintFromCP(reloadPath).get();
         Assert.assertEquals("Reload", op.getId());
     }
@@ -132,10 +128,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
 
         // make sure the Domain Server Groups operations are OK
         // RELOAD SERVERS
-        CanonicalPath reloadPath = feedPath(wfClientConfig.getFeedId()).modified()
-                .extend(SegmentType.rt, "Domain Server Group")
-                .extend(SegmentType.ot, "Reload Servers")
-                .get();
+        CanonicalPath reloadPath = feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Reload Servers").get();
         OperationType.Blueprint op = (OperationType.Blueprint) getBlueprintFromCP(reloadPath).get();
         Assert.assertEquals("Reload Servers", op.getId());
 
@@ -148,10 +142,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // RESTART SERVERS
-        CanonicalPath restartPath = feedPath(wfClientConfig.getFeedId()).modified()
-                .extend(SegmentType.rt, "Domain Server Group")
-                .extend(SegmentType.ot, "Restart Servers")
-                .get();
+        CanonicalPath restartPath = feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Restart Servers").get();
         op = (OperationType.Blueprint) getBlueprintFromCP(restartPath).get();
         Assert.assertEquals("Restart Servers", op.getId());
         configPath = restartPath.extend(SegmentType.d, "parameterTypes").get();
@@ -163,10 +155,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // START SERVERS
-        CanonicalPath startPath = feedPath(wfClientConfig.getFeedId()).modified()
-                .extend(SegmentType.rt, "Domain Server Group")
-                .extend(SegmentType.ot, "Start Servers")
-                .get();
+        CanonicalPath startPath = feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Start Servers").get();
         op = (OperationType.Blueprint) getBlueprintFromCP(startPath).get();
         Assert.assertEquals("Start Servers", op.getId());
         configPath = startPath.extend(SegmentType.d, "parameterTypes").get();
@@ -178,10 +168,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // SUSPEND SERVERS
-        CanonicalPath suspendPath = feedPath(wfClientConfig.getFeedId()).modified()
-                .extend(SegmentType.rt, "Domain Server Group")
-                .extend(SegmentType.ot, "Suspend Servers")
-                .get();
+        CanonicalPath suspendPath = feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Suspend Servers").get();
         op = (OperationType.Blueprint) getBlueprintFromCP(suspendPath).get();
         Assert.assertEquals("Suspend Servers", op.getId());
         configPath = suspendPath.extend(SegmentType.d, "parameterTypes").get();
@@ -193,10 +181,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // STOP SERVERS
-        CanonicalPath stopPath = feedPath(wfClientConfig.getFeedId()).modified()
-                .extend(SegmentType.rt, "Domain Server Group")
-                .extend(SegmentType.ot, "Stop Servers")
-                .get();
+        CanonicalPath stopPath = feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Stop Servers").get();
         op = (OperationType.Blueprint) getBlueprintFromCP(stopPath).get();
         Assert.assertEquals("Stop Servers", op.getId());
         configPath = stopPath.extend(SegmentType.d, "parameterTypes").get();
@@ -212,10 +198,8 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // RESUME SERVERS
-        CanonicalPath resumePath = feedPath(wfClientConfig.getFeedId()).modified()
-                .extend(SegmentType.rt, "Domain Server Group")
-                .extend(SegmentType.ot, "Resume Servers")
-                .get();
+        CanonicalPath resumePath = feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Resume Servers").get();
         op = (OperationType.Blueprint) getBlueprintFromCP(resumePath).get();
         Assert.assertEquals("Resume Servers", op.getId());
     }

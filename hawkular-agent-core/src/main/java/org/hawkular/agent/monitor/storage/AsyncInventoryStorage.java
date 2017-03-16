@@ -496,14 +496,13 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     // The final URL should be in the form: strings/inventory.<feedid>.r.<resource_id>
                     InventoryMetric metric = InventoryMetric.resource(feedId, removedResource.getID().getIDString());
-//                    System.out.println("---- REMOVING METRIC: " + metric.name());
                     // Post empty data
                     String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), "")));
                     postInventoryData(metric, jsonPayload, tenantIdToUse, 0);
                     // Remove "feed" tag
                     StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
                             .append("strings/")
-                            .append(Util.urlEncode(metric.name()))
+                            .append(metric.encodedName())
                             .append("/tags/feed");
                     Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
@@ -574,8 +573,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             try {
                 InventoryMetric metric = InventoryMetric.resource(feedId, resourceStructure.getRoot().getId());
                 Map<String, Collection<String>> resourceTypes = extractResourceTypes(resourceStructure);
-                // TODO: tag only once
-                initMetric(tenantIdToUse, metric, resourceTypes);
+                setupMetric(tenantIdToUse, metric, resourceTypes);
                 String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), resourceStructure)));
                 postInventoryData(metric, jsonPayload, tenantIdToUse, totalResourceCount);
             } catch (InterruptedException ie) {
@@ -621,8 +619,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         if (resourceTypeStructure.getRoot() != null) {
             try {
                 InventoryMetric metric = InventoryMetric.resourceType(feedId, resourceTypeStructure.getRoot().getId());
-                // TODO: tag only once
-                initMetric(tenantIdToUse, metric, null);
+                setupMetric(tenantIdToUse, metric, null);
                 String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), resourceTypeStructure)));
                 postInventoryData(metric, jsonPayload, tenantIdToUse, 1);
             } catch (InterruptedException ie) {
@@ -642,8 +639,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         if (metricTypeStructure.getRoot() != null) {
             try {
                 InventoryMetric metric = InventoryMetric.metricType(feedId, metricTypeStructure.getRoot().getId());
-                // TODO: tag only once
-                initMetric(tenantIdToUse, metric, null);
+                setupMetric(tenantIdToUse, metric, null);
                 String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), metricTypeStructure)));
                 postInventoryData(metric, jsonPayload, tenantIdToUse, 1);
             } catch (InterruptedException ie) {
@@ -660,7 +656,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             throws Exception {
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
                 .append("strings/")
-                .append(Util.urlEncode(metric.name()))
+                .append(metric.encodedName())
                 .append("/raw");
         Map<String, String> headers = getTenantHeader(tenantId);
 
@@ -708,31 +704,20 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return Collections.singletonMap("Hawkular-Tenant", tenantId);
     }
 
-    private void initMetric(String tenant, InventoryMetric metric, Map<String, Collection<String>> resourceTypes) throws Exception {
-        // FIXME: manage conflicts:
-        //  If metric already exists (conflict), tags should however be updated (especially the "rt.xxx" tags)
-        //  If metric doesn't exist, it must be created/tagged/configured with retention
-        // FIXME: better json
-//        System.out.println("CREATING METRIC: " + metric.name());
-        String json = "{\"id\": \"" + metric.name() + "\"," +
-                "\"dataRetention\": 90," +
-                "\"tags\": {" +
-                "\"module\": \"inventory\"," +
-                "\"feed\": \"" + metric.getFeed() + "\"," +
-                "\"type\": \"" + metric.getType() + "\"";
+    private void setupMetric(String tenant, InventoryMetric metric, Map<String, Collection<String>> resourceTypes) throws Exception {
+        MetricDefinition def = metric.toMetricDefinition();
         if (resourceTypes != null) {
             for (Map.Entry<String, Collection<String>> entry : resourceTypes.entrySet()) {
                 // FIXME: make sure "," cannot be used in ids, or choose another character
                 String ids = entry.getValue().stream().collect(Collectors.joining(","));
-                json += ",\"rt." + entry.getKey() + "\":\"" + ids + "\"";
+                def.addTag("rt." + entry.getKey(), ids);
             }
         }
-        json += "}}";
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
                 .append("strings?overwrite=true");
         Map<String, String> headers = getTenantHeader(tenant);
 
-        Request request = httpClientBuilder.buildJsonPostRequest(url.toString(), headers, json);
+        Request request = httpClientBuilder.buildJsonPostRequest(url.toString(), headers, Util.toJson(def));
         Call call = httpClientBuilder.getHttpClient().newCall(request);
         try (Response response = call.execute()) {
             if (!response.isSuccessful()) {

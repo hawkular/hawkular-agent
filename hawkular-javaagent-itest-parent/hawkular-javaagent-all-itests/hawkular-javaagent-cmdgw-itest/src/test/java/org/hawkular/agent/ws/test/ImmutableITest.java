@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.ws.test;
 
+import java.util.Map;
+
 import org.hamcrest.CoreMatchers;
 import org.hawkular.agent.javaagent.config.ConfigManager;
 import org.hawkular.agent.javaagent.config.Configuration;
@@ -26,7 +28,7 @@ import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent.ExpectedMessage;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.PatternMatcher;
-import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.paths.CanonicalPath;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -44,10 +46,11 @@ public class ImmutableITest extends AbstractCommandITest {
 
         waitForAgentViaJMX();
 
-        Resource agent = getResource(
-                "/traversal/f;" + hawkularFeedId + "/type=rt;"
-                        + "id=Hawkular%20WildFly%20Agent/rl;defines/type=r",
-                (r -> r.getId() != null));
+        CanonicalPath agentPath = getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+                .entrySet().stream()
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .get();
 
         // check we are starting with our original defaults - this is just a sanity check
         Configuration config = getAgentConfigurationFromFile();
@@ -60,7 +63,7 @@ public class ImmutableITest extends AbstractCommandITest {
         restartJMXAgent();
 
         String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agent.getPath().toString() + "\","
+                + "\"resourcePath\":\"" + agentPath.toString() + "\","
                 + "\"metricTypes\":{\"WildFly Threading Metrics~Thread Count\":\"159\"},"
                 + "\"availTypes\":{}"
                 + "}";
@@ -74,7 +77,7 @@ public class ImmutableITest extends AbstractCommandITest {
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(agent.getPath().ids().getFeedId())
+                .expectGenericSuccess(agentPath.ids().getFeedId())
                 .expectMessage(expectedEvent)
                 .expectClose()
                 .build()) {
@@ -100,7 +103,7 @@ public class ImmutableITest extends AbstractCommandITest {
                         if (m.getInterval().intValue() == expectedVal) {
                             return;
                         } else {
-                            Assert.fail(String.format("Metric type [%s~%s] expected to be [%d] but was [%d]",
+                            Assert.fail(String.format("Metric type [%s~%s] expected to be [%d %s] but was [%d %s]",
                                     setName, metricName,
                                     expectedVal, expectedUnits.name(),
                                     m.getInterval().intValue(), m.getTimeUnits().name()));

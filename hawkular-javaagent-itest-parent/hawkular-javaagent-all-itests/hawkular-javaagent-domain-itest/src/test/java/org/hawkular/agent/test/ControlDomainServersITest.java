@@ -16,9 +16,11 @@
  */
 package org.hawkular.agent.test;
 
+import java.util.Map;
+
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.javaagent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -46,22 +48,24 @@ public class ControlDomainServersITest extends AbstractDomainITestSuite {
         }
 
         CanonicalPath wfPath = getHostController();
-        Resource agent = getResource(
-                "/traversal/f;" + hawkularFeedId + "/type=rt;"
-                        + "id=Domain WildFly Server Controller/rl;defines/type=r",
-                (r -> r.getId().contains(serverToTest)));
+        CanonicalPath agentPath = getBlueprintsByType(hawkularFeedId, "Domain WildFly Server Controller")
+                .entrySet().stream()
+                .filter(e -> ((Entity.Blueprint)(e.getValue())).getId().contains(serverToTest))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .get();
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agent.getPath().toString() + "\","
+                + "\"resourcePath\":\"" + agentPath.toString() + "\","
                 + "\"operationName\":\"Stop\""
                 + "}";
         String response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"Stop\","
-                + "\"resourcePath\":\"" + agent.getPath() + "\","
+                + "\"resourcePath\":\"" + agentPath + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [Stop] on a [DMR Node] given by Inventory path ["
-                + agent.getPath() + "]\""
+                + agentPath + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")

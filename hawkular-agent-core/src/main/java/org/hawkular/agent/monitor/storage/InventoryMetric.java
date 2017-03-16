@@ -16,41 +16,47 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import org.hawkular.agent.monitor.util.Util;
+
 /**
  * @author Joel Takvorian
  */
-public class InventoryMetric {
+class InventoryMetric {
+
+    // FIXME: what retention? deactivate?
+    private static final int DATA_RETENTION = 90;
+
     private final String feed;
     private final String type;
     private final String id;
 
-    public InventoryMetric(String feed, String type, String id) {
+    private InventoryMetric(String feed, String type, String id) {
         this.feed = feed;
         this.type = type;
         this.id = id;
     }
 
-    public static InventoryMetric resource(String feed, String id) {
+    static InventoryMetric resource(String feed, String id) {
         return new InventoryMetric(feed, "r", id);
     }
 
-    public static InventoryMetric resourceType(String feed, String id) {
+    static InventoryMetric resourceType(String feed, String id) {
         return new InventoryMetric(feed, "rt", id);
     }
 
-    public static InventoryMetric metricType(String feed, String id) {
+    static InventoryMetric metricType(String feed, String id) {
         return new InventoryMetric(feed, "mt", id);
     }
 
-    public String getFeed() {
+    String getFeed() {
         return feed;
     }
 
-    public String getType() {
+    String getType() {
         return type;
     }
 
-    public String getId() {
+    String getId() {
         return id;
     }
 
@@ -78,5 +84,17 @@ public class InventoryMetric {
 
     public String name() {
         return "inventory." + feed + "." + type + "." + id;
+    }
+
+    public String encodedName() {
+        return Util.urlEncode(name());
+    }
+
+    MetricDefinition toMetricDefinition() {
+        MetricDefinition def = new MetricDefinition(name(), DATA_RETENTION);
+        def.addTag("module", "inventory");
+        def.addTag("feed", feed);
+        def.addTag("type", type);
+        return def;
     }
 }

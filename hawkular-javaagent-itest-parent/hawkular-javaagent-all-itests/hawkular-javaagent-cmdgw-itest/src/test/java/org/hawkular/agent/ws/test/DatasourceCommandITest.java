@@ -16,12 +16,16 @@
  */
 package org.hawkular.agent.ws.test;
 
+import java.util.Optional;
+
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -105,6 +109,9 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
 
         }
+        // Make sure it's in inventory
+        waitForResourceContaining(hawkularFeedId, "Datasource", datasourceName,
+                5000, 10);
     }
 
     @Test(groups = { GROUP }, dependsOnGroups = { ExportJdrCommandITest.GROUP })
@@ -148,6 +155,9 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
 
         }
+        // Make sure it's in inventory
+        waitForResourceContaining(hawkularFeedId, "XA Datasource", xaDatasourceName,
+                5000, 10);
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testAddDatasource" })
@@ -269,9 +279,11 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                    + "id=Datasource/rl;defines/type=r",
-                    (r -> r.getId().contains(datasourceName)));
+            Optional<?> resource = getBlueprintsByType(hawkularFeedId, "Datasource")
+                    .entrySet().stream()
+                    .filter(e -> ((Entity.Blueprint)(e.getValue())).getId().contains(datasourceName))
+                    .findFirst();
+            Assert.assertTrue(resource.isPresent());
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
                     + "\"resourcePath\":\"" + removePath + "\""
@@ -297,10 +309,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                    + "id=Datasource/rl;defines/type=r",
-                    (r -> r.getId().contains(datasourceName)), 10, 5000);
-
+            waitForNoResourceContaining(hawkularFeedId, "Datasource", datasourceName,
+                    5000, 10);
         }
     }
 
@@ -318,9 +328,11 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                    + "id=XA%20Datasource/rl;defines/type=r",
-                    (r -> r.getId().contains(xaDatasourceName)));
+            Optional<?> resource = getBlueprintsByType(hawkularFeedId, "XA Datasource")
+                    .entrySet().stream()
+                    .filter(e -> ((Entity.Blueprint)(e.getValue())).getId().contains(xaDatasourceName))
+                    .findFirst();
+            Assert.assertTrue(resource.isPresent());
 
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
                     + "\"resourcePath\":\"" + removePath + "\""
@@ -346,9 +358,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            assertResourceNotInInventory("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                    + "id=XA%20Datasource/rl;defines/type=r",
-                    (r -> r.getId().contains(xaDatasourceName)), 10, 5000);
+            waitForNoResourceContaining(hawkularFeedId, "XA Datasource", xaDatasourceName,
+                    5000, 10);
         }
     }
 }

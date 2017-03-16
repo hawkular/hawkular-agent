@@ -84,10 +84,8 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void operationParameters() throws Throwable {
         // get the operation
-        CanonicalPath shutdownPath = feedPath(wfClientConfig.getFeedId()).modified()
-                .extend(SegmentType.rt, "WildFly Server")
-                .extend(SegmentType.ot, "Shutdown")
-                .get();
+        CanonicalPath shutdownPath = feedPath(wfClientConfig.getFeedId())
+                .resourceType("WildFly Server").operationType("Shutdown").get();
         Optional<Blueprint> optBlueprint = getBlueprintFromCP(shutdownPath);
         Assert.assertTrue(optBlueprint.isPresent());
         OperationType.Blueprint op = (OperationType.Blueprint) optBlueprint.get();
@@ -338,9 +336,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         InventoryStructure.Offline<ResourceType.Blueprint>
                 osType = getResourceType(wfClientConfig.getFeedId(), "Platform_Operating System");
         Assert.assertNotNull(osType);
-        return feedPath(wfClientConfig.getFeedId())
-                .extend(SegmentType.rt, osType.getRoot().getId())
-                .get();
+        return feedPath(wfClientConfig.getFeedId()).resourceType(osType.getRoot().getId()).get();
     }
 
     private CanonicalPath getOperatingSystemResourcePath() throws Throwable {

@@ -24,8 +24,6 @@ import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.hawkular.agent.wildfly.log.AgentLoggers;
-import org.hawkular.agent.wildfly.log.MsgLogger;
 import org.hawkular.agent.wildfly.util.Util;
 import org.hawkular.agent.wildfly.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.OperationContext;

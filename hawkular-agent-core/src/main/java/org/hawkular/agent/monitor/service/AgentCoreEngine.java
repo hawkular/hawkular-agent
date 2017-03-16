@@ -19,7 +19,6 @@ package org.hawkular.agent.monitor.service;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +40,6 @@ import org.hawkular.agent.monitor.cmd.WebSocketClientBuilder;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
@@ -68,7 +66,6 @@ import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.bus.common.BasicMessage;
-import org.hawkular.inventory.api.model.Feed;
 import org.jboss.logging.Logger;
 
 import com.codahale.metrics.MetricRegistry;
@@ -291,15 +288,6 @@ public abstract class AgentCoreEngine {
             switch (this.configuration.getStorageAdapter().getType()) {
                 case HAWKULAR:
                     // if we are participating in a full Hawkular environment, we need to do some additional things:
-                    // 1. register our feed ID
-                    // 2. connect to the server's feed comm channel
-                    try {
-                        registerFeed(tenantIds);
-                    } catch (Exception e) {
-                        log.errorCannotDoAnythingWithoutFeed(e);
-                        throw new Exception("Agent needs a feed to run");
-                    }
-
                     // try to connect to the server via command-gateway channel; keep going on error
                     try {
                         this.webSocketClientBuilder = new WebSocketClientBuilder(
@@ -626,33 +614,6 @@ public abstract class AgentCoreEngine {
         this.schedulerService.start();
     }
 
-    /**
-     * Registers the feed with the Hawkular system under the given tenants.
-     * Note, it is OK to re-register the same feed/tenant combinations.
-     *
-     * This will not return until the feed is properly registered under all tenants.
-     * If the Hawkular server is not up, this could mean we are stuck here for a long time.
-     *
-     * @param tenantIds the feed is registered under the given tenantIds
-     * @throws Exception if failed to register feed
-     */
-    private void registerFeed(Set<String> tenantIds) throws Exception {
-        int retryMillis;
-        try {
-            retryMillis = Integer.parseInt(System.getProperty("hawkular.agent.feed.registration.retry", "60000"));
-        } catch (Exception e) {
-            retryMillis = 60000;
-        }
-
-        try {
-            for (String tenantId : tenantIds) {
-                registerFeed(tenantId, retryMillis);
-            }
-        } catch (Throwable t) {
-            throw new Exception(String.format("Cannot register feed ID [%s]", this.feedId), t);
-        }
-    }
-
     private void waitForHawkularServer() throws Exception {
         OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
 
@@ -692,41 +653,6 @@ public abstract class AgentCoreEngine {
                 log.warnConnectionDelayed(counter, "metrics", statusUrl);
             }
         }
-
-        if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
-            statusUrl = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
-                    configuration.getStorageAdapter().getInventoryContext()).append("status").toString();
-            request = this.httpClientBuilder.buildJsonGetRequest(statusUrl, null);
-            counter = 0;
-            while (true) {
-                Response response = null;
-                try {
-                    response = httpclient.newCall(request).execute();
-                    if (response.code() != 200) {
-                        if (response.code() != 401) {
-                            log.debugf("Hawkular Inventory is not ready yet: %d/%s", response.code(),
-                                    response.message());
-                        } else {
-                            log.warnBadHawkularCredentials(response.code(), response.message());
-                        }
-                    } else {
-                        log.debugf("Hawkular Inventory is ready: %s", response.body().string());
-                        break;
-                    }
-                } catch (Exception e) {
-                    log.debugf("Hawkular Inventory is not ready yet: %s", e.toString());
-                } finally {
-                    if (response != null) {
-                        response.body().close();
-                    }
-                }
-                Thread.sleep(5000L);
-                counter++;
-                if (counter % 5 == 0) {
-                    log.warnConnectionDelayed(counter, "inventory", statusUrl);
-                }
-            }
-        }
     }
 
     /**
@@ -747,85 +673,6 @@ public abstract class AgentCoreEngine {
         String status = (String) result.get("MetricsService");
 
         return "STARTED".equals(status);
-    }
-
-    /**
-     * Registers the feed with the Hawkular system under the given tenant.
-     * Note, it is OK to re-register the same feed/tenant combinations.
-     *
-     * If retryMillis > 0 then this will not return until the feed is properly registered.
-     * If the Hawkular server is not up, this could mean we are stuck here for a long time.
-     *
-     * @param tenantId the feed is registered under the given tenantId
-     * @param retryMillis if >0 the amount of millis to elapse before retrying
-     * @throws Exception if failed to register feed
-     */
-    public void registerFeed(String tenantId, int retryMillis) throws Exception {
-        // get the payload in JSON format
-        Feed.Blueprint feedPojo = new Feed.Blueprint(this.feedId, null);
-        String jsonPayload = Util.toJson(feedPojo);
-
-        // build the REST URL...
-        // start with the protocol, host, and port, plus context
-        StringBuilder url = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
-                configuration.getStorageAdapter().getInventoryContext());
-
-        // rest of the URL says we want the feeds API
-        url.append("entity/feed");
-
-        // now send the REST requests - one for each tenant to register
-        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-
-        Map<String, String> header = Collections.singletonMap("Hawkular-Tenant", tenantId);
-        Request request = this.httpClientBuilder.buildJsonPostRequest(url.toString(), header, jsonPayload);
-
-        boolean keepRetrying = (retryMillis > 0);
-        do {
-            try {
-                // note that we retry if newCall.execute throws an exception (assuming we were told to retry)
-                Response httpResponse = httpclient.newCall(request).execute();
-
-                try {
-                    // HTTP status of 201 means success; 409 means it already exists, anything else is an error
-                    if (httpResponse.code() == 201) {
-                        keepRetrying = false;
-                        final String feedObjectFromServer = httpResponse.body().string();
-                        final Feed feed = Util.fromJson(feedObjectFromServer, Feed.class);
-                        if (this.feedId.equals(feed.getId())) {
-                            log.infoUsingFeedId(feed.getId(), tenantId);
-                        } else {
-                            // do not keep retrying - this is a bad error; we need to abort
-                            log.errorUnwantedFeedId(feed.getId(), this.feedId, tenantId);
-                            throw new Exception(String.format("Received unwanted feed [%s]", feed.getId()));
-                        }
-                    } else if (httpResponse.code() == 409) {
-                        keepRetrying = false;
-                        log.infoFeedIdAlreadyRegistered(this.feedId, tenantId);
-                    } else if (httpResponse.code() == 404) {
-                        // the server is probably just starting to come up - wait for it if we were told to retry
-                        keepRetrying = (retryMillis > 0);
-                        throw new Exception(String.format("Is the Hawkular Server booting up? (%d=%s)",
-                                httpResponse.code(),
-                                httpResponse.message()));
-                    } else {
-                        // futile to keep retrying and getting the same 500 or whatever error
-                        keepRetrying = false;
-                        throw new Exception(String.format("status-code=[%d], reason=[%s]",
-                                httpResponse.code(),
-                                httpResponse.message()));
-                    }
-                } finally {
-                    httpResponse.body().close();
-                }
-            } catch (Exception e) {
-                log.warnCannotRegisterFeed(this.feedId, tenantId, request.url().toString(), e.toString());
-                if (keepRetrying) {
-                    Thread.sleep(retryMillis);
-                } else {
-                    throw e;
-                }
-            }
-        } while (keepRetrying);
     }
 
     /**

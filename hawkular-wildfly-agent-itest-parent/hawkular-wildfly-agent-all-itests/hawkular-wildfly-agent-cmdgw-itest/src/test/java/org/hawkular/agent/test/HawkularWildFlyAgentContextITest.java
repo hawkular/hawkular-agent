@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.test;
 
+import java.util.Optional;
+
 import org.hawkular.agent.monitor.api.HawkularAgentContext;
 import org.hawkular.agent.ws.test.AbstractCommandITest;
 import org.hawkular.agent.ws.test.DatasourceCommandITest;

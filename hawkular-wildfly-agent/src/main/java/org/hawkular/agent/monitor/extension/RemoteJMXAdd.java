@@ -24,8 +24,6 @@ import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
 import org.hawkular.agent.monitor.service.MonitorService;
-import org.hawkular.agent.wildfly.log.AgentLoggers;
-import org.hawkular.agent.wildfly.log.MsgLogger;
 import org.hawkular.agent.wildfly.util.Util;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
