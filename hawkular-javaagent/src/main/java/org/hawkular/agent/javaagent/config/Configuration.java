@@ -18,45 +18,52 @@ package org.hawkular.agent.javaagent.config;
 
 import org.hawkular.agent.javaagent.Util;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class Configuration implements Validatable {
 
     @JsonProperty
-    public Subsystem subsystem;
+    private Subsystem subsystem;
 
     @JsonProperty("security-realm")
-    public SecurityRealm[] securityRealms;
+    private SecurityRealm[] securityRealms;
 
     @JsonProperty("storage-adapter")
-    public StorageAdapter storageAdapter = new StorageAdapter();
+    private StorageAdapter storageAdapter = new StorageAdapter();
 
     @JsonProperty
-    public Diagnostics diagnostics = new Diagnostics();
+    private Diagnostics diagnostics = new Diagnostics();
 
     @JsonProperty("metric-set-dmr")
-    public DMRMetricSet[] dmrMetricSets;
+    private DMRMetricSet[] dmrMetricSets;
 
     @JsonProperty("avail-set-dmr")
-    public DMRAvailSet[] dmrAvailSets;
+    private DMRAvailSet[] dmrAvailSets;
 
     @JsonProperty("resource-type-set-dmr")
-    public DMRResourceTypeSet[] dmrResourceTypeSets;
+    private DMRResourceTypeSet[] dmrResourceTypeSets;
 
     @JsonProperty("metric-set-jmx")
-    public JMXMetricSet[] jmxMetricSets;
+    private JMXMetricSet[] jmxMetricSets;
 
     @JsonProperty("avail-set-jmx")
-    public JMXAvailSet[] jmxAvailSets;
+    private JMXAvailSet[] jmxAvailSets;
 
     @JsonProperty("resource-type-set-jmx")
-    public JMXResourceTypeSet[] jmxResourceTypeSets;
+    private JMXResourceTypeSet[] jmxResourceTypeSets;
 
     @JsonProperty("managed-servers")
-    public ManagedServers managedServers = new ManagedServers();
+    private ManagedServers managedServers = new ManagedServers();
 
     @JsonProperty
-    public Platform platform = new Platform();
+    private Platform platform = new Platform();
 
     public Configuration() {
     }
@@ -137,5 +144,101 @@ public class Configuration implements Validatable {
         }
         managedServers.validate();
         platform.validate();
+    }
+
+    public Subsystem getSubsystem() {
+        return subsystem;
+    }
+
+    public void setSubsystem(Subsystem subsystem) {
+        this.subsystem = subsystem;
+    }
+
+    public SecurityRealm[] getSecurityRealms() {
+        return securityRealms;
+    }
+
+    public void setSecurityRealms(SecurityRealm[] securityRealms) {
+        this.securityRealms = securityRealms;
+    }
+
+    public StorageAdapter getStorageAdapter() {
+        return storageAdapter;
+    }
+
+    public void setStorageAdapter(StorageAdapter storageAdapter) {
+        this.storageAdapter = storageAdapter;
+    }
+
+    public Diagnostics getDiagnostics() {
+        return diagnostics;
+    }
+
+    public void setDiagnostics(Diagnostics diagnostics) {
+        this.diagnostics = diagnostics;
+    }
+
+    public DMRMetricSet[] getDmrMetricSets() {
+        return dmrMetricSets;
+    }
+
+    public void setDmrMetricSets(DMRMetricSet[] dmrMetricSets) {
+        this.dmrMetricSets = dmrMetricSets;
+    }
+
+    public DMRAvailSet[] getDmrAvailSets() {
+        return dmrAvailSets;
+    }
+
+    public void setDmrAvailSets(DMRAvailSet[] dmrAvailSets) {
+        this.dmrAvailSets = dmrAvailSets;
+    }
+
+    public DMRResourceTypeSet[] getDmrResourceTypeSets() {
+        return dmrResourceTypeSets;
+    }
+
+    public void setDmrResourceTypeSets(DMRResourceTypeSet[] dmrResourceTypeSets) {
+        this.dmrResourceTypeSets = dmrResourceTypeSets;
+    }
+
+    public JMXMetricSet[] getJmxMetricSets() {
+        return jmxMetricSets;
+    }
+
+    public void setJmxMetricSets(JMXMetricSet[] jmxMetricSets) {
+        this.jmxMetricSets = jmxMetricSets;
+    }
+
+    public JMXAvailSet[] getJmxAvailSets() {
+        return jmxAvailSets;
+    }
+
+    public void setJmxAvailSets(JMXAvailSet[] jmxAvailSets) {
+        this.jmxAvailSets = jmxAvailSets;
+    }
+
+    public JMXResourceTypeSet[] getJmxResourceTypeSets() {
+        return jmxResourceTypeSets;
+    }
+
+    public void setJmxResourceTypeSets(JMXResourceTypeSet[] jmxResourceTypeSets) {
+        this.jmxResourceTypeSets = jmxResourceTypeSets;
+    }
+
+    public ManagedServers getManagedServers() {
+        return managedServers;
+    }
+
+    public void setManagedServers(ManagedServers managedServers) {
+        this.managedServers = managedServers;
+    }
+
+    public Platform getPlatform() {
+        return platform;
+    }
+
+    public void setPlatform(Platform platform) {
+        this.platform = platform;
     }
 }

@@ -88,42 +88,42 @@ public class ConfigConverter {
         // now convert our yaml config to the config object the agent core engine needs
 
         GlobalConfiguration globalConfiguration = new GlobalConfiguration(
-                config.subsystem.enabled,
-                config.subsystem.immutable,
-                config.subsystem.inContainer,
+                config.getSubsystem().getEnabled(),
+                config.getSubsystem().getImmutable(),
+                config.getSubsystem().getInContainer(),
                 null,
-                config.subsystem.autoDiscoveryScanPeriodSecs,
-                config.subsystem.minCollectionIntervalSecs,
+                config.getSubsystem().getAutoDiscoveryScanPeriodSecs(),
+                config.getSubsystem().getMinCollectionIntervalSecs(),
                 2,
-                config.subsystem.metricDispatcherBufferSize,
-                config.subsystem.metricDispatcherMaxBatchSize,
-                config.subsystem.availDispatcherBufferSize,
-                config.subsystem.availDispatcherMaxBatchSize,
-                config.subsystem.pingPeriodSecs);
+                config.getSubsystem().getMetricDispatcherBufferSize(),
+                config.getSubsystem().getMetricDispatcherMaxBatchSize(),
+                config.getSubsystem().getAvailDispatcherBufferSize(),
+                config.getSubsystem().getAvailDispatcherMaxBatchSize(),
+                config.getSubsystem().getPingPeriodSecs());
 
         DiagnosticsConfiguration diagnostics = new DiagnosticsConfiguration(
-                config.diagnostics.enabled,
-                AgentCoreEngineConfiguration.DiagnosticsReportTo.valueOf(config.diagnostics.reportTo.name()),
-                config.diagnostics.interval,
-                config.diagnostics.timeUnits.toJavaTimeUnit());
+                config.getDiagnostics().getEnabled(),
+                AgentCoreEngineConfiguration.DiagnosticsReportTo.valueOf(config.getDiagnostics().getReportTo().name()),
+                config.getDiagnostics().getInterval(),
+                config.getDiagnostics().getTimeUnits().toJavaTimeUnit());
 
         StorageAdapterConfiguration storageAdapter = new StorageAdapterConfiguration(
-                AgentCoreEngineConfiguration.StorageReportTo.valueOf(config.storageAdapter.type.name()),
-                config.storageAdapter.username,
-                config.storageAdapter.password,
-                config.storageAdapter.tenantId,
-                config.storageAdapter.feedId,
-                config.storageAdapter.url,
-                config.storageAdapter.useSSL(),
+                AgentCoreEngineConfiguration.StorageReportTo.valueOf(config.getStorageAdapter().getType().name()),
+                config.getStorageAdapter().getUsername(),
+                config.getStorageAdapter().getPassword(),
+                config.getStorageAdapter().getTenantId(),
+                config.getStorageAdapter().getFeedId(),
+                config.getStorageAdapter().getUrl(),
+                config.getStorageAdapter().useSSL(),
                 null, // we don't use socket binding ref
-                config.storageAdapter.inventoryContext,
-                config.storageAdapter.metricsContext,
-                config.storageAdapter.feedcommContext,
+                config.getStorageAdapter().getInventoryContext(),
+                config.getStorageAdapter().getMetricsContext(),
+                config.getStorageAdapter().getFeedcommContext(),
                 null, // we use security realm exclusively
                 null, // we use security realm exclusively
-                config.storageAdapter.securityRealmName,
-                config.storageAdapter.connectTimeoutSecs,
-                config.storageAdapter.readTimeoutSecs);
+                config.getStorageAdapter().getSecurityRealmName(),
+                config.getStorageAdapter().getConnectTimeoutSecs(),
+                config.getStorageAdapter().getReadTimeoutSecs());
 
         ProtocolConfiguration<DMRNodeLocation> dmrConfiguration = buildDmrConfiguration(config);
         ProtocolConfiguration<JMXNodeLocation> jmxConfiguration = buildJmxConfiguration(config);
@@ -143,115 +143,116 @@ public class ConfigConverter {
 
         TypeSets.Builder<DMRNodeLocation> typeSets = new TypeSets.Builder<>();
 
-        for (DMRMetricSet metricSet : config.dmrMetricSets) {
+        for (DMRMetricSet metricSet : config.getDmrMetricSets()) {
             TypeSetBuilder<MetricType<DMRNodeLocation>> typeSet = TypeSet.<MetricType<DMRNodeLocation>> builder();
-            typeSet.name(new Name(metricSet.name));
-            typeSet.enabled(metricSet.enabled);
-            for (DMRMetric metric : metricSet.dmrMetrics) {
+            typeSet.name(new Name(metricSet.getName()));
+            typeSet.enabled(metricSet.getEnabled());
+            for (DMRMetric metric : metricSet.getDmrMetrics()) {
                 DMRNodeLocation location = new DMRNodeLocation(
-                        getDmrPathAddress(metric.path),
-                        metric.resolveExpressions,
-                        metric.includeDefaults);
-                AttributeLocation<DMRNodeLocation> aLocation = new AttributeLocation<>(location, metric.attribute);
+                        getDmrPathAddress(metric.getPath()),
+                        metric.getResolveExpressions(),
+                        metric.getIncludeDefaults());
+                AttributeLocation<DMRNodeLocation> aLocation = new AttributeLocation<>(location,
+                        metric.getAttribute());
                 MetricType<DMRNodeLocation> type = new MetricType<DMRNodeLocation>(
-                        new ID(metricSet.name + "~" + metric.name),
-                        new Name(metric.name),
+                        new ID(metricSet.getName() + "~" + metric.getName()),
+                        new Name(metric.getName()),
                         aLocation,
-                        new Interval(metric.interval, metric.timeUnits.toJavaTimeUnit()),
-                        metric.metricUnits,
-                        metric.metricType,
-                        metric.metricIdTemplate,
-                        metric.metricTags);
+                        new Interval(metric.getInterval(), metric.getTimeUnits().toJavaTimeUnit()),
+                        metric.getMetricUnits(),
+                        metric.getMetricType(),
+                        metric.getMetricIdTemplate(),
+                        metric.getMetricTags());
                 typeSet.type(type);
             }
             typeSets.metricTypeSet(typeSet.build());
         }
 
-        for (DMRAvailSet availSet : config.dmrAvailSets) {
+        for (DMRAvailSet availSet : config.getDmrAvailSets()) {
             TypeSetBuilder<AvailType<DMRNodeLocation>> typeSet = TypeSet.<AvailType<DMRNodeLocation>> builder();
-            typeSet.name(new Name(availSet.name));
-            typeSet.enabled(availSet.enabled);
-            for (DMRAvail avail : availSet.dmrAvails) {
+            typeSet.name(new Name(availSet.getName()));
+            typeSet.enabled(availSet.getEnabled());
+            for (DMRAvail avail : availSet.getDmrAvails()) {
                 DMRNodeLocation location = new DMRNodeLocation(
-                        getDmrPathAddress(avail.path),
-                        avail.resolveExpressions,
-                        avail.includeDefaults);
-                AttributeLocation<DMRNodeLocation> aLocation = new AttributeLocation<>(location, avail.attribute);
+                        getDmrPathAddress(avail.getPath()),
+                        avail.getResolveExpressions(),
+                        avail.getIncludeDefaults());
+                AttributeLocation<DMRNodeLocation> aLocation = new AttributeLocation<>(location, avail.getAttribute());
                 AvailType<DMRNodeLocation> type = new AvailType<DMRNodeLocation>(
-                        new ID(availSet.name + "~" + avail.name),
-                        new Name(avail.name),
+                        new ID(availSet.getName() + "~" + avail.getName()),
+                        new Name(avail.getName()),
                         aLocation,
-                        new Interval(avail.interval, avail.timeUnits.toJavaTimeUnit()),
-                        Pattern.compile(avail.upRegex),
-                        avail.metricIdTemplate,
-                        avail.metricTags);
+                        new Interval(avail.getInterval(), avail.getTimeUnits().toJavaTimeUnit()),
+                        Pattern.compile(avail.getUpRegex()),
+                        avail.getMetricIdTemplate(),
+                        avail.getMetricTags());
                 typeSet.type(type);
             }
             typeSets.availTypeSet(typeSet.build());
         }
 
-        for (DMRResourceTypeSet rtSet : config.dmrResourceTypeSets) {
+        for (DMRResourceTypeSet rtSet : config.getDmrResourceTypeSets()) {
             TypeSetBuilder<ResourceType<DMRNodeLocation>> typeSet = TypeSet.<ResourceType<DMRNodeLocation>> builder();
-            typeSet.name(new Name(rtSet.name));
-            typeSet.enabled(rtSet.enabled);
-            for (DMRResourceType rt : rtSet.dmrResourceTypes) {
+            typeSet.name(new Name(rtSet.getName()));
+            typeSet.enabled(rtSet.getEnabled());
+            for (DMRResourceType rt : rtSet.getDmrResourceTypes()) {
                 Builder<?, DMRNodeLocation> rtBuilder = ResourceType.<DMRNodeLocation> builder();
-                rtBuilder.name(new Name(rt.name));
-                rtBuilder.location(DMRNodeLocation.of(rt.path));
-                rtBuilder.resourceNameTemplate(rt.resourceNameTemplate);
-                if (rt.parents != null) {
-                    for (String parent : rt.parents) {
+                rtBuilder.name(new Name(rt.getName()));
+                rtBuilder.location(DMRNodeLocation.of(rt.getPath()));
+                rtBuilder.resourceNameTemplate(rt.getResourceNameTemplate());
+                if (rt.getParents() != null) {
+                    for (String parent : rt.getParents()) {
                         rtBuilder.parent(new Name(parent));
                     }
                 }
-                if (rt.metricSets != null) {
-                    for (String metricSet : rt.metricSets) {
+                if (rt.getMetricSets() != null) {
+                    for (String metricSet : rt.getMetricSets()) {
                         rtBuilder.metricSetName(new Name(metricSet));
                     }
                 }
-                if (rt.availSets != null) {
-                    for (String availSet : rt.availSets) {
+                if (rt.getAvailSets() != null) {
+                    for (String availSet : rt.getAvailSets()) {
                         rtBuilder.availSetName(new Name(availSet));
                     }
                 }
 
-                if (rt.dmrResourceConfigs != null) {
-                    for (DMRResourceConfig resConfig : rt.dmrResourceConfigs) {
+                if (rt.getDmrResourceConfigs() != null) {
+                    for (DMRResourceConfig resConfig : rt.getDmrResourceConfigs()) {
                         DMRNodeLocation location = new DMRNodeLocation(
-                                getDmrPathAddress(resConfig.path),
-                                resConfig.resolveExpressions,
-                                resConfig.includeDefaults);
+                                getDmrPathAddress(resConfig.getPath()),
+                                resConfig.getResolveExpressions(),
+                                resConfig.getIncludeDefaults());
                         AttributeLocation<DMRNodeLocation> aLocation = new AttributeLocation<>(location,
-                                resConfig.attribute);
+                                resConfig.getAttribute());
 
                         rtBuilder.resourceConfigurationPropertyType(new ResourceConfigurationPropertyType<>(
                                 ID.NULL_ID,
-                                new Name(resConfig.name),
+                                new Name(resConfig.getName()),
                                 aLocation));
                     }
                 }
 
-                if (rt.dmrOperations != null) {
-                    for (DMROperation dmrOp : rt.dmrOperations) {
-                        PathAddress path = getDmrPathAddress(dmrOp.path);
+                if (rt.getDmrOperations() != null) {
+                    for (DMROperation dmrOp : rt.getDmrOperations()) {
+                        PathAddress path = getDmrPathAddress(dmrOp.getPath());
                         List<OperationParam> params = new ArrayList<>();
-                        if (dmrOp.dmrOperationParams != null) {
-                            for (DMROperationParam dmrParam : dmrOp.dmrOperationParams) {
+                        if (dmrOp.getDmrOperationParams() != null) {
+                            for (DMROperationParam dmrParam : dmrOp.getDmrOperationParams()) {
                                 OperationParam param = new OperationParam(
-                                        dmrParam.name,
-                                        dmrParam.type,
-                                        dmrParam.description,
-                                        dmrParam.defaultValue,
-                                        dmrParam.required);
+                                        dmrParam.getName(),
+                                        dmrParam.getType(),
+                                        dmrParam.getDescription(),
+                                        dmrParam.getDefaultValue(),
+                                        dmrParam.getRequired());
                                 params.add(param);
                             }
                         }
                         Operation<DMRNodeLocation> op = new Operation<>(
                                 ID.NULL_ID,
-                                new Name(dmrOp.name),
+                                new Name(dmrOp.getName()),
                                 new DMRNodeLocation(path),
-                                dmrOp.internalName,
-                                dmrOp.modifies,
+                                dmrOp.getInternalName(),
+                                dmrOp.getModifies(),
                                 params);
                         rtBuilder.operation(op);
                     }
@@ -265,7 +266,7 @@ public class ConfigConverter {
 
         Map<String, EndpointConfiguration> managedServers = new HashMap<>();
 
-        if (config.managedServers.localDmr != null) {
+        if (config.getManagedServers().getLocalDmr() != null) {
             ConnectionData connectionData = null;
 
             // the agent cannot get a local client when running as a javaagent, so really
@@ -274,45 +275,45 @@ public class ConfigConverter {
             connectionData = new ConnectionData("http-remoting", "127.0.0.1", 9990, null, null);
 
             EndpointConfiguration localDmrEndpointConfig = new EndpointConfiguration(
-                    config.managedServers.localDmr.name,
-                    config.managedServers.localDmr.enabled,
-                    getNamesFromStrings(config.managedServers.localDmr.resourceTypeSets),
+                    config.getManagedServers().getLocalDmr().getName(),
+                    config.getManagedServers().getLocalDmr().getEnabled(),
+                    getNamesFromStrings(config.getManagedServers().getLocalDmr().getResourceTypeSets()),
                     connectionData,
                     null,
-                    config.managedServers.localDmr.setAvailOnShutdown,
-                    config.managedServers.localDmr.tenantId,
-                    config.managedServers.localDmr.metricIdTemplate,
-                    config.managedServers.localDmr.metricTags,
+                    config.getManagedServers().getLocalDmr().getSetAvailOnShutdown(),
+                    config.getManagedServers().getLocalDmr().getTenantId(),
+                    config.getManagedServers().getLocalDmr().getMetricIdTemplate(),
+                    config.getManagedServers().getLocalDmr().getMetricTags(),
                     null);
-            managedServers.put(config.managedServers.localDmr.name, localDmrEndpointConfig);
+            managedServers.put(config.getManagedServers().getLocalDmr().getName(), localDmrEndpointConfig);
         }
 
-        if (config.managedServers.remoteDmrs != null) {
-            for (RemoteDMR remoteDmr : config.managedServers.remoteDmrs) {
-                if (remoteDmr.protocol == null) {
-                    remoteDmr.protocol = remoteDmr.useSsl ? "https-remoting" : "http-remoting";
+        if (config.getManagedServers().getRemoteDmrs() != null) {
+            for (RemoteDMR remoteDmr : config.getManagedServers().getRemoteDmrs()) {
+                if (remoteDmr.getProtocol() == null) {
+                    remoteDmr.setProtocol(remoteDmr.getUseSsl() ? "https-remoting" : "http-remoting");
                 }
 
                 ConnectionData connectionData = new ConnectionData(
-                        remoteDmr.protocol,
-                        remoteDmr.host,
-                        remoteDmr.port,
-                        remoteDmr.username,
-                        remoteDmr.password);
+                        remoteDmr.getProtocol(),
+                        remoteDmr.getHost(),
+                        remoteDmr.getPort(),
+                        remoteDmr.getUsername(),
+                        remoteDmr.getPassword());
 
                 EndpointConfiguration remoteDmrEndpointConfig = new EndpointConfiguration(
-                        remoteDmr.name,
-                        remoteDmr.enabled,
-                        getNamesFromStrings(remoteDmr.resourceTypeSets),
+                        remoteDmr.getName(),
+                        remoteDmr.getEnabled(),
+                        getNamesFromStrings(remoteDmr.getResourceTypeSets()),
                         connectionData,
-                        remoteDmr.securityRealmName,
-                        remoteDmr.setAvailOnShutdown,
-                        remoteDmr.tenantId,
-                        remoteDmr.metricIdTemplate,
-                        remoteDmr.metricTags,
+                        remoteDmr.getSecurityRealmName(),
+                        remoteDmr.getSetAvailOnShutdown(),
+                        remoteDmr.getTenantId(),
+                        remoteDmr.getMetricIdTemplate(),
+                        remoteDmr.getMetricTags(),
                         null);
 
-                managedServers.put(remoteDmr.name, remoteDmrEndpointConfig);
+                managedServers.put(remoteDmr.getName(), remoteDmrEndpointConfig);
             }
         }
 
@@ -323,105 +324,106 @@ public class ConfigConverter {
 
         TypeSets.Builder<JMXNodeLocation> typeSets = new TypeSets.Builder<>();
 
-        for (JMXMetricSet metricSet : config.jmxMetricSets) {
+        for (JMXMetricSet metricSet : config.getJmxMetricSets()) {
             TypeSetBuilder<MetricType<JMXNodeLocation>> typeSet = TypeSet.<MetricType<JMXNodeLocation>> builder();
-            typeSet.name(new Name(metricSet.name));
-            typeSet.enabled(metricSet.enabled);
-            for (JMXMetric metric : metricSet.jmxMetrics) {
-                JMXNodeLocation location = new JMXNodeLocation(getJmxObjectName(metric.objectName));
-                AttributeLocation<JMXNodeLocation> aLocation = new AttributeLocation<>(location, metric.attribute);
+            typeSet.name(new Name(metricSet.getName()));
+            typeSet.enabled(metricSet.getEnabled());
+            for (JMXMetric metric : metricSet.getJmxMetrics()) {
+                JMXNodeLocation location = new JMXNodeLocation(getJmxObjectName(metric.getObjectName()));
+                AttributeLocation<JMXNodeLocation> aLocation = new AttributeLocation<>(location,
+                        metric.getAttribute());
                 MetricType<JMXNodeLocation> type = new MetricType<JMXNodeLocation>(
-                        new ID(metricSet.name + "~" + metric.name),
-                        new Name(metric.name),
+                        new ID(metricSet.getName() + "~" + metric.getName()),
+                        new Name(metric.getName()),
                         aLocation,
-                        new Interval(metric.interval, metric.timeUnits.toJavaTimeUnit()),
-                        metric.metricUnits,
-                        metric.metricType,
-                        metric.metricIdTemplate,
-                        metric.metricTags);
+                        new Interval(metric.getInterval(), metric.getTimeUnits().toJavaTimeUnit()),
+                        metric.getMetricUnits(),
+                        metric.getMetricType(),
+                        metric.getMetricIdTemplate(),
+                        metric.getMetricTags());
                 typeSet.type(type);
             }
             typeSets.metricTypeSet(typeSet.build());
         }
 
-        for (JMXAvailSet availSet : config.jmxAvailSets) {
+        for (JMXAvailSet availSet : config.getJmxAvailSets()) {
             TypeSetBuilder<AvailType<JMXNodeLocation>> typeSet = TypeSet.<AvailType<JMXNodeLocation>> builder();
-            typeSet.name(new Name(availSet.name));
-            typeSet.enabled(availSet.enabled);
-            for (JMXAvail avail : availSet.jmxAvails) {
-                JMXNodeLocation location = new JMXNodeLocation(getJmxObjectName(avail.objectName));
-                AttributeLocation<JMXNodeLocation> aLocation = new AttributeLocation<>(location, avail.attribute);
+            typeSet.name(new Name(availSet.getName()));
+            typeSet.enabled(availSet.getEnabled());
+            for (JMXAvail avail : availSet.getJmxAvails()) {
+                JMXNodeLocation location = new JMXNodeLocation(getJmxObjectName(avail.getObjectName()));
+                AttributeLocation<JMXNodeLocation> aLocation = new AttributeLocation<>(location, avail.getAttribute());
                 AvailType<JMXNodeLocation> type = new AvailType<JMXNodeLocation>(
-                        new ID(availSet.name + "~" + avail.name),
-                        new Name(avail.name),
+                        new ID(availSet.getName() + "~" + avail.getName()),
+                        new Name(avail.getName()),
                         aLocation,
-                        new Interval(avail.interval, avail.timeUnits.toJavaTimeUnit()),
-                        Pattern.compile(avail.upRegex),
-                        avail.metricIdTemplate,
-                        avail.metricTags);
+                        new Interval(avail.getInterval(), avail.getTimeUnits().toJavaTimeUnit()),
+                        Pattern.compile(avail.getUpRegex()),
+                        avail.getMetricIdTemplate(),
+                        avail.getMetricTags());
                 typeSet.type(type);
             }
             typeSets.availTypeSet(typeSet.build());
         }
 
-        for (JMXResourceTypeSet rtSet : config.jmxResourceTypeSets) {
+        for (JMXResourceTypeSet rtSet : config.getJmxResourceTypeSets()) {
             TypeSetBuilder<ResourceType<JMXNodeLocation>> typeSet = TypeSet.<ResourceType<JMXNodeLocation>> builder();
-            typeSet.name(new Name(rtSet.name));
-            typeSet.enabled(rtSet.enabled);
-            for (JMXResourceType rt : rtSet.jmxResourceTypes) {
+            typeSet.name(new Name(rtSet.getName()));
+            typeSet.enabled(rtSet.getEnabled());
+            for (JMXResourceType rt : rtSet.getJmxResourceTypes()) {
                 Builder<?, JMXNodeLocation> rtBuilder = ResourceType.<JMXNodeLocation> builder();
-                rtBuilder.name(new Name(rt.name));
-                rtBuilder.location(new JMXNodeLocation(getJmxObjectName(rt.objectName)));
-                rtBuilder.resourceNameTemplate(rt.resourceNameTemplate);
-                if (rt.parents != null) {
-                    for (String parent : rt.parents) {
+                rtBuilder.name(new Name(rt.getName()));
+                rtBuilder.location(new JMXNodeLocation(getJmxObjectName(rt.getObjectName())));
+                rtBuilder.resourceNameTemplate(rt.getResourceNameTemplate());
+                if (rt.getParents() != null) {
+                    for (String parent : rt.getParents()) {
                         rtBuilder.parent(new Name(parent));
                     }
                 }
-                if (rt.metricSets != null) {
-                    for (String metricSet : rt.metricSets) {
+                if (rt.getMetricSets() != null) {
+                    for (String metricSet : rt.getMetricSets()) {
                         rtBuilder.metricSetName(new Name(metricSet));
                     }
                 }
-                if (rt.availSets != null) {
-                    for (String availSet : rt.availSets) {
+                if (rt.getAvailSets() != null) {
+                    for (String availSet : rt.getAvailSets()) {
                         rtBuilder.availSetName(new Name(availSet));
                     }
                 }
 
-                if (rt.jmxResourceConfigs != null) {
-                    for (JMXResourceConfig resConfig : rt.jmxResourceConfigs) {
-                        JMXNodeLocation location = new JMXNodeLocation(getJmxObjectName(resConfig.objectName));
+                if (rt.getJmxResourceConfigs() != null) {
+                    for (JMXResourceConfig resConfig : rt.getJmxResourceConfigs()) {
+                        JMXNodeLocation location = new JMXNodeLocation(getJmxObjectName(resConfig.getObjectName()));
                         AttributeLocation<JMXNodeLocation> aLocation = new AttributeLocation<>(location,
-                                resConfig.attribute);
+                                resConfig.getAttribute());
 
                         rtBuilder.resourceConfigurationPropertyType(new ResourceConfigurationPropertyType<>(
                                 ID.NULL_ID,
-                                new Name(resConfig.name),
+                                new Name(resConfig.getName()),
                                 aLocation));
                     }
                 }
 
-                if (rt.jmxOperations != null) {
-                    for (JMXOperation jmxOp : rt.jmxOperations) {
+                if (rt.getJmxOperations() != null) {
+                    for (JMXOperation jmxOp : rt.getJmxOperations()) {
                         List<OperationParam> params = new ArrayList<>();
-                        if (jmxOp.jmxOperationParams != null) {
-                            for (JMXOperationParam jmxParam : jmxOp.jmxOperationParams) {
+                        if (jmxOp.getJmxOperationParams() != null) {
+                            for (JMXOperationParam jmxParam : jmxOp.getJmxOperationParams()) {
                                 OperationParam param = new OperationParam(
-                                        jmxParam.name,
-                                        jmxParam.type,
-                                        jmxParam.description,
-                                        jmxParam.defaultValue,
-                                        jmxParam.required);
+                                        jmxParam.getName(),
+                                        jmxParam.getType(),
+                                        jmxParam.getDescription(),
+                                        jmxParam.getDefaultValue(),
+                                        jmxParam.getRequired());
                                 params.add(param);
                             }
                         }
                         Operation<JMXNodeLocation> op = new Operation<>(
                                 ID.NULL_ID,
-                                new Name(jmxOp.name),
-                                new JMXNodeLocation(jmxOp.objectName),
-                                jmxOp.internalName,
-                                jmxOp.modifies,
+                                new Name(jmxOp.getName()),
+                                new JMXNodeLocation(jmxOp.getObjectName()),
+                                jmxOp.getInternalName(),
+                                jmxOp.getModifies(),
                                 params);
                         rtBuilder.operation(op);
                     }
@@ -435,49 +437,49 @@ public class ConfigConverter {
 
         Map<String, EndpointConfiguration> managedServers = new HashMap<>();
 
-        if (config.managedServers.localJmx != null) {
+        if (config.getManagedServers().getLocalJmx() != null) {
             EndpointConfiguration localJmx = new EndpointConfiguration(
-                    config.managedServers.localJmx.name,
-                    config.managedServers.localJmx.enabled,
-                    getNamesFromStrings(config.managedServers.localJmx.resourceTypeSets),
+                    config.getManagedServers().getLocalJmx().getName(),
+                    config.getManagedServers().getLocalJmx().getEnabled(),
+                    getNamesFromStrings(config.getManagedServers().getLocalJmx().getResourceTypeSets()),
                     null,
                     null,
-                    config.managedServers.localJmx.setAvailOnShutdown,
-                    config.managedServers.localJmx.tenantId,
-                    config.managedServers.localJmx.metricIdTemplate,
-                    config.managedServers.localJmx.metricTags,
+                    config.getManagedServers().getLocalJmx().getSetAvailOnShutdown(),
+                    config.getManagedServers().getLocalJmx().getTenantId(),
+                    config.getManagedServers().getLocalJmx().getMetricIdTemplate(),
+                    config.getManagedServers().getLocalJmx().getMetricTags(),
                     Collections.singletonMap(JMXEndpointService.MBEAN_SERVER_NAME_KEY,
-                            config.managedServers.localJmx.mbeanServerName));
-            managedServers.put(config.managedServers.localJmx.name, localJmx);
+                            config.getManagedServers().getLocalJmx().getMbeanServerName()));
+            managedServers.put(config.getManagedServers().getLocalJmx().getName(), localJmx);
         }
 
-        if (config.managedServers.remoteJmxs != null) {
-            for (RemoteJMX remoteJmx : config.managedServers.remoteJmxs) {
+        if (config.getManagedServers().getRemoteJmxs() != null) {
+            for (RemoteJMX remoteJmx : config.getManagedServers().getRemoteJmxs()) {
                 URI url;
                 try {
-                    url = new URI(remoteJmx.url);
+                    url = new URI(remoteJmx.getUrl());
                 } catch (Exception e) {
-                    throw new Exception("Remote JMX [" + remoteJmx.name + "] has invalid URL", e);
+                    throw new Exception("Remote JMX [" + remoteJmx.getName() + "] has invalid URL", e);
                 }
 
                 ConnectionData connectionData = new ConnectionData(
                         url,
-                        remoteJmx.username,
-                        remoteJmx.password);
+                        remoteJmx.getUsername(),
+                        remoteJmx.getPassword());
 
                 EndpointConfiguration remoteJmxEndpointConfig = new EndpointConfiguration(
-                        remoteJmx.name,
-                        remoteJmx.enabled,
-                        getNamesFromStrings(remoteJmx.resourceTypeSets),
+                        remoteJmx.getName(),
+                        remoteJmx.getEnabled(),
+                        getNamesFromStrings(remoteJmx.getResourceTypeSets()),
                         connectionData,
-                        remoteJmx.securityRealmName,
-                        remoteJmx.setAvailOnShutdown,
-                        remoteJmx.tenantId,
-                        remoteJmx.metricIdTemplate,
-                        remoteJmx.metricTags,
+                        remoteJmx.getSecurityRealmName(),
+                        remoteJmx.getSetAvailOnShutdown(),
+                        remoteJmx.getTenantId(),
+                        remoteJmx.getMetricIdTemplate(),
+                        remoteJmx.getMetricTags(),
                         null);
 
-                managedServers.put(remoteJmx.name, remoteJmxEndpointConfig);
+                managedServers.put(remoteJmx.getName(), remoteJmxEndpointConfig);
             }
         }
 
@@ -487,7 +489,7 @@ public class ConfigConverter {
     private ProtocolConfiguration<PlatformNodeLocation> buildPlatformConfiguration(Configuration config) {
         // assume they are disabled unless configured otherwise
 
-        if (!config.platform.enabled) {
+        if (!config.getPlatform().getEnabled()) {
             Map<String, EndpointConfiguration> managedServers = new HashMap<>();
             return new ProtocolConfiguration<PlatformNodeLocation>(TypeSets.empty(), managedServers);
         }
@@ -516,7 +518,8 @@ public class ConfigConverter {
 
         // OS top-level metrics
 
-        Interval osInterval = new Interval(config.platform.interval, config.platform.timeUnits.toJavaTimeUnit());
+        Interval osInterval = new Interval(config.getPlatform().getInterval(),
+                config.getPlatform().getTimeUnits().toJavaTimeUnit());
 
         MetricType<PlatformNodeLocation> systemCpuLoad = new MetricType<PlatformNodeLocation>(
                 PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeId(),
@@ -579,9 +582,9 @@ public class ConfigConverter {
 
         // now add children types if they are enabled
 
-        if (config.platform.fileStores != null && config.platform.fileStores.enabled) {
-            Interval interval = new Interval(config.platform.fileStores.interval,
-                    config.platform.fileStores.timeUnits.toJavaTimeUnit());
+        if (config.getPlatform().getFileStores() != null && config.getPlatform().getFileStores().getEnabled()) {
+            Interval interval = new Interval(config.getPlatform().getFileStores().getInterval(),
+                    config.getPlatform().getFileStores().getTimeUnits().toJavaTimeUnit());
 
             MetricType<PlatformNodeLocation> usableSpace = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.FILE_STORE_USABLE_SPACE.getMetricTypeId(),
@@ -639,9 +642,9 @@ public class ConfigConverter {
             typeSets.resourceTypeSet(typeSet);
         }
 
-        if (config.platform.memory != null && config.platform.memory.enabled) {
-            Interval interval = new Interval(config.platform.memory.interval,
-                    config.platform.memory.timeUnits.toJavaTimeUnit());
+        if (config.getPlatform().getMemory() != null && config.getPlatform().getMemory().getEnabled()) {
+            Interval interval = new Interval(config.getPlatform().getMemory().getInterval(),
+                    config.getPlatform().getMemory().getTimeUnits().toJavaTimeUnit());
 
             MetricType<PlatformNodeLocation> available = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeId(),
@@ -698,9 +701,9 @@ public class ConfigConverter {
             typeSets.resourceTypeSet(typeSet);
         }
 
-        if (config.platform.processors != null && config.platform.processors.enabled) {
-            Interval interval = new Interval(config.platform.processors.interval,
-                    config.platform.processors.timeUnits.toJavaTimeUnit());
+        if (config.getPlatform().getProcessors() != null && config.getPlatform().getProcessors().getEnabled()) {
+            Interval interval = new Interval(config.getPlatform().getProcessors().getInterval(),
+                    config.getPlatform().getProcessors().getTimeUnits().toJavaTimeUnit());
 
             // this is the Processor.getProcessorCpuLoadBetweenTicks value
             MetricType<PlatformNodeLocation> cpuUsage = new MetricType<PlatformNodeLocation>(
@@ -746,9 +749,9 @@ public class ConfigConverter {
             typeSets.resourceTypeSet(typeSet);
         }
 
-        if (config.platform.powerSources != null && config.platform.powerSources.enabled) {
-            Interval interval = new Interval(config.platform.powerSources.interval,
-                    config.platform.powerSources.timeUnits.toJavaTimeUnit());
+        if (config.getPlatform().getPowerSources() != null && config.getPlatform().getPowerSources().getEnabled()) {
+            Interval interval = new Interval(config.getPlatform().getPowerSources().getInterval(),
+                    config.getPlatform().getPowerSources().getTimeUnits().toJavaTimeUnit());
 
             MetricType<PlatformNodeLocation> remainingCap = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.POWER_SOURCE_REMAINING_CAPACITY.getMetricTypeId(),
@@ -808,7 +811,7 @@ public class ConfigConverter {
         }
 
         Map<String, EndpointConfiguration> managedServers = new HashMap<>();
-        if (config.platform.enabled) {
+        if (config.getPlatform().getEnabled()) {
             EndpointConfiguration localPlatform = new EndpointConfiguration(
                     "platform",
                     true,
@@ -819,7 +822,7 @@ public class ConfigConverter {
                     null,
                     null,
                     null,
-                    Collections.singletonMap(Constants.MACHINE_ID, config.platform.machineId));
+                    Collections.singletonMap(Constants.MACHINE_ID, config.getPlatform().getMachineId()));
             managedServers.put("platform", localPlatform);
         }
 

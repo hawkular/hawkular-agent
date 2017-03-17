@@ -18,18 +18,25 @@ package org.hawkular.agent.javaagent.config;
 
 import org.hawkular.agent.javaagent.Util;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class JMXMetricSet implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty
-    public Boolean enabled = Boolean.TRUE;
+    private Boolean enabled = Boolean.TRUE;
 
     @JsonProperty("metric-jmx")
-    public JMXMetric[] jmxMetrics;
+    private JMXMetric[] jmxMetrics;
 
     public JMXMetricSet() {
     }
@@ -42,7 +49,7 @@ public class JMXMetricSet implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("metric-set-jmx name must be specified");
         }
 
@@ -51,5 +58,29 @@ public class JMXMetricSet implements Validatable {
                 o.validate();
             }
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public JMXMetric[] getJmxMetrics() {
+        return jmxMetrics;
+    }
+
+    public void setJmxMetrics(JMXMetric[] jmxMetrics) {
+        this.jmxMetrics = jmxMetrics;
     }
 }

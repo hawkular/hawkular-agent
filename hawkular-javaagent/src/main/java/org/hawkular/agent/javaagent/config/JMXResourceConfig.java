@@ -18,18 +18,25 @@ package org.hawkular.agent.javaagent.config;
 
 import javax.management.ObjectName;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class JMXResourceConfig implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty("object-name")
-    public String objectName;
+    private String objectName;
 
     @JsonProperty(required = true)
-    public String attribute;
+    private String attribute;
 
     public JMXResourceConfig() {
     }
@@ -42,11 +49,11 @@ public class JMXResourceConfig implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("resource-config-jmx name must be specified");
         }
 
-        if (attribute == null) {
+        if (attribute == null || attribute.trim().isEmpty()) {
             throw new Exception("resource-config-jmx [" + name + "] attribute must be specified");
         }
 
@@ -58,5 +65,29 @@ public class JMXResourceConfig implements Validatable {
                         e);
             }
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getObjectName() {
+        return objectName;
+    }
+
+    public void setObjectName(String objectName) {
+        this.objectName = objectName;
+    }
+
+    public String getAttribute() {
+        return attribute;
+    }
+
+    public void setAttribute(String attribute) {
+        this.attribute = attribute;
     }
 }

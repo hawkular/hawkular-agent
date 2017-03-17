@@ -83,35 +83,35 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
             Map<String, TrustManager[]> trustOnlyTrustManagers,
             Map<String, SSLContext> trustOnlySslContexts) {
 
-        SecurityRealm[] securityRealms = config.securityRealms;
+        SecurityRealm[] securityRealms = config.getSecurityRealms();
         if (securityRealms == null) {
             return;
         }
 
         for (SecurityRealm securityRealm : securityRealms) {
             try {
-                String keyStoreType = securityRealm.keystoreType;
-                String trustManagerAlgorithm = securityRealm.trustManagerAlgorithm;
-                String keyManagerAlgorithm = securityRealm.keyManagerAlgorithm;
-                String sslProtocol = securityRealm.sslProtocol;
-                String keyPassword = (securityRealm.keyPassword != null) ? securityRealm.keyPassword
-                        : securityRealm.keystorePassword;
+                String keyStoreType = securityRealm.getKeystoreType();
+                String trustManagerAlgorithm = securityRealm.getTrustManagerAlgorithm();
+                String keyManagerAlgorithm = securityRealm.getKeyManagerAlgorithm();
+                String sslProtocol = securityRealm.getSslProtocol();
+                String keyPassword = (securityRealm.getKeyPassword() != null) ? securityRealm.getKeyPassword()
+                        : securityRealm.getKeystorePassword();
 
                 KeyStore keystore = KeyStore.getInstance(keyStoreType);
-                try (InputStream is = new FileInputStream(securityRealm.keystorePath)) {
-                    keystore.load(is, securityRealm.keystorePassword.toCharArray());
+                try (InputStream is = new FileInputStream(securityRealm.getKeystorePath())) {
+                    keystore.load(is, securityRealm.getKeystorePassword().toCharArray());
                 }
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerAlgorithm);
                 kmf.init(keystore, keyPassword.toCharArray());
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance(trustManagerAlgorithm);
                 tmf.init(keystore);
 
-                trustOnlyTrustManagers.put(securityRealm.name, tmf.getTrustManagers());
+                trustOnlyTrustManagers.put(securityRealm.getName(), tmf.getTrustManagers());
 
                 SSLContext sc = SSLContext.getInstance(sslProtocol);
                 sc.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new java.security.SecureRandom());
 
-                trustOnlySslContexts.put(securityRealm.name, sc);
+                trustOnlySslContexts.put(securityRealm.getName(), sc);
 
             } catch (NoSuchAlgorithmException
                     | KeyStoreException
@@ -119,7 +119,7 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
                     | IOException
                     | UnrecoverableKeyException
                     | KeyManagementException e) {
-                log.errorBuildingSecurityRealm(securityRealm.name, e);
+                log.errorBuildingSecurityRealm(securityRealm.getName(), e);
             }
         }
     }
@@ -140,7 +140,7 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
             super.startHawkularAgent();
         } else {
             Configuration oldConfig = getConfigurationManager().getConfiguration();
-            boolean doNotChangeConfig = (oldConfig != null && oldConfig.subsystem.immutable);
+            boolean doNotChangeConfig = (oldConfig != null && oldConfig.getSubsystem().getImmutable());
 
             AgentCoreEngineConfiguration agentConfig;
             try {

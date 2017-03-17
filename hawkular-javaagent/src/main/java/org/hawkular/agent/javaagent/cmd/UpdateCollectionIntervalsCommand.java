@@ -96,24 +96,24 @@ public class UpdateCollectionIntervalsCommand
                 String metricSetName = names[0];
                 String metricName = names[1];
                 // find the metric and change its interval if found
-                for (DMRMetricSet metricSet : javaAgentConfig.dmrMetricSets) {
-                    if (metricSetName.equals(metricSet.name)) {
-                        for (DMRMetric metric : metricSet.dmrMetrics) {
-                            if (metricName.equals(metric.name)) {
-                                metric.interval = Integer.valueOf(entry.getValue());
-                                metric.timeUnits = TimeUnits.seconds; // the command always assumes seconds
+                for (DMRMetricSet metricSet : javaAgentConfig.getDmrMetricSets()) {
+                    if (metricSetName.equals(metricSet.getName())) {
+                        for (DMRMetric metric : metricSet.getDmrMetrics()) {
+                            if (metricName.equals(metric.getName())) {
+                                metric.setInterval(Integer.valueOf(entry.getValue()));
+                                metric.setTimeUnits(TimeUnits.seconds); // the command always assumes seconds
                                 requireRestart = true;
                                 continue NEXT_AVAIL;
                             }
                         }
                     }
                 }
-                for (JMXMetricSet metricSet : javaAgentConfig.jmxMetricSets) {
-                    if (metricSetName.equals(metricSet.name)) {
-                        for (JMXMetric metric : metricSet.jmxMetrics) {
-                            if (metricName.equals(metric.name)) {
-                                metric.interval = Integer.valueOf(entry.getValue());
-                                metric.timeUnits = TimeUnits.seconds; // the command always assumes seconds
+                for (JMXMetricSet metricSet : javaAgentConfig.getJmxMetricSets()) {
+                    if (metricSetName.equals(metricSet.getName())) {
+                        for (JMXMetric metric : metricSet.getJmxMetrics()) {
+                            if (metricName.equals(metric.getName())) {
+                                metric.setInterval(Integer.valueOf(entry.getValue()));
+                                metric.setTimeUnits(TimeUnits.seconds); // the command always assumes seconds
                                 requireRestart = true;
                                 continue NEXT_AVAIL;
                             }
@@ -129,24 +129,24 @@ public class UpdateCollectionIntervalsCommand
                 String availSetName = names[0];
                 String availName = names[1];
                 // find the avail and change its interval if found
-                for (DMRAvailSet availSet : javaAgentConfig.dmrAvailSets) {
-                    if (availSetName.equals(availSet.name)) {
-                        for (DMRAvail avail : availSet.dmrAvails) {
-                            if (availName.equals(avail.name)) {
-                                avail.interval = Integer.valueOf(entry.getValue());
-                                avail.timeUnits = TimeUnits.seconds; // the command always assumes seconds
+                for (DMRAvailSet availSet : javaAgentConfig.getDmrAvailSets()) {
+                    if (availSetName.equals(availSet.getName())) {
+                        for (DMRAvail avail : availSet.getDmrAvails()) {
+                            if (availName.equals(avail.getName())) {
+                                avail.setInterval(Integer.valueOf(entry.getValue()));
+                                avail.setTimeUnits(TimeUnits.seconds); // the command always assumes seconds
                                 requireRestart = true;
                                 continue NEXT_AVAIL;
                             }
                         }
                     }
                 }
-                for (JMXAvailSet availSet : javaAgentConfig.jmxAvailSets) {
-                    if (availSetName.equals(availSet.name)) {
-                        for (JMXAvail avail : availSet.jmxAvails) {
-                            if (availName.equals(avail.name)) {
-                                avail.interval = Integer.valueOf(entry.getValue());
-                                avail.timeUnits = TimeUnits.seconds; // the command always assumes seconds
+                for (JMXAvailSet availSet : javaAgentConfig.getJmxAvailSets()) {
+                    if (availSetName.equals(availSet.getName())) {
+                        for (JMXAvail avail : availSet.getJmxAvails()) {
+                            if (availName.equals(avail.getName())) {
+                                avail.setInterval(Integer.valueOf(entry.getValue()));
+                                avail.setTimeUnits(TimeUnits.seconds); // the command always assumes seconds
                                 requireRestart = true;
                                 continue NEXT_AVAIL;
                             }

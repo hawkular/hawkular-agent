@@ -18,18 +18,25 @@ package org.hawkular.agent.javaagent.config;
 
 import org.hawkular.agent.javaagent.Util;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class JMXResourceTypeSet implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty
-    public Boolean enabled = Boolean.TRUE;
+    private Boolean enabled = Boolean.TRUE;
 
     @JsonProperty("resource-type-jmx")
-    public JMXResourceType[] jmxResourceTypes;
+    private JMXResourceType[] jmxResourceTypes;
 
     public JMXResourceTypeSet() {
     }
@@ -42,7 +49,7 @@ public class JMXResourceTypeSet implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("resource-type-set-jmx name must be specified");
         }
 
@@ -51,5 +58,29 @@ public class JMXResourceTypeSet implements Validatable {
                 o.validate();
             }
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public JMXResourceType[] getJmxResourceTypes() {
+        return jmxResourceTypes;
+    }
+
+    public void setJmxResourceTypes(JMXResourceType[] jmxResourceTypes) {
+        this.jmxResourceTypes = jmxResourceTypes;
     }
 }

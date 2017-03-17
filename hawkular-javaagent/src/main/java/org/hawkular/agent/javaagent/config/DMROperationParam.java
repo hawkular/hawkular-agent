@@ -16,24 +16,31 @@
  */
 package org.hawkular.agent.javaagent.config;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class DMROperationParam implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty
-    public String type = "string";
+    private String type = "string";
 
     @JsonProperty("default-value")
-    public String defaultValue;
+    private String defaultValue;
 
     @JsonProperty
-    public String description;
+    private String description;
 
     @JsonProperty
-    public Boolean required = Boolean.FALSE;
+    private Boolean required = Boolean.FALSE;
 
     public DMROperationParam() {
     }
@@ -48,8 +55,48 @@ public class DMROperationParam implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("DMR operation parameter name must be specified");
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Boolean getRequired() {
+        return required;
+    }
+
+    public void setRequired(Boolean required) {
+        this.required = required;
     }
 }

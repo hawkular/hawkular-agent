@@ -21,33 +21,40 @@ import java.util.Map;
 
 import javax.management.ObjectName;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class JMXAvail implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty("object-name")
-    public String objectName;
+    private String objectName;
 
     @JsonProperty(required = true)
-    public String attribute;
+    private String attribute;
 
     @JsonProperty("up-regex")
-    public String upRegex;
+    private String upRegex;
 
     @JsonProperty
-    public Integer interval = 5;
+    private Integer interval = 5;
 
     @JsonProperty("time-units")
-    public TimeUnits timeUnits = TimeUnits.minutes;
+    private TimeUnits timeUnits = TimeUnits.minutes;
 
     @JsonProperty("metric-id-template")
-    public String metricIdTemplate;
+    private String metricIdTemplate;
 
     @JsonProperty("metric-tags")
-    public Map<String, String> metricTags;
+    private Map<String, String> metricTags;
 
     public JMXAvail() {
     }
@@ -65,7 +72,7 @@ public class JMXAvail implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("avail-jmx name must be specified");
         }
 
@@ -84,5 +91,69 @@ public class JMXAvail implements Validatable {
                 throw new Exception("avail-jmx [" + name + "] object-name [" + objectName + "] is invalid", e);
             }
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getObjectName() {
+        return objectName;
+    }
+
+    public void setObjectName(String objectName) {
+        this.objectName = objectName;
+    }
+
+    public String getAttribute() {
+        return attribute;
+    }
+
+    public void setAttribute(String attribute) {
+        this.attribute = attribute;
+    }
+
+    public String getUpRegex() {
+        return upRegex;
+    }
+
+    public void setUpRegex(String upRegex) {
+        this.upRegex = upRegex;
+    }
+
+    public Integer getInterval() {
+        return interval;
+    }
+
+    public void setInterval(Integer interval) {
+        this.interval = interval;
+    }
+
+    public TimeUnits getTimeUnits() {
+        return timeUnits;
+    }
+
+    public void setTimeUnits(TimeUnits timeUnits) {
+        this.timeUnits = timeUnits;
+    }
+
+    public String getMetricIdTemplate() {
+        return metricIdTemplate;
+    }
+
+    public void setMetricIdTemplate(String metricIdTemplate) {
+        this.metricIdTemplate = metricIdTemplate;
+    }
+
+    public Map<String, String> getMetricTags() {
+        return metricTags;
+    }
+
+    public void setMetricTags(Map<String, String> metricTags) {
+        this.metricTags = metricTags;
     }
 }

@@ -22,33 +22,40 @@ import javax.management.ObjectName;
 
 import org.hawkular.agent.javaagent.Util;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class JMXResourceType implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty(value = "object-name", required = true)
-    public String objectName;
+    private String objectName;
 
     @JsonProperty(value = "resource-name-template", required = true)
-    public String resourceNameTemplate;
+    private String resourceNameTemplate;
 
     @JsonProperty
-    public String[] parents;
+    private String[] parents;
 
     @JsonProperty("metric-sets")
-    public String[] metricSets;
+    private String[] metricSets;
 
     @JsonProperty("avail-sets")
-    public String[] availSets;
+    private String[] availSets;
 
     @JsonProperty("resource-config-jmx")
-    public JMXResourceConfig[] jmxResourceConfigs;
+    private JMXResourceConfig[] jmxResourceConfigs;
 
     @JsonProperty("operation-jmx")
-    public JMXOperation[] jmxOperations;
+    private JMXOperation[] jmxOperations;
 
     public JMXResourceType() {
     }
@@ -69,7 +76,7 @@ public class JMXResourceType implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("resource-type-jmx name must be specified");
         }
 
@@ -86,7 +93,7 @@ public class JMXResourceType implements Validatable {
             }
         }
 
-        if (resourceNameTemplate == null) {
+        if (resourceNameTemplate == null || resourceNameTemplate.trim().isEmpty()) {
             throw new Exception("resource-type-jmx [" + name + "] resource-name-template must be specified");
         }
 
@@ -101,5 +108,69 @@ public class JMXResourceType implements Validatable {
                 o.validate();
             }
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getObjectName() {
+        return objectName;
+    }
+
+    public void setObjectName(String objectName) {
+        this.objectName = objectName;
+    }
+
+    public String getResourceNameTemplate() {
+        return resourceNameTemplate;
+    }
+
+    public void setResourceNameTemplate(String resourceNameTemplate) {
+        this.resourceNameTemplate = resourceNameTemplate;
+    }
+
+    public String[] getParents() {
+        return parents;
+    }
+
+    public void setParents(String[] parents) {
+        this.parents = parents;
+    }
+
+    public String[] getMetricSets() {
+        return metricSets;
+    }
+
+    public void setMetricSets(String[] metricSets) {
+        this.metricSets = metricSets;
+    }
+
+    public String[] getAvailSets() {
+        return availSets;
+    }
+
+    public void setAvailSets(String[] availSets) {
+        this.availSets = availSets;
+    }
+
+    public JMXResourceConfig[] getJmxResourceConfigs() {
+        return jmxResourceConfigs;
+    }
+
+    public void setJmxResourceConfigs(JMXResourceConfig[] jmxResourceConfigs) {
+        this.jmxResourceConfigs = jmxResourceConfigs;
+    }
+
+    public JMXOperation[] getJmxOperations() {
+        return jmxOperations;
+    }
+
+    public void setJmxOperations(JMXOperation[] jmxOperations) {
+        this.jmxOperations = jmxOperations;
     }
 }
