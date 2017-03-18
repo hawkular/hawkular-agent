@@ -21,33 +21,40 @@ import java.util.Arrays;
 import org.hawkular.agent.javaagent.Util;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class DMRResourceType implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty
-    public String path = "/";
+    private String path = "/";
 
     @JsonProperty(value = "resource-name-template", required = true)
-    public String resourceNameTemplate;
+    private String resourceNameTemplate;
 
     @JsonProperty
-    public String[] parents;
+    private String[] parents;
 
     @JsonProperty("metric-sets")
-    public String[] metricSets;
+    private String[] metricSets;
 
     @JsonProperty("avail-sets")
-    public String[] availSets;
+    private String[] availSets;
 
     @JsonProperty("resource-config-dmr")
-    public DMRResourceConfig[] dmrResourceConfigs;
+    private DMRResourceConfig[] dmrResourceConfigs;
 
     @JsonProperty("operation-dmr")
-    public DMROperation[] dmrOperations;
+    private DMROperation[] dmrOperations;
 
     public DMRResourceType() {
     }
@@ -68,7 +75,7 @@ public class DMRResourceType implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("resource-type-dmr name must be specified");
         }
 
@@ -91,5 +98,69 @@ public class DMRResourceType implements Validatable {
                 o.validate();
             }
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public String getResourceNameTemplate() {
+        return resourceNameTemplate;
+    }
+
+    public void setResourceNameTemplate(String resourceNameTemplate) {
+        this.resourceNameTemplate = resourceNameTemplate;
+    }
+
+    public String[] getParents() {
+        return parents;
+    }
+
+    public void setParents(String[] parents) {
+        this.parents = parents;
+    }
+
+    public String[] getMetricSets() {
+        return metricSets;
+    }
+
+    public void setMetricSets(String[] metricSets) {
+        this.metricSets = metricSets;
+    }
+
+    public String[] getAvailSets() {
+        return availSets;
+    }
+
+    public void setAvailSets(String[] availSets) {
+        this.availSets = availSets;
+    }
+
+    public DMRResourceConfig[] getDmrResourceConfigs() {
+        return dmrResourceConfigs;
+    }
+
+    public void setDmrResourceConfigs(DMRResourceConfig[] dmrResourceConfigs) {
+        this.dmrResourceConfigs = dmrResourceConfigs;
+    }
+
+    public DMROperation[] getDmrOperations() {
+        return dmrOperations;
+    }
+
+    public void setDmrOperations(DMROperation[] dmrOperations) {
+        this.dmrOperations = dmrOperations;
     }
 }

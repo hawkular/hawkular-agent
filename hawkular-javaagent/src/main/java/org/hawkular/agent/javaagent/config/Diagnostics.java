@@ -16,8 +16,15 @@
  */
 package org.hawkular.agent.javaagent.config;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class Diagnostics implements Validatable {
 
     public enum ReportTo {
@@ -25,16 +32,16 @@ public class Diagnostics implements Validatable {
     };
 
     @JsonProperty
-    public Boolean enabled = Boolean.TRUE;
+    private Boolean enabled = Boolean.TRUE;
 
     @JsonProperty
-    public Integer interval = 5;
+    private Integer interval = 5;
 
     @JsonProperty("time-units")
-    public TimeUnits timeUnits = TimeUnits.minutes;
+    private TimeUnits timeUnits = TimeUnits.minutes;
 
     @JsonProperty("report-to")
-    public ReportTo reportTo = ReportTo.LOG;
+    private ReportTo reportTo = ReportTo.LOG;
 
     public Diagnostics() {
     }
@@ -51,5 +58,37 @@ public class Diagnostics implements Validatable {
         if (interval == null || interval.intValue() < 0) {
             throw new Exception("diagnostics interval must be greater than or equal to 0");
         }
+    }
+
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public Integer getInterval() {
+        return interval;
+    }
+
+    public void setInterval(Integer interval) {
+        this.interval = interval;
+    }
+
+    public TimeUnits getTimeUnits() {
+        return timeUnits;
+    }
+
+    public void setTimeUnits(TimeUnits timeUnits) {
+        this.timeUnits = timeUnits;
+    }
+
+    public ReportTo getReportTo() {
+        return reportTo;
+    }
+
+    public void setReportTo(ReportTo reportTo) {
+        this.reportTo = reportTo;
     }
 }

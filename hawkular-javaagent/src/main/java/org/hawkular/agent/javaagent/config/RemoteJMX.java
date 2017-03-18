@@ -20,56 +20,64 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
 import org.hawkular.agent.monitor.api.Avail;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class RemoteJMX implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty
-    public Boolean enabled = Boolean.TRUE;
+    private BooleanExpression enabled = new BooleanExpression(Boolean.TRUE);
 
     @JsonProperty(required = true)
-    public String url;
+    private StringExpression url;
 
     @JsonProperty
-    public String username;
+    private StringExpression username;
 
     @JsonProperty
-    public String password;
+    private StringExpression password;
 
     @JsonProperty("security-realm")
-    public String securityRealmName;
+    private String securityRealmName;
 
     @JsonProperty("tenant-id")
-    public String tenantId;
+    private StringExpression tenantId;
 
     @JsonProperty("resource-type-sets")
-    public String[] resourceTypeSets;
+    private String[] resourceTypeSets;
 
     @JsonProperty("metric-id-template")
-    public String metricIdTemplate;
+    private String metricIdTemplate;
 
     @JsonProperty("metric-tags")
-    public Map<String, String> metricTags;
+    private Map<String, String> metricTags;
 
     @JsonProperty("set-avail-on-shutdown")
-    public Avail setAvailOnShutdown;
+    private Avail setAvailOnShutdown;
 
     public RemoteJMX() {
     }
 
     public RemoteJMX(RemoteJMX original) {
         this.name = original.name;
-        this.enabled = original.enabled;
-        this.url = original.url;
-        this.username = original.username;
-        this.password = original.password;
+        this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
+        this.url = original.url == null ? null : new StringExpression(original.url);
+        this.username = original.username == null ? null : new StringExpression(original.username);
+        this.password = original.password == null ? null : new StringExpression(original.password);
         this.securityRealmName = original.securityRealmName;
-        this.tenantId = original.tenantId;
+        this.tenantId = original.tenantId == null ? null : new StringExpression(original.tenantId);
         this.resourceTypeSets = original.resourceTypeSets == null ? null
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
         this.metricIdTemplate = original.metricIdTemplate;
@@ -79,11 +87,119 @@ public class RemoteJMX implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("remote-jmx name must be specified");
         }
-        if (url == null) {
+        if (url == null || url.get().toString().trim().isEmpty()) {
             throw new Exception("remote-jmx url must be specified");
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Boolean getEnabled() {
+        return enabled == null ? null : enabled.get();
+    }
+
+    public void setEnabled(Boolean enabled) {
+        if (this.enabled != null) {
+            this.enabled.set(enabled);
+        } else {
+            this.enabled = new BooleanExpression(enabled);
+        }
+    }
+
+    public String getUrl() {
+        return url == null ? null : url.get().toString();
+    }
+
+    public void setUrl(String url) {
+        if (this.url != null) {
+            this.url.set(new StringValue(url));
+        } else {
+            this.url = new StringExpression(new StringValue(url));
+        }
+    }
+
+    public String getUsername() {
+        return username == null ? null : username.get().toString();
+    }
+
+    public void setUsername(String username) {
+        if (this.username != null) {
+            this.username.set(new StringValue(username));
+        } else {
+            this.username = new StringExpression(new StringValue(username));
+        }
+    }
+
+    public String getPassword() {
+        return password == null ? null : password.get().toString();
+    }
+
+    public void setPassword(String password) {
+        if (this.password != null) {
+            this.password.set(new StringValue(password));
+        } else {
+            this.password = new StringExpression(new StringValue(password));
+        }
+    }
+
+    public String getSecurityRealmName() {
+        return securityRealmName;
+    }
+
+    public void setSecurityRealmName(String securityRealmName) {
+        this.securityRealmName = securityRealmName;
+    }
+
+    public String getTenantId() {
+        return tenantId == null ? null : tenantId.get().toString();
+    }
+
+    public void setTenantId(String tenantId) {
+        if (this.tenantId != null) {
+            this.tenantId.set(new StringValue(tenantId));
+        } else {
+            this.tenantId = new StringExpression(tenantId);
+        }
+    }
+
+    public String[] getResourceTypeSets() {
+        return resourceTypeSets;
+    }
+
+    public void setResourceTypeSets(String[] resourceTypeSets) {
+        this.resourceTypeSets = resourceTypeSets;
+    }
+
+    public String getMetricIdTemplate() {
+        return metricIdTemplate;
+    }
+
+    public void setMetricIdTemplate(String metricIdTemplate) {
+        this.metricIdTemplate = metricIdTemplate;
+    }
+
+    public Map<String, String> getMetricTags() {
+        return metricTags;
+    }
+
+    public void setMetricTags(Map<String, String> metricTags) {
+        this.metricTags = metricTags;
+    }
+
+    public Avail getSetAvailOnShutdown() {
+        return setAvailOnShutdown;
+    }
+
+    public void setSetAvailOnShutdown(Avail setAvailOnShutdown) {
+        this.setAvailOnShutdown = setAvailOnShutdown;
     }
 }

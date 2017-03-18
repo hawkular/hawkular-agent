@@ -17,67 +17,55 @@
 package org.hawkular.agent.javaagent.config;
 
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.hawkular.metrics.client.common.MetricType;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class DMRMetric implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty
-    public String path = "/";
+    private String path = "/";
 
     @JsonProperty(required = true)
-    public String attribute;
+    private String attribute;
 
     @JsonProperty("resolve-expressions")
-    public Boolean resolveExpressions = Boolean.FALSE;
+    private Boolean resolveExpressions = Boolean.FALSE;
 
     @JsonProperty("include-defaults")
-    public Boolean includeDefaults = Boolean.TRUE;
+    private Boolean includeDefaults = Boolean.TRUE;
 
     @JsonProperty
-    public Integer interval = 5;
+    private Integer interval = 5;
 
     @JsonProperty("time-units")
-    public TimeUnits timeUnits = TimeUnits.minutes;
-
-    public MeasurementUnit metricUnits = MeasurementUnit.NONE;
+    private TimeUnits timeUnits = TimeUnits.minutes;
 
     @JsonProperty("metric-units")
-    private String getMetricUnits() {
-        return (metricUnits != null) ? metricUnits.name() : MeasurementUnit.NONE.name();
-    }
-
-    @SuppressWarnings("unused")
-    private void setMetricUnits(String s) {
-        metricUnits = (s != null) ? MeasurementUnit.valueOf(s.toUpperCase(Locale.ENGLISH)) : MeasurementUnit.NONE;
-    }
-
-    public MetricType metricType = MetricType.GAUGE;
+    private MeasurementUnitJsonProperty metricUnits = new MeasurementUnitJsonProperty(MeasurementUnit.NONE);
 
     @JsonProperty("metric-type")
-    private String getMetricType() {
-        return (metricType != null) ? metricType.toString() : MetricType.GAUGE.name();
-    }
-
-    @SuppressWarnings("unused")
-    private void setMetricType(String s) {
-        metricType = (s != null) ? MetricType.valueOf(s.toUpperCase(Locale.ENGLISH)) : MetricType.GAUGE;
-    }
+    private MetricTypeJsonProperty metricType = new MetricTypeJsonProperty(MetricType.GAUGE);
 
     @JsonProperty("metric-id-template")
-    public String metricIdTemplate;
+    private String metricIdTemplate;
 
     @JsonProperty("metric-tags")
-    public Map<String, String> metricTags;
+    private Map<String, String> metricTags;
 
     public DMRMetric() {
     }
@@ -90,15 +78,15 @@ public class DMRMetric implements Validatable {
         this.includeDefaults = original.includeDefaults;
         this.interval = original.interval;
         this.timeUnits = original.timeUnits;
-        this.metricUnits = original.metricUnits;
-        this.metricType = original.metricType;
+        this.metricUnits = original.metricUnits == null ? null : new MeasurementUnitJsonProperty(original.metricUnits);
+        this.metricType = original.metricType == null ? null : new MetricTypeJsonProperty(original.metricType);
         this.metricIdTemplate = original.metricIdTemplate;
         this.metricTags = original.metricTags == null ? null : new HashMap<>(original.metricTags);
     }
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("metric-dmr name must be specified");
         }
 
@@ -117,5 +105,101 @@ public class DMRMetric implements Validatable {
         } catch (Exception e) {
             throw new Exception("metric-dmr [" + name + "] path [" + path + "] is invalid", e);
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public String getAttribute() {
+        return attribute;
+    }
+
+    public void setAttribute(String attribute) {
+        this.attribute = attribute;
+    }
+
+    public Boolean getResolveExpressions() {
+        return resolveExpressions;
+    }
+
+    public void setResolveExpressions(Boolean resolveExpressions) {
+        this.resolveExpressions = resolveExpressions;
+    }
+
+    public Boolean getIncludeDefaults() {
+        return includeDefaults;
+    }
+
+    public void setIncludeDefaults(Boolean includeDefaults) {
+        this.includeDefaults = includeDefaults;
+    }
+
+    public Integer getInterval() {
+        return interval;
+    }
+
+    public void setInterval(Integer interval) {
+        this.interval = interval;
+    }
+
+    public TimeUnits getTimeUnits() {
+        return timeUnits;
+    }
+
+    public void setTimeUnits(TimeUnits timeUnits) {
+        this.timeUnits = timeUnits;
+    }
+
+    public MeasurementUnit getMetricUnits() {
+        return metricUnits == null ? null : metricUnits.get();
+    }
+
+    public void setMetricUnits(MeasurementUnit mu) {
+        if (metricUnits != null) {
+            metricUnits.set(mu);
+        } else {
+            metricUnits = new MeasurementUnitJsonProperty(mu);
+        }
+    }
+
+    public MetricType getMetricType() {
+        return metricType == null ? null : metricType.get();
+    }
+
+    public void setMetricType(MetricType mt) {
+        if (metricType != null) {
+            metricType.set(mt);
+        } else {
+            metricType = new MetricTypeJsonProperty(mt);
+        }
+    }
+
+    public String getMetricIdTemplate() {
+        return metricIdTemplate;
+    }
+
+    public void setMetricIdTemplate(String metricIdTemplate) {
+        this.metricIdTemplate = metricIdTemplate;
+    }
+
+    public Map<String, String> getMetricTags() {
+        return metricTags;
+    }
+
+    public void setMetricTags(Map<String, String> metricTags) {
+        this.metricTags = metricTags;
     }
 }

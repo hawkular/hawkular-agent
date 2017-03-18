@@ -22,42 +22,52 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class SecurityRealm implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty(value = "keystore-path", required = true)
-    public String keystorePath;
+    private StringExpression keystorePath;
 
     @JsonProperty(value = "keystore-password", required = true)
-    public String keystorePassword;
+    private StringExpression keystorePassword;
 
     @JsonProperty(value = "key-password")
-    public String keyPassword;
+    private StringExpression keyPassword;
 
     @JsonProperty(value = "keystore-type")
-    public String keystoreType = KeyStore.getDefaultType();
+    private String keystoreType = KeyStore.getDefaultType();
 
     @JsonProperty(value = "key-manager-algorithm")
-    public String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
+    private String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
 
     @JsonProperty(value = "trust-manager-algorithm")
-    public String trustManagerAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+    private String trustManagerAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
 
     @JsonProperty(value = "ssl-protocol")
-    public String sslProtocol = "TLSv1";
+    private String sslProtocol = "TLSv1";
 
     public SecurityRealm() {
     }
 
     public SecurityRealm(SecurityRealm original) {
         this.name = original.name;
-        this.keystorePath = original.keystorePath;
-        this.keystorePassword = original.keystorePassword;
-        this.keyPassword = original.keyPassword;
+        this.keystorePath = original.keystorePath == null ? null : new StringExpression(original.keystorePath);
+        this.keystorePassword = original.keystorePassword == null ? null
+                : new StringExpression(original.keystorePassword);
+        this.keyPassword = original.keyPassword == null ? null : new StringExpression(original.keyPassword);
         this.keystoreType = original.keystoreType;
         this.keyManagerAlgorithm = original.keyManagerAlgorithm;
         this.trustManagerAlgorithm = original.trustManagerAlgorithm;
@@ -66,15 +76,15 @@ public class SecurityRealm implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("security-realm name must be specified");
         }
 
-        if (keystorePath == null || keystorePath.trim().length() == 0) {
+        if (keystorePath == null || keystorePath.get().toString().trim().length() == 0) {
             throw new Exception("security-realm: [" + name + "] keystore-path must be specified");
         }
 
-        if (keystorePassword == null || keystorePassword.trim().length() == 0) {
+        if (keystorePassword == null || keystorePassword.get().toString().trim().length() == 0) {
             throw new Exception("security-realm: [" + name + "] keystore-password must be specified");
         }
 
@@ -108,5 +118,81 @@ public class SecurityRealm implements Validatable {
             throw new Exception("security-realm: [" + name + "] ssl-protocol [" + sslProtocol
                     + "] is invalid. You may want to use [TLSv1]", e);
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getKeystorePath() {
+        return keystorePath == null ? null : keystorePath.get().toString();
+    }
+
+    public void setKeystorePath(String keystorePath) {
+        if (this.keystorePath != null) {
+            this.keystorePath.set(new StringValue(keystorePath));
+        } else {
+            this.keystorePath = new StringExpression(new StringValue(keystorePath));
+        }
+    }
+
+    public String getKeystorePassword() {
+        return keystorePassword == null ? null : keystorePassword.get().toString();
+    }
+
+    public void setKeystorePassword(String keystorePassword) {
+        if (this.keystorePassword != null) {
+            this.keystorePassword.set(new StringValue(keystorePassword));
+        } else {
+            this.keystorePassword = new StringExpression(new StringValue(keystorePassword));
+        }
+    }
+
+    public String getKeyPassword() {
+        return keyPassword == null ? null : keyPassword.get().toString();
+    }
+
+    public void setKeyPassword(String keyPassword) {
+        if (this.keyPassword != null) {
+            this.keyPassword.set(new StringValue(keyPassword));
+        } else {
+            this.keyPassword = new StringExpression(new StringValue(keyPassword));
+        }
+    }
+
+    public String getKeystoreType() {
+        return keystoreType;
+    }
+
+    public void setKeystoreType(String keystoreType) {
+        this.keystoreType = keystoreType;
+    }
+
+    public String getKeyManagerAlgorithm() {
+        return keyManagerAlgorithm;
+    }
+
+    public void setKeyManagerAlgorithm(String keyManagerAlgorithm) {
+        this.keyManagerAlgorithm = keyManagerAlgorithm;
+    }
+
+    public String getTrustManagerAlgorithm() {
+        return trustManagerAlgorithm;
+    }
+
+    public void setTrustManagerAlgorithm(String trustManagerAlgorithm) {
+        this.trustManagerAlgorithm = trustManagerAlgorithm;
+    }
+
+    public String getSslProtocol() {
+        return sslProtocol;
+    }
+
+    public void setSslProtocol(String sslProtocol) {
+        this.sslProtocol = sslProtocol;
     }
 }

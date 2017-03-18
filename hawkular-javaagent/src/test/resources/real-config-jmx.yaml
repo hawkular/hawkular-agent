@@ -17,9 +17,11 @@
 
 ---
 subsystem:
-  enabled: true
+  enabled: "${hawkular.agent.enabled:true}"
+  immutable: "${hawkular.agent.immutable:false}"
+  in-container: "${hawkular.agent.in-container:false}"
   auto-discovery-scan-period-secs: 600
-  min-collection-interval-secs: 30
+  min-collection-interval-secs: "${hawkular.agent.minCollectionIntervalCecs:30}"
 
 diagnostics:
   enabled:    true
@@ -29,11 +31,11 @@ diagnostics:
 
 storage-adapter:
   type:      HAWKULAR
-  tenant-id: hawkular
-  feed-id:   autogenerate
+  tenant-id: "${hawkular.rest.tenantId:hawkular}"
+  feed-id:   "${hawkular.rest.feedId:autogenerate}"
   url:       http://hawkular-server:8080
-  username:  jdoe
-  password:  password
+  username:  "${hawkular.rest.user}"
+  password:  "${hawkular.rest.password}"
 
 # JMX
 

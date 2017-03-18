@@ -18,24 +18,31 @@ package org.hawkular.agent.javaagent.config;
 
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class DMRResourceConfig implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty
-    public String path = "/";
+    private String path = "/";
 
     @JsonProperty(required = true)
-    public String attribute;
+    private String attribute;
 
     @JsonProperty("resolve-expressions")
-    public Boolean resolveExpressions = Boolean.FALSE;
+    private Boolean resolveExpressions = Boolean.FALSE;
 
     @JsonProperty("include-defaults")
-    public Boolean includeDefaults = Boolean.TRUE;
+    private Boolean includeDefaults = Boolean.TRUE;
 
     public DMRResourceConfig() {
     }
@@ -50,7 +57,7 @@ public class DMRResourceConfig implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("resource-config-dmr name must be specified");
         }
 
@@ -65,5 +72,45 @@ public class DMRResourceConfig implements Validatable {
         } catch (Exception e) {
             throw new Exception("resource-config-dmr [" + name + "] path [" + path + "] is invalid", e);
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public String getAttribute() {
+        return attribute;
+    }
+
+    public void setAttribute(String attribute) {
+        this.attribute = attribute;
+    }
+
+    public Boolean getResolveExpressions() {
+        return resolveExpressions;
+    }
+
+    public void setResolveExpressions(Boolean resolveExpressions) {
+        this.resolveExpressions = resolveExpressions;
+    }
+
+    public Boolean getIncludeDefaults() {
+        return includeDefaults;
+    }
+
+    public void setIncludeDefaults(Boolean includeDefaults) {
+        this.includeDefaults = includeDefaults;
     }
 }

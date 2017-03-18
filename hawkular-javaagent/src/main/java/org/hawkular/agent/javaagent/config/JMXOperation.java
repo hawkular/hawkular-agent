@@ -20,24 +20,31 @@ import javax.management.ObjectName;
 
 import org.hawkular.agent.javaagent.Util;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class JMXOperation implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty("object-name")
-    public String objectName;
+    private String objectName;
 
     @JsonProperty("internal-name")
-    public String internalName;
+    private String internalName;
 
     @JsonProperty
-    public Boolean modifies = Boolean.FALSE;
+    private Boolean modifies = Boolean.FALSE;
 
     @JsonProperty("params")
-    public JMXOperationParam[] jmxOperationParams;
+    private JMXOperationParam[] jmxOperationParams;
 
     public JMXOperation() {
     }
@@ -52,7 +59,7 @@ public class JMXOperation implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("operation-jmx name must be specified");
         }
 
@@ -70,5 +77,45 @@ public class JMXOperation implements Validatable {
                 o.validate();
             }
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getObjectName() {
+        return objectName;
+    }
+
+    public void setObjectName(String objectName) {
+        this.objectName = objectName;
+    }
+
+    public String getInternalName() {
+        return internalName;
+    }
+
+    public void setInternalName(String internalName) {
+        this.internalName = internalName;
+    }
+
+    public Boolean getModifies() {
+        return modifies;
+    }
+
+    public void setModifies(Boolean modifies) {
+        this.modifies = modifies;
+    }
+
+    public JMXOperationParam[] getJmxOperationParams() {
+        return jmxOperationParams;
+    }
+
+    public void setJmxOperationParams(JMXOperationParam[] jmxOperationParams) {
+        this.jmxOperationParams = jmxOperationParams;
     }
 }

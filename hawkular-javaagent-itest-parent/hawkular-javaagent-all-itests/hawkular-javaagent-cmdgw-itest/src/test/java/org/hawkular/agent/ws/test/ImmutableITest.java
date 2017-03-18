@@ -51,11 +51,11 @@ public class ImmutableITest extends AbstractCommandITest {
 
         // check we are starting with our original defaults - this is just a sanity check
         Configuration config = getAgentConfigurationFromFile();
-        Assert.assertEquals(config.subsystem.immutable.booleanValue(), false);
+        Assert.assertEquals(config.getSubsystem().getImmutable().booleanValue(), false);
         assertMetricInterval(config, "WildFly Threading Metrics", "Thread Count", 2, TimeUnits.minutes);
 
         // make the agent immutable by flipping the flag and restarting it
-        config.subsystem.immutable = true;
+        config.getSubsystem().setImmutable(true);
         new ConfigManager(agentConfigFile).updateConfiguration(config, true);
         restartJMXAgent();
 
@@ -86,24 +86,24 @@ public class ImmutableITest extends AbstractCommandITest {
         assertMetricInterval(config, "WildFly Threading Metrics", "Thread Count", 2, TimeUnits.minutes);
 
         // make the agent mutable again so future tests can change things if need be
-        config.subsystem.immutable = false;
+        config.getSubsystem().setImmutable(false);
         new ConfigManager(agentConfigFile).updateConfiguration(config, true);
         restartJMXAgent();
     }
 
     private void assertMetricInterval(Configuration agentConfig, String setName, String metricName, int expectedVal,
             TimeUnits expectedUnits) {
-        for (DMRMetricSet s : agentConfig.dmrMetricSets) {
-            if (s.name.equals(setName)) {
-                for (DMRMetric m : s.dmrMetrics) {
-                    if (m.name.equals(metricName)) {
-                        if (m.interval.intValue() == expectedVal) {
+        for (DMRMetricSet s : agentConfig.getDmrMetricSets()) {
+            if (s.getName().equals(setName)) {
+                for (DMRMetric m : s.getDmrMetrics()) {
+                    if (m.getName().equals(metricName)) {
+                        if (m.getInterval().intValue() == expectedVal) {
                             return;
                         } else {
                             Assert.fail(String.format("Metric type [%s~%s] expected to be [%d] but was [%d]",
                                     setName, metricName,
                                     expectedVal, expectedUnits.name(),
-                                    m.interval.intValue(), m.timeUnits.name()));
+                                    m.getInterval().intValue(), m.getTimeUnits().name()));
                         }
                     }
                 }

@@ -31,55 +31,71 @@ public class ConfigCopyTest {
     public void testEmpty() throws Exception {
         Configuration config = loadTestConfigFile("/empty.yaml");
         Configuration clone = new Configuration(config);
-        Assert.assertEquals(clone.subsystem.enabled, config.subsystem.enabled);
+        Assert.assertEquals(clone.getSubsystem().getEnabled(), config.getSubsystem().getEnabled());
     }
 
     @Test
     public void testRealConfig() throws Exception {
         Configuration config = loadTestConfigFile("/real-config.yaml");
         Configuration clone = new Configuration(config);
-        Assert.assertEquals(clone.subsystem.enabled, config.subsystem.enabled);
-        Assert.assertEquals(clone.storageAdapter.url, config.storageAdapter.url);
-        Assert.assertEquals(clone.diagnostics.enabled, config.diagnostics.enabled);
-        Assert.assertEquals(clone.dmrMetricSets.length, config.dmrMetricSets.length);
-        Assert.assertEquals(clone.dmrAvailSets.length, config.dmrAvailSets.length);
-        Assert.assertEquals(clone.dmrResourceTypeSets.length, config.dmrResourceTypeSets.length);
-        Assert.assertEquals(clone.jmxMetricSets.length, config.jmxMetricSets.length);
-        Assert.assertEquals(clone.jmxAvailSets.length, config.jmxAvailSets.length);
-        Assert.assertEquals(clone.jmxResourceTypeSets.length, config.jmxResourceTypeSets.length);
-        Assert.assertEquals(clone.managedServers.localDmr.name, config.managedServers.localDmr.name);
-        Assert.assertEquals(clone.managedServers.localJmx.name, config.managedServers.localJmx.name);
-        Assert.assertEquals(clone.managedServers.remoteDmrs[0].name, config.managedServers.remoteDmrs[0].name);
-        Assert.assertEquals(clone.managedServers.remoteJmxs[0].name, config.managedServers.remoteJmxs[0].name);
-        Assert.assertEquals(clone.platform.enabled, config.platform.enabled);
-        Assert.assertEquals(clone.platform.fileStores.enabled, config.platform.fileStores.enabled);
-        Assert.assertEquals(clone.platform.memory.enabled, config.platform.memory.enabled);
-        Assert.assertEquals(clone.platform.processors.enabled, config.platform.processors.enabled);
-        Assert.assertEquals(clone.platform.powerSources.enabled, config.platform.powerSources.enabled);
+        Assert.assertEquals(clone.getSubsystem().getEnabled(), config.getSubsystem().getEnabled());
+        Assert.assertEquals(clone.getStorageAdapter().getUrl(), config.getStorageAdapter().getUrl());
+        Assert.assertEquals(clone.getDiagnostics().getEnabled(), config.getDiagnostics().getEnabled());
+        Assert.assertEquals(clone.getDmrMetricSets().length, config.getDmrMetricSets().length);
+        Assert.assertEquals(clone.getDmrAvailSets().length, config.getDmrAvailSets().length);
+        Assert.assertEquals(clone.getDmrResourceTypeSets().length, config.getDmrResourceTypeSets().length);
+        Assert.assertEquals(clone.getJmxMetricSets().length, config.getJmxMetricSets().length);
+        Assert.assertEquals(clone.getJmxAvailSets().length, config.getJmxAvailSets().length);
+        Assert.assertEquals(clone.getJmxResourceTypeSets().length, config.getJmxResourceTypeSets().length);
+        Assert.assertEquals(clone.getManagedServers().getLocalDmr().getName(),
+                config.getManagedServers().getLocalDmr().getName());
+        Assert.assertEquals(clone.getManagedServers().getLocalJmx().getName(),
+                config.getManagedServers().getLocalJmx().getName());
+        Assert.assertEquals(clone.getManagedServers().getRemoteDmrs()[0].getName(),
+                config.getManagedServers().getRemoteDmrs()[0].getName());
+        Assert.assertEquals(clone.getManagedServers().getRemoteJmxs()[0].getName(),
+                config.getManagedServers().getRemoteJmxs()[0].getName());
+        Assert.assertEquals(clone.getPlatform().getEnabled(), config.getPlatform().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getFileStores().getEnabled(),
+                config.getPlatform().getFileStores().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getMemory().getEnabled(),
+                config.getPlatform().getMemory().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getProcessors().getEnabled(),
+                config.getPlatform().getProcessors().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getPowerSources().getEnabled(),
+                config.getPlatform().getPowerSources().getEnabled());
     }
 
     @Test
     public void testConvertConfig() throws Exception {
         Configuration config = loadTestConfigFile("/test-convert.yaml");
         Configuration clone = new Configuration(config);
-        Assert.assertEquals(clone.subsystem.enabled, config.subsystem.enabled);
-        Assert.assertEquals(clone.storageAdapter.url, config.storageAdapter.url);
-        Assert.assertEquals(clone.diagnostics.enabled, config.diagnostics.enabled);
-        Assert.assertEquals(clone.dmrMetricSets.length, config.dmrMetricSets.length);
-        Assert.assertEquals(clone.dmrAvailSets.length, config.dmrAvailSets.length);
-        Assert.assertEquals(clone.dmrResourceTypeSets.length, config.dmrResourceTypeSets.length);
-        Assert.assertEquals(clone.jmxMetricSets.length, config.jmxMetricSets.length);
-        Assert.assertEquals(clone.jmxAvailSets.length, config.jmxAvailSets.length);
-        Assert.assertEquals(clone.jmxResourceTypeSets.length, config.jmxResourceTypeSets.length);
-        Assert.assertEquals(clone.managedServers.localDmr.name, config.managedServers.localDmr.name);
-        Assert.assertEquals(clone.managedServers.localJmx.name, config.managedServers.localJmx.name);
-        Assert.assertEquals(clone.managedServers.remoteDmrs[0].name, config.managedServers.remoteDmrs[0].name);
-        Assert.assertEquals(clone.managedServers.remoteJmxs[0].name, config.managedServers.remoteJmxs[0].name);
-        Assert.assertEquals(clone.platform.enabled, config.platform.enabled);
-        Assert.assertEquals(clone.platform.fileStores.enabled, config.platform.fileStores.enabled);
-        Assert.assertEquals(clone.platform.memory.enabled, config.platform.memory.enabled);
-        Assert.assertEquals(clone.platform.processors.enabled, config.platform.processors.enabled);
-        Assert.assertEquals(clone.platform.powerSources.enabled, config.platform.powerSources.enabled);
+        Assert.assertEquals(clone.getSubsystem().getEnabled(), config.getSubsystem().getEnabled());
+        Assert.assertEquals(clone.getStorageAdapter().getUrl(), config.getStorageAdapter().getUrl());
+        Assert.assertEquals(clone.getDiagnostics().getEnabled(), config.getDiagnostics().getEnabled());
+        Assert.assertEquals(clone.getDmrMetricSets().length, config.getDmrMetricSets().length);
+        Assert.assertEquals(clone.getDmrAvailSets().length, config.getDmrAvailSets().length);
+        Assert.assertEquals(clone.getDmrResourceTypeSets().length, config.getDmrResourceTypeSets().length);
+        Assert.assertEquals(clone.getJmxMetricSets().length, config.getJmxMetricSets().length);
+        Assert.assertEquals(clone.getJmxAvailSets().length, config.getJmxAvailSets().length);
+        Assert.assertEquals(clone.getJmxResourceTypeSets().length, config.getJmxResourceTypeSets().length);
+        Assert.assertEquals(clone.getManagedServers().getLocalDmr().getName(),
+                config.getManagedServers().getLocalDmr().getName());
+        Assert.assertEquals(clone.getManagedServers().getLocalJmx().getName(),
+                config.getManagedServers().getLocalJmx().getName());
+        Assert.assertEquals(clone.getManagedServers().getRemoteDmrs()[0].getName(),
+                config.getManagedServers().getRemoteDmrs()[0].getName());
+        Assert.assertEquals(clone.getManagedServers().getRemoteJmxs()[0].getName(),
+                config.getManagedServers().getRemoteJmxs()[0].getName());
+        Assert.assertEquals(clone.getPlatform().getEnabled(), config.getPlatform().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getFileStores().getEnabled(),
+                config.getPlatform().getFileStores().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getMemory().getEnabled(),
+                config.getPlatform().getMemory().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getProcessors().getEnabled(),
+                config.getPlatform().getProcessors().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getPowerSources().getEnabled(),
+                config.getPlatform().getPowerSources().getEnabled());
     }
 
     private Configuration loadTestConfigFile(String path) throws Exception {

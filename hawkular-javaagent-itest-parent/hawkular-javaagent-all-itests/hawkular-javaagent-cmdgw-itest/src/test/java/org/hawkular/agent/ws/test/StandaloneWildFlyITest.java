@@ -343,17 +343,17 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
     private void assertMetricInterval(Configuration agentConfig, String setName, String metricName, int expectedVal,
             TimeUnits expectedUnits) {
-        for (DMRMetricSet s : agentConfig.dmrMetricSets) {
-            if (s.name.equals(setName)) {
-                for (DMRMetric m : s.dmrMetrics) {
-                    if (m.name.equals(metricName)) {
-                        if (m.interval.intValue() == expectedVal) {
+        for (DMRMetricSet s : agentConfig.getDmrMetricSets()) {
+            if (s.getName().equals(setName)) {
+                for (DMRMetric m : s.getDmrMetrics()) {
+                    if (m.getName().equals(metricName)) {
+                        if (m.getInterval().intValue() == expectedVal) {
                             return;
                         } else {
                             Assert.fail(String.format("Metric type [%s~%s] expected to be [%d] but was [%d]",
                                     setName, metricName,
                                     expectedVal, expectedUnits.name(),
-                                    m.interval.intValue(), m.timeUnits.name()));
+                                    m.getInterval().intValue(), m.getTimeUnits().name()));
                         }
                     }
                 }

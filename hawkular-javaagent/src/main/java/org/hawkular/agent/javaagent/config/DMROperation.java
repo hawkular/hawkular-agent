@@ -19,24 +19,31 @@ package org.hawkular.agent.javaagent.config;
 import org.hawkular.agent.javaagent.Util;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class DMROperation implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty
-    public String path = "/";
+    private String path = "/";
 
     @JsonProperty("internal-name")
-    public String internalName;
+    private String internalName;
 
     @JsonProperty
-    public Boolean modifies = Boolean.FALSE;
+    private Boolean modifies = Boolean.FALSE;
 
     @JsonProperty("params")
-    public DMROperationParam[] dmrOperationParams;
+    private DMROperationParam[] dmrOperationParams;
 
     public DMROperation() {
     }
@@ -51,7 +58,7 @@ public class DMROperation implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("operation-dmr name must be specified");
         }
 
@@ -68,5 +75,45 @@ public class DMROperation implements Validatable {
                 o.validate();
             }
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public String getInternalName() {
+        return internalName;
+    }
+
+    public void setInternalName(String internalName) {
+        this.internalName = internalName;
+    }
+
+    public Boolean getModifies() {
+        return modifies;
+    }
+
+    public void setModifies(Boolean modifies) {
+        this.modifies = modifies;
+    }
+
+    public DMROperationParam[] getDmrOperationParams() {
+        return dmrOperationParams;
+    }
+
+    public void setDmrOperationParams(DMROperationParam[] dmrOperationParams) {
+        this.dmrOperationParams = dmrOperationParams;
     }
 }

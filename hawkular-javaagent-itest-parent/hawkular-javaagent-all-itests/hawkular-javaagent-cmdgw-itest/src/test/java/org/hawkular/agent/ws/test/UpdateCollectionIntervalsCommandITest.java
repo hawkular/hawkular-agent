@@ -83,17 +83,17 @@ public class UpdateCollectionIntervalsCommandITest extends AbstractCommandITest 
 
     private void assertMetricInterval(Configuration agentConfig, String setName, String metricName, int expectedVal,
             TimeUnits expectedUnits) {
-        for (DMRMetricSet s : agentConfig.dmrMetricSets) {
-            if (s.name.equals(setName)) {
-                for (DMRMetric m : s.dmrMetrics) {
-                    if (m.name.equals(metricName)) {
-                        if (m.interval.intValue() == expectedVal) {
+        for (DMRMetricSet s : agentConfig.getDmrMetricSets()) {
+            if (s.getName().equals(setName)) {
+                for (DMRMetric m : s.getDmrMetrics()) {
+                    if (m.getName().equals(metricName)) {
+                        if (m.getInterval().intValue() == expectedVal) {
                             return;
                         } else {
                             Assert.fail(String.format("Metric type [%s~%s] expected to be [%d] but was [%d]",
                                     setName, metricName,
                                     expectedVal, expectedUnits.name(),
-                                    m.interval.intValue(), m.timeUnits.name()));
+                                    m.getInterval().intValue(), m.getTimeUnits().name()));
                         }
                     }
                 }
@@ -104,17 +104,17 @@ public class UpdateCollectionIntervalsCommandITest extends AbstractCommandITest 
 
     private void assertAvailInterval(Configuration agentConfig, String setName, String availName, int expectedVal,
             TimeUnits expectedUnits) {
-        for (DMRAvailSet s : agentConfig.dmrAvailSets) {
-            if (s.name.equals(setName)) {
-                for (DMRAvail a : s.dmrAvails) {
-                    if (a.name.equals(availName)) {
-                        if (a.interval.intValue() == expectedVal) {
+        for (DMRAvailSet s : agentConfig.getDmrAvailSets()) {
+            if (s.getName().equals(setName)) {
+                for (DMRAvail a : s.getDmrAvails()) {
+                    if (a.getName().equals(availName)) {
+                        if (a.getInterval().intValue() == expectedVal) {
                             return;
                         } else {
                             Assert.fail(String.format("Avail type [%s~%s] expected to be [%d %s] but was [%d %s]",
                                     setName, availName,
                                     expectedVal, expectedUnits.name(),
-                                    a.interval.intValue(), a.timeUnits.name()));
+                                    a.getInterval().intValue(), a.getTimeUnits().name()));
                         }
                     }
                 }

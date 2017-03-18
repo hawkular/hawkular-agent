@@ -18,21 +18,28 @@ package org.hawkular.agent.javaagent.config;
 
 import org.hawkular.agent.javaagent.Util;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class ManagedServers implements Validatable {
 
     @JsonProperty("local-dmr")
-    public LocalDMR localDmr;
+    private LocalDMR localDmr;
 
     @JsonProperty("local-jmx")
-    public LocalJMX localJmx;
+    private LocalJMX localJmx;
 
     @JsonProperty("remote-dmr")
-    public RemoteDMR[] remoteDmrs;
+    private RemoteDMR[] remoteDmrs;
 
     @JsonProperty("remote-jmx")
-    public RemoteJMX[] remoteJmxs;
+    private RemoteJMX[] remoteJmxs;
 
     public ManagedServers() {
     }
@@ -62,5 +69,37 @@ public class ManagedServers implements Validatable {
                 remoteJmx.validate();
             }
         }
+    }
+
+    public LocalDMR getLocalDmr() {
+        return localDmr;
+    }
+
+    public void setLocalDmr(LocalDMR localDmr) {
+        this.localDmr = localDmr;
+    }
+
+    public LocalJMX getLocalJmx() {
+        return localJmx;
+    }
+
+    public void setLocalJmx(LocalJMX localJmx) {
+        this.localJmx = localJmx;
+    }
+
+    public RemoteDMR[] getRemoteDmrs() {
+        return remoteDmrs;
+    }
+
+    public void setRemoteDmrs(RemoteDMR[] remoteDmrs) {
+        this.remoteDmrs = remoteDmrs;
+    }
+
+    public RemoteJMX[] getRemoteJmxs() {
+        return remoteJmxs;
+    }
+
+    public void setRemoteJmxs(RemoteJMX[] remoteJmxs) {
+        this.remoteJmxs = remoteJmxs;
     }
 }

@@ -21,39 +21,46 @@ import java.util.Map;
 
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect( //
+        fieldVisibility = Visibility.NONE, //
+        getterVisibility = Visibility.NONE, //
+        setterVisibility = Visibility.NONE, //
+        isGetterVisibility = Visibility.NONE)
 public class DMRAvail implements Validatable {
 
     @JsonProperty(required = true)
-    public String name;
+    private String name;
 
     @JsonProperty
-    public String path = "/";
+    private String path = "/";
 
     @JsonProperty
-    public String attribute;
+    private String attribute;
 
     @JsonProperty("resolve-expressions")
-    public Boolean resolveExpressions = Boolean.FALSE;
+    private Boolean resolveExpressions = Boolean.FALSE;
 
     @JsonProperty("include-defaults")
-    public Boolean includeDefaults = Boolean.TRUE;
+    private Boolean includeDefaults = Boolean.TRUE;
 
     @JsonProperty("up-regex")
-    public String upRegex;
+    private String upRegex;
 
     @JsonProperty
-    public Integer interval = 5;
+    private Integer interval = 5;
 
     @JsonProperty("time-units")
-    public TimeUnits timeUnits = TimeUnits.minutes;
+    private TimeUnits timeUnits = TimeUnits.minutes;
 
     @JsonProperty("metric-id-template")
-    public String metricIdTemplate;
+    private String metricIdTemplate;
 
     @JsonProperty("metric-tags")
-    public Map<String, String> metricTags;
+    private Map<String, String> metricTags;
 
     public DMRAvail() {
     }
@@ -73,7 +80,7 @@ public class DMRAvail implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (name == null) {
+        if (name == null || name.trim().isEmpty()) {
             throw new Exception("avail-dmr name must be specified");
         }
 
@@ -88,5 +95,85 @@ public class DMRAvail implements Validatable {
         } catch (Exception e) {
             throw new Exception("avail-dmr [" + name + "] path [" + path + "] is invalid", e);
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public String getAttribute() {
+        return attribute;
+    }
+
+    public void setAttribute(String attribute) {
+        this.attribute = attribute;
+    }
+
+    public Boolean getResolveExpressions() {
+        return resolveExpressions;
+    }
+
+    public void setResolveExpressions(Boolean resolveExpressions) {
+        this.resolveExpressions = resolveExpressions;
+    }
+
+    public Boolean getIncludeDefaults() {
+        return includeDefaults;
+    }
+
+    public void setIncludeDefaults(Boolean includeDefaults) {
+        this.includeDefaults = includeDefaults;
+    }
+
+    public String getUpRegex() {
+        return upRegex;
+    }
+
+    public void setUpRegex(String upRegex) {
+        this.upRegex = upRegex;
+    }
+
+    public Integer getInterval() {
+        return interval;
+    }
+
+    public void setInterval(Integer interval) {
+        this.interval = interval;
+    }
+
+    public TimeUnits getTimeUnits() {
+        return timeUnits;
+    }
+
+    public void setTimeUnits(TimeUnits timeUnits) {
+        this.timeUnits = timeUnits;
+    }
+
+    public String getMetricIdTemplate() {
+        return metricIdTemplate;
+    }
+
+    public void setMetricIdTemplate(String metricIdTemplate) {
+        this.metricIdTemplate = metricIdTemplate;
+    }
+
+    public Map<String, String> getMetricTags() {
+        return metricTags;
+    }
+
+    public void setMetricTags(Map<String, String> metricTags) {
+        this.metricTags = metricTags;
     }
 }
