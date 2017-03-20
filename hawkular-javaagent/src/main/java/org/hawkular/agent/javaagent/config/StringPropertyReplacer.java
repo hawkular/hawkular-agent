@@ -258,7 +258,7 @@ public final class StringPropertyReplacer {
     private static String getReplacementString(String key, Properties props) {
         String value;
 
-        final String envPrefix = "ENV~";
+        final String envPrefix = "env.";
         if (key.startsWith(envPrefix)) {
             key = key.substring(envPrefix.length());
             value = System.getenv(key);

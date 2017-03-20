@@ -50,12 +50,12 @@ public class StringPropertyReplacerTest {
     public void testReplaceWithEnv() {
         Map.Entry<String, String> envvar = System.getenv().entrySet().iterator().next(); // just pick a env var to use
 
-        String token = String.format("${ENV~%s}", envvar.getKey());
-        String tokenAsFirst = String.format("${ENV~%s,does-not-exist}", envvar.getKey());
-        String tokenAsSecond = String.format("${does-not-exist,ENV~%s}", envvar.getKey());
-        String tokenDefault = String.format("${ENV~%s:abc}", envvar.getKey());
-        String tokenDefaultAsFirst = String.format("${ENV~%s,does-not-exist:abc}", envvar.getKey());
-        String tokenDefaultAsSecond = String.format("${does-not-exist,ENV~%s:abc}", envvar.getKey());
+        String token = String.format("${env.%s}", envvar.getKey());
+        String tokenAsFirst = String.format("${env.%s,does-not-exist}", envvar.getKey());
+        String tokenAsSecond = String.format("${does-not-exist,env.%s}", envvar.getKey());
+        String tokenDefault = String.format("${env.%s:abc}", envvar.getKey());
+        String tokenDefaultAsFirst = String.format("${env.%s,does-not-exist:abc}", envvar.getKey());
+        String tokenDefaultAsSecond = String.format("${does-not-exist,env.%s:abc}", envvar.getKey());
 
         Assert.assertEquals(envvar.getValue(), StringPropertyReplacer.replaceProperties(token));
         Assert.assertEquals(envvar.getValue(), StringPropertyReplacer.replaceProperties(tokenAsFirst));
@@ -64,6 +64,6 @@ public class StringPropertyReplacerTest {
         Assert.assertEquals(envvar.getValue(), StringPropertyReplacer.replaceProperties(tokenDefaultAsFirst));
         Assert.assertEquals(envvar.getValue(), StringPropertyReplacer.replaceProperties(tokenDefaultAsSecond));
 
-        Assert.assertEquals("abc", StringPropertyReplacer.replaceProperties("${ENV~DoEs_NoT_ExIsT:abc}"));
+        Assert.assertEquals("abc", StringPropertyReplacer.replaceProperties("${env.DoEs_NoT_ExIsT:abc}"));
     }
 }
