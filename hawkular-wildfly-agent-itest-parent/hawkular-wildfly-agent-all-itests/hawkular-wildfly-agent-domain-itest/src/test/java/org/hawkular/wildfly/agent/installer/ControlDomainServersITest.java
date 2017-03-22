@@ -48,7 +48,7 @@ public class ControlDomainServersITest extends AbstractITest {
         }
 
         CanonicalPath wfPath = getHostController(clientConfig);
-        CanonicalPath agentPath = getBlueprintsByType(clientConfig.getFeedId(), "Domain WildFly Server Controller")
+        CanonicalPath agentPath = testHelper.getBlueprintsByType(clientConfig.getFeedId(), "Domain WildFly Server Controller")
                 .entrySet().stream()
                 .filter(e -> ((Entity.Blueprint)(e.getValue())).getId().contains(serverToTest))
                 .map(Map.Entry::getKey)

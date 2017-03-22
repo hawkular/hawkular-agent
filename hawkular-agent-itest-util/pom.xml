@@ -22,22 +22,16 @@
 
   <parent>
     <groupId>org.hawkular.agent</groupId>
-    <artifactId>hawkular-wildfly-agent-itest-parent</artifactId>
-    <version>0.29.5.Final-SNAPSHOT</version>
+    <artifactId>hawkular-wildfly-agent-parent</artifactId>
+    <version>0.29.1.Final-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-wildfly-agent-itest-util</artifactId>
+  <artifactId>hawkular-agent-itest-util</artifactId>
 
   <name>Hawkular Agent: Agent Integration Tests Utility Classes</name>
   <description>Hawkular Agent: Agent utility classes for use in integration tests</description>
 
   <dependencies>
-    <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-installer</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp-ws</artifactId>
@@ -56,7 +50,13 @@
 
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-itest-feature-pack</artifactId>
+      <artifactId>hawkular-javaagent</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-javaagent-itest-feature-pack</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
@@ -75,11 +75,6 @@
     <dependency>
       <groupId>org.wildfly.core</groupId>
       <artifactId>wildfly-controller</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-agent-itest-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
   </dependencies>
 

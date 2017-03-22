@@ -42,7 +42,7 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
         waitForAccountsAndInventory();
 
         // make sure the agent is there - this comes from the DMR managed server - just making sure that still works
-        Entity.Blueprint agent = (Entity.Blueprint) getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+        Entity.Blueprint agent = (Entity.Blueprint) testHelper.getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
                 .values().stream().findFirst().get();
         Assert.assertEquals(agent.getName(), "Hawkular WildFly Agent");
 
@@ -53,7 +53,7 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
     @Test(groups = { GROUP }, dependsOnMethods = { "testDmrResources" })
     public void testLocalJmxResources() throws Throwable {
         // make sure the JMX resource is there
-        Entity.Blueprint runtime = (Entity.Blueprint) waitForResourceContaining(
+        Entity.Blueprint runtime = (Entity.Blueprint) testHelper.waitForResourceContaining(
                 hawkularFeedId, "Runtime MBean", "Local JMX~java.lang:type=Runtime", 5000, 5)
                 .getValue();
         Assert.assertEquals(runtime.getName(), "JMX [Local JMX][Runtime]");
@@ -88,7 +88,7 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
     // FIXME: lost traversal
     public void testRemoteJmxResources() throws Throwable {
         // make sure the JMX resource is there
-        Entity.Blueprint runtime = (Entity.Blueprint) waitForResourceContaining(
+        Entity.Blueprint runtime = (Entity.Blueprint) testHelper.waitForResourceContaining(
                 hawkularFeedId, "Runtime MBean", "Remote JMX~java.lang:type=Runtime", 5000, 5)
                 .getValue();
         Assert.assertEquals(runtime.getName(), "JMX [Remote JMX][Runtime]");
@@ -158,14 +158,14 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
         int second = 1000;
         int timeOutSeconds = 60;
         for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = newAuthRequest().url(baseMetricsUri + "/gauges").build();
+            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/gauges").build();
             lastUrl = request.url().toString();
-            Response gaugesResponse = client.newCall(request).execute();
+            Response gaugesResponse = testHelper.client().newCall(request).execute();
 
             if (gaugesResponse.code() == 200 && !gaugesResponse.body().string().isEmpty()) {
                 String url = baseMetricsUri + "/gauges/" + Util.urlEncode(id) + "/tags";
                 lastUrl = url;
-                Response tagsResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
+                Response tagsResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build()).execute();
                 if (tagsResponse.code() == 200) {
                     String tags = tagsResponse.body().string();
                     if (tags.equals(expectedTagsJson)) {
@@ -187,14 +187,14 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
         int second = 1000;
         int timeOutSeconds = 60;
         for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = newAuthRequest().url(baseMetricsUri + "/gauges").build();
+            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/gauges").build();
             lastUrl = request.url().toString();
-            Response gaugesResponse = client.newCall(request).execute();
+            Response gaugesResponse = testHelper.client().newCall(request).execute();
 
             if (gaugesResponse.code() == 200 && !gaugesResponse.body().string().isEmpty()) {
                 String url = baseMetricsUri + "/gauges/stats?buckets=1&metrics=" + Util.urlEncodeQuery(id);
                 lastUrl = url;
-                Response gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
+                Response gaugeResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build()).execute();
                 if (gaugeResponse.code() == 200 && !gaugeResponse.body().string().isEmpty()) {
                     /* this should be enough to prove that some metric was written successfully */
                     return;

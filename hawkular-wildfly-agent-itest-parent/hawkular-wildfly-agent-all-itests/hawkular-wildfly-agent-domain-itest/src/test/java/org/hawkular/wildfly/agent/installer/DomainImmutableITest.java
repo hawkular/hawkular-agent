@@ -72,7 +72,7 @@ public class DomainImmutableITest extends AbstractITest {
             Assert.assertTrue(waitForAgent(mcc, hostAgentAddress), "Expected host agent to be started.");
 
             // FIXME
-            CanonicalPath agentPath = getBlueprintsByType(clientConfig.getFeedId(), "Domain WildFly Server Controller")
+            CanonicalPath agentPath = testHelper.getBlueprintsByType(clientConfig.getFeedId(), "Domain WildFly Server Controller")
                     .entrySet().stream()
                     .filter(e -> ((Entity.Blueprint)(e.getValue())).getId().contains(serverToTest))
                     .map(Map.Entry::getKey)

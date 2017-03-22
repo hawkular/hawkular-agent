@@ -110,7 +110,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         }
         // Make sure it's in inventory
-        waitForResourceContaining(hawkularFeedId, "Datasource", datasourceName,
+        testHelper.waitForResourceContaining(hawkularFeedId, "Datasource", datasourceName,
                 5000, 10);
     }
 
@@ -156,7 +156,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         }
         // Make sure it's in inventory
-        waitForResourceContaining(hawkularFeedId, "XA Datasource", xaDatasourceName,
+        testHelper.waitForResourceContaining(hawkularFeedId, "XA Datasource", xaDatasourceName,
                 5000, 10);
     }
 
@@ -279,7 +279,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            Optional<?> resource = getBlueprintsByType(hawkularFeedId, "Datasource")
+            Optional<?> resource = testHelper.getBlueprintsByType(hawkularFeedId, "Datasource")
                     .entrySet().stream()
                     .filter(e -> ((Entity.Blueprint)(e.getValue())).getId().contains(datasourceName))
                     .findFirst();
@@ -309,7 +309,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            waitForNoResourceContaining(hawkularFeedId, "Datasource", datasourceName,
+            testHelper.waitForNoResourceContaining(hawkularFeedId, "Datasource", datasourceName,
                     5000, 10);
         }
     }
@@ -328,7 +328,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, true);
 
             // see that the resource has been persisted to hawkular-inventory
-            Optional<?> resource = getBlueprintsByType(hawkularFeedId, "XA Datasource")
+            Optional<?> resource = testHelper.getBlueprintsByType(hawkularFeedId, "XA Datasource")
                     .entrySet().stream()
                     .filter(e -> ((Entity.Blueprint)(e.getValue())).getId().contains(xaDatasourceName))
                     .findFirst();
@@ -358,7 +358,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, dsAddress, false);
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
-            waitForNoResourceContaining(hawkularFeedId, "XA Datasource", xaDatasourceName,
+            testHelper.waitForNoResourceContaining(hawkularFeedId, "XA Datasource", xaDatasourceName,
                     5000, 10);
         }
     }

@@ -16,6 +16,10 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.hawkular.agent.monitor.util.Util;
 
 /**
@@ -29,23 +33,25 @@ class InventoryMetric {
     private final String feed;
     private final String type;
     private final String id;
+    private final Set<String> resourceTypes;
 
-    private InventoryMetric(String feed, String type, String id) {
+    private InventoryMetric(String feed, String type, String id, Set<String> resourceTypes) {
         this.feed = feed;
         this.type = type;
         this.id = id;
+        this.resourceTypes = resourceTypes;
     }
 
-    static InventoryMetric resource(String feed, String id) {
-        return new InventoryMetric(feed, "r", id);
+    static InventoryMetric resource(String feed, String id, Set<String> resourceTypes) {
+        return new InventoryMetric(feed, "r", id, resourceTypes);
     }
 
     static InventoryMetric resourceType(String feed, String id) {
-        return new InventoryMetric(feed, "rt", id);
+        return new InventoryMetric(feed, "rt", id, null);
     }
 
     static InventoryMetric metricType(String feed, String id) {
-        return new InventoryMetric(feed, "mt", id);
+        return new InventoryMetric(feed, "mt", id, null);
     }
 
     String getFeed() {
@@ -79,22 +85,57 @@ class InventoryMetric {
     }
 
     @Override public String toString() {
-        return name();
+        return baseName();
     }
 
-    public String name() {
+    public String baseName() {
         return "inventory." + feed + "." + type + "." + id;
     }
 
-    public String encodedName() {
-        return Util.urlEncode(name());
+    public InventoryMetricChunk chunk(InventoryStringDataPoint chunk) {
+        return new InventoryMetricChunk(chunk);
     }
 
-    MetricDefinition toMetricDefinition() {
-        MetricDefinition def = new MetricDefinition(name(), DATA_RETENTION);
-        def.addTag("module", "inventory");
-        def.addTag("feed", feed);
-        def.addTag("type", type);
-        return def;
+    public class InventoryMetricChunk {
+        private final String chunkId;
+        private final InventoryStringData payload;
+
+        private InventoryMetricChunk(final InventoryStringDataPoint chunk) {
+            this.chunkId = chunk.getTags().get("chunk");
+            payload = new InventoryStringData(name(), Collections.singletonList(chunk));
+        }
+
+        public String name() {
+            if (chunkId.equals("0")) {
+                return baseName();
+            }
+            return baseName() + "." + chunkId;
+        }
+
+        public String encodedName() {
+            return Util.urlEncode(name());
+        }
+
+        public InventoryStringData getPayload() {
+            return payload;
+        }
+
+        @Override public String toString() {
+            return name();
+        }
+
+        public MetricDefinition toMetricDefinition() {
+            MetricDefinition def = new MetricDefinition(name(), DATA_RETENTION);
+            def.addTag("module", "inventory");
+            def.addTag("feed", feed);
+            def.addTag("type", type);
+            def.addTag("id", id);
+            def.addTag("chunk", chunkId);
+            if (resourceTypes != null) {
+                def.addTag("restypes",
+                        "|" + resourceTypes.stream().collect(Collectors.joining("|")) + "|");
+            }
+            return def;
+        }
     }
 }

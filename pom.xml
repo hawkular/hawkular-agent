@@ -48,6 +48,7 @@
     <module>eap6-support/hawkular-wildfly-agent-feature-pack-eap6</module>
     <module>eap6-support/hawkular-wildfly-agent-wf-extension-eap6</module>
     <module>eap6-support/hawkular-javaagent-wildfly-feature-pack-eap6</module>
+    <module>hawkular-agent-itest-util</module>
     <module>hawkular-javaagent-itest-parent</module>
     <module>hawkular-wildfly-agent-itest-parent</module>
     <module>wildfly-module-installer</module>

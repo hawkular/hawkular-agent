@@ -84,15 +84,15 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void operationParameters() throws Throwable {
         // get the operation
-        CanonicalPath shutdownPath = feedPath(wfClientConfig.getFeedId())
+        CanonicalPath shutdownPath = testHelper.feedPath(wfClientConfig.getFeedId())
                 .resourceType("WildFly Server").operationType("Shutdown").get();
-        Optional<Blueprint> optBlueprint = getBlueprintFromCP(shutdownPath);
+        Optional<Blueprint> optBlueprint = testHelper.getBlueprintFromCP(shutdownPath);
         Assert.assertTrue(optBlueprint.isPresent());
         OperationType.Blueprint op = (OperationType.Blueprint) optBlueprint.get();
         Assert.assertEquals("Shutdown", op.getId());
 
         // get parameters
-        optBlueprint = getBlueprintFromCP(shutdownPath.extend(SegmentType.d, "parameterTypes").get());
+        optBlueprint = testHelper.getBlueprintFromCP(shutdownPath.extend(SegmentType.d, "parameterTypes").get());
         Assert.assertTrue(optBlueprint.isPresent());
         DataEntity.Blueprint data = (DataEntity.Blueprint) optBlueprint.get();
         Map<String, StructuredData> paramsMap = data.getValue().map();
@@ -110,7 +110,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void socketBindingGroupsInInventory() throws Throwable {
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
-        Collection<Blueprint> sbgs = getBlueprintsByType(wfClientConfig.getFeedId(), "Socket Binding Group").values();
+        Collection<Blueprint> sbgs = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Socket Binding Group").values();
         for (String sbgName : dmrSBGNames) {
             boolean hasMatch = sbgs.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
                     && ((Entity.Blueprint)bp).getId().contains(sbgName));
@@ -124,7 +124,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
         // there is only one group - get the names of all the bindings (incoming and outbound) in that group
         Collection<String> dmrBindingNames = getSocketBindingNames();
-        Collection<Blueprint> bindings = getBlueprintsByType(wfClientConfig.getFeedId(), "Socket Binding").values();
+        Collection<Blueprint> bindings = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Socket Binding").values();
         for (String bindingName : dmrBindingNames) {
             boolean hasMatch = bindings.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
                     && ((Entity.Blueprint)bp).getId().contains(bindingName));
@@ -143,7 +143,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         Assert.assertEquals("Wrong number of socket binding groups", 7, dmrBindingNames.size());
 
         dmrBindingNames = getOutboundSocketBindingNames();
-        bindings = getBlueprintsByType(wfClientConfig.getFeedId(), "Remote Destination Outbound Socket Binding").values();
+        bindings = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Remote Destination Outbound Socket Binding").values();
         for (String bindingName : dmrBindingNames) {
             boolean hasMatch = bindings.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
                     && ((Entity.Blueprint)bp).getId().contains(bindingName));
@@ -159,7 +159,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void datasourcesAddedToInventory() throws Throwable {
-        Collection<Blueprint> datasources = getBlueprintsByType(wfClientConfig.getFeedId(), "Datasource").values();
+        Collection<Blueprint> datasources = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Datasource").values();
         for (String datasourceName : getDatasourceNames()) {
             boolean hasMatch = datasources.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
                     && ((Entity.Blueprint)bp).getId().contains(datasourceName));
@@ -196,8 +196,8 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         int second = 1000;
         int timeOutSeconds = 60;
         for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = newAuthRequest().url(baseMetricsUri + "/gauges").build();
-            try (Response gaugesResponse = client.newCall(request).execute()) {
+            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/gauges").build();
+            try (Response gaugesResponse = testHelper.client().newCall(request).execute()) {
                 if (gaugesResponse.code() == 200 && !gaugesResponse.body().string().isEmpty()) {
                     boolean found = false;
 
@@ -209,7 +209,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
                         id = Util.urlEncodeQuery(id);
                         String url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
                         lastUrl = url;
-                        try (Response gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute()) {
+                        try (Response gaugeResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build()).execute()) {
                             if (gaugeResponse.code() == 200) {
                                 String body = gaugeResponse.body().string();
                                 //System.out.println("ActiveBody=" + body);
@@ -227,7 +227,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
                             url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
                             //System.out.println("url = " + url);
                         }
-                        try (Response gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute()) {
+                        try (Response gaugeResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build()).execute()) {
                             if (gaugeResponse.code() == 200) {
                                 String body = gaugeResponse.body().string();
                                 // System.out.println("DisabledBody=" + body);
@@ -261,15 +261,15 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         int timeOutSeconds = 60;
 
         for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = newAuthRequest().url(baseMetricsUri + "/availability").build();
-            try (Response availabilityResponse = client.newCall(request).execute()) {
+            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/availability").build();
+            try (Response availabilityResponse = testHelper.client().newCall(request).execute()) {
                 if (availabilityResponse.code() == 200 && !availabilityResponse.body().string().isEmpty()) {
                     String id = "AI~R~[" + wfClientConfig.getFeedId()
                             + "/Local~~]~AT~Server Availability~Server Availability";
                     id = Util.urlEncode(id);
                     String url = baseMetricsUri + "/availability/" + id + "/raw";
                     //System.out.println("url = " + url);
-                    try (Response availabilityMetricResponse = client.newCall(newAuthRequest().url(url).get().build()).execute()){
+                    try (Response availabilityMetricResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build()).execute()){
                         if (availabilityMetricResponse.code() == 200) {
                             String body = availabilityMetricResponse.body().string();
                             System.out.println("AvailResponse ===>" + body);
@@ -294,7 +294,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     public void resourceConfig() throws Throwable {
         CanonicalPath wfPath = getWildFlyServerResourcePath();
         wfPath = wfPath.extend(SegmentType.d, "configuration").get();
-        Optional<Blueprint> optConfiguration = getBlueprintFromCP(wfPath);
+        Optional<Blueprint> optConfiguration = testHelper.getBlueprintFromCP(wfPath);
         Assert.assertTrue(optConfiguration.isPresent());
         DataEntity.Blueprint configuration = (DataEntity.Blueprint) optConfiguration.get();
         Map<String, StructuredData> resConfig = configuration.getValue().map();
@@ -312,7 +312,7 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     }
 
     private CanonicalPath getWildFlyServerResourcePath() throws Throwable {
-        Map<CanonicalPath, Blueprint> servers = getBlueprintsByType(wfClientConfig.getFeedId(), "WildFly Server");
+        Map<CanonicalPath, Blueprint> servers = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "WildFly Server");
         Assert.assertEquals(1, servers.size());
         return servers.keySet().iterator().next();
     }
@@ -320,27 +320,27 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void machineId() throws Throwable {
         CanonicalPath osTypePath = getOperatingSystemResourceTypePath().extend(SegmentType.d, "configurationSchema").get();
-        Optional<Blueprint> optSchema = getBlueprintFromCP(osTypePath);
+        Optional<Blueprint> optSchema = testHelper.getBlueprintFromCP(osTypePath);
         Assert.assertTrue(optSchema.isPresent());
         Map<String, StructuredData> schema = ((DataEntity.Blueprint) optSchema.get()).getValue().map();
         Assert.assertTrue(schema.containsKey("Machine Id"));
 
         CanonicalPath osPath = getOperatingSystemResourcePath().extend(SegmentType.d, "configuration").get();
-        Optional<Blueprint> optResConfig = getBlueprintFromCP(osPath);
+        Optional<Blueprint> optResConfig = testHelper.getBlueprintFromCP(osPath);
         Assert.assertTrue(optResConfig.isPresent());
         Map<String, StructuredData> resConfig = ((DataEntity.Blueprint) optResConfig.get()).getValue().map();
         Assert.assertTrue(resConfig.containsKey("Machine Id"));
     }
 
     private CanonicalPath getOperatingSystemResourceTypePath() throws Throwable {
-        InventoryStructure.Offline<ResourceType.Blueprint>
-                osType = getResourceType(wfClientConfig.getFeedId(), "Platform_Operating System");
-        Assert.assertNotNull(osType);
-        return feedPath(wfClientConfig.getFeedId()).resourceType(osType.getRoot().getId()).get();
+        Optional<InventoryStructure> optInventoryStructure = testHelper.getInventoryStructure(wfClientConfig.getFeedId(), "rt", "Platform_Operating System");
+        Assert.assertTrue(optInventoryStructure.isPresent());
+        InventoryStructure.Offline<ResourceType.Blueprint> osType = (InventoryStructure.Offline<ResourceType.Blueprint>) optInventoryStructure.get();
+        return testHelper.feedPath(wfClientConfig.getFeedId()).resourceType(osType.getRoot().getId()).get();
     }
 
     private CanonicalPath getOperatingSystemResourcePath() throws Throwable {
-        Map<CanonicalPath, Blueprint> os = getBlueprintsByType(wfClientConfig.getFeedId(), "Platform_Operating System");
+        Map<CanonicalPath, Blueprint> os = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Platform_Operating System");
         Assert.assertEquals(1, os.size());
         return os.keySet().iterator().next();
     }

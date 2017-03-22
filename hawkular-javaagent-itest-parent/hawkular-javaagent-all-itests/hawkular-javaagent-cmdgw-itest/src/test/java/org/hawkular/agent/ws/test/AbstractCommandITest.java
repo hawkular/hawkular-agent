@@ -29,7 +29,7 @@ public abstract class AbstractCommandITest extends AbstractITest {
 
         waitForAgentViaJMX();
 
-        CanonicalPath agentPath = waitForResourceContaining(
+        CanonicalPath agentPath = testHelper.waitForResourceContaining(
                 hawkularFeedId, "Hawkular WildFly Agent", null, 5000, 10).getKey();
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "

@@ -32,37 +32,30 @@ import org.testng.annotations.Test;
 public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
     public static final String GROUP = "HawkularWildFlyAgentContextITest";
 
-    @Override
-    protected String getTenantId() {
-        // see org.hawkular.agent.example.HawkularWildFlyAgentProvider.TENANT_ID
-        // if that is non-null, we want to return that string; otherwise, just return our superclass's tenant
-        return super.getTenantId();
-    }
-
     @Test(groups = { GROUP }, dependsOnGroups = { DatasourceCommandITest.GROUP })
     public void testAgentFromJNDI() throws Throwable {
         waitForAccountsAndInventory();
 
         // this should not exist yet
-        Optional<?> resource = getBlueprintsByType(hawkularFeedId, "MyAppResourceType")
+        Optional<?> resource = testHelper.getBlueprintsByType(hawkularFeedId, "MyAppResourceType")
                 .entrySet().stream()
                 .filter(e -> ((Entity.Blueprint)(e.getValue())).getId().contains("ITest Resource ID"))
                 .findFirst();
         Assert.assertFalse(resource.isPresent());
 
-        getWithRetries(getExampleJndiWarCreateResourceUrl("ITest Resource ID"));
+        testHelper.getWithRetries(getExampleJndiWarCreateResourceUrl("ITest Resource ID"));
 
         // see that the new resource has been persisted to hawkular-inventory
-        waitForResourceContaining(hawkularFeedId, "MyAppResourceType", "ITest Resource ID",
+        testHelper.waitForResourceContaining(hawkularFeedId, "MyAppResourceType", "ITest Resource ID",
                 5000, 5);
 
-        getWithRetries(getExampleJndiWarSendMetricUrl("ITest Metric Key", 123.0));
-        getWithRetries(getExampleJndiWarSendStringMetricUrl("ITest Metric Key", "ITest Val"));
-        getWithRetries(getExampleJndiWarSendAvailUrl("ITest Avail Key", "DOWN"));
-        getWithRetries(getExampleJndiWarRemoveResourceUrl("ITest Resource ID"));
+        testHelper.getWithRetries(getExampleJndiWarSendMetricUrl("ITest Metric Key", 123.0));
+        testHelper.getWithRetries(getExampleJndiWarSendStringMetricUrl("ITest Metric Key", "ITest Val"));
+        testHelper.getWithRetries(getExampleJndiWarSendAvailUrl("ITest Avail Key", "DOWN"));
+        testHelper.getWithRetries(getExampleJndiWarRemoveResourceUrl("ITest Resource ID"));
 
         // this should not exist anymore
-        waitForNoResourceContaining(hawkularFeedId, "MyAppResourceType", "ITest Resource ID",
+        testHelper.waitForNoResourceContaining(hawkularFeedId, "MyAppResourceType", "ITest Resource ID",
                 5000, 5);
     }
 

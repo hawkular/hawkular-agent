@@ -53,7 +53,7 @@ public class UpdateCollectionIntervalsCommandITest extends AbstractCommandITest 
                     "interval",
                     "30");
 
-            CanonicalPath agentPath = getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+            CanonicalPath agentPath = testHelper.getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
                     .entrySet().stream()
 //                .filter(e -> ((Entity.Blueprint)(e.getValue())).getId() != null)
                     .map(Map.Entry::getKey)

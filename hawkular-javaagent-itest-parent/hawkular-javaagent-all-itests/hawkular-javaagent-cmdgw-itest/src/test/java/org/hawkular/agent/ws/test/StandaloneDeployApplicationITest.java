@@ -232,19 +232,19 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         waitForHawkularServerToBeReady();
 
         // this should exist
-        waitForResourceContaining(hawkularFeedId, "Deployment", "hawkular-javaagent-helloworld-war.war", 5000, 10);
+        testHelper.waitForResourceContaining(hawkularFeedId, "Deployment", "hawkular-javaagent-helloworld-war.war", 5000, 10);
 
         // make sure to discover the mbean resources (same MBean discovered by local and remote managed server)
         forceInventoryDiscoveryScan();
 
-        CanonicalPath localPath = feedPath(hawkularFeedId).resource("Local JMX~org.hawkular.agent.itest:type=simple").get();
-        Optional<Blueprint> resource = getBlueprintFromCP(localPath);
+        CanonicalPath localPath = testHelper.feedPath(hawkularFeedId).resource("Local JMX~org.hawkular.agent.itest:type=simple").get();
+        Optional<Blueprint> resource = testHelper.getBlueprintFromCP(localPath);
         Assert.assertTrue(resource.isPresent());
 
         invokeJMXOperations(localPath);
 
-        CanonicalPath remotePath = feedPath(hawkularFeedId).resource("Remote JMX~org.hawkular.agent.itest:type=simple").get();
-        resource = getBlueprintFromCP(remotePath);
+        CanonicalPath remotePath = testHelper.feedPath(hawkularFeedId).resource("Remote JMX~org.hawkular.agent.itest:type=simple").get();
+        resource = testHelper.getBlueprintFromCP(remotePath);
         Assert.assertTrue(resource.isPresent());
 
         invokeJMXOperations(remotePath);
@@ -403,7 +403,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         waitForHawkularServerToBeReady();
 
         // this should exist
-        waitForResourceContaining(hawkularFeedId, "Deployment", "hawkular-javaagent-helloworld-war.war",
+        testHelper.waitForResourceContaining(hawkularFeedId, "Deployment", "hawkular-javaagent-helloworld-war.war",
                 5000, 10);
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
@@ -442,7 +442,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         }
 
         // this should be gone now, let's make sure it does get deleted from h-inventory
-        waitForNoResourceContaining(hawkularFeedId, "Deployment", "hawkular-javaagent-helloworld-war.war",
+        testHelper.waitForNoResourceContaining(hawkularFeedId, "Deployment", "hawkular-javaagent-helloworld-war.war",
                 5000, 10);
     }
 }

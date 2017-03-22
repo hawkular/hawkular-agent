@@ -17,7 +17,7 @@
 package org.hawkular.agent.monitor.storage;
 
 import java.io.Serializable;
-import java.util.Map;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -25,33 +25,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * @author Joel Takvorian
  */
-public class InventoryStringDataPoint implements Serializable {
-    @JsonProperty("timestamp")
-    private final long timestamp;
-    @JsonProperty("value")
-    private final byte[] inventoryStructure;
-    @JsonProperty("tags")
-    private final Map<String, String> tags;
+public class InventoryStringData implements Serializable {
+
+    @JsonProperty("id")
+    private final String id;
+    @JsonProperty("data")
+    private final List<InventoryStringDataPoint> data;
 
     @JsonCreator
-    public InventoryStringDataPoint(
-            @JsonProperty("timestamp") long timestamp,
-            @JsonProperty("value") byte[] inventoryStructure,
-            @JsonProperty("tags") Map<String, String> tags) {
-        this.timestamp = timestamp;
-        this.inventoryStructure = inventoryStructure;
-        this.tags = tags;
+    public InventoryStringData(@JsonProperty("id") String id, @JsonProperty("data") List<InventoryStringDataPoint> data) {
+        this.id = id;
+        this.data = data;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    public String getId() {
+        return id;
     }
 
-    public byte[] getInventoryStructure() {
-        return inventoryStructure;
-    }
-
-    public Map<String, String> getTags() {
-        return tags;
+    public List<InventoryStringDataPoint> getData() {
+        return data;
     }
 }

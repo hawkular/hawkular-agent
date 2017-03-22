@@ -46,7 +46,7 @@ public class ImmutableITest extends AbstractCommandITest {
 
         waitForAgentViaJMX();
 
-        CanonicalPath agentPath = getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+        CanonicalPath agentPath = testHelper.getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
                 .entrySet().stream()
                 .map(Map.Entry::getKey)
                 .findFirst()

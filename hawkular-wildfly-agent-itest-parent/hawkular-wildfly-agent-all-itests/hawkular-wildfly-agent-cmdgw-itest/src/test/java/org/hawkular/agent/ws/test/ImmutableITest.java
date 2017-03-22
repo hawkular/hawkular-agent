@@ -69,7 +69,7 @@ public class ImmutableITest extends AbstractCommandITest {
 
             Assert.assertTrue(waitForAgent(mcc), "Expected agent to be started.");
 
-            CanonicalPath agentPath = getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+            CanonicalPath agentPath = testHelper.getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
                     .entrySet().stream()
                     .map(Map.Entry::getKey)
                     .findFirst()

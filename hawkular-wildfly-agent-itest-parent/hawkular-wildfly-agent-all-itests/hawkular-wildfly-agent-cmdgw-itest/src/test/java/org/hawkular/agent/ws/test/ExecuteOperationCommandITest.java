@@ -35,7 +35,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
-        CanonicalPath agentPath = getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+        CanonicalPath agentPath = testHelper.getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
                 .entrySet().stream()
 //                .filter(e -> ((Entity.Blueprint)(e.getValue())).getId() != null)
                 .map(Map.Entry::getKey)
