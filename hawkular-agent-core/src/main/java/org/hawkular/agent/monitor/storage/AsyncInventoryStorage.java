@@ -497,7 +497,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     // The final URL should be in the form: strings/inventory.<feedid>.r.<resource_id>
                     InventoryMetric metric = InventoryMetric.resource(feedId, removedResource.getID().getIDString());
                     // Post empty data
-                    String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), "")));
+                    String jsonPayload = Util.toJson(Collections.singleton(new InventoryStringDataPoint(System.currentTimeMillis(), new byte[] {})));
                     postInventoryData(metric, jsonPayload, tenantIdToUse, 0);
                     // Remove "feed" tag
                     StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())

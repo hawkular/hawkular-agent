@@ -16,7 +16,10 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.zip.GZIPOutputStream;
 
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.InventoryStructure;
@@ -31,15 +34,20 @@ public class InventoryStringDataPoint implements Serializable {
     @JsonProperty("timestamp")
     private final long timestamp;
     @JsonProperty("value")
-    private final String inventoryStructure;
+    private final byte[] inventoryStructure;
 
-    public InventoryStringDataPoint(long timestamp, InventoryStructure<?> inventoryStructure) {
+    public InventoryStringDataPoint(long timestamp, InventoryStructure<?> inventoryStructure) throws IOException {
         this.timestamp = timestamp;
-        this.inventoryStructure = Util.toJson(inventoryStructure);
+        String json = Util.toJson(inventoryStructure);
+        ByteArrayOutputStream obj=new ByteArrayOutputStream();
+        GZIPOutputStream gzip = new GZIPOutputStream(obj);
+        gzip.write(json.getBytes("UTF-8"));
+        gzip.close();
+        this.inventoryStructure = obj.toByteArray();
     }
 
     @JsonCreator
-    public InventoryStringDataPoint(@JsonProperty("timestamp") long timestamp, @JsonProperty("value") String inventoryStructure) {
+    public InventoryStringDataPoint(@JsonProperty("timestamp") long timestamp, @JsonProperty("value") byte[] inventoryStructure) {
         this.timestamp = timestamp;
         this.inventoryStructure = inventoryStructure;
     }
@@ -48,7 +56,7 @@ public class InventoryStringDataPoint implements Serializable {
         return timestamp;
     }
 
-    public String getInventoryStructure() {
+    public byte[] getInventoryStructure() {
         return inventoryStructure;
     }
 }

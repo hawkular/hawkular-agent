@@ -16,6 +16,8 @@
  */
 package org.hawkular.wildfly.agent.itest.util;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -37,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -291,7 +294,7 @@ public abstract class AbstractITest {
     private Optional<InventoryStructure> extractStructureFromResponse(String responseBody) {
         try {
             JsonNode node = mapper.readTree(responseBody);
-            String embeddedJson = node.get(0).get("value").asText();
+            String embeddedJson = decompress(node.get(0).get("value").asText());
             if (embeddedJson.isEmpty()) {
                 return Optional.empty();
             }
@@ -305,7 +308,7 @@ public abstract class AbstractITest {
         try {
             Map<String, InventoryStructure<?>> result = new HashMap<>();
             for (JsonNode child : mapper.readTree(responseBody)) {
-                String embeddedJson = child.get("data").get(0).get("value").asText();
+                String embeddedJson = decompress(child.get("data").get(0).get("value").asText());
                 if (!embeddedJson.isEmpty()) {
                     result.put(child.get("id").asText(), mapper.readValue(embeddedJson, InventoryStructure.class));
                 }
@@ -314,6 +317,22 @@ public abstract class AbstractITest {
         } catch (IOException e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    private static String decompress(String gzipped) throws IOException {
+        if ((gzipped == null) || (gzipped.length() == 0)) {
+            return "";
+        }
+        System.out.println("Compressed: " + gzipped);
+        StringBuilder outStr = new StringBuilder();
+        GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(gzipped.getBytes("UTF-8")));
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(gis, "UTF-8"));
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+            outStr.append(line);
+        }
+        System.out.println("Deompressed: " + outStr.toString());
+        return outStr.toString();
     }
 
     protected Optional<InventoryStructure> getInventoryStructure(String feedId, String type, String id) throws Throwable {
@@ -442,16 +461,7 @@ public abstract class AbstractITest {
                             "Got code " + response.code() + " and message [" + response.message() + "] retries: " +
                                     request.url());
                     AssertJUnit.assertTrue(response.code() == 200 || response.code() == 204);
-//                    System.out.println("Got after " + (i + 1) + " retries: " + request.url());
-                    String responseBody = response.body().string();
-//                    System.err.println("Response size: " + responseBody.length());
-//                    ByteArrayOutputStream obj=new ByteArrayOutputStream();
-//                    GZIPOutputStream gzip = new GZIPOutputStream(obj);
-//                    gzip.write(responseBody.getBytes("UTF-8"));
-//                    gzip.close();
-//                    byte[] gzipped = obj.toByteArray();
-//                    System.err.println("Compressed size: " + gzipped.length);
-                    return responseBody;
+                    return response.body().string();
                 }
             } catch (Throwable t) {
                 // some initial attempts may fail so we continue
