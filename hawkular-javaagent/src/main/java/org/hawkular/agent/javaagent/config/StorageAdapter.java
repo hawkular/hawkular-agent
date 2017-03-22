@@ -192,14 +192,6 @@ public class StorageAdapter implements Validatable {
         this.securityRealmName = securityRealmName;
     }
 
-    public String getInventoryContext() {
-        return inventoryContext;
-    }
-
-    public void setInventoryContext(String inventoryContext) {
-        this.inventoryContext = inventoryContext;
-    }
-
     public String getMetricsContext() {
         return metricsContext;
     }
