@@ -17,7 +17,9 @@
 package org.hawkular.agent.monitor.storage;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,6 +28,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author Joel Takvorian
  */
 public class InventoryStringDataPoint implements Serializable {
+
+    private static final String KEY_CHUNK = "chunk";
+    private static final String KEY_NBCHUNKS = "chunks";
+    private static final String KEY_SIZE = "size";
+
     @JsonProperty("timestamp")
     private final long timestamp;
     @JsonProperty("value")
@@ -53,5 +60,25 @@ public class InventoryStringDataPoint implements Serializable {
 
     public Map<String, String> getTags() {
         return tags;
+    }
+
+    public static InventoryStringDataPoint full(long timestamp, byte[] inventoryStructure) {
+        return new InventoryStringDataPoint(timestamp, inventoryStructure, new HashMap<>());
+    }
+
+    public static InventoryStringDataPoint chunk(long timestamp, byte[] inventoryStructure, String chunkId) {
+        // Important: use a mutable map
+        Map<String, String> tags = new HashMap<>();
+        tags.put(KEY_CHUNK, chunkId);
+        return new InventoryStringDataPoint(timestamp, inventoryStructure, tags);
+    }
+
+    public void setMasterInfo(int nbChunks, int totalSize) {
+        tags.put(KEY_NBCHUNKS, String.valueOf(nbChunks));
+        tags.put(KEY_SIZE, String.valueOf(totalSize));
+    }
+
+    public Optional<String> getChunkId() {
+        return Optional.ofNullable(tags.get(KEY_CHUNK));
     }
 }

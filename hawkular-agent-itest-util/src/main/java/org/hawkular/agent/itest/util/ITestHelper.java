@@ -99,6 +99,9 @@ public class ITestHelper {
                     } else {
                         slavesById.put(child.get("id").asText(), dataNode);
                     }
+                } else {
+                    // Not chunked, consider it as a master with no slave
+                    mastersById.put(child.get("id").asText(), dataNode);
                 }
             }
             // Extract each master with its slave(s)
@@ -114,22 +117,28 @@ public class ITestHelper {
 
     private Optional<ExtendedInventoryStructure> rebuildFromChunks(String masterId, JsonNode masterData, Map<String, JsonNode> slavesById) {
         try {
-            int nbChunks = masterData.get("tags").get("chunks").asInt();
-            int totalSize = masterData.get("tags").get("size").asInt();
-            byte[] master = masterData.get("value").binaryValue();
-            if (master.length == 0) {
-                return Optional.empty();
-            }
-            byte[] all = new byte[totalSize];
-            int pos = 0;
-            System.arraycopy(master, 0, all, pos, master.length);
-            pos += master.length;
-            for (int i = 1; i < nbChunks; i++) {
-                String id = masterId + "." + i;
-                JsonNode slaveData = slavesById.get(id);
-                byte[] slave = slaveData.get("value").binaryValue();
-                System.arraycopy(slave, 0, all, pos, slave.length);
-                pos += slave.length;
+            final byte[] all;
+            if (masterData.has("tags") && masterData.get("tags").has("chunk")) {
+                int nbChunks = masterData.get("tags").get("chunks").asInt();
+                int totalSize = masterData.get("tags").get("size").asInt();
+                byte[] master = masterData.get("value").binaryValue();
+                if (master.length == 0) {
+                    return Optional.empty();
+                }
+                all = new byte[totalSize];
+                int pos = 0;
+                System.arraycopy(master, 0, all, pos, master.length);
+                pos += master.length;
+                for (int i = 1; i < nbChunks; i++) {
+                    String id = masterId + "." + i;
+                    JsonNode slaveData = slavesById.get(id);
+                    byte[] slave = slaveData.get("value").binaryValue();
+                    System.arraycopy(slave, 0, all, pos, slave.length);
+                    pos += slave.length;
+                }
+            } else {
+                // Not chunked
+                all = masterData.get("value").binaryValue();
             }
             String decompressed = decompress(all);
             ExtendedInventoryStructure structure = mapper.readValue(decompressed, ExtendedInventoryStructure.class);

@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.storage;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -92,32 +93,29 @@ class InventoryMetric {
         return "inventory." + feed + "." + type + "." + id;
     }
 
-    public InventoryMetricChunk chunk(InventoryStringDataPoint chunk) {
-        return new InventoryMetricChunk(chunk);
+    public InventoryMetricData withData(InventoryStringDataPoint data) {
+        return new InventoryMetricData(data);
     }
 
-    public class InventoryMetricChunk {
-        private final String chunkId;
-        private final InventoryStringData payload;
+    public class InventoryMetricData {
+        private final InventoryStringDataPoint data;
 
-        private InventoryMetricChunk(final InventoryStringDataPoint chunk) {
-            this.chunkId = chunk.getTags().get("chunk");
-            payload = new InventoryStringData(name(), Collections.singletonList(chunk));
+        private InventoryMetricData(final InventoryStringDataPoint data) {
+            this.data = data;
         }
 
         public String name() {
-            if (chunkId.equals("0")) {
-                return baseName();
-            }
-            return baseName() + "." + chunkId;
+            Optional<String> chunkId = data.getChunkId();
+            String suffix = chunkId.filter(c -> !c.equals("0")).map(c -> "." + c).orElse("");
+            return baseName() + suffix;
         }
 
         public String encodedName() {
             return Util.urlEncode(name());
         }
 
-        public InventoryStringData getPayload() {
-            return payload;
+        public InventoryStringData buildPayload() {
+            return new InventoryStringData(name(), Collections.singletonList(data));
         }
 
         @Override public String toString() {
@@ -130,7 +128,7 @@ class InventoryMetric {
             def.addTag("feed", feed);
             def.addTag("type", type);
             def.addTag("id", id);
-            def.addTag("chunk", chunkId);
+            data.getChunkId().ifPresent(c -> def.addTag("chunk", c));
             if (resourceTypes != null) {
                 def.addTag("restypes",
                         "|" + resourceTypes.stream().collect(Collectors.joining("|")) + "|");

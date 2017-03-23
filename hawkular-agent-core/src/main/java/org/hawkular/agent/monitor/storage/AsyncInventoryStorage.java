@@ -457,14 +457,15 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     private static final MsgLogger log = AgentLoggers.getLogger(AsyncInventoryStorage.class);
-    // TODO: make it configurable
-    private static final int CHUNKS_SIZE = 4096;
+    private static final int DEFAULT_CHUNKS_SIZE = 4096;
 
     private final String feedId;
     private final AgentCoreEngineConfiguration.StorageAdapterConfiguration config;
     private final HttpClientBuilder httpClientBuilder;
     private final Diagnostics diagnostics;
     private final ObjectMapper mapper;
+    // TODO: make it configurable
+    private final int chunkSize = DEFAULT_CHUNKS_SIZE;
 
     public AsyncInventoryStorage(
             String feedId,
@@ -683,13 +684,13 @@ public class AsyncInventoryStorage implements InventoryStorage {
     private void syncInventoryData(InventoryMetric metric, ExtendedInventoryStructure inventoryStructure, String tenantId, int totalResourceCount)
             throws Exception {
 
-        List<InventoryMetric.InventoryMetricChunk> metricChunks = compressAndChunk(metric, inventoryStructure);
+        List<InventoryMetric.InventoryMetricData> metricChunks = compressAndChunk(metric, inventoryStructure);
         if (metricChunks.isEmpty()) {
             return;
         }
         String jsonPayload = Util.toJson(
                 metricChunks.stream()
-                        .map(InventoryMetric.InventoryMetricChunk::getPayload)
+                        .map(InventoryMetric.InventoryMetricData::buildPayload)
                         .collect(Collectors.toList()));
 
         Map<String, String> headers = getTenantHeader(tenantId);
@@ -724,7 +725,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private void prepareSync(InventoryMetric.InventoryMetricChunk masterMetric,
+    private void prepareSync(InventoryMetric.InventoryMetricData masterMetric,
                              Map<String, String> headers,
                              String tagsPayload) throws Exception {
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
@@ -756,7 +757,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private void commitSync(InventoryMetric.InventoryMetricChunk metric,
+    private void commitSync(InventoryMetric.InventoryMetricData metric,
                             Map<String, String> headers) throws Exception {
 
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
@@ -774,7 +775,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private static List<InventoryMetric.InventoryMetricChunk> compressAndChunk(
+    private List<InventoryMetric.InventoryMetricData> compressAndChunk(
             InventoryMetric metric,
             ExtendedInventoryStructure inventoryStructure)
                 throws IOException {
@@ -786,24 +787,25 @@ public class AsyncInventoryStorage implements InventoryStorage {
         gzip.write(json.getBytes("UTF-8"));
         gzip.close();
         byte[] compressed = obj.toByteArray();
+        if (compressed.length <= chunkSize) {
+            // Don't chunk
+            return Collections.singletonList(metric.withData(InventoryStringDataPoint.full(timestamp, compressed)));
+        }
         int pos = 0;
         int chunkId = 0;
         while (pos < compressed.length) {
-            int size = Math.min(CHUNKS_SIZE, compressed.length - pos);
+            int size = Math.min(chunkSize, compressed.length - pos);
             byte[] chunk = new byte[size];
             System.arraycopy(compressed, pos, chunk, 0, size);
-            Map<String, String> mutableMap = new HashMap<>();
-            mutableMap.put("chunk", String.valueOf(chunkId));
-            chunks.add(new InventoryStringDataPoint(timestamp, chunk, mutableMap));
+            chunks.add(InventoryStringDataPoint.chunk(timestamp, chunk, String.valueOf(chunkId)));
             pos += size;
             chunkId++;
         }
         if (!chunks.isEmpty()) {
             // Set size in master chunk
-            chunks.get(0).getTags().put("chunks", String.valueOf(chunks.size()));
-            chunks.get(0).getTags().put("size", String.valueOf(compressed.length));
+            chunks.get(0).setMasterInfo(chunks.size(), compressed.length);
         }
-        return chunks.stream().map(metric::chunk).collect(Collectors.toList());
+        return chunks.stream().map(metric::withData).collect(Collectors.toList());
     }
 
     /**
