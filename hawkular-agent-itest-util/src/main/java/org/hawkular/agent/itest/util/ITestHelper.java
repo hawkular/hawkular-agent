@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import java.util.zip.GZIPInputStream;
 
 import org.hawkular.agent.monitor.storage.ExtendedInventoryStructure;
@@ -87,26 +88,10 @@ public class ITestHelper {
 
     private List<ExtendedInventoryStructure> extractStructuresFromResponse(String responseBody) {
         try {
-            // Dechunk data: "masters" are those with tag "chunk" == 0
-            Map<String, JsonNode> mastersById = new HashMap<>();
-            Map<String, JsonNode> slavesById = new HashMap<>();
-            for (JsonNode child : mapper.readTree(responseBody)) {
-                JsonNode dataNode = child.get("data").get(0);
-                if (dataNode.has("tags") && dataNode.get("tags").has("chunk")) {
-                    String chunkId = dataNode.get("tags").get("chunk").asText();
-                    if ("0".equals(chunkId)) {
-                        mastersById.put(child.get("id").asText(), dataNode);
-                    } else {
-                        slavesById.put(child.get("id").asText(), dataNode);
-                    }
-                } else {
-                    // Not chunked, consider it as a master with no slave
-                    mastersById.put(child.get("id").asText(), dataNode);
-                }
-            }
-            // Extract each master with its slave(s)
-            return mastersById.entrySet().stream()
-                    .map(e -> rebuildFromChunks(e.getKey(), e.getValue(), slavesById))
+            JsonNode responseNode = mapper.readTree(responseBody);
+            return StreamSupport.stream(responseNode.spliterator(), true)
+                    .map(node -> node.get("data"))
+                    .map(this::rebuildFromChunks)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .collect(Collectors.toList());
@@ -115,13 +100,17 @@ public class ITestHelper {
         }
     }
 
-    private Optional<ExtendedInventoryStructure> rebuildFromChunks(String masterId, JsonNode masterData, Map<String, JsonNode> slavesById) {
+    private Optional<ExtendedInventoryStructure> rebuildFromChunks(JsonNode dataNode) {
+        if (!dataNode.has(0)) {
+            return Optional.empty();
+        }
         try {
+            JsonNode masterNode = dataNode.get(0);
             final byte[] all;
-            if (masterData.has("tags") && masterData.get("tags").has("chunk")) {
-                int nbChunks = masterData.get("tags").get("chunks").asInt();
-                int totalSize = masterData.get("tags").get("size").asInt();
-                byte[] master = masterData.get("value").binaryValue();
+            if (masterNode.has("tags") && masterNode.get("tags").has("chunks")) {
+                int nbChunks = masterNode.get("tags").get("chunks").asInt();
+                int totalSize = masterNode.get("tags").get("size").asInt();
+                byte[] master = masterNode.get("value").binaryValue();
                 if (master.length == 0) {
                     return Optional.empty();
                 }
@@ -130,15 +119,14 @@ public class ITestHelper {
                 System.arraycopy(master, 0, all, pos, master.length);
                 pos += master.length;
                 for (int i = 1; i < nbChunks; i++) {
-                    String id = masterId + "." + i;
-                    JsonNode slaveData = slavesById.get(id);
-                    byte[] slave = slaveData.get("value").binaryValue();
+                    JsonNode slaveNode = dataNode.get(i);
+                    byte[] slave = slaveNode.get("value").binaryValue();
                     System.arraycopy(slave, 0, all, pos, slave.length);
                     pos += slave.length;
                 }
             } else {
                 // Not chunked
-                all = masterData.get("value").binaryValue();
+                all = masterNode.get("value").binaryValue();
             }
             String decompressed = decompress(all);
             ExtendedInventoryStructure structure = mapper.readValue(decompressed, ExtendedInventoryStructure.class);
@@ -167,7 +155,7 @@ public class ITestHelper {
         String url = baseInvUri + "/raw/query";
         String tags = "module:inventory,type:" + type + ",feed:" + feedId + ",id:" + id;
         String params = "{\"tags\":\"" + tags + "\"," +
-                "\"limit\":1," +
+                "\"fromEarliest\":true," +
                 "\"order\":\"DESC\"}";
         String response = getWithRetries(newAuthRequest()
                 .url(url)
@@ -205,7 +193,7 @@ public class ITestHelper {
         String url = baseInvUri + "/raw/query";
         String tags = "module:inventory,type:r,feed:" + feedId + ",restypes:.*|" + type + "|.*";
         String params = "{\"tags\":\"" + tags + "\"," +
-                "\"limit\":1," +
+                "\"fromEarliest\":true," +
                 "\"order\":\"DESC\"}";
         String response = getWithRetries(newAuthRequest()
                 .url(url)

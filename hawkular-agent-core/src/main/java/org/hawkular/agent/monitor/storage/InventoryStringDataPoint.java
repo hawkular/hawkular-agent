@@ -29,7 +29,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class InventoryStringDataPoint implements Serializable {
 
-    private static final String KEY_CHUNK = "chunk";
     private static final String KEY_NBCHUNKS = "chunks";
     private static final String KEY_SIZE = "size";
 
@@ -62,15 +61,8 @@ public class InventoryStringDataPoint implements Serializable {
         return tags;
     }
 
-    public static InventoryStringDataPoint full(long timestamp, byte[] inventoryStructure) {
+    public static InventoryStringDataPoint create(long timestamp, byte[] inventoryStructure) {
         return new InventoryStringDataPoint(timestamp, inventoryStructure, new HashMap<>());
-    }
-
-    public static InventoryStringDataPoint chunk(long timestamp, byte[] inventoryStructure, String chunkId) {
-        // Important: use a mutable map
-        Map<String, String> tags = new HashMap<>();
-        tags.put(KEY_CHUNK, chunkId);
-        return new InventoryStringDataPoint(timestamp, inventoryStructure, tags);
     }
 
     public void setMasterInfo(int nbChunks, int totalSize) {
@@ -78,7 +70,7 @@ public class InventoryStringDataPoint implements Serializable {
         tags.put(KEY_SIZE, String.valueOf(totalSize));
     }
 
-    public Optional<String> getChunkId() {
-        return Optional.ofNullable(tags.get(KEY_CHUNK));
+    public Optional<String> getNbChunks() {
+        return Optional.ofNullable(tags.get(KEY_NBCHUNKS));
     }
 }

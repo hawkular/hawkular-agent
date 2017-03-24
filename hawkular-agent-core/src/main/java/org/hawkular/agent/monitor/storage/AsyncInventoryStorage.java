@@ -75,9 +75,6 @@ import org.hawkular.inventory.paths.RelativePath;
 import org.hawkular.inventory.paths.SegmentType;
 
 import com.codahale.metrics.Timer;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import okhttp3.Call;
 import okhttp3.Request;
@@ -457,15 +454,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     private static final MsgLogger log = AgentLoggers.getLogger(AsyncInventoryStorage.class);
-    private static final int DEFAULT_CHUNKS_SIZE = 4096;
+    private static final int CHUNKS_SIZE = 1536;    // = 2048*4/3 due to Base64 conversion
 
     private final String feedId;
     private final AgentCoreEngineConfiguration.StorageAdapterConfiguration config;
     private final HttpClientBuilder httpClientBuilder;
     private final Diagnostics diagnostics;
-    private final ObjectMapper mapper;
-    // TODO: make it configurable
-    private final int chunkSize = DEFAULT_CHUNKS_SIZE;
 
     public AsyncInventoryStorage(
             String feedId,
@@ -477,7 +471,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
         this.config = config;
         this.httpClientBuilder = httpClientBuilder;
         this.diagnostics = diagnostics;
-        this.mapper = new ObjectMapper(new JsonFactory());
     }
 
     public void shutdown() {
@@ -508,7 +501,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                     // The final URL should be in the form: strings/inventory.<feedid>.r.<resource_id>
                     InventoryMetric metric = InventoryMetric.resource(feedId, removedResource.getID().getIDString(), null);
-                    deleteAllChunks(metric, headers);
+                    deleteMetric(metric, headers);
                 } catch (InterruptedException ie) {
                     log.errorFailedToStoreInventoryData(ie);
                     Thread.currentThread().interrupt(); // preserve interrupt
@@ -520,36 +513,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private void deleteAllChunks(InventoryMetric metric, Map<String, String> headers) throws Exception {
-        // First, get all metric chunks
-        StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
-                .append("metrics?type=string&tags=module:inventory,type:r,feed:")
-                .append(metric.getFeed())
-                .append(",id:")
-                .append(metric.getId());
-        Request request = this.httpClientBuilder.buildJsonGetRequest(url.toString(), headers);
-        Call call = this.httpClientBuilder.getHttpClient().newCall(request);
-        try (Response response = call.execute()) {
-            if (!response.isSuccessful()) {
-                throw new Exception("status-code=[" + response.code() + "], reason=["
-                        + response.message() + "], url=[" + request.url().toString() + "]");
-            }
-            String json = response.body().string();
-            if (json.isEmpty()) {
-                throw new Exception("No metric not found, url=[" + request.url().toString() + "]");
-            }
-            // For each chunk, delete related metric
-            for (JsonNode metricJson : mapper.readTree(json)) {
-                deleteChunk(metricJson.get("id").asText(), headers);
-            }
-        }
-    }
-
-    private void deleteChunk(String metricId, Map<String, String> headers) throws Exception {
-        // Delete metric
+    private void deleteMetric(InventoryMetric metric, Map<String, String> headers) throws Exception {
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
                 .append("strings/")
-                .append(metricId);
+                .append(metric.encodedName());
         Request request = this.httpClientBuilder.buildJsonDeleteRequest(url.toString(), headers);
         Call call = this.httpClientBuilder.getHttpClient().newCall(request);
         try (Response response = call.execute()) {
@@ -684,32 +651,19 @@ public class AsyncInventoryStorage implements InventoryStorage {
     private void syncInventoryData(InventoryMetric metric, ExtendedInventoryStructure inventoryStructure, String tenantId, int totalResourceCount)
             throws Exception {
 
-        List<InventoryMetric.InventoryMetricData> metricChunks = compressAndChunk(metric, inventoryStructure);
+        InventoryMetric.WithData metricChunks = compressAndChunk(metric, inventoryStructure);
         if (metricChunks.isEmpty()) {
             return;
         }
-        String jsonPayload = Util.toJson(
-                metricChunks.stream()
-                        .map(InventoryMetric.InventoryMetricData::buildPayload)
-                        .collect(Collectors.toList()));
 
         Map<String, String> headers = getTenantHeader(tenantId);
         Timer.Context timer = diagnostics.getInventoryStorageRequestTimer().time();
 
         try {
-            log.tracef("Syncing [%d] elements to inventory: headers=[%s] metric=[%s]", totalResourceCount, headers, metric.baseName());
+            log.tracef("Syncing [%d] elements to inventory: headers=[%s] metric=[%s]", totalResourceCount, headers, metric.name());
 
-            // Before uploading all chunks, to make it kind of transactional update the "chunks" tag on master metric
-            prepareSync(metricChunks.get(0), headers, Util.toJson(Collections.singletonMap("chunks", "uploading")));
-
-            // Now upload inventory chunks
-            runSync(headers, jsonPayload);
-
-            // Finally, update tags; slaves first, master last
-            for (int chunkId = 1; chunkId < metricChunks.size(); chunkId++) {
-                commitSync(metricChunks.get(chunkId), headers);
-            }
-            commitSync(metricChunks.get(0), headers);
+            runSync(metricChunks, headers);
+            tagMetric(metricChunks, headers);
 
             if (totalResourceCount > 0) {
                 diagnostics.getInventoryRate().mark(totalResourceCount);
@@ -725,28 +679,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private void prepareSync(InventoryMetric.InventoryMetricData masterMetric,
-                             Map<String, String> headers,
-                             String tagsPayload) throws Exception {
+    private void runSync(InventoryMetric.WithData metric, Map<String, String> headers) throws Exception {
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
                 .append("strings/")
-                .append(masterMetric.encodedName())
-                .append("/tags");
-        Request request = httpClientBuilder.buildJsonPutRequest(url.toString(), headers, tagsPayload);
-        Call call = httpClientBuilder.getHttpClient().newCall(request);
-        try (Response response = call.execute()) {
-            log.tracef("Received response while preparing chunks: code [%d]", response.code());
-            if (!response.isSuccessful()) {
-                throw new Exception("status-code=[" + response.code() + "], reason=["
-                        + response.message() + "], url=[" + request.url().toString() + "]");
-            }
-        }
-    }
-
-    private void runSync(Map<String, String> headers,
-                         String payload) throws Exception {
-        StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext()).append("strings/raw");
-        Request request = httpClientBuilder.buildJsonPostRequest(url.toString(), headers, payload);
+                .append(metric.encodedName())
+                .append("/raw");
+        Request request = httpClientBuilder.buildJsonPostRequest(url.toString(), headers, metric.getPayload());
         Call call = httpClientBuilder.getHttpClient().newCall(request);
         try (Response response = call.execute()) {
             log.tracef("Received response while uploading chunks: code [%d]", response.code());
@@ -757,8 +695,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private void commitSync(InventoryMetric.InventoryMetricData metric,
-                            Map<String, String> headers) throws Exception {
+    private void tagMetric(InventoryMetric.WithData metric, Map<String, String> headers) throws Exception {
 
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
                 .append("strings?overwrite=true");
@@ -775,37 +712,28 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private List<InventoryMetric.InventoryMetricData> compressAndChunk(
-            InventoryMetric metric,
-            ExtendedInventoryStructure inventoryStructure)
+    private InventoryMetric.WithData compressAndChunk(InventoryMetric metric, ExtendedInventoryStructure inventoryStructure)
                 throws IOException {
-        long timestamp = System.currentTimeMillis();
-        List<InventoryStringDataPoint> chunks = new ArrayList<>();
         String json = Util.toJson(inventoryStructure);
         ByteArrayOutputStream obj = new ByteArrayOutputStream();
         GZIPOutputStream gzip = new GZIPOutputStream(obj);
         gzip.write(json.getBytes("UTF-8"));
         gzip.close();
         byte[] compressed = obj.toByteArray();
-        if (compressed.length <= chunkSize) {
+        if (compressed.length <= CHUNKS_SIZE) {
             // Don't chunk
-            return Collections.singletonList(metric.withData(InventoryStringDataPoint.full(timestamp, compressed)));
+            return metric.full(compressed);
         }
         int pos = 0;
-        int chunkId = 0;
+        List<byte[]> chunks = new ArrayList<>();
         while (pos < compressed.length) {
-            int size = Math.min(chunkSize, compressed.length - pos);
+            int size = Math.min(CHUNKS_SIZE, compressed.length - pos);
             byte[] chunk = new byte[size];
             System.arraycopy(compressed, pos, chunk, 0, size);
-            chunks.add(InventoryStringDataPoint.chunk(timestamp, chunk, String.valueOf(chunkId)));
+            chunks.add(chunk);
             pos += size;
-            chunkId++;
         }
-        if (!chunks.isEmpty()) {
-            // Set size in master chunk
-            chunks.get(0).setMasterInfo(chunks.size(), compressed.length);
-        }
-        return chunks.stream().map(metric::withData).collect(Collectors.toList());
+        return metric.chunks(chunks, compressed.length);
     }
 
     /**

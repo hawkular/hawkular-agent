@@ -16,8 +16,9 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,9 +28,7 @@ import org.hawkular.agent.monitor.util.Util;
  * @author Joel Takvorian
  */
 class InventoryMetric {
-
-    // FIXME: what retention? deactivate?
-    private static final int DATA_RETENTION = 90;
+    private static final int DATA_RETENTION = 365;
 
     private final String feed;
     private final String type;
@@ -86,54 +85,75 @@ class InventoryMetric {
     }
 
     @Override public String toString() {
-        return baseName();
+        return name();
     }
 
-    public String baseName() {
+    public String name() {
         return "inventory." + feed + "." + type + "." + id;
     }
 
-    public InventoryMetricData withData(InventoryStringDataPoint data) {
-        return new InventoryMetricData(data);
+    public String encodedName() {
+        return Util.urlEncode(name());
     }
 
-    public class InventoryMetricData {
-        private final InventoryStringDataPoint data;
+    public WithData full(byte[] data) {
+        return new WithData(feed, type, id, resourceTypes,
+                Collections.singletonList(InventoryStringDataPoint.create(System.currentTimeMillis(), data)));
+    }
 
-        private InventoryMetricData(final InventoryStringDataPoint data) {
+    public WithData chunks(List<byte[]> chunks, int totalSize) {
+        List<InventoryStringDataPoint> data = new ArrayList<>(chunks.size());
+        // Put all chunks in reverse timestamp order so that it can be easily queried with sort=DESC&fromEarliest=true
+        long timestamp = System.currentTimeMillis();
+        for (byte[] chunk : chunks) {
+            data.add(InventoryStringDataPoint.create(timestamp, chunk));
+            timestamp--;
+        }
+        // Set size in master chunk
+        data.get(0).setMasterInfo(chunks.size(), totalSize);
+        return new WithData(feed, type, id, resourceTypes, data);
+    }
+
+    public MetricDefinition toMetricDefinition() {
+        MetricDefinition def = new MetricDefinition(name(), DATA_RETENTION);
+        def.addTag("module", "inventory");
+        def.addTag("feed", feed);
+        def.addTag("type", type);
+        def.addTag("id", id);
+        if (resourceTypes != null) {
+            def.addTag("restypes",
+                    "|" + resourceTypes.stream().collect(Collectors.joining("|")) + "|");
+        }
+        return def;
+    }
+
+    static class WithData extends InventoryMetric {
+        private List<InventoryStringDataPoint> data;
+
+        private WithData(String feed,
+                         String type,
+                         String id,
+                         Set<String> resourceTypes,
+                         List<InventoryStringDataPoint> data) {
+            super(feed, type, id, resourceTypes);
             this.data = data;
         }
 
-        public String name() {
-            Optional<String> chunkId = data.getChunkId();
-            String suffix = chunkId.filter(c -> !c.equals("0")).map(c -> "." + c).orElse("");
-            return baseName() + suffix;
-        }
-
-        public String encodedName() {
-            return Util.urlEncode(name());
-        }
-
-        public InventoryStringData buildPayload() {
-            return new InventoryStringData(name(), Collections.singletonList(data));
-        }
-
-        @Override public String toString() {
-            return name();
-        }
-
+        @Override
         public MetricDefinition toMetricDefinition() {
-            MetricDefinition def = new MetricDefinition(name(), DATA_RETENTION);
-            def.addTag("module", "inventory");
-            def.addTag("feed", feed);
-            def.addTag("type", type);
-            def.addTag("id", id);
-            data.getChunkId().ifPresent(c -> def.addTag("chunk", c));
-            if (resourceTypes != null) {
-                def.addTag("restypes",
-                        "|" + resourceTypes.stream().collect(Collectors.joining("|")) + "|");
+            MetricDefinition def = super.toMetricDefinition();
+            if (!data.isEmpty()) {
+                data.get(0).getNbChunks().ifPresent(n -> def.addTag("chunks", n));
             }
             return def;
+        }
+
+        public boolean isEmpty() {
+            return data.isEmpty();
+        }
+
+        public String getPayload() {
+            return Util.toJson(data);
         }
     }
 }
