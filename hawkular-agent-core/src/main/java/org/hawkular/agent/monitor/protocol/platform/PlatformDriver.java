@@ -70,8 +70,10 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
                 return false;
             case 1:
                 ID attributeToCheck = new ID(location.getAttribute());
-                // see if this is asking for the special "machine id" attribute
+                // see if this is asking for the special "machine id" or "container id" attribute
                 if (Constants.MACHINE_ID.equals(attributeToCheck.getIDString())) {
+                    return true;
+                } else if (Constants.CONTAINER_ID.equals(attributeToCheck.getIDString())) {
                     return true;
                 } else {
                     return nodes.values().iterator().next().getType().getMetricTypeIds().contains(attributeToCheck);
@@ -97,6 +99,8 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
                         // see if this is asking for the special "machine id" attribute
                         if (Constants.MACHINE_ID.equals(metricToCollect.getIDString())) {
                             return platform.getMachineId();
+                        } else if (Constants.CONTAINER_ID.equals(metricToCollect.getIDString())) {
+                            return platform.getContainerId();
                         } else {
                             return platform.getMetric(nodes.values().iterator().next(), metricToCollect);
                         }
@@ -106,6 +110,8 @@ public class PlatformDriver implements Driver<PlatformNodeLocation> {
                             // see if this is asking for the special "machine id" attribute
                             if (Constants.MACHINE_ID.equals(metricToCollect.getIDString())) {
                                 results.add(platform.getMachineId());
+                            } else if (Constants.CONTAINER_ID.equals(metricToCollect.getIDString())) {
+                                results.add(platform.getContainerId());
                             } else {
                                 results.add(platform.getMetric(node, metricToCollect));
                             }

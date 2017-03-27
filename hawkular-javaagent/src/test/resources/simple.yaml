@@ -154,6 +154,7 @@ platform:
   interval:     1234
   time-units:   seconds
   machine-id:   my-machine-id-here
+  container-id: my-container-id-here
 
   file-stores:
     enabled:    true

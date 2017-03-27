@@ -23,6 +23,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformMetricType;
 import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
 import org.hawkular.agent.monitor.util.Util;
@@ -42,6 +44,8 @@ import oshi.software.os.OperatingSystem;
  * @author John Mazzitelli
  */
 public class OshiPlatformCache {
+    private static final MsgLogger log = AgentLoggers.getLogger(OshiPlatformCache.class);
+
     private SystemInfo sysInfo;
     private final Map<PlatformResourceType, Map<String, ? extends Object>> sysInfoCache;
     private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -49,20 +53,23 @@ public class OshiPlatformCache {
     private final WriteLock wLock = rwLock.writeLock();
     private final String feedId;
     private final String machineId;
+    private final String containerId;
 
     /**
      * Creates the cache of OSHi platform data.
      *
      * @param feedId       he feed ID
      * @param machineId    the machine ID - if null, one will be attempted to be discovered
+     * @param containerId  the container ID - if null, one will be attempted to be discovered
      *
-     * @see Util#getSystemId()
+     * @see Util#getMachineId()
      */
-    public OshiPlatformCache(String feedId, String machineId) {
+    public OshiPlatformCache(String feedId, String machineId, String containerId) {
         sysInfo = new SystemInfo();
         sysInfoCache = new HashMap<>(5);
         this.feedId = feedId;
-        this.machineId = (machineId != null) ? machineId : Util.getSystemId();
+        this.machineId = (machineId != null) ? machineId : Util.getMachineId();
+        this.containerId = (containerId != null) ? containerId : Util.getContainerId();
     }
 
     /**
@@ -498,5 +505,12 @@ public class OshiPlatformCache {
      */
     public String getMachineId() {
         return machineId;
+    }
+
+    /**
+     * @return the unique container ID for this platform if it is known. Otherwise, null is returned.
+     */
+    public String getContainerId() {
+        return containerId;
     }
 }

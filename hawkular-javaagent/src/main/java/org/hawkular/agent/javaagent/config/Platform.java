@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.javaagent.config;
 
+import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -103,7 +105,10 @@ public class Platform implements Validatable {
     private TimeUnits timeUnits = TimeUnits.minutes;
 
     @JsonProperty("machine-id")
-    private String machineId;
+    private StringExpression machineId;
+
+    @JsonProperty("container-id")
+    private StringExpression containerId;
 
     @JsonProperty("file-stores")
     private PlatformChild fileStores = new PlatformChild(true, 5, TimeUnits.minutes);
@@ -124,7 +129,8 @@ public class Platform implements Validatable {
         this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
         this.interval = original.interval;
         this.timeUnits = original.timeUnits;
-        this.machineId = original.machineId;
+        this.machineId = original.machineId == null ? null : new StringExpression(original.machineId);
+        this.containerId = original.containerId == null ? null : new StringExpression(original.containerId);
         this.fileStores = new PlatformChild(original.fileStores);
         this.memory = new PlatformChild(original.memory);
         this.processors = new PlatformChild(original.processors);
@@ -167,11 +173,27 @@ public class Platform implements Validatable {
     }
 
     public String getMachineId() {
-        return machineId;
+        return machineId == null ? null : machineId.get().toString();
     }
 
     public void setMachineId(String machineId) {
-        this.machineId = machineId;
+        if (this.machineId != null) {
+            this.machineId.set(new StringValue(machineId));
+        } else {
+            this.machineId = new StringExpression(new StringValue(machineId));
+        }
+    }
+
+    public String getContainerId() {
+        return containerId == null ? null : containerId.get().toString();
+    }
+
+    public void setContainerId(String containerId) {
+        if (this.containerId != null) {
+            this.containerId.set(new StringValue(containerId));
+        } else {
+            this.containerId = new StringExpression(new StringValue(containerId));
+        }
     }
 
     public PlatformChild getFileStores() {

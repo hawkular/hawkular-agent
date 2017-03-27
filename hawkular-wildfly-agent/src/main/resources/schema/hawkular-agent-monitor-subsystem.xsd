@@ -366,10 +366,11 @@
       <xs:element name="processors"    type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
       <xs:element name="power-sources" type="platformMetricType"     minOccurs="0" maxOccurs="1"/>
     </xs:all>
-    <xs:attribute name="enabled"    type="xs:boolean"/>
-    <xs:attribute name="machine-id" type="xs:string"/>
-    <xs:attribute name="interval"   type="xs:int"/>
-    <xs:attribute name="time-units" type="timeUnitsType"/>
+    <xs:attribute name="enabled"      type="xs:boolean"/>
+    <xs:attribute name="machine-id"   type="xs:string"/>
+    <xs:attribute name="container-id" type="xs:string"/>
+    <xs:attribute name="interval"     type="xs:int"/>
+    <xs:attribute name="time-units"   type="timeUnitsType"/>
   </xs:complexType>
 
   <!-- various platform metrics configuration -->

@@ -119,9 +119,11 @@ public class MonitorServiceConfigurationBuilder {
         TypeSets<PlatformNodeLocation> platformTypeSets = buildPlatformTypeSets(config, context);
         platformConfigBuilder.typeSets(platformTypeSets);
         if (!platformTypeSets.isDisabledOrEmpty()) {
-            String machineId = determinePlatformMachineId(config, context);
+            Map<String, String> customData = new HashMap<>(2);
+            customData.put(Constants.MACHINE_ID, determinePlatformMachineId(config, context));
+            customData.put(Constants.CONTAINER_ID, determinePlatformContainerId(config, context));
             EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null, Avail.DOWN,
-                    null, null, null, Collections.singletonMap(Constants.MACHINE_ID, machineId));
+                    null, null, null, customData);
             platformConfigBuilder.endpoint(endpoint);
         }
 
@@ -490,6 +492,25 @@ public class MonitorServiceConfigurationBuilder {
         return machineId;
     }
 
+    private static String determinePlatformContainerId(ModelNode config, OperationContext context)
+            throws OperationFailedException {
+
+        if (!config.hasDefined(PlatformDefinition.PLATFORM)) {
+            return null; // not monitoring platform, so we don't collect container ID
+        }
+
+        List<Property> asPropertyList = config.get(PlatformDefinition.PLATFORM).asPropertyList();
+        if (asPropertyList.size() == 0) {
+            return null; // not monitoring platform, so we don't collect container ID
+        } else if (asPropertyList.size() > 1) {
+            throw new IllegalArgumentException("Only one platform config allowed: " + config.toJSONString(true));
+        }
+
+        ModelNode platformValueNode = asPropertyList.get(0).getValue();
+        String containerId = getString(platformValueNode, context, PlatformAttributes.CONTAINER_ID);
+        return containerId;
+    }
+
     private static TypeSets<PlatformNodeLocation> buildPlatformTypeSets(ModelNode config, OperationContext context)
             throws OperationFailedException {
 
@@ -536,6 +557,13 @@ public class MonitorServiceConfigurationBuilder {
                         new AttributeLocation<>(
                                 new PlatformNodeLocation(PlatformPath.empty()), Constants.MACHINE_ID));
         rootTypeBldr.resourceConfigurationPropertyType(machineIdConfigType);
+
+        ResourceConfigurationPropertyType<PlatformNodeLocation> containerIdConfigType = //
+                new ResourceConfigurationPropertyType<>(ID.NULL_ID,
+                        new Name(Constants.CONTAINER_ID),
+                        new AttributeLocation<>(
+                                new PlatformNodeLocation(PlatformPath.empty()), Constants.CONTAINER_ID));
+        rootTypeBldr.resourceConfigurationPropertyType(containerIdConfigType);
 
         // OS top-level metrics
 
