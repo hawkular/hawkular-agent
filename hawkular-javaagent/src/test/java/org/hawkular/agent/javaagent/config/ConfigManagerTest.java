@@ -542,6 +542,7 @@ public class ConfigManagerTest {
         Assert.assertEquals(Integer.valueOf(1234), config.getPlatform().getInterval());
         Assert.assertEquals(TimeUnits.seconds, config.getPlatform().getTimeUnits());
         Assert.assertEquals("my-machine-id-here", config.getPlatform().getMachineId());
+        Assert.assertEquals("my-container-id-here", config.getPlatform().getContainerId());
         Assert.assertEquals(Boolean.TRUE, config.getPlatform().getFileStores().getEnabled());
         Assert.assertEquals(Integer.valueOf(5000), config.getPlatform().getFileStores().getInterval());
         Assert.assertEquals(TimeUnits.milliseconds, config.getPlatform().getFileStores().getTimeUnits());

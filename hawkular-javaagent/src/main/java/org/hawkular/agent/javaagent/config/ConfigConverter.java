@@ -516,6 +516,14 @@ public class ConfigConverter {
                         new AttributeLocation<>(new PlatformNodeLocation(PlatformPath.empty()), Constants.MACHINE_ID));
         rootTypeBldr.resourceConfigurationPropertyType(machineIdConfigType);
 
+        ResourceConfigurationPropertyType<PlatformNodeLocation> containerIdConfigType = //
+                new ResourceConfigurationPropertyType<>(
+                        ID.NULL_ID,
+                        new Name(Constants.CONTAINER_ID),
+                        new AttributeLocation<>(new PlatformNodeLocation(PlatformPath.empty()),
+                                Constants.CONTAINER_ID));
+        rootTypeBldr.resourceConfigurationPropertyType(containerIdConfigType);
+
         // OS top-level metrics
 
         Interval osInterval = new Interval(config.getPlatform().getInterval(),
@@ -812,6 +820,9 @@ public class ConfigConverter {
 
         Map<String, EndpointConfiguration> managedServers = new HashMap<>();
         if (config.getPlatform().getEnabled()) {
+            Map<String, String> customData = new HashMap<>(2);
+            customData.put(Constants.MACHINE_ID, config.getPlatform().getMachineId());
+            customData.put(Constants.CONTAINER_ID, config.getPlatform().getContainerId());
             EndpointConfiguration localPlatform = new EndpointConfiguration(
                     "platform",
                     true,
@@ -822,7 +833,7 @@ public class ConfigConverter {
                     null,
                     null,
                     null,
-                    Collections.singletonMap(Constants.MACHINE_ID, config.getPlatform().getMachineId()));
+                    customData);
             managedServers.put("platform", localPlatform);
         }
 

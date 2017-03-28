@@ -32,6 +32,7 @@ import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.util.Base64;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.log.AgentLoggers;
@@ -54,8 +55,10 @@ public class Util {
     private static final String ENCODING_UTF_8 = "utf-8";
     private static final int BUFFER_SIZE = 128;
     private static final String HAWKULAR_AGENT_MACHINE_ID = "hawkular.agent.machine.id";
+    private static final String HAWKULAR_AGENT_CONTAINER_ID = "hawkular.agent.container.id";
     private static ObjectMapper mapper;
-    private static String systemId;
+    private static String machineId;
+    private static String containerId;
 
     static {
         try {
@@ -270,37 +273,107 @@ public class Util {
     }
 
     /**
-     * Tries to determine the system ID for the machine where this JVM is located.
+     * Tries to determine the machine ID for the machine where this JVM is located.
      * First check if the user explicitly set it. If not try to read it from
      * /etc/machine-id
      *
-     * @return system ID or null if cannot determine
+     * @return machine ID or null if cannot determine
      */
-    public static String getSystemId() {
+    public static String getMachineId() {
 
-        if (systemId == null) {
-            systemId = System.getProperty(HAWKULAR_AGENT_MACHINE_ID);
-            if (systemId != null) {
-                log.infof("MachineId was explicitly set to [%s]", systemId);
+        if (machineId == null) {
+            machineId = System.getProperty(HAWKULAR_AGENT_MACHINE_ID);
+            if (machineId != null) {
+                log.infof("Machine ID was explicitly set to [%s]", machineId);
             }
         }
 
-        if (systemId == null) {
+        if (machineId == null) {
             File machineIdFile = new File("/etc/machine-id");
             if (machineIdFile.exists() && machineIdFile.canRead()) {
                 try (Reader reader = new InputStreamReader(new FileInputStream(machineIdFile))) {
-                    systemId = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+                    machineId = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
                 } catch (IOException e) {
                     log.warnf(e, "/etc/machine-id exists and is readable, but exception was raised when reading it");
-                    systemId = "";
+                    machineId = "";
                 }
             } else {
                 log.warnf("/etc/machine-id does not exist or is unreadable");
                 // for the future, we might want to check additional places and try different things
-                systemId = "";
+                machineId = "";
             }
         }
 
-        return (systemId.isEmpty()) ? null : systemId;
+        return (machineId.isEmpty()) ? null : machineId;
+    }
+
+    /**
+     * Tries to determine the container ID for the machine where this JVM is located.
+     * First check if the user explicitly set it. If not try determine it.
+     *
+     * @return container ID or null if cannot determine
+     */
+    public static String getContainerId() {
+
+        if (containerId == null) {
+            containerId = System.getProperty(HAWKULAR_AGENT_CONTAINER_ID);
+            if (containerId != null) {
+                log.infof("Container ID was explicitly set to [%s]", containerId);
+            }
+        }
+
+        if (containerId == null) {
+            final String containerIdFilename = "/proc/self/cgroup";
+            File containerIdFile = new File(containerIdFilename);
+            if (containerIdFile.exists() && containerIdFile.canRead()) {
+                try (Reader reader = new InputStreamReader(new FileInputStream(containerIdFile))) {
+                    new BufferedReader(reader).lines().forEach(new Consumer<String>() {
+                        @Override
+                        public void accept(String s) {
+                            // /proc/self/cgroup has lines that look like this:
+                            // 11:memory:/docker/99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a
+                            // 9:cpuset:/docker/99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a
+                            // 3:cpu,cpuacct:/docker/99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a
+                            // 1:name=systemd:/docker/99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a
+                            // The container ID is the same in all the /docker/ entries - we just want one of them.
+                            if (containerId == null) {
+                                String[] arr = s.trim().split("/docker/", 2);
+                                if (arr.length > 1) {
+                                    containerId = arr[1];
+                                }
+                            }
+                        }
+                    });
+                } catch (IOException e) {
+                    log.warnf(e, "%s exists and is readable, but a read error occurred", containerIdFilename);
+                    containerId = "";
+                } finally {
+                    if (containerId == null) {
+                        log.warnf("%s exists but could not find a container ID in it", containerIdFilename);
+                        containerId = "";
+                    }
+                }
+            } else {
+                log.debugf("%s does not exist or is unreadable. Assuming not inside a container", containerIdFilename);
+                // for the future, we might want to check additional places and try different things
+                containerId = "";
+            }
+        }
+
+        // The hostname has a portion of the container ID but only the first 12 chars. This might not be good enough,
+        // so don't even rely on it. Leaving this code here in case in the future we do want to do this, but for now,
+        // we do not. If we uncomment this, we need to change the code above so it leaves containerId null when
+        // container ID is not found.
+        //
+        // if (containerId == null) {
+        //     try {
+        //         containerId = InetAddress.getLocalHost().getCanonicalHostName();
+        //     } catch (Exception e) {
+        //         log.warnf(e, "Cannot determine container ID - hostname cannot be determined");
+        //         containerId = "";
+        //     }
+        // }
+
+        return (containerId.isEmpty()) ? null : containerId;
     }
 }

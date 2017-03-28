@@ -34,6 +34,9 @@ public interface Constants {
     // this is a special resource config property on the platform OS resource itself
     String MACHINE_ID = "Machine Id";
 
+    // this is a special resource config property on the platform OS resource itself
+    String CONTAINER_ID = "Container Id";
+
     enum PlatformResourceType {
         OPERATING_SYSTEM("Operating System"), //
         FILE_STORE("File Store"), //

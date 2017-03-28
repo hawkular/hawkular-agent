@@ -24,10 +24,6 @@ import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.protocol.EndpointService;
 
-/**
- * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
- * @see EndpointService
- */
 public class PlatformEndpointService extends EndpointService<PlatformNodeLocation, PlatformSession> {
 
     public PlatformEndpointService(String feedId, MonitoredEndpoint<EndpointConfiguration> endpoint,
@@ -35,10 +31,9 @@ public class PlatformEndpointService extends EndpointService<PlatformNodeLocatio
         super(feedId, endpoint, resourceTypeManager, new PlatformLocationResolver(), diagnostics);
     }
 
-    /** @see org.hawkular.agent.monitor.protocol.EndpointService#openSession() */
     @Override
     public PlatformSession openSession() {
-        OshiPlatformCache oshi = new OshiPlatformCache(getFeedId(), getMachineId());
+        OshiPlatformCache oshi = new OshiPlatformCache(getFeedId(), getMachineId(), getContainerId());
         PlatformDriver driver = new PlatformDriver(oshi, getDiagnostics());
         return new PlatformSession(getFeedId(), getMonitoredEndpoint(), getResourceTypeManager(), driver,
                 getLocationResolver());
@@ -47,6 +42,11 @@ public class PlatformEndpointService extends EndpointService<PlatformNodeLocatio
     private String getMachineId() {
         Map<String, ? extends Object> customData = getMonitoredEndpoint().getEndpointConfiguration().getCustomData();
         return (String) customData.get(Constants.MACHINE_ID);
+    }
+
+    private String getContainerId() {
+        Map<String, ? extends Object> customData = getMonitoredEndpoint().getEndpointConfiguration().getCustomData();
+        return (String) customData.get(Constants.CONTAINER_ID);
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,6 +43,13 @@ public interface PlatformAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
+    SimpleAttributeDefinition CONTAINER_ID = new SimpleAttributeDefinitionBuilder("container-id",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
+
     SimpleAttributeDefinition INTERVAL = new SimpleAttributeDefinitionBuilder("interval",
             ModelType.INT)
                     .setAllowNull(true)
@@ -64,6 +71,7 @@ public interface PlatformAttributes {
     AttributeDefinition[] ATTRIBUTES = {
             ENABLED,
             MACHINE_ID,
+            CONTAINER_ID,
             INTERVAL,
             TIME_UNITS
     };

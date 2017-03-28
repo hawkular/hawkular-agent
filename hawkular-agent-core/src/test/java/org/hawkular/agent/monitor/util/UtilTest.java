@@ -50,6 +50,6 @@ public class UtilTest {
 
     @Test @Ignore("CI system has no /etc/machine-id . But this should work on Fedora/RHEL/CentOS boxes.")
     public void getSystemId() {
-        Assert.assertNotNull(Util.getSystemId());
+        Assert.assertNotNull(Util.getMachineId());
     }
 }
