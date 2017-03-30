@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
+    and other contributors as indicated by the @author tags.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.hawkular.agent</groupId>
+    <artifactId>hawkular-wildfly-agent-parent</artifactId>
+    <version>0.29.4.Final-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>hawkular-javaagent-wildfly-feature-pack-eap6</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Hawkular Agent: Java Agent Feature Pack for EAP6</name>
+  <description>A feature pack to be able to deploy a Hawkular Java Agent in a WildFly an EAP6 server.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-javaagent</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- feature pack dependencies -->
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-feature-pack</artifactId>
+      <version>${version.org.wildfly}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.wildfly.core</groupId>
+      <artifactId>wildfly-core-feature-pack</artifactId>
+      <version>${version.org.wildfly.core}</version>
+      <type>zip</type>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <!-- Unpack the upstream artifacts that host standalone.conf file that we want to use unchanged or adapt in the next steps -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-core-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.wildfly.core</groupId>
+                  <artifactId>wildfly-core-feature-pack</artifactId>
+                  <type>zip</type>
+                  <includes>content/bin/standalone.conf</includes>
+                  <!-- Placing into a tmp folder to always have a unchanged copy of it,
+                  because we will append text on next step -->
+                  <outputDirectory>${project.build.directory}/tmp</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>update-standalone-conf</id>
+            <phase>generate-resources</phase>
+            <configuration>
+              <target>
+                <copy file="${project.build.directory}/tmp/content/bin/standalone.conf"
+                      tofile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf"
+                      overwrite="true"/>
+                <replaceregexp file="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf"
+                               match="(JBOSS_MODULES_SYSTEM_PKGS=&quot;.*)&quot;"
+                               replace="\1,org.jboss.logmanager&quot;"
+                               flags="s"
+                               byline="true"
+                />
+                <concat destfile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf" append="yes">
+                  <file name="${basedir}/src/main/resources/bin/standalone-hawkular-javaagent-javaopts.conf"/>
+                </concat>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Add the resources from src/main/resources/featurepack to feature-pack-resources working directory -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${basedir}/src/main/resources/featurepack</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.wildfly.build</groupId>
+        <artifactId>wildfly-feature-pack-build-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>feature-pack-build</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>build</goal>
+            </goals>
+            <configuration>
+              <resources-dir>target/feature-pack-resources</resources-dir>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>assemble</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assembly.xml</descriptor>
+              </descriptors>
+              <appendAssemblyId>false</appendAssemblyId>
+              <tarLongFileMode>gnu</tarLongFileMode>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>
