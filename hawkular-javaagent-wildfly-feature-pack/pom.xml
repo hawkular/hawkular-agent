@@ -46,6 +46,12 @@
       <artifactId>wildfly-feature-pack</artifactId>
       <type>zip</type>
     </dependency>
+    <dependency>
+      <groupId>org.wildfly.core</groupId>
+      <artifactId>wildfly-core-feature-pack</artifactId>
+      <version>${version.org.wildfly.core}</version>
+      <type>zip</type>
+    </dependency>
   </dependencies>
 
   <build>
@@ -68,11 +74,63 @@
                   <groupId>org.wildfly</groupId>
                   <artifactId>wildfly-feature-pack</artifactId>
                   <type>zip</type>
-                  <includes>configuration/**/*.xml</includes>
+                  <includes>configuration/standalone/template.xml,configuration/standalone/subsystems.xml</includes>
                   <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
+          </execution>
+
+          <!-- Unpack the upstream artifacts that host standalone-hawkular-javaagent-javaopts.conf file that we want to use unchanged or adapt in the next steps -->
+          <execution>
+            <id>unpack-core-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.wildfly.core</groupId>
+                  <artifactId>wildfly-core-feature-pack</artifactId>
+                  <type>zip</type>
+                  <includes>content/bin/standalone.conf</includes>
+                  <!-- Placing into a tmp folder to always have a unchanged copy of it,
+                  because it will be changed in next step -->
+                  <outputDirectory>${project.build.directory}/tmp</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>update-standalone-conf</id>
+            <phase>generate-resources</phase>
+            <configuration>
+              <target>
+                <copy file="${project.build.directory}/tmp/content/bin/standalone.conf"
+                      tofile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf"
+                      overwrite="true"/>
+                <replaceregexp file="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf"
+                               match="(JBOSS_MODULES_SYSTEM_PKGS=&quot;.*)&quot;"
+                               replace="\1,org.jboss.logmanager&quot;"
+                               flags="s"
+                               byline="true"
+                />
+                <concat destfile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf" append="yes">
+                  <file name="${basedir}/src/main/bin/standalone-hawkular-javaagent-javaopts.conf"/>
+                </concat>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
