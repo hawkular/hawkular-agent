@@ -272,7 +272,23 @@ public class ConfigConverter {
             // the agent cannot get a local client when running as a javaagent, so really
             // this is a "remote" endpoint, pointing to the local machine.
             // If user doesn't like these defaults, let them define their own remote-dmr
-            connectionData = new ConnectionData("http-remoting", "127.0.0.1", 9990, null, null);
+            String localHost = System.getProperty("jboss.bind.address.management", "127.0.0.1");
+            int localPortOffset;
+            int localPort;
+            try {
+                String localPortOffsetString = System.getProperty("jboss.socket.binding.port-offset", "0");
+                localPortOffset = Integer.parseInt(localPortOffsetString);
+            } catch (Exception e) {
+                throw new Exception("jboss.socket.binding.port-offset is invalid", e);
+            }
+            try {
+                String localPortString = System.getProperty("jboss.management.http.port", "9990");
+                localPort = Integer.parseInt(localPortString);
+            } catch (Exception e) {
+                throw new Exception("jboss.management.http.port is invalid", e);
+            }
+
+            connectionData = new ConnectionData("http-remoting", localHost, localPort + localPortOffset, null, null);
 
             EndpointConfiguration localDmrEndpointConfig = new EndpointConfiguration(
                     config.getManagedServers().getLocalDmr().getName(),
