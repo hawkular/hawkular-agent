@@ -30,7 +30,7 @@
   <packaging>pom</packaging>
 
   <name>Hawkular Javaagent: WildFly + Javaagent</name>
-  <description>A WildFly distribution that includes an agent installed inside of it.</description>
+  <description>A WildFly distribution that includes a Hawkular Java Agent installed inside of it.</description>
 
   <dependencies>
     <dependency>
@@ -63,13 +63,7 @@
         </executions>
       </plugin>
 
-      <!-- Install the Hawkular WildFly Agent inside the WildFly server -->
-      <!--
-           The agent will be installed in standalone.xml file as well as host.xml and domain.xml.
-           People typically will only use the agent distro in standalone mode, but we put it in
-           host.xml/domain.xml just in case someone wants to use it that way.
-      -->
-      <!-- assemble the WildFly + Agent into a distribution zip file -->
+      <!-- assemble the WildFly + Hawkular Java Agent into a distribution zip file -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
