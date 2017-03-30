@@ -39,6 +39,7 @@
     <module>hawkular-agent-command-cli</module>
     <module>hawkular-agent-core</module>
     <module>hawkular-javaagent</module>
+    <module>hawkular-javaagent-wildfly-feature-pack</module>
     <module>hawkular-wildfly-agent</module>
     <module>hawkular-wildfly-agent-download</module>
     <module>hawkular-wildfly-agent-feature-pack</module>
