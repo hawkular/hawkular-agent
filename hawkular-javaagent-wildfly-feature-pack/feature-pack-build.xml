@@ -22,10 +22,6 @@
     <artifact name="org.wildfly:wildfly-feature-pack" />
   </dependencies>
 
-  <config>
-    <standalone template="configuration/standalone/template.xml" subsystems="configuration/standalone/subsystems.xml" output-file="standalone/configuration/standalone.xml" />
-  </config>
-
   <copy-artifacts>
     <copy-artifact artifact="org.hawkular.agent:hawkular-javaagent" to-location="bin/hawkular-javaagent.jar" />
   </copy-artifacts>

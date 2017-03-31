@@ -40,10 +40,10 @@
     </dependency>
 
     <!-- feature pack dependencies -->
-
     <dependency>
       <groupId>org.wildfly</groupId>
       <artifactId>wildfly-feature-pack</artifactId>
+      <version>${version.org.wildfly}</version>
       <type>zip</type>
     </dependency>
     <dependency>
@@ -57,31 +57,11 @@
   <build>
     <plugins>
 
-      <!-- Unpack the upstream artifacts that host various *.xml files that we want to use unchanged or adapt in the next steps -->
+      <!-- Unpack the upstream artifacts that host standalone.conf file that we want to use unchanged or adapt in the next steps -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
-          <execution>
-            <id>unpack-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.wildfly</groupId>
-                  <artifactId>wildfly-feature-pack</artifactId>
-                  <type>zip</type>
-                  <includes>configuration/standalone/template.xml,configuration/standalone/subsystems.xml</includes>
-                  <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-
-          <!-- Unpack the upstream artifacts that host standalone-hawkular-javaagent-javaopts.conf file that we want to use unchanged or adapt in the next steps -->
           <execution>
             <id>unpack-core-deps</id>
             <phase>generate-resources</phase>
@@ -96,7 +76,7 @@
                   <type>zip</type>
                   <includes>content/bin/standalone.conf</includes>
                   <!-- Placing into a tmp folder to always have a unchanged copy of it,
-                  because it will be changed in next step -->
+                  because we will append text on next step -->
                   <outputDirectory>${project.build.directory}/tmp</outputDirectory>
                 </artifactItem>
               </artifactItems>
@@ -124,7 +104,7 @@
                                byline="true"
                 />
                 <concat destfile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf" append="yes">
-                  <file name="${basedir}/src/main/bin/standalone-hawkular-javaagent-javaopts.conf"/>
+                  <file name="${basedir}/src/main/resources/bin/standalone-hawkular-javaagent-javaopts.conf"/>
                 </concat>
               </target>
             </configuration>
@@ -135,7 +115,7 @@
         </executions>
       </plugin>
 
-      <!-- Add the resources from src/main/resources to feature-pack-resources working directory -->
+      <!-- Add the resources from src/main/resources/featurepack to feature-pack-resources working directory -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
@@ -150,7 +130,7 @@
               <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${basedir}/src/main/resources</directory>
+                  <directory>${basedir}/src/main/resources/featurepack</directory>
                 </resource>
               </resources>
             </configuration>
