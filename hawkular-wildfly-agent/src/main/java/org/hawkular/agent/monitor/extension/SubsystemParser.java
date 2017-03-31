@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -130,18 +130,34 @@ public class SubsystemParser implements XMLStreamConstants, XMLElementReader<Lis
                                     .addChild(builder(RemoteDMRDefinition.INSTANCE)
                                             .setXmlElementName(RemoteDMRDefinition.REMOTE_DMR)
                                             .addAttributes(RemoteDMRAttributes.ATTRIBUTES)
+                                            .addChild(builder(RemoteDMRWaitForDefinition.INSTANCE)
+                                                    .setXmlElementName(RemoteDMRWaitForDefinition.WAIT_FOR)
+                                                    .addAttributes(RemoteDMRWaitForAttributes.ATTRIBUTES)
+                                            )
                                     )
                                     .addChild(builder(LocalDMRDefinition.INSTANCE)
                                             .setXmlElementName(LocalDMRDefinition.LOCAL_DMR)
                                             .addAttributes(LocalDMRAttributes.ATTRIBUTES)
+                                            .addChild(builder(LocalDMRWaitForDefinition.INSTANCE)
+                                                    .setXmlElementName(LocalDMRWaitForDefinition.WAIT_FOR)
+                                                    .addAttributes(LocalDMRWaitForAttributes.ATTRIBUTES)
+                                            )
                                     )
                                     .addChild(builder(RemoteJMXDefinition.INSTANCE)
                                             .setXmlElementName(RemoteJMXDefinition.REMOTE_JMX)
                                             .addAttributes(RemoteJMXAttributes.ATTRIBUTES)
+                                            .addChild(builder(RemoteJMXWaitForDefinition.INSTANCE)
+                                                    .setXmlElementName(RemoteJMXWaitForDefinition.WAIT_FOR)
+                                                    .addAttributes(RemoteJMXWaitForAttributes.ATTRIBUTES)
+                                            )
                                     )
                                     .addChild(builder(LocalJMXDefinition.INSTANCE)
                                             .setXmlElementName(LocalJMXDefinition.LOCAL_JMX)
                                             .addAttributes(LocalJMXAttributes.ATTRIBUTES)
+                                            .addChild(builder(LocalJMXWaitForDefinition.INSTANCE)
+                                                    .setXmlElementName(LocalJMXWaitForDefinition.WAIT_FOR)
+                                                    .addAttributes(LocalJMXWaitForAttributes.ATTRIBUTES)
+                                            )
                                     )
                             )
 

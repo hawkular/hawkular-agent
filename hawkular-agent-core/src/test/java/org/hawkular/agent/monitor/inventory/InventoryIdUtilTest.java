@@ -31,7 +31,7 @@ public class InventoryIdUtilTest {
         ResourceIdParts parts;
 
         EndpointConfiguration endpointConfig = new EndpointConfiguration("testmanagedserver", true,
-                Collections.emptyList(), null, null, null, null, null, null, null);
+                Collections.emptyList(), null, null, null, null, null, null, null, null);
         MonitoredEndpoint<EndpointConfiguration> me = MonitoredEndpoint.<EndpointConfiguration> of(endpointConfig,
                 null);
 

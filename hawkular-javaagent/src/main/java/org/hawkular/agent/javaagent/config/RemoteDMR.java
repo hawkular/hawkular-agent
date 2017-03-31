@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
 import org.hawkular.agent.monitor.api.Avail;
+import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -76,6 +77,9 @@ public class RemoteDMR implements Validatable {
     @JsonProperty("set-avail-on-shutdown")
     private Avail setAvailOnShutdown;
 
+    @JsonProperty("wait-for")
+    private WaitFor[] waitFor;
+
     public RemoteDMR() {
     }
 
@@ -95,6 +99,7 @@ public class RemoteDMR implements Validatable {
         this.metricIdTemplate = original.metricIdTemplate;
         this.metricTags = original.metricTags == null ? null : new HashMap<>(original.metricTags);
         this.setAvailOnShutdown = original.setAvailOnShutdown;
+        this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
     }
 
     @Override
@@ -108,6 +113,23 @@ public class RemoteDMR implements Validatable {
         if (port == null || port.get() <= 0) {
             throw new Exception("remote-dmr port must be specified");
         }
+
+        if (waitFor != null) {
+            for (WaitFor wf : waitFor) {
+                wf.validate();
+
+                // throw exception if the resource is not a valid DMR path
+                if (!"/".equals(wf.getName())) {
+                    try {
+                        WildflyCompatibilityUtils.parseCLIStyleAddress(wf.getName());
+                    } catch (Exception e) {
+                        throw new Exception(
+                                "remote-dmr [" + name + "] has invalid wait-for resource: " + wf.getName(), e);
+                    }
+                }
+            }
+        }
+
     }
 
     public String getName() {
@@ -248,5 +270,13 @@ public class RemoteDMR implements Validatable {
 
     public void setSetAvailOnShutdown(Avail setAvailOnShutdown) {
         this.setAvailOnShutdown = setAvailOnShutdown;
+    }
+
+    public WaitFor[] getWaitFor() {
+        return waitFor;
+    }
+
+    public void setWaitFor(WaitFor[] waitFor) {
+        this.waitFor = waitFor;
     }
 }

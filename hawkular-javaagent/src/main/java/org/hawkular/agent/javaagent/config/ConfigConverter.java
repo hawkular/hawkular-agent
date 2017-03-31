@@ -29,6 +29,7 @@ import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration.WaitFor;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.GlobalConfiguration;
@@ -300,7 +301,8 @@ public class ConfigConverter {
                     config.getManagedServers().getLocalDmr().getTenantId(),
                     config.getManagedServers().getLocalDmr().getMetricIdTemplate(),
                     config.getManagedServers().getLocalDmr().getMetricTags(),
-                    null);
+                    null,
+                    asWaitForList(config.getManagedServers().getLocalDmr().getWaitFor()));
             managedServers.put(config.getManagedServers().getLocalDmr().getName(), localDmrEndpointConfig);
         }
 
@@ -327,7 +329,8 @@ public class ConfigConverter {
                         remoteDmr.getTenantId(),
                         remoteDmr.getMetricIdTemplate(),
                         remoteDmr.getMetricTags(),
-                        null);
+                        null,
+                        asWaitForList(remoteDmr.getWaitFor()));
 
                 managedServers.put(remoteDmr.getName(), remoteDmrEndpointConfig);
             }
@@ -465,7 +468,8 @@ public class ConfigConverter {
                     config.getManagedServers().getLocalJmx().getMetricIdTemplate(),
                     config.getManagedServers().getLocalJmx().getMetricTags(),
                     Collections.singletonMap(JMXEndpointService.MBEAN_SERVER_NAME_KEY,
-                            config.getManagedServers().getLocalJmx().getMbeanServerName()));
+                            config.getManagedServers().getLocalJmx().getMbeanServerName()),
+                    asWaitForList(config.getManagedServers().getLocalJmx().getWaitFor()));
             managedServers.put(config.getManagedServers().getLocalJmx().getName(), localJmx);
         }
 
@@ -493,7 +497,8 @@ public class ConfigConverter {
                         remoteJmx.getTenantId(),
                         remoteJmx.getMetricIdTemplate(),
                         remoteJmx.getMetricTags(),
-                        null);
+                        null,
+                        asWaitForList(remoteJmx.getWaitFor()));
 
                 managedServers.put(remoteJmx.getName(), remoteJmxEndpointConfig);
             }
@@ -849,7 +854,8 @@ public class ConfigConverter {
                     null,
                     null,
                     null,
-                    customData);
+                    customData,
+                    null);
             managedServers.put("platform", localPlatform);
         }
 
@@ -912,5 +918,17 @@ public class ConfigConverter {
             names.add(new Name(s));
         }
         return names;
+    }
+
+    private List<WaitFor> asWaitForList(org.hawkular.agent.javaagent.config.WaitFor[] arr) {
+        if (arr == null) {
+            return Collections.emptyList();
+        }
+        List<WaitFor> list = new ArrayList<>(arr.length);
+        for (org.hawkular.agent.javaagent.config.WaitFor arrEle : arr) {
+            WaitFor wf = new WaitFor(arrEle.getName());
+            list.add(wf);
+        }
+        return list;
     }
 }

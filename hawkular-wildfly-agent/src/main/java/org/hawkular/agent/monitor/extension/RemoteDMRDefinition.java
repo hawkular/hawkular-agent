@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.protocol.EndpointService;
@@ -35,6 +36,7 @@ import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathElement;
+import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 import org.jboss.dmr.ModelNode;
@@ -58,6 +60,11 @@ public class RemoteDMRDefinition extends MonitorPersistentResourceDefinition {
     @Override
     public Collection<AttributeDefinition> getAttributes() {
         return Arrays.asList(RemoteDMRAttributes.ATTRIBUTES);
+    }
+
+    @Override
+    protected List<? extends PersistentResourceDefinition> getChildren() {
+        return Arrays.asList(RemoteDMRWaitForDefinition.INSTANCE);
     }
 
     @Override

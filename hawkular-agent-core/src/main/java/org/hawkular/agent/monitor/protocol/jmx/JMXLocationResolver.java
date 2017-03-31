@@ -30,6 +30,11 @@ import org.hawkular.agent.monitor.protocol.ProtocolException;
 public class JMXLocationResolver implements LocationResolver<JMXNodeLocation> {
 
     @Override
+    public JMXNodeLocation buildLocation(String path) throws Exception {
+        return new JMXNodeLocation(path);
+    }
+
+    @Override
     public String findWildcardMatch(JMXNodeLocation multiTargetLocation, JMXNodeLocation singleLocation)
             throws ProtocolException {
 
@@ -103,7 +108,7 @@ public class JMXLocationResolver implements LocationResolver<JMXNodeLocation> {
         }
 
         return true;
-     }
+    }
 
     @Override
     public boolean matches(JMXNodeLocation query, JMXNodeLocation location) {

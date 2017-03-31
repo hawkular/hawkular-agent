@@ -1216,7 +1216,9 @@
                     port="${hawkular.dmr.port:9990}"
                     username="${hawkular.dmr.username:admin}"
                     password="${hawkular.dmr.password:admin}"
-                    resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Clustering,Hawkular"/>
+                    resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Clustering,Hawkular">
+          <wait-for name="/" />
+        </remote-dmr>
       </managed-servers>
 
       <platform enabled="${hawkular.platform.enabled:true}">

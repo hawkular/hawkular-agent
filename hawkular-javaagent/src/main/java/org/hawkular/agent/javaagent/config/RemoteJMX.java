@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.management.ObjectName;
+
 import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
 import org.hawkular.agent.monitor.api.Avail;
 
@@ -67,6 +69,9 @@ public class RemoteJMX implements Validatable {
     @JsonProperty("set-avail-on-shutdown")
     private Avail setAvailOnShutdown;
 
+    @JsonProperty("wait-for")
+    private WaitFor[] waitFor;
+
     public RemoteJMX() {
     }
 
@@ -83,6 +88,7 @@ public class RemoteJMX implements Validatable {
         this.metricIdTemplate = original.metricIdTemplate;
         this.metricTags = original.metricTags == null ? null : new HashMap<>(original.metricTags);
         this.setAvailOnShutdown = original.setAvailOnShutdown;
+        this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
     }
 
     @Override
@@ -92,6 +98,20 @@ public class RemoteJMX implements Validatable {
         }
         if (url == null || url.get().toString().trim().isEmpty()) {
             throw new Exception("remote-jmx url must be specified");
+        }
+
+        if (waitFor != null) {
+            for (WaitFor wf : waitFor) {
+                wf.validate();
+
+                // throw exception if the resource is not a valid ObjectName
+                try {
+                    new ObjectName(wf.getName());
+                } catch (Exception e) {
+                    throw new Exception(
+                            "remote-jmx [" + name + "] has invalid wait-for resource: " + wf.getName(), e);
+                }
+            }
         }
     }
 
@@ -201,5 +221,13 @@ public class RemoteJMX implements Validatable {
 
     public void setSetAvailOnShutdown(Avail setAvailOnShutdown) {
         this.setAvailOnShutdown = setAvailOnShutdown;
+    }
+
+    public WaitFor[] getWaitFor() {
+        return waitFor;
+    }
+
+    public void setWaitFor(WaitFor[] waitFor) {
+        this.waitFor = waitFor;
     }
 }

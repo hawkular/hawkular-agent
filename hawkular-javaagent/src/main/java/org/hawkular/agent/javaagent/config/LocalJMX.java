@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.management.ObjectName;
+
 import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
 import org.hawkular.agent.monitor.api.Avail;
 
@@ -58,6 +60,9 @@ public class LocalJMX implements Validatable {
     @JsonProperty("mbean-server-name")
     private String mbeanServerName;
 
+    @JsonProperty("wait-for")
+    private WaitFor[] waitFor;
+
     public LocalJMX() {
     }
 
@@ -71,12 +76,27 @@ public class LocalJMX implements Validatable {
         this.metricTags = original.metricTags == null ? null : new HashMap<>(original.metricTags);
         this.setAvailOnShutdown = original.setAvailOnShutdown;
         this.mbeanServerName = original.mbeanServerName;
+        this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
     }
 
     @Override
     public void validate() throws Exception {
         if (name == null || name.trim().isEmpty()) {
             throw new Exception("local-jmx name must be specified");
+        }
+
+        if (waitFor != null) {
+            for (WaitFor wf : waitFor) {
+                wf.validate();
+
+                // throw exception if the resource is not a valid ObjectName
+                try {
+                    new ObjectName(wf.getName());
+                } catch (Exception e) {
+                    throw new Exception(
+                            "local-jmx [" + name + "] has invalid wait-for resource: " + wf.getName(), e);
+                }
+            }
         }
     }
 
@@ -150,5 +170,13 @@ public class LocalJMX implements Validatable {
 
     public void setMbeanServerName(String mbeanServerName) {
         this.mbeanServerName = mbeanServerName;
+    }
+
+    public WaitFor[] getWaitFor() {
+        return waitFor;
+    }
+
+    public void setWaitFor(WaitFor[] waitFor) {
+        this.waitFor = waitFor;
     }
 }

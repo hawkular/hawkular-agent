@@ -1405,6 +1405,8 @@ managed-servers:
   local-dmr:
     name: Local DMR
     enabled: true
+    wait-for:
+    - name: /
     resource-type-sets:
     - Standalone Environment
     - Deployment
@@ -1422,6 +1424,8 @@ managed-servers:
   local-jmx:
     name: Local JMX
     enabled: true
+    wait-for:
+    - name: java.lang:type=Runtime
     resource-type-sets:
     - Main
     - Memory Pool
@@ -1434,6 +1438,8 @@ managed-servers:
     port: 9990
     username: adminUser
     password: adminPass
+    wait-for:
+    - name: /
     resource-type-sets:
     - Standalone Environment
     - Deployment
@@ -1451,6 +1457,8 @@ managed-servers:
   - name: Remote Jolokia Server
     enabled: false
     url: http://localhost:8080/jolokia-war
+    wait-for:
+    - name: java.lang:type=Runtime
     resource-type-sets:
     - Main
     - Memory Pool

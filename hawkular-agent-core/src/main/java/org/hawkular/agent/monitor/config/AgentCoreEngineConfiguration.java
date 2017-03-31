@@ -19,6 +19,7 @@ package org.hawkular.agent.monitor.config;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -354,6 +355,22 @@ public class AgentCoreEngineConfiguration {
     }
 
     public static class AbstractEndpointConfiguration {
+
+        public static class WaitFor {
+            private final String resource;
+
+            public WaitFor(String resource) {
+                this.resource = resource;
+            }
+
+            /**
+             * @return The resource to wait for (can be things like a DMR path or JMX object name).
+             */
+            public String getResource() {
+                return this.resource;
+            }
+        }
+
         private final String name;
         private final boolean enabled;
         private final ConnectionData connectionData;
@@ -362,10 +379,11 @@ public class AgentCoreEngineConfiguration {
         private final String metricIdTemplate;
         private final Map<String, String> metricTags;
         private final Map<String, ? extends Object> customData;
+        private final List<WaitFor> waitForResources;
 
         public AbstractEndpointConfiguration(String name, boolean enabled, ConnectionData connectionData,
                 String securityRealm, String tenantId, String metricIdTemplate, Map<String, String> metricTags,
-                Map<String, ? extends Object> customData) {
+                Map<String, ? extends Object> customData, List<WaitFor> waitForResources) {
             super();
             this.name = name;
             this.enabled = enabled;
@@ -375,6 +393,8 @@ public class AgentCoreEngineConfiguration {
             this.metricIdTemplate = metricIdTemplate;
             this.metricTags = metricTags;
             this.customData = (customData != null) ? Collections.unmodifiableMap(customData) : Collections.emptyMap();
+            this.waitForResources = (waitForResources != null) ? Collections.unmodifiableList(waitForResources)
+                    : Collections.emptyList();
         }
 
         public boolean isEnabled() {
@@ -428,6 +448,13 @@ public class AgentCoreEngineConfiguration {
         public boolean isLocal() {
             return connectionData == null;
         }
+
+        /**
+         * @return list of resources to wait for before starting to monitor the endpoint (will not be null)
+         */
+        public List<WaitFor> getWaitForResources() {
+            return waitForResources;
+        }
     }
 
     public static class EndpointConfiguration extends AbstractEndpointConfiguration {
@@ -436,8 +463,10 @@ public class AgentCoreEngineConfiguration {
 
         public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
                 ConnectionData connectionData, String securityRealm, Avail setAvailOnShutdown, String tenantId,
-                String metricIdTemplate, Map<String, String> metricTags, Map<String, ? extends Object> customData) {
-            super(name, enabled, connectionData, securityRealm, tenantId, metricIdTemplate, metricTags, customData);
+                String metricIdTemplate, Map<String, String> metricTags, Map<String, ? extends Object> customData,
+                List<WaitFor> waitForResources) {
+            super(name, enabled, connectionData, securityRealm, tenantId, metricIdTemplate, metricTags, customData,
+                    waitForResources);
             this.resourceTypeSets = resourceTypeSets;
             this.setAvailOnShutdown = setAvailOnShutdown;
         }

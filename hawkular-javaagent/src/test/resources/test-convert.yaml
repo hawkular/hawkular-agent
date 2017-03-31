@@ -237,6 +237,9 @@ managed-servers:
     resource-type-sets:
     - first resource type set d
     - second resource type set d
+    wait-for:
+    - name: /subsystem=undertow
+    - name: /
 
   local-jmx:
     name:               Test Local JMX
@@ -244,6 +247,9 @@ managed-servers:
     resource-type-sets:
     - first resource type set
     - second resource type set
+    wait-for:
+    - name: java.lang:type=Runtime
+    - name: java.lang:type=Memory
 
   remote-dmr:
   - name:               Test Remote DMR
@@ -255,6 +261,8 @@ managed-servers:
     resource-type-sets:
     - first resource type set d
     - second resource type set d
+    wait-for:
+    - name: /subsystem=undertow
   - name:               Test Remote DMR 2
     enabled:            true
     host:               localhost2
@@ -271,6 +279,8 @@ managed-servers:
     resource-type-sets:
     - first resource type set
     - second resource type set
+    wait-for:
+    - name: java.lang:type=Runtime
   - name:               Test Remote JMX 2
     enabled:            true
     url:                http://localhost:9090/jolokia-war
