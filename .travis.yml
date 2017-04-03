@@ -22,8 +22,7 @@ install:
 # unshallow is needed by license-maven-plugin
 - git fetch origin --unshallow
 script:
-- ./mvnw -s .travis.maven.settings.xml verify -Pitest -Dfailsafe.useFile=false | grep -vF "[INFO] Downloading:" | grep
-  -vF "[INFO] Downloaded:"; test ${PIPESTATUS[0]} -eq 0
+- ./mvnw -s .travis.maven.settings.xml clean verify -Pitest
 env:
   global:
   - secure: DOP9OifGr7yBDNdkn1Tl58ur4tJzqFaNzVktmX+KgpjDbWtKE3cqyqf1pElyAbSpTm8kVf/UAxUPyCXdRh/W7jj2jB6Tc5kwBCqM8UHjJ6QuZVGnpih4lO6EImV1MDW2+MNWvun7kdUgtRjCWohaYh4pTPAwOk8v7IfeewH1Ud4=
