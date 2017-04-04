@@ -39,12 +39,15 @@
     <module>hawkular-agent-command-cli</module>
     <module>hawkular-agent-core</module>
     <module>hawkular-javaagent</module>
+    <module>hawkular-javaagent-wildfly-feature-pack</module>
+    <module>hawkular-javaagent-wildfly-dist</module>
     <module>hawkular-wildfly-agent</module>
     <module>hawkular-wildfly-agent-download</module>
     <module>hawkular-wildfly-agent-feature-pack</module>
     <module>hawkular-wildfly-agent-wf-extension</module>
     <module>eap6-support/hawkular-wildfly-agent-feature-pack-eap6</module>
     <module>eap6-support/hawkular-wildfly-agent-wf-extension-eap6</module>
+    <module>eap6-support/hawkular-javaagent-wildfly-feature-pack-eap6</module>
     <module>hawkular-javaagent-itest-parent</module>
     <module>hawkular-wildfly-agent-itest-parent</module>
     <module>wildfly-module-installer</module>
