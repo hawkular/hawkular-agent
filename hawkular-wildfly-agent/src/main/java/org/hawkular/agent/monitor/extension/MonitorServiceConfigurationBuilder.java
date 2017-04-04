@@ -32,6 +32,7 @@ import javax.management.ObjectName;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration.WaitFor;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsReportTo;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
@@ -123,7 +124,7 @@ public class MonitorServiceConfigurationBuilder {
             customData.put(Constants.MACHINE_ID, determinePlatformMachineId(config, context));
             customData.put(Constants.CONTAINER_ID, determinePlatformContainerId(config, context));
             EndpointConfiguration endpoint = new EndpointConfiguration("platform", true, null, null, null, Avail.DOWN,
-                    null, null, null, customData);
+                    null, null, null, customData, null);
             platformConfigBuilder.endpoint(endpoint);
         }
 
@@ -1303,10 +1304,30 @@ public class MonitorServiceConfigurationBuilder {
                     if (protocol == null) {
                         protocol = useSsl ? "https-remoting" : "http-remoting";
                     }
+
+                    List<WaitFor> waitFor = new ArrayList<WaitFor>();
+                    if (remoteDMRValueNode.hasDefined(RemoteDMRWaitForDefinition.WAIT_FOR)) {
+                        List<Property> waitForList = remoteDMRValueNode.get(RemoteDMRWaitForDefinition.WAIT_FOR)
+                                .asPropertyList();
+                        for (Property waitForProperty : waitForList) {
+                            //ModelNode waitForValueNode = waitForProperty.getValue();
+                            String resource = waitForProperty.getName();
+                            try {
+                                if (!"/".equals(resource)) {
+                                    WildflyCompatibilityUtils.parseCLIStyleAddress(resource);
+                                }
+                            } catch (Exception e) {
+                                throw new OperationFailedException(
+                                        "Invalid wait-for name - not a valid DMR path: " + resource, e);
+                            }
+                            waitFor.add(new WaitFor(resource));
+                        }
+                    }
+
                     ConnectionData connectionData = new ConnectionData(protocol, host, port, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
                             connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, metricTags,
-                            null);
+                            null, waitFor);
 
                     dmrConfigBuilder.endpoint(endpoint);
                 }
@@ -1334,8 +1355,27 @@ public class MonitorServiceConfigurationBuilder {
                 Map<String, String> metricTags = getMapFromString(localDMRValueNode, context,
                         LocalDMRAttributes.METRIC_TAGS);
 
+                List<WaitFor> waitFor = new ArrayList<WaitFor>();
+                if (localDMRValueNode.hasDefined(LocalDMRWaitForDefinition.WAIT_FOR)) {
+                    List<Property> waitForList = localDMRValueNode.get(LocalDMRWaitForDefinition.WAIT_FOR)
+                            .asPropertyList();
+                    for (Property waitForProperty : waitForList) {
+                        //ModelNode waitForValueNode = waitForProperty.getValue();
+                        String resource = waitForProperty.getName();
+                        try {
+                            if (!"/".equals(resource)) {
+                                WildflyCompatibilityUtils.parseCLIStyleAddress(resource);
+                            }
+                        } catch (Exception e) {
+                            throw new OperationFailedException(
+                                    "Invalid wait-for name - not a valid DMR path: " + resource, e);
+                        }
+                        waitFor.add(new WaitFor(resource));
+                    }
+                }
+
                 EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets, null, null,
-                        setAvailOnShutdown, tenantId, metricIdTemplate, metricTags, null);
+                        setAvailOnShutdown, tenantId, metricIdTemplate, metricTags, null, waitFor);
                 dmrConfigBuilder.endpoint(endpoint);
             }
 
@@ -1376,10 +1416,27 @@ public class MonitorServiceConfigurationBuilder {
                         log.debugf("Using SSL with no security realm - will rely on the JVM truststore: " + name);
                     }
 
+                    List<WaitFor> waitFor = new ArrayList<WaitFor>();
+                    if (remoteJMXValueNode.hasDefined(RemoteJMXWaitForDefinition.WAIT_FOR)) {
+                        List<Property> waitForList = remoteJMXValueNode.get(RemoteJMXWaitForDefinition.WAIT_FOR)
+                                .asPropertyList();
+                        for (Property waitForProperty : waitForList) {
+                            //ModelNode waitForValueNode = waitForProperty.getValue();
+                            String resource = waitForProperty.getName();
+                            try {
+                                new ObjectName(resource);
+                            } catch (Exception e) {
+                                throw new OperationFailedException(
+                                        "Invalid wait-for name - not a valid JMX ObjectName: " + resource, e);
+                            }
+                            waitFor.add(new WaitFor(resource));
+                        }
+                    }
+
                     ConnectionData connectionData = new ConnectionData(url, username, password);
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
                             connectionData, securityRealm, setAvailOnShutdown, tenantId, metricIdTemplate, metricTags,
-                            null);
+                            null, waitFor);
 
                     jmxConfigBuilder.endpoint(endpoint);
                 }
@@ -1405,9 +1462,26 @@ public class MonitorServiceConfigurationBuilder {
                     Map<String, String> metricTags = getMapFromString(localJMXValueNode, context,
                             RemoteDMRAttributes.METRIC_TAGS);
 
+                    List<WaitFor> waitFor = new ArrayList<WaitFor>();
+                    if (localJMXValueNode.hasDefined(LocalJMXWaitForDefinition.WAIT_FOR)) {
+                        List<Property> waitForList = localJMXValueNode.get(LocalJMXWaitForDefinition.WAIT_FOR)
+                                .asPropertyList();
+                        for (Property waitForProperty : waitForList) {
+                            //ModelNode waitForValueNode = waitForProperty.getValue();
+                            String resource = waitForProperty.getName();
+                            try {
+                                new ObjectName(resource);
+                            } catch (Exception e) {
+                                throw new OperationFailedException(
+                                        "Invalid wait-for name - not a valid JMX ObjectName: " + resource, e);
+                            }
+                            waitFor.add(new WaitFor(resource));
+                        }
+                    }
+
                     EndpointConfiguration endpoint = new EndpointConfiguration(name, enabled, resourceTypeSets,
                             null, null, setAvailOnShutdown, tenantId, metricIdTemplate, metricTags,
-                            Collections.singletonMap(JMXEndpointService.MBEAN_SERVER_NAME_KEY, mbsNameStr));
+                            Collections.singletonMap(JMXEndpointService.MBEAN_SERVER_NAME_KEY, mbsNameStr), waitFor);
 
                     jmxConfigBuilder.endpoint(endpoint);
                 }

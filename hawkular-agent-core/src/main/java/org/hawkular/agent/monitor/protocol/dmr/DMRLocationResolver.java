@@ -43,6 +43,11 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
     }
 
     @Override
+    public DMRNodeLocation buildLocation(String path) throws Exception {
+        return DMRNodeLocation.of(path);
+    }
+
+    @Override
     public String findWildcardMatch(DMRNodeLocation multiTargetLocation, DMRNodeLocation singleLocation)
             throws ProtocolException {
 

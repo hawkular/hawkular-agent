@@ -102,6 +102,9 @@ managed-servers:
       localdmrtag1: val1
       dmrtag2: val2
     set-avail-on-shutdown: DOWN
+    wait-for:
+    - name: /subsystem=undertow
+    - name: /
 
   remote-dmr:
   - name:                  Remote WildFly
@@ -119,6 +122,8 @@ managed-servers:
       remotedmrtag1: val1
       dmrtag2: val2
     set-avail-on-shutdown: DOWN
+    wait-for:
+    - name: /subsystem=undertow
 
   local-jmx:
     name:                  Local JMX
@@ -133,6 +138,9 @@ managed-servers:
       jmxtag2: val2
     set-avail-on-shutdown: UNKNOWN
     mbean-server-name:     some-mbs-name
+    wait-for:
+    - name: java.lang:type=Runtime
+    - name: java.lang:type=Memory
 
   remote-jmx:
   - name:                  Remote JMX
@@ -148,6 +156,8 @@ managed-servers:
       remotejmxtag1: val1
       jmxtag2: val2
     set-avail-on-shutdown: UNKNOWN
+    wait-for:
+    - name: java.lang:type=Runtime
 
 platform:
   enabled:      true

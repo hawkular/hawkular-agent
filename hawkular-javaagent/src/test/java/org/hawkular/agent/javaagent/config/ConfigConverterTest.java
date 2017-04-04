@@ -82,21 +82,33 @@ public class ConfigConverterTest {
 
         EndpointConfiguration localDmr = agentConfig.getDmrConfiguration().getEndpoints().get("Test Local DMR");
         Assert.assertEquals(true, localDmr.isEnabled());
+        Assert.assertEquals(2, localDmr.getWaitForResources().size());
+        Assert.assertEquals("/subsystem=undertow", localDmr.getWaitForResources().get(0).getResource());
+        Assert.assertEquals("/", localDmr.getWaitForResources().get(1).getResource());
 
         EndpointConfiguration localJmx = agentConfig.getJmxConfiguration().getEndpoints().get("Test Local JMX");
         Assert.assertEquals(true, localJmx.isEnabled());
+        Assert.assertEquals(2, localJmx.getWaitForResources().size());
+        Assert.assertEquals("java.lang:type=Runtime", localJmx.getWaitForResources().get(0).getResource());
+        Assert.assertEquals("java.lang:type=Memory", localJmx.getWaitForResources().get(1).getResource());
 
         EndpointConfiguration remoteDmr = agentConfig.getDmrConfiguration().getEndpoints().get("Test Remote DMR");
         Assert.assertEquals(true, remoteDmr.isEnabled());
+        Assert.assertEquals(1, remoteDmr.getWaitForResources().size());
+        Assert.assertEquals("/subsystem=undertow", remoteDmr.getWaitForResources().get(0).getResource());
 
         EndpointConfiguration remoteJmx = agentConfig.getJmxConfiguration().getEndpoints().get("Test Remote JMX");
         Assert.assertEquals(true, remoteJmx.isEnabled());
+        Assert.assertEquals(1, remoteJmx.getWaitForResources().size());
+        Assert.assertEquals("java.lang:type=Runtime", remoteJmx.getWaitForResources().get(0).getResource());
 
         EndpointConfiguration remoteDmr2 = agentConfig.getDmrConfiguration().getEndpoints().get("Test Remote DMR 2");
         Assert.assertEquals(true, remoteDmr2.isEnabled());
+        Assert.assertEquals(0, remoteDmr2.getWaitForResources().size());
 
         EndpointConfiguration remoteJmx2 = agentConfig.getJmxConfiguration().getEndpoints().get("Test Remote JMX 2");
         Assert.assertEquals(true, remoteJmx2.isEnabled());
+        Assert.assertEquals(0, remoteJmx2.getWaitForResources().size());
 
         EndpointConfiguration platform = agentConfig.getPlatformConfiguration().getEndpoints().get("platform");
         Assert.assertEquals(true, platform.isEnabled());

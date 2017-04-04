@@ -90,7 +90,7 @@ public class UpdateCollectionIntervalsCommandITest extends AbstractCommandITest 
                         if (m.getInterval().intValue() == expectedVal) {
                             return;
                         } else {
-                            Assert.fail(String.format("Metric type [%s~%s] expected to be [%d] but was [%d]",
+                            Assert.fail(String.format("Metric type [%s~%s] expected to be [%d %s] but was [%d %s]",
                                     setName, metricName,
                                     expectedVal, expectedUnits.name(),
                                     m.getInterval().intValue(), m.getTimeUnits().name()));

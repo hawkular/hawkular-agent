@@ -29,6 +29,17 @@ import org.hawkular.agent.monitor.inventory.NodeLocation;
  */
 public interface LocationResolver<L> {
     /**
+     * Given a string, this will build a location object L from that string.
+     *
+     * @param path an L location in string form.
+     *
+     * @return a Location object
+     *
+     * @throws Exception if the path is invalid and cannot be converted to a location object
+     */
+    L buildLocation(String path) throws Exception;
+
+    /**
      * Given a multi-target location (e.g. a location with a wildcard) and a single location,
      * this returns that portion of the single location that matches the multi-target wildcard.
      *

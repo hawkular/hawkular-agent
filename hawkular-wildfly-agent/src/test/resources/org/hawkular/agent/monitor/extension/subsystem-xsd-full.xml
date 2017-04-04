@@ -148,7 +148,10 @@
                 resource-type-sets="Main"
                 tenant-id=""
                 metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
-                metric-tags="feed=%FeedId,Label One=Value One" />
+                metric-tags="feed=%FeedId,Label One=Value One">
+      <wait-for name="/" />
+      <wait-for name="/subsystem=undertow" />
+    </remote-dmr>
 
     <local-dmr name="Self"
                enabled="true"
@@ -156,7 +159,10 @@
                resource-type-sets="Main"
                tenant-id="tenantOverride"
                metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
-               metric-tags="feed=%FeedId,Label One=Value One" />
+               metric-tags="feed=%FeedId,Label One=Value One">
+      <wait-for name="/" />
+      <wait-for name="/subsystem=undertow" />
+    </local-dmr>
 
     <remote-jmx name="Remote JMX"
                 enabled="true"
@@ -168,7 +174,10 @@
                 resource-type-sets="R Resource Type Set"
                 tenant-id="tenantOverride"
                 metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
-                metric-tags="feed=%FeedId,Label One=Value One" />
+                metric-tags="feed=%FeedId,Label One=Value One">
+      <wait-for name="java.lang:type=Memory" />
+      <wait-for name="java.lang:type=OperatingSystem" />
+    </remote-jmx>
 
     <local-jmx name="Local JMX"
                enabled="true"
@@ -177,7 +186,10 @@
                resource-type-sets="R Resource Type Set"
                tenant-id="tenantOverride"
                metric-id-template="%FeedId-%ResourceName-%MetricTypeName"
-               metric-tags="feed=%FeedId,Label One=Value One" />
+               metric-tags="feed=%FeedId,Label One=Value One">
+      <wait-for name="java.lang:type=Memory" />
+      <wait-for name="java.lang:type=OperatingSystem" />
+    </local-jmx>
 
   </managed-servers>
 

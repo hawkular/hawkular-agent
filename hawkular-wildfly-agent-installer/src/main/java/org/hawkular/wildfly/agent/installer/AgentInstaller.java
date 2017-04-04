@@ -478,7 +478,9 @@ public class AgentInstaller {
                 .append("<local-dmr name=\"" + managedServerName + "\" enabled=\"true\" "
                         + "resource-type-sets=\""
                         + managedServerResourceTypeSets
-                        + "\" />")
+                        + "\">")
+                .append("<wait-for name=\"/\" />")
+                .append("</local-dmr>")
                 .append("</managed-servers>");
 
         // replaces <managed-servers> under urn:org.hawkular.agent:agent:1.0 subsystem with above content

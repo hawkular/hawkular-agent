@@ -87,6 +87,7 @@ public class DMREndpointService
             return fullId.toString();
         }
     }
+
     private final ModelControllerClientFactory modelControllerClientFactory;
 
     public DMREndpointService(String feedId, MonitoredEndpoint<EndpointConfiguration> endpoint,

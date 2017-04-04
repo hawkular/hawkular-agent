@@ -100,6 +100,8 @@ public class ProtocolService<L, S extends Session<L>> {
     }
 
     public void start() {
+        // Note that any endpoint service start method may block!
+        // It may wait for resources to come up first before returning.
         for (EndpointService<L, S> service : getEndpointServices().values()) {
             service.start();
         }

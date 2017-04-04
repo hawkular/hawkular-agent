@@ -222,10 +222,13 @@ public class ProtocolServices {
     }
 
     public void start() {
+        // Note that any protocol service start method may block!
+        // It may wait for resources to come up first before returning.
         for (ProtocolService<?, ?> service : services) {
             service.start();
         }
 
+        // only start auto discovery after all services have started
         startAutoDiscovery();
     }
 

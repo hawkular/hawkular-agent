@@ -29,6 +29,11 @@ import org.hawkular.agent.monitor.protocol.platform.PlatformPath.PathSegment;
 public class PlatformLocationResolver implements LocationResolver<PlatformNodeLocation> {
 
     @Override
+    public PlatformNodeLocation buildLocation(String path) throws Exception {
+        throw new UnsupportedOperationException("Cannot convert string to platform location - not implemented yet");
+    }
+
+    @Override
     public String findWildcardMatch(PlatformNodeLocation multiTargetLocation, PlatformNodeLocation singleLocation)
             throws ProtocolException {
         List<PathSegment> multiTargetPaths = multiTargetLocation.getPlatformPath().getSegments();

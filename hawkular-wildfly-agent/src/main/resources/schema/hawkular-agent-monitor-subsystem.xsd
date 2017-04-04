@@ -307,6 +307,9 @@
   </xs:complexType>
 
   <xs:complexType name="localDmrType">
+    <xs:sequence>
+      <xs:element name="wait-for" type="waitForType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
     <xs:attribute name="name"                  type="xs:string" use="required"/>
     <xs:attribute name="enabled"               type="xs:boolean"/>
     <xs:attribute name="resource-type-sets"    type="xs:string"/>
@@ -317,6 +320,9 @@
   </xs:complexType>
 
   <xs:complexType name="remoteDmrType">
+    <xs:sequence>
+      <xs:element name="wait-for" type="waitForType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
     <xs:attribute name="name"                  type="xs:string" use="required"/>
     <xs:attribute name="enabled"               type="xs:boolean"/>
     <xs:attribute name="protocol"              type="xs:string"/>
@@ -334,6 +340,9 @@
   </xs:complexType>
 
   <xs:complexType name="remoteJmxType">
+    <xs:sequence>
+      <xs:element name="wait-for" type="waitForType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
     <xs:attribute name="name"                  type="xs:string" use="required"/>
     <xs:attribute name="enabled"               type="xs:boolean"/>
     <xs:attribute name="url"                   type="xs:string" use="required"/>
@@ -348,6 +357,9 @@
   </xs:complexType>
 
   <xs:complexType name="localJmxType">
+    <xs:sequence>
+      <xs:element name="wait-for" type="waitForType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
     <xs:attribute name="name"                  type="xs:string" use="required"/>
     <xs:attribute name="enabled"               type="xs:boolean"/>
     <xs:attribute name="mbean-server-name"     type="xs:string"/>
@@ -396,4 +408,9 @@
       <xs:enumeration value="float"/>
     </xs:restriction>
   </xs:simpleType>
+
+  <xs:complexType name="waitForType">
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
 </xs:schema>

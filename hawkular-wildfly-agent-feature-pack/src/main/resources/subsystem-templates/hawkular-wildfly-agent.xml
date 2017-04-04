@@ -1146,15 +1146,23 @@
                   port="9990"
                   username="adminUser"
                   password="adminPass"
-                  resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Clustering" />
+                  resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Clustering">
+        <wait-for name="/" />
+      </remote-dmr>
 
       <local-dmr name="Local"
                  enabled="true"
-                 resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Clustering,Hawkular" />
+                 resource-type-sets="Standalone Environment,Deployment,Web Component,EJB,Datasource,XA Datasource,JDBC Driver,Transaction Manager,Messaging,Socket Binding Group,Clustering,Hawkular">
+        <wait-for name="/" />
+      </local-dmr>
 
-      <remote-jmx name="Remote JMX" enabled="false" resource-type-sets="MainJMX,MemoryPoolJMX" url="http://localhost:8080/jolokia-war"/>
+      <remote-jmx name="Remote JMX" enabled="false" resource-type-sets="MainJMX,MemoryPoolJMX" url="http://localhost:8080/jolokia-war">
+        <wait-for name="java.lang:type=Runtime" />
+      </remote-jmx>
 
-      <local-jmx name="Local JMX" enabled="false" resource-type-sets="MainJMX,MemoryPoolJMX" />
+      <local-jmx name="Local JMX" enabled="false" resource-type-sets="MainJMX,MemoryPoolJMX">
+        <wait-for name="java.lang:type=Runtime" />
+      </local-jmx>
 
     </managed-servers>
 

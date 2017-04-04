@@ -40,6 +40,7 @@ import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration.WaitFor;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
@@ -607,7 +608,23 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     public final void start() {
         status.assertInitialOrStopped(getClass(), "start()");
         status = ServiceStatus.STARTING;
-        // nothing to do
+
+        // block the start method until the endpoint is ready
+        boolean ready = isEndpointReady();
+        if (!ready) {
+            LOG.infof("Endpoint [%s] is not ready yet - will wait", toString());
+            do {
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    status = ServiceStatus.STOPPED;
+                    return;
+                }
+                ready = isEndpointReady();
+            } while (!ready);
+        }
+
         status = ServiceStatus.RUNNING;
 
         LOG.debugf("Started [%s]", toString());
@@ -620,6 +637,35 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         status = ServiceStatus.STOPPED;
 
         LOG.debugf("Stopped [%s]", toString());
+    }
+
+    private boolean isEndpointReady() {
+        // If the endpoint was not configured to wait for any resources, assume the endpoint is ready.
+        // Otherwise, check to see if all resources to be waited on exist - if so, assume the endpoint is ready.
+        // Even if just one wait-for resource does not exist, we assume the endpoint is NOT ready.
+        List<WaitFor> waitForResources = this.getMonitoredEndpoint().getEndpointConfiguration().getWaitForResources();
+        if (!waitForResources.isEmpty()) {
+            try (S s = openSession()) {
+                Driver<L> driver = s.getDriver();
+                Map<L, Object> results;
+                for (WaitFor waitFor : waitForResources) {
+                    LOG.tracef("Checking if endpoint [%s] is ready: resource [%s]", this, waitFor.getResource());
+                    results = driver.fetchNodes(s.getLocationResolver().buildLocation(waitFor.getResource()));
+                    if (results.isEmpty()) {
+                        LOG.debugf("Endpoint [%s] is not yet ready - resource [%s] is missing",
+                                this, waitFor.getResource());
+                        return false;
+                    } else {
+                        LOG.tracef("Endpoint [%s] wait-for resource [%s] is ready", this, waitFor.getResource());
+                    }
+                }
+            } catch (Exception e) {
+                LOG.debugf("Endpoint [%s] is not yet ready [%s]", this, e.toString());
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override
