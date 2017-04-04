@@ -29,7 +29,7 @@
   <artifactId>hawkular-services-dist-docker</artifactId>
   <packaging>pom</packaging>
 
-  <name>agent docker dist</name>
+  <name>Hawkular Agent: Docker Distribution</name>
 
   <build>
 
