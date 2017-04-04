@@ -70,7 +70,7 @@
     <version.org.hamcrest>1.3</version.org.hamcrest>
     <version.org.hawkular.commons>0.9.2.Final</version.org.hawkular.commons>
     <version.org.hawkular.inventory>1.1.3.Final</version.org.hawkular.inventory>
-    <version.org.hawkular.metrics>0.21.5.Final</version.org.hawkular.metrics>
+    <version.org.hawkular.metrics>0.26.0.Final</version.org.hawkular.metrics>
 
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
