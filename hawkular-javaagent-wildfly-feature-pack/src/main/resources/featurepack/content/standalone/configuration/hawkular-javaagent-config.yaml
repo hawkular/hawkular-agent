@@ -1418,6 +1418,8 @@ managed-servers:
     - Socket Binding Group
     - Clustering
     - Hawkular
+    wait-for:
+    - name: /
 
   local-jmx:
     name: Local JMX
@@ -1426,6 +1428,8 @@ managed-servers:
     - Main
     - Memory Pool
     - Hawkular
+    wait-for:
+    - name: java.lang:type=Runtime
 
   remote-dmr:
   - name: Remote DMR
@@ -1446,6 +1450,8 @@ managed-servers:
     - Messaging
     - Socket Binding Group
     - Clustering
+    wait-for:
+    - name: /
 
   remote-jmx:
   - name: Remote Jolokia Server
@@ -1454,6 +1460,8 @@ managed-servers:
     resource-type-sets:
     - Main
     - Memory Pool
+    wait-for:
+    - name: java.lang:type=Runtime
 
 platform:
   enabled:      true
