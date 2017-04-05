@@ -31,6 +31,21 @@
 
   <name>Hawkular Agent: Docker Distribution</name>
 
+  <dependencies>
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-javaagent-wildfly-dist</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-wildfly-agent-installer-full</artifactId>
+      <version>${project.version}</version>
+      <type>jar</type>
+    </dependency>
+  </dependencies>
+
   <build>
 
     <plugins>
@@ -38,6 +53,11 @@
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
         <configuration>
+          <mapping>
+            <Dockerfile-wf-agent>SCRIPT_STYLE</Dockerfile-wf-agent>
+            <Dockerfile-wf-agent-domain>SCRIPT_STYLE</Dockerfile-wf-agent-domain>
+          </mapping>
+
           <excludes>
             <exclude>.dockerignore</exclude>
             <exclude>**/*.war</exclude>
@@ -45,9 +65,68 @@
             <exclude>*/test-simple.war</exclude>
             <exclude>*.zip</exclude>
             <exclude>*.adoc</exclude>
-            <exclude>Dockerfile-domain</exclude>
           </excludes>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.hawkular.agent</groupId>
+                  <artifactId>hawkular-javaagent-wildfly-dist</artifactId>
+                  <type>zip</type>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <stripVersion>true</stripVersion>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.hawkular.agent</groupId>
+                  <artifactId>hawkular-wildfly-agent-installer-full</artifactId>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>prepare-files</id>
+            <phase>generate-resources</phase>
+            <configuration>
+              <target>
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}"
+                      tofile="${project.build.directory}/hawkular-javaagent-wildfly-dist"/>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
