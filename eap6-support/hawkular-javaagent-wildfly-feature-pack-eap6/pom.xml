@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-wildfly-agent-parent</artifactId>
-    <version>0.29.4.Final-SNAPSHOT</version>
+    <version>0.29.4.Final</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -95,17 +95,10 @@
             <phase>generate-resources</phase>
             <configuration>
               <target>
-                <copy file="${project.build.directory}/tmp/content/bin/standalone.conf"
-                      tofile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf"
-                      overwrite="true"/>
-                <replaceregexp file="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf"
-                               match="(JBOSS_MODULES_SYSTEM_PKGS=&quot;.*)&quot;"
-                               replace="\1,org.jboss.logmanager&quot;"
-                               flags="s"
-                               byline="true"
-                />
+                <copy file="${project.build.directory}/tmp/content/bin/standalone.conf" tofile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf" overwrite="true" />
+                <replaceregexp file="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf" match="(JBOSS_MODULES_SYSTEM_PKGS=&quot;.*)&quot;" replace="\1,org.jboss.logmanager&quot;" flags="s" byline="true" />
                 <concat destfile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf" append="yes">
-                  <file name="${basedir}/src/main/resources/bin/standalone-hawkular-javaagent-javaopts.conf"/>
+                  <file name="${basedir}/src/main/resources/bin/standalone-hawkular-javaagent-javaopts.conf" />
                 </concat>
               </target>
             </configuration>
