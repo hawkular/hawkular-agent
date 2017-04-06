@@ -17,7 +17,7 @@
 
 FROM jboss/wildfly:10.1.0.Final
 
-MAINTAINER Heiko W. Rupp <hawkular-dev@lists.jboss.org>
+MAINTAINER Hawkular project <hawkular-dev@lists.jboss.org>
 
 # ADD test-simple.war /opt/jboss/wildfly/standalone/deployments/
 ADD target/hawkular-javaagent-wildfly-dist/bin/standalone.conf $JBOSS_HOME/bin

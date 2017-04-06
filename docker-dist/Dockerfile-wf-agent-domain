@@ -17,7 +17,7 @@
 
 FROM jboss/wildfly:10.1.0.Final
 
-MAINTAINER Heiko W. Rupp <hawkular-dev@lists.jboss.org>
+MAINTAINER Hawkular project <hawkular-dev@lists.jboss.org>
 
 ADD target/hawkular-wildfly-agent-installer-full.jar /tmp/installer.jar
 ADD src/main/resources/domain.conf /opt/jboss/wildfly/bin
