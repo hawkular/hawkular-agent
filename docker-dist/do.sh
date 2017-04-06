@@ -19,6 +19,8 @@
 
 docker > /dev/null 2>&1 || { echo "docker is required, but is not found. Make sure it is accessible."; exit 1; }
 
+pushd "$( dirname "${BASH_SOURCE[0]}" )"
+
 echo "Building Docker for Wildfly + Hawkular javaagent."
 docker build -t wildfly-hawkular-javaagent . -f Dockerfile
 
@@ -26,3 +28,5 @@ echo "Building Docker for Wildfly + Hawkular Wildfly Agent (Standalone)."
 docker build -t wildfly-hawkular-agent -f Dockerfile-wf-agent .
 echo "Building Docker for Wildfly + Hawkular Wildfly Agent (Domain)."
 docker build -t wildfly-hawkular-agent-domain -f Dockerfile-wf-agent-domain .
+
+popd
