@@ -28,7 +28,7 @@ ENV HAWKULAR_SERVER_PROTOCOL http
 ENV HAWKULAR_SERVER_ADDR hawkular
 ENV HAWKULAR_SERVER_PORT 8080
 ENV HAWKULAR_AGENT_USER=jdoe HAWKULAR_AGENT_PASSWORD=password
-ENV JAVA_OPTS="-Xmx256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman,org.jboss.logmanager -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m"
+ENV JAVA_OPTS="-Xmx256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m"
 
 EXPOSE 8080 9090
 

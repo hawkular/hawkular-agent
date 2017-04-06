@@ -95,7 +95,20 @@
             <configuration>
               <target>
                 <copy file="${project.build.directory}/tmp/content/bin/standalone.conf" tofile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf" overwrite="true" />
-                <replaceregexp file="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf" match="(JBOSS_MODULES_SYSTEM_PKGS=&quot;.*)&quot;" replace="\1,org.jboss.logmanager&quot;" flags="s" byline="true" />
+                <!-- We need to ensure that we always have logmanager available.-->
+
+                <!--   Add logmanager to the list of default modules.
+                       If JBOSS_MODULES_SYSTEM_PKGS is set check if logmanager is there or add it --> -->
+                <replaceregexp file="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf"
+                               match="( *)(JBOSS_MODULES_SYSTEM_PKGS=&quot;.*)&quot;"
+                               replace="\1\2,org.jboss.logmanager&quot;&#10;\1else&#10;\1   echo $JBOSS_MODULES_SYSTEM_PKGS | grep &quot;org.jboss.logmanager&quot; > /dev/null&#10;\1   if ! [ $? -eq 0 ]; then&#10;\1      JBOSS_MODULES_SYSTEM_PKGS=&quot;$JBOSS_MODULES_SYSTEM_PKGS,org.jboss.logmanager&quot;&#10;\1   fi"
+                               flags="s"
+                               byline="true" />
+                <!--   If JAVA_OPTS is set, we need to notify that JBOSS_MODULES_SYSTEM_PKGS is to be set if we want to modify it.
+                       Include $JBOSS_MODULES_SYSTEM_PKGS in $JAVA_OPTS-->
+                <replaceregexp file="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf"
+                               match="( *)echo &quot;JAVA_OPTS already set in environment; overriding default settings with values: \$JAVA_OPTS&quot;"
+                               replace="\1echo &quot;JAVA_OPTS already set in environment; overriding default settings with values: $JAVA_OPTS&quot;&#10;\1echo &quot;If you want to set 'jboss.modules.system.pkgs' use JBOSS_MODULES_SYSTEM_PKGS env&quot;&#10;\1JAVA_OPTS=&quot;$JAVA_OPTS -Djboss.modules.system.pkgs=$JBOSS_MODULES_SYSTEM_PKGS&quot;"/>
                 <concat destfile="${project.build.directory}/feature-pack-resources/content/bin/standalone.conf" append="yes">
                   <file name="${basedir}/src/main/resources/bin/standalone-hawkular-javaagent-javaopts.conf" />
                 </concat>
