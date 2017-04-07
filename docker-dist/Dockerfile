@@ -37,4 +37,7 @@ RUN chown -R jboss:0 /opt/jboss/wildfly/standalone && \
     chmod -R ug+rw /opt/jboss/wildfly/standalone
 
 USER jboss
-CMD /opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 -Dhawkular.rest.host=${HAWKULAR_SERVER_PROTOCOL}://${HAWKULAR_SERVER_ADDR}:${HAWKULAR_SERVER_PORT} -Dhawkular.rest.user=${HAWKULAR_AGENT_USER} -Dhawkular.rest.password=${HAWKULAR_AGENT_PASSWORD}
+CMD /opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 \
+-Dhawkular.rest.host=${HAWKULAR_SERVER_PROTOCOL}://${HAWKULAR_SERVER_ADDR}:${HAWKULAR_SERVER_PORT} \
+-Dhawkular.rest.user=${HAWKULAR_AGENT_USER} -Dhawkular.rest.password=${HAWKULAR_AGENT_PASSWORD} \
+-Dhawkular.agent.immutable=true -Dhawkular.agent.in-container=true
