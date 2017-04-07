@@ -67,6 +67,7 @@ public class AgentCoreEngineConfiguration {
         private final String inventoryContext;
         private final String metricsContext;
         private final String feedcommContext;
+        private final String hawkularContext;
         private final String keystorePath;
         private final String keystorePassword;
         private final String securityRealm;
@@ -85,6 +86,7 @@ public class AgentCoreEngineConfiguration {
                 String inventoryContext,
                 String metricsContext,
                 String feedcommContext,
+                String hawkularContext,
                 String keystorePath,
                 String keystorePassword,
                 String securityRealm,
@@ -102,6 +104,7 @@ public class AgentCoreEngineConfiguration {
             this.inventoryContext = inventoryContext;
             this.metricsContext = metricsContext;
             this.feedcommContext = feedcommContext;
+            this.hawkularContext = hawkularContext;
             this.keystorePath = keystorePath;
             this.keystorePassword = keystorePassword;
             this.securityRealm = securityRealm;
@@ -155,6 +158,10 @@ public class AgentCoreEngineConfiguration {
 
         public String getMetricsContext() {
             return metricsContext;
+        }
+
+        public String getHawkularContext() {
+            return hawkularContext;
         }
 
         public String getFeedcommContext() {

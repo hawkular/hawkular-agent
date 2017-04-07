@@ -131,6 +131,13 @@ public interface StorageAttributes {
                     .setDefaultValue(new ModelNode("/hawkular/command-gateway/"))
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
+    SimpleAttributeDefinition HAWKULAR_CONTEXT = new SimpleAttributeDefinitionBuilder("hawkular-context",
+            ModelType.STRING)
+                    .setAllowNull(true)
+                    .setAllowExpression(true)
+                    .setDefaultValue(new ModelNode("/hawkular/api/"))
+                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
+                    .build();
     SimpleAttributeDefinition CONNECT_TIMEOUT_SECONDS = new SimpleAttributeDefinitionBuilder("connect-timeout-secs",
             ModelType.INT)
                     .setAllowNull(true)

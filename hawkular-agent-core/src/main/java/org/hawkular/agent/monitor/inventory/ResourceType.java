@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.hawkular.client.api.NotificationType;
+
 /**
  * @author John Mazzitelli
  *
@@ -42,6 +44,7 @@ public final class ResourceType<L>
         private List<Name> availSetNames = new ArrayList<>();
         private List<MetricType<L>> metricTypes = new ArrayList<>();
         private List<AvailType<L>> availTypes = new ArrayList<>();
+        private List<NotificationType> notificationTypes = new ArrayList<>();
         private List<Operation<L>> operations = new ArrayList<>();
         private List<ResourceConfigurationPropertyType<L>> resourceConfigurationPropertyTypes = new ArrayList<>();
 
@@ -59,6 +62,7 @@ public final class ResourceType<L>
                     Collections.unmodifiableList(availSetNames),
                     Collections.unmodifiableList(metricTypes),
                     Collections.unmodifiableList(availTypes),
+                    Collections.unmodifiableList(notificationTypes),
                     Collections.unmodifiableList(operations),
                     Collections.unmodifiableList(resourceConfigurationPropertyTypes));
         }
@@ -113,6 +117,16 @@ public final class ResourceType<L>
             return getThis();
         }
 
+        public This notificationType(NotificationType notificationType) {
+            this.notificationTypes.add(notificationType);
+            return getThis();
+        }
+
+        public This notificationTypes(Collection<NotificationType> notificationTypes) {
+            this.notificationTypes.addAll(notificationTypes);
+            return getThis();
+        }
+
         public This resourceNameTemplate(String resourceNameTemplate) {
             this.resourceNameTemplate = resourceNameTemplate;
             return getThis();
@@ -141,12 +155,14 @@ public final class ResourceType<L>
     private final Collection<Name> availSetNames;
     private final Collection<MetricType<L>> metricTypes;
     private final Collection<AvailType<L>> availTypes;
+    private final Collection<NotificationType> notifications;
     private final Collection<Operation<L>> operations;
     private final Collection<ResourceConfigurationPropertyType<L>> resourceConfigurationPropertyTypes;
 
     private ResourceType(ID id, Name name, L location, String resourceNameTemplate, Collection<Name> parents,
-            Collection<Name> metricSetNames, Collection<Name> availSetNames, Collection<MetricType<L>> metricTypes,
-            Collection<AvailType<L>> availTypes, Collection<Operation<L>> operations,
+            Collection<Name> metricSetNames, Collection<Name> availSetNames,
+            Collection<MetricType<L>> metricTypes, Collection<AvailType<L>> availTypes,
+            Collection<NotificationType> notifications, Collection<Operation<L>> operations,
             Collection<ResourceConfigurationPropertyType<L>> resourceConfigurationPropertyTypes) {
         super(id, name, location);
         this.resourceNameTemplate = resourceNameTemplate;
@@ -155,6 +171,7 @@ public final class ResourceType<L>
         this.availSetNames = availSetNames;
         this.metricTypes = metricTypes;
         this.availTypes = availTypes;
+        this.notifications = notifications;
         this.operations = operations;
         this.resourceConfigurationPropertyTypes = resourceConfigurationPropertyTypes;
     }
@@ -165,6 +182,10 @@ public final class ResourceType<L>
 
     public Collection<Name> getParents() {
         return parents;
+    }
+
+    public Collection<NotificationType> getNotifications() {
+        return notifications;
     }
 
     public Collection<Name> getMetricSets() {

@@ -599,6 +599,8 @@
                          path="/"
                          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
                          avail-sets="Server Availability">
+        <notification-dmr name="resource-added" />
+
         <resource-config-dmr name="Name"          attribute="name"/>
         <resource-config-dmr name="Product Name"  attribute="product-name" />
         <resource-config-dmr name="Version"       attribute="product-version" />
@@ -645,6 +647,8 @@
       <resource-type-dmr name="Host Controller"
                          resource-name-template="Host Controller [%ManagedServerName]"
                          path="/">
+        <notification-dmr name="resource-added" />
+
         <resource-config-dmr name="Product Name"    attribute="product-name" />
         <resource-config-dmr name="Version"         attribute="product-version" />
         <resource-config-dmr name="Process Type"    attribute="process-type" /> <!-- (Host|Domain) Controller -->
@@ -689,6 +693,8 @@
                          path="/host=*"
                          parents="Host Controller"
                          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics">
+        <notification-dmr name="resource-added" />
+
         <resource-config-dmr name="Name"                 attribute="name"/>
         <resource-config-dmr name="Product Name"         attribute="product-name" />
         <resource-config-dmr name="Version"              attribute="product-version" />
@@ -712,6 +718,8 @@
                          parents="Domain Host"
                          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
                          avail-sets="Server Availability">
+        <notification-dmr name="resource-added" />
+
         <resource-config-dmr name="Name"           attribute="name"/>
         <resource-config-dmr name="Host"           attribute="host"/>
         <resource-config-dmr name="Product Name"   attribute="product-name" />
@@ -738,6 +746,8 @@
                          resource-name-template="Domain WildFly Server Controller [%-]"
                          path="/server-config=*"
                          parents="Domain Host">
+        <notification-dmr name="resource-added" />
+
         <resource-config-dmr name="Name"         attribute="name"/>
         <resource-config-dmr name="Server Group" attribute="group"/>
         <resource-config-dmr name="Auto Start"   attribute="auto-start"/>

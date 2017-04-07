@@ -18,39 +18,29 @@ package org.hawkular.agent.monitor.extension;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.PathElement;
-import org.jboss.as.controller.PersistentResourceDefinition;
 import org.jboss.as.controller.registry.OperationEntry.Flag;
 
-public class DMRResourceTypeDefinition extends MonitorPersistentResourceDefinition {
+public class DMRNotificationDefinition extends MonitorPersistentResourceDefinition {
 
-    public static final DMRResourceTypeDefinition INSTANCE = new DMRResourceTypeDefinition();
+    public static final DMRNotificationDefinition INSTANCE = new DMRNotificationDefinition();
 
-    static final String RESOURCE_TYPE = "resource-type-dmr";
+    static final String NOTIFICATION = "notification-dmr";
 
-    private DMRResourceTypeDefinition() {
-        super(PathElement.pathElement(RESOURCE_TYPE),
+    private DMRNotificationDefinition() {
+        super(PathElement.pathElement(NOTIFICATION),
                 SubsystemExtension.getResourceDescriptionResolver(DMRResourceTypeSetDefinition.RESOURCE_TYPE_SET,
-                        RESOURCE_TYPE),
-                DMRResourceTypeAdd.INSTANCE,
-                DMRResourceTypeRemove.INSTANCE,
+                        DMRResourceTypeDefinition.RESOURCE_TYPE, NOTIFICATION),
+                DMRNotificationAdd.INSTANCE,
+                DMRNotificationRemove.INSTANCE,
                 Flag.RESTART_RESOURCE_SERVICES,
                 Flag.RESTART_RESOURCE_SERVICES);
     }
 
     @Override
     public Collection<AttributeDefinition> getAttributes() {
-        return Arrays.asList(DMRResourceTypeAttributes.ATTRIBUTES);
-    }
-
-    @Override
-    protected List<? extends PersistentResourceDefinition> getChildren() {
-        return Arrays.asList(
-                DMRNotificationDefinition.INSTANCE,
-                DMRResourceConfigDefinition.INSTANCE,
-                DMROperationDefinition.INSTANCE);
+        return Arrays.asList(DMRNotificationAttributes.ATTRIBUTES);
     }
 }

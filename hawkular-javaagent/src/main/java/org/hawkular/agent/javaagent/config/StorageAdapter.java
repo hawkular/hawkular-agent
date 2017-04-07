@@ -65,6 +65,9 @@ public class StorageAdapter implements Validatable {
     @JsonProperty("feedcomm-context")
     private String feedcommContext = "/hawkular/command-gateway/";
 
+    @JsonProperty("hawkular-context")
+    private String hawkularContext = "/hawkular/api/";
+
     @JsonProperty("connect-timeout-secs")
     private Integer connectTimeoutSecs = 10;
 
@@ -85,6 +88,7 @@ public class StorageAdapter implements Validatable {
         this.inventoryContext = original.inventoryContext;
         this.metricsContext = original.metricsContext;
         this.feedcommContext = original.feedcommContext;
+        this.hawkularContext = original.hawkularContext;
         this.connectTimeoutSecs = original.connectTimeoutSecs;
         this.readTimeoutSecs = original.readTimeoutSecs;
     }
@@ -218,6 +222,14 @@ public class StorageAdapter implements Validatable {
 
     public void setFeedcommContext(String feedcommContext) {
         this.feedcommContext = feedcommContext;
+    }
+
+    public String getHawkularContext() {
+        return hawkularContext;
+    }
+
+    public void setHawkularContext(String hawkularContext) {
+        this.hawkularContext = hawkularContext;
     }
 
     public Integer getConnectTimeoutSecs() {

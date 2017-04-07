@@ -32,6 +32,7 @@ import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricTagPayloadBuilder;
+import org.hawkular.agent.monitor.api.NotificationPayloadBuilder;
 import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
@@ -469,5 +470,66 @@ public class HawkularStorageAdapter implements StorageAdapter {
             tenantDataPoints.add(dp);
         }
         return byTenant;
+    }
+
+    @Override
+    public NotificationPayloadBuilder createNotificationPayloadBuilder() {
+        return new NotificationPayloadBuilderImpl();
+    }
+
+    @Override
+    public void store(NotificationPayloadBuilder payloadBuilder, long waitMillis) {
+        try {
+            // get the payload
+            String payload = Util.toJson(payloadBuilder.toPayload());
+
+            // build the REST URL...
+            StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getHawkularContext());
+            url.append("notification");
+
+            // now send the REST request
+            Request request = this.httpClientBuilder.buildJsonPutRequest(url.toString(), agentTenantIdHeader, payload);
+            final CountDownLatch latch = (waitMillis <= 0) ? null : new CountDownLatch(1);
+
+            this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    try {
+                        log.errorFailedToStoreNotification(e, payload);
+                        diagnostics.getStorageErrorRate().mark(1);
+                    } finally {
+                        if (latch != null) {
+                            latch.countDown();
+                        }
+                    }
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    try {
+                        // HTTP status of 200 means success; anything else is an error
+                        if (response.code() != 200) {
+                            IOException e = new IOException("status-code=[" + response.code() + "], reason=["
+                                    + response.message() + "], url=[" + request.url().toString() + "]");
+                            log.errorFailedToStoreNotification(e, payload);
+                            diagnostics.getStorageErrorRate().mark(1);
+                        }
+                    } finally {
+                        if (latch != null) {
+                            latch.countDown();
+                        }
+                        response.body().close();
+                    }
+                }
+            });
+
+            if (latch != null) {
+                latch.await(waitMillis, TimeUnit.MILLISECONDS);
+            }
+
+        } catch (Throwable t) {
+            log.errorFailedToStoreNotification(t, String.valueOf(payloadBuilder.toPayload()));
+            diagnostics.getStorageErrorRate().mark(1);
+        }
     }
 }

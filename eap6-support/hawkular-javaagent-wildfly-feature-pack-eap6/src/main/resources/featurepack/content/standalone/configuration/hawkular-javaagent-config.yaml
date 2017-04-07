@@ -528,6 +528,8 @@ resource-type-set-dmr:
   resource-type-dmr:
   - name: WildFly Server
     resource-name-template: "WildFly Server [%ManagedServerName]"
+    notification-dmr:
+    - name: resource-added
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -609,6 +611,8 @@ resource-type-set-dmr:
   resource-type-dmr:
   - name: Host Controller
     resource-name-template: "Host Controller [%ManagedServerName]"
+    notification-dmr:
+    - name: resource-added
     resource-config-dmr:
     - name: Product Name
       attribute: product-name
@@ -685,6 +689,8 @@ resource-type-set-dmr:
     path: "/host=*"
     parents:
     - Host Controller
+    notification-dmr:
+    - name: resource-added
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -723,6 +729,8 @@ resource-type-set-dmr:
     path: "/server=*"
     parents:
     - Domain Host
+    notification-dmr:
+    - name: resource-added
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -764,6 +772,8 @@ resource-type-set-dmr:
     path: "/server-config=*"
     parents:
     - Domain Host
+    notification-dmr:
+    - name: resource-added
     resource-config-dmr:
     - name: Name
       attribute: name

@@ -21,10 +21,11 @@ import java.util.Set;
 import org.hawkular.agent.monitor.api.AvailStorage;
 import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.api.MetricStorage;
+import org.hawkular.agent.monitor.api.NotificationStorage;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 
-public interface StorageAdapter extends MetricStorage, AvailStorage, InventoryStorage {
+public interface StorageAdapter extends MetricStorage, AvailStorage, InventoryStorage, NotificationStorage {
 
     /**
      * Initializes the storage adapter.
