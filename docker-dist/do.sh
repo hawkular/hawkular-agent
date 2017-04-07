@@ -1,3 +1,4 @@
+#!/usr/bin/env sh
 #
 # Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
 # and other contributors as indicated by the @author tags.
@@ -15,7 +16,17 @@
 # limitations under the License.
 #
 
-# Hawkular Java Agent:
-#   Explicitly tell the VM to use the JBoss Log Manager via -Djava.util.logging.manager system property.
-#   Use the -javaagent VM option to load the Hawkular Java Agent with its config file.
-JAVA_OPTS="$JAVA_OPTS -Djava.util.logging.manager=org.jboss.logmanager.LogManager -javaagent:$JBOSS_HOME/bin/hawkular-javaagent.jar=config=$JBOSS_HOME/standalone/configuration/hawkular-javaagent-config.yaml,delay=10"
+
+docker > /dev/null 2>&1 || { echo "docker is required, but is not found. Make sure it is accessible."; exit 1; }
+
+pushd "$( dirname "${BASH_SOURCE[0]}" )"
+
+echo "Building Docker for Wildfly + Hawkular javaagent."
+docker build -t wildfly-hawkular-javaagent . -f Dockerfile
+
+echo "Building Docker for Wildfly + Hawkular Wildfly Agent (Standalone)."
+docker build -t wildfly-hawkular-agent -f Dockerfile-wf-agent .
+echo "Building Docker for Wildfly + Hawkular Wildfly Agent (Domain)."
+docker build -t wildfly-hawkular-agent-domain -f Dockerfile-wf-agent-domain .
+
+popd
