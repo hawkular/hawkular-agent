@@ -16,58 +16,156 @@
  */
 package org.hawkular.agent.monitor.api;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.hawkular.agent.monitor.inventory.Resource;
+import org.hawkular.agent.monitor.inventory.ResourceManager;
+import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 
 /**
- * A event for changes in the inventory of resources.
- *
- * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
- *
- * @param <T> the type of {@link #payload}
+ * A event for discovery scans.
  *
  * @see InventoryListener
  */
 public class InventoryEvent<L> {
 
     private final SamplingService<L> samplingService;
-    private final List<Resource<L>> payload;
+    private final ResourceManager<L> resourceManager;
+    private final Optional<ResourceTypeManager<L>> resourceTypeManager;
+    private final Map<String, Resource<L>> addedOrModifiedRootResources;
+    private final Map<String, Resource<L>> removedRootResources;
+    private final List<Resource<L>> addedOrModified;
+    private final List<Resource<L>> removed;
 
     /**
-     * Creates an inventory event.
-     *
-     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
+     * Creates a discovery event.
+     *  @param samplingService a service that provides details such as feed ID and endpoint information that helps
      *                        identify the resources in the event, plus has methods that can be used to monitor
      *                        the resources in the event.
-     * @param payload the list of resources associated with this event
+     * @param resourceManager the resources associated with the discovery
+     * @param resourceTypeManager the resource types associated with the discovery. Omit if resource type sync is not
+     *                           needed
+     * @param addedOrModified list of added or modified root resources
+     * @param removed         list of removed root resources
      */
-    public InventoryEvent(SamplingService<L> samplingService, List<Resource<L>> payload) {
+    private InventoryEvent(SamplingService<L> samplingService,
+                          ResourceManager<L> resourceManager,
+                          Optional<ResourceTypeManager<L>> resourceTypeManager,
+                          List<Resource<L>> addedOrModified,
+                          List<Resource<L>> removed) {
         if (samplingService == null) {
             throw new IllegalArgumentException("Sampling service cannot be null");
         }
 
-        if (payload == null) {
-            payload = Collections.emptyList();
+        if (resourceManager == null) {
+            throw new IllegalArgumentException("Resource manager cannot be null");
+        }
+
+        if (resourceTypeManager == null) {
+            throw new IllegalArgumentException("Resource type manager cannot be null");
         }
 
         this.samplingService = samplingService;
-        this.payload = payload;
+        this.resourceManager = resourceManager;
+        this.resourceTypeManager = resourceTypeManager;
+        this.addedOrModified = addedOrModified;
+        this.removed = removed;
+
+        // Distribute 'addedOrModified' and 'removed' in 'addedOrModifiedRootResources' and 'removedRootResources'
+        addedOrModifiedRootResources = new HashMap<>();
+        removedRootResources = new HashMap<>();
+        addedOrModified.forEach(r -> {
+            Resource<L> root = getRootResource(r);
+            addedOrModifiedRootResources.put(root.getID().getIDString(), root);
+        });
+        removed.forEach(r -> {
+            if (r.getParent() == null) {
+                // Root resource removed
+                removedRootResources.put(r.getID().getIDString(), r);
+            } else {
+                Resource<L> root = getRootResource(r);
+                addedOrModifiedRootResources.put(root.getID().getIDString(), root);
+            }
+        });
+    }
+
+    public static <L> InventoryEvent<L> removed(SamplingService<L> samplingService,
+                                              ResourceManager<L> resourceManager,
+                                              List<Resource<L>> removed) {
+        return new InventoryEvent<>(samplingService, resourceManager, Optional.empty(), new ArrayList<>(), removed);
+    }
+
+    public static <L> InventoryEvent<L> addedOrModified(SamplingService<L> samplingService,
+                                              ResourceManager<L> resourceManager,
+                                              List<Resource<L>> addedOrModified) {
+        return new InventoryEvent<>(samplingService, resourceManager, Optional.empty(), addedOrModified, new ArrayList<>());
+    }
+
+    public static <L> InventoryEvent<L> discovery(SamplingService<L> samplingService,
+                                                     ResourceManager<L> resourceManager,
+                                                     ResourceTypeManager<L> resourceTypeManager,
+                                                     List<Resource<L>> addedOrModified,
+                                                     List<Resource<L>> removed) {
+        return new InventoryEvent<>(
+                samplingService,
+                resourceManager,
+                Optional.of(resourceTypeManager),
+                addedOrModified,
+                removed);
+    }
+
+    private static <T> Resource<T> getRootResource(Resource<T> resource) {
+        if (resource.getParent() == null) {
+            return resource;
+        }
+        return getRootResource(resource.getParent());
     }
 
     /**
-     * @return the resources related to this event
-     */
-    public List<Resource<L>> getPayload() {
-        return payload;
-    }
-
-    /**
-     * @return the sampling service able to handle the resources in payload
+     * @return the sampling service associated with the discovery that was performed
      */
     public SamplingService<L> getSamplingService() {
         return samplingService;
     }
 
+    /**
+     * @return the resource manager that was populated by the discovery scan
+     */
+    public ResourceManager<L> getResourceManager() {
+        return resourceManager;
+    }
+
+    /**
+     * @return the resource type manager containing all the types of resources that discovery scans might find
+     */
+    public Optional<ResourceTypeManager<L>> getResourceTypeManager() {
+        return resourceTypeManager;
+    }
+
+    /**
+     * @return the map of added or modified resources during this discovery
+     */
+    public Collection<Resource<L>> getAddedOrModifiedRootResources() {
+        return addedOrModifiedRootResources.values();
+    }
+
+    /**
+     * @return the map of removed resources during this discovery
+     */
+    public Collection<Resource<L>> getRemovedRootResources() {
+        return removedRootResources.values();
+    }
+
+    public List<Resource<L>> getAddedOrModified() {
+        return addedOrModified;
+    }
+
+    public List<Resource<L>> getRemoved() {
+        return removed;
+    }
 }

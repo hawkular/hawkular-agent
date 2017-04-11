@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
-import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.MetricTagPayloadBuilder;
@@ -386,15 +385,15 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public <L> void resourcesAdded(InventoryEvent<L> event) {
+    public <L> void receivedEvent(InventoryEvent<L> event) {
         if (inventoryStorage != null) {
-            inventoryStorage.resourcesAdded(event);
+            inventoryStorage.receivedEvent(event);
         }
 
         // create the metric tags for the metrics associated with the new resource
         SamplingService<L> service = event.getSamplingService();
 
-        for (Resource<L> resource : event.getPayload()) {
+        for (Resource<L> resource : event.getAddedOrModified()) {
             MetricTagPayloadBuilder bldr = createMetricTagPayloadBuilder();
 
             Collection<MeasurementInstance<L, MetricType<L>>> metrics = resource.getMetrics();
@@ -423,22 +422,8 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 store(bldr, 0L);
             }
         }
-    }
-
-    @Override
-    public <L> void resourcesRemoved(InventoryEvent<L> event) {
-        if (inventoryStorage != null) {
-            inventoryStorage.resourcesRemoved(event);
-        }
 
         // TODO: should we delete the metrics from Hawkular Metrics?
-    }
-
-    @Override
-    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
-        if (inventoryStorage != null) {
-            inventoryStorage.discoveryCompleted(event);
-        }
     }
 
     @Override

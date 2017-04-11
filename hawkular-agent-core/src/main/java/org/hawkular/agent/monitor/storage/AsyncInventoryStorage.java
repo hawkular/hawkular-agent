@@ -25,12 +25,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
-import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryStorage;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
@@ -51,7 +51,6 @@ import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyInstanc
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceType;
-import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
@@ -478,62 +477,13 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public <L> void resourcesAdded(InventoryEvent<L> event) {
-        // We don't do anything here - the real work will be done when discovery is completed.
-    }
-
-    @Override
-    public <L> void resourcesRemoved(InventoryEvent<L> event) {
-        // due to the way inventory sync works and how we are using it, we only care about explicitly
-        // removing root resources. We can't individually sync a root resource (because it doesn't exist!)
-        // so we remove it here. Any children resources will be synced via discoveryCompleted so we don't
-        // do anything in here.
-        List<Resource<L>> removedResources = event.getPayload();
-        for (Resource<L> removedResource : removedResources) {
-            if (removedResource.getParent() == null) {
-                try {
-                    log.debugf("Removing root resource: %s", removedResource);
-
-                    MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
-                    String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
-                    String tenantIdToUse = (endpointTenantId != null) ? endpointTenantId : config.getTenantId();
-                    Map<String, String> headers = getTenantHeader(tenantIdToUse);
-
-                    // The final URL should be in the form: strings/inventory.<feedid>.r.<resource_id>
-                    InventoryMetric metric = InventoryMetric.resource(feedId, removedResource.getID().getIDString(), null);
-                    deleteMetric(metric, headers);
-                } catch (InterruptedException ie) {
-                    log.errorFailedToStoreInventoryData(ie);
-                    Thread.currentThread().interrupt(); // preserve interrupt
-                } catch (Exception e) {
-                    log.errorFailedToStoreInventoryData(e);
-                    diagnostics.getStorageErrorRate().mark(1);
-                }
-            }
-        }
-    }
-
-    private void deleteMetric(InventoryMetric metric, Map<String, String> headers) throws Exception {
-        StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
-                .append("strings/")
-                .append(metric.encodedName());
-        Request request = this.httpClientBuilder.buildJsonDeleteRequest(url.toString(), headers);
-        Call call = this.httpClientBuilder.getHttpClient().newCall(request);
-        try (Response response = call.execute()) {
-            if (!response.isSuccessful()) {
-                throw new Exception("status-code=[" + response.code() + "], reason=["
-                        + response.message() + "], url=[" + request.url().toString() + "]");
-            }
-        }
-    }
-
-    @Override
-    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
+    public <L> void receivedEvent(InventoryEvent<L> event) {
+        log.debug("Received inventory event");
         ResourceManager<L> resourceManager = event.getResourceManager();
-        ResourceTypeManager<L> resourceTypeManager = event.getResourceTypeManager();
         MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
         String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
         String tenantIdToUse = (endpointTenantId != null) ? endpointTenantId : config.getTenantId();
+        Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
         InventoryPayloadBuilder<L> bldr = new InventoryPayloadBuilder<>(tenantIdToUse, feedId);
 
@@ -541,30 +491,70 @@ public class AsyncInventoryStorage implements InventoryStorage {
         // types that have already been flagged as having been persisted.
         // We first must persist metric types then resource types (remember, there are no hierarchies,
         // all metric types and resource types are peers to one another).
-        List<ResourceType<L>> allResourceTypes = resourceTypeManager.getResourceTypesBreadthFirst()
-                .stream()
-                .filter(rt -> !rt.isPersisted())
-                .collect(Collectors.toList());
-        Map<MeasurementType<L>, Offline<org.hawkular.inventory.api.model.MetricType.Blueprint>> mtBlueprints;
-        mtBlueprints = bldr.buildMetrics(allResourceTypes);
-        mtBlueprints.forEach((mt, bp) -> performMetricTypeSync(bp, tenantIdToUse));
+        event.getResourceTypeManager().ifPresent(resourceTypeManager -> {
+            List<ResourceType<L>> allResourceTypes = resourceTypeManager.getResourceTypesBreadthFirst()
+                    .stream()
+                    .filter(rt -> !rt.isPersisted())
+                    .collect(Collectors.toList());
+            Map<MeasurementType<L>, Offline<org.hawkular.inventory.api.model.MetricType.Blueprint>> mtBlueprints;
+            mtBlueprints = bldr.buildMetrics(allResourceTypes);
+            mtBlueprints.forEach((mt, bp) -> performMetricTypeSync(bp, tenantIdToUse));
 
-        Map<ResourceType<L>, Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint>> rtBlueprints;
-        rtBlueprints = bldr.build(allResourceTypes);
-        rtBlueprints.forEach((rt, bp) -> performResourceTypeSync(bp, tenantIdToUse));
+            Map<ResourceType<L>, Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint>> rtBlueprints;
+            rtBlueprints = bldr.build(allResourceTypes);
+            rtBlueprints.forEach((rt, bp) -> performResourceTypeSync(bp, tenantIdToUse));
 
-        // indicate we persisted the resource types
-        allResourceTypes.forEach(rt -> rt.setPersisted(true));
+            // indicate we persisted the resource types
+            allResourceTypes.forEach(rt -> rt.setPersisted(true));
+        });
 
         // build the JSON blueprints for the sync resource requests
         // Note that it is possible for a endpoint to define multiple root resources.
         // We have to sync each root resource separately.
-        Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> rBlueprints;
-        rBlueprints = bldr.build(resourceManager);
-        rBlueprints.forEach((r, bp) -> performResourceSync(bp, tenantIdToUse, resourceManager.size(r)));
+        Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> fullTrees
+                = bldr.build(resourceManager);
+        event.getAddedOrModifiedRootResources().forEach(r -> {
+            // find tree from resourceManager, because this resource (r) is without context (full child tree missing)
+            Offline<org.hawkular.inventory.api.model.Resource.Blueprint> bp = fullTrees.get(r);
+            if (bp == null) {
+                log.errorFailedToStoreInventoryData(new NoSuchElementException(r.getID().getIDString()));
+                return;
+            }
+            log.infof("Updating root resource: %s", bp.getRoot().getId());
+            performResourceSync(bp, tenantIdToUse, resourceManager.size(r));
+        });
 
         // indicate we persisted the resources
         resourceManager.getResourcesBreadthFirst().forEach(r -> r.setPersisted(true));
+
+        // Remove root resources
+        event.getRemovedRootResources().forEach(r -> {
+            log.infof("Removing root resource: %s", r.getID().getIDString());
+            InventoryMetric metric = InventoryMetric.resource(feedId, r.getID().getIDString(), null);
+            deleteMetric(metric, headers);
+        });
+    }
+
+    private void deleteMetric(InventoryMetric metric, Map<String, String> headers) {
+        try {
+            StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getMetricsContext())
+                    .append("strings/")
+                    .append(metric.encodedName());
+            Request request = this.httpClientBuilder.buildJsonDeleteRequest(url.toString(), headers);
+            Call call = this.httpClientBuilder.getHttpClient().newCall(request);
+            try (Response response = call.execute()) {
+                if (!response.isSuccessful()) {
+                    throw new Exception("status-code=[" + response.code() + "], reason=["
+                            + response.message() + "], url=[" + request.url().toString() + "]");
+                }
+            }
+        } catch (InterruptedException ie) {
+            log.errorFailedToStoreInventoryData(ie);
+            Thread.currentThread().interrupt(); // preserve interrupt
+        } catch (Exception e) {
+            log.errorFailedToStoreInventoryData(e);
+            diagnostics.getStorageErrorRate().mark(1);
+        }
     }
 
     private void performResourceSync(
