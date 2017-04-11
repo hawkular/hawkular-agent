@@ -43,15 +43,15 @@ public class InventoryEvent<L> {
     private final List<Resource<L>> removed;
 
     /**
-     * Creates a discovery event.
-     *  @param samplingService a service that provides details such as feed ID and endpoint information that helps
+     * Creates an inventory event.
+     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
      *                        identify the resources in the event, plus has methods that can be used to monitor
      *                        the resources in the event.
-     * @param resourceManager the resources associated with the discovery
-     * @param resourceTypeManager the resource types associated with the discovery. Omit if resource type sync is not
+     * @param resourceManager the resources associated with the event
+     * @param resourceTypeManager the resource types associated with the event. Omit if resource type sync is not
      *                           needed
-     * @param addedOrModified list of added or modified root resources
-     * @param removed         list of removed root resources
+     * @param addedOrModified list of added or modified resources
+     * @param removed         list of removed resources
      */
     private InventoryEvent(SamplingService<L> samplingService,
                           ResourceManager<L> resourceManager,
@@ -94,18 +94,44 @@ public class InventoryEvent<L> {
         });
     }
 
+    /**
+     * Build an {@link InventoryEvent} for removed resources
+     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
+     *                        identify the resources in the event, plus has methods that can be used to monitor
+     *                        the resources in the event.
+     * @param resourceManager the resources associated with the event
+     * @param removed         list of removed resources
+     */
     public static <L> InventoryEvent<L> removed(SamplingService<L> samplingService,
                                               ResourceManager<L> resourceManager,
                                               List<Resource<L>> removed) {
         return new InventoryEvent<>(samplingService, resourceManager, Optional.empty(), new ArrayList<>(), removed);
     }
 
+    /**
+     * Build an {@link InventoryEvent} for added or modified resources
+     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
+     *                        identify the resources in the event, plus has methods that can be used to monitor
+     *                        the resources in the event.
+     * @param resourceManager the resources associated with the event
+     * @param addedOrModified list of added or modified resources
+     */
     public static <L> InventoryEvent<L> addedOrModified(SamplingService<L> samplingService,
                                               ResourceManager<L> resourceManager,
                                               List<Resource<L>> addedOrModified) {
         return new InventoryEvent<>(samplingService, resourceManager, Optional.empty(), addedOrModified, new ArrayList<>());
     }
 
+    /**
+     * Build an {@link InventoryEvent} for added or modified resources
+     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
+     *                        identify the resources in the event, plus has methods that can be used to monitor
+     *                        the resources in the event.
+     * @param resourceManager the resources associated with the event
+     * @param resourceTypeManager the resource types associated with the event
+     * @param addedOrModified list of added or modified resources
+     * @param removed         list of removed resources
+     */
     public static <L> InventoryEvent<L> discovery(SamplingService<L> samplingService,
                                                      ResourceManager<L> resourceManager,
                                                      ResourceTypeManager<L> resourceTypeManager,
@@ -127,44 +153,52 @@ public class InventoryEvent<L> {
     }
 
     /**
-     * @return the sampling service associated with the discovery that was performed
+     * @return the contextual sampling service associated with the event
      */
     public SamplingService<L> getSamplingService() {
         return samplingService;
     }
 
     /**
-     * @return the resource manager that was populated by the discovery scan
+     * @return the resource manager that was populated for this event
      */
     public ResourceManager<L> getResourceManager() {
         return resourceManager;
     }
 
     /**
-     * @return the resource type manager containing all the types of resources that discovery scans might find
+     * @return when relevant, the resource type manager containing all the types of resources that discovery scans
+     * might find
      */
     public Optional<ResourceTypeManager<L>> getResourceTypeManager() {
         return resourceTypeManager;
     }
 
     /**
-     * @return the map of added or modified resources during this discovery
+     * @return the list of added or modified root resources. Note that if a non-root resource was removed, its root
+     * resource will be listed here.
      */
     public Collection<Resource<L>> getAddedOrModifiedRootResources() {
         return addedOrModifiedRootResources.values();
     }
 
     /**
-     * @return the map of removed resources during this discovery
+     * @return the list of removed root resources
      */
     public Collection<Resource<L>> getRemovedRootResources() {
         return removedRootResources.values();
     }
 
+    /**
+     * @return the list of added or modified resources, including non-root resources
+     */
     public List<Resource<L>> getAddedOrModified() {
         return addedOrModified;
     }
 
+    /**
+     * @return the list of removed resources, including non-root resources
+     */
     public List<Resource<L>> getRemoved() {
         return removed;
     }
