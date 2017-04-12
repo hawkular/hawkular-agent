@@ -238,6 +238,7 @@
                       <groupId>org.hawkular.agent</groupId>
                       <artifactId>hawkular-javaagent</artifactId>
                       <version>${project.version}</version>
+                      <classifier>shaded</classifier>
                     </artifactItem>
                   </artifactItems>
                   <outputDirectory>${hawkular.agent.itest.javaagent.dir}</outputDirectory>
@@ -372,7 +373,7 @@
                     <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
                     <javaOpt>-Dhawkular.backend=embedded_cassandra</javaOpt>
                     <javaOpt>${debug.hawkular.argLine}</javaOpt>
-                    <javaOpt>-javaagent:${hawkular.agent.itest.javaagent.dir}/hawkular-javaagent.jar=config=${hawkular.agent.itest.javaagent.configfile},delay=30</javaOpt>
+                    <javaOpt>-javaagent:${hawkular.agent.itest.javaagent.dir}/hawkular-javaagent-shaded.jar=config=${hawkular.agent.itest.javaagent.configfile},delay=30</javaOpt>
                   </javaOpts>
                   <add-user>
                     <users>

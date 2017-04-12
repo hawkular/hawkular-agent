@@ -7,7 +7,7 @@ This provides a Java Agent that can be installed in any VM via the -javaagent co
 To attach the Hawkular Java Agent to your running application's VM, pass the following option to your Java application's command line:
 
 ```
--javaagent:hawkular-javaagent-*.jar=config=hawkular-javaagent-config.yaml,delay=10"
+-javaagent:hawkular-javaagent-shaded-*.jar=config=hawkular-javaagent-config.yaml,delay=10"
 ```
 
 Of course, make sure the path names point to the correct Hawkular Java Agent jar and its configuration file.  The `delay` option tells the agent to delay its start up the given number of seconds. This is useful to give your main application time to start up before the agent starts monitoring it.

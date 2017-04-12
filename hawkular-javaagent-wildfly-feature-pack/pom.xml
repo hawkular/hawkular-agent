@@ -37,6 +37,7 @@
       <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-javaagent</artifactId>
       <version>${project.version}</version>
+      <classifier>shaded</classifier>
     </dependency>
 
     <!-- feature pack dependencies -->
