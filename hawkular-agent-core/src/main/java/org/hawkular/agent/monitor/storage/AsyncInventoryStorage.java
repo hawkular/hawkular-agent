@@ -530,7 +530,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         // Remove root resources
         event.getRemovedRootResources().forEach(r -> {
             log.infof("Removing root resource: %s", r.getID().getIDString());
-            InventoryMetric metric = InventoryMetric.resource(feedId, r.getID().getIDString(), null);
+            InventoryMetric metric = InventoryMetric.resource(feedId, r.getID().getIDString(), null, null);
             deleteMetric(metric, headers);
         });
     }
@@ -564,8 +564,17 @@ public class AsyncInventoryStorage implements InventoryStorage {
         if (resourceStructure.getRoot() != null) {
             try {
                 Map<String, Collection<String>> resourceTypes = extractResourceTypes(resourceStructure);
-                InventoryMetric metric = InventoryMetric.resource(feedId, resourceStructure.getRoot().getId(), resourceTypes.keySet());
-                syncInventoryData(metric, new ExtendedInventoryStructure(resourceStructure, resourceTypes), tenantIdToUse, totalResourceCount);
+                Map<String, Collection<String>> metricTypes = extractMetricTypes(resourceStructure);
+                InventoryMetric metric = InventoryMetric.resource(
+                        feedId,
+                        resourceStructure.getRoot().getId(),
+                        resourceTypes.keySet(),
+                        metricTypes.keySet());
+                syncInventoryData(
+                        metric,
+                        new ExtendedInventoryStructure(resourceStructure, resourceTypes, metricTypes),
+                        tenantIdToUse,
+                        totalResourceCount);
             } catch (InterruptedException ie) {
                 log.errorFailedToStoreInventoryData(ie);
                 Thread.currentThread().interrupt(); // preserve interrupt
@@ -603,13 +612,40 @@ public class AsyncInventoryStorage implements InventoryStorage {
         });
     }
 
+    private static Map<String, Collection<String>> extractMetricTypes(
+            InventoryStructure<org.hawkular.inventory.api.model.Resource.Blueprint> resourceStructure) {
+        Map<String, Collection<String>> metricsPerType = new HashMap<>();
+        extractMetricTypesForNode(resourceStructure, RelativePath.empty().get(), metricsPerType);
+        return metricsPerType;
+    }
+
+    private static void extractMetricTypesForNode(
+            InventoryStructure<org.hawkular.inventory.api.model.Resource.Blueprint> resourceStructure,
+            RelativePath nodePath,
+            Map<String, Collection<String>> metricsPerType) {
+        Entity.Blueprint bp = resourceStructure.get(nodePath);
+        if (bp instanceof org.hawkular.inventory.api.model.Metric.Blueprint) {
+            CanonicalPath metricTypePath = CanonicalPath.fromString(
+                    ((org.hawkular.inventory.api.model.Metric.Blueprint)bp).getMetricTypePath());
+            Collection<String> idsForType = metricsPerType.computeIfAbsent(metricTypePath.getSegment().getElementId(),
+                    k -> new ArrayList<>());
+            idsForType.add(nodePath.toString());
+        }
+        // Process children
+        resourceStructure.getAllChildren(nodePath).forEach(child -> {
+            SegmentType childSegmentType = Inventory.types().byBlueprint(child.getClass()).getSegmentType();
+            RelativePath childPath = nodePath.modified().extend(childSegmentType, child.getId()).get();
+            extractMetricTypesForNode(resourceStructure, childPath, metricsPerType);
+        });
+    }
+
     private void performResourceTypeSync(
             Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint> resourceTypeStructure,
             String tenantIdToUse) {
         if (resourceTypeStructure.getRoot() != null) {
             try {
                 InventoryMetric metric = InventoryMetric.resourceType(feedId, resourceTypeStructure.getRoot().getId());
-                syncInventoryData(metric, new ExtendedInventoryStructure(resourceTypeStructure, null), tenantIdToUse, 1);
+                syncInventoryData(metric, new ExtendedInventoryStructure(resourceTypeStructure), tenantIdToUse, 1);
             } catch (InterruptedException ie) {
                 log.errorFailedToStoreInventoryData(ie);
                 Thread.currentThread().interrupt(); // preserve interrupt
@@ -627,7 +663,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         if (metricTypeStructure.getRoot() != null) {
             try {
                 InventoryMetric metric = InventoryMetric.metricType(feedId, metricTypeStructure.getRoot().getId());
-                syncInventoryData(metric, new ExtendedInventoryStructure(metricTypeStructure, null), tenantIdToUse, 1);
+                syncInventoryData(metric, new ExtendedInventoryStructure(metricTypeStructure), tenantIdToUse, 1);
             } catch (InterruptedException ie) {
                 log.errorFailedToStoreInventoryData(ie);
                 Thread.currentThread().interrupt(); // preserve interrupt

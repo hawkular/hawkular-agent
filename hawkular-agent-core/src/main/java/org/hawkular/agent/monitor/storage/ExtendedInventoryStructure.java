@@ -32,12 +32,22 @@ public class ExtendedInventoryStructure {
     private final InventoryStructure<?> structure;
     @JsonProperty("typesIndex")
     private final Map<String, Collection<String>> typesIndex;
+    @JsonProperty("metricTypesIndex")
+    private final Map<String, Collection<String>> metricTypesIndex;
 
     @JsonCreator
     public ExtendedInventoryStructure(@JsonProperty("inventoryStructure") InventoryStructure<?> structure,
-                               @JsonProperty("typesIndex") Map<String, Collection<String>> typesIndex) {
+                               @JsonProperty("typesIndex") Map<String, Collection<String>> typesIndex,
+                               @JsonProperty("metricTypesIndex") Map<String, Collection<String>> metricTypesIndex) {
         this.structure = structure;
         this.typesIndex = typesIndex;
+        this.metricTypesIndex = metricTypesIndex;
+    }
+
+    public ExtendedInventoryStructure(InventoryStructure<?> structure) {
+        this.structure = structure;
+        this.typesIndex = null;
+        this.metricTypesIndex = null;
     }
 
     public InventoryStructure<?> getStructure() {
@@ -46,5 +56,9 @@ public class ExtendedInventoryStructure {
 
     public Map<String, Collection<String>> getTypesIndex() {
         return typesIndex;
+    }
+
+    public Map<String, Collection<String>> getMetricTypesIndex() {
+        return metricTypesIndex;
     }
 }

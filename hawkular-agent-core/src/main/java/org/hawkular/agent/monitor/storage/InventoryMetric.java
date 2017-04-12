@@ -34,24 +34,26 @@ class InventoryMetric {
     private final String type;
     private final String id;
     private final Set<String> resourceTypes;
+    private final Set<String> metricTypes;
 
-    private InventoryMetric(String feed, String type, String id, Set<String> resourceTypes) {
+    private InventoryMetric(String feed, String type, String id, Set<String> resourceTypes, Set<String> metricTypes) {
         this.feed = feed;
         this.type = type;
         this.id = id;
         this.resourceTypes = resourceTypes;
+        this.metricTypes = metricTypes;
     }
 
-    static InventoryMetric resource(String feed, String id, Set<String> resourceTypes) {
-        return new InventoryMetric(feed, "r", id, resourceTypes);
+    static InventoryMetric resource(String feed, String id, Set<String> resourceTypes, Set<String> metricTypes) {
+        return new InventoryMetric(feed, "r", id, resourceTypes, metricTypes);
     }
 
     static InventoryMetric resourceType(String feed, String id) {
-        return new InventoryMetric(feed, "rt", id, null);
+        return new InventoryMetric(feed, "rt", id, null, null);
     }
 
     static InventoryMetric metricType(String feed, String id) {
-        return new InventoryMetric(feed, "mt", id, null);
+        return new InventoryMetric(feed, "mt", id, null, null);
     }
 
     String getFeed() {
@@ -97,7 +99,7 @@ class InventoryMetric {
     }
 
     public WithData full(byte[] data) {
-        return new WithData(feed, type, id, resourceTypes,
+        return new WithData(feed, type, id, resourceTypes, metricTypes,
                 Collections.singletonList(InventoryStringDataPoint.create(System.currentTimeMillis(), data)));
     }
 
@@ -111,7 +113,7 @@ class InventoryMetric {
         }
         // Set size in master chunk
         data.get(0).setMasterInfo(chunks.size(), totalSize);
-        return new WithData(feed, type, id, resourceTypes, data);
+        return new WithData(feed, type, id, resourceTypes, metricTypes, data);
     }
 
     public MetricDefinition toMetricDefinition() {
@@ -124,6 +126,10 @@ class InventoryMetric {
             def.addTag("restypes",
                     "|" + resourceTypes.stream().collect(Collectors.joining("|")) + "|");
         }
+        if (metricTypes != null) {
+            def.addTag("mtypes",
+                    "|" + metricTypes.stream().collect(Collectors.joining("|")) + "|");
+        }
         return def;
     }
 
@@ -134,8 +140,9 @@ class InventoryMetric {
                          String type,
                          String id,
                          Set<String> resourceTypes,
+                         Set<String> metricTypes,
                          List<InventoryStringDataPoint> data) {
-            super(feed, type, id, resourceTypes);
+            super(feed, type, id, resourceTypes, metricTypes);
             this.data = data;
         }
 
