@@ -274,6 +274,10 @@ public class ConfigConverter {
             // this is a "remote" endpoint, pointing to the local machine.
             // If user doesn't like these defaults, let them define their own remote-dmr
             String localHost = System.getProperty("jboss.bind.address.management", "127.0.0.1");
+            // If bind address is 0.0.0.0 just use 127.0.0.1
+            if (localHost.equals("0.0.0.0")) {
+                localHost = "127.0.0.1";
+            }
             int localPortOffset;
             int localPort;
             try {
