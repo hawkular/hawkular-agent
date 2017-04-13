@@ -22,6 +22,8 @@ IMAGES="wildfly-hawkular-agent-domain \
         wildfly-hawkular-agent \
         wildfly-hawkular-javaagent"
 
+OWNER="${OWNER:-hawkular}"
+
 if [[ "${TRAVIS_TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.Final$ ]]; then
 
   # build the images
@@ -34,10 +36,10 @@ if [[ "${TRAVIS_TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.Final$ ]]; then
 
   # push the latest and ${TRAVIS_TAG} images
   for image in ${IMAGES}; do
-    docker tag $image:latest hawkular/$image:${TRAVIS_TAG}
-    docker tag $image:latest hawkular/$image:latest
-    docker push hawkular/$image:${TRAVIS_TAG}
-    docker push hawkular/$image:latest
+    docker tag $image:latest $OWNER/$image:${TRAVIS_TAG}
+    docker tag $image:latest $OWNER/$image:latest
+    docker push $OWNER/$image:${TRAVIS_TAG}
+    docker push $OWNER/$image:latest
   done
 
   docker logout
