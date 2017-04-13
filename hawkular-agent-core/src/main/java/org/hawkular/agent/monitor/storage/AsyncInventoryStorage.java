@@ -22,10 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -39,6 +37,7 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageAda
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
+import org.hawkular.agent.monitor.inventory.IDObject;
 import org.hawkular.agent.monitor.inventory.Instance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MetricType;
@@ -95,118 +94,49 @@ public class AsyncInventoryStorage implements InventoryStorage {
         private final String feedId;
         private final String tenantId;
 
-        private enum IdType {
-            RESOURCE_TYPE, METRIC_TYPE
-        }
-
-        private final Map<IdType, Set<String>> addedIds; // tracks what we already added so we don't add duplicates
-
-        public InventoryPayloadBuilder(String tenantId, String feedId) {
+        InventoryPayloadBuilder(String tenantId, String feedId) {
             this.tenantId = tenantId;
             this.feedId = feedId;
-            this.addedIds = new HashMap<>();
         }
 
         /**
-         * Builds a sync structure that can be sent to {@code /sync} endpoint of Inventory
+         * Builds a sync structure that can be sent to Inventory metrics
          * in order to sync resources in the given resource manager. No types are synced.
-         *
-         * @param resourceManager the resources to be sync'ed
-         * @return sync structure for each root resource in the given resource manager
+         * @param resourceManager the resources manager
+         * @param root the root resource to be sync'ed
+         * @return sync structure for root resource in the given resource manager
          */
-        public Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> build(
-                ResourceManager<L> resourceManager) {
-
-            Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> retVal;
-            Set<Resource<L>> roots = resourceManager.getRootResources();
-            retVal = new HashMap<>(roots.size());
-
-            synchronized (addedIds) {
-                prepareAddedIds();
-
-                // recursively builds the sync structure starting at the roots of the inventory
-                for (Resource<L> root : roots) {
-                    InventoryStructure.Builder<org.hawkular.inventory.api.model.Resource.Blueprint> invBldr;
-                    org.hawkular.inventory.api.model.Resource.Blueprint rootBP = buildResourceBlueprint(root);
-                    invBldr = InventoryStructure.Offline.of(rootBP);
-                    resource(resourceManager, root, invBldr);
-                    retVal.put(root, invBldr.build());
-                }
-            }
-
-            return retVal;
+        Offline<org.hawkular.inventory.api.model.Resource.Blueprint> buildRootResource(
+                ResourceManager<L> resourceManager,
+                Resource<L> root) {
+            org.hawkular.inventory.api.model.Resource.Blueprint rootBP = buildResourceBlueprint(root);
+            InventoryStructure.Builder<org.hawkular.inventory.api.model.Resource.Blueprint> invBldr
+                    = InventoryStructure.Offline.of(rootBP);
+            resource(resourceManager, root, invBldr);
+            return invBldr.build();
         }
 
         /**
-         * Builds structures that can be sent to inventory to create or update resource types.
-         * @return inventory structures all rooted at the given resource types
+         * Builds structure that can be sent to inventory to create or update resource type.
+         * @return inventory structure rooted at the given resource type
          */
-        public Map<ResourceType<L>, Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint>> build(
-                List<ResourceType<L>> resourceTypes) {
-
-            Map<ResourceType<L>, Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint>> retVal;
-            retVal = new HashMap<>(resourceTypes.size());
-
-            synchronized (addedIds) {
-                prepareAddedIds();
-
-                // we don't sync parent-child relations for types; all types are stored at root level in inventory
-                for (ResourceType<L> rt : resourceTypes) {
-                    InventoryStructure.Builder<org.hawkular.inventory.api.model.ResourceType.Blueprint> invBldr;
-                    org.hawkular.inventory.api.model.ResourceType.Blueprint rtBP = buildResourceTypeBlueprint(rt);
-                    invBldr = InventoryStructure.Offline.of(rtBP);
-                    resourceType(rt, invBldr);
-                    retVal.put(rt, invBldr.build());
-                }
-            }
-
-            return retVal;
+        Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint> buildResourceType(ResourceType<L> resourceType) {
+            // we don't sync parent-child relations for types; all types are stored at root level in inventory
+            InventoryStructure.Builder<org.hawkular.inventory.api.model.ResourceType.Blueprint> invBldr;
+            invBldr = InventoryStructure.Offline.of(buildResourceTypeBlueprint(resourceType));
+            resourceType(resourceType, invBldr);
+            return invBldr.build();
         }
 
         /**
-         * Builds structures that can be sent to inventory to create or update metric types.
+         * Builds structure that can be sent to inventory to create or update metric type.
          *
-         * @param resourceTypes all resource types whose metrics are to be processed
-         * @return inventory structures all rooted at the given resource types
+         * @param measurementType the measurement type
+         * @return inventory structure rooted at the given measurement type
          */
-        public Map<MeasurementType<L>, Offline<org.hawkular.inventory.api.model.MetricType.Blueprint>> buildMetrics(
-                List<ResourceType<L>> resourceTypes) {
-
-            Set<MeasurementType<L>> measTypes = new HashSet<>();
-            for (ResourceType<L> resourceType : resourceTypes) {
-                if (!resourceType.isPersisted()) {
-                    measTypes.addAll(resourceType.getMetricTypes().stream().filter(t -> !t.isPersisted())
-                            .collect(Collectors.toList()));
-                    measTypes.addAll(resourceType.getAvailTypes().stream().filter(t -> !t.isPersisted())
-                            .collect(Collectors.toList()));
-                }
-            }
-
-            Map<MeasurementType<L>, Offline<org.hawkular.inventory.api.model.MetricType.Blueprint>> retVal;
-            retVal = new HashMap<>(measTypes.size());
-
-            synchronized (addedIds) {
-                prepareAddedIds();
-
-                // we don't sync parent-child relations for types; all types are stored at root level in inventory
-                for (MeasurementType<L> mt : measTypes) {
-                    if (!addedIds.get(IdType.METRIC_TYPE).add(mt.getID().getIDString())) {
-                        continue; // we already did this metric type
-                    }
-                    InventoryStructure.Builder<org.hawkular.inventory.api.model.MetricType.Blueprint> invBldr;
-                    org.hawkular.inventory.api.model.MetricType.Blueprint mtBP = buildMetricTypeBlueprint(mt);
-                    invBldr = InventoryStructure.Offline.of(mtBP);
-                    retVal.put(mt, invBldr.build());
-                }
-            }
-
-            return retVal;
-        }
-
-        private void prepareAddedIds() {
-            addedIds.clear();
-            addedIds.put(IdType.RESOURCE_TYPE, new HashSet<>());
-            addedIds.put(IdType.METRIC_TYPE, new HashSet<>());
+        Offline<org.hawkular.inventory.api.model.MetricType.Blueprint> buildMetricType(MeasurementType<L> measurementType) {
+            org.hawkular.inventory.api.model.MetricType.Blueprint mtBP = buildMetricTypeBlueprint(measurementType);
+            return InventoryStructure.Offline.of(mtBP).build();
         }
 
         private org.hawkular.inventory.api.model.Resource.Blueprint buildResourceBlueprint(Resource<L> resource) {
@@ -314,11 +244,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
 
         private void resourceType(ResourceType<L> resourceType, AbstractBuilder<?> theBuilder) {
-
-            if (!addedIds.get(IdType.RESOURCE_TYPE).add(theBuilder.getBlueprint().getId())) {
-                return; // we already did this resource type
-            }
-
             // operations (which are children of the resource type)
             Collection<? extends Operation<L>> ops = resourceType.getOperations();
             for (Operation<L> op : ops) {
@@ -459,10 +384,13 @@ public class AsyncInventoryStorage implements InventoryStorage {
     private final AgentCoreEngineConfiguration.StorageAdapterConfiguration config;
     private final HttpClientBuilder httpClientBuilder;
     private final Diagnostics diagnostics;
+    // Visible for testing
+    final long persistenceRefreshDelay;
 
     public AsyncInventoryStorage(
             String feedId,
             StorageAdapterConfiguration config,
+            int autoDiscoveryScanPeriodSeconds,
             HttpClientBuilder httpClientBuilder,
             Diagnostics diagnostics) {
         super();
@@ -470,10 +398,19 @@ public class AsyncInventoryStorage implements InventoryStorage {
         this.config = config;
         this.httpClientBuilder = httpClientBuilder;
         this.diagnostics = diagnostics;
+        // Data will be refreshed after a given delay even when it's been persisted,
+        // to make sure it's not lost due to Metric's TTL
+        persistenceRefreshDelay = TimeUnit.DAYS.toMillis(InventoryMetric.DATA_RETENTION)
+                - TimeUnit.SECONDS.toMillis(autoDiscoveryScanPeriodSeconds)
+                - 300000L; // Additional 5min safety delay (but is it really necessary?)
     }
 
     public void shutdown() {
         log.debugf("Shutting down async inventory storage");
+    }
+
+    private boolean needToRefresh(IDObject idObject) {
+        return System.currentTimeMillis() > idObject.getPersistedTime() + persistenceRefreshDelay;
     }
 
     @Override
@@ -486,46 +423,49 @@ public class AsyncInventoryStorage implements InventoryStorage {
         Map<String, String> headers = getTenantHeader(tenantIdToUse);
 
         InventoryPayloadBuilder<L> bldr = new InventoryPayloadBuilder<>(tenantIdToUse, feedId);
+        long timestamp = System.currentTimeMillis();
 
         // Since we know types never change during the lifetime of the agent, we don't have to process
         // types that have already been flagged as having been persisted.
         // We first must persist metric types then resource types (remember, there are no hierarchies,
         // all metric types and resource types are peers to one another).
         event.getResourceTypeManager().ifPresent(resourceTypeManager -> {
-            List<ResourceType<L>> allResourceTypes = resourceTypeManager.getResourceTypesBreadthFirst()
-                    .stream()
-                    .filter(rt -> !rt.isPersisted())
-                    .collect(Collectors.toList());
-            Map<MeasurementType<L>, Offline<org.hawkular.inventory.api.model.MetricType.Blueprint>> mtBlueprints;
-            mtBlueprints = bldr.buildMetrics(allResourceTypes);
-            mtBlueprints.forEach((mt, bp) -> performMetricTypeSync(bp, tenantIdToUse));
+            List<ResourceType<L>> allResourceTypes = resourceTypeManager.getResourceTypesBreadthFirst();
+            getMetricTypesToSync(allResourceTypes).forEach(mt -> {
+                log.infof("Updating metric type: %s", mt.getID().getIDString());
+                performMetricTypeSync(bldr.buildMetricType(mt), tenantIdToUse);
+                // indicate we persisted the resource
+                mt.setPersistedTime(timestamp);
+            });
 
-            Map<ResourceType<L>, Offline<org.hawkular.inventory.api.model.ResourceType.Blueprint>> rtBlueprints;
-            rtBlueprints = bldr.build(allResourceTypes);
-            rtBlueprints.forEach((rt, bp) -> performResourceTypeSync(bp, tenantIdToUse));
-
-            // indicate we persisted the resource types
-            allResourceTypes.forEach(rt -> rt.setPersisted(true));
+            allResourceTypes.stream()
+                    .filter(this::needToRefresh)
+                    .forEach(rt -> {
+                        log.infof("Updating resource type: %s", rt.getID().getIDString());
+                        performResourceTypeSync(bldr.buildResourceType(rt), tenantIdToUse);
+                        // indicate we persisted the resource
+                        rt.setPersistedTime(timestamp);
+                    });
         });
 
         // build the JSON blueprints for the sync resource requests
         // Note that it is possible for a endpoint to define multiple root resources.
         // We have to sync each root resource separately.
-        Map<Resource<L>, Offline<org.hawkular.inventory.api.model.Resource.Blueprint>> fullTrees
-                = bldr.build(resourceManager);
-        event.getAddedOrModifiedRootResources().forEach(r -> {
-            // find tree from resourceManager, because this resource (r) is without context (full child tree missing)
-            Offline<org.hawkular.inventory.api.model.Resource.Blueprint> bp = fullTrees.get(r);
-            if (bp == null) {
-                log.errorFailedToStoreInventoryData(new NoSuchElementException(r.getID().getIDString()));
-                return;
+        Set<ID> addedOrModifiedIds = event.getAddedOrModifiedRootResources().stream()
+                .map(IDObject::getID)
+                .collect(Collectors.toSet());
+        resourceManager.getRootResources().forEach(r -> {
+            // Ignore unmodified resources that doesn't need to be refreshed
+            if (addedOrModifiedIds.contains(r.getID()) || needToRefresh(r)) {
+                log.infof("Updating root resource: %s", r.getID().getIDString());
+                performResourceSync(
+                        bldr.buildRootResource(resourceManager, r),
+                        tenantIdToUse,
+                        resourceManager.size(r));
+                // indicate we persisted the resource
+                r.setPersistedTime(timestamp);
             }
-            log.infof("Updating root resource: %s", bp.getRoot().getId());
-            performResourceSync(bp, tenantIdToUse, resourceManager.size(r));
         });
-
-        // indicate we persisted the resources
-        resourceManager.getResourcesBreadthFirst().forEach(r -> r.setPersisted(true));
 
         // Remove root resources
         event.getRemovedRootResources().forEach(r -> {
@@ -533,6 +473,19 @@ public class AsyncInventoryStorage implements InventoryStorage {
             InventoryMetric metric = InventoryMetric.resource(feedId, r.getID().getIDString(), null, null);
             deleteMetric(metric, headers);
         });
+    }
+
+    private <L> Collection<MeasurementType<L>> getMetricTypesToSync(List<ResourceType<L>> resourceTypes) {
+        Map<String, MeasurementType<L>> measTypes = new HashMap<>();
+        resourceTypes.forEach(rt -> {
+            rt.getMetricTypes().stream()
+                    .filter(this::needToRefresh)
+                    .forEach(mt -> measTypes.put(mt.getID().getIDString(), mt));
+            rt.getAvailTypes().stream()
+                    .filter(this::needToRefresh)
+                    .forEach(mt -> measTypes.put(mt.getID().getIDString(), mt));
+        });
+        return measTypes.values();
     }
 
     private void deleteMetric(InventoryMetric metric, Map<String, String> headers) {

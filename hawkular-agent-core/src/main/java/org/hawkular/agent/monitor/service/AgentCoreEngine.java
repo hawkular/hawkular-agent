@@ -545,7 +545,12 @@ public abstract class AgentCoreEngine {
     private void startStorageAdapter() throws Exception {
         // create the storage adapter that will write our metrics/inventory data to backend storage on server
         this.storageAdapter = new HawkularStorageAdapter();
-        this.storageAdapter.initialize(feedId, configuration.getStorageAdapter(), diagnostics, httpClientBuilder);
+        this.storageAdapter.initialize(
+                feedId,
+                configuration.getStorageAdapter(),
+                configuration.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds(),
+                diagnostics,
+                httpClientBuilder);
 
         // provide our storage adapter to the proxies - allows external apps to use them to store its own data
         metricStorageProxy.setStorageAdapter(storageAdapter);

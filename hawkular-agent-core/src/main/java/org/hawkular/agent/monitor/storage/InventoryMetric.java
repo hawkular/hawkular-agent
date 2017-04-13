@@ -28,7 +28,7 @@ import org.hawkular.agent.monitor.util.Util;
  * @author Joel Takvorian
  */
 class InventoryMetric {
-    private static final int DATA_RETENTION = 365;
+    static final int DATA_RETENTION = 7;
 
     private final String feed;
     private final String type;
