@@ -85,7 +85,6 @@ public class LocalAndRemoteJmxITest extends AbstractITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "testLocalJmxResources" })
-    // FIXME: lost traversal
     public void testRemoteJmxResources() throws Throwable {
         // make sure the JMX resource is there
         Entity.Blueprint runtime = (Entity.Blueprint) testHelper.waitForResourceContaining(
