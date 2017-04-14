@@ -23,7 +23,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
@@ -128,32 +127,21 @@ public class SchedulerService implements InventoryListener {
     }
 
     @Override
-    public <L> void resourcesAdded(InventoryEvent<L> event) {
-        List<Resource<L>> resources = event.getPayload();
+    public <L> void receivedEvent(InventoryEvent<L> event) {
+        List<Resource<L>> added = event.getAddedOrModified();
+        List<Resource<L>> removed = event.getRemoved();
         SamplingService<L> service = event.getSamplingService();
 
         log.debugf("Scheduling jobs for [%d] new resources for endpoint [%s]",
-                resources.size(), service.getMonitoredEndpoint());
+                added.size(), service.getMonitoredEndpoint());
 
-        ((MeasurementScheduler) metricScheduler).schedule(service, resources);
-        ((MeasurementScheduler) availScheduler).schedule(service, resources);
-    }
-
-    @Override
-    public <L> void resourcesRemoved(InventoryEvent<L> event) {
-        List<Resource<L>> resources = event.getPayload();
-        SamplingService<L> service = event.getSamplingService();
+        ((MeasurementScheduler) metricScheduler).schedule(service, added);
+        ((MeasurementScheduler) availScheduler).schedule(service, added);
 
         log.debugf("Unscheduling jobs for [%d] obsolete resources for endpoint [%s]",
-                resources.size(), service.getMonitoredEndpoint());
+                removed.size(), service.getMonitoredEndpoint());
 
-        unschedule(service, resources);
-    }
-
-    @Override
-    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
-        // not interested in this
-        return;
+        unschedule(service, removed);
     }
 
     public <L> void unschedule(SamplingService<L> service, Collection<Resource<L>> resources) {

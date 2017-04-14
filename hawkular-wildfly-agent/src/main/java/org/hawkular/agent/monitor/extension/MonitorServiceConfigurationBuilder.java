@@ -967,7 +967,6 @@ public class MonitorServiceConfigurationBuilder {
                 StorageAttributes.SERVER_OUTBOUND_SOCKET_BINDING_REF);
         String tenantId = getString(storageAdapterConfig, context, StorageAttributes.TENANT_ID);
         String feedId = getString(storageAdapterConfig, context, StorageAttributes.FEED_ID);
-        String inventoryContext = getString(storageAdapterConfig, context, StorageAttributes.INVENTORY_CONTEXT);
         String metricsContext = getString(storageAdapterConfig, context, StorageAttributes.METRICS_CONTEXT);
         String feedcommContext = getString(storageAdapterConfig, context, StorageAttributes.FEEDCOMM_CONTEXT);
         String username = getString(storageAdapterConfig, context, StorageAttributes.USERNAME);
@@ -995,7 +994,7 @@ public class MonitorServiceConfigurationBuilder {
         }
 
         return new StorageAdapterConfiguration(type, username, password, tenantId, feedId, url, useSSL,
-                serverOutboundSocketBindingRef, inventoryContext, metricsContext, feedcommContext,
+                serverOutboundSocketBindingRef, metricsContext, feedcommContext,
                 keystorePath, keystorePassword, securityRealm, connectTimeoutSeconds, readTimeoutSeconds);
     }
 

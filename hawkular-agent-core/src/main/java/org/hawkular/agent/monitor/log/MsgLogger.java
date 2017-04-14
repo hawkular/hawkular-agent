@@ -98,10 +98,6 @@ public interface MsgLogger extends BasicLogger {
     void errorFailedToStoreInventoryData(@Cause Throwable t);
 
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10026, value = "Can't do anything without a feed; aborting startup")
-    void errorCannotDoAnythingWithoutFeed(@Cause Throwable t);
-
-    @LogMessage(level = Level.ERROR)
     @Message(id = 10028, value = "Cannot start storage adapter; aborting startup")
     void errorCannotStartStorageAdapter(@Cause Throwable t);
 
@@ -210,24 +206,12 @@ public interface MsgLogger extends BasicLogger {
     void errorFailedToDiscoverResources(@Cause Throwable t, MonitoredEndpoint<?> endpoint);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10063, value = "Feed ID [%s] has been registered under tenant ID [%s]")
-    void infoUsingFeedId(String id, String tenantId);
-
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10064, value = "Server gave us a feed ID [%s] but we wanted [%s] under tenant ID [%s]")
-    void errorUnwantedFeedId(String acquiredFeedId, String desiredFeedId, String tenantId);
-
-    @LogMessage(level = Level.INFO)
     @Message(id = 10065, value = "Received request to perform [%s] on a [%s] given by inventory path [%s]")
     void infoReceivedResourcePathCommand(String operationName, String entityType, String resourcePath);
 
     @LogMessage(level = Level.DEBUG) // making DEBUG as this gets noisy if you run discovery often enough
     @Message(id = 10066, value = "Being asked to discover all resources for endpoint [%s]")
     void infoDiscoveryRequested(MonitoredEndpoint<?> monitoredEndpoint);
-
-    @LogMessage(level = Level.INFO)
-    @Message(id = 10067, value = "Feed ID [%s] was already registered under tenant ID [%s]; it will be reused")
-    void infoFeedIdAlreadyRegistered(String feedId, String tenantId);
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10068, value = "Agent is already stopped.")
@@ -245,10 +229,6 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10074, value = "The resource type [%s] is missing a parent. "
             + "Make sure at least one of these resource types are defined and enabled: %s")
     void errorInvalidRootResourceType(String idString, Collection<Name> parents);
-
-    @LogMessage(level = Level.WARN)
-    @Message(id = 10075, value = "Cannot register feed ID [%s] under tenant ID [%s] via URL [%s]: %s")
-    void warnCannotRegisterFeed(String feedId, String tenantId, String url, String message);
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10077, value = "Failed to store metric tags: %s")

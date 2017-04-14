@@ -48,6 +48,7 @@
     <module>eap6-support/hawkular-wildfly-agent-feature-pack-eap6</module>
     <module>eap6-support/hawkular-wildfly-agent-wf-extension-eap6</module>
     <module>eap6-support/hawkular-javaagent-wildfly-feature-pack-eap6</module>
+    <module>hawkular-agent-itest-util</module>
     <module>hawkular-javaagent-itest-parent</module>
     <module>hawkular-wildfly-agent-itest-parent</module>
     <module>wildfly-module-installer</module>
@@ -247,6 +248,12 @@
         <groupId>org.wildfly.core</groupId>
         <artifactId>wildfly-subsystem-test-framework</artifactId>
         <version>${version.org.wildfly.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>${version.org.mockito}</version>
       </dependency>
 
     </dependencies>

@@ -108,14 +108,6 @@ public interface StorageAttributes {
                     .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
                     .build();
 
-    SimpleAttributeDefinition INVENTORY_CONTEXT = new SimpleAttributeDefinitionBuilder("inventory-context",
-            ModelType.STRING)
-                    .setAllowNull(true)
-                    .setAllowExpression(true)
-                    .setDefaultValue(new ModelNode("/hawkular/inventory/"))
-                    .addFlag(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
-                    .build();
-
     SimpleAttributeDefinition METRICS_CONTEXT = new SimpleAttributeDefinitionBuilder("metrics-context",
             ModelType.STRING)
                     .setAllowNull(true)
@@ -158,7 +150,6 @@ public interface StorageAttributes {
             KEYSTORE_PATH,
             KEYSTORE_PASSWORD,
             SERVER_OUTBOUND_SOCKET_BINDING_REF,
-            INVENTORY_CONTEXT,
             METRICS_CONTEXT,
             FEEDCOMM_CONTEXT,
             CONNECT_TIMEOUT_SECONDS,

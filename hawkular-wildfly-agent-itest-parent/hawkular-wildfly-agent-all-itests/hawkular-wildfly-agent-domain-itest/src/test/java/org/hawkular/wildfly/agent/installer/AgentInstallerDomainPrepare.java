@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,7 +68,7 @@ public class AgentInstallerDomainPrepare extends AbstractITest {
                 "--server-url=http://" + hawkularHost + ":" + hawkularHttpPort,
                 "--username=" + testUser,
                 "--password=" + testPasword,
-                "--tenant-id=" + getTenantId(),
+                "--tenant-id=" + testHelper.getTenantId(),
                 "--enabled=true"
         });
 

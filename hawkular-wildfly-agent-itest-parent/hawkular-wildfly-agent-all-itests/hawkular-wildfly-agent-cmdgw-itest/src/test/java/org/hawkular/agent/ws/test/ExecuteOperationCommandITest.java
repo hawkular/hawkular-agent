@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +16,9 @@
  */
 package org.hawkular.agent.ws.test;
 
+import java.util.Map;
+
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.dmr.ModelNode;
 import org.testng.Assert;
@@ -34,22 +35,24 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
-        Resource agent = getResource(
-                "/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=Hawkular%20WildFly%20Agent/rl;defines/type=r",
-                (r -> r.getId() != null));
+        CanonicalPath agentPath = testHelper.getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent")
+                .entrySet().stream()
+//                .filter(e -> ((Entity.Blueprint)(e.getValue())).getId() != null)
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .get();
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agent.getPath().toString() + "\","
+                + "\"resourcePath\":\"" + agentPath.toString() + "\","
                 + "\"operationName\":\"Inventory Discovery Scan\""
                 + "}";
         String response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"Inventory Discovery Scan\","
-                + "\"resourcePath\":\"" + agent.getPath() + "\","
+                + "\"resourcePath\":\"" + agentPath + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [Inventory Discovery Scan] on a [DMR Node] given by Inventory path ["
-                + agent.getPath() + "]\""
+                + agentPath + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
