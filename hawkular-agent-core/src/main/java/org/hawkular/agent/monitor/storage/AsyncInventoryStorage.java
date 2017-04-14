@@ -432,7 +432,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         event.getResourceTypeManager().ifPresent(resourceTypeManager -> {
             List<ResourceType<L>> allResourceTypes = resourceTypeManager.getResourceTypesBreadthFirst();
             getMetricTypesToSync(allResourceTypes).forEach(mt -> {
-                log.infof("Updating metric type: %s", mt.getID().getIDString());
+                log.debugf("Updating metric type: %s", mt.getID().getIDString());
                 performMetricTypeSync(bldr.buildMetricType(mt), tenantIdToUse);
                 // indicate we persisted the resource
                 mt.setPersistedTime(timestamp);
@@ -441,7 +441,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             allResourceTypes.stream()
                     .filter(this::needToRefresh)
                     .forEach(rt -> {
-                        log.infof("Updating resource type: %s", rt.getID().getIDString());
+                        log.debugf("Updating resource type: %s", rt.getID().getIDString());
                         performResourceTypeSync(bldr.buildResourceType(rt), tenantIdToUse);
                         // indicate we persisted the resource
                         rt.setPersistedTime(timestamp);
@@ -457,7 +457,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         resourceManager.getRootResources().forEach(r -> {
             // Ignore unmodified resources that doesn't need to be refreshed
             if (addedOrModifiedIds.contains(r.getID()) || needToRefresh(r)) {
-                log.infof("Updating root resource: %s", r.getID().getIDString());
+                log.debugf("Updating root resource: %s", r.getID().getIDString());
                 performResourceSync(
                         bldr.buildRootResource(resourceManager, r),
                         tenantIdToUse,
@@ -469,7 +469,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
         // Remove root resources
         event.getRemovedRootResources().forEach(r -> {
-            log.infof("Removing root resource: %s", r.getID().getIDString());
+            log.debugf("Removing root resource: %s", r.getID().getIDString());
             InventoryMetric metric = InventoryMetric.resource(feedId, r.getID().getIDString(), null, null);
             deleteMetric(metric, headers);
         });
