@@ -36,7 +36,7 @@ public interface MetricTagPayloadBuilder {
 
     /**
      * Due to the way Hawkular Metrics REST API works, you can only add tags for a single metric.
-     * So this method actually has the potential to return mulitple payloads - one for each metric that is
+     * So this method actually has the potential to return multiple payloads - one for each metric that is
      * getting assigned tags. The key to the map is the relative path to the REST API that identifies
      * the metric whose tags are being added. For example, if a gauge metric of id "foo" is getting
      * tags, its key in the map will be "gauges/foo". The values of the map are the JSON encodings

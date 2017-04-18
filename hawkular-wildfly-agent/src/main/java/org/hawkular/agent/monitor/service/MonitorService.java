@@ -166,6 +166,7 @@ public class MonitorService extends AgentCoreEngine implements Service<MonitorSe
                             bootStorageAdapter.getInventoryContext(),
                             bootStorageAdapter.getMetricsContext(),
                             bootStorageAdapter.getFeedcommContext(),
+                            bootStorageAdapter.getHawkularContext(),
                             bootStorageAdapter.getKeystorePath(),
                             bootStorageAdapter.getKeystorePassword(),
                             bootStorageAdapter.getSecurityRealm(),

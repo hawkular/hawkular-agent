@@ -120,6 +120,7 @@ public class ConfigConverter {
                 config.getStorageAdapter().getInventoryContext(),
                 config.getStorageAdapter().getMetricsContext(),
                 config.getStorageAdapter().getFeedcommContext(),
+                config.getStorageAdapter().getHawkularContext(),
                 null, // we use security realm exclusively
                 null, // we use security realm exclusively
                 config.getStorageAdapter().getSecurityRealmName(),
@@ -214,6 +215,12 @@ public class ConfigConverter {
                 if (rt.getAvailSets() != null) {
                     for (String availSet : rt.getAvailSets()) {
                         rtBuilder.availSetName(new Name(availSet));
+                    }
+                }
+
+                if (rt.getDmrNotifications() != null) {
+                    for (DMRNotification notification : rt.getDmrNotifications()) {
+                        rtBuilder.notificationType(notification.getNotificationType());
                     }
                 }
 

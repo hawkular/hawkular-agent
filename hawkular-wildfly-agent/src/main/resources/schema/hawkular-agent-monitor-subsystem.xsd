@@ -189,6 +189,7 @@
 
   <xs:complexType name="resourceTypeDmrType">
     <xs:sequence>
+      <xs:element name="notification-dmr"    type="notificationDmrType"   minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="resource-config-dmr" type="resourceConfigDmrType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="operation-dmr"       type="operationDmrType"      minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
@@ -198,6 +199,10 @@
     <xs:attribute name="parents"                type="xs:string"/>
     <xs:attribute name="metric-sets"            type="xs:string"/>
     <xs:attribute name="avail-sets"             type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="notificationDmrType">
+    <xs:attribute name="name"                type="xs:string" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="resourceConfigDmrType">

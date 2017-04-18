@@ -50,6 +50,9 @@ public class DMRResourceType implements Validatable {
     @JsonProperty("avail-sets")
     private String[] availSets;
 
+    @JsonProperty("notification-dmr")
+    private DMRNotification[] dmrNotifications;
+
     @JsonProperty("resource-config-dmr")
     private DMRResourceConfig[] dmrResourceConfigs;
 
@@ -69,6 +72,8 @@ public class DMRResourceType implements Validatable {
                 : Arrays.copyOf(original.metricSets, original.metricSets.length);
         this.availSets = original.availSets == null ? null
                 : Arrays.copyOf(original.availSets, original.availSets.length);
+        this.dmrNotifications = original.dmrNotifications == null ? null
+                : Arrays.copyOf(original.dmrNotifications, original.dmrNotifications.length);
         this.dmrResourceConfigs = Util.cloneArray(original.dmrResourceConfigs);
         this.dmrOperations = Util.cloneArray(original.dmrOperations);
     }
@@ -162,5 +167,13 @@ public class DMRResourceType implements Validatable {
 
     public void setDmrOperations(DMROperation[] dmrOperations) {
         this.dmrOperations = dmrOperations;
+    }
+
+    public DMRNotification[] getDmrNotifications() {
+        return dmrNotifications;
+    }
+
+    public void setDmrNotifications(DMRNotification[] dmrNotifications) {
+        this.dmrNotifications = dmrNotifications;
     }
 }

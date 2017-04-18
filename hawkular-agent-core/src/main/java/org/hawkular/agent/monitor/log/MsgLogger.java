@@ -269,4 +269,8 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.INFO)
     @Message(id = 10082, value = "Agent being asked to start but is currently stopping. Will wait and then restart.")
     void infoAgentWillStartAfterStopping();
+
+    @LogMessage(level = Level.ERROR)
+    @Message(id = 10083, value = "Failed to store notification: %s")
+    void errorFailedToStoreNotification(@Cause Throwable t, String data);
 }

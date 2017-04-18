@@ -65,6 +65,7 @@ import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.MetricStorageProxy;
+import org.hawkular.agent.monitor.storage.NotificationDispatcher;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.bus.common.BasicMessage;
@@ -110,6 +111,9 @@ public abstract class AgentCoreEngine {
 
     // scheduled metric and avail collections
     private SchedulerService schedulerService;
+
+    // used to send notifications to the server
+    private NotificationDispatcher notificationDispatcher;
 
     // proxies that are exposed via JNDI so external apps can emit their own inventory, metrics, and avail checks
     private final MetricStorageProxy metricStorageProxy = new MetricStorageProxy();
@@ -341,6 +345,8 @@ public abstract class AgentCoreEngine {
                 throw new Exception("Agent cannot initialize scheduler");
             }
 
+            this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
+
             // build the protocol services
             ProtocolServices ps = createProtocolServicesBuilder()
                     .dmrProtocolService(this.localModelControllerClientFactory, configuration.getDmrConfiguration())
@@ -351,6 +357,7 @@ public abstract class AgentCoreEngine {
                     .build();
             ps.addInventoryListener(inventoryStorageProxy);
             ps.addInventoryListener(schedulerService);
+            ps.addInventoryListener(notificationDispatcher);
             protocolServices = ps;
 
             // start all protocol services - this should perform the initial discovery scans
@@ -443,6 +450,7 @@ public abstract class AgentCoreEngine {
                     protocolServices.stop();
                     protocolServices.removeInventoryListener(inventoryStorageProxy);
                     protocolServices.removeInventoryListener(schedulerService);
+                    protocolServices.removeInventoryListener(notificationDispatcher);
                     protocolServices = null;
                 }
             } catch (Throwable t) {

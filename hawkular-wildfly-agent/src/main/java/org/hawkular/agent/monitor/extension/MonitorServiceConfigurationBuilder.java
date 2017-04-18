@@ -66,6 +66,7 @@ import org.hawkular.agent.monitor.protocol.platform.PlatformPath;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.hawkular.agent.wildfly.log.AgentLoggers;
 import org.hawkular.agent.wildfly.log.MsgLogger;
+import org.hawkular.client.api.NotificationType;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
@@ -970,6 +971,7 @@ public class MonitorServiceConfigurationBuilder {
         String inventoryContext = getString(storageAdapterConfig, context, StorageAttributes.INVENTORY_CONTEXT);
         String metricsContext = getString(storageAdapterConfig, context, StorageAttributes.METRICS_CONTEXT);
         String feedcommContext = getString(storageAdapterConfig, context, StorageAttributes.FEEDCOMM_CONTEXT);
+        String hawkularContext = getString(storageAdapterConfig, context, StorageAttributes.HAWKULAR_CONTEXT);
         String username = getString(storageAdapterConfig, context, StorageAttributes.USERNAME);
         String password = getString(storageAdapterConfig, context, StorageAttributes.PASSWORD);
         String typeStr = getString(storageAdapterConfig, context, StorageAttributes.TYPE);
@@ -995,7 +997,7 @@ public class MonitorServiceConfigurationBuilder {
         }
 
         return new StorageAdapterConfiguration(type, username, password, tenantId, feedId, url, useSSL,
-                serverOutboundSocketBindingRef, inventoryContext, metricsContext, feedcommContext,
+                serverOutboundSocketBindingRef, inventoryContext, metricsContext, feedcommContext, hawkularContext,
                 keystorePath, keystorePassword, securityRealm, connectTimeoutSeconds, readTimeoutSeconds);
     }
 
@@ -1069,6 +1071,18 @@ public class MonitorServiceConfigurationBuilder {
 
                         resourceTypeBuilder.metricSetNames(metricSets)
                                 .availSetNames(availSets);
+
+                        // get notifications
+                        ModelNode notifModelNode = resourceTypeValueNode.get(DMRNotificationDefinition.NOTIFICATION);
+                        if (notifModelNode != null && notifModelNode.isDefined()) {
+                            List<Property> notificationList = notifModelNode.asPropertyList();
+                            for (Property notificationProperty : notificationList) {
+                                String name = notificationProperty.getName();
+                                String notificationTypeName = name.trim().replace("-", "_").toUpperCase();
+                                NotificationType notificationType = NotificationType.valueOf(notificationTypeName);
+                                resourceTypeBuilder.notificationType(notificationType);
+                            }
+                        }
 
                         // get operations
                         ModelNode opModelNode = resourceTypeValueNode.get(DMROperationDefinition.OPERATION);
