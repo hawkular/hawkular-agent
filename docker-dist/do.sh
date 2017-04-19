@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 #
 # Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
 # and other contributors as indicated by the @author tags.
@@ -18,15 +18,16 @@
 
 
 docker > /dev/null 2>&1 || { echo "docker is required, but is not found. Make sure it is accessible."; exit 1; }
+TAG="${1:-latest}"
 
 pushd "$( dirname "${BASH_SOURCE[0]}" )"
 
-echo "Building Docker for Wildfly + Hawkular javaagent."
-docker build -t wildfly-hawkular-javaagent . -f Dockerfile
+echo "Building Docker image for Wildfly + Hawkular javaagent with tag $TAG."
+docker build -t wildfly-hawkular-javaagent:$TAG . -f Dockerfile
 
-echo "Building Docker for Wildfly + Hawkular Wildfly Agent (Standalone)."
-docker build -t wildfly-hawkular-agent -f Dockerfile-wf-agent .
-echo "Building Docker for Wildfly + Hawkular Wildfly Agent (Domain)."
-docker build -t wildfly-hawkular-agent-domain -f Dockerfile-wf-agent-domain .
+echo "Building Docker image for Wildfly + Hawkular Wildfly Agent (Standalone) with tag $TAG."
+docker build -t wildfly-hawkular-agent:$TAG -f Dockerfile-wf-agent .
+echo "Building Docker image for Wildfly + Hawkular Wildfly Agent (Domain) with tag $TAG."
+docker build -t wildfly-hawkular-agent-domain:$TAG -f Dockerfile-wf-agent-domain .
 
 popd
