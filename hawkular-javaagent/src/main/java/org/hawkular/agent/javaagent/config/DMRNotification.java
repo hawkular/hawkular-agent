@@ -20,7 +20,6 @@ import org.hawkular.client.api.NotificationType;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -38,44 +37,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
         isGetterVisibility = Visibility.NONE)
 public class DMRNotification implements Validatable {
 
-    @JsonProperty(required = true)
-    private String name;
-
-    @JsonIgnore
-    NotificationType notificationType;
+    @JsonProperty(value="name", required = true)
+    private NotificationTypeJsonProperty notificationType;
 
     public DMRNotification() {
     }
 
     public DMRNotification(DMRNotification original) {
-        setName(original.name);
+        this.notificationType = original.notificationType == null? null : new NotificationTypeJsonProperty(original.notificationType);
     }
 
     @Override
     public void validate() throws Exception {
-        if (name == null || name.trim().isEmpty()) {
-            throw new Exception("notification name must be specified");
-        }
-
-        if (null == notificationType) {
-            throw new Exception("notification name [" + name + "] is an unknown notification type");
-        }
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-        try {
-            this.notificationType = NotificationType.valueOf(name.trim().replace("-", "_").toUpperCase());
-        } catch (Exception e) {
-            // ignore, will be reported in validate
-        }
+        // NotificationType validates itself
     }
 
     public NotificationType getNotificationType() {
-        return notificationType;
+        return notificationType == null ? null : notificationType.get();
     }
+
+    public void setNotificationType(NotificationType nt) {
+        if (notificationType != null) {
+            notificationType.set(nt);
+        } else {
+            notificationType = new NotificationTypeJsonProperty(nt);
+        }
+    }
+
 }
