@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,19 +42,19 @@ import org.w3c.dom.ls.DOMImplementationLS;
 
 public class ExtensionDeployerTest {
 
-    static final File widlflyHome = Paths.get("target","fake-wildfly").toFile();
-    static final File standaloneXml = Paths.get(widlflyHome.getAbsolutePath(),"standalone",
-            "configuration","standalone.xml").toFile();
+    static final File widlflyHome = Paths.get("target", "fake-wildfly").toFile();
+    static final File standaloneXml = Paths.get(widlflyHome.getAbsolutePath(), "standalone",
+            "configuration", "standalone.xml").toFile();
 
-    static final File domainXml = Paths.get(widlflyHome.getAbsolutePath(),"domain",
-            "configuration","domain.xml").toFile();
+    static final File domainXml = Paths.get(widlflyHome.getAbsolutePath(), "domain",
+            "configuration", "domain.xml").toFile();
 
     static final File hostXml = Paths.get(widlflyHome.getAbsolutePath(), "domain",
             "configuration", "host.xml").toFile();
 
     static final File modulesHome = Paths.get(widlflyHome.getAbsolutePath(), "modules",
-            "system", "layers","base").toFile();
-    private File moduleZip = Paths.get("target","test-module.zip").toFile();
+            "system", "layers", "base").toFile();
+    private File moduleZip = Paths.get("target", "test-module.zip").toFile();
 
     final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     DocumentBuilder dBuilder;
@@ -77,11 +77,10 @@ public class ExtensionDeployerTest {
         FileOutputStream fout = new FileOutputStream(moduleZip);
         ZipOutputStream zout = new ZipOutputStream(fout);
         // nest to some subdir
-        for (String res : resources)
-        {
-            ZipEntry ze = new ZipEntry("fake-module/main/"+res);
+        for (String res : resources) {
+            ZipEntry ze = new ZipEntry("fake-module/main/" + res);
             zout.putNextEntry(ze);
-            zout.write(IOUtils.toByteArray(getClass().getResourceAsStream("/module/"+res)));
+            zout.write(IOUtils.toByteArray(getClass().getResourceAsStream("/module/" + res)));
             zout.closeEntry();
         }
         zout.close();
@@ -128,19 +127,21 @@ public class ExtensionDeployerTest {
                 .module(moduleZip.toURI().toURL())
                 .build();
         new ExtensionDeployer().install(configuration);
-        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(),"fake-module","main","module.xml").toFile();
+        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(), "fake-module", "main", "module.xml")
+                .toFile();
         Assert.assertTrue("Deployed module.xml exists", deployedModuleXml.exists());
     }
 
     @Test
     public void deployModuleWithSnippetsIncluded() throws Exception {
-        createModuleZip("module.xml", "subsystem-snippet.xml","socket-binding-snippet.xml");
+        createModuleZip("module.xml", "subsystem-snippet.xml", "socket-binding-snippet.xml");
         DeploymentConfiguration configuration = DeploymentConfiguration.builder()
                 .jbossHome(widlflyHome)
                 .module(moduleZip.toURI().toURL())
                 .build();
         new ExtensionDeployer().install(configuration);
-        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(),"fake-module","main","module.xml").toFile();
+        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(), "fake-module", "main", "module.xml")
+                .toFile();
         Assert.assertTrue("Deployed module.xml exists", deployedModuleXml.exists());
         Document doc = dBuilder.parse(standaloneXml);
         String xmlns = doc.getDocumentElement().getAttribute("xmlns");
@@ -155,6 +156,12 @@ public class ExtensionDeployerTest {
         // verify socket binding was installed
         assertXpath("/x:server/x:socket-binding-group[@name='standard-sockets']"
                 + "/x:outbound-socket-binding[@name='hawkular']", doc, 1);
+
+        try {
+            new ExtensionDeployer().install(configuration);
+            Assert.fail("Should not be able to install server extension when it already is installed");
+        } catch (Exception expected) {
+        }
     }
 
     @Test
@@ -167,7 +174,8 @@ public class ExtensionDeployerTest {
                 .socketBinding(getClass().getResource("/module/socket-binding-snippet.xml"))
                 .build();
         new ExtensionDeployer().install(configuration);
-        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(),"fake-module","main","module.xml").toFile();
+        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(), "fake-module", "main", "module.xml")
+                .toFile();
         Assert.assertTrue("Deployed module.xml exists", deployedModuleXml.exists());
         Document doc = dBuilder.parse(standaloneXml);
         String xmlns = doc.getDocumentElement().getAttribute("xmlns");
@@ -190,7 +198,8 @@ public class ExtensionDeployerTest {
                 .socketBinding(getClass().getResource("/module/socket-binding-snippet.xml"))
                 .build();
         new ExtensionDeployer().install(configuration);
-        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(),"fake-module","main","module.xml").toFile();
+        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(), "fake-module", "main", "module.xml")
+                .toFile();
         Assert.assertTrue("Deployed module.xml exists", deployedModuleXml.exists());
 
         Document doc = dBuilder.parse(domainXml);
@@ -224,7 +233,8 @@ public class ExtensionDeployerTest {
                 .serverConfig("domain/configuration/domain.xml")
                 .build();
         new ExtensionDeployer().install(configuration);
-        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(),"fake-module","main","module.xml").toFile();
+        File deployedModuleXml = Paths.get(modulesHome.getAbsolutePath(), "fake-module", "main", "module.xml")
+                .toFile();
         Assert.assertTrue("Deployed module.xml exists", deployedModuleXml.exists());
 
         Document doc = dBuilder.parse(domainXml);
@@ -244,6 +254,12 @@ public class ExtensionDeployerTest {
         // verify socket binding was installed
         assertXpath("/x:domain/x:socket-binding-groups/x:socket-binding-group[@name='standard-sockets']"
                 + "/x:outbound-socket-binding[@name='hawkular']", doc, 1);
+
+        try {
+            new ExtensionDeployer().install(configuration);
+            Assert.fail("Should not be able to install domain extension when it already is installed");
+        } catch (Exception expected) {
+        }
     }
 
     @Test
@@ -271,6 +287,12 @@ public class ExtensionDeployerTest {
         // verify socket binding was installed
         assertXpath("/x:host/x:socket-binding-group[@name='standard-sockets']"
                 + "/x:outbound-socket-binding[@name='hawkular']", doc, 1);
+
+        try {
+            new ExtensionDeployer().install(configuration);
+            Assert.fail("Should not be able to install host extension when it already is installed");
+        } catch (Exception expected) {
+        }
     }
 
     private void assertXpath(String expression, Document doc, int expectedCount) throws Exception {
