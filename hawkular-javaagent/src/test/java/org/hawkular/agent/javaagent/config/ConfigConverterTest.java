@@ -114,6 +114,15 @@ public class ConfigConverterTest {
         Assert.assertEquals(true, platform.isEnabled());
     }
 
+    @Test
+    public void testBadNotification() throws Exception {
+        try {
+            loadTestConfigFile("/bad-notif.yaml");
+            Assert.fail("Should have failed due to a bad notification name");
+        } catch (Exception ok) {
+        }
+    }
+
     private Configuration loadTestConfigFile(String path) throws Exception {
         URL url = ConfigConverterTest.class.getResource(path);
         Assert.assertNotNull("yaml config file not found", url);

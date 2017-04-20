@@ -103,6 +103,12 @@ public class DMRResourceType implements Validatable {
                 o.validate();
             }
         }
+
+        if (dmrNotifications != null) {
+            for (DMRNotification o : dmrNotifications) {
+                o.validate();
+            }
+        }
     }
 
     public String getName() {
