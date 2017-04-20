@@ -92,6 +92,12 @@ public class DMRResourceType implements Validatable {
             throw new Exception("resource-type-dmr [" + name + "] path [" + path + "] is invalid", e);
         }
 
+        if (dmrNotifications != null) {
+            for (DMRNotification o : dmrNotifications) {
+                o.validate();
+            }
+        }
+
         if (dmrResourceConfigs != null) {
             for (DMRResourceConfig o : dmrResourceConfigs) {
                 o.validate();
