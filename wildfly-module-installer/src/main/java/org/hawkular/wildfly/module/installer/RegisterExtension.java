@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,16 @@ package org.hawkular.wildfly.module.installer;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathFactory;
+
 import org.jboss.logging.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 class RegisterExtension {
 
@@ -51,11 +60,25 @@ class RegisterExtension {
         log.info("New serverConfig file written to [" + options.getTargetServerConfig().getAbsolutePath() + "]");
     }
 
+    private void assertNotRegistered(RegisterModuleConfiguration options, String extensionExpr) throws Exception {
+        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        final DocumentBuilder dBuilder = factory.newDocumentBuilder();
+        final Document srcDoc = dBuilder.parse(options.getSourceServerConfig());
+        final XPath xpath = XPathFactory.newInstance().newXPath();
+        final XPathExpression expr = xpath.compile(extensionExpr);
+        NodeList data = (NodeList) expr.evaluate(srcDoc, XPathConstants.NODESET);
+        if (data != null && data.getLength() > 0) {
+            throw new IllegalStateException("Extension [" + extensionExpr + "] is already installed. Aborting.");
+        }
+    }
+
     private void registerToStandalone(RegisterModuleConfiguration options) throws Exception {
         List<XmlEdit> inserts = new ArrayList<XmlEdit>();
         inserts.addAll(options.getXmlEdits());
         if (options.getModuleId() != null) {
             log.info("Register STANDALONE extension module=" + options.getModuleId());
+            assertNotRegistered(options,
+                    String.format("/server/extensions/extension[@module='%s']", options.getModuleId()));
             inserts.add(new XmlEdit("/server/extensions", "<extension module=\"" + options.getModuleId() + "\"/>"));
         }
 
@@ -78,6 +101,8 @@ class RegisterExtension {
         inserts.addAll(options.getXmlEdits());
         if (options.getModuleId() != null) {
             log.info("Register HOST extension module=" + options.getModuleId());
+            assertNotRegistered(options,
+                    String.format("/host/extensions/extension[@module='%s']", options.getModuleId()));
             inserts.add(new XmlEdit("/host/extensions", "<extension module=\"" + options.getModuleId() + "\"/>"));
         }
 
@@ -102,12 +127,14 @@ class RegisterExtension {
         inserts.addAll(options.getXmlEdits());
         if (options.getModuleId() != null) {
             log.info("Register DOMAIN extension module=" + options.getModuleId());
+            assertNotRegistered(options,
+                    String.format("/domain/extensions/extension[@module='%s']", options.getModuleId()));
             inserts.add(new XmlEdit("/domain/extensions", "<extension module=\"" + options.getModuleId() + "\"/>"));
         }
 
         if (options.getSubsystem() != null) {
             for (String profile : options.getProfiles()) {
-                inserts.add(new XmlEdit("/domain/profiles/profile[@name='"+profile+"']", options.getSubsystem()));
+                inserts.add(new XmlEdit("/domain/profiles/profile[@name='" + profile + "']", options.getSubsystem()));
             }
         }
         if (options.getSocketBindingGroups() != null && options.getSocketBinding() != null) {
