@@ -20,7 +20,6 @@ import org.hawkular.client.api.NotificationType;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -41,24 +40,26 @@ public class DMRNotification implements Validatable {
     @JsonProperty(required = true)
     private String name;
 
-    @JsonIgnore
-    NotificationType notificationType;
+    private NotificationType notificationType;
 
     public DMRNotification() {
     }
 
     public DMRNotification(DMRNotification original) {
-        setName(original.name);
+        this.name = original.name;
+        this.notificationType = original.notificationType;
     }
 
     @Override
     public void validate() throws Exception {
         if (name == null || name.trim().isEmpty()) {
-            throw new Exception("notification name must be specified");
+            throw new Exception("notification-dmr name must be specified");
         }
 
-        if (null == notificationType) {
-            throw new Exception("notification name [" + name + "] is an unknown notification type");
+        try {
+            this.notificationType = NotificationType.valueOf(name.trim().replace("-", "_").toUpperCase());
+        } catch (Exception e) {
+            throw new Exception("notification-dmr name [" + name + "] is an unknown notification type");
         }
     }
 
@@ -68,14 +69,12 @@ public class DMRNotification implements Validatable {
 
     public void setName(String name) {
         this.name = name;
-        try {
-            this.notificationType = NotificationType.valueOf(name.trim().replace("-", "_").toUpperCase());
-        } catch (Exception e) {
-            // ignore, will be reported in validate
-        }
     }
 
     public NotificationType getNotificationType() {
+        if (notificationType == null) {
+            throw new IllegalStateException("Notification type is null - validate was never called. This is a bug.");
+        }
         return notificationType;
     }
 }
