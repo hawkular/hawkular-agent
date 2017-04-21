@@ -17,14 +17,15 @@
 package org.hawkular.wildfly.agent.installer;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import org.hawkular.agent.monitor.util.Util;
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -82,18 +83,18 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void operationParameters() throws Throwable {
-
         // get the operation
-        OperationType op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                "id=WildFly Server/type=ot;id=Shutdown", ATTEMPT_COUNT, ATTEMPT_DELAY);
+        CanonicalPath shutdownPath = testHelper.feedPath(wfClientConfig.getFeedId())
+                .resourceType("WildFly Server").operationType("Shutdown").get();
+        Optional<Blueprint> optBlueprint = testHelper.getBlueprintFromCP(shutdownPath);
+        Assert.assertTrue(optBlueprint.isPresent());
+        OperationType.Blueprint op = (OperationType.Blueprint) optBlueprint.get();
         Assert.assertEquals("Shutdown", op.getId());
-        System.out.println("operation=" + op);
 
         // get parameters
-        DataEntity data = getDataEntity(
-                "/entity/f;" + wfClientConfig.getFeedId() + "/rt;WildFly Server/ot;Shutdown/d;parameterTypes",
-                ATTEMPT_COUNT, ATTEMPT_DELAY);
-        Assert.assertNotNull(data);
+        optBlueprint = testHelper.getBlueprintFromCP(shutdownPath.extend(SegmentType.d, "parameterTypes").get());
+        Assert.assertTrue(optBlueprint.isPresent());
+        DataEntity.Blueprint data = (DataEntity.Blueprint) optBlueprint.get();
         Map<String, StructuredData> paramsMap = data.getValue().map();
         Map<String, StructuredData> timeoutParam = paramsMap.get("timeout").map();
         Assert.assertEquals("int", timeoutParam.get("type").string());
@@ -108,14 +109,13 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void socketBindingGroupsInInventory() throws Throwable {
-
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
+        Collection<Blueprint> sbgs = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Socket Binding Group").values();
         for (String sbgName : dmrSBGNames) {
-            Resource sbg = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                            "id=Socket Binding Group/rl;defines/type=r",
-                    (r -> r.getName().contains(sbgName)));
-            System.out.println("socket binding group in inventory=" + sbg);
+            boolean hasMatch = sbgs.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint)bp).getId().contains(sbgName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("socket binding group in inventory=" + sbgName);
         }
 
         // make sure we are testing against what we were expecting
@@ -124,12 +124,12 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
         // there is only one group - get the names of all the bindings (incoming and outbound) in that group
         Collection<String> dmrBindingNames = getSocketBindingNames();
+        Collection<Blueprint> bindings = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Socket Binding").values();
         for (String bindingName : dmrBindingNames) {
-            Resource binding = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                            "id=Socket Binding/rl;defines/type=r",
-                    (r -> r.getName().contains(bindingName)));
-            System.out.println("socket binding in inventory=" + binding);
+            boolean hasMatch = bindings.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint)bp).getId().contains(bindingName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("socket binding in inventory=" + bindingName);
         }
 
         // make sure we are testing against what we were expecting
@@ -143,12 +143,12 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         Assert.assertEquals("Wrong number of socket binding groups", 7, dmrBindingNames.size());
 
         dmrBindingNames = getOutboundSocketBindingNames();
+        bindings = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Remote Destination Outbound Socket Binding").values();
         for (String bindingName : dmrBindingNames) {
-            Resource binding = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                            "id=Remote Destination Outbound Socket Binding/rl;defines/type=r",
-                    (r -> r.getName().contains(bindingName)));
-            System.out.println("outbound socket binding in inventory=" + binding);
+            boolean hasMatch = bindings.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint)bp).getId().contains(bindingName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("outbound socket binding in inventory=" + bindingName);
         }
 
         // make sure we are testing against what we were expecting
@@ -159,14 +159,13 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void datasourcesAddedToInventory() throws Throwable {
-
+        Collection<Blueprint> datasources = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Datasource").values();
         for (String datasourceName : getDatasourceNames()) {
-            Resource ds = getResource("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                    + "id=Datasource/rl;defines/type=r",
-                    (r -> r.getId().contains(datasourceName)));
-            System.out.println("ds = " + ds);
+            boolean hasMatch = datasources.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint)bp).getId().contains(datasourceName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("ds = " + datasourceName);
         }
-
         Assert.assertNotNull("feedId should not be null", wfClientConfig.getFeedId());
     }
 
@@ -197,52 +196,55 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         int second = 1000;
         int timeOutSeconds = 60;
         for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = newAuthRequest().url(baseMetricsUri + "/gauges").build();
-            Response gaugesResponse = client.newCall(request).execute();
+            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/gauges").build();
+            try (Response gaugesResponse = testHelper.client().newCall(request).execute()) {
+                if (gaugesResponse.code() == 200 && !gaugesResponse.body().string().isEmpty()) {
+                    boolean found = false;
 
-            if (gaugesResponse.code() == 200 && !gaugesResponse.body().string().isEmpty()) {
-                boolean found = false;
+                    for (String datasourceName : getDatasourceNames()) {
+                        // enabled
+                        String id = "MI~R~[" + wfClientConfig.getFeedId() + "/Local~/subsystem=datasources/data-source="
+                                + datasourceName
+                                + "]~MT~Datasource Pool Metrics~Available Count";
+                        id = Util.urlEncodeQuery(id);
+                        String url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
+                        lastUrl = url;
+                        try (Response gaugeResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build()).execute()) {
+                            if (gaugeResponse.code() == 200) {
+                                String body = gaugeResponse.body().string();
+                                //System.out.println("ActiveBody=" + body);
+                                /* this should be enough to prove that some metric was written successfully */
+                                if (body.contains("\"empty\":false")) {
+                                    found = true;
+                                }
+                            }
 
-                for (String datasourceName : getDatasourceNames()) {
-                    // enabled
-                    String id = "MI~R~[" + wfClientConfig.getFeedId() + "/Local~/subsystem=datasources/data-source="
-                            + datasourceName
-                            + "]~MT~Datasource Pool Metrics~Available Count";
-                    id = Util.urlEncodeQuery(id);
-                    String url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
-                    lastUrl = url;
-                    Response gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
-                    if (gaugeResponse.code() == 200) {
-                        String body = gaugeResponse.body().string();
-                        //System.out.println("ActiveBody=" + body);
-                        /* this should be enough to prove that some metric was written successfully */
-                        if (body.contains("\"empty\":false")) {
-                            found = true;
+                            // disabled
+                            id = "MI~R~[" + wfClientConfig.getFeedId() + "/Local~/subsystem=datasources/data-source="
+                                    + datasourceName
+                                    + "]~MT~Datasource Pool Metrics~Active Count";
+                            id = Util.urlEncodeQuery(id);
+                            url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
+                            //System.out.println("url = " + url);
                         }
-                    }
-
-                    // disabled
-                    id = "MI~R~[" + wfClientConfig.getFeedId() + "/Local~/subsystem=datasources/data-source="
-                            + datasourceName
-                            + "]~MT~Datasource Pool Metrics~Active Count";
-                    id = Util.urlEncodeQuery(id);
-                    url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
-                    //System.out.println("url = " + url);
-                    gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
-                    if (gaugeResponse.code() == 200) {
-                        String body = gaugeResponse.body().string();
-                        // System.out.println("DisabledBody=" + body);
-                        /* this should be enough to prove that the metric was not disabled */
-                        if (body.contains("\"empty\":false")) {
-                            String msg = String.format("Disabled Gauge gathered after [%d]ms. url=[%s], data=%s",
-                                    (System.currentTimeMillis() - startTime), url, body);
-                            Assert.fail(msg);
+                        try (Response gaugeResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build()).execute()) {
+                            if (gaugeResponse.code() == 200) {
+                                String body = gaugeResponse.body().string();
+                                // System.out.println("DisabledBody=" + body);
+                                /* this should be enough to prove that the metric was not disabled */
+                                if (body.contains("\"empty\":false")) {
+                                    String msg =
+                                            String.format("Disabled Gauge gathered after [%d]ms. url=[%s], data=%s",
+                                                    (System.currentTimeMillis() - startTime), url, body);
+                                    Assert.fail(msg);
+                                }
+                            }
                         }
-                    }
 
-                    // if enabled metric collected and disabled metric not collected then we should be good.
-                    if (found) {
-                        return;
+                        // if enabled metric collected and disabled metric not collected then we should be good.
+                        if (found) {
+                            return;
+                        }
                     }
                 }
             }
@@ -259,25 +261,26 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
         int timeOutSeconds = 60;
 
         for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = newAuthRequest().url(baseMetricsUri + "/availability").build();
-            Response availabilityResponse = client.newCall(request).execute();
-
-            if (availabilityResponse.code() == 200 && !availabilityResponse.body().string().isEmpty()) {
-                String id = "AI~R~[" + wfClientConfig.getFeedId()
-                        + "/Local~~]~AT~Server Availability~Server Availability";
-                id = Util.urlEncode(id);
-                String url = baseMetricsUri + "/availability/" + id + "/raw";
-                //System.out.println("url = " + url);
-                availabilityResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
-                if (availabilityResponse.code() == 200) {
-                    String body = availabilityResponse.body().string();
-                    System.out.println("AvailResponse ===>" + body);
-                    /* this should be enough to prove that some metric was written successfully */
-                    if (body.contains("\"value\":\"up\"")) {
-                        return;
+            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/availability").build();
+            try (Response availabilityResponse = testHelper.client().newCall(request).execute()) {
+                if (availabilityResponse.code() == 200 && !availabilityResponse.body().string().isEmpty()) {
+                    String id = "AI~R~[" + wfClientConfig.getFeedId()
+                            + "/Local~~]~AT~Server Availability~Server Availability";
+                    id = Util.urlEncode(id);
+                    String url = baseMetricsUri + "/availability/" + id + "/raw";
+                    //System.out.println("url = " + url);
+                    try (Response availabilityMetricResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build()).execute()){
+                        if (availabilityMetricResponse.code() == 200) {
+                            String body = availabilityMetricResponse.body().string();
+                            System.out.println("AvailResponse ===>" + body);
+                            /* this should be enough to prove that some metric was written successfully */
+                            if (body.contains("\"value\":\"up\"")) {
+                                return;
+                            }
+                        } else {
+                            System.out.println("code = " + availabilityMetricResponse.code());
+                        }
                     }
-                } else {
-                    System.out.println("code = " + availabilityResponse.code());
                 }
             }
             Thread.sleep(second);
@@ -291,7 +294,10 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     public void resourceConfig() throws Throwable {
         CanonicalPath wfPath = getWildFlyServerResourcePath();
         wfPath = wfPath.extend(SegmentType.d, "configuration").get();
-        Map<String, StructuredData> resConfig = getStructuredData("/entity" + wfPath.toString(), 1, 1);
+        Optional<Blueprint> optConfiguration = testHelper.getBlueprintFromCP(wfPath);
+        Assert.assertTrue(optConfiguration.isPresent());
+        DataEntity.Blueprint configuration = (DataEntity.Blueprint) optConfiguration.get();
+        Map<String, StructuredData> resConfig = configuration.getValue().map();
         Assert.assertEquals("NORMAL", resConfig.get("Running Mode").string());
         Assert.assertEquals("RUNNING", resConfig.get("Suspend State").string());
         Assert.assertTrue(resConfig.containsKey("Name"));
@@ -306,38 +312,36 @@ public class AgentInstallerStandaloneITest extends AbstractITest {
     }
 
     private CanonicalPath getWildFlyServerResourcePath() throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + wfClientConfig.getFeedId() + "/type=r", 2);
-        List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
-                .collect(Collectors.toList());
-        Assert.assertEquals(1, wfs.size());
-        return wfs.get(0).getPath();
+        Map<CanonicalPath, Blueprint> servers = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "WildFly Server");
+        Assert.assertEquals(1, servers.size());
+        return servers.keySet().iterator().next();
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void machineId() throws Throwable {
-        CanonicalPath osTypePath = getOperatingSystemResourceTypePath();
-        osTypePath = osTypePath.extend(SegmentType.d, "configurationSchema").get();
-        Map<String, StructuredData> schema = getStructuredData("/entity" + osTypePath.toString(), 1, 1);
+        CanonicalPath osTypePath = getOperatingSystemResourceTypePath().extend(SegmentType.d, "configurationSchema").get();
+        Optional<Blueprint> optSchema = testHelper.getBlueprintFromCP(osTypePath);
+        Assert.assertTrue(optSchema.isPresent());
+        Map<String, StructuredData> schema = ((DataEntity.Blueprint) optSchema.get()).getValue().map();
         Assert.assertTrue(schema.containsKey("Machine Id"));
 
-        CanonicalPath osPath = getOperatingSystemResourcePath();
-        osPath = osPath.extend(SegmentType.d, "configuration").get();
-        Map<String, StructuredData> resConfig = getStructuredData("/entity" + osPath.toString(), 1, 1);
+        CanonicalPath osPath = getOperatingSystemResourcePath().extend(SegmentType.d, "configuration").get();
+        Optional<Blueprint> optResConfig = testHelper.getBlueprintFromCP(osPath);
+        Assert.assertTrue(optResConfig.isPresent());
+        Map<String, StructuredData> resConfig = ((DataEntity.Blueprint) optResConfig.get()).getValue().map();
         Assert.assertTrue(resConfig.containsKey("Machine Id"));
     }
 
     private CanonicalPath getOperatingSystemResourceTypePath() throws Throwable {
-        ResourceType osType = getResourceType(
-                "/entity/f;" + wfClientConfig.getFeedId() + "/rt;Platform_Operating%20System", 1, 1);
-        Assert.assertNotNull(osType);
-        return osType.getPath();
+        Optional<InventoryStructure> optInventoryStructure = testHelper.getInventoryStructure(wfClientConfig.getFeedId(), "rt", "Platform_Operating System");
+        Assert.assertTrue(optInventoryStructure.isPresent());
+        InventoryStructure.Offline<ResourceType.Blueprint> osType = (InventoryStructure.Offline<ResourceType.Blueprint>) optInventoryStructure.get();
+        return testHelper.feedPath(wfClientConfig.getFeedId()).resourceType(osType.getRoot().getId()).get();
     }
 
     private CanonicalPath getOperatingSystemResourcePath() throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + wfClientConfig.getFeedId() + "/type=r", 2);
-        List<Resource> os = servers.stream().filter(s -> "Platform_Operating System".equals(s.getType().getId()))
-                .collect(Collectors.toList());
+        Map<CanonicalPath, Blueprint> os = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Platform_Operating System");
         Assert.assertEquals(1, os.size());
-        return os.get(0).getPath();
+        return os.keySet().iterator().next();
     }
 }

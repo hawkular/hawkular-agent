@@ -16,9 +16,13 @@
  */
 package org.hawkular.agent.test;
 
+import java.util.Optional;
+
 import org.hawkular.agent.monitor.api.HawkularAgentContext;
 import org.hawkular.agent.ws.test.AbstractCommandITest;
 import org.hawkular.agent.ws.test.DatasourceCommandITest;
+import org.hawkular.inventory.api.model.Entity;
+import org.junit.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -28,39 +32,31 @@ import org.testng.annotations.Test;
 public class HawkularWildFlyAgentContextITest extends AbstractCommandITest {
     public static final String GROUP = "HawkularWildFlyAgentContextITest";
 
-    @Override
-    protected String getTenantId() {
-        // see org.hawkular.agent.example.HawkularWildFlyAgentProvider.TENANT_ID
-        // if that is non-null, we want to return that string; otherwise, just return our superclass's tenant
-        return super.getTenantId();
-    }
-
     @Test(groups = { GROUP }, dependsOnGroups = { DatasourceCommandITest.GROUP })
     public void testAgentFromJNDI() throws Throwable {
         waitForAccountsAndInventory();
 
         // this should not exist yet
-        assertResourceNotInInventory("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=MyAppResourceType/rl;defines/type=r",
-                (r -> r.getId().contains("ITest Resource ID")), 5, 5000);
+        Optional<?> resource = testHelper.getBlueprintsByType(hawkularFeedId, "MyAppResourceType")
+                .entrySet().stream()
+                .filter(e -> ((Entity.Blueprint)(e.getValue())).getId().contains("ITest Resource ID"))
+                .findFirst();
+        Assert.assertFalse(resource.isPresent());
 
-        String createResource = getWithRetries(getExampleJndiWarCreateResourceUrl("ITest Resource ID"), 1, 1);
+        testHelper.getWithRetries(getExampleJndiWarCreateResourceUrl("ITest Resource ID"));
 
         // see that the new resource has been persisted to hawkular-inventory
-        getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=MyAppResourceType/rl;defines/type=r",
-                (r -> r.getId().contains("ITest Resource ID")));
+        testHelper.waitForResourceContaining(hawkularFeedId, "MyAppResourceType", "ITest Resource ID",
+                5000, 5);
 
-        String metric = getWithRetries(getExampleJndiWarSendMetricUrl("ITest Metric Key", 123.0), 1, 1);
-        String strMetric = getWithRetries(getExampleJndiWarSendStringMetricUrl("ITest Metric Key", "ITest Val"), 1, 1);
-        String avail = getWithRetries(getExampleJndiWarSendAvailUrl("ITest Avail Key", "DOWN"), 1, 1);
-        String removeResource = getWithRetries(getExampleJndiWarRemoveResourceUrl("ITest Resource ID"), 1, 1);
+        testHelper.getWithRetries(getExampleJndiWarSendMetricUrl("ITest Metric Key", 123.0));
+        testHelper.getWithRetries(getExampleJndiWarSendStringMetricUrl("ITest Metric Key", "ITest Val"));
+        testHelper.getWithRetries(getExampleJndiWarSendAvailUrl("ITest Avail Key", "DOWN"));
+        testHelper.getWithRetries(getExampleJndiWarRemoveResourceUrl("ITest Resource ID"));
 
         // this should not exist anymore
-        assertResourceNotInInventory("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                + "id=MyAppResourceType/rl;defines/type=r",
-                (r -> r.getId().contains("ITest Resource ID")), 5, 5000);
-
+        testHelper.waitForNoResourceContaining(hawkularFeedId, "MyAppResourceType", "ITest Resource ID",
+                5000, 5);
     }
 
     private String getExampleJndiWarCreateResourceUrl(String newResourceID) {

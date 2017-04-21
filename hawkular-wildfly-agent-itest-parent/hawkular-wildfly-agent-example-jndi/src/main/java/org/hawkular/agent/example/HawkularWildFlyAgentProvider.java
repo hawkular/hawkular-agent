@@ -16,8 +16,7 @@
  */
 package org.hawkular.agent.example;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
@@ -25,7 +24,6 @@ import javax.ejb.Singleton;
 import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.AvailDataPayloadBuilder;
 import org.hawkular.agent.monitor.api.AvailStorage;
-import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.HawkularAgentContext;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.MetricDataPayloadBuilder;
@@ -120,22 +118,17 @@ public class HawkularWildFlyAgentProvider {
 
         myAppInventory.addResource(newResource);
 
-        List<Resource<MyAppNodeLocation>> resources = Arrays.asList(newResource);
-        InventoryEvent<MyAppNodeLocation> iEvent = new InventoryEvent<>(myAppSamplingService, resources);
-        getHawkularWildFlyAgent().getInventoryStorage().resourcesAdded(iEvent);
-
-        // we want to persist this - since we only added one, we can tell the
-        // system our "discovery" is done now and our inventory has been updated
-        DiscoveryEvent<MyAppNodeLocation> dEvent;
-        dEvent = new DiscoveryEvent<>(myAppSamplingService, myAppInventory.getResourceManager(),
-                myAppInventory.getResourceTypeManager());
-        getHawkularWildFlyAgent().getInventoryStorage().discoveryCompleted(dEvent);
+        InventoryEvent<MyAppNodeLocation> iEvent = InventoryEvent.addedOrModified(
+                myAppSamplingService,
+                myAppInventory.getResourceManager(),
+                Collections.singletonList(newResource));
+        getHawkularWildFlyAgent().getInventoryStorage().receivedEvent(iEvent);
     }
 
     /**
      * This will remove the resource from the internal inventory and persist the full inventory to hawkular.
      *
-     * @param resource the resource to remove
+     * @param doomedResourceId the resource to remove
      */
     public void removeResourceFromInventory(String doomedResourceId) {
         Resource<MyAppNodeLocation> doomedResource = myAppInventory.getResource(doomedResourceId);
@@ -145,16 +138,11 @@ public class HawkularWildFlyAgentProvider {
 
         myAppInventory.removeResource(doomedResource);
 
-        List<Resource<MyAppNodeLocation>> resources = Arrays.asList(doomedResource);
-        InventoryEvent<MyAppNodeLocation> iEvent = new InventoryEvent<>(myAppSamplingService, resources);
-        getHawkularWildFlyAgent().getInventoryStorage().resourcesRemoved(iEvent);
-
-        // we want to persist this - since we only removed one, we can tell the
-        // system our "discovery" is done now and our inventory has been updated
-        DiscoveryEvent<MyAppNodeLocation> dEvent;
-        dEvent = new DiscoveryEvent<>(myAppSamplingService, myAppInventory.getResourceManager(),
-                myAppInventory.getResourceTypeManager());
-        getHawkularWildFlyAgent().getInventoryStorage().discoveryCompleted(dEvent);
+        InventoryEvent<MyAppNodeLocation> iEvent = InventoryEvent.removed(
+                myAppSamplingService,
+                myAppInventory.getResourceManager(),
+                Collections.singletonList(doomedResource));
+        getHawkularWildFlyAgent().getInventoryStorage().receivedEvent(iEvent);
     }
 
     private HawkularAgentContext getHawkularWildFlyAgent() throws UnsupportedOperationException {

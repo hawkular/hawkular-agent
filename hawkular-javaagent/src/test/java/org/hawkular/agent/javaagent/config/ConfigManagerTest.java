@@ -361,7 +361,6 @@ public class ConfigManagerTest {
         StorageAdapter sa = new StorageAdapter();
         Assert.assertEquals(StorageAdapter.Type.HAWKULAR, sa.getType());
         Assert.assertEquals("hawkular", sa.getTenantId());
-        Assert.assertEquals("/hawkular/inventory/", sa.getInventoryContext());
         Assert.assertEquals("/hawkular/metrics/", sa.getMetricsContext());
         Assert.assertEquals("/hawkular/command-gateway/", sa.getFeedcommContext());
         Assert.assertEquals(10, sa.getConnectTimeoutSecs().intValue());
@@ -477,7 +476,6 @@ public class ConfigManagerTest {
         Assert.assertEquals("password", config.getStorageAdapter().getPassword());
         Assert.assertEquals("autogenerate", config.getStorageAdapter().getFeedId());
         Assert.assertEquals("h-server-security-realm", config.getStorageAdapter().getSecurityRealmName());
-        Assert.assertEquals("/my-inventory", config.getStorageAdapter().getInventoryContext());
         Assert.assertEquals("/my-metrics", config.getStorageAdapter().getMetricsContext());
         Assert.assertEquals("/my-feedcomm", config.getStorageAdapter().getFeedcommContext());
         Assert.assertEquals(Integer.valueOf(123), config.getStorageAdapter().getConnectTimeoutSecs());

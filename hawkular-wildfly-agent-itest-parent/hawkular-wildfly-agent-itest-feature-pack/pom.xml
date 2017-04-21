@@ -61,13 +61,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.inventory</groupId>
-      <artifactId>hawkular-inventory-feature-pack</artifactId>
-      <version>${version.org.hawkular.inventory}</version>
-      <type>zip</type>
-    </dependency>
-
-    <dependency>
       <groupId>org.hawkular.metrics</groupId>
       <artifactId>hawkular-metrics-component-dist</artifactId>
       <version>${version.org.hawkular.metrics}</version>
@@ -108,13 +101,6 @@
                 <artifactItem>
                   <groupId>org.hawkular.agent</groupId>
                   <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
-                  <type>zip</type>
-                  <includes>subsystem-templates/*.xml,configuration/**/*.xml</includes>
-                  <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.hawkular.inventory</groupId>
-                  <artifactId>hawkular-inventory-feature-pack</artifactId>
                   <type>zip</type>
                   <includes>subsystem-templates/*.xml,configuration/**/*.xml</includes>
                   <outputDirectory>${project.build.directory}/feature-pack-resources</outputDirectory>

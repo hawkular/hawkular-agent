@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -99,8 +99,8 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
-            // expecting h2, postgres and the mysql driver we added in the previous test
-            assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 3);
+            // expecting h2 and the mysql driver we added in the previous test
+            assertResourceCount(mcc, datasourcesPath, "jdbc-driver", 2);
             assertResourceExists(mcc, driverAddress, true);
 
             String req = "RemoveJdbcDriverRequest={\"authentication\":" + authentication + ", "
