@@ -66,7 +66,6 @@
     <xs:attribute name="keystore-path"         type="xs:string"/>
     <xs:attribute name="keystore-password"     type="xs:string"/>
     <xs:attribute name="server-outbound-socket-binding-ref" type="xs:string"/>
-    <xs:attribute name="inventory-context"     type="xs:string"/>
     <xs:attribute name="metrics-context"       type="xs:string"/>
     <xs:attribute name="feedcomm-context"      type="xs:string"/>
     <xs:attribute name="connect-timeout-secs"  type="xs:int"/>

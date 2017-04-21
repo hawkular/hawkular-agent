@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -227,8 +227,8 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         waitForAccountsAndInventory();
 
         // this should exist
-        getResource("/traversal/f;" + hawkularFeedId + "/type=rt;id=Deployment/rl;defines/type=r",
-                (r -> r.getId().contains("hawkular-wildfly-agent-helloworld-war.war")), 10, 5000);
+        testHelper.waitForResourceContaining(hawkularFeedId, "Deployment", "hawkular-wildfly-agent-helloworld-war.war",
+                5000, 10);
 
         CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
         File applicationFile = getTestApplicationFile();
@@ -266,7 +266,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         }
 
         // this should be gone now, let's make sure it does get deleted from h-inventory
-        assertResourceNotInInventory("/traversal/f;" + hawkularFeedId + "/type=rt;id=Deployment/rl;defines/type=r",
-                (r -> r.getId().contains("hawkular-wildfly-agent-helloworld-war.war")), 10, 5000);
+        testHelper.waitForNoResourceContaining(hawkularFeedId, "Deployment", "hawkular-wildfly-agent-helloworld-war.war",
+                5000, 10);
     }
 }

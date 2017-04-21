@@ -36,7 +36,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
@@ -85,29 +84,17 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         private final List<InventoryListener> inventoryListeners = new ArrayList<>();
         private final ReadWriteLock inventoryListenerRWLock = new ReentrantReadWriteLock();
 
-        public void fireResourcesAdded(List<Resource<L>> resources) {
-            if (!resources.isEmpty()) {
-                inventoryListenerRWLock.readLock().lock();
-                try {
-                    LOG.debugf("Firing inventory event for [%d] added/modified resources", resources.size());
-                    InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
-                    for (InventoryListener inventoryListener : inventoryListeners) {
-                        inventoryListener.resourcesAdded(event);
-                    }
-                } finally {
-                    inventoryListenerRWLock.readLock().unlock();
-                }
-            }
-        }
-
         public void fireResourcesRemoved(List<Resource<L>> resources) {
             if (!resources.isEmpty()) {
                 inventoryListenerRWLock.readLock().lock();
                 try {
                     LOG.debugf("Firing inventory event for [%d] removed resources", resources.size());
-                    InventoryEvent<L> event = new InventoryEvent<L>(EndpointService.this, resources);
+                    InventoryEvent<L> event = InventoryEvent.removed(
+                            EndpointService.this,
+                            getResourceManager(),
+                            resources);
                     for (InventoryListener inventoryListener : inventoryListeners) {
-                        inventoryListener.resourcesRemoved(event);
+                        inventoryListener.receivedEvent(event);
                     }
                 } finally {
                     inventoryListenerRWLock.readLock().unlock();
@@ -115,14 +102,18 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             }
         }
 
-        public void fireDiscoveryComplete() {
+        public void fireDiscoveryComplete(List<Resource<L>> addedOrModified, List<Resource<L>> removed) {
             inventoryListenerRWLock.readLock().lock();
             try {
                 LOG.debugf("Firing inventory event for discovery complete");
-                DiscoveryEvent<L> event = new DiscoveryEvent<L>(EndpointService.this, getResourceManager(),
-                        getResourceTypeManager());
+                InventoryEvent<L> event = InventoryEvent.discovery(
+                        EndpointService.this,
+                        getResourceManager(),
+                        getResourceTypeManager(),
+                        addedOrModified,
+                        removed);
                 for (InventoryListener inventoryListener : inventoryListeners) {
-                    inventoryListener.discoveryCompleted(event);
+                    inventoryListener.receivedEvent(event);
                 }
             } finally {
                 inventoryListenerRWLock.readLock().unlock();
@@ -166,14 +157,10 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             // remove them from the resource manager itself
             removedResources.forEach(r -> getResourceManager().removeResource(r));
 
-            // now emit events so other parts of the system can add/remove resources and persist to Hawkular Inventory
-            inventoryListenerSupport.fireResourcesAdded(newOrModifiedResources);
-            inventoryListenerSupport.fireResourcesRemoved(removedResources);
-
             // do not fire a discovery complete event if errors occurred since we might be missing resources
             // that really do exist - we don't want to permanently delete those during an inventory sync
             if (errors.isEmpty()) {
-                inventoryListenerSupport.fireDiscoveryComplete();
+                inventoryListenerSupport.fireDiscoveryComplete(newOrModifiedResources, removedResources);
             } else {
                 LOG.debugf("[%d] discovery errors occurred - not firing event: %s", errors.size(), errors);
             }
@@ -325,7 +312,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
     /**
      * Discovers child resources of the given {@code parentLocation}, puts them to {@link #resourceManager} and triggers
-     * {@link InventoryListener#resourcesAdded(InventoryEvent)}.
+     * {@link InventoryListener#receivedEvent(InventoryEvent)}.
      *
      * @param parentLocation the location under which the discovery should happen
      * @param childType the resources of this type will be discovered.
@@ -602,7 +589,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         } catch (Exception e) {
             LOG.errorCouldNotAccess(this, e);
         }
-
     }
 
     public final void start() {

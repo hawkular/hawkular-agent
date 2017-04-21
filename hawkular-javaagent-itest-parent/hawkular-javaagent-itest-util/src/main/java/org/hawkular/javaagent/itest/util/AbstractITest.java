@@ -27,13 +27,11 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.management.ObjectName;
@@ -44,6 +42,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.RealmCallback;
 
+import org.hawkular.agent.itest.util.ITestHelper;
 import org.hawkular.agent.javaagent.JavaAgentEngine;
 import org.hawkular.agent.javaagent.config.ConfigManager;
 import org.hawkular.agent.javaagent.config.Configuration;
@@ -51,12 +50,7 @@ import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.JBossASClient;
-import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Resource;
-import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.StructuredData;
-import org.hawkular.inventory.json.InventoryJacksonConfig;
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -69,25 +63,15 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import okhttp3.Credentials;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 public abstract class AbstractITest {
 
     private static final Logger log = Logger.getLogger(AbstractITest.class.getName());
 
     private static volatile boolean hawkularServerIsReady = false;
-
-    protected static final int ATTEMPT_COUNT = 500;
-    protected static final long ATTEMPT_DELAY = 5000;
 
     protected static final String hawkularHost;
     protected static final int hawkularHttpPort;
@@ -133,8 +117,8 @@ public abstract class AbstractITest {
         System.out.println("using REST user [" + hawkularTestUser + "] with password [" + hawkularTestPasword + "]");
         authentication = "{\"username\":\"" + hawkularTestUser + "\",\"password\":\"" + hawkularTestPasword + "\"}";
         baseMetricsUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/metrics";
+        baseInvUri = baseMetricsUri + "/strings";
         baseGwUri = "ws://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/command-gateway";
-        baseInvUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/inventory";
         agentJolokiaUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/jolokia-war";
 
         try {
@@ -197,27 +181,21 @@ public abstract class AbstractITest {
     }
 
     // Fields
-
-    protected OkHttpClient client;
-    protected ObjectMapper mapper;
+    protected ITestHelper testHelper;
 
     @BeforeMethod
     public void before() {
-        JsonFactory f = new JsonFactory();
-        this.mapper = new ObjectMapper(f);
-        InventoryJacksonConfig.configure(mapper);
-        this.client = new OkHttpClient();
-
+        testHelper = new ITestHelper(tenantId, hawkularAuthHeader, baseInvUri);
     }
 
     @AfterMethod
     public void after() {
         // Trigger shutdown of the dispatcher's executor so this process can exit cleanly.
-        this.client.dispatcher().executorService().shutdown();
+        testHelper.client().dispatcher().executorService().shutdown();
     }
 
     protected String getNodeAttribute(ModelControllerClient mcc, ModelNode addressActual, String attributeName) {
-        String actualAttributeValue = OperationBuilder
+        return OperationBuilder
                 .readAttribute()
                 .address(addressActual)
                 .name(attributeName)
@@ -226,7 +204,6 @@ public abstract class AbstractITest {
                 .assertSuccess()
                 .getResultNode()
                 .asString();
-        return actualAttributeValue;
     }
 
     protected void writeNodeAttribute(ModelControllerClient mcc, ModelNode address, String attribute, String value) {
@@ -281,6 +258,30 @@ public abstract class AbstractITest {
         }
     }
 
+    protected void assertNodeRegex(ModelControllerClient mcc, ModelNode address, Class<?> caller,
+            String expectedNodeFileName, boolean saveActual) {
+        try {
+            ModelNode actual = OperationBuilder
+                    .readResource()
+                    .address(address)
+                    .includeRuntime()
+                    .includeDefaults()
+                    .recursive()
+                    .execute(mcc)
+                    .assertSuccess()
+                    .getResultNode();
+            String expected = readNode(caller, expectedNodeFileName);
+            Pattern pattern = Pattern.compile(expected);
+            String actualString = actual.toString();
+            if (saveActual) {
+                writeNode(caller, actual, expectedNodeFileName + ".actual.txt");
+            }
+            Assert.assertTrue(pattern.matcher(actualString).matches());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     protected void assertResourceCount(ModelControllerClient mcc, ModelNode address, String childType,
             int expectedCount) throws IOException {
         ModelNode request = new ModelNode();
@@ -318,234 +319,6 @@ public abstract class AbstractITest {
 
     }
 
-    protected Resource getResource(String listPath, Predicate<Resource> predicate) throws Throwable {
-        return getResource(listPath, predicate, ATTEMPT_COUNT, ATTEMPT_DELAY);
-    }
-
-    protected Resource getResource(String listPath, Predicate<Resource> predicate, int attemptCount, long attemptDelay)
-            throws Throwable {
-        String url = baseInvUri + listPath;
-        Throwable e = null;
-        for (int i = 0; i < attemptCount; i++) {
-            try {
-                String body = getWithRetries(url, attemptCount, attemptDelay);
-                TypeFactory tf = mapper.getTypeFactory();
-                JavaType listType = tf.constructCollectionType(ArrayList.class, Resource.class);
-                JsonNode node = mapper.readTree(body);
-                List<Resource> result = mapper.readValue(node.traverse(), listType);
-                Optional<Resource> found = result.stream().filter(predicate).findFirst();
-                if (found.isPresent()) {
-                    return found.get();
-                }
-                System.out.println("Could not find the right resource among [" + result.size() + "] resources on ["
-                        + (i + 1) + "] of [" + attemptCount + "] attempts for URL [" + url + "]");
-                // System.out.println(body);
-            } catch (Throwable t) {
-                // some initial attempts may fail so we continue
-                e = t;
-                System.out.println("URL [" + url + "] not ready yet on [" + (i + 1) + "] of [" + attemptCount
-                        + "] attempts, about to retry after [" + attemptDelay + "]ms: " + t);
-            }
-            Thread.sleep(attemptDelay);
-        }
-        if (e != null) {
-            throw e;
-        } else {
-            throw new AssertionError("Could not get [" + url + "]");
-        }
-    }
-
-    protected List<Resource> getResources(String path, int minCount) throws Throwable {
-        return getResources(path, minCount, ATTEMPT_COUNT, ATTEMPT_DELAY);
-    }
-
-    protected List<Resource> getResources(String path, int minCount, int attemptCount, long attemptDelay)
-            throws Throwable {
-        String url = baseInvUri + path;
-        Throwable e = null;
-        for (int i = 0; i < attemptCount; i++) {
-            try {
-                String body = getWithRetries(url, attemptCount, attemptDelay);
-                TypeFactory tf = mapper.getTypeFactory();
-                JavaType listType = tf.constructCollectionType(ArrayList.class, Resource.class);
-                JsonNode node = mapper.readTree(body);
-                List<Resource> result = mapper.readValue(node.traverse(), listType);
-                if (result.size() >= minCount) {
-                    return result;
-                }
-                System.out.println("Got only [" + result.size() + "] resources while expected [" + minCount + "] on ["
-                        + (i + 1) + "] of [" + attemptCount + "] attempts for URL [" + url + "]");
-                // System.out.println(body);
-            } catch (Throwable t) {
-                // some initial attempts may fail so we continue
-                e = t;
-                System.out.println("URL [" + url + "] not ready yet on [" + (i + 1) + "] of [" + attemptCount
-                        + "] attempts, about to retry after [" + attemptDelay + "]ms: " + t);
-            }
-            Thread.sleep(attemptDelay);
-        }
-        if (e != null) {
-            throw e;
-        } else {
-            throw new AssertionError("Could not get [" + url + "]");
-        }
-    }
-
-    // expects entity not traversal path URL
-    protected ResourceType getResourceType(String path, int attemptCount, long attemptDelay)
-            throws Throwable {
-        String url = baseInvUri + path;
-        Throwable e = null;
-        for (int i = 0; i < attemptCount; i++) {
-            try {
-                String body = getWithRetries(url, attemptCount, attemptDelay);
-                TypeFactory tf = mapper.getTypeFactory();
-                JavaType javaType = tf.constructType(ResourceType.class);
-                JsonNode node = mapper.readTree(body);
-                ResourceType result = mapper.readValue(node.traverse(), javaType);
-                return result;
-                // System.out.println(body);
-            } catch (Throwable t) {
-                // some initial attempts may fail so we continue
-                e = t;
-                System.out.println("URL [" + url + "] not ready yet on [" + (i + 1) + "] of [" + attemptCount
-                        + "] attempts, about to retry after [" + attemptDelay + "]ms: " + t);
-            }
-            Thread.sleep(attemptDelay);
-        }
-        if (e != null) {
-            throw e;
-        } else {
-            throw new AssertionError("Could not get [" + url + "]");
-        }
-    }
-
-    // expects traversal, not entity path URL
-    protected OperationType getOperationType(String path, int attemptCount, long attemptDelay)
-            throws Throwable {
-        String url = baseInvUri + path;
-        Throwable e = null;
-        int minCount = 1; // for now, we expect to retrieve only 1 type
-        for (int i = 0; i < attemptCount; i++) {
-            try {
-                String body = getWithRetries(url, attemptCount, attemptDelay);
-                TypeFactory tf = mapper.getTypeFactory();
-                JavaType listType = tf.constructCollectionType(ArrayList.class, OperationType.class);
-                JsonNode node = mapper.readTree(body);
-                List<OperationType> result = mapper.readValue(node.traverse(), listType);
-                if (result.size() >= minCount) {
-                    return result.get(0); // we assume we are just getting 1
-                }
-                System.out.println("Got only " + result.size() + " operation types while expected " + minCount + " on "
-                        + (i + 1) + " of " + attemptCount + " attempts for URL [" + url + "]");
-                // System.out.println(body);
-            } catch (Throwable t) {
-                // some initial attempts may fail so we continue
-                e = t;
-                System.out.println("URL [" + url + "] not ready yet on [" + (i + 1) + "] of [" + attemptCount
-                        + "] attempts, about to retry after [" + attemptDelay + "]ms: " + t);
-            }
-            Thread.sleep(attemptDelay);
-        }
-        if (e != null) {
-            throw e;
-        } else {
-            throw new AssertionError("Could not get [" + url + "]");
-        }
-    }
-
-    protected DataEntity getDataEntity(String path, int attemptCount, long attemptDelay)
-            throws Throwable {
-        String url = baseInvUri + path;
-        Throwable e = null;
-        for (int i = 0; i < attemptCount; i++) {
-            try {
-                String body = getWithRetries(url, attemptCount, attemptDelay);
-                TypeFactory tf = mapper.getTypeFactory();
-                JavaType javaType = tf.constructType(DataEntity.class);
-                JsonNode node = mapper.readTree(body);
-                DataEntity result = mapper.readValue(node.traverse(), javaType);
-                return result;
-                // System.out.println(body);
-            } catch (Throwable t) {
-                // some initial attempts may fail so we continue
-                e = t;
-                System.out.println("URL [" + url + "] not ready yet on [" + (i + 1) + "] of [" + attemptCount
-                        + "] attempts, about to retry after [" + attemptDelay + "]ms: " + t);
-            }
-            Thread.sleep(attemptDelay);
-        }
-        if (e != null) {
-            throw e;
-        } else {
-            throw new AssertionError("Could not get [" + url + "]");
-        }
-    }
-
-    // path be entity not traversal and must have the "/d;configuration" at the end
-    protected Map<String, StructuredData> getStructuredData(String path, int attemptCount, long attemptDelay)
-            throws Throwable {
-        DataEntity resConfigEntity = getDataEntity(path, attemptCount, attemptDelay);
-        Map<String, StructuredData> resConfig = resConfigEntity.getValue().map();
-        return resConfig;
-    }
-
-    protected String getWithRetries(String url) throws Throwable {
-        return getWithRetries(url, ATTEMPT_COUNT, ATTEMPT_DELAY);
-    }
-
-    protected String getWithRetries(String url, int attemptCount, long attemptDelay) throws Throwable {
-        Throwable e = null;
-        for (int i = 0; i < attemptCount; i++) {
-            try {
-                Request request = newAuthRequest().url(url).build();
-                Response response = client.newCall(request).execute();
-                System.out.println("Received [" + response.code() + "][" + response.message() + "] from: " + url);
-                AssertJUnit.assertEquals(200, response.code());
-                return response.body().string();
-            } catch (Throwable t) {
-                // some initial attempts may fail so we continue
-                e = t;
-                System.out.println("URL [" + url + "] not ready yet on [" + (i + 1) + "] of [" + attemptCount
-                        + "] attempts, about to retry after [" + attemptDelay + "]ms: " + t);
-            }
-            Thread.sleep(attemptDelay);
-        }
-        if (e != null) {
-            throw e;
-        } else {
-            throw new AssertionError("Could not get [" + url + "]");
-        }
-    }
-
-    protected void assertResourceNotInInventory(String listPath, Predicate<Resource> predicate, int attemptCount,
-            long attemptDelay) throws Throwable {
-        try {
-            for (int i = 0; i < attemptCount; i++) {
-                getResource(listPath, predicate, 1, 1);
-                Thread.sleep(attemptDelay);
-            }
-        } catch (AssertionError expected) {
-            return;
-        }
-        Assert.fail("resource is still in inventory. listPath=" + listPath);
-    }
-
-    protected Request.Builder newAuthRequest() {
-        return new Request.Builder()
-                .addHeader("Authorization", hawkularAuthHeader)
-                .addHeader("Accept", "application/json")
-                .addHeader("Hawkular-Tenant", getTenantId());
-    }
-
-    /**
-     * Subclass tests can override this if they are putting things in other tenants.
-     * @return the tenant to use when connecting to the hawkular server.
-     */
-    protected String getTenantId() {
-        return tenantId;
-    }
-
     /**
      * If a plain WildFly server was configured for the tests, this returns its data.
      * This will throw a runtime exception if there is no plain wildfly server in the test framework.
@@ -559,7 +332,7 @@ public abstract class AbstractITest {
     /**
      * @return Client to the Hawkular WildFly Server.
      *
-     * @see #getPlainWildFlyConfig()
+     * @see #getPlainWildFlyClientConfig()
      */
     protected static ModelControllerClient newPlainWildFlyModelControllerClient(WildFlyClientConfig config) {
         return newModelControllerClient(config.getHost(), config.getManagementPort());
@@ -649,11 +422,12 @@ public abstract class AbstractITest {
     protected void waitForHawkularServerToBeReady() throws Throwable {
         synchronized (waitForAccountsLock) {
             if (!hawkularServerIsReady) {
-                Thread.sleep(10000);
+                Thread.sleep(8000);
 
-                getWithRetries(baseInvUri + "/tenant");
-                while (!getWithRetries(baseMetricsUri + "/status").contains("STARTED")) {
+                String response = "";
+                while (!response.contains("STARTED")) {
                     Thread.sleep(2000);
+                    response = testHelper.getWithRetries(baseMetricsUri + "/status");
                 }
 
                 hawkularServerIsReady = true;
@@ -664,7 +438,6 @@ public abstract class AbstractITest {
     /**
      * Wait for the agent deployed in JMX to start.
      *
-     * @param mcc
      * @return true if the agent is up, false if the wait timed out
      * @throws Throwable on error
      */
@@ -676,8 +449,8 @@ public abstract class AbstractITest {
                 while (!ServiceStatus.RUNNING.name().equals(status) && count++ < 12) {
                     Thread.sleep(5000);
                     String url = agentJolokiaUri + "/exec/" + AGENT_MBEAN_OBJECT_NAME.toString() + "/status";
-                    String json = getWithRetries(url);
-                    JsonNode results = mapper.readTree(json);
+                    String json = testHelper.getWithRetries(url);
+                    JsonNode results = testHelper.mapper().readTree(json);
                     if (results.has("value")) {
                         status = results.get("value").asText("");
                     }
@@ -705,7 +478,7 @@ public abstract class AbstractITest {
             String agentPath = agentAddress.toAddressPathString();
             log.info("Checking [" + agentPath + "] status...");
             int count = 0;
-            while (true && ++count <= 12) {
+            while (++count <= 12) {
                 Thread.sleep(5000);
 
                 ModelNode op = JBossASClient.createRequest("status", agentAddress);
@@ -742,11 +515,11 @@ public abstract class AbstractITest {
     protected JsonNode getJMXAgentInventoryReport() {
         try {
             String url = agentJolokiaUri + "/exec/" + AGENT_MBEAN_OBJECT_NAME.toString() + "/inventoryReport";
-            String json = getWithRetries(url);
-            JsonNode results = mapper.readTree(json);
+            String json = testHelper.getWithRetries(url);
+            JsonNode results = testHelper.mapper().readTree(json);
             if (results.has("value")) {
                 String inventoryJson = results.get("value").asText();
-                return mapper.readTree(inventoryJson);
+                return testHelper.mapper().readTree(inventoryJson);
             }
             throw new Exception("No inventory report");
         } catch (Throwable e) {
@@ -757,8 +530,8 @@ public abstract class AbstractITest {
     protected void restartJMXAgent() {
         try {
             String url = agentJolokiaUri + "/exec/" + AGENT_MBEAN_OBJECT_NAME.toString() + "/";
-            getWithRetries(url + "stop");
-            getWithRetries(url + "start");
+            testHelper.getWithRetries(url + "stop");
+            testHelper.getWithRetries(url + "start");
             if (!waitForAgentViaJMX()) {
                 throw new Exception("Agent is not coming back up");
             }
@@ -772,14 +545,11 @@ public abstract class AbstractITest {
      * This is the Hawkular Server itself.
      *
      * @return path of hawkular wildfly server resource
-     * @throws Throwable
      */
     protected CanonicalPath getHawkularWildFlyServerResourcePath() throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + hawkularFeedId + "/type=r", 2);
-        List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
-                .collect(Collectors.toList());
-        AssertJUnit.assertEquals(1, wfs.size());
-        return wfs.get(0).getPath();
+        Map<CanonicalPath, Blueprint> wildflyServers = testHelper.getBlueprintsByType(hawkularFeedId, "WildFly Server");
+        AssertJUnit.assertEquals(1, wildflyServers.size());
+        return wildflyServers.keySet().iterator().next();
     }
 
     /**
@@ -787,14 +557,11 @@ public abstract class AbstractITest {
      * found in the given client config.
      *
      * @return path of host controller
-     * @throws Throwable
      */
     protected CanonicalPath getHostController() throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + hawkularFeedId + "/type=r", 2);
-        List<Resource> hcs = servers.stream().filter(s -> "Host Controller".equals(s.getType().getId()))
-                .collect(Collectors.toList());
+        Map<CanonicalPath, Blueprint> hcs = testHelper.getBlueprintsByType(hawkularFeedId, "Host Controller");
         AssertJUnit.assertEquals(1, hcs.size());
-        return hcs.get(0).getPath();
+        return hcs.keySet().iterator().next();
     }
 
     protected File getTestApplicationFile() {
