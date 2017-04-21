@@ -64,7 +64,6 @@ public class AgentCoreEngineConfiguration {
         private final String url;
         private final boolean useSSL;
         private final String serverOutboundSocketBindingRef;
-        private final String inventoryContext;
         private final String metricsContext;
         private final String feedcommContext;
         private final String hawkularContext;
@@ -83,7 +82,6 @@ public class AgentCoreEngineConfiguration {
                 String url,
                 boolean useSSL,
                 String serverOutboundSocketBindingRef,
-                String inventoryContext,
                 String metricsContext,
                 String feedcommContext,
                 String hawkularContext,
@@ -101,7 +99,6 @@ public class AgentCoreEngineConfiguration {
             this.url = url;
             this.useSSL = useSSL;
             this.serverOutboundSocketBindingRef = serverOutboundSocketBindingRef;
-            this.inventoryContext = inventoryContext;
             this.metricsContext = metricsContext;
             this.feedcommContext = feedcommContext;
             this.hawkularContext = hawkularContext;
@@ -150,10 +147,6 @@ public class AgentCoreEngineConfiguration {
 
         public String getServerOutboundSocketBindingRef() {
             return serverOutboundSocketBindingRef;
-        }
-
-        public String getInventoryContext() {
-            return inventoryContext;
         }
 
         public String getMetricsContext() {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+    Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
     and other contributors as indicated by the @author tags.
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,6 @@
     limitations under the License.
 
 -->
-
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xalan="http://xml.apache.org/xalan" version="2.0" exclude-result-prefixes="xalan">
 
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" xalan:indent-amount="4" standalone="no" />
@@ -39,11 +38,6 @@
   <!-- Replace hawkular-nest-logging.xml with hawkular-wildfly-agent-itest-logging.xml -->
   <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='hawkular-nest-logging.xml']">
     <subsystem>hawkular-wildfly-agent-itest-logging.xml</subsystem>
-  </xsl:template>
-
-  <!-- Replace datasources.xml with hawkular-inventory-datasources.xml -->
-  <xsl:template match="/*[local-name()='config']/*[local-name()='subsystems']/*[local-name()='subsystem' and text()='datasources.xml']">
-    <subsystem>hawkular-inventory-datasources.xml</subsystem>
   </xsl:template>
 
   <!-- Replace infinispan.xml with hawkular-wildfly-agent-itest-infinispan.xml -->

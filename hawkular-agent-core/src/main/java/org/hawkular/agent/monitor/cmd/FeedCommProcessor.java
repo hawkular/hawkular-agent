@@ -140,7 +140,7 @@ public class FeedCommProcessor implements WebSocketListener {
      * @return true if this object is currently connected to the websocket.
      */
     public boolean isConnected() {
-        return webSocket != null;
+        return this.webSocket != null;
     }
 
     /**
@@ -173,6 +173,17 @@ public class FeedCommProcessor implements WebSocketListener {
         if (webSocket != null) {
             try {
                 webSocket.close(code, reason);
+                // CommandGateway performs some async cleanup code that must complete before we
+                // can safely continue.  Otherwise we may try to establish a new connection (with the same name)
+                // before the old one is cleaned up server-side. It's fast, wait 2s and then continue. This is
+                // blunt but because there is no way for us to know when cmdgw has finished its close actions,
+                // there is no obvious alternative.
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
             } catch (Exception e) {
                 log.warnFailedToCloseWebSocket(code, reason, e);
             }
@@ -207,7 +218,7 @@ public class FeedCommProcessor implements WebSocketListener {
      * @param messageWithData the message to send
      */
     public void sendAsync(BasicMessageWithExtraData<? extends BasicMessage> messageWithData) {
-        if (webSocket == null) {
+        if (!isConnected()) {
             throw new IllegalStateException("WebSocket connection was closed. Cannot send any messages");
         }
 
@@ -256,7 +267,7 @@ public class FeedCommProcessor implements WebSocketListener {
      * @throws IOException if the message failed to be sent
      */
     public void sendSync(BasicMessageWithExtraData<? extends BasicMessage> messageWithData) throws Exception {
-        if (webSocket == null) {
+        if (!isConnected()) {
             throw new IllegalStateException("WebSocket connection was closed. Cannot send any messages");
         }
 

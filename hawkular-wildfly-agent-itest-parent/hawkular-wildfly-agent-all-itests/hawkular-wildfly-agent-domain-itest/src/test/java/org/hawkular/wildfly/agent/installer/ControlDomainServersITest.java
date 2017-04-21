@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +16,11 @@
  */
 package org.hawkular.wildfly.agent.installer;
 
+import java.util.Map;
+
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
@@ -46,22 +48,25 @@ public class ControlDomainServersITest extends AbstractITest {
         }
 
         CanonicalPath wfPath = getHostController(clientConfig);
-        Resource agent = getResource(
-                "/traversal/f;" + clientConfig.getFeedId() + "/type=rt;"
-                + "id=Domain WildFly Server Controller/rl;defines/type=r",
-                (r -> r.getId().contains(serverToTest)));
+        CanonicalPath agentPath = testHelper
+                .getBlueprintsByType(clientConfig.getFeedId(), "Domain WildFly Server Controller", 1)
+                .entrySet().stream()
+                .filter(e -> ((Entity.Blueprint) (e.getValue())).getId().contains(serverToTest))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .get();
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agent.getPath().toString() + "\","
+                + "\"resourcePath\":\"" + agentPath.toString() + "\","
                 + "\"operationName\":\"Stop\""
                 + "}";
         String response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"Stop\","
-                + "\"resourcePath\":\"" + agent.getPath() + "\","
+                + "\"resourcePath\":\"" + agentPath + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [Stop] on a [DMR Node] given by Inventory path ["
-                + agent.getPath() + "]\""
+                + agentPath + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")

@@ -28,10 +28,10 @@ import java.util.Map;
  * @author John Mazzitelli
  */
 public abstract class IDObject {
+
     private final ID id;
     private final Map<String, Object> properties = new HashMap<>();
-
-    private boolean persisted = false;
+    private long persistedTime = 0;
 
     public IDObject(String id) {
         if (id == null) {
@@ -79,14 +79,14 @@ public abstract class IDObject {
     }
 
     /**
-     * @return if true, this object has been registered or persisted in backend storage
+     * @return return the persistence timestamp
      */
-    public boolean isPersisted() {
-        return persisted;
+    public long getPersistedTime() {
+        return persistedTime;
     }
 
-    public void setPersisted(boolean persisted) {
-        this.persisted = persisted;
+    public void setPersistedTime(long timestamp) {
+        this.persistedTime = timestamp;
     }
 
     @Override
