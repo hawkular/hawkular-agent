@@ -16,13 +16,15 @@
  */
 package org.hawkular.wildfly.agent.installer;
 
+import java.util.Map;
+
 import org.hamcrest.CoreMatchers;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent.ExpectedMessage;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.PatternMatcher;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.paths.CanonicalPath;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
@@ -69,13 +71,16 @@ public class DomainImmutableITest extends AbstractITest {
 
             Assert.assertTrue(waitForAgent(mcc, hostAgentAddress), "Expected host agent to be started.");
 
-            Resource agent = getResource(
-                    "/traversal/f;" + clientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain WildFly Server Controller/rl;defines/type=r",
-                    (r -> r.getId().contains(serverToTest)));
+            CanonicalPath agentPath = testHelper
+                    .getBlueprintsByType(clientConfig.getFeedId(), "Domain WildFly Server Controller", 1)
+                    .entrySet().stream()
+                    .filter(e -> ((Entity.Blueprint) (e.getValue())).getId().contains(serverToTest))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .get();
 
             String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + agent.getPath().toString() + "\","
+                    + "\"resourcePath\":\"" + agentPath.toString() + "\","
                     + "\"metricTypes\":{\"WildFly Memory Metrics~Heap Max\":\"77\"}"
                     + "}";
             String response = ".*\"status\":\"ERROR\""

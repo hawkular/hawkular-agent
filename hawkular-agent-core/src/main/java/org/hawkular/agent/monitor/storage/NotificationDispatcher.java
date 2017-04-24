@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import org.hawkular.agent.monitor.api.DiscoveryEvent;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.NotificationPayloadBuilder;
@@ -38,13 +37,13 @@ public class NotificationDispatcher implements InventoryListener {
         this.feedId = feedId;
     }
 
-    @Override
-    public <L> void resourcesAdded(InventoryEvent<L> event) {
+    @Override public <L> void receivedEvent(InventoryEvent<L> event) {
         MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
         String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
         String tenantId = (null != endpointTenantId) ? endpointTenantId
                 : storageAdapter.getStorageAdapterConfiguration().getTenantId();
-        event.getPayload().stream()
+
+        event.getAddedOrModified().stream()
                 .filter(r -> r.getResourceType().getNotifications().contains(NotificationType.RESOURCE_ADDED))
                 .forEach(r -> {
                     CanonicalPath cp = CanonicalPath.of()
@@ -62,15 +61,5 @@ public class NotificationDispatcher implements InventoryListener {
 
                     }
                 });
-    }
-
-    @Override
-    public <L> void resourcesRemoved(InventoryEvent<L> event) {
-        // no notifications
-    }
-
-    @Override
-    public <L> void discoveryCompleted(DiscoveryEvent<L> event) {
-        // no notifications
     }
 }

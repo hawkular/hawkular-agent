@@ -20,7 +20,6 @@
 <build xmlns="urn:wildfly:feature-pack-build:1.1">
   <dependencies>
     <artifact name="org.hawkular.commons:hawkular-nest-feature-pack" />
-    <artifact name="org.hawkular.inventory:hawkular-inventory-feature-pack"/>
   </dependencies>
 
   <config>

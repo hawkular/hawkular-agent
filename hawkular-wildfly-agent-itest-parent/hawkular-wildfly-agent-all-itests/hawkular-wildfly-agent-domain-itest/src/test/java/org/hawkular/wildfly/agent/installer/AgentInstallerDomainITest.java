@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +19,13 @@ package org.hawkular.wildfly.agent.installer;
 import java.util.Collection;
 import java.util.Map;
 
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.Entity;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.StructuredData;
+import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.paths.SegmentType;
 import org.hawkular.wildfly.agent.itest.util.AbstractITest;
 import org.hawkular.wildfly.agent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
@@ -53,12 +56,13 @@ public class AgentInstallerDomainITest extends AbstractITest {
     public void hostsInInventory() throws Throwable {
 
         Collection<String> dmrHostNames = getHostNames();
+        Collection<Blueprint> hosts = testHelper.getBlueprintsByType(wfClientConfig.getFeedId(), "Domain Host", 1)
+                .values();
         for (String hostName : dmrHostNames) {
-            Resource host = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain Host/rl;defines/type=r",
-                    (r -> r.getName().contains(hostName)));
-            System.out.println("domain host in inventory=" + host);
+            boolean hasMatch = hosts.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint) bp).getId().contains(hostName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("domain host in inventory=" + hostName);
         }
 
         // make sure we are testing against what we were expecting
@@ -67,11 +71,13 @@ public class AgentInstallerDomainITest extends AbstractITest {
 
         // make sure the Domain Host operations are OK
         // SHUTDOWN
-        OperationType op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                "id=Domain Host/type=ot;id=Shutdown", 1, 1);
+        CanonicalPath shutdownPath = testHelper.feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Host").operationType("Shutdown").get();
+        OperationType.Blueprint op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(shutdownPath).get();
         Assert.assertEquals("Shutdown", op.getId());
-        DataEntity data = getDataEntity("/entity/f;" + wfClientConfig.getFeedId()
-                + "/rt;Domain Host/ot;Shutdown/d;parameterTypes", 1, 1);
+
+        CanonicalPath configPath = shutdownPath.extend(SegmentType.d, "parameterTypes").get();
+        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
         Map<String, StructuredData> paramsMap = data.getValue().map();
         Map<String, StructuredData> param = paramsMap.get("restart").map();
         Assert.assertEquals("bool", param.get("type").string());
@@ -79,8 +85,9 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // RELOAD
-        op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                "id=Domain Host/type=ot;id=Reload", 1, 1);
+        CanonicalPath reloadPath = testHelper.feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Host").operationType("Reload").get();
+        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(reloadPath).get();
         Assert.assertEquals("Reload", op.getId());
     }
 
@@ -88,12 +95,13 @@ public class AgentInstallerDomainITest extends AbstractITest {
     public void serversInInventory() throws Throwable {
 
         Collection<String> dmrServerNames = getServerNames();
+        Collection<Blueprint> servers = testHelper
+                .getBlueprintsByType(wfClientConfig.getFeedId(), "Domain WildFly Server", 3).values();
         for (String serverName : dmrServerNames) {
-            Resource server = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain WildFly Server/rl;defines/type=r",
-                    (r -> r.getName().contains(serverName)));
-            System.out.println("domain server in inventory=" + server);
+            boolean hasMatch = servers.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint) bp).getId().contains(serverName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("domain server in inventory=" + serverName);
         }
 
         // make sure we are testing against what we were expecting
@@ -107,12 +115,13 @@ public class AgentInstallerDomainITest extends AbstractITest {
     public void serverGroupsInInventory() throws Throwable {
 
         Collection<String> dmrServerGroupNames = getServerGroupNames();
+        Collection<Blueprint> groups = testHelper
+                .getBlueprintsByType(wfClientConfig.getFeedId(), "Domain Server Group", 2).values();
         for (String groupName : dmrServerGroupNames) {
-            Resource group = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain Server Group/rl;defines/type=r",
-                    (r -> r.getName().contains(groupName)));
-            System.out.println("domain server group in inventory=" + group);
+            boolean hasMatch = groups.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint) bp).getId().contains(groupName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("domain server group in inventory=" + groupName);
         }
 
         // make sure we are testing against what we were expecting
@@ -122,11 +131,13 @@ public class AgentInstallerDomainITest extends AbstractITest {
 
         // make sure the Domain Server Groups operations are OK
         // RELOAD SERVERS
-        OperationType op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                "id=Domain Server Group/type=ot;id=Reload Servers", 1, 1);
+        CanonicalPath reloadPath = testHelper.feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Reload Servers").get();
+        OperationType.Blueprint op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(reloadPath).get();
         Assert.assertEquals("Reload Servers", op.getId());
-        DataEntity data = getDataEntity("/entity/f;" + wfClientConfig.getFeedId()
-                + "/rt;Domain Server Group/ot;Reload Servers/d;parameterTypes", 1, 1);
+
+        CanonicalPath configPath = reloadPath.extend(SegmentType.d, "parameterTypes").get();
+        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
         Map<String, StructuredData> paramsMap = data.getValue().map();
         Map<String, StructuredData> param = paramsMap.get("blocking").map();
         Assert.assertEquals("bool", param.get("type").string());
@@ -134,11 +145,12 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // RESTART SERVERS
-        op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                "id=Domain Server Group/type=ot;id=Restart Servers", 1, 1);
+        CanonicalPath restartPath = testHelper.feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Restart Servers").get();
+        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(restartPath).get();
         Assert.assertEquals("Restart Servers", op.getId());
-        data = getDataEntity("/entity/f;" + wfClientConfig.getFeedId()
-                + "/rt;Domain Server Group/ot;Restart Servers/d;parameterTypes", 1, 1);
+        configPath = restartPath.extend(SegmentType.d, "parameterTypes").get();
+        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
         paramsMap = data.getValue().map();
         param = paramsMap.get("blocking").map();
         Assert.assertEquals("bool", param.get("type").string());
@@ -146,11 +158,12 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // START SERVERS
-        op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                "id=Domain Server Group/type=ot;id=Start Servers", 1, 1);
+        CanonicalPath startPath = testHelper.feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Start Servers").get();
+        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(startPath).get();
         Assert.assertEquals("Start Servers", op.getId());
-        data = getDataEntity("/entity/f;" + wfClientConfig.getFeedId()
-                + "/rt;Domain Server Group/ot;Start Servers/d;parameterTypes", 1, 1);
+        configPath = startPath.extend(SegmentType.d, "parameterTypes").get();
+        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
         paramsMap = data.getValue().map();
         param = paramsMap.get("blocking").map();
         Assert.assertEquals("bool", param.get("type").string());
@@ -158,11 +171,12 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // SUSPEND SERVERS
-        op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                "id=Domain Server Group/type=ot;id=Suspend Servers", 1, 1);
+        CanonicalPath suspendPath = testHelper.feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Suspend Servers").get();
+        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(suspendPath).get();
         Assert.assertEquals("Suspend Servers", op.getId());
-        data = getDataEntity("/entity/f;" + wfClientConfig.getFeedId()
-                + "/rt;Domain Server Group/ot;Suspend Servers/d;parameterTypes", 1, 1);
+        configPath = suspendPath.extend(SegmentType.d, "parameterTypes").get();
+        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
         paramsMap = data.getValue().map();
         param = paramsMap.get("timeout").map();
         Assert.assertEquals("int", param.get("type").string());
@@ -170,11 +184,12 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // STOP SERVERS
-        op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                "id=Domain Server Group/type=ot;id=Stop Servers", 1, 1);
+        CanonicalPath stopPath = testHelper.feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Stop Servers").get();
+        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(stopPath).get();
         Assert.assertEquals("Stop Servers", op.getId());
-        data = getDataEntity("/entity/f;" + wfClientConfig.getFeedId()
-                + "/rt;Domain Server Group/ot;Stop Servers/d;parameterTypes", 1, 1);
+        configPath = stopPath.extend(SegmentType.d, "parameterTypes").get();
+        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
         paramsMap = data.getValue().map();
         param = paramsMap.get("timeout").map();
         Assert.assertEquals("int", param.get("type").string());
@@ -186,8 +201,9 @@ public class AgentInstallerDomainITest extends AbstractITest {
         Assert.assertNotNull(param.get("description").string());
 
         // RESUME SERVERS
-        op = getOperationType("/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;" +
-                "id=Domain Server Group/type=ot;id=Resume Servers", 1, 1);
+        CanonicalPath resumePath = testHelper.feedPath(wfClientConfig.getFeedId())
+                .resourceType("Domain Server Group").operationType("Resume Servers").get();
+        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(resumePath).get();
         Assert.assertEquals("Resume Servers", op.getId());
     }
 
@@ -195,12 +211,13 @@ public class AgentInstallerDomainITest extends AbstractITest {
     public void profilesInInventory() throws Throwable {
 
         Collection<String> dmrProfileNames = getProfileNames();
+        Collection<Blueprint> profiles = testHelper
+                .getBlueprintsByType(wfClientConfig.getFeedId(), "Domain Profile", 4).values();
         for (String profileName : dmrProfileNames) {
-            Resource profile = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Domain Profile/rl;defines/type=r",
-                    (r -> r.getName().contains(profileName)));
-            System.out.println("domain profile in inventory=" + profile);
+            boolean hasMatch = profiles.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint) bp).getId().contains(profileName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("domain profile in inventory=" + profileName);
         }
 
         // make sure we are testing against what we were expecting
@@ -215,12 +232,13 @@ public class AgentInstallerDomainITest extends AbstractITest {
     public void socketBindingGroupsInInventory() throws Throwable {
 
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
+        Collection<Blueprint> sbgs = testHelper
+                .getBlueprintsByType(wfClientConfig.getFeedId(), "Socket Binding Group", 4).values();
         for (String sbgName : dmrSBGNames) {
-            Resource sbg = getResource(
-                    "/traversal/f;" + wfClientConfig.getFeedId() + "/type=rt;"
-                            + "id=Socket Binding Group/rl;defines/type=r",
-                    (r -> r.getName().contains(sbgName)));
-            System.out.println("socket binding group in inventory=" + sbg);
+            boolean hasMatch = sbgs.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint) bp).getId().contains(sbgName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("socket binding group in inventory=" + sbgName);
         }
 
         // make sure we are testing against what we were expecting

@@ -47,7 +47,6 @@ storage-adapter:
   password:             password
   feed-id:              autogenerate
   security-realm:       h-server-security-realm
-  inventory-context:    /my-inventory
   metrics-context:      /my-metrics
   feedcomm-context:     /my-feedcomm
   connect-timeout-secs: 123

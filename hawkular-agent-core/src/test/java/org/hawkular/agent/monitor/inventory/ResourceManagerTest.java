@@ -62,15 +62,16 @@ public class ResourceManagerTest {
         // add root
         addResourceAndTest(rm, originalRoot, Effect.ADDED);
 
+        long rootPersistedTime = System.currentTimeMillis();
         // simulate that we persisted it
-        originalRoot.setPersisted(true);
+        originalRoot.setPersistedTime(rootPersistedTime);
 
         // make sure our inventory is what we expect: root1 -> child1 -> grandchild1
         Iterator<Resource<DMRNodeLocation>> bIter = rm.getResourcesBreadthFirst().iterator();
         Assert.assertEquals(originalRoot, bIter.next());
         Assert.assertFalse(bIter.hasNext());
         Assert.assertEquals("root1Name", rm.getResource(new ID(rootIdString)).getName().getNameString());
-        Assert.assertTrue(rm.getResource(new ID(rootIdString)).isPersisted());
+        Assert.assertTrue(rm.getResource(new ID(rootIdString)).getPersistedTime() >= rootPersistedTime);
 
         // perform "full discovery" - we'll find a new resource as a child of a parent we already know about
         Resource<DMRNodeLocation> discoveredRoot = Resource.<DMRNodeLocation> builder()
@@ -97,7 +98,8 @@ public class ResourceManagerTest {
 
         // simulate that we persisted it
         discoveredChild = addResultChild.getResource();
-        discoveredChild.setPersisted(true);
+        long childPersistedTime = System.currentTimeMillis();
+        discoveredChild.setPersistedTime(childPersistedTime);
 
         // make sure the inventory is as we expect
         bIter = rm.getResourcesBreadthFirst().iterator();
@@ -110,12 +112,12 @@ public class ResourceManagerTest {
         Assert.assertEquals(discoveredChild.getID(), rm.getResource(discoveredChild.getID()).getID());
 
         // persisted flags should be true
-        Assert.assertTrue("Should be persisted", rm.getResource(new ID(rootIdString)).isPersisted());
-        Assert.assertTrue("Should be persisted", rm.getResource(new ID(childIdString)).isPersisted());
+        Assert.assertTrue("Should be persisted", rm.getResource(new ID(rootIdString)).getPersistedTime() >= rootPersistedTime);
+        Assert.assertTrue("Should be persisted", rm.getResource(new ID(childIdString)).getPersistedTime() >= childPersistedTime);
 
         // the child's parent should have been replaced with the one in inventory
         Resource<DMRNodeLocation> child = rm.getResource(new ID(childIdString));
-        Assert.assertTrue("Parent should be persisted", child.getParent().isPersisted());
+        Assert.assertTrue("Parent should be persisted", child.getParent().getPersistedTime() >= rootPersistedTime);
         Assert.assertSame("Child's parent should be the original root", originalRoot, child.getParent());
     }
 

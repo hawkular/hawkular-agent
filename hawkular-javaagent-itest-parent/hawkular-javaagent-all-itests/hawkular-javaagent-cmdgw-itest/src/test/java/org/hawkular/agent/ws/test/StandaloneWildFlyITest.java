@@ -17,9 +17,8 @@
 package org.hawkular.agent.ws.test;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import org.hawkular.agent.javaagent.config.Configuration;
 import org.hawkular.agent.javaagent.config.DMRMetric;
@@ -27,9 +26,11 @@ import org.hawkular.agent.javaagent.config.DMRMetricSet;
 import org.hawkular.agent.javaagent.config.TimeUnits;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
+import org.hawkular.inventory.api.model.Blueprint;
 import org.hawkular.inventory.api.model.DataEntity;
+import org.hawkular.inventory.api.model.Entity;
+import org.hawkular.inventory.api.model.InventoryStructure;
 import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResourceType;
 import org.hawkular.inventory.api.model.StructuredData;
 import org.hawkular.inventory.paths.CanonicalPath;
@@ -52,29 +53,27 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
         waitForAgentViaJMX();
 
-        Resource agent = getResource(
-                "/traversal/f;" + hawkularFeedId + "/type=rt;"
-                        + "id=Hawkular%20WildFly%20Agent/rl;defines/type=r",
-                (r -> r.getId() != null));
+        CanonicalPath agentPath = testHelper.getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent", 1)
+                .keySet().iterator().next();
 
         // disable Datasource Pool Metrics~Active Count
         String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agent.getPath().toString() + "\","
+                + "\"resourcePath\":\"" + agentPath.toString() + "\","
                 + "\"metricTypes\":{\"Datasource Pool Metrics~Active Count\":\"0\",\"Unknown~Metric\":\"666\"},"
                 + "\"availTypes\":{}"
                 + "}";
         String response = "UpdateCollectionIntervalsResponse={"
-                + "\"resourcePath\":\"" + agent.getPath() + "\","
+                + "\"resourcePath\":\"" + agentPath + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [Update Collection Intervals] on a [Agent[JMX]] given by Inventory path ["
-                + agent.getPath() + "]\""
+                + agentPath + "]\""
                 + "}";
 
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(agent.getPath().ids().getFeedId())
+                .expectGenericSuccess(agentPath.ids().getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -93,15 +92,15 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     public void operationParameters() throws Throwable {
 
         // get the operation
-        OperationType op = getOperationType("/traversal/f;" + hawkularFeedId + "/type=rt;" +
-                "id=WildFly Server/type=ot;id=Shutdown", ATTEMPT_COUNT, ATTEMPT_DELAY);
+        CanonicalPath shutdownPath = testHelper.feedPath(hawkularFeedId)
+                .resourceType("WildFly Server").operationType("Shutdown").get();
+        OperationType.Blueprint op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(shutdownPath).get();
         Assert.assertEquals("Shutdown", op.getId());
         System.out.println("StandaloneWildFlyITest.operationParameters() ===> " + op);
 
         // get parameters
-        DataEntity data = getDataEntity(
-                "/entity/f;" + hawkularFeedId + "/rt;WildFly Server/ot;Shutdown/d;parameterTypes",
-                ATTEMPT_COUNT, ATTEMPT_DELAY);
+        CanonicalPath configPath = shutdownPath.extend(SegmentType.d, "parameterTypes").get();
+        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
         Assert.assertNotNull(data);
         Map<String, StructuredData> paramsMap = data.getValue().map();
         Map<String, StructuredData> timeoutParam = paramsMap.get("timeout").map();
@@ -118,13 +117,14 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
     public void socketBindingGroupsInInventory() throws Throwable {
 
+        Collection<Blueprint> blueprints = testHelper.getBlueprintsByType(hawkularFeedId, "Socket Binding Group", 1)
+                .values();
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
         for (String sbgName : dmrSBGNames) {
-            Resource sbg = getResource(
-                    "/traversal/f;" + hawkularFeedId + "/type=rt;" +
-                            "id=Socket Binding Group/rl;defines/type=r",
-                    (r -> r.getName().contains(sbgName)));
-            System.out.println("StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> group: " + sbg);
+            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint) bp).getId().contains(sbgName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> group: " + sbgName);
         }
 
         // make sure we are testing against what we were expecting
@@ -132,13 +132,13 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         Assert.assertEquals(dmrSBGNames.size(), 1, "Wrong number of socket binding groups");
 
         // there is only one group - get the names of all the bindings (incoming and outbound) in that group
+        blueprints = testHelper.getBlueprintsByType(hawkularFeedId, "Socket Binding", 7).values();
         Collection<String> dmrBindingNames = getSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
-            Resource binding = getResource(
-                    "/traversal/f;" + hawkularFeedId + "/type=rt;" +
-                            "id=Socket Binding/rl;defines/type=r",
-                    (r -> r.getName().contains(bindingName)));
-            System.out.println("StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> binding: " + binding);
+            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint) bp).getId().contains(bindingName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> binding: " + bindingName);
         }
 
         // make sure we are testing against what we were expecting
@@ -151,13 +151,15 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         Assert.assertTrue(dmrBindingNames.contains("txn-status-manager"));
         Assert.assertEquals(dmrBindingNames.size(), 7, "Wrong number of socket binding groups");
 
+        blueprints = testHelper.getBlueprintsByType(hawkularFeedId, "Remote Destination Outbound Socket Binding", 1)
+                .values();
         dmrBindingNames = getOutboundSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
-            Resource binding = getResource(
-                    "/traversal/f;" + hawkularFeedId + "/type=rt;" +
-                            "id=Remote Destination Outbound Socket Binding/rl;defines/type=r",
-                    (r -> r.getName().contains(bindingName)));
-            System.out.println("StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> out-binding: " + binding);
+            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint) bp).getId().contains(bindingName));
+            Assert.assertTrue(hasMatch);
+            System.out.println(
+                    "StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> out-binding: " + bindingName);
         }
 
         // make sure we are testing against what we were expecting
@@ -167,12 +169,14 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
     public void datasourcesAddedToInventory() throws Throwable {
-
-        for (String datasourceName : getDatasourceNames()) {
-            Resource ds = getResource("/traversal/f;" + hawkularFeedId + "/type=rt;"
-                    + "id=Datasource/rl;defines/type=r",
-                    (r -> r.getId().contains(datasourceName)));
-            System.out.println("StandaloneWildFlyITest.datasourcesAddedToInventory() ===> " + ds);
+        Collection<String> datasourceNames = getDatasourceNames();
+        Collection<Blueprint> blueprints = testHelper
+                .getBlueprintsByType(hawkularFeedId, "Datasource", datasourceNames.size()).values();
+        for (String datasourceName : datasourceNames) {
+            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
+                    && ((Entity.Blueprint) bp).getId().contains(datasourceName));
+            Assert.assertTrue(hasMatch);
+            System.out.println("StandaloneWildFlyITest.datasourcesAddedToInventory() ===> " + datasourceName);
         }
     }
 
@@ -201,8 +205,8 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         int second = 1000;
         int timeOutSeconds = 90; // enabled metrics should have been collected at least once in this time
         for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = newAuthRequest().url(baseMetricsUri + "/gauges").build();
-            Response gaugesResponse = client.newCall(request).execute();
+            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/gauges").build();
+            Response gaugesResponse = testHelper.client().newCall(request).execute();
 
             if (gaugesResponse.code() == 200 && !gaugesResponse.body().string().isEmpty()) {
                 boolean found = false;
@@ -215,7 +219,8 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
                     id = Util.urlEncodeQuery(id);
                     String url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
                     lastUrl = url;
-                    Response gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
+                    Response gaugeResponse = testHelper.client()
+                            .newCall(testHelper.newAuthRequest().url(url).get().build()).execute();
                     if (gaugeResponse.code() == 200) {
                         String body = gaugeResponse.body().string();
                         // this should be enough to prove that some metric was written successfully
@@ -231,7 +236,8 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
                     id = Util.urlEncodeQuery(id);
                     url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
                     //System.out.println("url = " + url);
-                    gaugeResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
+                    gaugeResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build())
+                            .execute();
                     if (gaugeResponse.code() == 200) {
                         String body = gaugeResponse.body().string();
                         // this should be enough to prove that the metric was not disabled
@@ -261,15 +267,16 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         int timeOutSeconds = 90; // avail should be been collected at least once within this time
 
         for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = newAuthRequest().url(baseMetricsUri + "/availability").build();
-            Response availabilityResponse = client.newCall(request).execute();
+            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/availability").build();
+            Response availabilityResponse = testHelper.client().newCall(request).execute();
 
             if (availabilityResponse.code() == 200 && !availabilityResponse.body().string().isEmpty()) {
                 String id = "AI~R~[" + hawkularFeedId
                         + "/Local DMR~~]~AT~Server Availability~Server Availability";
                 id = Util.urlEncode(id);
                 String url = baseMetricsUri + "/availability/" + id + "/raw";
-                availabilityResponse = client.newCall(newAuthRequest().url(url).get().build()).execute();
+                availabilityResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build())
+                        .execute();
                 if (availabilityResponse.code() == 200) {
                     String body = availabilityResponse.body().string();
                     // this should be enough to prove that some metric was written successfully
@@ -289,9 +296,9 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void resourceConfig() throws Throwable {
-        CanonicalPath wfPath = getWildFlyServerResourcePath();
-        wfPath = wfPath.extend(SegmentType.d, "configuration").get();
-        Map<String, StructuredData> resConfig = getStructuredData("/entity" + wfPath.toString(), 1, 1);
+        CanonicalPath wfPath = getWildFlyServerResourcePath().extend(SegmentType.d, "configuration").get();
+        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(wfPath).get();
+        Map<String, StructuredData> resConfig = data.getValue().map();
         Assert.assertEquals("NORMAL", resConfig.get("Running Mode").string());
         Assert.assertEquals("RUNNING", resConfig.get("Suspend State").string());
         Assert.assertTrue(resConfig.containsKey("Name"));
@@ -306,39 +313,39 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     }
 
     private CanonicalPath getWildFlyServerResourcePath() throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + hawkularFeedId + "/type=r", 2);
-        List<Resource> wfs = servers.stream().filter(s -> "WildFly Server".equals(s.getType().getId()))
-                .collect(Collectors.toList());
-        Assert.assertEquals(1, wfs.size());
-        return wfs.get(0).getPath();
+        Map<CanonicalPath, Blueprint> servers = testHelper.getBlueprintsByType(hawkularFeedId, "WildFly Server", 1);
+        Assert.assertEquals(1, servers.size());
+        return servers.keySet().iterator().next();
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void machineId() throws Throwable {
-        CanonicalPath osTypePath = getOperatingSystemResourceTypePath();
-        osTypePath = osTypePath.extend(SegmentType.d, "configurationSchema").get();
-        Map<String, StructuredData> schema = getStructuredData("/entity" + osTypePath.toString(), 1, 1);
+        CanonicalPath osTypePath = getOperatingSystemResourceTypePath().extend(SegmentType.d, "configurationSchema")
+                .get();
+        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(osTypePath).get();
+        Map<String, StructuredData> schema = data.getValue().map();
         Assert.assertTrue(schema.containsKey("Machine Id"));
 
-        CanonicalPath osPath = getOperatingSystemResourcePath();
-        osPath = osPath.extend(SegmentType.d, "configuration").get();
-        Map<String, StructuredData> resConfig = getStructuredData("/entity" + osPath.toString(), 1, 1);
+        CanonicalPath osPath = getOperatingSystemResourcePath().extend(SegmentType.d, "configuration").get();
+        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(osPath).get();
+        Map<String, StructuredData> resConfig = data.getValue().map();
         Assert.assertTrue(resConfig.containsKey("Machine Id"));
     }
 
     private CanonicalPath getOperatingSystemResourceTypePath() throws Throwable {
-        ResourceType osType = getResourceType(
-                "/entity/f;" + hawkularFeedId + "/rt;Platform_Operating%20System", 1, 1);
-        Assert.assertNotNull(osType);
-        return osType.getPath();
+        Optional<InventoryStructure> optInventoryStructure = testHelper.getInventoryStructure(hawkularFeedId, "rt",
+                "Platform_Operating System");
+        Assert.assertTrue(optInventoryStructure.isPresent());
+        InventoryStructure.Offline<ResourceType.Blueprint> osType = (InventoryStructure.Offline<ResourceType.Blueprint>) optInventoryStructure
+                .get();
+        return testHelper.feedPath(hawkularFeedId).resourceType(osType.getRoot().getId()).get();
     }
 
     private CanonicalPath getOperatingSystemResourcePath() throws Throwable {
-        List<Resource> servers = getResources("/traversal/f;" + hawkularFeedId + "/type=r", 2);
-        List<Resource> os = servers.stream().filter(s -> "Platform_Operating System".equals(s.getType().getId()))
-                .collect(Collectors.toList());
+        Map<CanonicalPath, Blueprint> os = testHelper.getBlueprintsByType(hawkularFeedId, "Platform_Operating System",
+                1);
         Assert.assertEquals(1, os.size());
-        return os.get(0).getPath();
+        return os.keySet().iterator().next();
     }
 
     private void assertMetricInterval(Configuration agentConfig, String setName, String metricName, int expectedVal,

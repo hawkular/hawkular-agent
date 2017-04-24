@@ -1,5 +1,5 @@
 #
-# Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+# Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
 # and other contributors as indicated by the @author tags.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,16 +52,6 @@ repositories:
     - org.hawkular.commons
     urls:
     - git:https://github.com/hawkular/hawkular-commons.git
-    buildArguments:
-    - -Dcheckstyle.skip=true
-    - -Dlicense.skip=true
-    - -Drevapi.skip=true
-
-  org.hawkular.inventory:
-    selectors:
-    - org.hawkular.inventory
-    urls:
-    - git:https://github.com/hawkular/hawkular-inventory.git
     buildArguments:
     - -Dcheckstyle.skip=true
     - -Dlicense.skip=true

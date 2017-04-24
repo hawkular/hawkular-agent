@@ -67,7 +67,7 @@ public class AgentInstallerStandalonePrepare extends AbstractITest {
                 "--server-url=http://" + hawkularHost + ":" + hawkularHttpPort,
                 "--username=" + testUser,
                 "--password=" + testPasword,
-                "--tenant-id=" + getTenantId(),
+                "--tenant-id=" + testHelper.getTenantId(),
                 "--enabled=true"
         });
 
