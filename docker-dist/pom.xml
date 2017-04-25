@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-wildfly-agent-parent</artifactId>
-    <version>0.29.5.Final-SNAPSHOT</version>
+    <version>1.0.0.CR1</version>
   </parent>
 
   <artifactId>hawkular-services-dist-docker</artifactId>
@@ -118,8 +118,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <target>
-                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}"
-                      tofile="${project.build.directory}/hawkular-javaagent-wildfly-dist"/>
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}" tofile="${project.build.directory}/hawkular-javaagent-wildfly-dist" />
               </target>
             </configuration>
             <goals>
