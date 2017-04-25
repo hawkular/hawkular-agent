@@ -23,7 +23,7 @@
   </dependencies>
 
   <copy-artifacts>
-    <copy-artifact artifact="org.hawkular.agent:hawkular-javaagent" to-location="bin/hawkular-javaagent.jar" />
+    <copy-artifact artifact="org.hawkular.agent:hawkular-javaagent::shaded" to-location="bin/hawkular-javaagent.jar" />
   </copy-artifacts>
 
   <file-permissions>
