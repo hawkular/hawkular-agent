@@ -24,7 +24,7 @@ IMAGES="wildfly-hawkular-agent-domain \
 
 OWNER="${OWNER:-hawkular}"
 
-if [[ "${TRAVIS_TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.Final$ ]]; then
+if [[ "${TRAVIS_TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.(Final|Alpha|Beta|CR)[0-9]?$ ]]; then
 
   # build the images
   ./docker-dist/do.sh
