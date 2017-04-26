@@ -25,6 +25,30 @@ import org.junit.Test;
 
 public class UtilTest {
     @Test
+    public void testExtractHashFromString() {
+        Assert.assertNull(Util.extractDockerContainerIdFromString(null));
+        Assert.assertNull(Util.extractDockerContainerIdFromString(""));
+        Assert.assertNull(Util.extractDockerContainerIdFromString("\n"));
+        Assert.assertNull(Util.extractDockerContainerIdFromString("This has no hash"));
+        Assert.assertNull(Util.extractDockerContainerIdFromString("Missing the word dock?r 1234567890abcdefABCDEF"));
+
+        String l;
+        String hash;
+
+        l = "11:memory:/docker/99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a\n";
+        hash = "99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a";
+        Assert.assertEquals(hash, Util.extractDockerContainerIdFromString(l));
+
+        l = "11:freezer:/system.slice/docker-c4a970c28c9d277373b5d1458679ac17c10db8538dd081072a95682b4396674f.scope\n";
+        hash = "c4a970c28c9d277373b5d1458679ac17c10db8538dd081072a95682b4396674f";
+        Assert.assertEquals(hash, Util.extractDockerContainerIdFromString(l));
+
+        l = "9876543210fedcba blah blah docker blah blah-1234567890abcdefABCDEF.yadda fedcba9876543210";
+        hash = "1234567890abcdefABCDEF";
+        Assert.assertEquals(hash, Util.extractDockerContainerIdFromString(l));
+    }
+
+    @Test
     public void encodeUrlSpace() {
         String encoded = Util.urlEncode("space should be a percent20");
         Assert.assertEquals("space%20should%20be%20a%20percent20", encoded);
@@ -48,7 +72,8 @@ public class UtilTest {
         Assert.assertEquals(map, mapDup);
     }
 
-    @Test @Ignore("CI system has no /etc/machine-id . But this should work on Fedora/RHEL/CentOS boxes.")
+    @Test
+    @Ignore("CI system has no /etc/machine-id . But this should work on Fedora/RHEL/CentOS boxes.")
     public void getSystemId() {
         Assert.assertNotNull(Util.getMachineId());
     }

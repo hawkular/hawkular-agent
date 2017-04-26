@@ -33,6 +33,8 @@ import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.util.Base64;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.log.AgentLoggers;
@@ -332,15 +334,11 @@ public class Util {
                         public void accept(String s) {
                             // /proc/self/cgroup has lines that look like this:
                             // 11:memory:/docker/99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a
-                            // 9:cpuset:/docker/99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a
-                            // 3:cpu,cpuacct:/docker/99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a
-                            // 1:name=systemd:/docker/99cb4a5d8c7a8a29d01dfcbb7c2ba210bad5470cc7a86474945441361a37513a
-                            // The container ID is the same in all the /docker/ entries - we just want one of them.
+                            // or this
+                            // 11:freezer:/system.slice/docker-c4a970c28c9d277373b5d1458679ac17c10db8538dd081072a.scope
+                            // The container ID is the same in all the /docker entries - we just want one of them.
                             if (containerId == null) {
-                                String[] arr = s.trim().split("/docker/", 2);
-                                if (arr.length > 1) {
-                                    containerId = arr[1];
-                                }
+                                containerId = extractDockerContainerIdFromString(s);
                             }
                         }
                     });
@@ -349,7 +347,7 @@ public class Util {
                     containerId = "";
                 } finally {
                     if (containerId == null) {
-                        log.warnf("%s exists but could not find a container ID in it", containerIdFilename);
+                        log.infof("%s exists but could not find a container ID in it", containerIdFilename);
                         containerId = "";
                     }
                 }
@@ -375,5 +373,20 @@ public class Util {
         // }
 
         return (containerId.isEmpty()) ? null : containerId;
+    }
+
+    public static String extractDockerContainerIdFromString(String s) {
+        if (s == null || !s.contains("docker")) {
+            return null;
+        }
+
+        // container ID must follow the word "docker" and must be at least 8 hex digits long (or more)
+        String haystack = s.trim().substring(s.indexOf("docker") + "docker".length());
+        Matcher m = Pattern.compile(".*?([0-9a-fA-F]{8,}).*?").matcher(haystack);
+        if (m.matches()) {
+            return m.group(1);
+        }
+
+        return null;
     }
 }
