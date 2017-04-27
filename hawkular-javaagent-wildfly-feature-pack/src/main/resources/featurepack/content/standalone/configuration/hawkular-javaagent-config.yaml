@@ -21,7 +21,7 @@ subsystem:
   immutable: "${hawkular.agent.immutable:false}"
   in-container: "${hawkular.agent.in-container:false}"
   auto-discovery-scan-period-secs: 600
-  min-collection-interval-secs: "${hawkular.agent.minCollectionIntervalCecs:30}"
+  min-collection-interval-secs: "${hawkular.agent.minCollectionIntervalSecs:30}"
 
 diagnostics:
   enabled:    true
