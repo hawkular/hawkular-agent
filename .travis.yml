@@ -51,6 +51,6 @@ after_success:
   then
     ./mvnw -s .travis.maven.settings.xml deploy -DskipTests -Dlicense.skip=true;
   fi
-- if [[ "$TRAVIS_TAG" != "" ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
+- if [[ "${TRAVIS_TAG}" != "" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
     ./.travis.push.docker.images.sh;
   fi
