@@ -59,9 +59,9 @@
     <!-- Some third-party libraries (e.g. okhttp3) use SLF4J logging API.
          To avoid errors spitting out, we need to include an SLF4J binding -->
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-nop</artifactId>
-      <version>1.7.21</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.1</version>
       <scope>compile</scope>
     </dependency>
 
