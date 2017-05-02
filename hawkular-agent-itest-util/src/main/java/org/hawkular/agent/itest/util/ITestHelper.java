@@ -114,12 +114,25 @@ public class ITestHelper {
                 if (master.length == 0) {
                     return Optional.empty();
                 }
+                if (nbChunks > dataNode.size()) {
+                    // Race condition: some, but not all chunks have been written on DB while reading?
+                    // Then, caller must just wait a little bit before retrying
+                    return Optional.empty();
+                }
+                long masterTimestamp = masterNode.get("timestamp").asLong();
                 all = new byte[totalSize];
                 int pos = 0;
                 System.arraycopy(master, 0, all, pos, master.length);
                 pos += master.length;
                 for (int i = 1; i < nbChunks; i++) {
                     JsonNode slaveNode = dataNode.get(i);
+                    // Perform sanity check using timestamps; they should all be contiguous, in decreasing order
+                    long slaveTimestamp = slaveNode.get("timestamp").asLong();
+                    if (slaveTimestamp != masterTimestamp-i) {
+                        // Race condition: some, but not all chunks have been written on DB while reading?
+                        // Then, caller must just wait a little bit before retrying
+                        return Optional.empty();
+                    }
                     byte[] slave = slaveNode.get("value").binaryValue();
                     System.arraycopy(slave, 0, all, pos, slave.length);
                     pos += slave.length;
