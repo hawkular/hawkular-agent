@@ -559,14 +559,6 @@ resource-type-set-dmr:
     - name: Bound Address
       attribute: bound-address
       path:     /socket-binding-group=standard-sockets/socket-binding=http
-    - name: Immutable
-      attribute:           immutable
-      path:                /subsystem=hawkular-wildfly-agent
-      resolve-expressions: true
-    - name: In Container
-      attribute:           in-container
-      path:                /subsystem=hawkular-wildfly-agent
-      resolve-expressions: true
     operation-dmr:
     - name: JDR
       internal-name: generate-jdr-report
@@ -622,14 +614,6 @@ resource-type-set-dmr:
       attribute: process-type
     - name: Local Host Name
       attribute: local-host-name
-    - name: Immutable
-      attribute:           immutable
-      path:                /subsystem=hawkular-wildfly-agent
-      resolve-expressions: true
-    - name: In Container
-      attribute:           in-container
-      path:                /subsystem=hawkular-wildfly-agent
-      resolve-expressions: true
     operation-dmr:
     - name: Restart Servers
       internal-name: restart-servers
