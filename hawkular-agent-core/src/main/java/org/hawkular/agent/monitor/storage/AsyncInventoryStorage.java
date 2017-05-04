@@ -379,7 +379,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     private static final MsgLogger log = AgentLoggers.getLogger(AsyncInventoryStorage.class);
-    private static final int CHUNKS_SIZE = 1536;    // = 2048*4/3 due to Base64 conversion
+    /**
+     * Maximum string size in Hawkular Metrics is 2048 bytes
+     * Chunks byte array are then base64-encoded, which expands their size by 4:3 ratio
+     * So we set their max size to 2048 * 3 / 4 (1536 B)
+     */
+    private static final int CHUNKS_SIZE = 2048 * 3 / 4;
 
     private final String feedId;
     private final AgentCoreEngineConfiguration.StorageAdapterConfiguration config;
