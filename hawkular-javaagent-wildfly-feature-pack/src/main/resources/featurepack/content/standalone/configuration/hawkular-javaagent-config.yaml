@@ -1427,7 +1427,6 @@ managed-servers:
     - Messaging
     - Socket Binding Group
     - Clustering
-    - Hawkular
     wait-for:
     - name: /
 
