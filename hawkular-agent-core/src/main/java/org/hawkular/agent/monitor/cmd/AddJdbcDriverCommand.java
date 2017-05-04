@@ -89,6 +89,9 @@ public class AddJdbcDriverCommand extends AbstractDMRResourcePathCommand<AddJdbc
                 .attribute(JdbcDriverNodeConstants.DRIVER_CLASS_NAME, request.getDriverClass())
                 .attribute(JdbcDriverNodeConstants.DRIVER_MAJOR_VERSION, request.getDriverMajorVersion())
                 .attribute(JdbcDriverNodeConstants.DRIVER_MINOR_VERSION, request.getDriverMinorVersion())
+                .attribute(JdbcDriverNodeConstants.DRIVER_XA_DATASOURCE_CLASS_NAME,
+                        request.getDriverXaDatasourceClassName())
+                .attribute(JdbcDriverNodeConstants.XA_DATASOURCE_CLASS, request.getXaDatasourceClass())
                 .execute(controllerClient)
                 .assertSuccess();
         setServerRefreshIndicator(opResult, response);

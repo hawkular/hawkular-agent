@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,20 +30,25 @@ public interface SubsystemDatasourceConstants {
         String USER_NAME = "user-name";
         String STATISTICS_ENABLED = "statistics-enabled";
     }
+
     public interface DatasourceNodeConstants extends DatasourceNodeCommonConstants {
         String CONNECTION_URL = "connection-url";
         String DRIVER_CLASS = "driver-class";
     }
+
     public interface XaDatasourceNodeConstants extends DatasourceNodeCommonConstants {
         String SECURITY_DOMAIN = "security-domain";
         String XA_DATASOURCE_CLASS = "xa-datasource-class";
     }
+
     public interface JdbcDriverNodeConstants {
         String DRIVER_NAME = "driver-name";
         String DRIVER_CLASS_NAME = "driver-class-name";
         String DRIVER_MODULE_NAME = "driver-module-name";
         String DRIVER_MAJOR_VERSION = "driver-major-version";
         String DRIVER_MINOR_VERSION = "driver-minor-version";
+        String DRIVER_XA_DATASOURCE_CLASS_NAME = "driver-xa-datasource-class-name";
+        String XA_DATASOURCE_CLASS = "xa-datasource-class";
     }
 
     String CONNECTION_PROPERTIES = "connection-properties";

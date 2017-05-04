@@ -61,6 +61,8 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     + "\"resourcePath\":\"" + wfPath.toString() + "\","
                     + "\"driverName\":\"" + driverName + "\","
                     + "\"driverClass\":\"com.mysql.jdbc.Driver\","
+                    + "\"driverXaDatasourceClassName\":\"com.mysql.jdbc.jdbc2.optional.MysqlXADataSource\","
+                    + "\"xaDatasourceClass\":\"com.mysql.jdbc.jdbc2.optional.MysqlXADataSource\","
                     + "\"driverMajorVersion\":\"5\","
                     + "\"driverMinorVersion\":\"1\","
                     + "\"moduleName\":\"com.mysql\","
