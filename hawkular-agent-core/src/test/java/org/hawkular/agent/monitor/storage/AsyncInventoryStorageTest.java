@@ -193,11 +193,11 @@ public class AsyncInventoryStorageTest {
                 "http://ignore/ignore/strings/inventory.feed_id.r.r1/raw",
                 "http://ignore/ignore/strings?overwrite=true");
 
-        // Make sure we won't make them expire before ~1week (+/- 1 hour)
+        // Make sure we won't make them expire before ~1week (+/- 25 hours)
         final long initialTime = R_1.getPersistedTime();
         long expireTime = initialTime + storage.persistenceRefreshDelay;
         long oneWeekFromNow = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(InventoryMetric.DATA_RETENTION);
-        Assert.assertTrue(Math.abs(oneWeekFromNow - expireTime) < TimeUnit.HOURS.toMillis(1));
+        Assert.assertTrue(TimeUnit.MILLISECONDS.toHours(Math.abs(oneWeekFromNow - expireTime)) <= 25);
         Assert.assertEquals(initialTime, R_2.getPersistedTime());
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
         Assert.assertEquals(initialTime, MT_1.getPersistedTime());

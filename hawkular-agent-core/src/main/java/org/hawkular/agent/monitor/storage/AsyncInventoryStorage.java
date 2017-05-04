@@ -403,7 +403,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         // to make sure it's not lost due to Metric's TTL
         persistenceRefreshDelay = TimeUnit.DAYS.toMillis(InventoryMetric.DATA_RETENTION)
                 - TimeUnit.SECONDS.toMillis(autoDiscoveryScanPeriodSeconds)
-                - 300000L; // Additional 5min safety delay (but is it really necessary?)
+                - TimeUnit.DAYS.toMillis(1); // safety delay
     }
 
     public void shutdown() {
