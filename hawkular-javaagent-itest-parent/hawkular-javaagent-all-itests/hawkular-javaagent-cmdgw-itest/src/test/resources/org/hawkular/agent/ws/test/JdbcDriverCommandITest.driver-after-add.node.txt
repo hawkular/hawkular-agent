@@ -6,9 +6,9 @@
     "driver-minor-version" => 1,
     "driver-module-name" => "com.mysql",
     "driver-name" => "mysql",
-    "driver-xa-datasource-class-name" => undefined,
+    "driver-xa-datasource-class-name" => "com.mysql.jdbc.jdbc2.optional.MysqlXADataSource",
     "jdbc-compliant" => undefined,
     "module-slot" => undefined,
     "profile" => undefined,
-    "xa-datasource-class" => undefined
+    "xa-datasource-class" => "com.mysql.jdbc.jdbc2.optional.MysqlXADataSource"
 }
