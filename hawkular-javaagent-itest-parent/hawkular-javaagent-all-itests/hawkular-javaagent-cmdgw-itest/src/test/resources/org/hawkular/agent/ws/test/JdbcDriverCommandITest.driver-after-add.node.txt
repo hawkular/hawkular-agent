@@ -7,7 +7,7 @@
     "driver-module-name" => "com.mysql",
     "driver-name" => "mysql",
     "driver-xa-datasource-class-name" => "com.mysql.jdbc.jdbc2.optional.MysqlXADataSource",
-    "jdbc-compliant" => undefined,
+    "jdbc-compliant" => true,
     "module-slot" => undefined,
     "profile" => undefined,
     "xa-datasource-class" => "com.mysql.jdbc.jdbc2.optional.MysqlXADataSource"
