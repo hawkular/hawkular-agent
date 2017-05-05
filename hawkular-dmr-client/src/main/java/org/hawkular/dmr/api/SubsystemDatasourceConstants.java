@@ -49,6 +49,7 @@ public interface SubsystemDatasourceConstants {
         String DRIVER_MINOR_VERSION = "driver-minor-version";
         String DRIVER_XA_DATASOURCE_CLASS_NAME = "driver-xa-datasource-class-name";
         String XA_DATASOURCE_CLASS = "xa-datasource-class";
+        String JDBC_COMPLIANT = "jdbc-compliant";
     }
 
     String CONNECTION_PROPERTIES = "connection-properties";

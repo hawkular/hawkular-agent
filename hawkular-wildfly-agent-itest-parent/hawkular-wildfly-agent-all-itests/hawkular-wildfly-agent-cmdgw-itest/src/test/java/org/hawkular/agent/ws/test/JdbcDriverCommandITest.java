@@ -63,6 +63,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     + "\"driverClass\":\"com.mysql.jdbc.Driver\","
                     + "\"driverXaDatasourceClassName\":\"com.mysql.jdbc.jdbc2.optional.MysqlXADataSource\","
                     + "\"xaDatasourceClass\":\"com.mysql.jdbc.jdbc2.optional.MysqlXADataSource\","
+                    + "\"jdbcCompliant\":true,"
                     + "\"driverMajorVersion\":\"5\","
                     + "\"driverMinorVersion\":\"1\","
                     + "\"moduleName\":\"com.mysql\","

@@ -57,7 +57,7 @@ import org.jboss.dmr.ModelNode;
  */
 public class OperationBuilder implements SubsystemDatasourceConstants, SubsystemLoggingConstants {
     public abstract static class AbstractOperationBuilder<T extends AbstractOperationBuilder<?, R>, //
-    R extends OperationResult<?>> {
+            R extends OperationResult<?>> {
         protected final ModelNode baseNode = new ModelNode();
 
         public T allowResourceServiceRestart() {
@@ -146,8 +146,10 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
         }
 
         @SuppressWarnings("unchecked")
-        public T attribute(String name, boolean value) {
-            baseNode.get(name).set(value);
+        public T attribute(String name, Boolean value) {
+            if (value != null) {
+                baseNode.get(name).set(value);
+            }
             return (T) this;
         }
 
@@ -319,7 +321,7 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
 
         @SuppressWarnings("unchecked")
         public ReadChildrenResourcesOperationBuilder<ReadChildrenResourcesOperationBuilder<?>> //
-        readReadChildrenResources() {
+                readReadChildrenResources() {
             return new ReadChildrenResourcesOperationBuilder<>(
                     (CompositeOperationBuilder<CompositeOperationBuilder<?>>) this);
         }
@@ -835,10 +837,10 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
     }
 
     public static //
-    AddressBuilder<AddressBuilder<?, AbstractSingleOperationBuilder<?, ?>>, AbstractSingleOperationBuilder<?, ?>> //
-    address() {
+            AddressBuilder<AddressBuilder<?, AbstractSingleOperationBuilder<?, ?>>, AbstractSingleOperationBuilder<?, ?>> //
+            address() {
         return new AddressBuilder<AddressBuilder<?, AbstractSingleOperationBuilder<?, ?>>, //
-        AbstractSingleOperationBuilder<?, ?>>((AbstractSingleOperationBuilder<?, ?>) null);
+                AbstractSingleOperationBuilder<?, ?>>((AbstractSingleOperationBuilder<?, ?>) null);
     }
 
     public static CompositeOperationBuilder<CompositeOperationBuilder<?>> composite() {
@@ -858,7 +860,7 @@ public class OperationBuilder implements SubsystemDatasourceConstants, Subsystem
     }
 
     public static ReadChildrenResourcesOperationBuilder<ReadChildrenResourcesOperationBuilder<?>> //
-    readChildrenResources() {
+            readChildrenResources() {
         return new ReadChildrenResourcesOperationBuilder<>(null);
     }
 
