@@ -10,5 +10,5 @@
     "jdbc-compliant" => true,
     "module-slot" => undefined,
     "profile" => undefined,
-    "xa-datasource-class" => "com.mysql.jdbc.jdbc2.optional.MysqlXADataSource"
+    "xa-datasource-class" => undefined
 }
