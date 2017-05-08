@@ -104,6 +104,7 @@ public class CommandCli {
         String jsonRequest;
         File binaryDataFile;
 
+        @Override
         public String toString() {
             StringBuilder str = new StringBuilder("CLI Configuration:\n");
             str.append("Server URL:        ").append(this.serverUrl).append("\n");
@@ -115,6 +116,11 @@ public class CommandCli {
             str.append("Binary Data File:  ").append(this.binaryDataFile).append("\n");
             str.append("JSON Request:      ").append(this.jsonRequest).append("\n");
             return str.toString();
+        }
+
+        public boolean willRespond() {
+            boolean willRespond = !jsonRequest.toLowerCase().contains(":\"stop\"");
+            return willRespond;
         }
     }
 
@@ -297,7 +303,19 @@ public class CommandCli {
         try {
             Config config = parseCommandLine(options, args);
             CliWebSocketListener listener = sendCommand(config);
-            listener.waitForResponse();
+            if (config.willRespond()) {
+                listener.waitForResponse();
+            } else {
+                // ensure the call is running (no longer queued) before shutting down the listener
+                while (listener.httpClient.dispatcher().runningCallsCount() == 0) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                listener.shutdown(null);
+            }
         } catch (CommandLineParserException pe) {
             log.errorf(pe, "Failed to parse command line.");
             printHelp(options);
