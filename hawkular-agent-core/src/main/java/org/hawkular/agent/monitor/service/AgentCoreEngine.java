@@ -225,6 +225,11 @@ public abstract class AgentCoreEngine {
         }
 
         try {
+            Package agentPackage = this.getClass().getPackage();
+            if (agentPackage != null) {
+                log.infoTypeAndVersion(agentPackage.getImplementationTitle(), agentPackage.getImplementationVersion());
+            }
+
             log.infoStarting();
 
             // determine the configuration to use
