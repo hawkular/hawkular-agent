@@ -40,6 +40,7 @@ import org.hawkular.agent.monitor.cmd.WebSocketClientBuilder;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
@@ -333,7 +334,12 @@ public abstract class AgentCoreEngine {
                 throw new Exception("Agent cannot initialize scheduler");
             }
 
-            this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
+            // now that we started the storage adapter, we can create our dispatcher but only if in hawkular mode
+            if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
+                this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
+            } else {
+                this.notificationDispatcher = null;
+            }
 
             // build the protocol services
             ProtocolServices ps = createProtocolServicesBuilder()
@@ -345,7 +351,9 @@ public abstract class AgentCoreEngine {
                     .build();
             ps.addInventoryListener(inventoryStorageProxy);
             ps.addInventoryListener(schedulerService);
-            ps.addInventoryListener(notificationDispatcher);
+            if (notificationDispatcher != null) {
+                ps.addInventoryListener(notificationDispatcher);
+            }
             protocolServices = ps;
 
             // start all protocol services - this should perform the initial discovery scans
@@ -438,7 +446,9 @@ public abstract class AgentCoreEngine {
                     protocolServices.stop();
                     protocolServices.removeInventoryListener(inventoryStorageProxy);
                     protocolServices.removeInventoryListener(schedulerService);
-                    protocolServices.removeInventoryListener(notificationDispatcher);
+                    if (notificationDispatcher != null) {
+                        protocolServices.removeInventoryListener(notificationDispatcher);
+                    }
                     protocolServices = null;
                 }
             } catch (Throwable t) {
