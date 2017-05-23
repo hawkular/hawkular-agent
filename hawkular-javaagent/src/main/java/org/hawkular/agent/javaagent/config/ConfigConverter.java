@@ -292,14 +292,31 @@ public class ConfigConverter {
             } catch (Exception e) {
                 throw new Exception("jboss.socket.binding.port-offset is invalid", e);
             }
-            try {
-                String localPortString = System.getProperty("jboss.management.http.port", "9990");
-                localPort = Integer.parseInt(localPortString);
-            } catch (Exception e) {
-                throw new Exception("jboss.management.http.port is invalid", e);
+            String localProtocol = System.getProperty("hawkular.local.dmr.protocol", "http-remoting");
+            if (localProtocol.contains("https")) {
+                try {
+                    String localPortString = System.getProperty("jboss.management.https.port", "9443");
+                    localPort = Integer.parseInt(localPortString);
+                } catch (Exception e) {
+                    throw new Exception("jboss.management.https.port is invalid", e);
+                }
+            } else if (localProtocol.contains("http")) {
+                try {
+                    String localPortString = System.getProperty("jboss.management.http.port", "9990");
+                    localPort = Integer.parseInt(localPortString);
+                } catch (Exception e) {
+                    throw new Exception("jboss.management.http.port is invalid", e);
+                }
+            } else {
+                try {
+                    String localPortString = System.getProperty("jboss.management.native.port", "9999");
+                    localPort = Integer.parseInt(localPortString);
+                } catch (Exception e) {
+                    throw new Exception("jboss.management.native.port is invalid", e);
+                }
             }
 
-            connectionData = new ConnectionData("http-remoting", localHost, localPort + localPortOffset, null, null);
+            connectionData = new ConnectionData(localProtocol, localHost, localPort + localPortOffset, null, null);
 
             EndpointConfiguration localDmrEndpointConfig = new EndpointConfiguration(
                     config.getManagedServers().getLocalDmr().getName(),
