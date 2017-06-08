@@ -679,7 +679,7 @@
                    time-units="seconds"
                    path="/"
                    attribute="server-state"
-                   up-regex="run.*"/>
+                   up-regex="run.*|.*-required"/>
       </avail-set-dmr>
 
       <avail-set-dmr name="Deployment Status" enabled="true">
