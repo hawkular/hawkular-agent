@@ -544,7 +544,7 @@ avail-set-dmr:
     interval:   30
     time-units: seconds
     attribute:  server-state
-    up-regex:   "run.*"
+    up-regex:   "run.*|.*-required"
 - name: Deployment Status
   avail-dmr:
   - name: Deployment Status
