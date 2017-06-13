@@ -4,9 +4,54 @@ This builds a WF 10 server with an agent installed
 
 == Build
 
-$ sh do.sh
+This command will build three docker images:
+
+. `wildfly-hawkular-javaagent` - Hawkular Javaagent running along Wildfly in standalone mode.
+. `wildfly-hawkular-agent` - Wildfly 10 running with Hawkular Wildfly Agent subsystem in standalone mode.
+. `wildfly-hawkular-agent-domain` - Wildfly 10 running with Hawkular Wildfly Agent subsystem in domain mode.
+
+```bash
+sh do.sh
+```
 
 == Run
 
-docker run -p 8081:8080 --link 2271bcd4adca:hawkular pilhuhn/hawkfly
+Select the type of Hawkular agent you would like to run, once you have a running Hawkular Services you can run it like:
 
+```bash
+docker run -p 8081:8080 --link hawkular -e  {selected hawkular agent}
+```
+
+It will connect to http://hawkular:8080 using username `jdoe` and password `password`.
+
+You can configure the endpoint, username and password passing the following environment variables.
+
+
+* HAWKULAR_SERVER_PROTOCOL defaults to `http`
+* HAWKULAR_SERVER_ADDR defaults to `hawkular`
+* HAWKULAR_SERVER_PORT defaults to `8080`
+* HAWKULAR_AGENT_USER defaults to `jdoe`
+* HAWKULAR_AGENT_PASSWORD defaults to `password`
+
+e.g.
+```bash
+docker run -p 8081:8080 --link 2271bcd4adca:hawkular-services -e HAWKULAR_AGENT_PASSWORD=hard-to-guess -e HAWKULAR_SERVER_ADDR=hawkular-services wildfly-hawkular-javaagent
+```
+
+=== Connecting to a secured Hawkular Services
+
+You might also use these docker instances to when connecting to a secured (https) Hawkular Services.
+You need to provide Hawkular Services public certificate in PEM format into `/client-secrets/hawkular-services-public.pem` of your docker Hawkular Agent
+and set `HAWKULAR_SERVER_PROTOCOL` to `https`.
+
+WARNING: You need to make sure that the domain name or IP stored in the certificate matches the `HAWKULAR_SERVER_ADDR`
+else it will be rejected when trying to connect.
+
+Below is a full example running Cassandra 3.0.9, Hawkular Services and wildfly-hawkular-javaagent.
+
+```bash
+mkdir $HOME/hawkular-certificates
+docker run --name hawkular-cassandra -e CASSANDRA_START_RPC=true -d cassandra:3.0.9
+docker run --name hawkular-services --link=hawkular-cassandra -e CASSANDRA_NODES=hawkular-cassandra -e HAWKULAR_HOSTNAME=hawkular-services -e HAWKULAR_USE_SSL=true -p 8443:8443 -v $HOME/hawkular-certificates:/client-secrets/ hawkular/hawkular-services
+docker run --name hawkular-agent-01 --link=hawkular-services -e HAWKULAR_SERVER_PROTOCOL=https -e HAWKULAR_SERVER_ADDR=hawkular-services -e HAWKULAR_SERVER_PORT=8443 -v $HOME/hawkular-certificates:/client-secrets/ wildfly-hawkular-javaagent
+```

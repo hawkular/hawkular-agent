@@ -24,6 +24,8 @@ ADD target/hawkular-javaagent-wildfly-dist/bin/standalone.conf $JBOSS_HOME/bin
 ADD target/hawkular-javaagent-wildfly-dist/bin/hawkular-javaagent.jar $JBOSS_HOME/bin
 ADD target/hawkular-javaagent-wildfly-dist/standalone/configuration/hawkular-javaagent-config.yaml $JBOSS_HOME/standalone/configuration/
 
+ADD src/main/resources/run_hawkular_javaagent.sh /opt/hawkular/bin/run_hawkular_agent.sh
+
 ENV HAWKULAR_SERVER_PROTOCOL http
 ENV HAWKULAR_SERVER_ADDR hawkular
 ENV HAWKULAR_SERVER_PORT 8080
@@ -34,11 +36,10 @@ ENV JAVA_OPTS="-Xmx256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true
 EXPOSE 8080 9090
 
 USER root
-RUN chown -R jboss:0 /opt/jboss/wildfly/standalone && \
-    chmod -R ug+rw /opt/jboss/wildfly/standalone
+RUN yum install --quiet -y openssl && \
+    rm -rf /var/cache/yum && \
+    chown -RH jboss:0 $JBOSS_HOME/standalone $JAVA_HOME/jre/lib/security/cacerts /opt/hawkular && \
+    chmod -R ug+rw $JBOSS_HOME/standalone $JAVA_HOME/jre/lib/security/cacerts /opt/hawkular
 
 USER jboss
-CMD /opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 \
--Dhawkular.rest.host=${HAWKULAR_SERVER_PROTOCOL}://${HAWKULAR_SERVER_ADDR}:${HAWKULAR_SERVER_PORT} \
--Dhawkular.rest.user=${HAWKULAR_AGENT_USER} -Dhawkular.rest.password=${HAWKULAR_AGENT_PASSWORD} \
--Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE}
+CMD /opt/hawkular/bin/run_hawkular_agent.sh
