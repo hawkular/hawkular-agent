@@ -36,6 +36,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 
 import org.hawkular.agent.monitor.api.Avail;
+import org.hawkular.agent.monitor.api.AvailEvent;
+import org.hawkular.agent.monitor.api.AvailListener;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
@@ -43,6 +45,7 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEn
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
+import org.hawkular.agent.monitor.inventory.AvailManager;
 import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
@@ -121,6 +124,27 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
     }
 
+    private class AvailListenerSupport {
+        private final List<AvailListener> availListeners = new ArrayList<>();
+        private final ReadWriteLock availListenerRWLock = new ReentrantReadWriteLock();
+
+        public void fireAvailChanged(Map<MeasurementInstance<L, AvailType<L>>, Avail> changedAvails) {
+            availListenerRWLock.readLock().lock();
+            try {
+                AvailEvent<L> event = AvailEvent.availChanged(
+                        EndpointService.this,
+                        getAvailManager(),
+                        changedAvails
+                );
+                for (AvailListener availListener : availListeners) {
+                    availListener.receivedEvent(event);
+                }
+            } finally {
+                availListenerRWLock.readLock().unlock();
+            }
+        }
+    }
+
     private class DiscoveryResults {
         private final List<Resource<L>> newOrModifiedResources = new ArrayList<>();
         private final List<ID> discoveredResourceIds = new ArrayList<>(); // to save space, just store the IDs
@@ -167,11 +191,32 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
     }
 
+    private class AvailMeasurementResults {
+        private final Map<MeasurementInstance<L, AvailType<L>>, Avail> modifiedAvails = new HashMap<>();
+        private final List<ID> unchangedAvails = new ArrayList<>();
+
+        public void modified(MeasurementInstance<L, AvailType<L>> measurementInstance, Avail newAvail) {
+            modifiedAvails.put(measurementInstance, newAvail);
+        }
+
+        public void unchanged(MeasurementInstance<L, AvailType<L>> measurementInstance) {
+            unchangedAvails.add(measurementInstance.getID());
+        }
+
+        public void availMeasurementFinished() {
+            if (modifiedAvails.size() > 0) {
+                availListenerSupport.fireAvailChanged(modifiedAvails);
+            }
+        }
+    }
+
     private final MonitoredEndpoint<EndpointConfiguration> endpoint;
     private final String feedId;
     private final InventoryListenerSupport inventoryListenerSupport = new InventoryListenerSupport();
+    private final AvailListenerSupport availListenerSupport = new AvailListenerSupport();
     private final ResourceManager<L> resourceManager;
     private final ResourceTypeManager<L> resourceTypeManager;
+    private final AvailManager<L> availManager;
     private final LocationResolver<L> locationResolver;
     private final ProtocolDiagnostics diagnostics;
     private final ExecutorService fullDiscoveryScanThreadPool;
@@ -188,6 +233,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         this.endpoint = endpoint;
         this.resourceManager = new ResourceManager<>();
         this.resourceTypeManager = resourceTypeManager;
+        this.availManager = new AvailManager<>();
         this.locationResolver = locationResolver;
         this.diagnostics = diagnostics;
 
@@ -216,6 +262,10 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
     public ResourceTypeManager<L> getResourceTypeManager() {
         return resourceTypeManager;
+    }
+
+    public AvailManager<L> getAvailManager() {
+        return availManager;
     }
 
     public LocationResolver<L> getLocationResolver() {
@@ -255,6 +305,38 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             LOG.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
         } finally {
             this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Works only before {@link #start()} or after {@link #stop()}.
+     *
+     * @param listener to remove
+     */
+    public void addAvailListener(AvailListener listener) {
+        this.availListenerSupport.availListenerRWLock.writeLock().lock();
+        try {
+            status.assertInitialOrStopped(getClass(), "addAvailListener()");
+            this.availListenerSupport.availListeners.add(listener);
+            LOG.debugf("Added avail listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
+        } finally {
+            this.availListenerSupport.availListenerRWLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Works only before {@link #start()} or after {@link #stop()}.
+     *
+     * @param listener to remove
+     */
+    public void removeAvailListener(AvailListener listener) {
+        this.availListenerSupport.availListenerRWLock.writeLock().lock();
+        try {
+            status.assertInitialOrStopped(getClass(), "removeAvailListener()");
+            this.availListenerSupport.availListeners.remove(listener);
+            LOG.debugf("Removed avail listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
+        } finally {
+            this.availListenerSupport.availListenerRWLock.writeLock().unlock();
         }
     }
 
@@ -401,6 +483,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
 
         try {
+            AvailMeasurementResults availMeasurementResults = new AvailMeasurementResults();
             for (MeasurementInstance<L, AvailType<L>> instance : instances) {
                 Avail avail = null;
                 if (driver != null) {
@@ -434,7 +517,20 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 AvailDataPoint dataPoint = new AvailDataPoint(key, ts, avail,
                         getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
                 consumer.accept(dataPoint);
+
+                AvailManager.AddResult addResult = getAvailManager().addAvail(instance, avail);
+                switch (addResult.getEffect()) {
+                    case MODIFIED:
+                        availMeasurementResults.modified(addResult.getMeasurementInstance(), addResult.getAvail());
+                        break;
+                    case UNCHANGED:
+                        availMeasurementResults.unchanged(addResult.getMeasurementInstance());
+                        break;
+                    default:
+                        throw new RuntimeException("Bad effect; report this bug: " + addResult.getEffect());
+                }
             }
+            availMeasurementResults.availMeasurementFinished();
         } catch (Exception e) {
             LOG.errorAvailCheckFailed(e);
         } finally {

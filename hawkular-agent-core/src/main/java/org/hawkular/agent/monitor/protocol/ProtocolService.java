@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.hawkular.agent.monitor.api.AvailListener;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.inventory.NodeLocation;
 import org.hawkular.agent.monitor.inventory.Resource;
@@ -71,6 +72,7 @@ public class ProtocolService<L, S extends Session<L>> {
 
     // need to remember the listeners in case new endpoints are added after things have started
     private final List<InventoryListener> inventoryListeners = Collections.synchronizedList(new ArrayList<>());
+    private final List<AvailListener> availListeners = Collections.synchronizedList(new ArrayList<>());
 
     public ProtocolService(String name, Map<String, EndpointService<L, S>> endpointServices) {
         this.name = name;
@@ -127,6 +129,20 @@ public class ProtocolService<L, S extends Session<L>> {
         this.inventoryListeners.remove(listener);
     }
 
+    public void addAvailListener(AvailListener listener) {
+        for (EndpointService<L, S> service : getEndpointServices().values()) {
+            service.addAvailListener(listener);
+        }
+        this.availListeners.add(listener);
+    }
+
+    public void removeAvailListener(AvailListener listener) {
+        for (EndpointService<L, S> service : getEndpointServices().values()) {
+            service.removeAvailListener(listener);
+        }
+        this.availListeners.remove(listener);
+    }
+
     /**
      * This will add a new endpoint service to the list. Once added, the new service
      * will immediately be started.
@@ -141,6 +157,12 @@ public class ProtocolService<L, S extends Session<L>> {
         synchronized (this.inventoryListeners) {
             for (InventoryListener listener : this.inventoryListeners) {
                 newEndpointService.addInventoryListener(listener);
+            }
+        }
+
+        synchronized (this.availListeners) {
+            for (AvailListener listener : this.availListeners) {
+                newEndpointService.addAvailListener(listener);
             }
         }
 

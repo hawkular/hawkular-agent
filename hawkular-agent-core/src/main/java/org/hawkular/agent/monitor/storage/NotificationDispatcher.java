@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.monitor.storage;
 
+import org.hawkular.agent.monitor.api.AvailEvent;
+import org.hawkular.agent.monitor.api.AvailListener;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.NotificationPayloadBuilder;
@@ -27,7 +29,7 @@ import org.hawkular.inventory.paths.CanonicalPath;
 /**
  * @author Jay Shaughnessy
  */
-public class NotificationDispatcher implements InventoryListener {
+public class NotificationDispatcher implements InventoryListener, AvailListener {
 
     StorageAdapter storageAdapter;
     String feedId;
@@ -56,6 +58,34 @@ public class NotificationDispatcher implements InventoryListener {
                         b.addNotificationType(NotificationType.RESOURCE_ADDED);
                         b.addProperty("resourceType", r.getResourceType().getName().getNameString());
                         b.addProperty("resourcePath", cp.toString());
+                        storageAdapter.store(b, 0);
+                    } catch (Exception e) {
+
+                    }
+                });
+    }
+
+    @Override
+    public <L> void receivedEvent(AvailEvent<L> event) {
+        MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
+        String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
+        String tenantId = (null != endpointTenantId) ? endpointTenantId
+                : storageAdapter.getStorageAdapterConfiguration().getTenantId();
+
+        event.getChanged().keySet().stream()
+                .filter(mi -> mi.getResource().getResourceType().getNotifications().contains(NotificationType.AVAIL_CHANGE))
+                .forEach(mi ->  {
+                    CanonicalPath cp = CanonicalPath.of()
+                            .tenant(tenantId)
+                            .feed(feedId)
+                            .resource(mi.getResource().getID().getIDString())
+                            .get();
+                    try {
+                        NotificationPayloadBuilder b = storageAdapter.createNotificationPayloadBuilder();
+                        b.addNotificationType(NotificationType.AVAIL_CHANGE);
+                        b.addProperty("resourceType", mi.getResource().getResourceType().getName().getNameString());
+                        b.addProperty("resourcePath", cp.toString());
+                        b.addProperty("newAvail", String.valueOf(event.getChanged().get(mi).getNumericValue()));
                         storageAdapter.store(b, 0);
                     } catch (Exception e) {
 
