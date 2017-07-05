@@ -85,7 +85,8 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
                         b.addNotificationType(NotificationType.AVAIL_CHANGE);
                         b.addProperty("resourceType", mi.getResource().getResourceType().getName().getNameString());
                         b.addProperty("resourcePath", cp.toString());
-                        b.addProperty("newAvail", String.valueOf(event.getChanged().get(mi).getNumericValue()));
+                        b.addProperty("availType", mi.getType().getName().getNameString());
+                        b.addProperty("newAvail", event.getChanged().get(mi).name());
                         storageAdapter.store(b, 0);
                     } catch (Exception e) {
 
