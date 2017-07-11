@@ -23,6 +23,8 @@ import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.NotificationPayloadBuilder;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
+import org.hawkular.agent.monitor.log.AgentLoggers;
+import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.client.api.NotificationType;
 import org.hawkular.inventory.paths.CanonicalPath;
 
@@ -31,6 +33,7 @@ import org.hawkular.inventory.paths.CanonicalPath;
  */
 public class NotificationDispatcher implements InventoryListener, AvailListener {
 
+    private static final MsgLogger log = AgentLoggers.getLogger(NotificationDispatcher.class);
     StorageAdapter storageAdapter;
     String feedId;
 
@@ -60,7 +63,7 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
                         b.addProperty("resourcePath", cp.toString());
                         storageAdapter.store(b, 0);
                     } catch (Exception e) {
-
+                        log.errorFailedToCreateNotification(e, NotificationType.RESOURCE_ADDED.name());
                     }
                 });
     }
@@ -89,7 +92,7 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
                         b.addProperty("newAvail", event.getChanged().get(mi).name());
                         storageAdapter.store(b, 0);
                     } catch (Exception e) {
-
+                        log.errorFailedToCreateNotification(e, NotificationType.AVAIL_CHANGE.name());
                     }
                 });
     }
