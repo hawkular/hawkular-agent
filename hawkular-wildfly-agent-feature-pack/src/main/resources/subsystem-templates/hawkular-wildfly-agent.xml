@@ -628,6 +628,7 @@
                          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
                          avail-sets="Server Availability">
         <notification-dmr name="resource-added" />
+        <notification-dmr name="avail-change" />
 
         <resource-config-dmr name="Name"          attribute="name"/>
         <resource-config-dmr name="Product Name"  attribute="product-name" />
@@ -675,6 +676,7 @@
                          resource-name-template="Host Controller [%ManagedServerName]"
                          path="/">
         <notification-dmr name="resource-added" />
+        <notification-dmr name="avail-change" />
 
         <resource-config-dmr name="Product Name"    attribute="product-name" />
         <resource-config-dmr name="Version"         attribute="product-version" />
@@ -743,6 +745,7 @@
                          parents="Host Controller"
                          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics">
         <notification-dmr name="resource-added" />
+        <notification-dmr name="avail-change" />
 
         <resource-config-dmr name="Name"                 attribute="name"/>
         <resource-config-dmr name="Product Name"         attribute="product-name" />
@@ -770,6 +773,7 @@
                          metric-sets="WildFly Memory Metrics,WildFly Threading Metrics,WildFly Aggregated Web Metrics"
                          avail-sets="Server Availability">
         <notification-dmr name="resource-added" />
+        <notification-dmr name="avail-change" />
 
         <resource-config-dmr name="Name"           attribute="name"/>
         <resource-config-dmr name="Host"           attribute="host"/>
@@ -800,6 +804,7 @@
                          path="/server-config=*"
                          parents="Domain Host">
         <notification-dmr name="resource-added" />
+        <notification-dmr name="avail-change" />
 
         <resource-config-dmr name="Name"         attribute="name"/>
         <resource-config-dmr name="Server Group" attribute="group"/>
