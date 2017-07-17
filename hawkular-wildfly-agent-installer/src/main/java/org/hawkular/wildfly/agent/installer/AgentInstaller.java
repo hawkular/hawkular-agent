@@ -304,7 +304,7 @@ public class AgentInstaller {
                     Files.copy(Paths.get(keystoreSrcFile.getAbsolutePath()), keystoreDst);
                 }
 
-                String securityRealm = createSecurityRealm(keystoreSrcFile.getName(), keystorePass);
+                String securityRealm = createSecurityRealm(keystoreSrcFile.getName(), keystorePass, targetConfigInfo.getRelativeTo());
                 configurationBldr.addXmlEdit(new XmlEdit(targetConfigInfo.getSecurityRealmsXPath(), securityRealm));
             }
 
@@ -373,11 +373,11 @@ public class AgentInstaller {
      * @param keystorePass the password to access the keystore file
      * @return XML snippet
      */
-    private static String createSecurityRealm(String keystoreFile, String keystorePass) {
+    private static String createSecurityRealm(String keystoreFile, String keystorePass, String relativeTo) {
         return new StringBuilder("<security-realm name=\"" + SECURITY_REALM_NAME + "\">")
                 .append("<authentication>")
                 .append("<truststore path=\"" + keystoreFile + "\"")
-                .append(" relative-to=\"jboss.server.config.dir\"")
+                .append(" relative-to=\"" + relativeTo + "\"")
                 .append(" keystore-password=\"" + keystorePass + "\"")
                 .append(" /></authentication></security-realm>").toString();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,5 +49,10 @@ public class StandaloneTargetConfigInfo implements TargetConfigInfo {
                 .append("Clustering,")
                 .append("Hawkular")
                 .toString();
+    }
+
+    @Override
+    public String getRelativeTo() {
+        return "jboss.server.config.dir";
     }
 }
