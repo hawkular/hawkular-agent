@@ -732,6 +732,7 @@
         <resource-config-dmr name="Base Directory"
                              path="/core-service=server-environment"
                              attribute="base-dir"/>
+        <operation-dmr name="JDR" internal-name="generate-jdr-report" path="/subsystem=jdr" />
       </resource-type-dmr>
 
       <resource-type-dmr name="Domain WildFly Server Controller"
