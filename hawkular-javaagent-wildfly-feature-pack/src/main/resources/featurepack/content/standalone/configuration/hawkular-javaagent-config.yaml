@@ -560,6 +560,8 @@ resource-type-set-dmr:
     resource-name-template: "WildFly Server [%ManagedServerName]"
     notification-dmr:
     - name: resource-added
+    - name: avail-change
+    - name: avail-starting
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -654,6 +656,8 @@ resource-type-set-dmr:
     resource-name-template: "Host Controller [%ManagedServerName]"
     notification-dmr:
     - name: resource-added
+    - name: avail-change
+    - name: avail-starting
     resource-config-dmr:
     - name: Product Name
       attribute: product-name
@@ -794,6 +798,8 @@ resource-type-set-dmr:
     - Host Controller
     notification-dmr:
     - name: resource-added
+    - name: avail-change
+    - name: avail-starting
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -838,6 +844,8 @@ resource-type-set-dmr:
     - Domain Host
     notification-dmr:
     - name: resource-added
+    - name: avail-change
+    - name: avail-starting
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -885,6 +893,8 @@ resource-type-set-dmr:
     - Domain Host
     notification-dmr:
     - name: resource-added
+    - name: avail-change
+    - name: avail-starting
     resource-config-dmr:
     - name: Name
       attribute: name

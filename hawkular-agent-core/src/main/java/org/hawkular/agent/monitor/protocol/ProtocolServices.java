@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 
+import org.hawkular.agent.monitor.api.AvailListener;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.ProtocolConfiguration;
@@ -255,6 +256,18 @@ public class ProtocolServices {
     public void removeInventoryListener(InventoryListener listener) {
         for (ProtocolService<?, ?> service : services) {
             service.removeInventoryListener(listener);
+        }
+    }
+
+    public void addAvailListener(AvailListener listener) {
+        for (ProtocolService<?, ?> service : services) {
+            service.addAvailListener(listener);
+        }
+    }
+
+    public void removeAvailListener(AvailListener listener) {
+        for (ProtocolService<?, ?> service : services) {
+            service.removeAvailListener(listener);
         }
     }
 

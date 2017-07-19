@@ -358,6 +358,7 @@ public abstract class AgentCoreEngine {
             ps.addInventoryListener(schedulerService);
             if (notificationDispatcher != null) {
                 ps.addInventoryListener(notificationDispatcher);
+                ps.addAvailListener(notificationDispatcher);
             }
             protocolServices = ps;
 
@@ -453,6 +454,7 @@ public abstract class AgentCoreEngine {
                     protocolServices.removeInventoryListener(schedulerService);
                     if (notificationDispatcher != null) {
                         protocolServices.removeInventoryListener(notificationDispatcher);
+                        protocolServices.removeAvailListener(notificationDispatcher);
                     }
                     protocolServices = null;
                 }
