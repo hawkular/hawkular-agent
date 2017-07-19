@@ -81,7 +81,7 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
                 : storageAdapter.getStorageAdapterConfiguration().getTenantId();
 
         processAvailEvents(event.getChanged(), NotificationType.AVAIL_CHANGE, tenantId);
-        processAvailEvents(event.getChanged(), NotificationType.AVAIL_STARTING, tenantId);
+        processAvailEvents(event.getStarted(), NotificationType.AVAIL_STARTING, tenantId);
     }
 
     private <L> void processAvailEvents(Map<MeasurementInstance<L, AvailType<L>>, Avail> avails,
