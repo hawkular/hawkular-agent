@@ -47,7 +47,7 @@ public class AvailManagerTest {
         result = am.addAvail(measurementInstance, Avail.UP);
         Assert.assertEquals(Avail.UP, result.getAvail());
         Assert.assertEquals(measurementInstance, result.getMeasurementInstance());
-        Assert.assertEquals(AvailManager.AddResult.Effect.UNCHANGED, result.getEffect());
+        Assert.assertEquals(AvailManager.AddResult.Effect.STARTING, result.getEffect());
 
         result = am.addAvail(measurementInstance, Avail.UP);
         Assert.assertEquals(AvailManager.AddResult.Effect.UNCHANGED, result.getEffect());

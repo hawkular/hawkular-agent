@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.api;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.inventory.AvailManager;
@@ -31,6 +32,7 @@ public class AvailEvent<L> {
 
     private final SamplingService<L> samplingService;
     private final AvailManager<L> availManager;
+    private final Map<MeasurementInstance<L, AvailType<L>>, Avail> started;
     private final Map<MeasurementInstance<L, AvailType<L>>, Avail> changed;
 
 
@@ -43,7 +45,8 @@ public class AvailEvent<L> {
      * @param changed map of changed avails
      */
     private AvailEvent(SamplingService<L> samplingService, AvailManager<L> availManager,
-                      Map<MeasurementInstance<L, AvailType<L>>, Avail> changed) {
+                       Map<MeasurementInstance<L, AvailType<L>>, Avail> started,
+                       Map<MeasurementInstance<L, AvailType<L>>, Avail> changed) {
 
         if (samplingService == null) {
             throw new IllegalArgumentException("Sampling service cannot be null");
@@ -55,11 +58,17 @@ public class AvailEvent<L> {
         this.samplingService = samplingService;
         this.availManager = availManager;
         this.changed = changed;
+        this.started = started;
     }
 
     public static <L> AvailEvent<L> availChanged(SamplingService<L> samplingService, AvailManager<L> availManager,
                                Map<MeasurementInstance<L, AvailType<L>>, Avail> changed) {
-        return new AvailEvent<L>(samplingService, availManager, changed);
+        return new AvailEvent<L>(samplingService, availManager, Collections.emptyMap(), changed);
+    }
+
+    public static <L> AvailEvent<L> availStarted(SamplingService<L> samplingService, AvailManager<L> availManager,
+                                                 Map<MeasurementInstance<L, AvailType<L>>, Avail> started) {
+        return new AvailEvent<L>(samplingService, availManager, started, Collections.emptyMap());
     }
 
     public SamplingService<L> getSamplingService() {
@@ -72,5 +81,9 @@ public class AvailEvent<L> {
 
     public Map<MeasurementInstance<L, AvailType<L>>, Avail> getChanged() {
         return changed;
+    }
+
+    public Map<MeasurementInstance<L, AvailType<L>>, Avail> getStarted() {
+        return started;
     }
 }

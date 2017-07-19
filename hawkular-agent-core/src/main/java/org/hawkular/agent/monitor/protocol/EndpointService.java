@@ -128,6 +128,22 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         private final List<AvailListener> availListeners = new ArrayList<>();
         private final ReadWriteLock availListenerRWLock = new ReentrantReadWriteLock();
 
+        public void fireAvailStarting(Map<MeasurementInstance<L, AvailType<L>>, Avail> startingAvails) {
+            availListenerRWLock.readLock().lock();
+            try {
+                AvailEvent<L> event = AvailEvent.availStarted(
+                        EndpointService.this,
+                        getAvailManager(),
+                        startingAvails
+                );
+                for (AvailListener availListener : availListeners) {
+                    availListener.receivedEvent(event);
+                }
+            } finally {
+                availListenerRWLock.readLock().unlock();
+            }
+        }
+
         public void fireAvailChanged(Map<MeasurementInstance<L, AvailType<L>>, Avail> changedAvails) {
             availListenerRWLock.readLock().lock();
             try {
@@ -192,8 +208,13 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     private class AvailMeasurementResults {
+        private final Map<MeasurementInstance<L, AvailType<L>>, Avail> startingAvails = new HashMap<>();
         private final Map<MeasurementInstance<L, AvailType<L>>, Avail> modifiedAvails = new HashMap<>();
         private final List<ID> unchangedAvails = new ArrayList<>();
+
+        public void starting(MeasurementInstance<L, AvailType<L>> measurementInstance, Avail newAvail) {
+            startingAvails.put(measurementInstance, newAvail);
+        }
 
         public void modified(MeasurementInstance<L, AvailType<L>> measurementInstance, Avail newAvail) {
             modifiedAvails.put(measurementInstance, newAvail);
@@ -204,6 +225,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
 
         public void availMeasurementFinished() {
+            if (startingAvails.size() > 0) {
+                availListenerSupport.fireAvailStarting(startingAvails);
+            }
             if (modifiedAvails.size() > 0) {
                 availListenerSupport.fireAvailChanged(modifiedAvails);
             }
@@ -520,6 +544,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
                 AvailManager.AddResult addResult = getAvailManager().addAvail(instance, avail);
                 switch (addResult.getEffect()) {
+                    case STARTING:
+                        availMeasurementResults.starting(addResult.getMeasurementInstance(), addResult.getAvail());
+                        break;
                     case MODIFIED:
                         availMeasurementResults.modified(addResult.getMeasurementInstance(), addResult.getAvail());
                         break;

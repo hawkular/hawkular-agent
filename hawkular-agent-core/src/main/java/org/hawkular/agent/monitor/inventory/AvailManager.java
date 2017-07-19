@@ -30,7 +30,7 @@ public final class AvailManager<L> {
 
     public static class AddResult<L> {
         public enum Effect {
-            MODIFIED, UNCHANGED
+            MODIFIED, UNCHANGED, STARTING
         }
         private final MeasurementInstance<L, AvailType<L>> measurementInstance;
         private final Avail avail;
@@ -58,15 +58,17 @@ public final class AvailManager<L> {
     private Map<MeasurementInstance<L, AvailType<L>>, Avail> storage = new HashMap<>();
 
     public AddResult<L> addAvail(MeasurementInstance<L, AvailType<L>> measurementInstance, Avail avail) {
-        AddResult<L> result;
         Avail previousAvail = storage.get(measurementInstance);
-        if (previousAvail == null || avail == previousAvail) {
-            result = new AddResult<>(measurementInstance, avail, AddResult.Effect.UNCHANGED);
+        AddResult.Effect effect;
+        if (previousAvail == null) {
+            effect = AddResult.Effect.STARTING;
+        } else if (avail == previousAvail) {
+            effect = AddResult.Effect.UNCHANGED;
         } else {
-            result = new AddResult<>(measurementInstance, avail, AddResult.Effect.MODIFIED);
+            effect = AddResult.Effect.MODIFIED;
         }
         storage.put(measurementInstance, avail);
-        return result;
+        return new AddResult<>(measurementInstance, avail, effect);
     }
 
 }

@@ -561,6 +561,7 @@ resource-type-set-dmr:
     notification-dmr:
     - name: resource-added
     - name: avail-changed
+    - name: avail-starting
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -656,6 +657,7 @@ resource-type-set-dmr:
     notification-dmr:
     - name: resource-added
     - name: avail-changed
+    - name: avail-starting
     resource-config-dmr:
     - name: Product Name
       attribute: product-name
@@ -797,6 +799,7 @@ resource-type-set-dmr:
     notification-dmr:
     - name: resource-added
     - name: avail-changed
+    - name: avail-starting
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -842,6 +845,7 @@ resource-type-set-dmr:
     notification-dmr:
     - name: resource-added
     - name: avail-changed
+    - name: avail-starting
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -890,6 +894,7 @@ resource-type-set-dmr:
     notification-dmr:
     - name: resource-added
     - name: avail-changed
+    - name: avail-starting
     resource-config-dmr:
     - name: Name
       attribute: name
