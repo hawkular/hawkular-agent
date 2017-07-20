@@ -67,6 +67,7 @@ public class ExportJdrCommand extends AbstractDMRResourcePathCommand<ExportJdrRe
 
         CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
         String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+        boolean deleteImmediately = request.isDeleteImmediately();
 
         ResourceManager<DMRNodeLocation> resourceManager = endpointService.getResourceManager();
         Resource<DMRNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
@@ -118,6 +119,17 @@ public class ExportJdrCommand extends AbstractDMRResourcePathCommand<ExportJdrRe
         File reportFile = new File(reportLocation);
         InputStream reportInputStream = new FileInputStream(reportFile);
         binaryData = new BinaryData(null, reportInputStream);
+
+        if (deleteImmediately) {
+            log.tracef("Operation [%s] is going to delete [%s] file after completed.",
+                    requestedOpName, reportFile.getName());
+
+            binaryData.setOnCloseAction(() -> {
+                reportFile.delete();
+                log.tracef("File [%s] is deleted for operation [%s].",
+                        reportFile.getName(), requestedOpName);
+            });
+        }
 
         response.setStatus(ResponseStatus.OK);
         response.setFileName(reportFile.getName());

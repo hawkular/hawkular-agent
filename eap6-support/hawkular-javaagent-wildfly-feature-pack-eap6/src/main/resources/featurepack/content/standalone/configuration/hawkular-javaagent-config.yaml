@@ -562,7 +562,6 @@ resource-type-set-dmr:
     operation-dmr:
     - name: JDR
       internal-name: generate-jdr-report
-      modifies:      true
       path:          /subsystem=jdr
     - name: Reload
       internal-name: reload
@@ -750,6 +749,10 @@ resource-type-set-dmr:
     - name: Base Directory
       attribute: base-dir
       path:      /core-service=server-environment
+    operation-dmr:
+    - name: JDR
+      internal-name: generate-jdr-report
+      path:          /subsystem=jdr
 
   - name: Domain WildFly Server Controller
     resource-name-template: "Domain WildFly Server Controller [%-]"
