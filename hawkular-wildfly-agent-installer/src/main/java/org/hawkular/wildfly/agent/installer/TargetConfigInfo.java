@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,4 +36,9 @@ public interface TargetConfigInfo {
      * @return the resource type sets that should be associated with the managed server definition
      */
     String getManagedServerResourceTypeSets();
+
+    /**
+     * @return relative-to property for the target config
+     */
+    String getRelativeTo();
 }
