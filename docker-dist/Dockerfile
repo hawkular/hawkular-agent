@@ -28,6 +28,7 @@ ENV HAWKULAR_SERVER_PROTOCOL http
 ENV HAWKULAR_SERVER_ADDR hawkular
 ENV HAWKULAR_SERVER_PORT 8080
 ENV HAWKULAR_AGENT_USER=jdoe HAWKULAR_AGENT_PASSWORD=password
+ENV HAWKULAR_IMMUTABLE=true
 ENV JAVA_OPTS="-Xmx256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m"
 
 EXPOSE 8080 9090
@@ -40,4 +41,4 @@ USER jboss
 CMD /opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 \
 -Dhawkular.rest.host=${HAWKULAR_SERVER_PROTOCOL}://${HAWKULAR_SERVER_ADDR}:${HAWKULAR_SERVER_PORT} \
 -Dhawkular.rest.user=${HAWKULAR_AGENT_USER} -Dhawkular.rest.password=${HAWKULAR_AGENT_PASSWORD} \
--Dhawkular.agent.immutable=true -Dhawkular.agent.in-container=true
+-Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE}
