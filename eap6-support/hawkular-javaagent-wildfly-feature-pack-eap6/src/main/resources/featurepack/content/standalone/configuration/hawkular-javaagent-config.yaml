@@ -749,6 +749,9 @@ resource-type-set-dmr:
     - name: Base Directory
       attribute: base-dir
       path:      /core-service=server-environment
+    - name: Bound Address
+      attribute: bound-address
+      path:     /socket-binding-group=full-sockets/socket-binding=http
     operation-dmr:
     - name: JDR
       internal-name: generate-jdr-report

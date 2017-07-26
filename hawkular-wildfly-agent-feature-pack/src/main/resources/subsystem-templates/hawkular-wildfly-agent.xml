@@ -801,6 +801,9 @@
         <resource-config-dmr name="Base Directory"
                              path="/core-service=server-environment"
                              attribute="base-dir"/>
+        <resource-config-dmr name="Bound Address"
+                             path="/socket-binding-group=full-sockets/socket-binding=http"
+                             attribute="bound-address" />
         <operation-dmr name="JDR" internal-name="generate-jdr-report" path="/subsystem=jdr" />
       </resource-type-dmr>
 

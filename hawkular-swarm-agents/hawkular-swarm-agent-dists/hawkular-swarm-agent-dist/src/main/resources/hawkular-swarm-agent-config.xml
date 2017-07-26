@@ -863,6 +863,9 @@
           <resource-config-dmr name="Base Directory"
                                path="/core-service=server-environment"
                                attribute="base-dir"/>
+          <resource-config-dmr name="Bound Address"
+                               path="/socket-binding-group=full-sockets/socket-binding=http"
+                               attribute="bound-address" />
         </resource-type-dmr>
 
         <resource-type-dmr name="Domain WildFly Server Controller"
