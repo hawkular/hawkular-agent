@@ -50,4 +50,6 @@ RUN yum install --quiet -y openssl && \
     rm /tmp/hawkular_wildfly_agent_setup.sh
 
 USER jboss
+
+WORKDIR /opt
 CMD /opt/hawkular/bin/run_hawkular_agent.sh "standalone"
