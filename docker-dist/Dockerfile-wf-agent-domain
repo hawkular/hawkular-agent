@@ -20,7 +20,10 @@ FROM jboss/wildfly:10.1.0.Final
 MAINTAINER Hawkular project <hawkular-dev@lists.jboss.org>
 
 ADD target/hawkular-wildfly-agent-installer-full.jar /tmp/installer.jar
-ADD src/main/resources/domain.conf /opt/jboss/wildfly/bin
+ADD src/main/resources/hawkular_wildfly_agent_setup.sh /tmp/hawkular_wildfly_agent_setup.sh
+ADD src/main/resources/domain.conf $JBOSS_HOME/bin
+
+ADD src/main/resources/run_hawkular_wildfly_agent.sh /opt/hawkular/bin/run_hawkular_agent.sh
 
 ENV HAWKULAR_SERVER_PROTOCOL http
 ENV HAWKULAR_SERVER_ADDR hawkular
@@ -33,15 +36,18 @@ EXPOSE 8080 9090
 
 WORKDIR /tmp
 
-RUN java -jar installer.jar --enabled true --server-url '${env.HAWKULAR_SERVER_PROTOCOL}://${env.HAWKULAR_SERVER_ADDR}:${env.HAWKULAR_SERVER_PORT}' \
-  --module-dist classpath:hawkular-wildfly-agent-wf-extension.zip --username '${env.HAWKULAR_AGENT_USER}' \
-  --target-config=/opt/jboss/wildfly/domain/configuration/host.xml \
-  --password '${env.HAWKULAR_AGENT_PASSWORD}' --target-location /opt/jboss/wildfly
+RUN source ./hawkular_wildfly_agent_setup.sh && \
+    generate_empty_keystore && \
+    run_hawkular_agent_domain_install
 
 USER root
-RUN chown -R jboss:0 /opt/jboss/wildfly/domain && \
-    chmod -R ug+rw /opt/jboss/wildfly/domain && \
-    rm /tmp/installer.jar
+RUN yum install --quiet -y openssl && \
+    rm -rf /var/cache/yum && \
+    chown -RH jboss:0 $JBOSS_HOME/domain /opt/hawkular && \
+    chmod -R ug+rw $JBOSS_HOME/domain /opt/hawkular && \
+    rm /tmp/installer.jar && \
+    rm /tmp/hawkular_wildfly_agent_setup.sh
 
 USER jboss
-CMD /opt/jboss/wildfly/bin/domain.sh
+WORKDIR /opt
+CMD /opt/hawkular/bin/run_hawkular_agent.sh "domain"
