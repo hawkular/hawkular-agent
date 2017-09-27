@@ -60,7 +60,7 @@
 
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent</artifactId>
+      <artifactId>hawkular-javaagent</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

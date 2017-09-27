@@ -1,3 +1,0 @@
-<outbound-socket-binding name="hawkular">
-  <remote-destination host="your-hawkular-server-hostname" port="the-port" />
-</outbound-socket-binding>

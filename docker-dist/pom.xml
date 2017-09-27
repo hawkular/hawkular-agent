@@ -26,7 +26,7 @@
     <version>2.0.0.Alpha1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hawkular-services-dist-docker</artifactId>
+  <artifactId>hawkular-javaagent-dist-docker</artifactId>
   <packaging>pom</packaging>
 
   <name>Hawkular Agent: Docker Distribution</name>
@@ -37,12 +37,6 @@
       <artifactId>hawkular-javaagent-wildfly-dist</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
-    </dependency>
-    <dependency>
-      <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent-installer-full</artifactId>
-      <version>${project.version}</version>
-      <type>jar</type>
     </dependency>
   </dependencies>
 
@@ -90,23 +84,6 @@
               </artifactItems>
             </configuration>
           </execution>
-          <execution>
-            <id>copy-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <stripVersion>true</stripVersion>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.hawkular.agent</groupId>
-                  <artifactId>hawkular-wildfly-agent-installer-full</artifactId>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -129,6 +106,5 @@
       </plugin>
     </plugins>
   </build>
-
 
 </project>

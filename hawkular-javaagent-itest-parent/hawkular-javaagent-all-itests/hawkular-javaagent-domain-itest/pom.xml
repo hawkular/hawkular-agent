@@ -19,11 +19,13 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-javaagent-all-itests</artifactId>
     <version>2.0.0.Alpha1-SNAPSHOT</version>
   </parent>
+
   <artifactId>hawkular-javaagent-domain-itest</artifactId>
 
   <name>Hawkular Agent: WildFly Domain Environment Integration Tests</name>
@@ -59,7 +61,7 @@
 
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent</artifactId>
+      <artifactId>hawkular-javaagent</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
