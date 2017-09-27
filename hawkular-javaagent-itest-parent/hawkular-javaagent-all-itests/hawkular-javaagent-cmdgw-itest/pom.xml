@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.hawkular.agent</groupId>
     <artifactId>hawkular-javaagent-all-itests</artifactId>
-    <version>1.0.0.Final-SNAPSHOT</version>
+    <version>2.0.0.Alpha1-SNAPSHOT</version>
   </parent>
 
   <artifactId>hawkular-javaagent-cmdgw-itest</artifactId>
@@ -60,7 +60,7 @@
 
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent</artifactId>
+      <artifactId>hawkular-javaagent</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

@@ -1,7 +1,0 @@
-<subsystem name="foobar">
-  <child attr="value1"></child>
-  <child attr="value2"></child>
-  <child2 xmlns="keepme">
-    <keepme></keepme>
-  </child2>
-</subsystem>

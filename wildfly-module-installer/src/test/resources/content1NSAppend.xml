@@ -1,4 +1,0 @@
-<subsystem xmlns="something">
-  <child attr="value1"></child>
-  <child attr="value2"></child>
-</subsystem>

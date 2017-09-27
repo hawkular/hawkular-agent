@@ -28,7 +28,7 @@
 
   <groupId>org.hawkular.agent</groupId>
   <artifactId>hawkular-wildfly-agent-parent</artifactId>
-  <version>1.0.0.Final-SNAPSHOT</version>
+  <version>2.0.0.Alpha1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Hawkular Agent: Parent</name>
@@ -41,21 +41,9 @@
     <module>hawkular-javaagent</module>
     <module>hawkular-javaagent-wildfly-feature-pack</module>
     <module>hawkular-javaagent-wildfly-dist</module>
-    <module>hawkular-wildfly-agent</module>
-    <module>hawkular-wildfly-agent-download</module>
-    <module>hawkular-wildfly-agent-feature-pack</module>
-    <module>hawkular-wildfly-agent-wf-extension</module>
-    <module>eap6-support/hawkular-wildfly-agent-feature-pack-eap6</module>
-    <module>eap6-support/hawkular-wildfly-agent-wf-extension-eap6</module>
     <module>eap6-support/hawkular-javaagent-wildfly-feature-pack-eap6</module>
     <module>hawkular-agent-itest-util</module>
     <module>hawkular-javaagent-itest-parent</module>
-    <module>hawkular-wildfly-agent-itest-parent</module>
-    <module>wildfly-module-installer</module>
-    <module>hawkular-wildfly-agent-installer</module>
-    <module>hawkular-wildfly-agent-installer-full</module>
-    <module>hawkular-wildfly-agent-dist</module>
-    <module>hawkular-swarm-agents</module>
     <module>docker-dist</module>
   </modules>
 
