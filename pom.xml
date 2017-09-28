@@ -121,13 +121,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.hawkular.agent</groupId>
-        <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
-        <version>${project.version}</version>
-        <type>zip</type>
-      </dependency>
-
-      <dependency>
         <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-command-gateway-api</artifactId>
         <version>${version.org.hawkular.commons}</version>
