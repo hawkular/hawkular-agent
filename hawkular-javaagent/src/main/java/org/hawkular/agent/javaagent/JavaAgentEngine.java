@@ -39,7 +39,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.hawkular.agent.javaagent.cmd.UpdateCollectionIntervalsCommand;
+import org.hawkular.agent.javaagent.cmd.EchoCommand;
 import org.hawkular.agent.javaagent.config.ConfigConverter;
 import org.hawkular.agent.javaagent.config.ConfigManager;
 import org.hawkular.agent.javaagent.config.Configuration;
@@ -205,8 +205,7 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
     @Override
     protected Map<String, Class<? extends Command<? extends BasicMessage, ? extends BasicMessage>>> //
             buildAdditionalCommands() {
-        return Collections.singletonMap(UpdateCollectionIntervalsCommand.REQUEST_CLASS.getName(),
-                UpdateCollectionIntervalsCommand.class);
+        return Collections.singletonMap(EchoCommand.REQUEST_CLASS.getName(), EchoCommand.class);
     }
 
     // JMX Interface
