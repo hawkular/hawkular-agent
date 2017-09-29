@@ -59,6 +59,9 @@ public class StorageAdapter implements Validatable {
     @JsonProperty("metrics-context")
     private String metricsContext = "/hawkular/metrics/";
 
+    @JsonProperty("inventory-context")
+    private String inventoryContext = "/hawkular/inventory/";
+
     @JsonProperty("feedcomm-context")
     private String feedcommContext = "/hawkular/command-gateway/";
 
@@ -202,6 +205,14 @@ public class StorageAdapter implements Validatable {
 
     public void setMetricsContext(String metricsContext) {
         this.metricsContext = metricsContext;
+    }
+
+    public String getInventoryContext() {
+        return inventoryContext;
+    }
+
+    public void setInventoryContext(String inventoryContext) {
+        this.inventoryContext = inventoryContext;
     }
 
     public String getFeedcommContext() {
