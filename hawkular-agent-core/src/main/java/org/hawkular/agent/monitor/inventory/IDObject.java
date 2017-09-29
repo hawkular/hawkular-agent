@@ -78,6 +78,10 @@ public abstract class IDObject {
         properties.remove(name);
     }
 
+    public boolean isPersisted() {
+        return persistedTime > 0;
+    }
+
     /**
      * @return return the persistence timestamp
      */
