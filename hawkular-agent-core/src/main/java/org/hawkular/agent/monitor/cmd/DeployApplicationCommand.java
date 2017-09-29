@@ -39,7 +39,6 @@ import org.hawkular.cmdgw.api.DeployApplicationRequest;
 import org.hawkular.cmdgw.api.DeployApplicationResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.dmrclient.DeploymentJBossASClient;
-import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
@@ -68,15 +67,14 @@ public class DeployApplicationCommand
 
         DeployApplicationRequest request = envelope.getBasicMessage();
 
-        final String resourcePath = request.getResourcePath();
+        final String resourcePath = request.getResourceId();
         final String destFileName = request.getDestinationFileName();
         final boolean enabled = (request.getEnabled() == null) ? true : request.getEnabled().booleanValue();
         final boolean forceDeploy = (request.getForceDeploy() == null) ? true
                 : request.getForceDeploy().booleanValue();
         final Set<String> serverGroups = convertCsvToSet(request.getServerGroups());
 
-        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
-        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+        String resourceId = resourcePath;
 
         ResourceManager<DMRNodeLocation> resourceManager = endpointService.getResourceManager();
         Resource<DMRNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
@@ -101,7 +99,7 @@ public class DeployApplicationCommand
                     String.format("Cannot deploy application to [%s]. That feature is disabled.", resource));
         }
 
-        MessageUtils.prepareResourcePathResponse(request, response);
+        MessageUtils.prepareResourceResponse(request, response);
         response.setDestinationFileName(request.getDestinationFileName());
 
         DeploymentJBossASClient client = new DeploymentJBossASClient(dmrContext.getClient());

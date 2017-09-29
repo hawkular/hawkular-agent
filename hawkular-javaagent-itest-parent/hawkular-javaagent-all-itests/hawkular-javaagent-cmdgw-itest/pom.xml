@@ -93,12 +93,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.commons</groupId>
-      <artifactId>hawkular-inventory-paths</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.jolokia</groupId>
       <artifactId>jolokia-war</artifactId>
       <version>${version.org.jolokia}</version>

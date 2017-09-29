@@ -83,11 +83,6 @@
 
     <dependency>
       <groupId>org.hawkular.commons</groupId>
-      <artifactId>hawkular-inventory-paths</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-client-api</artifactId>
     </dependency>
 
@@ -98,7 +93,7 @@
 
     <dependency>
       <groupId>org.hawkular.commons</groupId>
-      <artifactId>hawkular-inventory-json-helper</artifactId>
+      <artifactId>hawkular-inventory-model</artifactId>
     </dependency>
 
     <dependency>

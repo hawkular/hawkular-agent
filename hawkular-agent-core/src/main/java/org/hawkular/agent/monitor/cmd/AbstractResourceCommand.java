@@ -19,11 +19,11 @@ package org.hawkular.agent.monitor.cmd;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
-import org.hawkular.cmdgw.api.ResourcePathRequest;
-import org.hawkular.cmdgw.api.ResourcePathResponse;
+import org.hawkular.cmdgw.api.ResourceRequest;
+import org.hawkular.cmdgw.api.ResourceResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
 
-public abstract class AbstractResourcePathCommand<REQ extends ResourcePathRequest, RESP extends ResourcePathResponse>
+public abstract class AbstractResourceCommand<REQ extends ResourceRequest, RESP extends ResourceResponse>
         implements Command<REQ, RESP> {
 
     /**
@@ -39,7 +39,7 @@ public abstract class AbstractResourcePathCommand<REQ extends ResourcePathReques
      */
     private final String entityType;
 
-    public AbstractResourcePathCommand(String operationName, String entityType) {
+    public AbstractResourceCommand(String operationName, String entityType) {
         this.operationName = operationName;
         this.entityType = entityType;
     }
@@ -59,9 +59,9 @@ public abstract class AbstractResourcePathCommand<REQ extends ResourcePathReques
      * @param envelope the request to validate
      */
     protected void validate(BasicMessageWithExtraData<REQ> envelope) {
-        if (envelope.getBasicMessage().getResourcePath() == null) {
+        if (envelope.getBasicMessage().getResourceId() == null) {
             throw new IllegalArgumentException(
-                    String.format("resourcePath of a [%s] cannot be null", envelope.getClass().getName()));
+                    String.format("resourceId of a [%s] cannot be null", envelope.getClass().getName()));
         }
     }
 
@@ -81,8 +81,8 @@ public abstract class AbstractResourcePathCommand<REQ extends ResourcePathReques
 
     protected void success(BasicMessageWithExtraData<REQ> envelope, RESP response) {
         response.setStatus(ResponseStatus.OK);
-        String msg = String.format("Performed [%s] on a [%s] given by Inventory path [%s]",
-                this.getOperationName(envelope), entityType, envelope.getBasicMessage().getResourcePath());
+        String msg = String.format("Performed [%s] on a [%s] given by Inventory ID [%s]",
+                this.getOperationName(envelope), entityType, envelope.getBasicMessage().getResourceId());
 
         String innerMessage = response.getMessage();
         if (innerMessage != null) {

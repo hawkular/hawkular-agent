@@ -43,7 +43,6 @@ import org.hawkular.cmdgw.api.ExportJdrResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.cmdgw.api.ResponseStatus;
 import org.hawkular.dmr.api.OperationBuilder;
-import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
 
@@ -65,15 +64,14 @@ public class ExportJdrCommand extends AbstractDMRResourcePathCommand<ExportJdrRe
             CommandContext context, DMRSession dmrContext) throws Exception {
         ExportJdrRequest request = envelope.getBasicMessage();
 
-        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
-        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+        String resourceId = request.getResourceId();
         boolean deleteImmediately = request.isDeleteImmediately();
 
         ResourceManager<DMRNodeLocation> resourceManager = endpointService.getResourceManager();
         Resource<DMRNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot export a DMR report: unknown resource [%s]", request.getResourcePath()));
+                    String.format("Cannot export a DMR report: unknown resource [%s]", request.getResourceId()));
         }
 
         // find the operation we need to execute - make sure it exists and get the address for the resource to invoke
@@ -97,7 +95,7 @@ public class ExportJdrCommand extends AbstractDMRResourcePathCommand<ExportJdrRe
                     "Cannot execute operation: unknown operation [%s] for resource [%s]", requestedOpName, resource));
         }
 
-        MessageUtils.prepareResourcePathResponse(request, response);
+        MessageUtils.prepareResourceResponse(request, response);
 
         BinaryData binaryData = null;
         ModelNode resultNode = null;
