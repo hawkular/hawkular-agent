@@ -43,7 +43,6 @@ import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.CompositeOperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.OperationResult;
 import org.hawkular.dmrclient.JBossASClient;
-import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
@@ -74,24 +73,22 @@ public class StatisticsControlCommand
                     throws Exception {
 
         final StatisticsControlRequest request = envelope.getBasicMessage();
-        final String resourcePath = request.getResourcePath();
-        final CanonicalPath canonicalPath = CanonicalPath.fromString(resourcePath);
-        final String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+        final String resourceId = request.getResourceId();
         final ResourceManager<DMRNodeLocation> resourceManager = endpointService.getResourceManager();
         final Resource<DMRNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
 
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot change statistics flags: unknown resource [%s]", resourcePath));
+                    String.format("Cannot change statistics flags: unknown resource [%s]", resourceId));
         }
 
         if (!resource.getLocation().getPathAddress().toCLIStyleString().equals("/")) {
             throw new IllegalArgumentException(
-                    String.format("Cannot change statistics flags: not a server resource [%s]", resourcePath));
+                    String.format("Cannot change statistics flags: not a server resource [%s]", resourceId));
         }
 
         // populate the basic response
-        MessageUtils.prepareResourcePathResponse(request, response);
+        MessageUtils.prepareResourceResponse(request, response);
 
         // determine which statistics it wants to enable, disable, or leave the same.
         Optional<Boolean> datasources = getStatisticsEnabledFlag(request.getDatasources());
@@ -355,7 +352,7 @@ public class StatisticsControlCommand
                         + "enabled for subsystems %s, "
                         + "disabled for subsystems %s, "
                         + "and left as-is for subsystems %s",
-                envelope.getBasicMessage().getResourcePath(),
+                envelope.getBasicMessage().getResourceId(),
                 settings.get(StatisticsSetting.ENABLED),
                 settings.get(StatisticsSetting.DISABLED),
                 settings.get(null));

@@ -36,7 +36,6 @@ import org.hawkular.cmdgw.api.ExecuteOperationRequest;
 import org.hawkular.cmdgw.api.ExecuteOperationResponse;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.OperationResult;
-import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
@@ -85,14 +84,13 @@ public class ExecuteDMROperationCommand extends
             CommandContext context,
             DMRSession dmrContext) throws Exception {
         ExecuteOperationRequest request = envelope.getBasicMessage();
-        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
-        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+        String resourceId = request.getResourceId();
 
         ResourceManager<DMRNodeLocation> resourceManager = endpointService.getResourceManager();
         Resource<DMRNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot execute operation: unknown resource [%s]", request.getResourcePath()));
+                    String.format("Cannot execute operation: unknown resource [%s]", request.getResourceId()));
         }
 
         // find the operation we need to execute - make sure it exists and get the address for the resource to invoke

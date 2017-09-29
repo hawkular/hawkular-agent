@@ -39,7 +39,6 @@ import org.hawkular.cmdgw.api.DisableApplicationRequest;
 import org.hawkular.cmdgw.api.DisableApplicationResponse;
 import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.dmrclient.DeploymentJBossASClient;
-import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
@@ -70,12 +69,11 @@ public class DisableApplicationCommand
 
         DisableApplicationRequest request = envelope.getBasicMessage();
 
-        final String resourcePath = request.getResourcePath();
+        final String resourcePath = request.getResourceId();
         final String destFileName = request.getDestinationFileName();
         final Set<String> serverGroups = convertCsvToSet(request.getServerGroups());
 
-        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
-        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+        String resourceId = resourcePath;
 
         ResourceManager<DMRNodeLocation> resourceManager = endpointService.getResourceManager();
         Resource<DMRNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
@@ -100,7 +98,7 @@ public class DisableApplicationCommand
                     String.format("Cannot [%s] from [%s]. The operation is undefined.", NAME, resource));
         }
 
-        MessageUtils.prepareResourcePathResponse(request, response);
+        MessageUtils.prepareResourceResponse(request, response);
         response.setDestinationFileName(request.getDestinationFileName());
 
         // don't close this wrapper client

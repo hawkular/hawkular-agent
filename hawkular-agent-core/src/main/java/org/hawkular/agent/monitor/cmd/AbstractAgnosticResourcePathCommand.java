@@ -28,20 +28,19 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.cmdgw.api.MessageUtils;
-import org.hawkular.cmdgw.api.ResourcePathRequest;
-import org.hawkular.cmdgw.api.ResourcePathResponse;
+import org.hawkular.cmdgw.api.ResourceRequest;
+import org.hawkular.cmdgw.api.ResourceResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
-import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
- * A class that can execute either DMR or JMX {@link Command}s of type {@link ResourcePathRequest}.
+ * A class that can execute either DMR or JMX {@link Command}s of type {@link ResourceRequest}.
  *
  * Note that this is agnostic as to whether the resource path refers to a JMX or DMR resource.
  * Subclasses will be able to build the necessary commands for the different types.
  */
 public abstract class AbstractAgnosticResourcePathCommand //
-<REQ extends ResourcePathRequest, RESP extends ResourcePathResponse>
-        extends AbstractResourcePathCommand<REQ, RESP>
+<REQ extends ResourceRequest, RESP extends ResourceResponse>
+        extends AbstractResourceCommand<REQ, RESP>
         implements Command<REQ, RESP> {
 
     private static final MsgLogger log = AgentLoggers.getLogger(AbstractAgnosticResourcePathCommand.class);
@@ -55,22 +54,13 @@ public abstract class AbstractAgnosticResourcePathCommand //
             throws Exception {
 
         REQ request = envelope.getBasicMessage();
-        String rawResourcePath = request.getResourcePath();
+        String rawResourcePath = request.getResourceId();
         long timestampBeforeExecution = System.currentTimeMillis();
 
         try {
             validate(envelope);
 
-            // Based on the resource ID we need to know which inventory manager is handling it.
-            // From the inventory manager, we can get the actual resource.
-            CanonicalPath canonicalPath = CanonicalPath.fromString(rawResourcePath);
-
-            String resourceId;
-            try {
-                resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Bad resource path specified in command: " + rawResourcePath);
-            }
+            String resourceId = rawResourcePath;
             ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
 
             String managedServerName = idParts.getManagedServerName();
@@ -99,7 +89,7 @@ public abstract class AbstractAgnosticResourcePathCommand //
 
         } catch (Throwable t) {
             RESP response = createResponse();
-            MessageUtils.prepareResourcePathResponse(request, response);
+            MessageUtils.prepareResourceResponse(request, response);
             response.setStatus(ResponseStatus.ERROR);
             String formattedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mmX").withZone(ZoneOffset.UTC)
                     .format(Instant.ofEpochMilli(timestampBeforeExecution));

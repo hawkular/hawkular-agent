@@ -86,7 +86,7 @@ public class ExecuteJMXOperationCommand extends
         Resource<JMXNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot execute operation: unknown resource [%s]", request.getResourcePath()));
+                    String.format("Cannot execute operation: unknown resource [%s]", request.getResourceId()));
         }
 
         // find the operation we need to execute - make sure it exists and get the address for the resource to invoke

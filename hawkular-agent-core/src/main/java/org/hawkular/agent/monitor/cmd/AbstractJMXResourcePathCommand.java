@@ -30,20 +30,19 @@ import org.hawkular.agent.monitor.protocol.jmx.JMXSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
 import org.hawkular.cmdgw.api.MessageUtils;
-import org.hawkular.cmdgw.api.ResourcePathRequest;
-import org.hawkular.cmdgw.api.ResourcePathResponse;
+import org.hawkular.cmdgw.api.ResourceRequest;
+import org.hawkular.cmdgw.api.ResourceResponse;
 import org.hawkular.cmdgw.api.ResponseStatus;
-import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
- * A base for {@link Command}s initiated by subclasses of {@link ResourcePathRequest}.
+ * A base for {@link Command}s initiated by subclasses of {@link ResourceRequest}.
  *
  * Note that this assumes the resource path refers to a JMX resource! Thus commands that extend
  * this class will assume to need to access a JMX endpoint and will perform JMX-related operations.
  */
 public abstract class AbstractJMXResourcePathCommand //
-<REQ extends ResourcePathRequest, RESP extends ResourcePathResponse>
-        extends AbstractResourcePathCommand<REQ, RESP> {
+<REQ extends ResourceRequest, RESP extends ResourceResponse>
+        extends AbstractResourceCommand<REQ, RESP> {
 
     private static final MsgLogger log = AgentLoggers.getLogger(AbstractJMXResourcePathCommand.class);
 
@@ -56,28 +55,19 @@ public abstract class AbstractJMXResourcePathCommand //
             throws Exception {
 
         REQ request = envelope.getBasicMessage();
-        String rawResourcePath = request.getResourcePath();
+        String rawResourcePath = request.getResourceId();
         log.infoReceivedResourcePathCommand(this.getOperationName(envelope), this.getEntityType(envelope),
                 rawResourcePath);
 
         RESP response = createResponse();
-        MessageUtils.prepareResourcePathResponse(request, response);
+        MessageUtils.prepareResourceResponse(request, response);
         BinaryData binaryData = null;
         long timestampBeforeExecution = System.currentTimeMillis();
 
         try {
             validate(envelope);
 
-            // Based on the resource ID we need to know which inventory manager is handling it.
-            // From the inventory manager, we can get the actual resource.
-            CanonicalPath canonicalPath = CanonicalPath.fromString(rawResourcePath);
-
-            String resourceId;
-            try {
-                resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Bad resource path specified in command: " + rawResourcePath);
-            }
+            String resourceId = rawResourcePath;
             ResourceIdParts idParts = InventoryIdUtil.parseResourceId(resourceId);
             String managedServerName = idParts.getManagedServerName();
             EndpointService<JMXNodeLocation, JMXSession> endpointService = context.getAgentCoreEngine()

@@ -39,7 +39,6 @@ import org.hawkular.cmdgw.api.MessageUtils;
 import org.hawkular.cmdgw.api.UndeployApplicationRequest;
 import org.hawkular.cmdgw.api.UndeployApplicationResponse;
 import org.hawkular.dmrclient.DeploymentJBossASClient;
-import org.hawkular.inventory.paths.CanonicalPath;
 import org.jboss.as.controller.client.ModelControllerClient;
 
 /**
@@ -68,21 +67,19 @@ public class UndeployApplicationCommand
 
         UndeployApplicationRequest request = envelope.getBasicMessage();
 
-        final String resourcePath = request.getResourcePath();
         final String destFileName = request.getDestinationFileName();
         final boolean removeContent = (request.getRemoveContent() == null) ? true
                 : request.getRemoveContent().booleanValue();
 
         final Set<String> serverGroups = convertCsvToSet(request.getServerGroups());
 
-        CanonicalPath canonicalPath = CanonicalPath.fromString(request.getResourcePath());
-        String resourceId = canonicalPath.ids().getResourcePath().getSegment().getElementId();
+        final String resourceId = request.getResourceId();
 
         ResourceManager<DMRNodeLocation> resourceManager = endpointService.getResourceManager();
         Resource<DMRNodeLocation> resource = resourceManager.getResource(new ID(resourceId));
         if (resource == null) {
             throw new IllegalArgumentException(
-                    String.format("Cannot undeploy application: unknown resource [%s]", resourcePath));
+                    String.format("Cannot undeploy application: unknown resource [%s]", resourceId));
         }
 
         // find the operation we need to execute - make sure it exists
@@ -101,7 +98,7 @@ public class UndeployApplicationCommand
                     String.format("Cannot undeploy application from [%s]. That feature is disabled.", resource));
         }
 
-        MessageUtils.prepareResourcePathResponse(request, response);
+        MessageUtils.prepareResourceResponse(request, response);
         response.setDestinationFileName(request.getDestinationFileName());
 
         DeploymentJBossASClient client = new DeploymentJBossASClient(dmrContext.getClient());
