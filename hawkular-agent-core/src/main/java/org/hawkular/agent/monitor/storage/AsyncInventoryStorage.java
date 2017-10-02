@@ -20,9 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryStorage;
@@ -31,7 +29,6 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointCo
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.IDObject;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
@@ -39,7 +36,6 @@ import org.hawkular.agent.monitor.inventory.NamedObject;
 import org.hawkular.agent.monitor.inventory.Operation;
 import org.hawkular.agent.monitor.inventory.OperationParam;
 import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
@@ -86,7 +82,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
     @Override
     public <L> void receivedEvent(InventoryEvent<L> event) {
         try {
-            ResourceManager<L> resourceManager = event.getResourceManager();
             MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
             log.debugf("Received inventory event for [%s]", endpoint);
 
@@ -120,7 +115,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                                 .builder();
                         ob.name(op.getName().getNameString());
                         for (OperationParam param : op.getParameters()) {
-                            Map<String, String> metadata = new HashMap<String, String>();
+                            Map<String, String> metadata = new HashMap<>();
                             metadata.put("description", param.getDescription());
                             metadata.put("defaultValue", param.getDefaultValue());
                             metadata.put("type", param.getType());
@@ -138,21 +133,14 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             // Build the JSON for the resources.
             // Note that it is possible for a endpoint to define multiple root resources.
-            Set<ID> addedOrModifiedIds = event.getAddedOrModifiedRootResources().stream()
-                    .map(IDObject::getID)
-                    .collect(Collectors.toSet());
+            event.getAddedOrModified().forEach(r -> {
+                log.debugf("Updating root resource: %s", r.getID().getIDString());
 
-            for (Resource<L> r : resourceManager.getRootResources()) {
-                // Ignore unmodified resources
-                if (addedOrModifiedIds.contains(r.getID())) {
-                    log.debugf("Updating root resource: %s", r.getID().getIDString());
+                addResourceToImport(r, importResources);
 
-                    addResourceToImport(resourceManager, r, true, importResources);
-
-                    // indicate we persisted the resource
-                    r.setPersistedTime(timestamp);
-                }
-            }
+                // indicate we persisted the resource
+                r.setPersistedTime(timestamp);
+            });
 
             // Remove deleted resources
             for (Resource<L> r : event.getRemoved()) {
@@ -178,25 +166,18 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return feedId + "~" + id;
     }
 
-    private <L> void addResourceToImport(
-            ResourceManager<L> resourceManager,
-            Resource<L> r,
-            boolean isRoot,
-            List<org.hawkular.inventory.model.Resource> importResources) {
+    private <L> void addResourceToImport(Resource<L> r, List<org.hawkular.inventory.model.Resource> importResources) {
+        String parentId = (r.getParent() != null) ? r.getParent().getID().getIDString() : null;
         org.hawkular.inventory.model.Resource.Builder rb = org.hawkular.inventory.model.Resource
                 .builder()
                 .id(getInventoryId(r))
-                .isRoot(isRoot)
+                .parentId(parentId)
                 .typeId(getInventoryId(r.getResourceType()))
                 .name(r.getName().getNameString());
         r.getProperties().forEach((k, v) -> rb.property(k, v.toString()));
         r.getMetrics().forEach(m -> rb.metric(buildMetric(m)));
         r.getAvails().forEach(m -> rb.metric(buildMetric(m)));
-        Set<Resource<L>> children = resourceManager.getChildren(r);
-        children.forEach(child -> rb.childId(getInventoryId(child)));
         importResources.add(rb.build());
-
-        children.forEach(child -> addResourceToImport(resourceManager, child, false, importResources));
     }
 
     private <L,M extends MeasurementType<L>> Metric buildMetric(MeasurementInstance<L, M> m) {
