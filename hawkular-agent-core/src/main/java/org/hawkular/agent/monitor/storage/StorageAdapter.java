@@ -32,14 +32,12 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
      *
      * @param feedId identifies the feed that is storing data
      * @param config the configuration of the storage adapter
-     * @param autoDiscoveryScanPeriodSeconds the auto discovery frequency in seconds
      * @param diag the object used to track internal diagnostic data for the storage adapter
      * @param httpClientBuilder used to communicate with the storage server
      */
     void initialize(
             String feedId,
             AgentCoreEngineConfiguration.StorageAdapterConfiguration config,
-            int autoDiscoveryScanPeriodSeconds,
             Diagnostics diag,
             HttpClientBuilder httpClientBuilder);
 

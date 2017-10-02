@@ -17,10 +17,7 @@
 package org.hawkular.agent.monitor.api;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.hawkular.agent.monitor.inventory.Resource;
@@ -37,8 +34,6 @@ public class InventoryEvent<L> {
     private final SamplingService<L> samplingService;
     private final ResourceManager<L> resourceManager;
     private final Optional<ResourceTypeManager<L>> resourceTypeManager;
-    private final Map<String, Resource<L>> addedOrModifiedRootResources;
-    private final Map<String, Resource<L>> removedRootResources;
     private final List<Resource<L>> addedOrModified;
     private final List<Resource<L>> removed;
 
@@ -75,23 +70,6 @@ public class InventoryEvent<L> {
         this.resourceTypeManager = resourceTypeManager;
         this.addedOrModified = addedOrModified;
         this.removed = removed;
-
-        // Distribute 'addedOrModified' and 'removed' in 'addedOrModifiedRootResources' and 'removedRootResources'
-        addedOrModifiedRootResources = new HashMap<>();
-        removedRootResources = new HashMap<>();
-        addedOrModified.forEach(r -> {
-            Resource<L> root = getRootResource(r);
-            addedOrModifiedRootResources.put(root.getID().getIDString(), root);
-        });
-        removed.forEach(r -> {
-            if (r.getParent() == null) {
-                // Root resource removed
-                removedRootResources.put(r.getID().getIDString(), r);
-            } else {
-                Resource<L> root = getRootResource(r);
-                addedOrModifiedRootResources.put(root.getID().getIDString(), root);
-            }
-        });
     }
 
     /**
@@ -172,21 +150,6 @@ public class InventoryEvent<L> {
      */
     public Optional<ResourceTypeManager<L>> getResourceTypeManager() {
         return resourceTypeManager;
-    }
-
-    /**
-     * @return the list of added or modified root resources. Note that if a non-root resource was removed, its root
-     * resource will be listed here.
-     */
-    public Collection<Resource<L>> getAddedOrModifiedRootResources() {
-        return addedOrModifiedRootResources.values();
-    }
-
-    /**
-     * @return the list of removed root resources
-     */
-    public Collection<Resource<L>> getRemovedRootResources() {
-        return removedRootResources.values();
     }
 
     /**
