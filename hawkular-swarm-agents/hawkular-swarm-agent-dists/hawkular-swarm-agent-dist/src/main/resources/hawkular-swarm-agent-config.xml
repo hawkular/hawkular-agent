@@ -926,9 +926,6 @@
                            parents="WildFly Server,Domain WildFly Server"
                            metric-sets="Undertow Metrics"
                            avail-sets="Deployment Status">
-          <operation-dmr name="Redeploy" internal-name="redeploy" modifies="true"/>
-          <operation-dmr name="Remove"   internal-name="remove"   modifies="true"/>
-          <operation-dmr name="Undeploy" internal-name="undeploy" modifies="true"/>
         </resource-type-dmr>
 
         <resource-type-dmr name="SubDeployment"
