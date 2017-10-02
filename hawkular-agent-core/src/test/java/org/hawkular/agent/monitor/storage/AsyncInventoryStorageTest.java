@@ -114,8 +114,7 @@ public class AsyncInventoryStorageTest {
         when(config.getMetricsContext()).thenReturn("ignore");
         httpClientBuilder = mockHttp();
         diagnostics = new DiagnosticsImpl(null, new MetricRegistry(), "feed_id");
-        int autoDiscoveryScanSeconds = 10;
-        storage = new AsyncInventoryStorage("feed_id", config, autoDiscoveryScanSeconds, httpClientBuilder, diagnostics);
+        storage = new AsyncInventoryStorage("feed_id", config, httpClientBuilder, diagnostics);
 
         // Mock SamplingService > MonitoredEndpoint > EndpointConfiguration
         AgentCoreEngineConfiguration.EndpointConfiguration endpointConfiguration
@@ -193,11 +192,8 @@ public class AsyncInventoryStorageTest {
                 "http://ignore/ignore/strings/inventory.feed_id.r.r1/raw",
                 "http://ignore/ignore/strings?overwrite=true");
 
-        // Make sure we won't make them expire before ~1week (+/- 25 hours)
+        // Make sure persisted time is correct
         final long initialTime = R_1.getPersistedTime();
-        long expireTime = initialTime + storage.persistenceRefreshDelay;
-        long oneWeekFromNow = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(InventoryMetric.DATA_RETENTION);
-        Assert.assertTrue(TimeUnit.MILLISECONDS.toHours(Math.abs(oneWeekFromNow - expireTime)) <= 25);
         Assert.assertEquals(initialTime, R_2.getPersistedTime());
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
         Assert.assertEquals(initialTime, MT_1.getPersistedTime());
@@ -355,8 +351,7 @@ public class AsyncInventoryStorageTest {
     public void testDiscoveryWithExpiringTTL() {
         // Hack the AsyncInventoryStorage and autoDiscoveryScanSeconds so that it thinks metrics expire very quickly
         // High value will set persistenceRefreshDelay negative so that it always trigger refreshes
-        int autoDiscoveryScanSeconds = (int) TimeUnit.DAYS.toSeconds(8);
-        storage = new AsyncInventoryStorage("feed_id", config, autoDiscoveryScanSeconds, httpClientBuilder, diagnostics);
+        storage = new AsyncInventoryStorage("feed_id", config, httpClientBuilder, diagnostics);
         storage.receivedEvent(InventoryEvent.discovery(
                 samplingService,
                 resourceManager,

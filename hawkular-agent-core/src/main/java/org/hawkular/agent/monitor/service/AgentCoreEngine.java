@@ -573,7 +573,6 @@ public abstract class AgentCoreEngine {
         this.storageAdapter.initialize(
                 feedId,
                 configuration.getStorageAdapter(),
-                configuration.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds(),
                 diagnostics,
                 httpClientBuilder);
 
