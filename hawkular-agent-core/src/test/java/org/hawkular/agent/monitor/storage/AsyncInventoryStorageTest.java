@@ -228,7 +228,6 @@ public class AsyncInventoryStorageTest {
         // Persistence time changed only for R_2
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
         Assert.assertEquals(initialTime, R_1.getPersistedTime());
-        Assert.assertTrue(R_2.getPersistedTime() > initialTime);
         final long intermediateR2Time = R_2.getPersistedTime();
 
         Thread.sleep(10);
@@ -242,7 +241,7 @@ public class AsyncInventoryStorageTest {
                 Collections.emptyList(),
                 Collections.singletonList(R_1)));
         expectCalls(collectedDeleteCalls,
-                "http://ignore/ignore/import");
+                "http://ignore/ignore/resources/r1");
         Assert.assertEquals(0, collectedPostCalls.size());
 
         // Persistence time hasn't changed
@@ -260,13 +259,13 @@ public class AsyncInventoryStorageTest {
                 Collections.emptyList(),
                 Collections.singletonList(r3)));
         // r3 being a child resource, it triggers an update on its parent
-        Assert.assertEquals(0, collectedDeleteCalls.size());
-        expectCalls(collectedPostCalls,
-                "http://ignore/ignore/import");
+        Assert.assertEquals(0, collectedPostCalls.size());
+        expectCalls(collectedDeleteCalls,
+                "http://ignore/ignore/resources/r3");
 
         // Persistence time changed for R2
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
-        Assert.assertTrue(R_2.getPersistedTime() > intermediateR2Time);
+        Assert.assertEquals(intermediateR2Time, R_2.getPersistedTime());
     }
 
     @Test
@@ -306,7 +305,7 @@ public class AsyncInventoryStorageTest {
                 resourceManager,
                 Collections.singletonList(R_1)));
         expectCalls(collectedDeleteCalls,
-                "http://ignore/ignore/import");
+                "http://ignore/ignore/resources/r1");
         Assert.assertEquals(0, collectedPostCalls.size());
 
         // Next run with removed r3
@@ -315,10 +314,9 @@ public class AsyncInventoryStorageTest {
                 samplingService,
                 resourceManager,
                 Collections.singletonList(r3)));
-        // r3 being a child resource, it triggers an update on its parent
-        Assert.assertEquals(0, collectedDeleteCalls.size());
-        expectCalls(collectedPostCalls,
-                "http://ignore/ignore/import");
+        expectCalls(collectedDeleteCalls,
+                "http://ignore/ignore/resources/r3");
+        Assert.assertEquals(0, collectedPostCalls.size());
     }
 
     private static class AnyLocation {
