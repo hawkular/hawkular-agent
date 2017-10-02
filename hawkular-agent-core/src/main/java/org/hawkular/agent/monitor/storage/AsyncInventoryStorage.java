@@ -154,7 +154,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
 
         } catch (Exception e) {
-
+            log.errorf("Failed to process inventory event: ", e.toString());
         }
     }
 
