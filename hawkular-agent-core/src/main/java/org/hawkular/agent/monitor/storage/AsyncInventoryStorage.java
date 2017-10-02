@@ -43,6 +43,8 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.Import;
 import org.hawkular.inventory.model.Metric;
+import org.hawkular.inventory.model.MetricUnit;
+import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 import com.codahale.metrics.Timer;
 
@@ -134,7 +136,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             // Build the JSON for the resources.
             // Note that it is possible for a endpoint to define multiple root resources.
             event.getAddedOrModified().forEach(r -> {
-                log.debugf("Updating root resource: %s", r.getID().getIDString());
+                log.debugf("Updating resource: %s", r.getID().getIDString());
 
                 addResourceToImport(r, importResources);
 
@@ -175,17 +177,20 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 .typeId(getInventoryId(r.getResourceType()))
                 .name(r.getName().getNameString());
         r.getProperties().forEach((k, v) -> rb.property(k, v.toString()));
-        r.getMetrics().forEach(m -> rb.metric(buildMetric(m)));
-        r.getAvails().forEach(m -> rb.metric(buildMetric(m)));
+        r.getMetrics().forEach(m -> rb.metric(buildMetric(m, m.getType().getMetricUnits())));
+        r.getAvails().forEach(m -> rb.metric(buildMetric(m, null)));
         importResources.add(rb.build());
     }
 
-    private <L,M extends MeasurementType<L>> Metric buildMetric(MeasurementInstance<L, M> m) {
+    private <L, M extends MeasurementType<L>> Metric buildMetric(MeasurementInstance<L, M> m,
+            MeasurementUnit metricUnits) {
         org.hawkular.inventory.model.Metric.Builder mb = org.hawkular.inventory.model.Metric
                 .builder()
                 .name(m.getName().getNameString())
                 .type(m.getType().getName().getNameString());
-// TODO: unit                .unit(???);
+        if (metricUnits != null) {
+            mb.unit(MetricUnit.valueOf(metricUnits.name()));
+        }
         m.getProperties().forEach((k, v) -> mb.property(k, v.toString()));
         return mb.build();
     }
