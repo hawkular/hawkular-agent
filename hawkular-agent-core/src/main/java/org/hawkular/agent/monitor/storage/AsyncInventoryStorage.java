@@ -32,6 +32,8 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageAda
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.IDObject;
+import org.hawkular.agent.monitor.inventory.MeasurementInstance;
+import org.hawkular.agent.monitor.inventory.MeasurementType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NamedObject;
 import org.hawkular.agent.monitor.inventory.Operation;
@@ -44,6 +46,7 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.Import;
+import org.hawkular.inventory.model.Metric;
 
 import com.codahale.metrics.Timer;
 
@@ -68,7 +71,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
     public AsyncInventoryStorage(
             String feedId,
             StorageAdapterConfiguration config,
-            int autoDiscoveryScanPeriodSeconds,
             HttpClientBuilder httpClientBuilder,
             Diagnostics diagnostics) {
         this.feedId = feedId;
@@ -145,7 +147,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 if (addedOrModifiedIds.contains(r.getID())) {
                     log.debugf("Updating root resource: %s", r.getID().getIDString());
 
-                    // TODO build Import
+                    addResourceToImport(resourceManager, r, true, importResources);
 
                     // indicate we persisted the resource
                     r.setPersistedTime(timestamp);
@@ -157,6 +159,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 log.debugf("Removing resource: %s", r.getID().getIDString());
                 deleteInventoryData(r.getID());
             }
+            if (!importResources.isEmpty() || !importTypes.isEmpty()) {
+                importInventoryData(importData);
+            }
+
         } catch (Exception e) {
 
         }
@@ -170,6 +176,37 @@ public class AsyncInventoryStorage implements InventoryStorage {
             id = no.getID().getIDString();
         }
         return feedId + "~" + id;
+    }
+
+    private <L> void addResourceToImport(
+            ResourceManager<L> resourceManager,
+            Resource<L> r,
+            boolean isRoot,
+            List<org.hawkular.inventory.model.Resource> importResources) {
+        org.hawkular.inventory.model.Resource.Builder rb = org.hawkular.inventory.model.Resource
+                .builder()
+                .id(getInventoryId(r))
+                .isRoot(isRoot)
+                .typeId(getInventoryId(r.getResourceType()))
+                .name(r.getName().getNameString());
+        r.getProperties().forEach((k, v) -> rb.property(k, v.toString()));
+        r.getMetrics().forEach(m -> rb.metric(buildMetric(m)));
+        r.getAvails().forEach(m -> rb.metric(buildMetric(m)));
+        Set<Resource<L>> children = resourceManager.getChildren(r);
+        children.forEach(child -> rb.childId(getInventoryId(child)));
+        importResources.add(rb.build());
+
+        children.forEach(child -> addResourceToImport(resourceManager, child, false, importResources));
+    }
+
+    private <L,M extends MeasurementType<L>> Metric buildMetric(MeasurementInstance<L, M> m) {
+        org.hawkular.inventory.model.Metric.Builder mb = org.hawkular.inventory.model.Metric
+                .builder()
+                .name(m.getName().getNameString())
+                .type(m.getType().getName().getNameString());
+// TODO: unit                .unit(???);
+        m.getProperties().forEach((k, v) -> mb.property(k, v.toString()));
+        return mb.build();
     }
 
     private void importInventoryData(Import importData) throws Exception {
