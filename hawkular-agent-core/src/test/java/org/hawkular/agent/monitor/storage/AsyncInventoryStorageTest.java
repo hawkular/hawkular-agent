@@ -111,7 +111,7 @@ public class AsyncInventoryStorageTest {
         // AsyncInventoryStorage
         config = mock(AgentCoreEngineConfiguration.StorageAdapterConfiguration.class);
         when(config.getUrl()).thenReturn("http://ignore");
-        when(config.getMetricsContext()).thenReturn("ignore");
+        when(config.getInventoryContext()).thenReturn("ignore");
         httpClientBuilder = mockHttp();
         diagnostics = new DiagnosticsImpl(null, new MetricRegistry(), "feed_id");
         storage = new AsyncInventoryStorage("feed_id", config, httpClientBuilder, diagnostics);
@@ -181,22 +181,13 @@ public class AsyncInventoryStorageTest {
                 Collections.emptyList()));
         Assert.assertEquals(0, collectedDeleteCalls.size());
         expectCalls(collectedPostCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.mt.mt1/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.rt.rt2/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.rt.rt1/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.r.r2/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.r.r1/raw",
-                "http://ignore/ignore/strings?overwrite=true");
+                "http://ignore/ignore/import");
 
         // Make sure persisted time is correct
         final long initialTime = R_1.getPersistedTime();
+        Assert.assertTrue(initialTime > 0);
         Assert.assertEquals(initialTime, R_2.getPersistedTime());
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
-        Assert.assertEquals(initialTime, MT_1.getPersistedTime());
 
         Thread.sleep(10);
 
@@ -211,7 +202,6 @@ public class AsyncInventoryStorageTest {
         Assert.assertEquals(0, collectedPostCalls.size());
         // Persistence time hasn't changed
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
-        Assert.assertEquals(initialTime, MT_1.getPersistedTime());
         Assert.assertEquals(initialTime, R_1.getPersistedTime());
 
         Thread.sleep(10);
@@ -233,14 +223,11 @@ public class AsyncInventoryStorageTest {
                 Collections.emptyList()));
         Assert.assertEquals(0, collectedDeleteCalls.size());
         expectCalls(collectedPostCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.r.r2/raw",
-                "http://ignore/ignore/strings?overwrite=true");
+                "http://ignore/ignore/import");
 
         // Persistence time changed only for R_2
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
-        Assert.assertEquals(initialTime, MT_1.getPersistedTime());
         Assert.assertEquals(initialTime, R_1.getPersistedTime());
-        Assert.assertTrue(R_2.getPersistedTime() > initialTime);
         final long intermediateR2Time = R_2.getPersistedTime();
 
         Thread.sleep(10);
@@ -254,12 +241,11 @@ public class AsyncInventoryStorageTest {
                 Collections.emptyList(),
                 Collections.singletonList(R_1)));
         expectCalls(collectedDeleteCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.r.r1");
+                "http://ignore/ignore/resources/r1");
         Assert.assertEquals(0, collectedPostCalls.size());
 
         // Persistence time hasn't changed
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
-        Assert.assertEquals(initialTime, MT_1.getPersistedTime());
         Assert.assertEquals(intermediateR2Time, R_2.getPersistedTime());
 
         Thread.sleep(10);
@@ -273,15 +259,13 @@ public class AsyncInventoryStorageTest {
                 Collections.emptyList(),
                 Collections.singletonList(r3)));
         // r3 being a child resource, it triggers an update on its parent
-        Assert.assertEquals(0, collectedDeleteCalls.size());
-        expectCalls(collectedPostCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.r.r2/raw",
-                "http://ignore/ignore/strings?overwrite=true");
+        Assert.assertEquals(0, collectedPostCalls.size());
+        expectCalls(collectedDeleteCalls,
+                "http://ignore/ignore/resources/r3");
 
         // Persistence time changed for R2
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
-        Assert.assertEquals(initialTime, MT_1.getPersistedTime());
-        Assert.assertTrue(R_2.getPersistedTime() > intermediateR2Time);
+        Assert.assertEquals(intermediateR2Time, R_2.getPersistedTime());
     }
 
     @Test
@@ -295,16 +279,7 @@ public class AsyncInventoryStorageTest {
                 Collections.emptyList()));
         Assert.assertEquals(0, collectedDeleteCalls.size());
         expectCalls(collectedPostCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.mt.mt1/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.rt.rt2/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.rt.rt1/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.r.r2/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.r.r1/raw",
-                "http://ignore/ignore/strings?overwrite=true");
+                "http://ignore/ignore/import");
 
         // Add 1 discovered resource under R_2
         Resource<AnyLocation> r3 = Resource.<AnyLocation>builder()
@@ -321,8 +296,7 @@ public class AsyncInventoryStorageTest {
                 Collections.singletonList(r3)));
         Assert.assertEquals(0, collectedDeleteCalls.size());
         expectCalls(collectedPostCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.r.r2/raw",
-                "http://ignore/ignore/strings?overwrite=true");
+                "http://ignore/ignore/import");
 
         // Next run with removed R_1
         resourceManager.removeResource(R_1);
@@ -331,7 +305,7 @@ public class AsyncInventoryStorageTest {
                 resourceManager,
                 Collections.singletonList(R_1)));
         expectCalls(collectedDeleteCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.r.r1");
+                "http://ignore/ignore/resources/r1");
         Assert.assertEquals(0, collectedPostCalls.size());
 
         // Next run with removed r3
@@ -340,56 +314,9 @@ public class AsyncInventoryStorageTest {
                 samplingService,
                 resourceManager,
                 Collections.singletonList(r3)));
-        // r3 being a child resource, it triggers an update on its parent
-        Assert.assertEquals(0, collectedDeleteCalls.size());
-        expectCalls(collectedPostCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.r.r2/raw",
-                "http://ignore/ignore/strings?overwrite=true");
-    }
-
-    @Test
-    public void testDiscoveryWithExpiringTTL() {
-        // Hack the AsyncInventoryStorage and autoDiscoveryScanSeconds so that it thinks metrics expire very quickly
-        // High value will set persistenceRefreshDelay negative so that it always trigger refreshes
-        storage = new AsyncInventoryStorage("feed_id", config, httpClientBuilder, diagnostics);
-        storage.receivedEvent(InventoryEvent.discovery(
-                samplingService,
-                resourceManager,
-                resourceTypeManager,
-                resourceManager.getResourcesBreadthFirst(),
-                Collections.emptyList()));
-        Assert.assertEquals(0, collectedDeleteCalls.size());
-        expectCalls(collectedPostCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.mt.mt1/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.rt.rt2/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.rt.rt1/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.r.r2/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.r.r1/raw",
-                "http://ignore/ignore/strings?overwrite=true");
-
-        // Next run with no discovered resource, but metrics expired
-        storage.receivedEvent(InventoryEvent.discovery(
-                samplingService,
-                resourceManager,
-                resourceTypeManager,
-                Collections.emptyList(),
-                Collections.emptyList()));
-        Assert.assertEquals(0, collectedDeleteCalls.size());
-        expectCalls(collectedPostCalls,
-                "http://ignore/ignore/strings/inventory.feed_id.mt.mt1/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.rt.rt2/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.rt.rt1/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.r.r2/raw",
-                "http://ignore/ignore/strings?overwrite=true",
-                "http://ignore/ignore/strings/inventory.feed_id.r.r1/raw",
-                "http://ignore/ignore/strings?overwrite=true");
+        expectCalls(collectedDeleteCalls,
+                "http://ignore/ignore/resources/r3");
+        Assert.assertEquals(0, collectedPostCalls.size());
     }
 
     private static class AnyLocation {
