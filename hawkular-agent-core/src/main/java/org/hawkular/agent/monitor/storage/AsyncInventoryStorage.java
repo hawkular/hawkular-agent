@@ -142,6 +142,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
                 // indicate we persisted the resource
                 r.setPersistedTime(timestamp);
+                r.getMetrics().forEach(m -> m.setPersistedTime(timestamp));
             });
 
             // Remove deleted resources
