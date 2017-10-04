@@ -35,16 +35,18 @@ public class InventoryIdUtilTest {
         MonitoredEndpoint<EndpointConfiguration> me = MonitoredEndpoint.<EndpointConfiguration> of(endpointConfig,
                 null);
 
-        id = InventoryIdUtil.generateResourceId(me, "/test/id/path");
-        Assert.assertEquals("testmanagedserver~/test/id/path", id.toString());
+        id = InventoryIdUtil.generateResourceId("fid", me, "/test/id/path");
+        Assert.assertEquals("fid~testmanagedserver~/test/id/path", id.toString());
         parts = InventoryIdUtil.parseResourceId(id.getIDString());
+        Assert.assertEquals("fid", parts.getFeedId());
         Assert.assertEquals("testmanagedserver", parts.getManagedServerName());
         Assert.assertEquals("/test/id/path", parts.getIdPart());
 
         // test that you can have ~ in the last part of the ID
-        id = InventoryIdUtil.generateResourceId(me, "~/~test/~id/~path");
-        Assert.assertEquals("testmanagedserver~~/~test/~id/~path", id.toString());
+        id = InventoryIdUtil.generateResourceId("fid", me, "~/~test/~id/~path");
+        Assert.assertEquals("fid~testmanagedserver~~/~test/~id/~path", id.toString());
         parts = InventoryIdUtil.parseResourceId(id.getIDString());
+        Assert.assertEquals("fid", parts.getFeedId());
         Assert.assertEquals("testmanagedserver", parts.getManagedServerName());
         Assert.assertEquals("~/~test/~id/~path", parts.getIdPart());
     }
