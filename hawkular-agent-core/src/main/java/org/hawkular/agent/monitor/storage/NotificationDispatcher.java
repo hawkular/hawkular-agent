@@ -53,6 +53,7 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
                     try {
                         NotificationPayloadBuilder b = storageAdapter.createNotificationPayloadBuilder();
                         b.addNotificationType(NotificationType.RESOURCE_ADDED);
+                        b.addProperty("feedId", this.feedId);
                         b.addProperty("resourceType", r.getResourceType().getName().getNameString());
                         b.addProperty("resourceId", r.getID().getIDString());
                         storageAdapter.store(b, 0);
@@ -81,6 +82,7 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
                     try {
                         NotificationPayloadBuilder b = storageAdapter.createNotificationPayloadBuilder();
                         b.addNotificationType(notificationType);
+                        b.addProperty("feedId", this.feedId);
                         b.addProperty("resourceType", mi.getResource().getResourceType().getName().getNameString());
                         b.addProperty("resourceId", mi.getResource().getID().getIDString());
                         b.addProperty("availType", mi.getType().getName().getNameString());

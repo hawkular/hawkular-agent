@@ -23,11 +23,6 @@ import org.hawkular.agent.monitor.api.NotificationPayloadBuilder;
 import org.hawkular.client.api.Notification;
 import org.hawkular.client.api.NotificationType;
 
-/**
- * Allows one to build up a payload request to send to metric storage by adding
- * data points one by one. After all data points are added, you can get the payload in
- * either an {@link #toObjectPayload() object} format or a {@link #toPayload() JSON} format.
- */
 public class NotificationPayloadBuilderImpl implements NotificationPayloadBuilder {
 
     private NotificationType notificationType;
