@@ -612,6 +612,15 @@
                  up-regex="run.*|.*-required" />
     </avail-set-dmr>
 
+    <avail-set-dmr name="Domain Availability" enabled="true">
+      <avail-dmr name="Domain Availability"
+                 interval="30"
+                 time-units="seconds"
+                 path="/"
+                 attribute="host-state"
+                 up-regex="run.*|.*-required" />
+    </avail-set-dmr>
+
     <avail-set-dmr name="Deployment Status" enabled="true">
       <avail-dmr name="Deployment Status"
                  interval="1"
@@ -745,7 +754,8 @@
                          resource-name-template="Domain Host [%-]"
                          path="/host=*"
                          parents="Host Controller"
-                         metric-sets="WildFly Memory Metrics,WildFly Threading Metrics">
+                         metric-sets="WildFly Memory Metrics,WildFly Threading Metrics"
+                         avail-sets="Domain Availability">
         <notification-dmr name="resource-added" />
         <notification-dmr name="avail-change" />
         <notification-dmr name="avail-starting" />
