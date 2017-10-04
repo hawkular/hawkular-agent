@@ -166,7 +166,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         } else {
             id = no.getID().getIDString();
         }
-        return feedId + "~" + id;
+        return id;
     }
 
     private <L> void addResourceToImport(Resource<L> r, List<org.hawkular.inventory.model.Resource> importResources) {
