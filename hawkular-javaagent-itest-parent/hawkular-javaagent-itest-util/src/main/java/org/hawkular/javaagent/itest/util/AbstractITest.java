@@ -29,7 +29,6 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,8 +49,7 @@ import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.JBossASClient;
-import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.ResourceWithType;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.Operations;
@@ -540,30 +538,33 @@ public abstract class AbstractITest {
         }
     }
 
+    // TODO [lponce] Commented until we synced with new inventory
     /**
-     * Return the {@link CanonicalPath} of the only WildFly server present in inventory under the hawkular feed.
+     * Return the {@link ResourceWithType} of the only WildFly server present in inventory under the hawkular feed.
      * This is the Hawkular Server itself.
      *
      * @return path of hawkular wildfly server resource
      */
-    protected CanonicalPath getHawkularWildFlyServerResourcePath() throws Throwable {
-        Map<CanonicalPath, Blueprint> wildflyServers = testHelper.getBlueprintsByType(hawkularFeedId, "WildFly Server",
-                1);
+    protected ResourceWithType getHawkularWildFlyServerResource() throws Throwable {
+        Collection<ResourceWithType> wildflyServers = testHelper.getResourceByType(hawkularFeedId, "WildFly Server", 1);
         AssertJUnit.assertEquals(1, wildflyServers.size());
-        return wildflyServers.keySet().iterator().next();
+        return wildflyServers.iterator().next();
     }
 
+    // TODO [lponce] Commented until we synced with new inventory
     /**
      * Return the {@link CanonicalPath} of the only WildFly Host Controller present in inventory under the feed
      * found in the given client config.
      *
      * @return path of host controller
      */
+    /*
     protected CanonicalPath getHostController() throws Throwable {
         Map<CanonicalPath, Blueprint> hcs = testHelper.getBlueprintsByType(hawkularFeedId, "Host Controller", 1);
         AssertJUnit.assertEquals(1, hcs.size());
         return hcs.keySet().iterator().next();
     }
+    */
 
     protected File getTestApplicationFile() {
         String dir = System.getProperty("hawkular.agent.itest.staging.dir"); // the maven build put our test app here

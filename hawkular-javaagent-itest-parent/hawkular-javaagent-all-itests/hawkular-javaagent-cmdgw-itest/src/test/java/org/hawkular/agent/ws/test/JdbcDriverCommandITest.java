@@ -18,11 +18,12 @@ package org.hawkular.agent.ws.test;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Collection;
+import java.util.Optional;
 
-import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.ResourceWithType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -47,7 +48,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
     public void testAddJdbcDriver() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        ResourceWithType wfResource = getHawkularWildFlyServerResource();
         final ModelNode driverAddress = driverAddress();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
@@ -60,7 +61,8 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             final String driverJarName = new File(driverJarUrl.getPath()).getName();
 
             String req = "AddJdbcDriverRequest={\"authentication\":" + authentication + ","
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"driverName\":\"" + driverName + "\","
                     + "\"driverClass\":\"com.mysql.jdbc.Driver\","
                     + "\"driverXaDatasourceClassName\":\"com.mysql.jdbc.jdbc2.optional.MysqlXADataSource\","
@@ -72,7 +74,8 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
                     + "}";
             String response = "AddJdbcDriverResponse={"
                     + "\"driverName\":\"" + driverName + "\","
-                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
                     + "\"message\":\"Added JDBC Driver: " + driverName + "\""
@@ -80,7 +83,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(new MessageAnswer(req, driverJarUrl, 0))
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(wfResource.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
@@ -95,11 +98,15 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
     public void testRemoveJdbcDriver() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Collection<ResourceWithType> drivers = testHelper.getResourceByType(hawkularFeedId, "JDBC Driver", 0);
+        Optional<ResourceWithType> driver = drivers.stream()
+                .filter(e -> e.getName().equals(driverName))
+                .findFirst();
+        if (!driver.isPresent()) {
+            throw new IllegalStateException("Driver not found");
+        }
+        ResourceWithType drv = driver.get();
         final ModelNode driverAddress = driverAddress();
-
-        String removePath = wfPath.toString().replaceFirst("\\~+$", "")
-                + Util.urlEncode("~/subsystem=datasources/jdbc-driver=" + driverName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             ModelNode datasourcesPath = new ModelNode().add(ModelDescriptionConstants.SUBSYSTEM, "datasources");
@@ -108,19 +115,21 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
             assertResourceExists(mcc, driverAddress, true);
 
             String req = "RemoveJdbcDriverRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + removePath + "\""
+                    + "\"feedId\":\"" + drv.getFeedId() + "\","
+                    + "\"resourceId\":\"" + drv.getId() + "\""
                     + "}";
             String response = "RemoveJdbcDriverResponse={"
-                    + "\"resourcePath\":\"" + removePath.toString() + "\","
+                    + "\"feedId\":\"" + drv.getFeedId() + "\","
+                    + "\"resourceId\":\"" + drv.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Performed [Remove] on a [JDBC Driver] given by Inventory path [" + removePath
-                    + "]\""
+                    + "\"message\":\"Performed [Remove] on a [JDBC Driver] given by Feed Id [" + drv.getFeedId() +"] Resource Id ["
+                    + drv.getId() + "]\""
                     + ""; // server refresh indicator might be after this - so don't look for ending bracked here
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(drv.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {

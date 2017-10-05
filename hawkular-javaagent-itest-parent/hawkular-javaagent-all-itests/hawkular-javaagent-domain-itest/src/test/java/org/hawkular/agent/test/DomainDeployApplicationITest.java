@@ -17,14 +17,16 @@
 package org.hawkular.agent.test;
 
 import java.io.File;
+import java.util.Collection;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.ResourceWithType;
 import org.hawkular.javaagent.itest.util.AbstractITest;
 import org.hawkular.javaagent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.client.ModelControllerClient;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 @Test(suiteName = AbstractDomainITestSuite.SUITE)
@@ -35,27 +37,32 @@ public class DomainDeployApplicationITest extends AbstractITest {
     public void testAddDeployment() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHostController();
+        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Assert.assertEquals(1, hostControllers.size());
+        ResourceWithType hostController = hostControllers.iterator().next();
+
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "DeployApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\","
                 + "\"serverGroups\":\"main-server-group,other-server-group\""
                 + "}";
         String response = "DeployApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Deploy] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Deploy] on a [Application] given by Feed Id ["
+                + hostController.getFeedId() + "] Resource Id [" + hostController.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(hostController.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -99,27 +106,32 @@ public class DomainDeployApplicationITest extends AbstractITest {
                     "true");
         }
 
-        CanonicalPath wfPath = getHostController();
+        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Assert.assertEquals(1, hostControllers.size());
+        ResourceWithType hostController = hostControllers.iterator().next();
+
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "DisableApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\","
                 + "\"serverGroups\":\"main-server-group,other-server-group\""
                 + "}";
         String response = "DisableApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Disable Deployment] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Disable Deployment] on a [Application] given by Feed Id ["
+                + hostController.getFeedId() + "] Resource Id [" + hostController.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(hostController.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -162,27 +174,32 @@ public class DomainDeployApplicationITest extends AbstractITest {
                     "false");
         }
 
-        CanonicalPath wfPath = getHostController();
+        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Assert.assertEquals(1, hostControllers.size());
+        ResourceWithType hostController = hostControllers.iterator().next();
+
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "EnableApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\","
                 + "\"serverGroups\":\"main-server-group,other-server-group\""
                 + "}";
         String response = "EnableApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Enable Deployment] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Enable Deployment] on a [Application] given by Feed Id ["
+                + hostController.getFeedId() + "] Resource Id [" + hostController.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(hostController.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -225,27 +242,32 @@ public class DomainDeployApplicationITest extends AbstractITest {
                     "true");
         }
 
-        CanonicalPath wfPath = getHostController();
+        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Assert.assertEquals(1, hostControllers.size());
+        ResourceWithType hostController = hostControllers.iterator().next();
+
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "RestartApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\","
                 + "\"serverGroups\":\"main-server-group,other-server-group\""
                 + "}";
         String response = "RestartApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Restart Deployment] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Restart Deployment] on a [Application] given by Feed Id ["
+                + hostController.getFeedId() + "] Resource Id [" + hostController.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(hostController.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -272,27 +294,32 @@ public class DomainDeployApplicationITest extends AbstractITest {
     // this does a full undeploy via the host controller - removing from all server groups
     @Test(groups = { GROUP }, dependsOnMethods = { "testRestartDeployment" })
     public void testUndeploy() throws Throwable {
-        CanonicalPath wfPath = getHostController();
+        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Assert.assertEquals(1, hostControllers.size());
+        ResourceWithType hostController = hostControllers.iterator().next();
+
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "UndeployApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\","
                 + "\"serverGroups\":\"main-server-group,other-server-group\""
                 + "}";
         String response = "UndeployApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + hostController.getFeedId() + "\","
+                + "\"resourceId\":\"" + hostController.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Undeploy] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Undeploy] on a [Application] given by Feed Id ["
+                + hostController.getFeedId() + "] Resource Id [" + hostController.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(hostController.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
