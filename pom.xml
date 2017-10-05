@@ -60,6 +60,9 @@
     <version.com.samskivert.jmustache>1.11</version.com.samskivert.jmustache>
     <version.io.dropwizard.metrics>3.1.2</version.io.dropwizard.metrics>
     <version.org.hamcrest>1.3</version.org.hamcrest>
+    <!--
+    <version.org.hawkular.commons>0.9.8.Final-SNAPSHOT</version.org.hawkular.commons>
+    -->
     <version.org.hawkular.commons>0.9.8.Final-SRC-revision-c7530072669262bec66220daf72147233432719c</version.org.hawkular.commons>
     <version.org.hawkular.metrics>0.26.1.Final</version.org.hawkular.metrics>
 
