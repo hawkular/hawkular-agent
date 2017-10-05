@@ -17,15 +17,14 @@
 package org.hawkular.agent.ws.test;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.Optional;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.ResourceWithType;
 import org.jboss.as.controller.client.ModelControllerClient;
-import org.junit.Assert;
 import org.testng.annotations.Test;
 
 public class StandaloneDeployApplicationITest extends AbstractCommandITest {
@@ -35,26 +34,28 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
     public void testAddDeployment() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        ResourceWithType wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "DeployApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\""
                 + "}";
         String response = "DeployApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Deploy] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Deploy] on a [Application] given by Feed Id [" + wfResource.getFeedId() + "] "
+                + "Resource Id [" + wfResource.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(wfResource.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -86,26 +87,28 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                     "true");
         }
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        ResourceWithType wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "DisableApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\""
                 + "}";
         String response = "DisableApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Disable Deployment] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Disable Deployment] on a [Application] given by Feed Id [" + wfResource.getFeedId() + "] "
+                + "Resource Id [" + wfResource.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(wfResource.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -137,26 +140,28 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                     "false");
         }
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        ResourceWithType wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "EnableApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\""
                 + "}";
         String response = "EnableApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Enable Deployment] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Enable Deployment] on a [Application] given by Feed Id [" + wfResource.getFeedId() + "] "
+                + "Resource Id [" + wfResource.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(wfResource.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -188,26 +193,28 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                     "true");
         }
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        ResourceWithType wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "RestartApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\""
                 + "}";
         String response = "RestartApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Restart Deployment] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Restart Deployment] on a [Application] given by Feed Id [" + wfResource.getFeedId() + "] "
+                + "Resource Id [" + wfResource.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(wfResource.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -237,40 +244,50 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         // make sure to discover the mbean resources (same MBean discovered by local and remote managed server)
         forceInventoryDiscoveryScan();
 
-        CanonicalPath localPath = testHelper.feedPath(hawkularFeedId).resource("Local JMX~org.hawkular.agent.itest:type=simple").get();
-        Optional<Blueprint> resource = testHelper.getBlueprintFromCP(localPath);
-        Assert.assertTrue(resource.isPresent());
+        // TODO [lponce] probably this is not correct, it should have proper type
+        Collection<ResourceWithType> localMbeans = testHelper.getResourceByType(hawkularFeedId, "Local JMX~org.hawkular.agent.itest:type=simple", 0);
+        Optional<ResourceWithType> localMbean = localMbeans.stream()
+                .filter(e -> e.getName().equals("Local JMX~org.hawkular.agent.itest:type=simple"))
+                .findFirst();
+        if (!localMbean.isPresent()) {
+            throw new IllegalStateException("Local MBean not found");
+        }
+        invokeJMXOperations(localMbean.get());
 
-        invokeJMXOperations(localPath);
+        // TODO [lponce] probably this is not correct, it should have proper type
+        Collection<ResourceWithType> remoteMbeans = testHelper.getResourceByType(hawkularFeedId, "Remote JMX~org.hawkular.agent.itest:type=simple", 0);
+        Optional<ResourceWithType> remoteMbean = remoteMbeans.stream()
+                .filter(e -> e.getName().equals("Remote JMX~org.hawkular.agent.itest:type=simple"))
+                .findFirst();
+        if (!localMbean.isPresent()) {
+            throw new IllegalStateException("Remote MBean not found");
+        }
 
-        CanonicalPath remotePath = testHelper.feedPath(hawkularFeedId).resource("Remote JMX~org.hawkular.agent.itest:type=simple").get();
-        resource = testHelper.getBlueprintFromCP(remotePath);
-        Assert.assertTrue(resource.isPresent());
-
-        invokeJMXOperations(remotePath);
-
+        invokeJMXOperations(remoteMbean.get());
     }
 
-    private void invokeJMXOperations(CanonicalPath mbeanPath) throws Throwable {
+    private void invokeJMXOperations(ResourceWithType mbean) throws Throwable {
 
         // jmx operation with no parameters
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + mbeanPath.toString() + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"operationName\":\"testOperationNoParams\""
                 + "}";
         String response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"testOperationNoParams\","
-                + "\"resourcePath\":\"" + mbeanPath + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [testOperationNoParams] on a [JMX MBean] given by Inventory path ["
-                + mbeanPath + "]\""
+                + "\"message\":\"Performed [testOperationNoParams] on a [JMX MBean] given by Feed Id ["
+                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(mbeanPath.ids().getFeedId())
+                .expectGenericSuccess(mbean.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -279,7 +296,8 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
 
         // jmx operation with the different primitive types as parameters
         req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + mbeanPath.toString() + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"operationName\":\"testOperationPrimitive\","
                 + "\"parameters\": {"
                 + "    \"s\":\"STR\","
@@ -295,17 +313,18 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 + "}";
         response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"testOperationPrimitive\","
-                + "\"resourcePath\":\"" + mbeanPath + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [testOperationPrimitive] on a [JMX MBean] given by Inventory path ["
-                + mbeanPath + "]: "
+                + "\"message\":\"Performed [testOperationPrimitive] on a [JMX MBean] given by Feed Id ["
+                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]:"
                 + "string=STR, int=1, boolean=true, long=2, double=3.0, float=4.0, short=5, char=a, byte=6"
                 + "\"}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(mbeanPath.ids().getFeedId())
+                .expectGenericSuccess(mbean.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -314,7 +333,8 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
 
         // jmx operation with the different "Object primitive" types as parameters
         req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + mbeanPath.toString() + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"operationName\":\"testOperation\","
                 + "\"parameters\": {"
                 + "    \"s\":\"STR\","
@@ -330,17 +350,18 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 + "}";
         response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"testOperation\","
-                + "\"resourcePath\":\"" + mbeanPath + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [testOperation] on a [JMX MBean] given by Inventory path ["
-                + mbeanPath + "]: "
+                + "\"message\":\"Performed [testOperation] on a [JMX MBean] given by Feed Id ["
+                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]:"
                 + "String=STR, Int=1, Boolean=true, Long=2, Double=3.0, Float=4.0, Short=5, Char=a, Byte=6"
                 + "\"}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(mbeanPath.ids().getFeedId())
+                .expectGenericSuccess(mbean.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -349,23 +370,25 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
 
         // jmx operation - signature with primitives but relying on default values (not passing in any args)
         req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + mbeanPath.toString() + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"operationName\":\"testOperationPrimitive\""
                 + "}";
         response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"testOperationPrimitive\","
-                + "\"resourcePath\":\"" + mbeanPath + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [testOperationPrimitive] on a [JMX MBean] given by Inventory path ["
-                + mbeanPath + "]: "
+                + "\"message\":\"Performed [testOperationPrimitive] on a [JMX MBean] given by Feed Id ["
+                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]:"
                 + "string=yaml default"
                 + ", int=111, boolean=false, long=222, double=3.33, float=4.44, short=5, char=x, byte=0"
                 + "\"}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(mbeanPath.ids().getFeedId())
+                .expectGenericSuccess(mbean.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -374,23 +397,25 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
 
         // jmx operation - signature with Objects but relying on default values (not passing in any args)
         req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + mbeanPath.toString() + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"operationName\":\"testOperation\""
                 + "}";
         response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"testOperation\","
-                + "\"resourcePath\":\"" + mbeanPath + "\","
+                + "\"feedId\":\"" + mbean.getFeedId() + "\","
+                + "\"resourceId\":\"" + mbean.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [testOperation] on a [JMX MBean] given by Inventory path ["
-                + mbeanPath + "]: "
+                + "\"message\":\"Performed [testOperation] on a [JMX MBean] given by Feed Id ["
+                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]:"
                 + "String=null"
                 + ", Int=null, Boolean=null, Long=null, Double=null, Float=null, Short=null, Char=null, Byte=null"
                 + "\"}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(mbeanPath.ids().getFeedId())
+                .expectGenericSuccess(mbean.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -406,26 +431,28 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         testHelper.waitForResourceContaining(hawkularFeedId, "Deployment", "hawkular-javaagent-helloworld-war.war",
                 5000, 10);
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        ResourceWithType wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
         String req = "UndeployApplicationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationFileName\":\"" + deploymentName + "\""
                 + "}";
         String response = "UndeployApplicationResponse={"
                 + "\"destinationFileName\":\"" + deploymentName + "\","
-                + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + wfResource.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Undeploy] on a [Application] given by Inventory path ["
-                + wfPath.toString() + "]\""
+                + "\"message\":\"Performed [Undeploy] on a [Application] given by Feed Id [" + wfResource.getFeedId() + "] "
+                + "Resource Id [" + wfResource.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(new MessageAnswer(req, applicationFile.toURI().toURL(), 0))
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(wfResource.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {

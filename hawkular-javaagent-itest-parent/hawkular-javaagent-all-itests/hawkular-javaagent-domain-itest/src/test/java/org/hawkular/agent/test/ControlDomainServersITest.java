@@ -16,12 +16,11 @@
  */
 package org.hawkular.agent.test;
 
-import java.util.Map;
+import java.util.Collection;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.ResourceWithType;
 import org.hawkular.javaagent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.Assert;
@@ -47,30 +46,30 @@ public class ControlDomainServersITest extends AbstractDomainITestSuite {
                     "running");
         }
 
-        CanonicalPath wfPath = getHostController();
-        CanonicalPath agentPath = testHelper.getBlueprintsByType(hawkularFeedId, "Domain WildFly Server Controller", 1)
-                .entrySet().stream()
-                .filter(e -> ((Entity.Blueprint) (e.getValue())).getId().contains(serverToTest))
-                .map(Map.Entry::getKey)
+        Collection<ResourceWithType> agents = testHelper.getResourceByType(hawkularFeedId, "Domain WildFly Server Controller", 1);
+        ResourceWithType agent = agents.stream()
+                .filter(e -> e.getName().contains(serverToTest))
                 .findFirst()
                 .get();
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agentPath.toString() + "\","
+                + "\"feedId\":\"" + agent.getFeedId() + "\","
+                + "\"resourceId\":\"" + agent.getId() + "\","
                 + "\"operationName\":\"Stop\""
                 + "}";
         String response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"Stop\","
-                + "\"resourcePath\":\"" + agentPath + "\","
+                + "\"feedId\":\"" + agent.getFeedId() + "\","
+                + "\"resourceId\":\"" + agent.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Stop] on a [DMR Node] given by Inventory path ["
-                + agentPath + "]\""
+                + "\"message\":\"Performed [Stop] on a [DMR Node] given by Feed Id ["
+                + agent.getFeedId() + "] Resource Id [" + agent.getId() + "]\""
                 + "}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(wfPath.ids().getFeedId())
+                .expectGenericSuccess(agent.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {

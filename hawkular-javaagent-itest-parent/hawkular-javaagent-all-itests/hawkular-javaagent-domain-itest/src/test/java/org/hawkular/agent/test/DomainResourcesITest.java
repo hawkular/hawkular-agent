@@ -17,15 +17,10 @@
 package org.hawkular.agent.test;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.Optional;
 
-import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.StructuredData;
-import org.hawkular.inventory.paths.CanonicalPath;
-import org.hawkular.inventory.paths.SegmentType;
+import org.hawkular.inventory.api.ResourceWithType;
+import org.hawkular.inventory.model.Operation;
 import org.hawkular.javaagent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
 import org.junit.Assert;
@@ -50,11 +45,12 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
     public void hostsInInventory() throws Throwable {
         String feedId = hawkularFeedId;
 
-        Collection<Blueprint> servers = testHelper.getBlueprintsByType(feedId, "Domain Host", 1).values();
+        Collection<ResourceWithType> domainHosts = testHelper.getResourceByType(hawkularFeedId, "Domain Host", 1);
+
         Collection<String> dmrHostNames = getHostNames();
         for (String hostName : dmrHostNames) {
-            boolean hasMatch = servers.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
-                    && ((Entity.Blueprint) bp).getId().contains(hostName));
+            boolean hasMatch = domainHosts.stream()
+                    .anyMatch(dh -> dh.getName().contains(hostName));
             Assert.assertTrue("No match for " + hostName, hasMatch);
             System.out.println("domain host in inventory=" + hostName);
         }
@@ -65,34 +61,35 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
         // make sure the Domain Host operations are OK
         // SHUTDOWN
-        CanonicalPath shutdownPath = testHelper.feedPath(feedId)
-                .resourceType("Domain Host").operationType("Shutdown").get();
-        OperationType.Blueprint op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(shutdownPath).get();
-        Assert.assertEquals("Shutdown", op.getId());
+        ResourceWithType domainHost = domainHosts.iterator().next();
+        Optional<Operation> shutdown = domainHost.getType()
+                .getOperations()
+                .stream()
+                .filter(o -> o.getName().contains("Shutdown"))
+                .findFirst();
+        Assert.assertTrue(shutdown.isPresent());
 
-        CanonicalPath configPath = shutdownPath.extend(SegmentType.d, "parameterTypes").get();
-        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
-        Map<String, StructuredData> paramsMap = data.getValue().map();
-        Map<String, StructuredData> param = paramsMap.get("restart").map();
-        Assert.assertEquals("bool", param.get("type").string());
-        Assert.assertNull(param.get("defaultValue")); // this is not defined today
-        Assert.assertNotNull(param.get("description").string());
+        Assert.assertTrue(shutdown.get().getParameters().containsKey("restart"));
+        Assert.assertEquals("bool", shutdown.get().getParameters().get("restart").get("type"));
+        Assert.assertNull(shutdown.get().getParameters().get("restart").get("defaultValue"));
+        Assert.assertNotNull(shutdown.get().getParameters().get("restart").get("description"));
 
         // RELOAD
-        CanonicalPath reloadPath = testHelper.feedPath(feedId)
-                .resourceType("Domain Host").operationType("Reload").get();
-        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(reloadPath).get();
-        Assert.assertEquals("Reload", op.getId());
+        Optional<Operation> reload = domainHost.getType()
+                .getOperations()
+                .stream()
+                .filter(o -> o.getName().contains("Reload"))
+                .findFirst();
+        Assert.assertTrue(reload.isPresent());
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void serversInInventory() throws Throwable {
-        Collection<Blueprint> servers = testHelper.getBlueprintsByType(hawkularFeedId, "Domain WildFly Server", 3)
-                .values();
+        Collection<ResourceWithType> servers = testHelper.getResourceByType(hawkularFeedId, "Domain WildFly Server", 2);
         Collection<String> dmrServerNames = getServerNames();
         for (String serverName : dmrServerNames) {
-            boolean hasMatch = servers.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
-                    && ((Entity.Blueprint) bp).getId().contains(serverName));
+            boolean hasMatch = servers.stream()
+                    .anyMatch(s -> s.getName().contains(serverName));
             Assert.assertTrue(hasMatch);
             System.out.println("domain server in inventory=" + serverName);
         }
@@ -106,12 +103,11 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void serverGroupsInInventory() throws Throwable {
-        Collection<Blueprint> servers = testHelper.getBlueprintsByType(hawkularFeedId, "Domain Server Group", 2)
-                .values();
+        Collection<ResourceWithType> servers = testHelper.getResourceByType(hawkularFeedId, "Domain WildFly Group", 2);
         Collection<String> dmrServerGroupNames = getServerGroupNames();
         for (String groupName : dmrServerGroupNames) {
-            boolean hasMatch = servers.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
-                    && ((Entity.Blueprint) bp).getId().contains(groupName));
+            boolean hasMatch = servers.stream()
+                    .anyMatch(s -> s.getName().contains(groupName));
             Assert.assertTrue(hasMatch);
             System.out.println("domain server group in inventory=" + groupName);
         }
@@ -123,94 +119,86 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
         // make sure the Domain Server Groups operations are OK
         // RELOAD SERVERS
-        CanonicalPath reloadPath = testHelper.feedPath(hawkularFeedId)
-                .resourceType("Domain Server Group").operationType("Reload Servers").get();
-        OperationType.Blueprint op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(reloadPath).get();
-        Assert.assertEquals("Reload Servers", op.getId());
+        ResourceWithType server = servers.iterator().next();
+        Optional<Operation> reloadServers = server.getType()
+                .getOperations()
+                .stream()
+                .filter(o -> o.getName().contains("Reload Servers"))
+                .findFirst();
+        Assert.assertTrue(reloadServers.isPresent());
 
-        CanonicalPath configPath = reloadPath.extend(SegmentType.d, "parameterTypes").get();
-        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
-        Map<String, StructuredData> paramsMap = data.getValue().map();
-        Map<String, StructuredData> param = paramsMap.get("blocking").map();
-        Assert.assertEquals("bool", param.get("type").string());
-        Assert.assertEquals("false", param.get("defaultValue").string());
-        Assert.assertNotNull(param.get("description").string());
+        Assert.assertEquals("bool", reloadServers.get().getParameters().get("blocking").get("type"));
+        Assert.assertEquals("false", reloadServers.get().getParameters().get("blocking").get("defaultValue"));
+        Assert.assertNotNull(reloadServers.get().getParameters().get("blocking").get("description"));
 
         // RESTART SERVERS
-        CanonicalPath restartPath = testHelper.feedPath(hawkularFeedId)
-                .resourceType("Domain Server Group").operationType("Restart Servers").get();
-        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(restartPath).get();
-        Assert.assertEquals("Restart Servers", op.getId());
+        Optional<Operation> restartServers = server.getType()
+                .getOperations()
+                .stream()
+                .filter(o -> o.getName().contains("Restart Servers"))
+                .findFirst();
+        Assert.assertTrue(restartServers.isPresent());
 
-        configPath = restartPath.extend(SegmentType.d, "parameterTypes").get();
-        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
-        paramsMap = data.getValue().map();
-        param = paramsMap.get("blocking").map();
-        Assert.assertEquals("bool", param.get("type").string());
-        Assert.assertEquals("false", param.get("defaultValue").string());
-        Assert.assertNotNull(param.get("description").string());
+        Assert.assertEquals("bool", reloadServers.get().getParameters().get("blocking").get("type"));
+        Assert.assertEquals("false", reloadServers.get().getParameters().get("blocking").get("defaultValue"));
+        Assert.assertNotNull(reloadServers.get().getParameters().get("blocking").get("description"));
 
         // START SERVERS
-        CanonicalPath startPath = testHelper.feedPath(hawkularFeedId)
-                .resourceType("Domain Server Group").operationType("Start Servers").get();
-        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(startPath).get();
-        Assert.assertEquals("Start Servers", op.getId());
+        Optional<Operation> startServers = server.getType()
+                .getOperations()
+                .stream()
+                .filter(o -> o.getName().contains("Start Servers"))
+                .findFirst();
+        Assert.assertTrue(startServers.isPresent());
 
-        configPath = startPath.extend(SegmentType.d, "parameterTypes").get();
-        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
-        paramsMap = data.getValue().map();
-        param = paramsMap.get("blocking").map();
-        Assert.assertEquals("bool", param.get("type").string());
-        Assert.assertEquals("false", param.get("defaultValue").string());
-        Assert.assertNotNull(param.get("description").string());
+        Assert.assertEquals("bool", startServers.get().getParameters().get("blocking").get("type"));
+        Assert.assertEquals("false", startServers.get().getParameters().get("blocking").get("defaultValue"));
+        Assert.assertNotNull(startServers.get().getParameters().get("blocking").get("description"));
 
         // SUSPEND SERVERS
-        CanonicalPath suspendPath = testHelper.feedPath(hawkularFeedId)
-                .resourceType("Domain Server Group").operationType("Suspend Servers").get();
-        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(suspendPath).get();
-        Assert.assertEquals("Suspend Servers", op.getId());
+        Optional<Operation> suspendServers = server.getType()
+                .getOperations()
+                .stream()
+                .filter(o -> o.getName().contains("Suspend Servers"))
+                .findFirst();
+        Assert.assertTrue(suspendServers.isPresent());
 
-        configPath = suspendPath.extend(SegmentType.d, "parameterTypes").get();
-        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
-        paramsMap = data.getValue().map();
-        param = paramsMap.get("timeout").map();
-        Assert.assertEquals("int", param.get("type").string());
-        Assert.assertNull(param.get("defaultValue")); // today, no default value is defined for this
-        Assert.assertNotNull(param.get("description").string());
+        Assert.assertEquals("int", startServers.get().getParameters().get("timeout").get("type"));
+        Assert.assertNull(startServers.get().getParameters().get("timeout").get("defaultValue"));
+        Assert.assertNotNull(startServers.get().getParameters().get("timeout").get("description"));
 
         // STOP SERVERS
-        CanonicalPath stopPath = testHelper.feedPath(hawkularFeedId)
-                .resourceType("Domain Server Group").operationType("Stop Servers").get();
-        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(stopPath).get();
-        Assert.assertEquals("Stop Servers", op.getId());
+        Optional<Operation> stopServers = server.getType()
+                .getOperations()
+                .stream()
+                .filter(o -> o.getName().contains("Stop Servers"))
+                .findFirst();
+        Assert.assertTrue(stopServers.isPresent());
 
-        configPath = stopPath.extend(SegmentType.d, "parameterTypes").get();
-        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
-        paramsMap = data.getValue().map();
-        param = paramsMap.get("timeout").map();
-        Assert.assertEquals("int", param.get("type").string());
-        Assert.assertNull(param.get("defaultValue")); // today, no default value is defined for this
-        Assert.assertNotNull(param.get("description").string());
-        param = paramsMap.get("blocking").map();
-        Assert.assertEquals("bool", param.get("type").string());
-        Assert.assertEquals("false", param.get("defaultValue").string());
-        Assert.assertNotNull(param.get("description").string());
+        Assert.assertEquals("bool", stopServers.get().getParameters().get("blocking").get("type"));
+        Assert.assertEquals("false", stopServers.get().getParameters().get("blocking").get("defaultValue"));
+        Assert.assertNotNull(stopServers.get().getParameters().get("blocking").get("description"));
+
+        Assert.assertEquals("int", stopServers.get().getParameters().get("timeout").get("type"));
+        Assert.assertNull(stopServers.get().getParameters().get("timeout").get("defaultValue"));
+        Assert.assertNotNull(stopServers.get().getParameters().get("timeout").get("description"));
 
         // RESUME SERVERS
-        CanonicalPath resumePath = testHelper.feedPath(hawkularFeedId)
-                .resourceType("Domain Server Group").operationType("Resume Servers").get();
-        op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(resumePath).get();
-        Assert.assertEquals("Resume Servers", op.getId());
+        Optional<Operation> resumeServers = server.getType()
+                .getOperations()
+                .stream()
+                .filter(o -> o.getName().contains("Resume Servers"))
+                .findFirst();
+        Assert.assertTrue(resumeServers.isPresent());
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void profilesInInventory() throws Throwable {
-        Collection<Blueprint> blueprints = testHelper.getBlueprintsByType(hawkularFeedId, "Domain Profile", 4)
-                .values();
+        Collection<ResourceWithType> domains = testHelper.getResourceByType(hawkularFeedId, "Domain Profile", 4);
         Collection<String> dmrProfileNames = getProfileNames();
         for (String profileName : dmrProfileNames) {
-            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
-                    && ((Entity.Blueprint) bp).getId().contains(profileName));
+            boolean hasMatch = domains.stream()
+                    .anyMatch(d -> d.getName().equals(profileName));
             Assert.assertTrue(hasMatch);
             System.out.println("domain profile in inventory=" + profileName);
         }
@@ -225,12 +213,11 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void socketBindingGroupsInInventory() throws Throwable {
-        Collection<Blueprint> blueprints = testHelper.getBlueprintsByType(hawkularFeedId, "Socket Binding Group", 4)
-                .values();
+        Collection<ResourceWithType> sockets = testHelper.getResourceByType(hawkularFeedId, "Socket Binding Group", 4);
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
         for (String sbgName : dmrSBGNames) {
-            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
-                    && ((Entity.Blueprint) bp).getId().contains(sbgName));
+            boolean hasMatch = sockets.stream()
+                    .anyMatch(s -> s.getName().contains(sbgName));
             Assert.assertTrue(hasMatch);
             System.out.println("socket binding group in inventory=" + sbgName);
         }

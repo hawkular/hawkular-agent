@@ -16,16 +16,14 @@
  */
 package org.hawkular.agent.ws.test;
 
+import java.util.Collection;
 import java.util.Optional;
 
-import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.ResourceWithType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -67,7 +65,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testAddDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        ResourceWithType wfResource = getHawkularWildFlyServerResource();
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
@@ -75,7 +73,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
             /* define the mock and its behavior */
             String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"xaDatasource\":\"false\","
                     + "\"datasourceName\":\"" + datasourceName + "\","
                     + "\"jndiName\":\"" + datasourceJndiName + "\","
@@ -90,7 +89,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             String response = "AddDatasourceResponse={"
                     + "\"xaDatasource\":false,"
                     + "\"datasourceName\":\"" + datasourceName + "\","
-                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
                     + "\"message\":\"Added Datasource: " + datasourceName + "\""
@@ -99,7 +99,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(wfResource.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
@@ -118,13 +118,14 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testAddXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        ResourceWithType wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, false);
 
             String req = "AddDatasourceRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"xaDatasource\":\"true\","
                     + "\"datasourceName\":\"" + xaDatasourceName + "\","
                     + "\"jndiName\":\"" + xaDatasourceJndiName + "\","
@@ -137,7 +138,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             String response = "AddDatasourceResponse={"
                     + "\"xaDatasource\":true,"
                     + "\"datasourceName\":\"" + xaDatasourceName + "\","
-                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
                     + "\"message\":\"Added Datasource: " + xaDatasourceName + "\""
@@ -145,7 +147,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(wfResource.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
@@ -164,11 +166,15 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testUpdateDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
+        Optional<ResourceWithType> datasource = datasources.stream()
+                .filter(e -> e.getName().equals(datasourceName))
+                .findFirst();
+        if (!datasource.isPresent()) {
+            throw new IllegalStateException("Datasource not found");
+        }
+        ResourceWithType ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
-
-        String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
-                + Util.urlEncode("~/subsystem=datasources/data-source=" + datasourceName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertNodeEquals(mcc, dsAddress, getClass(), dsFileNameAfterAdd);
@@ -176,7 +182,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             final String changedConnectionUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
 
             String req = "UpdateDatasourceRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + dsPath + "\","
+                    + "\"feedId\":\"" + ds.getFeedId() + "\","
+                    + "\"resourceId\":\"" + ds.getId() + "\","
                     + "\"datasourceName\":\"" + datasourceName + "\","
                     + "\"jndiName\":\"" + datasourceJndiName + "\","
                     + "\"datasourceProperties\":{\"prop1\":\"val1.1\",\"prop3\":\"val3\"},"
@@ -188,17 +195,19 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "}";
 
             String response = "UpdateDatasourceResponse={"
-                    + "\"resourcePath\":\"" + dsPath.toString() + "\","
+                    + "\"feedId\":\"" + ds.getFeedId() + "\","
+                    + "\"resourceId\":\"" + ds.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\","
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Feed Id ["
+                    + ds.getFeedId() + "] Resource Id: [" + ds.getId() + "]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
 
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(ds.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
@@ -216,11 +225,15 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testUpdateXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
+        Optional<ResourceWithType> datasource = datasources.stream()
+                .filter(e -> e.getName().equals(datasourceName))
+                .findFirst();
+        if (!datasource.isPresent()) {
+            throw new IllegalStateException("XA Datasource not found");
+        }
+        ResourceWithType ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
-
-        String dsPath = wfPath.toString().replaceFirst("\\~+$", "")
-                + Util.urlEncode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertNodeEquals(mcc, dsAddress, getClass(), xaDsFileNameAfterAdd);
@@ -229,7 +242,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             final String changedXaDsUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=5000";
 
             String req = "UpdateDatasourceRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + dsPath + "\","
+                    + "\"feedId\":\"" + ds.getFeedId() + "\","
+                    + "\"resourceId\":\"" + ds.getId() + "\","
                     + "\"datasourceName\":\"" + xaDatasourceName + "\","
                     + "\"jndiName\":\"" + changedXaDatasourceJndiName + "\","
                     // changing or removing of props seems to be broken
@@ -241,17 +255,19 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"password\":\"" + password + "\""
                     + "}";
             String response = "UpdateDatasourceResponse={"
-                    + "\"resourcePath\":\"" + dsPath.toString() + "\","
+                    + "\"feedId\":\"" + ds.getFeedId() + "\","
+                    + "\"resourceId\":\"" + ds.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Performed [Update] on a [Datasource] given by Inventory path [" + dsPath + "]\","
+                    + "\"message\":\"Performed [Update] on a [Datasource] given by Feed Id [" + ds.getFeedId()
+                    +"] Resource Id:[" + ds.getId() + "]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
 
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(ds.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
@@ -269,37 +285,35 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testRemoveDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
+        Optional<ResourceWithType> datasource = datasources.stream()
+                .filter(e -> e.getName().equals(datasourceName))
+                .findFirst();
+        if (!datasource.isPresent()) {
+            throw new IllegalStateException("Datasource not found");
+        }
+        ResourceWithType ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
-
-        String removePath = wfPath.toString().replaceFirst("\\~+$", "")
-                + Util.urlEncode("~/subsystem=datasources/data-source=" + datasourceName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
 
-            // see that the resource has been persisted to hawkular-inventory
-            Optional<?> resource = testHelper.getBlueprintsByType(hawkularFeedId, "Datasource", 1)
-                    .entrySet().stream()
-                    .filter(e -> ((Entity.Blueprint) (e.getValue())).getId().contains(datasourceName))
-                    .findFirst();
-            Assert.assertTrue(resource.isPresent());
-
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + removePath + "\""
+                    + "\"feedId\":\"" + ds.getFeedId() + "\","
+                    + "\"resourceId\":\"" + ds.getId() + "\""
                     + "}";
             String response = "RemoveDatasourceResponse={"
-                    + "\"resourcePath\":\"" + removePath.toString() + "\","
+                    + "\"feedId\":\"" + ds.getFeedId() + "\","
+                    + "\"resourceId\":\"" + ds.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
-                    + "]\","
+                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Feed Id [" + ds.getFeedId() + "] Resource Id [" + ds.getId() + "]\", "
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(ds.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
@@ -318,37 +332,36 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testRemoveXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
+        Optional<ResourceWithType> datasource = datasources.stream()
+                .filter(e -> e.getName().equals(datasourceName))
+                .findFirst();
+        if (!datasource.isPresent()) {
+            throw new IllegalStateException("Datasource not found");
+        }
+        ResourceWithType ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
-
-        String removePath = wfPath.toString().replaceFirst("\\~+$", "")
-                + Util.urlEncode("~/subsystem=datasources/xa-data-source=" + xaDatasourceName);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
 
-            // see that the resource has been persisted to hawkular-inventory
-            Optional<?> resource = testHelper.getBlueprintsByType(hawkularFeedId, "XA Datasource", 1)
-                    .entrySet().stream()
-                    .filter(e -> ((Entity.Blueprint) (e.getValue())).getId().contains(xaDatasourceName))
-                    .findFirst();
-            Assert.assertTrue(resource.isPresent());
-
             String req = "RemoveDatasourceRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + removePath + "\""
+                    + "\"feedId\":\"" + ds.getFeedId() + "\","
+                    + "\"resourceId\":\"" + ds.getId() + "\""
                     + "}";
             String response = "RemoveDatasourceResponse={"
-                    + "\"resourcePath\":\"" + removePath.toString() + "\","
+                    + "\"feedId\":\"" + ds.getFeedId() + "\","
+                    + "\"resourceId\":\"" + ds.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Inventory path [" + removePath
+                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Feed Id [" + ds.getFeedId() + "] Resource Id [" + ds.getId() + "]\", "
                     + "]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(ds.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
