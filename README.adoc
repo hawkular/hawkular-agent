@@ -1,208 +1,27 @@
-= Hawkular WildFly Agent
+= Hawkular Java Agent
 
 [link=https://travis-ci.org/hawkular/hawkular-agent]
 image::https://travis-ci.org/hawkular/hawkular-agent.svg?branch=master[Build Status]
 
 [TIP, caption='Synopsis']
 ====
-Hawkular WildFly Agent can be used to monitor WildFly or EAP applications servers as well as applications running within those  application servers (for the rest of this documentation, WildFly will be used for brevity but unless other noted EAP will be implied as well). It can collect inventory and metrics from the native WildFly management interface (DMR API) as well as JMX (via Jolokia if monitoring remote application servers).
+Hawkular Java Agent can be used to manage WildFly or EAP applications servers as well as any Java application exposing JMX data.
 ====
 
 == Installation
 
-The agent runs embedded within a WildFly application server. Whether the agent monitors its own app server is up to you and how you configure the agent, but it always is deployed in one.
-
-[TIP]
-That isn't totally true. The agent can run as a microservice in the form of a WildFly Swarm uber-jar. For more details on the swarm agent, see link:hawkular-swarm-agents/hawkular-swarm-agent-dists/hawkular-swarm-agent-dist[]
-
-For more information on how to install the agent in a WildFly application server, see link:hawkular-wildfly-agent-installer[].
+The agent runs as a JVM Java Agent. See link:hawkular-javaagent/README.adoc[].
 
 == Configuration
 
-The agent is configured like any other WildFly subsystem - that is, inside WildFly's XML configuration file (e.g. standalone.xml). Most of the agent's configuration is located in the agent's subsystem configuration section:
+The agent is configured with a yaml file. For an example, see link:hawkular-javaagent-wildfly-feature-pack/src/main/resources/featurepack/content/standalone/configuration/hawkular-javaagent-config.yaml[]
 
-[source,xml]
-<subsystem xmlns="urn:org.hawkular.agent:agent:1.0" ...>
-   ...
-</subsystem>
+== Running
 
-You can reference the link:hawkular-wildfly-agent/src/main/resources/schema/hawkular-agent-monitor-subsystem.xsd[agent subsystem XSD Schema] for all the valid settings. Some simple help documentation for each agent subsystem element/attribute can be found at link:hawkular-wildfly-agent/src/main/resources/org/hawkular/agent/monitor/extension/LocalDescriptions.properties[LocalDescriptions.properties].
+You attach the Hawkular Java Agent to your own application, so running your application runs the Hawkular Java Agent with it.
 
-=== Subsystem
+If you want to test the Hawkular Java Agent, you can run it standalone and just point it to a remote Java application to manage (you do this by addinga remote-dmr or remote-jmx managed server definition to its configuration file). You can run it like this:
 
-`<subsystem xmlns="urn:org.hawkular.agent:agent:1.0">` is the outer element of the agent subsystem configuration. It defines some global agent configuration settings.
-
-enabled:: When `true` the agent will be enabled and will start running once the WildFly application server initializes. When `false` the agent subsystem will not start any internal services and will remain dormant unless and until this flag is set to `true`.
-
-auto-discovery-scan-period-secs:: Periodically the agent will perform a discovery scan allowing it to find resources in the servers it is managing. Once this discovery scan completes, the inventory for the managed server that was scanned will be updated. This setting defines how often that discovery scan is performed.
-
-=== Storage Adapter
-
-`<storage-adapter>` defines where the data the agent collects gets stored. Essentially, it defines where your Hawkular Server is located and how the agent is to communicate with it.
-
-type:: Defines the type of the Hawkular backend the agent will be communicating with. Usually you will want to use `HAWKULAR` which means the agent will be expected to talk to a full Hawkular Server. This means the agent will store both metric data and inventory data and will connect to the Hawkular Server via a websocket so the agent can send and receive realtime messages. If you set this to `METRICS` then the agent is expected to talk to a independent Hawkular Metrics server - in this case only metrics are stored, inventory data is not collected, and the agent does not maintain a websocket connection.
-server-outbound-socket-binding-ref:: The outbound socket binding definition that defines where the Hawkular backend is (hostname and port).
-use-ssl:: Should be `true` if the agent should communicate to the Hawkular backend using SSL encryption.
-security-realm:: If SSL is to be used, this is the name of the configured security realm that provides keystore information for secure communications. Security realms are defined in the WildFly configuration outside of the agent subsystem configuration.
-username:: User that will log into the Hawkular backend.
-password:: Credentials of the user that logs into Hawkular backend.
-
-=== Metrics, Avails, Resource Types
-
-The agent is told what to monitor by defining metrics, avails, and resource types and grouping those things into sets. *Metrics* are things like _gauges_ (values that go up and down, like "used memory" or "cpu utilization") and _counters_ (values that continually increase, like "number of requests processed"). *Avails* are things that determine if a resource is up or down. *Resource types* describe the entities that are deployed in your WildFly application servers (such as "datasources" or "EJBs" or "message queues").
-
-There are two main ways the agent can collect such data: 1) through WildFly's native management interface and its detyped model representation (DMR) API and 2) through standard JMX. In addition, the agent can collect this data either locally or remotely - that is to say, the agent can collect DMR and JMX data from within the same WildFly application server the agent is running in or from another external WildFly application server.
-
-Within the agent configuration are definitions for all the types of resources the agent can expect to find in the servers it is managing. The metrics and avails that those resource emit are also defined so the agent knows what kinds of data it should collect from the resources it discovered.
-
-The examples below should hopefully illustrate this further.
-
-==== DMR
-
-This defines a metric set that contains a metric whose value represents heap memory currently being used.
-
-[source,xml]
-<metric-set-dmr name="WildFly Memory Metrics">
-  <!-- This metric is to be collected every 30 seconds.
-       This metric's value is in units of bytes.
-       This metric is emitted by the owning resource's child at the DMR path of "/core-service=platform-mbean/type=memory".
-       This metric is found in the composite attribute "heap-memory-usage" at the subpath of "used". -->
-  <metric-dmr name="Heap Used"
-              interval="30"
-              time-units="seconds"
-              metric-units="bytes"
-              path="/core-service=platform-mbean/type=memory"
-              attribute="heap-memory-usage#used" />
-  <!-- You can define other metrics in this set if you want -->
-</metric-set-dmr>
-
-You can define avails in a similar way:
-
-[source,xml]
-<!-- When the agent collects a value of the given attribute "status", it will
-     see if that value matches the regular expression defined in up-regex.
-     If it matches, this avail value will be stored as UP, otherwise it will be stored as DOWN. -->
-<avail-set-dmr name="Server Availability">
-  <avail-dmr name="Server Availability"
-             interval="1"
-             time-units="minutes"
-             path="/"
-             attribute="server-state"
-             up-regex="run.*" />
-  <!-- You can define other avails in this set if you want -->
-</avail-set-dmr>
-
-Once your DMR metrics and avails are defined, you then define sets of resource types. These declare the types of resources the agent should expect to discover in its managed servers. The description of these resource types include what metrics and avails those resources emit as well as what resource configuration properties they have and what operations they support.
-
-[source,xml]
-<resource-type-set-dmr name="Standalone Environment">
-  <resource-type-dmr name="WildFly Server"
-                     resource-name-template="WildFly Server [%ManagedServerName]"
-                     path="/"
-                     metric-sets="WildFly Memory Metrics"
-                     avail-sets="Server Availability">
-    <resource-config-dmr name="Name"          attribute="name"/>
-    <resource-config-dmr name="Version"       attribute="product-version" />
-    <resource-config-dmr name="Home Directory"
-                         path="/core-service=server-environment"
-                         attribute="home-dir"/>
-    <operation-dmr name="Reload" internal-name="reload" >
-      <param name="admin-only"                type="bool" default-value="false"/>
-      <param name="use-current-server-config" type="bool" default-value="false"/>
-    </operation-dmr>
-  </resource-type-dmr>
-</resource-type-set-dmr>
-
-You can define child resource types - these are resources that can be expected to be found under other resources:
-
-[source,xml]
-<resource-type-set-dmr name="Clustering" enabled="true">
-  <!-- This is a child resource found at the relative path "/subsystem=infinispan"
-       under any parent resource whose type is "WildFly Server". Since "WildFly Server"
-       resources have a path of "/" then the absolute path of Infinispan resources will
-       be "/subsystem=infinispan". -->
-  <resource-type-dmr name="Infinispan"
-                           resource-name-template="Infinispan"
-                           path="/subsystem=infinispan"
-                           parents="WildFly Server" />
-  <!-- This is a child resource found at the relative path "/cache-container=*"
-       under the parent resource whose type is "Infinispan". Since "Infinispan" resources
-       have the absolute path "/subsystem=infinispan" then resources of this type
-       "Infinispan Cache Container" will have absolute path of "/subsystem=infinispan/cache-container=*"
-       Because of the wildcard in the path, the agent will actually look for multiple resources
-       that match the wildcard (that is, any resource whose absolute path matches
-       "/subsystem=infinispan/cache-container=*".) -->
-  <resource-type-dmr name="Infinispan Cache Container"
-                     resource-name-template="Infinispan Cache Container [%-]"
-                     path="/cache-container=*"
-                     parents="Infinispan" />
-</resource-type-set-dmr>
-
-==== JMX
-
-If applications deployed in WildFly expose data via JMX, the agent can collect that data as well. You define JMX metrics, avails, and resource types in a very similar manner as with DMR. Note that the XML elements end with "-jmx" as opposed to "-dmr" and note that rather than using DMR paths, these use JMX object names.
-
-Here are examples of metrics, avails, and resource types:
-
-[source,xml]
-----
-<metric-set-jmx name="RuntimeMetricsJMX" enabled="true">
-  <!-- This defines a metric that is collected every 30 seconds from the MBean "java.lang:type=Memory",
-       specifically from the "used" value found in the MBean's composite attribute "HeapMemoryUsage". -->
-  <metric-jmx name="Used Heap Memory"
-              interval="30"
-              time-units="seconds"
-              metric-units="bytes"
-              object-name="java.lang:type=Memory"
-              attribute="HeapMemoryUsage#used" />
-</metric-set-jmx>
-
-<avail-set-jmx name="MemoryPoolAvailsJMX" enabled="true">
-  <!-- This defines an avail that indicates if a Memory Pool is a valid or not. Because no object name
-       is defined, it is assumed the attribute "Valid" is to be found directly on the resource where this
-       avail is attached. If the value of the "Valid" attribute matches the regular expression "[tT].*"
-       then the availability is stored as UP, otherwise it is stored as DOWN. -->
-  <avail-jmx name="Memory Pool Avail"
-             interval="30"
-             time-units="seconds"
-             attribute="Valid"
-             up-regex="[tT].*" />
-</avail-set-jmx>
-
-<resource-type-set-jmx name="MainJMX" enabled="true">
-  <!-- This defines a resource type identified by the MBean object name "java.lang:type=Runtime".
-       Since this is note a object name query, this resource type is defining a singletone resource,
-       since there can only every be one of them. -->
-  <resource-type-jmx name="Runtime MBean"
-                     resource-name-template="JMX [%_ManagedServerName%][%type%]"
-                     object-name="java.lang:type=Runtime"
-                     metric-sets="RuntimeMetricsJMX" >
-    <-- This defines a resource configuration property that will be associated with any resource of this type.
-        This means any MBean with the object namne "java.lang:type=Runtime" will be assigned a resource
-        configuration property named "OS Name" whose value is that of the "Name" attribute found on
-        another MBean named "java.lang:type=OperatingSystem". -->
-    <resource-config-jmx name="OS Name" object-name="java.lang:type=OperatingSystem" attribute="Name" />
-  </resource-type-jmx>
-</resource-type-set-jmx>
-
-<resource-type-set-jmx name="MemoryPoolJMX" enabled="true">
-  <!-- This defines a resource type that is to be considered a child of its parent "Runtime MBean" resource.
-       Because the object-name is a query, this resource type definition tells the agent it can expect
-       multiple resources of this type. Any MBean that matches this query object name will be considered
-       this type of resource. -->
-  <resource-type-jmx name="Memory Pool MBean"
-                     parents="Runtime MBean"
-                     resource-name-template="JMX [%_ManagedServerName%] %type% %name%"
-                     object-name="java.lang:type=MemoryPool,name=*"
-                     avail-sets="MemoryPoolAvailsJMX" >
-    <resource-config-jmx name="Type" attribute="Type" />
-  </resource-type-jmx>
-</resource-type-set-jmx>
-----
-
-=== `<managed-servers>`
-
-remote-dmr:: This defines a remote WildFly server that the agent should monitor. You give it a name, where it is located (host and port) and what resources the agent can expect to find there (by setting the resource-type-sets attribute whose value is a comma-separated list of resource-type-set-dmr names).
-local-dmr:: This indicates the agent should monitor the same WildFly server where the agent is deployed. Because it is the same WildFly server where the agent is co-located, there is no need to specify a host or port, but you still need to tell the agent what resource types it should look for via the resource-type-sets attribute.
-remote-jmx:: This defines a remote JMX endpoint that the agent should monitor. This does not have to be a WildFly server! It can be anything with a Jolokia REST endpoint. It is through the Jolokia REST interface that the agent will communicate with the managed server. Similar to remote-dmr, you need to tell the agent where the Jolokia endpoint is (via the url attribute) and you need to tell the agent what resources it can expect to find there (by setting the resource-type-sets attribute whose value is a comma-separated list of resource-type-set-jmx names).
-local-jmx:: This indicates the agent should monitor the same WildFly server where the agent is deployed, but it will collect data from the JMX MBeans found in the WildFly server. Again, you need to specify the resource-type-sets attribute in order to inform the agent about the resources it can expect to find.
+```
+java -Dhawkular.rest.user=jdoe -Dhawkular.rest.password=password -Dhawkular.rest.host=http://localhost:8080 -jar hawkular-javaagent/target/hawkular-javaagent-*-shaded.jar config=hawkular-javaagent-wildfly-feature-pack/src/main/resources/featurepack/content/standalone/configuration/hawkular-javaagent-config.yaml
+```
