@@ -1,0 +1,92 @@
+#
+# Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
+# and other contributors as indicated by the @author tags.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+subsystem:
+  enabled: true
+
+storage-adapter:
+  type:                 HAWKULAR
+  url:                  http://127.0.0.1:8080
+  username:             jdoe
+  password:             password
+
+resource-type-set-dmr:
+- name: dmr type set 1
+  resource-type-dmr:
+  - name: dmr type 1
+    path: /dmr-type=1
+  - name: dmr type 2
+    path: /dmr-type=2
+- name: dmr type set 2
+  resource-type-dmr:
+  - name: dmr type 3
+    path: /dmr-type=3
+  - name: dmr type 4
+    path: /dmr-type=4
+- name: dmr type set X DISABLED
+  enabled: false
+  resource-type-dmr:
+  - name: dmr type X
+    path: /dmr-type=X
+
+resource-type-set-jmx:
+- name: jmx type set 1
+  resource-type-jmx:
+  - name: jmx type 1
+    object-name: domain:type=one
+    resource-name-template: name1
+  - name: jmx type 2
+    object-name: domain:type=two
+    resource-name-template: name2
+- name: jmx type set 2
+  resource-type-jmx:
+  - name: jmx type 3
+    object-name: domain:type=three
+    resource-name-template: name3
+  - name: jmx type 4
+    object-name: domain:type=four
+    resource-name-template: name4
+- name: jmx type set X DISABLED
+  enabled: false
+  resource-type-jmx:
+  - name: jmx type X
+    object-name: domain:type=X
+    resource-name-template: nameX
+
+# No resource type set names are provided in managed server definitions.
+# The default is to include all of them if none are specified.
+managed-servers:
+  local-dmr:
+    name: local-dmr-ms
+
+  remote-dmr:
+  - name: remote-dmr-ms-1
+    host: host1
+    port: 1111
+  - name: remote-dmr-ms-2
+    host: host2
+    port: 2222
+
+  local-jmx:
+    name: local-jmx-ms
+
+  remote-jmx:
+  - name: remote-jmx-ms-1
+    url: http://host1
+  - name: remote-jmx-ms-2
+    url: http://host2
