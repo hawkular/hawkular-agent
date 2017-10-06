@@ -23,10 +23,54 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsReportTo;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
+import org.hawkular.agent.monitor.inventory.Name;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class ConfigConverterTest {
+
+    @Test
+    public void testManagedServerDefaultAllResourceTypeSets() throws Exception {
+        Configuration config = loadTestConfigFile("/all-resource-type-sets.yaml");
+        AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
+        Assert.assertTrue(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
+        Assert.assertEquals(2,
+                agentConfig.getDmrConfiguration().getEndpoints().get("local-dmr-ms").getResourceTypeSets().size());
+        Assert.assertTrue(agentConfig.getDmrConfiguration().getEndpoints().get("local-dmr-ms").getResourceTypeSets()
+                .contains(new Name("dmr type set 1")));
+        Assert.assertTrue(agentConfig.getDmrConfiguration().getEndpoints().get("local-dmr-ms").getResourceTypeSets()
+                .contains(new Name("dmr type set 2")));
+        Assert.assertEquals(2,
+                agentConfig.getDmrConfiguration().getEndpoints().get("remote-dmr-ms-1").getResourceTypeSets().size());
+        Assert.assertTrue(agentConfig.getDmrConfiguration().getEndpoints().get("remote-dmr-ms-1").getResourceTypeSets()
+                .contains(new Name("dmr type set 1")));
+        Assert.assertTrue(agentConfig.getDmrConfiguration().getEndpoints().get("remote-dmr-ms-1").getResourceTypeSets()
+                .contains(new Name("dmr type set 2")));
+        Assert.assertEquals(2,
+                agentConfig.getDmrConfiguration().getEndpoints().get("remote-dmr-ms-2").getResourceTypeSets().size());
+        Assert.assertTrue(agentConfig.getDmrConfiguration().getEndpoints().get("remote-dmr-ms-2").getResourceTypeSets()
+                .contains(new Name("dmr type set 1")));
+        Assert.assertTrue(agentConfig.getDmrConfiguration().getEndpoints().get("remote-dmr-ms-2").getResourceTypeSets()
+                .contains(new Name("dmr type set 2")));
+        Assert.assertEquals(2,
+                agentConfig.getJmxConfiguration().getEndpoints().get("local-jmx-ms").getResourceTypeSets().size());
+        Assert.assertTrue(agentConfig.getJmxConfiguration().getEndpoints().get("local-jmx-ms").getResourceTypeSets()
+                .contains(new Name("jmx type set 1")));
+        Assert.assertTrue(agentConfig.getJmxConfiguration().getEndpoints().get("local-jmx-ms").getResourceTypeSets()
+                .contains(new Name("jmx type set 2")));
+        Assert.assertEquals(2,
+                agentConfig.getJmxConfiguration().getEndpoints().get("remote-jmx-ms-1").getResourceTypeSets().size());
+        Assert.assertTrue(agentConfig.getJmxConfiguration().getEndpoints().get("remote-jmx-ms-1").getResourceTypeSets()
+                .contains(new Name("jmx type set 1")));
+        Assert.assertTrue(agentConfig.getJmxConfiguration().getEndpoints().get("remote-jmx-ms-1").getResourceTypeSets()
+                .contains(new Name("jmx type set 2")));
+        Assert.assertEquals(2,
+                agentConfig.getJmxConfiguration().getEndpoints().get("remote-jmx-ms-2").getResourceTypeSets().size());
+        Assert.assertTrue(agentConfig.getJmxConfiguration().getEndpoints().get("remote-jmx-ms-2").getResourceTypeSets()
+                .contains(new Name("jmx type set 1")));
+        Assert.assertTrue(agentConfig.getJmxConfiguration().getEndpoints().get("remote-jmx-ms-2").getResourceTypeSets()
+                .contains(new Name("jmx type set 2")));
+    }
 
     @Test
     public void testEmpty() throws Exception {
