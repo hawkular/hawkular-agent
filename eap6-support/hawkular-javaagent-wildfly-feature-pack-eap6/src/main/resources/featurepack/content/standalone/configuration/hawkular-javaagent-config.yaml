@@ -521,7 +521,7 @@ avail-set-dmr:
     internal:   30
     time-units: seconds
     attribute:  host-state
-    up.regex:   "run.*|-required"
+    up-regex:   "run.*|-required"
 - name: Deployment Status
   avail-dmr:
   - name: Deployment Status
