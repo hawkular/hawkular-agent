@@ -27,9 +27,6 @@
       <logger category="org.hawkular.metrics">
         <level name="${{hawkular.log.metrics:INFO}}" />
       </logger>
-      <logger category="org.hawkular.inventory">
-        <level name="${{hawkular.log.inventory:INFO}}" />
-      </logger>
       <logger category="org.hawkular.inventory.rest.requests">
         <level name="${{hawkular.log.inventory.rest.requests:INFO}}" />
       </logger>

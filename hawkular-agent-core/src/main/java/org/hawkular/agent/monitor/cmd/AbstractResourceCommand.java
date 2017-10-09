@@ -75,14 +75,15 @@ public abstract class AbstractResourceCommand<REQ extends ResourceRequest, RESP 
             MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint);
 
     /**
-     * @return a new instance of the appropriate {@link ResourcePathResponse} subclass
+     * @return a new instance of the appropriate {@link ResourceResponse} subclass
      */
     protected abstract RESP createResponse();
 
     protected void success(BasicMessageWithExtraData<REQ> envelope, RESP response) {
         response.setStatus(ResponseStatus.OK);
-        String msg = String.format("Performed [%s] on a [%s] given by Inventory ID [%s]",
-                this.getOperationName(envelope), entityType, envelope.getBasicMessage().getResourceId());
+        String msg = String.format("Performed [%s] on a [%s] given by Feed Id [%s] Resource Id [%s]",
+                this.getOperationName(envelope), entityType, envelope.getBasicMessage().getFeedId(),
+                envelope.getBasicMessage().getResourceId());
 
         String innerMessage = response.getMessage();
         if (innerMessage != null) {
