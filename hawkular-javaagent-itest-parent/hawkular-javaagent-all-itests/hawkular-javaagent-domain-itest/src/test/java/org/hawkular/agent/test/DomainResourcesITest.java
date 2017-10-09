@@ -19,8 +19,8 @@ package org.hawkular.agent.test;
 import java.util.Collection;
 import java.util.Optional;
 
-import org.hawkular.inventory.api.ResourceWithType;
-import org.hawkular.inventory.model.Operation;
+import org.hawkular.inventory.api.model.Operation;
+import org.hawkular.inventory.api.model.ResourceWithType;
 import org.hawkular.javaagent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
 import org.junit.Assert;

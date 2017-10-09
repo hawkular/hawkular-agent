@@ -33,6 +33,8 @@
     <jms-topic name="HawkularCommandEvent" entries="java:/topic/HawkularCommandEvent"/>
     <jms-topic name="HawkularAvailData" entries="java:/topic/HawkularAvailData java:jboss/exported/topic/HawkularAvailData"/>
     <jms-topic name="HawkularMetricData" entries="java:/topic/HawkularMetricData java:jboss/exported/topic/HawkularMetricData"/>
+    <jms-topic name="HawkularQueue" entries="java:/queue/HawkularQueue"/>
+    <jms-topic name="HawkularTopic" entries="java:/topic/HawkularTopic"/>
   </xsl:template>
 
   <!-- copy everything else as-is -->

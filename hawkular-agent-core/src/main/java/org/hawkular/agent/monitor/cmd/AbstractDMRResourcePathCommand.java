@@ -42,7 +42,7 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 
 /**
- * A base for {@link Command}s initiated by subclasses of {@link ResourcePathRequest}.
+ * A base for {@link Command}s initiated by subclasses of {@link ResourceRequest}.
  *
  * Note that this assumes the resource path refers to DMR resource! Thus commands that extend
  * this class will assume to need to access a DMR endpoint and will perform DMR-related operations.

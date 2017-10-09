@@ -28,7 +28,7 @@ import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent.ExpectedMessage;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.PatternMatcher;
-import org.hawkular.inventory.api.ResourceWithType;
+import org.hawkular.inventory.api.model.ResourceWithType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -64,7 +64,7 @@ public class ImmutableITest extends AbstractCommandITest {
         restartJMXAgent();
 
         String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                + "\"feedId\":\"" + agent.get().getId() + "\","
+                + "\"feedId\":\"" + agent.get().getFeedId() + "\","
                 + "\"resourceId\":\"" + agent.get().getId() + "\","
                 + "\"metricTypes\":{\"WildFly Threading Metrics~Thread Count\":\"159\"},"
                 + "\"availTypes\":{}"

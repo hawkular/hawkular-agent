@@ -25,7 +25,7 @@ import org.hawkular.agent.javaagent.config.DMRMetric;
 import org.hawkular.agent.javaagent.config.DMRMetricSet;
 import org.hawkular.agent.javaagent.config.TimeUnits;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.ResourceWithType;
+import org.hawkular.inventory.api.model.ResourceWithType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
