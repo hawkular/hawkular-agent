@@ -125,8 +125,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         }
                         rtb.operation(ob.build());
                     }
-
-                    importTypes.add(rtb.build());
+                    org.hawkular.inventory.api.model.ResourceType resourceType = rtb.build();
+                    log.debugf("Adding %s", resourceType);
+                    importTypes.add(resourceType);
 
                     // indicate we persisted the resource
                     rt.setPersistedTime(timestamp);
@@ -175,12 +176,15 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 .builder()
                 .id(getInventoryId(r))
                 .parentId(parentId)
+                .feedId(feedId)
                 .typeId(getInventoryId(r.getResourceType()))
                 .name(r.getName().getNameString());
         r.getProperties().forEach((k, v) -> rb.property(k, v.toString()));
         r.getMetrics().forEach(m -> rb.metric(buildMetric(m, m.getType().getMetricUnits())));
         r.getAvails().forEach(m -> rb.metric(buildMetric(m, null)));
-        importResources.add(rb.build());
+        org.hawkular.inventory.api.model.Resource resource = rb.build();
+        log.debugf("Adding %s", resource);
+        importResources.add(resource);
     }
 
     private <L, M extends MeasurementType<L>> Metric buildMetric(MeasurementInstance<L, M> m,
@@ -252,7 +256,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
     private void sendDeleteResourceRestRequest(ID resourceId) throws Exception {
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getInventoryContext())
-                .append("resources/").append(resourceId.getIDString());
+                .append("resources/").append(Util.urlEncode(resourceId.getIDString()));
         Request request = httpClientBuilder.buildJsonDeleteRequest(url.toString(), null);
         Call call = httpClientBuilder.getHttpClient().newCall(request);
 

@@ -19,15 +19,18 @@ package org.hawkular.agent.ws.test;
 import java.io.File;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.ResourceWithType;
+import org.hawkular.inventory.api.model.ResourceWithType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.annotations.Test;
 
 public class StandaloneDeployApplicationITest extends AbstractCommandITest {
+    private static final Logger log = Logger.getLogger(StandaloneDeployApplicationITest.class.getName());
+
     public static final String GROUP = "StandaloneDeployApplicationITest";
 
     @Test(groups = { GROUP }, dependsOnGroups = { UpdateCollectionIntervalsCommandITest.GROUP })
@@ -244,22 +247,21 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         // make sure to discover the mbean resources (same MBean discovered by local and remote managed server)
         forceInventoryDiscoveryScan();
 
-        // TODO [lponce] probably this is not correct, it should have proper type
-        Collection<ResourceWithType> localMbeans = testHelper.getResourceByType(hawkularFeedId, "Local JMX~org.hawkular.agent.itest:type=simple", 0);
-        Optional<ResourceWithType> localMbean = localMbeans.stream()
-                .filter(e -> e.getName().equals("Local JMX~org.hawkular.agent.itest:type=simple"))
+        Collection<ResourceWithType> mbeans = testHelper.getResourceByType(hawkularFeedId, "Simple ITest MBean", 2);
+        Optional<ResourceWithType> localMbean = mbeans.stream()
+                // TODO [lponce] this is not 100% right, id should be opaque but Local JMX and Remote JMX have same name
+                .filter(e -> e.getId().equals(hawkularFeedId + "~Local JMX~org.hawkular.agent.itest:type=simple"))
                 .findFirst();
         if (!localMbean.isPresent()) {
             throw new IllegalStateException("Local MBean not found");
         }
         invokeJMXOperations(localMbean.get());
 
-        // TODO [lponce] probably this is not correct, it should have proper type
-        Collection<ResourceWithType> remoteMbeans = testHelper.getResourceByType(hawkularFeedId, "Remote JMX~org.hawkular.agent.itest:type=simple", 0);
-        Optional<ResourceWithType> remoteMbean = remoteMbeans.stream()
-                .filter(e -> e.getName().equals("Remote JMX~org.hawkular.agent.itest:type=simple"))
+        Optional<ResourceWithType> remoteMbean = mbeans.stream()
+                // TODO [lponce] this is not 100% right, id should be opaque but Local JMX and Remote JMX have same name
+                .filter(e -> e.getId().equals(hawkularFeedId + "~Remote JMX~org.hawkular.agent.itest:type=simple"))
                 .findFirst();
-        if (!localMbean.isPresent()) {
+        if (!remoteMbean.isPresent()) {
             throw new IllegalStateException("Remote MBean not found");
         }
 
@@ -318,7 +320,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [testOperationPrimitive] on a [JMX MBean] given by Feed Id ["
-                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]:"
+                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]: "
                 + "string=STR, int=1, boolean=true, long=2, double=3.0, float=4.0, short=5, char=a, byte=6"
                 + "\"}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
@@ -355,7 +357,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [testOperation] on a [JMX MBean] given by Feed Id ["
-                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]:"
+                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]: "
                 + "String=STR, Int=1, Boolean=true, Long=2, Double=3.0, Float=4.0, Short=5, Char=a, Byte=6"
                 + "\"}";
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
@@ -381,7 +383,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [testOperationPrimitive] on a [JMX MBean] given by Feed Id ["
-                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]:"
+                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]: "
                 + "string=yaml default"
                 + ", int=111, boolean=false, long=222, double=3.33, float=4.44, short=5, char=x, byte=0"
                 + "\"}";
@@ -408,7 +410,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [testOperation] on a [JMX MBean] given by Feed Id ["
-                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]:"
+                + mbean.getFeedId() + "] Resource Id [" + mbean.getId() + "]: "
                 + "String=null"
                 + ", Int=null, Boolean=null, Long=null, Double=null, Float=null, Short=null, Char=null, Byte=null"
                 + "\"}";

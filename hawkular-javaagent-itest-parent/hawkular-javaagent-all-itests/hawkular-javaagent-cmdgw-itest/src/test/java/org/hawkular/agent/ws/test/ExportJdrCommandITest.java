@@ -17,7 +17,7 @@
 package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.ResourceWithType;
+import org.hawkular.inventory.api.model.ResourceWithType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.annotations.Test;
 

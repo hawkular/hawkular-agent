@@ -25,8 +25,8 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.zip.GZIPInputStream;
 
-import org.hawkular.inventory.api.ResourceWithType;
-import org.hawkular.inventory.api.ResultSet;
+import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.ResultSet;
 import org.testng.AssertJUnit;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -62,83 +62,6 @@ public class ITestHelper {
                 .addHeader("Hawkular-Tenant", tenantId);
     }
 
-    /*
-    private Optional<InventoryStructure> extractStructureFromResponse(String responseBody) {
-        List<ExtendedInventoryStructure> l = extractStructuresFromResponse(responseBody);
-        if (l.size() != 1) {
-            return Optional.empty();
-        }
-        return Optional.of(l.get(0).getStructure());
-    }
-    */
-
-    /*
-    private List<ExtendedInventoryStructure> extractStructuresFromResponse(String responseBody) {
-        try {
-            JsonNode responseNode = mapper.readTree(responseBody);
-            return StreamSupport.stream(responseNode.spliterator(), true)
-                    .map(node -> node.get("data"))
-                    .map(this::rebuildFromChunks)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw Throwables.propagate(e);
-        }
-    }
-    */
-
-    /*
-    private Optional<ExtendedInventoryStructure> rebuildFromChunks(JsonNode dataNode) {
-        if (!dataNode.has(0)) {
-            return Optional.empty();
-        }
-        try {
-            JsonNode masterNode = dataNode.get(0);
-            final byte[] all;
-            if (masterNode.has("tags") && masterNode.get("tags").has("chunks")) {
-                int nbChunks = masterNode.get("tags").get("chunks").asInt();
-                int totalSize = masterNode.get("tags").get("size").asInt();
-                byte[] master = masterNode.get("value").binaryValue();
-                if (master.length == 0) {
-                    return Optional.empty();
-                }
-                if (nbChunks > dataNode.size()) {
-                    // Race condition: some, but not all chunks have been written on DB while reading?
-                    // Then, caller must just wait a little bit before retrying
-                    return Optional.empty();
-                }
-                long masterTimestamp = masterNode.get("timestamp").asLong();
-                all = new byte[totalSize];
-                int pos = 0;
-                System.arraycopy(master, 0, all, pos, master.length);
-                pos += master.length;
-                for (int i = 1; i < nbChunks; i++) {
-                    JsonNode slaveNode = dataNode.get(i);
-                    // Perform sanity check using timestamps; they should all be contiguous, in decreasing order
-                    long slaveTimestamp = slaveNode.get("timestamp").asLong();
-                    if (slaveTimestamp != masterTimestamp-i) {
-                        // Race condition: some, but not all chunks have been written on DB while reading?
-                        // Then, caller must just wait a little bit before retrying
-                        return Optional.empty();
-                    }
-                    byte[] slave = slaveNode.get("value").binaryValue();
-                    System.arraycopy(slave, 0, all, pos, slave.length);
-                    pos += slave.length;
-                }
-            } else {
-                // Not chunked
-                all = masterNode.get("value").binaryValue();
-            }
-            String decompressed = decompress(all);
-            ExtendedInventoryStructure structure = mapper.readValue(decompressed, ExtendedInventoryStructure.class);
-            return Optional.of(structure);
-        } catch (Exception e) {
-            throw Throwables.propagate(e);
-        }
-    }
-    */
-
     private static String decompress(byte[] gzipped) throws IOException {
         if ((gzipped == null) || (gzipped.length == 0)) {
             return "";
@@ -152,48 +75,6 @@ public class ITestHelper {
         }
         return outStr.toString();
     }
-
-    /*
-    public Optional<InventoryStructure> getInventoryStructure(String feedId, String type, String id) throws Throwable {
-        // Fetch metrics by tag
-        String url = baseInvUri + "/raw/query";
-        String tags = "module:inventory,type:" + type + ",feed:" + feedId + ",id:" + id;
-        String params = "{\"tags\":\"" + tags + "\"," +
-                "\"fromEarliest\":true," +
-                "\"order\":\"DESC\"}";
-        String response = getWithRetries(newAuthRequest()
-                .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json"), params))
-                .build());
-        return Optional.of(response)
-                .filter(r -> !r.isEmpty())
-                .flatMap(this::extractStructureFromResponse);
-    }
-    */
-
-    /*
-    public Optional<Blueprint> getBlueprintFromCP(CanonicalPath path) throws Throwable {
-        Iterator<CanonicalPath> upDown = path.descendingIterator();
-        if (!upDown.hasNext()) {
-            return Optional.empty();
-        }
-        // Ignore tenant
-        upDown.next();
-        if (!upDown.hasNext()) {
-            return Optional.empty();
-        }
-        String feed = upDown.next().getSegment().getElementId();
-        if (!upDown.hasNext()) {
-            return Optional.empty();
-        }
-        CanonicalPath itemPath = upDown.next();
-        Optional<InventoryStructure> inventoryStructure = getInventoryStructure(
-                feed,
-                itemPath.getSegment().getElementType().getSerialized(),
-                itemPath.getSegment().getElementId());
-        return inventoryStructure.map(struct -> (Blueprint) struct.get(path.relativeTo(itemPath)));
-    }
-    */
 
     public Collection<ResourceWithType> getResourceByType(String feedId, String type, int expectedCount)
             throws Throwable {
@@ -214,55 +95,6 @@ public class ITestHelper {
         }
         throw new IllegalStateException("Cannot get expected number of resources. Retries have been exceeded.");
     }
-
-    /*
-    public Map<CanonicalPath, Blueprint> getBlueprintsByType(String feedId, String type, int expectedCount)
-            throws Throwable {
-        for (int attempt = 0; attempt < ATTEMPT_COUNT; attempt++) {
-            // Fetch metrics by tag
-            String url = baseInvUri + "/raw/query";
-            String tags = "module:inventory,type:r,feed:" + feedId + ",restypes:.*|" + type + "|.*";
-            String params = "{\"tags\":\"" + tags + "\"," +
-                    "\"fromEarliest\":true," +
-                    "\"order\":\"DESC\"}";
-            String response = getWithRetries(newAuthRequest()
-                    .url(url)
-                    .post(RequestBody.create(MediaType.parse("application/json"), params))
-                    .build());
-            if (response.isEmpty()) {
-                return new HashMap<>();
-            }
-
-            // Now find each collected resource path in their belonging InventoryStructure
-            List<ExtendedInventoryStructure> structures = extractStructuresFromResponse(response);
-            Map<CanonicalPath, Blueprint> matchingResources = new HashMap<>();
-            CanonicalPath feedPath = feedPath(feedId).get();
-            structures.forEach(structure -> {
-                Collection<String> childResources = structure.getTypesIndex().get(type);
-                if (childResources != null) {
-                    CanonicalPath rootPath = feedPath.modified()
-                            .extend(SegmentType.r, structure.getStructure().getRoot().getId()).get();
-                    for (String resourcePath : childResources) {
-                        RelativePath relativePath = RelativePath.fromString(resourcePath);
-                        Blueprint bp = structure.getStructure().get(relativePath);
-                        if (bp != null) {
-                            CanonicalPath absolutePath = relativePath.applyTo(rootPath);
-                            matchingResources.put(absolutePath, bp);
-                        }
-                    }
-                }
-            });
-
-            if (matchingResources.size() >= expectedCount) {
-                return matchingResources;
-            }
-
-            Thread.sleep(ATTEMPT_DELAY);
-        }
-
-        throw new IllegalStateException("Cannot get expected number of resources. Retries have been exceeded.");
-    }
-    */
 
     public String getWithRetries(String url) throws Throwable {
         return getWithRetries(newAuthRequest().url(url).build());
@@ -297,7 +129,7 @@ public class ITestHelper {
             Optional<ResourceWithType> resource = getResourceByType(feed, rType, 0)
                     .stream()
                     .filter(e -> containing == null
-                            || e.getId().contains(containing)) // TODO [lponce] not sure if containing matches against id or name ?
+                            || e.getName().contains(containing))
                     .findFirst();
             if (resource.isPresent()) {
                 return resource.get();
@@ -314,7 +146,7 @@ public class ITestHelper {
             Optional<ResourceWithType> resource = getResourceByType(feed, rType, 0)
                     .stream()
                     .filter(e -> containing == null
-                            || e.getId().contains(containing)) // TODO [lponce] not sure if containing matches against id or name ?
+                            || e.getName().contains(containing))
                     .findFirst();
             if (!resource.isPresent()) {
                 return;

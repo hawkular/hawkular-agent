@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.ResourceWithType;
+import org.hawkular.inventory.api.model.ResourceWithType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -168,7 +168,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
         Optional<ResourceWithType> datasource = datasources.stream()
-                .filter(e -> e.getName().equals(datasourceName))
+                // TODO [lponce] name has format "Datasource [<datasource>]"
+                .filter(e -> e.getName().contains(datasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
             throw new IllegalStateException("Datasource not found");
@@ -200,7 +201,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
                     + "\"message\":\"Performed [Update] on a [Datasource] given by Feed Id ["
-                    + ds.getFeedId() + "] Resource Id: [" + ds.getId() + "]\","
+                    + ds.getFeedId() + "] Resource Id [" + ds.getId() + "]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
 
@@ -227,7 +228,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
         Optional<ResourceWithType> datasource = datasources.stream()
-                .filter(e -> e.getName().equals(datasourceName))
+                // TODO [lponce] name has format "XA Datasource [<datasource>]"
+                .filter(e -> e.getName().contains(xaDatasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
             throw new IllegalStateException("XA Datasource not found");
@@ -260,7 +262,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
                     + "\"message\":\"Performed [Update] on a [Datasource] given by Feed Id [" + ds.getFeedId()
-                    +"] Resource Id:[" + ds.getId() + "]\","
+                    +"] Resource Id [" + ds.getId() + "]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
 
@@ -287,7 +289,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
         Optional<ResourceWithType> datasource = datasources.stream()
-                .filter(e -> e.getName().equals(datasourceName))
+                // TODO [lponce] name has format "Datasource [<datasource>]"
+                .filter(e -> e.getName().contains(datasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
             throw new IllegalStateException("Datasource not found");
@@ -307,7 +310,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourceId\":\"" + ds.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Feed Id [" + ds.getFeedId() + "] Resource Id [" + ds.getId() + "]\", "
+                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Feed Id [" + ds.getFeedId() + "] Resource Id [" + ds.getId() + "]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
@@ -334,7 +337,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
         Optional<ResourceWithType> datasource = datasources.stream()
-                .filter(e -> e.getName().equals(datasourceName))
+                // TODO [lponce] name has format "XA Datasource [<datasource>]"
+                .filter(e -> e.getName().contains(xaDatasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
             throw new IllegalStateException("Datasource not found");
@@ -354,8 +358,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                     + "\"resourceId\":\"" + ds.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Feed Id [" + ds.getFeedId() + "] Resource Id [" + ds.getId() + "]\", "
-                    + "]\","
+                    + "\"message\":\"Performed [Remove] on a [Datasource] given by Feed Id [" + ds.getFeedId() + "] Resource Id [" + ds.getId() + "]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
                     + "}";
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()

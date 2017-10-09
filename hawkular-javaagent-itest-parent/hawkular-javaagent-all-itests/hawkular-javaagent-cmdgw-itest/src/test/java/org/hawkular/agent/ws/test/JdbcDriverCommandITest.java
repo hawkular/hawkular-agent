@@ -23,7 +23,7 @@ import java.util.Optional;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
-import org.hawkular.inventory.api.ResourceWithType;
+import org.hawkular.inventory.api.model.ResourceWithType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -98,9 +98,9 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
     public void testRemoveJdbcDriver() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        Collection<ResourceWithType> drivers = testHelper.getResourceByType(hawkularFeedId, "JDBC Driver", 0);
+        Collection<ResourceWithType> drivers = testHelper.getResourceByType(hawkularFeedId, "JDBC Driver", 2);
         Optional<ResourceWithType> driver = drivers.stream()
-                .filter(e -> e.getName().equals(driverName))
+                .filter(e -> e.getName().contains(driverName))
                 .findFirst();
         if (!driver.isPresent()) {
             throw new IllegalStateException("Driver not found");

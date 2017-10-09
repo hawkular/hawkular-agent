@@ -17,7 +17,7 @@
 package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.ResourceWithType;
+import org.hawkular.inventory.api.model.ResourceWithType;
 import org.hawkular.javaagent.itest.util.AbstractITest;
 
 /**
@@ -44,7 +44,7 @@ public abstract class AbstractCommandITest extends AbstractITest {
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
                 + "\"message\":\"Performed [Inventory Discovery Scan] on a [JMX MBean] given by Feed Id ["
-                + agentResource.getFeedId() + "] Resource Id: [" + agentResource.getId()
+                + agentResource.getFeedId() + "] Resource Id [" + agentResource.getId()
                 + "]: Full inventory discovery scan completed in"; // will match anything after
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")

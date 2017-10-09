@@ -42,7 +42,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
         ArrayNode localJmxResources = ((ArrayNode) jsonResources);
         JsonNode agentNode = null;
         for (JsonNode jmxResource : localJmxResources) {
-            String agentId = "Local JMX~" + AGENT_MBEAN_OBJECT_NAME.toString();
+            String agentId = hawkularFeedId + "~Local JMX~" + AGENT_MBEAN_OBJECT_NAME.toString();
             if (jmxResource.has(agentId)) {
                 agentNode = jmxResource.get(agentId);
                 break;

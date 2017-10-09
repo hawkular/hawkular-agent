@@ -18,7 +18,7 @@ package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.ResourceWithType;
+import org.hawkular.inventory.api.model.ResourceWithType;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.junit.AfterClass;
 import org.testng.annotations.Test;
@@ -62,7 +62,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Statistics for server [" + wfResource.getName()
+                    + "\"message\":\"Statistics for server [" + wfResource.getId()
                     + "] have been enabled for subsystems "
                     + "[datasources, EJB3, infinispan, messaging, transactions, web]"
                     + ", disabled for subsystems []"
@@ -137,7 +137,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Statistics for server [" + wfResource.getName()
+                    + "\"message\":\"Statistics for server [" + wfResource.getId()
                     + "] have been enabled for subsystems [], disabled for subsystems "
                     + "[datasources, EJB3, infinispan, messaging, transactions, web]"
                     + ", and left as-is for subsystems []\","
@@ -220,7 +220,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Statistics for server [" + wfResource.getName()
+                    + "\"message\":\"Statistics for server [" + wfResource.getId()
                     + "] have been enabled for subsystems [], disabled for subsystems []"
                     + ", and left as-is for subsystems "
                     + "[datasources, EJB3, infinispan, messaging, transactions, web]\""
@@ -278,7 +278,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Statistics for server [" + wfResource.getName()
+                    + "\"message\":\"Statistics for server [" + wfResource.getId()
                     + "] have been enabled for subsystems [transactions], disabled for subsystems []"
                     + ", and left as-is for subsystems [datasources, EJB3, infinispan, messaging, web]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
