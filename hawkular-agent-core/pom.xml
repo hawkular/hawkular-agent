@@ -92,11 +92,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.commons</groupId>
-      <artifactId>hawkular-inventory-model</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.hawkular.metrics</groupId>
       <artifactId>hawkular-metrics-clients-common</artifactId>
     </dependency>
