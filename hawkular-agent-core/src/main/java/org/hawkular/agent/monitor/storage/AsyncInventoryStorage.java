@@ -41,9 +41,9 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.util.Util;
-import org.hawkular.inventory.api.Import;
-import org.hawkular.inventory.model.Metric;
-import org.hawkular.inventory.model.MetricUnit;
+import org.hawkular.inventory.api.model.Inventory;
+import org.hawkular.inventory.api.model.Metric;
+import org.hawkular.inventory.api.model.MetricUnit;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 import com.codahale.metrics.Timer;
@@ -89,9 +89,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             long timestamp = System.currentTimeMillis();
 
-            List<org.hawkular.inventory.model.Resource> importResources = new ArrayList<>();
-            List<org.hawkular.inventory.model.ResourceType> importTypes = new ArrayList<>();
-            Import importData = new Import(importResources, importTypes);
+            List<org.hawkular.inventory.api.model.Resource> importResources = new ArrayList<>();
+            List<org.hawkular.inventory.api.model.ResourceType> importTypes = new ArrayList<>();
+            Inventory importData = new Inventory(importResources, importTypes);
 
             // Since we know types never change during the lifetime of the agent, we don't have to process
             // types that have already been flagged as having been persisted.
@@ -105,7 +105,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     }
                     log.debugf("Updating resource type: %s", rt.getID().getIDString());
 
-                    org.hawkular.inventory.model.ResourceType.Builder rtb = org.hawkular.inventory.model.ResourceType
+                    org.hawkular.inventory.api.model.ResourceType.Builder rtb = org.hawkular.inventory.api.model.ResourceType
                             .builder();
                     rtb.id(getInventoryId(rt));
                     rt.getProperties().forEach((k, v) -> {
@@ -113,7 +113,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                     });
 
                     for (Operation<L> op : rt.getOperations()) {
-                        org.hawkular.inventory.model.Operation.Builder ob = org.hawkular.inventory.model.Operation
+                        org.hawkular.inventory.api.model.Operation.Builder ob = org.hawkular.inventory.api.model.Operation
                                 .builder();
                         ob.name(op.getName().getNameString());
                         for (OperationParam param : op.getParameters()) {
@@ -169,9 +169,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return id;
     }
 
-    private <L> void addResourceToImport(Resource<L> r, List<org.hawkular.inventory.model.Resource> importResources) {
+    private <L> void addResourceToImport(Resource<L> r, List<org.hawkular.inventory.api.model.Resource> importResources) {
         String parentId = (r.getParent() != null) ? r.getParent().getID().getIDString() : null;
-        org.hawkular.inventory.model.Resource.Builder rb = org.hawkular.inventory.model.Resource
+        org.hawkular.inventory.api.model.Resource.Builder rb = org.hawkular.inventory.api.model.Resource
                 .builder()
                 .id(getInventoryId(r))
                 .parentId(parentId)
@@ -184,9 +184,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     private <L, M extends MeasurementType<L>> Metric buildMetric(MeasurementInstance<L, M> m,
-            MeasurementUnit metricUnits) {
-        org.hawkular.inventory.model.Metric.Builder mb = org.hawkular.inventory.model.Metric
-                .builder()
+                                                                 MeasurementUnit metricUnits) {
+        Metric.Builder mb = Metric.builder()
                 .name(m.getName().getNameString())
                 .type(m.getType().getName().getNameString());
         if (metricUnits != null) {
@@ -196,7 +195,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return mb.build();
     }
 
-    private void importInventoryData(Import importData) throws Exception {
+    private void importInventoryData(Inventory importData) throws Exception {
         try {
             log.tracef("Importing [%d] resources to inventory", importData.getResources().size());
             sendImportRestRequest(importData);
@@ -229,7 +228,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private void sendImportRestRequest(Import importData) throws Exception {
+    private void sendImportRestRequest(Inventory importData) throws Exception {
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getInventoryContext())
                 .append("import");
         Request request = httpClientBuilder.buildJsonPostRequest(url.toString(), null, Util.toJson(importData));
