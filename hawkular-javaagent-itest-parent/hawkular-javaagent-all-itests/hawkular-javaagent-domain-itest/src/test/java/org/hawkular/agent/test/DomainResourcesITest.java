@@ -103,7 +103,7 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void serverGroupsInInventory() throws Throwable {
-        Collection<ResourceWithType> servers = testHelper.getResourceByType(hawkularFeedId, "Domain WildFly Group", 2);
+        Collection<ResourceWithType> servers = testHelper.getResourceByType(hawkularFeedId, "Domain Server Group", 2);
         Collection<String> dmrServerGroupNames = getServerGroupNames();
         for (String groupName : dmrServerGroupNames) {
             boolean hasMatch = servers.stream()
