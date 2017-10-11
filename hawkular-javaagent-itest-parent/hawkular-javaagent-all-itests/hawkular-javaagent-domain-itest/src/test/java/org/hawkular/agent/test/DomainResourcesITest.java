@@ -198,7 +198,7 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
         Collection<String> dmrProfileNames = getProfileNames();
         for (String profileName : dmrProfileNames) {
             boolean hasMatch = domains.stream()
-                    .anyMatch(d -> d.getName().equals(profileName));
+                    .anyMatch(d -> d.getName().contains(profileName));
             Assert.assertTrue(hasMatch);
             System.out.println("domain profile in inventory=" + profileName);
         }
