@@ -179,7 +179,7 @@ public class AsyncInventoryStorageTest {
                 resourceTypeManager,
                 resourceManager.getResourcesBreadthFirst(),
                 Collections.emptyList()));
-        Assert.assertEquals(0, collectedDeleteCalls.size());
+        Assert.assertEquals("Unexpected DELETE calls: " + collectedDeleteCalls, 0, collectedDeleteCalls.size());
         expectCalls(collectedPostCalls,
                 "http://ignore/ignore/import");
 
@@ -198,7 +198,7 @@ public class AsyncInventoryStorageTest {
                 resourceTypeManager,
                 Collections.emptyList(),
                 Collections.emptyList()));
-        Assert.assertEquals(0, collectedDeleteCalls.size());
+        Assert.assertEquals("Unexpected DELETE calls: " + collectedDeleteCalls, 0, collectedDeleteCalls.size());
         Assert.assertEquals(0, collectedPostCalls.size());
         // Persistence time hasn't changed
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
@@ -221,7 +221,7 @@ public class AsyncInventoryStorageTest {
                 resourceTypeManager,
                 Collections.singletonList(r3),
                 Collections.emptyList()));
-        Assert.assertEquals(0, collectedDeleteCalls.size());
+        Assert.assertEquals("Unexpected DELETE calls: " + collectedDeleteCalls, 0, collectedDeleteCalls.size());
         expectCalls(collectedPostCalls,
                 "http://ignore/ignore/import");
 
@@ -241,7 +241,7 @@ public class AsyncInventoryStorageTest {
                 Collections.emptyList(),
                 Collections.singletonList(R_1)));
         expectCalls(collectedDeleteCalls,
-                "http://ignore/ignore/resources/r1");
+                "http://ignore/ignore/resources?ids=r1");
         Assert.assertEquals(0, collectedPostCalls.size());
 
         // Persistence time hasn't changed
@@ -261,7 +261,7 @@ public class AsyncInventoryStorageTest {
         // r3 being a child resource, it triggers an update on its parent
         Assert.assertEquals(0, collectedPostCalls.size());
         expectCalls(collectedDeleteCalls,
-                "http://ignore/ignore/resources/r3");
+                "http://ignore/ignore/resources?ids=r3");
 
         // Persistence time changed for R2
         Assert.assertEquals(initialTime, RT_1.getPersistedTime());
@@ -277,7 +277,7 @@ public class AsyncInventoryStorageTest {
                 resourceTypeManager,
                 resourceManager.getResourcesBreadthFirst(),
                 Collections.emptyList()));
-        Assert.assertEquals(0, collectedDeleteCalls.size());
+        Assert.assertEquals("Unexpected DELETE calls: " + collectedDeleteCalls, 0, collectedDeleteCalls.size());
         expectCalls(collectedPostCalls,
                 "http://ignore/ignore/import");
 
@@ -294,7 +294,7 @@ public class AsyncInventoryStorageTest {
                 samplingService,
                 resourceManager,
                 Collections.singletonList(r3)));
-        Assert.assertEquals(0, collectedDeleteCalls.size());
+        Assert.assertEquals("Unexpected DELETE calls: " + collectedDeleteCalls, 0, collectedDeleteCalls.size());
         expectCalls(collectedPostCalls,
                 "http://ignore/ignore/import");
 
@@ -305,7 +305,7 @@ public class AsyncInventoryStorageTest {
                 resourceManager,
                 Collections.singletonList(R_1)));
         expectCalls(collectedDeleteCalls,
-                "http://ignore/ignore/resources/r1");
+                "http://ignore/ignore/resources?ids=r1");
         Assert.assertEquals(0, collectedPostCalls.size());
 
         // Next run with removed r3
@@ -315,7 +315,7 @@ public class AsyncInventoryStorageTest {
                 resourceManager,
                 Collections.singletonList(r3)));
         expectCalls(collectedDeleteCalls,
-                "http://ignore/ignore/resources/r3");
+                "http://ignore/ignore/resources?ids=r3");
         Assert.assertEquals(0, collectedPostCalls.size());
     }
 

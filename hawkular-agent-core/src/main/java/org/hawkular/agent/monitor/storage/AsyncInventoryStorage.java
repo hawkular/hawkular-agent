@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryStorage;
@@ -147,9 +148,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
             });
 
             // Remove deleted resources
-            for (Resource<L> r : event.getRemoved()) {
-                log.debugf("Removing resource: %s", r.getID().getIDString());
-                deleteInventoryData(r.getID());
+            if (!event.getRemoved().isEmpty()) {
+                List<String> resourcesToRemove = event.getRemoved().stream()
+                        .map(r -> r.getID().getIDString())
+                        .collect(Collectors.toList());
+                log.debugf("Removing resources: %s", resourcesToRemove);
+                deleteInventoryData(resourcesToRemove);
             }
             if (!importResources.isEmpty() || !importTypes.isEmpty()) {
                 importInventoryData(importData);
@@ -216,10 +220,10 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private void deleteInventoryData(ID resourceId) throws Exception {
+    private void deleteInventoryData(List<String> resourceIds) throws Exception {
         try {
-            log.tracef("Deleting resource [%s] from inventory", resourceId);
-            sendDeleteResourceRestRequest(resourceId);
+            log.tracef("Deleting resources [%s] from inventory", resourceIds);
+            sendDeleteResourcesRestRequest(resourceIds);
         } catch (InterruptedException ie) {
             log.errorFailedToStoreInventoryData(ie);
             Thread.currentThread().interrupt(); // preserve interrupt
@@ -254,9 +258,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
         }
     }
 
-    private void sendDeleteResourceRestRequest(ID resourceId) throws Exception {
+    private void sendDeleteResourcesRestRequest(List<String> resourceId) throws Exception {
+        String ids = resourceId.stream()
+                .map(id -> "ids=" + Util.urlEncode(id))
+                .collect(Collectors.joining("&"));
         StringBuilder url = Util.getContextUrlString(config.getUrl(), config.getInventoryContext())
-                .append("resources/").append(Util.urlEncode(resourceId.getIDString()));
+                .append("resources?").append(ids);
         Request request = httpClientBuilder.buildJsonDeleteRequest(url.toString(), null);
         Call call = httpClientBuilder.getHttpClient().newCall(request);
 
