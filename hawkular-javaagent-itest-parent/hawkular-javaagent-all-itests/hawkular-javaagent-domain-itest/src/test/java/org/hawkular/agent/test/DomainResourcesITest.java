@@ -163,9 +163,9 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
                 .findFirst();
         Assert.assertTrue(suspendServers.isPresent());
 
-        Assert.assertEquals("int", startServers.get().getParameters().get("timeout").get("type"));
-        Assert.assertNull(startServers.get().getParameters().get("timeout").get("defaultValue"));
-        Assert.assertNotNull(startServers.get().getParameters().get("timeout").get("description"));
+        Assert.assertEquals("int", suspendServers.get().getParameters().get("timeout").get("type"));
+        Assert.assertNull(suspendServers.get().getParameters().get("timeout").get("defaultValue"));
+        Assert.assertNotNull(suspendServers.get().getParameters().get("timeout").get("description"));
 
         // STOP SERVERS
         Optional<Operation> stopServers = server.getType()
