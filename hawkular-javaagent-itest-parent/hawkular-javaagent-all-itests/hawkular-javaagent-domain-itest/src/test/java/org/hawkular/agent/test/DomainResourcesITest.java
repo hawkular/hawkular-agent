@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 import org.hawkular.inventory.api.model.Operation;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.javaagent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.PathAddress;
 import org.junit.Assert;
@@ -45,7 +45,7 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
     public void hostsInInventory() throws Throwable {
         String feedId = hawkularFeedId;
 
-        Collection<ResourceWithType> domainHosts = testHelper.getResourceByType(hawkularFeedId, "Domain Host", 1);
+        Collection<Resource> domainHosts = testHelper.getResourceByType(hawkularFeedId, "Domain Host", 1);
 
         Collection<String> dmrHostNames = getHostNames();
         for (String hostName : dmrHostNames) {
@@ -61,7 +61,7 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
         // make sure the Domain Host operations are OK
         // SHUTDOWN
-        ResourceWithType domainHost = domainHosts.iterator().next();
+        Resource domainHost = domainHosts.iterator().next();
         Optional<Operation> shutdown = domainHost.getType()
                 .getOperations()
                 .stream()
@@ -85,7 +85,7 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void serversInInventory() throws Throwable {
-        Collection<ResourceWithType> servers = testHelper.getResourceByType(hawkularFeedId, "Domain WildFly Server", 2);
+        Collection<Resource> servers = testHelper.getResourceByType(hawkularFeedId, "Domain WildFly Server", 2);
         Collection<String> dmrServerNames = getServerNames();
         for (String serverName : dmrServerNames) {
             boolean hasMatch = servers.stream()
@@ -103,7 +103,7 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void serverGroupsInInventory() throws Throwable {
-        Collection<ResourceWithType> servers = testHelper.getResourceByType(hawkularFeedId, "Domain Server Group", 2);
+        Collection<Resource> servers = testHelper.getResourceByType(hawkularFeedId, "Domain Server Group", 2);
         Collection<String> dmrServerGroupNames = getServerGroupNames();
         for (String groupName : dmrServerGroupNames) {
             boolean hasMatch = servers.stream()
@@ -119,7 +119,7 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
         // make sure the Domain Server Groups operations are OK
         // RELOAD SERVERS
-        ResourceWithType server = servers.iterator().next();
+        Resource server = servers.iterator().next();
         Optional<Operation> reloadServers = server.getType()
                 .getOperations()
                 .stream()
@@ -194,7 +194,7 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void profilesInInventory() throws Throwable {
-        Collection<ResourceWithType> domains = testHelper.getResourceByType(hawkularFeedId, "Domain Profile", 4);
+        Collection<Resource> domains = testHelper.getResourceByType(hawkularFeedId, "Domain Profile", 4);
         Collection<String> dmrProfileNames = getProfileNames();
         for (String profileName : dmrProfileNames) {
             boolean hasMatch = domains.stream()
@@ -213,7 +213,7 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void socketBindingGroupsInInventory() throws Throwable {
-        Collection<ResourceWithType> sockets = testHelper.getResourceByType(hawkularFeedId, "Socket Binding Group", 4);
+        Collection<Resource> sockets = testHelper.getResourceByType(hawkularFeedId, "Socket Binding Group", 4);
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
         for (String sbgName : dmrSBGNames) {
             boolean hasMatch = sockets.stream()

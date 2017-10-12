@@ -45,6 +45,7 @@ import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.Inventory;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.hawkular.inventory.api.model.RawResource;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 import com.codahale.metrics.Timer;
@@ -90,7 +91,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
 
             long timestamp = System.currentTimeMillis();
 
-            List<org.hawkular.inventory.api.model.Resource> importResources = new ArrayList<>();
+            List<RawResource> importResources = new ArrayList<>();
             List<org.hawkular.inventory.api.model.ResourceType> importTypes = new ArrayList<>();
             Inventory importData = new Inventory(importResources, importTypes);
 
@@ -174,10 +175,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
         return id;
     }
 
-    private <L> void addResourceToImport(Resource<L> r, List<org.hawkular.inventory.api.model.Resource> importResources) {
+    private <L> void addResourceToImport(Resource<L> r, List<RawResource> importResources) {
         String parentId = (r.getParent() != null) ? r.getParent().getID().getIDString() : null;
-        org.hawkular.inventory.api.model.Resource.Builder rb = org.hawkular.inventory.api.model.Resource
-                .builder()
+        RawResource.Builder rb = RawResource.builder()
                 .id(getInventoryId(r))
                 .parentId(parentId)
                 .feedId(feedId)
@@ -186,7 +186,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         r.getProperties().forEach((k, v) -> rb.property(k, v.toString()));
         r.getMetrics().forEach(m -> rb.metric(buildMetric(m, m.getType().getMetricUnits())));
         r.getAvails().forEach(m -> rb.metric(buildMetric(m, null)));
-        org.hawkular.inventory.api.model.Resource resource = rb.build();
+        RawResource resource = rb.build();
         log.debugf("Adding %s", resource);
         importResources.add(resource);
     }

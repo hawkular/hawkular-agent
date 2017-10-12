@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -65,7 +65,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testAddDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
@@ -118,7 +118,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testAddXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, false);
@@ -166,15 +166,15 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testUpdateDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
-        Optional<ResourceWithType> datasource = datasources.stream()
+        Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
+        Optional<Resource> datasource = datasources.stream()
                 // TODO [lponce] name has format "Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(datasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
             throw new IllegalStateException("Datasource not found");
         }
-        ResourceWithType ds = datasource.get();
+        Resource ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
@@ -226,15 +226,15 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testUpdateXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
-        Optional<ResourceWithType> datasource = datasources.stream()
+        Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
+        Optional<Resource> datasource = datasources.stream()
                 // TODO [lponce] name has format "XA Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(xaDatasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
             throw new IllegalStateException("XA Datasource not found");
         }
-        ResourceWithType ds = datasource.get();
+        Resource ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
@@ -287,15 +287,15 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testRemoveDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
-        Optional<ResourceWithType> datasource = datasources.stream()
+        Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
+        Optional<Resource> datasource = datasources.stream()
                 // TODO [lponce] name has format "Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(datasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
             throw new IllegalStateException("Datasource not found");
         }
-        ResourceWithType ds = datasource.get();
+        Resource ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(datasourceName, false);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
@@ -335,15 +335,15 @@ public class DatasourceCommandITest extends AbstractCommandITest {
     public void testRemoveXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
-        Optional<ResourceWithType> datasource = datasources.stream()
+        Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
+        Optional<Resource> datasource = datasources.stream()
                 // TODO [lponce] name has format "XA Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(xaDatasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
             throw new IllegalStateException("Datasource not found");
         }
-        ResourceWithType ds = datasource.get();
+        Resource ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {

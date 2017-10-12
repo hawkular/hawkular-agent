@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.annotations.Test;
 
@@ -37,7 +37,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
     public void testAddDeployment() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
@@ -90,7 +90,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                     "true");
         }
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
@@ -143,7 +143,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                     "false");
         }
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
@@ -196,7 +196,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
                     "true");
         }
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 
@@ -247,8 +247,8 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         // make sure to discover the mbean resources (same MBean discovered by local and remote managed server)
         forceInventoryDiscoveryScan();
 
-        Collection<ResourceWithType> mbeans = testHelper.getResourceByType(hawkularFeedId, "Simple ITest MBean", 2);
-        Optional<ResourceWithType> localMbean = mbeans.stream()
+        Collection<Resource> mbeans = testHelper.getResourceByType(hawkularFeedId, "Simple ITest MBean", 2);
+        Optional<Resource> localMbean = mbeans.stream()
                 // TODO [lponce] this is not 100% right, id should be opaque but Local JMX and Remote JMX have same name
                 .filter(e -> e.getId().equals(hawkularFeedId + "~Local JMX~org.hawkular.agent.itest:type=simple"))
                 .findFirst();
@@ -257,7 +257,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         }
         invokeJMXOperations(localMbean.get());
 
-        Optional<ResourceWithType> remoteMbean = mbeans.stream()
+        Optional<Resource> remoteMbean = mbeans.stream()
                 // TODO [lponce] this is not 100% right, id should be opaque but Local JMX and Remote JMX have same name
                 .filter(e -> e.getId().equals(hawkularFeedId + "~Remote JMX~org.hawkular.agent.itest:type=simple"))
                 .findFirst();
@@ -268,7 +268,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         invokeJMXOperations(remoteMbean.get());
     }
 
-    private void invokeJMXOperations(ResourceWithType mbean) throws Throwable {
+    private void invokeJMXOperations(Resource mbean) throws Throwable {
 
         // jmx operation with no parameters
 
@@ -433,7 +433,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         testHelper.waitForResourceContaining(hawkularFeedId, "Deployment", "hawkular-javaagent-helloworld-war.war",
                 5000, 10);
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
 

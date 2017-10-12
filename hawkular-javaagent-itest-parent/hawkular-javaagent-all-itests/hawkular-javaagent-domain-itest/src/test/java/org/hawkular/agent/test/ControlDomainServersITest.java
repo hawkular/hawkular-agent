@@ -20,7 +20,7 @@ import java.util.Collection;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.javaagent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.Assert;
@@ -46,8 +46,8 @@ public class ControlDomainServersITest extends AbstractDomainITestSuite {
                     "running");
         }
 
-        Collection<ResourceWithType> agents = testHelper.getResourceByType(hawkularFeedId, "Domain WildFly Server Controller", 1);
-        ResourceWithType agent = agents.stream()
+        Collection<Resource> agents = testHelper.getResourceByType(hawkularFeedId, "Domain WildFly Server Controller", 1);
+        Resource agent = agents.stream()
                 .filter(e -> e.getName().contains(serverToTest))
                 .findFirst()
                 .get();
