@@ -49,7 +49,7 @@ import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.JBossASClient;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.Operations;
@@ -547,13 +547,13 @@ public abstract class AbstractITest {
     }
 
     /**
-     * Return the {@link ResourceWithType} of the only WildFly server present in inventory under the hawkular feed.
+     * Return the {@link Resource} of the only WildFly server present in inventory under the hawkular feed.
      * This is the Hawkular Server itself.
      *
      * @return path of hawkular wildfly server resource
      */
-    protected ResourceWithType getHawkularWildFlyServerResource() throws Throwable {
-        Collection<ResourceWithType> wildflyServers = testHelper.getResourceByType(hawkularFeedId, "WildFly Server", 1);
+    protected Resource getHawkularWildFlyServerResource() throws Throwable {
+        Collection<Resource> wildflyServers = testHelper.getResourceByType(hawkularFeedId, "WildFly Server", 1);
         AssertJUnit.assertEquals(1, wildflyServers.size());
         return wildflyServers.iterator().next();
     }

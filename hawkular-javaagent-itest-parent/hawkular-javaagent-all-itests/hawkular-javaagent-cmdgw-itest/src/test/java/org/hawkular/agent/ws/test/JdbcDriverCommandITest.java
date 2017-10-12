@@ -23,7 +23,7 @@ import java.util.Optional;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.dmr.ModelNode;
@@ -48,7 +48,7 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
     public void testAddJdbcDriver() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
         final ModelNode driverAddress = driverAddress();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
@@ -98,14 +98,14 @@ public class JdbcDriverCommandITest extends AbstractCommandITest {
     public void testRemoveJdbcDriver() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        Collection<ResourceWithType> drivers = testHelper.getResourceByType(hawkularFeedId, "JDBC Driver", 2);
-        Optional<ResourceWithType> driver = drivers.stream()
+        Collection<Resource> drivers = testHelper.getResourceByType(hawkularFeedId, "JDBC Driver", 2);
+        Optional<Resource> driver = drivers.stream()
                 .filter(e -> e.getName().contains(driverName))
                 .findFirst();
         if (!driver.isPresent()) {
             throw new IllegalStateException("Driver not found");
         }
-        ResourceWithType drv = driver.get();
+        Resource drv = driver.get();
         final ModelNode driverAddress = driverAddress();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {

@@ -17,7 +17,7 @@
 package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.annotations.Test;
 
@@ -31,7 +31,7 @@ public class ExportJdrCommandITest extends AbstractCommandITest {
     public void exportJdrCommand() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient ignored = newHawkularModelControllerClient()) {
             String req = "ExportJdrRequest={\"authentication\":" + authentication + ", "

@@ -26,7 +26,7 @@ import org.hawkular.agent.javaagent.config.TimeUnits;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.inventory.api.model.Operation;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.PathAddress;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -45,7 +45,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
         waitForAgentViaJMX();
 
-        ResourceWithType agentResource = testHelper.waitForResourceContaining(
+        Resource agentResource = testHelper.waitForResourceContaining(
                 hawkularFeedId, "Hawkular WildFly Agent", null, 5000, 10);
 
         // disable Datasource Pool Metrics~Active Count
@@ -86,7 +86,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     public void operationParameters() throws Throwable {
 
         // get the operation
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
         Optional<Operation> operation = wfResource.getType()
                 .getOperations()
                 .stream()
@@ -112,7 +112,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
     public void socketBindingGroupsInInventory() throws Throwable {
 
-        Collection<ResourceWithType> bindingGroups = testHelper.getResourceByType(hawkularFeedId, "Socket Binding Group", 0);
+        Collection<Resource> bindingGroups = testHelper.getResourceByType(hawkularFeedId, "Socket Binding Group", 0);
 
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
         for (String sbgName : dmrSBGNames) {
@@ -129,7 +129,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         Assert.assertEquals(dmrSBGNames.size(), 1, "Wrong number of socket binding groups");
 
         // there is only one group - get the names of all the bindings (incoming and outbound) in that group
-        Collection<ResourceWithType> socketBindings = testHelper.getResourceByType(hawkularFeedId, "Socket Binding", 0);
+        Collection<Resource> socketBindings = testHelper.getResourceByType(hawkularFeedId, "Socket Binding", 0);
         Collection<String> dmrBindingNames = getSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
             boolean hasMatch = socketBindings.stream()
@@ -148,7 +148,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         Assert.assertTrue(dmrBindingNames.contains("txn-status-manager"));
         Assert.assertEquals(dmrBindingNames.size(), 7, "Wrong number of socket binding groups");
 
-        Collection<ResourceWithType> oSocketBindings = testHelper.getResourceByType(hawkularFeedId, "Remote Destination Outbound Socket Binding", 1);
+        Collection<Resource> oSocketBindings = testHelper.getResourceByType(hawkularFeedId, "Remote Destination Outbound Socket Binding", 1);
         dmrBindingNames = getOutboundSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
             boolean hasMatch = oSocketBindings.stream()
@@ -166,7 +166,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
     public void datasourcesAddedToInventory() throws Throwable {
         Collection<String> datasourceNames = getDatasourceNames();
-        Collection<ResourceWithType> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", datasourceNames.size());
+        Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", datasourceNames.size());
         for (String datasourceName : datasourceNames) {
             boolean hasMatch = datasources.stream().anyMatch(ds -> ds.getId().contains(datasourceName));
             Assert.assertTrue(hasMatch);
@@ -291,9 +291,9 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     // @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void resourceConfig() throws Throwable {
 
-        Collection<ResourceWithType> servers = testHelper.getResourceByType(hawkularFeedId, "WildFly Server", 1);
+        Collection<Resource> servers = testHelper.getResourceByType(hawkularFeedId, "WildFly Server", 1);
         Assert.assertEquals(1, servers.size());
-        ResourceWithType server = servers.iterator().next();
+        Resource server = servers.iterator().next();
 
         Assert.assertEquals("NORMAL", server.getProperties().get("Running Mode"));
         Assert.assertEquals("RUNNING", server.getProperties().get("Suspend State"));
@@ -312,9 +312,9 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     // @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void machineId() throws Throwable {
 
-        Collection<ResourceWithType> platforms = testHelper.getResourceByType(hawkularFeedId, "Platform_Operating System", 1);
+        Collection<Resource> platforms = testHelper.getResourceByType(hawkularFeedId, "Platform_Operating System", 1);
         Assert.assertEquals(1, platforms.size());
-        ResourceWithType platform = platforms.iterator().next();
+        Resource platform = platforms.iterator().next();
 
         System.out.println("");
         Assert.assertTrue(platform.getProperties().containsKey("Machine Id"));

@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.zip.GZIPInputStream;
 
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResultSet;
 import org.testng.AssertJUnit;
 
@@ -76,7 +76,7 @@ public class ITestHelper {
         return outStr.toString();
     }
 
-    public Collection<ResourceWithType> getResourceByType(String feedId, String type, int expectedCount)
+    public Collection<Resource> getResourceByType(String feedId, String type, int expectedCount)
             throws Throwable {
         for (int attempt = 0; attempt < ATTEMPT_COUNT; attempt++) {
             // TODO [lponce] this call is not paginating, perhaps enough for itest but it should be adapted in the future
@@ -88,7 +88,7 @@ public class ITestHelper {
             if (response.isEmpty()) {
                 return new ArrayList<>();
             }
-            ResultSet<ResourceWithType> rs = mapper.readValue(response, ResultSet.class);
+            ResultSet<Resource> rs = mapper.readValue(response, ResultSet.class);
             if (rs.getResults().size() >= expectedCount) {
                 return rs.getResults();
             }
@@ -122,11 +122,11 @@ public class ITestHelper {
         throw e;
     }
 
-    public ResourceWithType waitForResourceContaining(String feed, String rType, String containing,
+    public Resource waitForResourceContaining(String feed, String rType, String containing,
             long sleep, int attempts)
             throws Throwable {
         for (int i = 0; i < attempts; i++) {
-            Optional<ResourceWithType> resource = getResourceByType(feed, rType, 0)
+            Optional<Resource> resource = getResourceByType(feed, rType, 0)
                     .stream()
                     .filter(e -> containing == null
                             || e.getName().contains(containing))
@@ -143,7 +143,7 @@ public class ITestHelper {
     public void waitForNoResourceContaining(String feed, String rType, String containing, long sleep, int attempts)
             throws Throwable {
         for (int i = 0; i < attempts; i++) {
-            Optional<ResourceWithType> resource = getResourceByType(feed, rType, 0)
+            Optional<Resource> resource = getResourceByType(feed, rType, 0)
                     .stream()
                     .filter(e -> containing == null
                             || e.getName().contains(containing))

@@ -28,7 +28,7 @@ import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent.ExpectedMessage;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.PatternMatcher;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -46,7 +46,7 @@ public class ImmutableITest extends AbstractCommandITest {
 
         waitForAgentViaJMX();
 
-        Optional<ResourceWithType> agent = testHelper.getResourceByType(hawkularFeedId, "Hawkular WildFly Agent", 1)
+        Optional<Resource> agent = testHelper.getResourceByType(hawkularFeedId, "Hawkular WildFly Agent", 1)
                 .stream()
                 .findFirst();
         if (!agent.isPresent()) {
