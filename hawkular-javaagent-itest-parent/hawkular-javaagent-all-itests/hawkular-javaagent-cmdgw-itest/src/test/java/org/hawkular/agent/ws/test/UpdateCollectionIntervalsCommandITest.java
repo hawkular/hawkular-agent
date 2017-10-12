@@ -25,7 +25,7 @@ import org.hawkular.agent.javaagent.config.DMRMetric;
 import org.hawkular.agent.javaagent.config.DMRMetricSet;
 import org.hawkular.agent.javaagent.config.TimeUnits;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -41,9 +41,9 @@ public class UpdateCollectionIntervalsCommandITest extends AbstractCommandITest 
 
         waitForAgentViaJMX();
 
-        Collection<ResourceWithType> agents = testHelper.getResourceByType(hawkularFeedId, "Hawkular WildFly Agent", 1);
+        Collection<Resource> agents = testHelper.getResourceByType(hawkularFeedId, "Hawkular WildFly Agent", 1);
         Assert.assertEquals(1, agents.size());
-        ResourceWithType agent = agents.iterator().next();
+        Resource agent = agents.iterator().next();
 
 
         // check we are starting with our original defaults - this is just a sanity check

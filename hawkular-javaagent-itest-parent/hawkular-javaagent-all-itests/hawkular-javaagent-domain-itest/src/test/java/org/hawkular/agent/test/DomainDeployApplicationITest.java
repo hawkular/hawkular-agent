@@ -22,7 +22,7 @@ import java.util.Collection;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient.MessageAnswer;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.javaagent.itest.util.AbstractITest;
 import org.hawkular.javaagent.itest.util.WildFlyClientConfig;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -37,9 +37,9 @@ public class DomainDeployApplicationITest extends AbstractITest {
     public void testAddDeployment() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Collection<Resource> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
         Assert.assertEquals(1, hostControllers.size());
-        ResourceWithType hostController = hostControllers.iterator().next();
+        Resource hostController = hostControllers.iterator().next();
 
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
@@ -106,9 +106,9 @@ public class DomainDeployApplicationITest extends AbstractITest {
                     "true");
         }
 
-        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Collection<Resource> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
         Assert.assertEquals(1, hostControllers.size());
-        ResourceWithType hostController = hostControllers.iterator().next();
+        Resource hostController = hostControllers.iterator().next();
 
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
@@ -174,9 +174,9 @@ public class DomainDeployApplicationITest extends AbstractITest {
                     "false");
         }
 
-        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Collection<Resource> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
         Assert.assertEquals(1, hostControllers.size());
-        ResourceWithType hostController = hostControllers.iterator().next();
+        Resource hostController = hostControllers.iterator().next();
 
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
@@ -242,9 +242,9 @@ public class DomainDeployApplicationITest extends AbstractITest {
                     "true");
         }
 
-        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Collection<Resource> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
         Assert.assertEquals(1, hostControllers.size());
-        ResourceWithType hostController = hostControllers.iterator().next();
+        Resource hostController = hostControllers.iterator().next();
 
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();
@@ -294,9 +294,9 @@ public class DomainDeployApplicationITest extends AbstractITest {
     // this does a full undeploy via the host controller - removing from all server groups
     @Test(groups = { GROUP }, dependsOnMethods = { "testRestartDeployment" })
     public void testUndeploy() throws Throwable {
-        Collection<ResourceWithType> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
+        Collection<Resource> hostControllers = testHelper.getResourceByType(hawkularFeedId, "Host Controller", 1);
         Assert.assertEquals(1, hostControllers.size());
-        ResourceWithType hostController = hostControllers.iterator().next();
+        Resource hostController = hostControllers.iterator().next();
 
         File applicationFile = getTestApplicationFile();
         final String deploymentName = applicationFile.getName();

@@ -17,7 +17,7 @@
 package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.javaagent.itest.util.AbstractITest;
 
 /**
@@ -29,7 +29,7 @@ public abstract class AbstractCommandITest extends AbstractITest {
 
         waitForAgentViaJMX();
 
-        ResourceWithType agentResource = testHelper.waitForResourceContaining(
+        Resource agentResource = testHelper.waitForResourceContaining(
                 hawkularFeedId, "Hawkular WildFly Agent", null, 5000, 10);
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "

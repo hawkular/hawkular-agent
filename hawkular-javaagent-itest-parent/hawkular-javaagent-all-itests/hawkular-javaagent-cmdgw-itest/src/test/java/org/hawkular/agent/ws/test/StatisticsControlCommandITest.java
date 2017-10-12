@@ -18,7 +18,7 @@ package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.api.model.ResourceWithType;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.junit.AfterClass;
 import org.testng.annotations.Test;
@@ -36,7 +36,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     public void testEnableStatistics() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
@@ -111,7 +111,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     public void testDisableStatistics() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
@@ -183,7 +183,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     private void testReadOnlyStatistics(boolean expectedEnabledFlag) throws Throwable {
         waitForHawkularServerToBeReady();
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
@@ -242,7 +242,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     public void testEnableStatisticsSubset() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        ResourceWithType wfResource = getHawkularWildFlyServerResource();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
