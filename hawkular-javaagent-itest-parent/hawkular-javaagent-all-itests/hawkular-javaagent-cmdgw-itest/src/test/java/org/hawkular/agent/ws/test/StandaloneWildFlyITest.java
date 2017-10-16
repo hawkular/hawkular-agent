@@ -287,37 +287,31 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         Assert.fail("Availability still not gathered after [" + timeOutSeconds + "] seconds: [" + lastUrl + "]");
     }
 
-    // TODO [lponce] Temporarily disabled, enabled once basic inventory tests are working
-    // @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void resourceConfig() throws Throwable {
-
         Collection<Resource> servers = testHelper.getResourceByType(hawkularFeedId, "WildFly Server", 1);
         Assert.assertEquals(1, servers.size());
         Resource server = servers.iterator().next();
 
-        Assert.assertEquals("NORMAL", server.getProperties().get("Running Mode"));
-        Assert.assertEquals("RUNNING", server.getProperties().get("Suspend State"));
-        Assert.assertTrue(server.getProperties().containsKey("Name"));
-        Assert.assertTrue(server.getProperties().containsKey("UUID"));
-        Assert.assertTrue(server.getProperties().containsKey("Hostname"));
-        Assert.assertTrue(server.getProperties().containsKey("Product Name"));
-        Assert.assertTrue(server.getProperties().containsKey("Server State"));
-        Assert.assertTrue(server.getProperties().containsKey("Node Name"));
-        Assert.assertTrue(server.getProperties().containsKey("Version"));
-        Assert.assertTrue(server.getProperties().containsKey("Home Directory"));
-        Assert.assertTrue(server.getProperties().containsKey("Bound Address"));
+        Assert.assertEquals("NORMAL", server.getConfig().get("Running Mode"));
+        Assert.assertEquals("RUNNING", server.getConfig().get("Suspend State"));
+        Assert.assertTrue(server.getConfig().containsKey("Name"));
+        Assert.assertTrue(server.getConfig().containsKey("UUID"));
+        Assert.assertTrue(server.getConfig().containsKey("Hostname"));
+        Assert.assertTrue(server.getConfig().containsKey("Product Name"));
+        Assert.assertTrue(server.getConfig().containsKey("Server State"));
+        Assert.assertTrue(server.getConfig().containsKey("Node Name"));
+        Assert.assertTrue(server.getConfig().containsKey("Version"));
+        Assert.assertTrue(server.getConfig().containsKey("Home Directory"));
+        Assert.assertTrue(server.getConfig().containsKey("Bound Address"));
     }
 
-    // TODO [lponce] Temporarily disabled, enabled once basic inventory tests are working
-    // @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void machineId() throws Throwable {
-
         Collection<Resource> platforms = testHelper.getResourceByType(hawkularFeedId, "Platform_Operating System", 1);
         Assert.assertEquals(1, platforms.size());
         Resource platform = platforms.iterator().next();
-
-        System.out.println("");
-        Assert.assertTrue(platform.getProperties().containsKey("Machine Id"));
+        Assert.assertTrue(platform.getConfig().containsKey("Machine Id"));
     }
 
     private void assertMetricInterval(Configuration agentConfig, String setName, String metricName, int expectedVal,
