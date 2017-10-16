@@ -205,6 +205,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
         // TODO remove these once h-metrics integration is removed
         mb.property("hawkular.metric.type", m.getType().getMetricType().name());
         mb.property("hawkular.metric.typeId", m.getType().getID().getIDString());
+        mb.property("hawkular.metric.id", m.getID().getIDString());
         return mb.build();
     }
 
