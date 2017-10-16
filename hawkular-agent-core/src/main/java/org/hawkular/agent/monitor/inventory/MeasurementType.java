@@ -29,16 +29,23 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointCo
  */
 public class MeasurementType<L> extends AttributeLocationProvider<L> {
 
+    private final org.hawkular.metrics.client.common.MetricType metricType;
     private final Interval interval;
     private final String metricIdTemplate;
     private final Map<String, String> metricTags;
 
-    public MeasurementType(ID id, Name name, AttributeLocation<L> location, Interval interval, String metricIdTemplate,
+    public MeasurementType(ID id, Name name, org.hawkular.metrics.client.common.MetricType metricType,
+            AttributeLocation<L> location, Interval interval, String metricIdTemplate,
             Map<String, String> metricTags) {
         super(id, name, location);
+        this.metricType = metricType;
         this.interval = interval;
         this.metricIdTemplate = metricIdTemplate;
         this.metricTags = (metricTags != null) ? Collections.unmodifiableMap(metricTags) : Collections.emptyMap();
+    }
+
+    public org.hawkular.metrics.client.common.MetricType getMetricType() {
+        return metricType;
     }
 
     /**

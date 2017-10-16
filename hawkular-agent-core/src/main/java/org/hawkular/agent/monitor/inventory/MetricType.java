@@ -29,18 +29,11 @@ public final class MetricType<L> extends MeasurementType<L> {
 
     private final MeasurementUnit metricUnits;
 
-    private final org.hawkular.metrics.client.common.MetricType metricType;
-
     public MetricType(ID id, Name name, AttributeLocation<L> location, Interval interval, MeasurementUnit metricUnits,
             org.hawkular.metrics.client.common.MetricType metricType, String metricIdTemplate,
             Map<String, String> metricTags) {
-        super(id, name, location, interval, metricIdTemplate, metricTags);
+        super(id, name, metricType, location, interval, metricIdTemplate, metricTags);
         this.metricUnits = metricUnits;
-        this.metricType = metricType;
-    }
-
-    public org.hawkular.metrics.client.common.MetricType getMetricType() {
-        return metricType;
     }
 
     public MeasurementUnit getMetricUnits() {
