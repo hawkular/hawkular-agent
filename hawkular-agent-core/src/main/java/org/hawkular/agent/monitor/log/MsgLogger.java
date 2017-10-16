@@ -32,10 +32,10 @@ import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.logging.annotations.ValidIdRange;
 
-@MessageLogger(projectCode = "HAWKMONITOR")
+@MessageLogger(projectCode = "HAWKAGENT")
 @ValidIdRange(min = 10000, max = 19999)
 public interface MsgLogger extends BasicLogger {
-    MsgLogger LOG = Logger.getMessageLogger(MsgLogger.class, "org.hawkular.agent.monitor");
+    MsgLogger LOG = Logger.getMessageLogger(MsgLogger.class, "org.hawkular.agent");
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10000, value = "Starting Hawkular Agent")
