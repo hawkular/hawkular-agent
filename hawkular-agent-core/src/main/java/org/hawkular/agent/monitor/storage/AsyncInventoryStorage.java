@@ -87,7 +87,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     public <L> void receivedEvent(InventoryEvent<L> event) {
         try {
             MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
-            log.debugf("Received inventory event for [%s]", endpoint);
+            log.debugf("Received inventory event for endpoint: %s", endpoint);
 
             long timestamp = System.currentTimeMillis();
 
@@ -128,7 +128,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
                         rtb.operation(ob.build());
                     }
                     org.hawkular.inventory.api.model.ResourceType resourceType = rtb.build();
-                    log.debugf("Adding %s", resourceType);
+                    log.debugf("Adding resource type: %s", resourceType);
                     importTypes.add(resourceType);
 
                     // indicate we persisted the resource
@@ -183,11 +183,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
                 .feedId(feedId)
                 .typeId(getInventoryId(r.getResourceType()))
                 .name(r.getName().getNameString());
+        r.getResourceConfigurationProperties().forEach(c -> rb.config(c.getName().getNameString(), c.getValue()));
         r.getProperties().forEach((k, v) -> rb.property(k, v.toString()));
         r.getMetrics().forEach(m -> rb.metric(buildMetric(m, m.getType().getMetricUnits())));
         r.getAvails().forEach(m -> rb.metric(buildMetric(m, null)));
         RawResource resource = rb.build();
-        log.debugf("Adding %s", resource);
+        log.debugf("Adding resource: %s", resource);
         importResources.add(resource);
     }
 
