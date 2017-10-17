@@ -19,6 +19,8 @@ package org.hawkular.agent.monitor.inventory;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.hawkular.metrics.client.common.MetricType;
+
 public final class AvailType<L> extends MeasurementType<L> {
 
     private static final Pattern DEFAULT_UP_PATTERN = Pattern.compile("(?i)(UP|OK)");
@@ -31,7 +33,7 @@ public final class AvailType<L> extends MeasurementType<L> {
 
     public AvailType(ID id, Name name, AttributeLocation<L> location, Interval interval, Pattern upPattern,
             String metricIdTemplate, Map<String, String> metricTags) {
-        super(id, name, location, interval, metricIdTemplate, metricTags);
+        super(id, name, MetricType.AVAILABILITY, location, interval, metricIdTemplate, metricTags);
         this.upPattern = upPattern;
     }
 
