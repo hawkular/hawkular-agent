@@ -557,7 +557,7 @@ resource-type-set-dmr:
 - name: Standalone Environment
   resource-type-dmr:
   - name: WildFly Server
-    resource-name-template: "WildFly Server [%ManagedServerName]"
+    resource-name-template: "%ManagedServerName"
     notification-dmr:
     - name: resource-added
     - name: avail-change
@@ -652,7 +652,7 @@ resource-type-set-dmr:
 - name: Domain Environment
   resource-type-dmr:
   - name: Host Controller
-    resource-name-template: "Host Controller [%ManagedServerName]"
+    resource-name-template: "%ManagedServerName"
     notification-dmr:
     - name: resource-added
     - name: avail-change
@@ -727,7 +727,7 @@ resource-type-set-dmr:
       modifies:      true
 
   - name: Domain Profile
-    resource-name-template: "Domain Profile [%-]"
+    resource-name-template: "%-"
     path: "/profile=*"
     parents:
     - Host Controller
@@ -736,7 +736,7 @@ resource-type-set-dmr:
       attribute: name
 
   - name: Domain Server Group
-    resource-name-template: "Domain Server Group [%-]"
+    resource-name-template: "%-"
     path: "/server-group=*"
     parents:
     - Host Controller
@@ -791,7 +791,7 @@ resource-type-set-dmr:
         description:   Timeout in seconds to allow active connections to drain
 
   - name: Domain Host
-    resource-name-template: "Domain Host [%-]"
+    resource-name-template: "%-"
     path: "/host=*"
     parents:
     - Host Controller
@@ -837,7 +837,7 @@ resource-type-set-dmr:
         description: If true, once shutdown the host controller will be restarted again.
 
   - name: Domain WildFly Server
-    resource-name-template: "Domain WildFly Server [%-]"
+    resource-name-template: "%-"
     path: "/server=*"
     parents:
     - Domain Host
@@ -893,7 +893,7 @@ resource-type-set-dmr:
       path:          /subsystem=jdr
 
   - name: Domain WildFly Server Controller
-    resource-name-template: "Domain WildFly Server Controller [%-]"
+    resource-name-template: "%-"
     path: "/server-config=*"
     parents:
     - Domain Host
@@ -1002,7 +1002,7 @@ resource-type-set-dmr:
 - name: Deployment
   resource-type-dmr:
   - name: Deployment
-    resource-name-template: "Deployment [%-]"
+    resource-name-template: "%-"
     path: "/deployment=*"
     parents:
     - WildFly Server
@@ -1012,7 +1012,7 @@ resource-type-set-dmr:
     avail-sets:
     - Deployment Status
   - name: SubDeployment
-    resource-name-template: "SubDeployment [%-]"
+    resource-name-template: "%-"
     path: "/subdeployment=*"
     parents:
     - Deployment
@@ -1022,7 +1022,7 @@ resource-type-set-dmr:
 - name: Web Component
   resource-type-dmr:
   - name: Servlet
-    resource-name-template: "Servlet [%-]"
+    resource-name-template: "%-"
     path: "/subsystem=undertow/servlet=*"
     parents:
     - Deployment
@@ -1033,7 +1033,7 @@ resource-type-set-dmr:
 - name: EJB
   resource-type-dmr:
   - name: Singleton EJB
-    resource-name-template: "Singleton EJB [%-]"
+    resource-name-template: "%-"
     path: "/subsystem=ejb3/singleton-bean=*"
     parents:
     - Deployment
@@ -1041,7 +1041,7 @@ resource-type-set-dmr:
     metric-sets:
     - Singleton EJB Metrics
   - name: Message Driven EJB
-    resource-name-template: "Message Driven EJB [%-]"
+    resource-name-template: "%-"
     path: "/subsystem=ejb3/message-driven-bean=*"
     parents:
     - Deployment
@@ -1049,7 +1049,7 @@ resource-type-set-dmr:
     metric-sets:
     - Message Driven EJB Metrics
   - name: Stateless Session EJB
-    resource-name-template: "Stateless Session EJB [%-]"
+    resource-name-template: "%-"
     path: "/subsystem=ejb3/stateless-session-bean=*"
     parents:
     - Deployment
@@ -1057,7 +1057,7 @@ resource-type-set-dmr:
     metric-sets:
     - Stateless Session EJB Metrics
   - name: Stateful Session EJB
-    resource-name-template: "Stateful Session EJB [%-]"
+    resource-name-template: "%-"
     path: "/subsystem=ejb3/stateful-session-bean=*"
     parents:
     - Deployment
@@ -1068,7 +1068,7 @@ resource-type-set-dmr:
 - name: Datasource
   resource-type-dmr:
   - name: Datasource
-    resource-name-template: "Datasource [%-]"
+    resource-name-template: "%-"
     path: "/subsystem=datasources/data-source=*"
     parents:
     - WildFly Server
@@ -1103,7 +1103,7 @@ resource-type-set-dmr:
 - name: XA Datasource
   resource-type-dmr:
   - name: XA Datasource
-    resource-name-template: "XA Datasource [%-]"
+    resource-name-template: "%-"
     path: "/subsystem=datasources/xa-data-source=*"
     parents:
     - WildFly Server
@@ -1133,7 +1133,7 @@ resource-type-set-dmr:
 - name: JDBC Driver
   resource-type-dmr:
   - name: JDBC Driver
-    resource-name-template: "JDBC Driver [%-]"
+    resource-name-template: "%-"
     path: "/subsystem=datasources/jdbc-driver=*"
     parents:
     - WildFly Server
@@ -1162,20 +1162,20 @@ resource-type-set-dmr:
 - name: Messaging
   resource-type-dmr:
   - name: Messaging Server
-    resource-name-template: "Messaging Server [%-]"
+    resource-name-template: "%-"
     path: "/subsystem=messaging-activemq/server=*"
     parents:
     - WildFly Server
     - Domain WildFly Server
   - name: JMS Queue
-    resource-name-template: "JMS Queue [%-]"
+    resource-name-template: "%-"
     path: "/jms-queue=*"
     parents:
     - Messaging Server
     metric-sets:
     - JMS Queue Metrics
   - name: JMS Topic
-    resource-name-template: "JMS Topic [%-]"
+    resource-name-template: "%-"
     path: "/jms-topic=*"
     parents:
     - Messaging Server
@@ -1185,7 +1185,7 @@ resource-type-set-dmr:
 - name: Socket Binding Group
   resource-type-dmr:
   - name: Socket Binding Group
-    resource-name-template: "Socket Binding Group [%-]"
+    resource-name-template: "%-"
     path: "/socket-binding-group=*"
     parents:
     - WildFly Server
@@ -1199,7 +1199,7 @@ resource-type-set-dmr:
     - name: Default Interface
       attribute: default-interface
   - name: Socket Binding
-    resource-name-template: "Socket Binding [%-]"
+    resource-name-template: "%-"
     path: "/socket-binding=*"
     parents:
     - Socket Binding Group
@@ -1217,7 +1217,7 @@ resource-type-set-dmr:
     - name: Multicast Port
       attribute: multicast-port
   - name: Remote Destination Outbound Socket Binding
-    resource-name-template: "Remote Destination Outbound Socket Binding [%-]"
+    resource-name-template: "%-"
     path: "/remote-destination-outbound-socket-binding=*"
     parents:
     - Socket Binding Group
@@ -1249,7 +1249,7 @@ resource-type-set-dmr:
     - WildFly Server
     - Domain WildFly Server
   - name: JGroups Channel
-    resource-name-template: "JGroups Channel [%-]"
+    resource-name-template: "%-"
     path:                   "/channel=*"
     parents:
     - JGroups
@@ -1268,7 +1268,7 @@ resource-type-set-dmr:
     - WildFly Server
     - Domain WildFly Server
   - name: Infinispan Cache Container
-    resource-name-template: "Infinispan Cache Container [%-]"
+    resource-name-template: "%-"
     path:                   "/cache-container=*"
     parents:
     - Infinispan
