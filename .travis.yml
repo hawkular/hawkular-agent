@@ -29,9 +29,9 @@ env:
   global:
   - secure: DOP9OifGr7yBDNdkn1Tl58ur4tJzqFaNzVktmX+KgpjDbWtKE3cqyqf1pElyAbSpTm8kVf/UAxUPyCXdRh/W7jj2jB6Tc5kwBCqM8UHjJ6QuZVGnpih4lO6EImV1MDW2+MNWvun7kdUgtRjCWohaYh4pTPAwOk8v7IfeewH1Ud4=
   - secure: IG9j773bZtof+VCK20doXL6HiMnWfQVPD2MhkPc0wc1sXBi3QPatcsWqnOQSsTODyzZQu2yXrRD7cCsXHBFusYxMPIra08mjN4i16b6D4UdtpEhEucotqYCgawGhbv0kW/iRmGKPphAV4pZn+FNiBKJJQzBthBVnzz6WYkYdz7w=
-  # DOCKER_USER=xyz used by the .travis.push.docker.images.sh
+  # DOCKER_USER=xyz used to push to docker hub
   - secure: "p7+Sgoow5aTEp9G6bCRQcRklpMmBhYqEjREyswWymqYnkTyrd1TD1oWRYGrt/D3F6om4q71Kv4BN3hJGuKBCxxf6eJMUYBXrl5RY/M3wjGSNk0yFuTbu9c2EkEyf4AsXbeDMU/nXirZv39KikZKeOX0i3VAb161ORy0wwkN7oyI="
-  # DOCKER_PASS=xyz used by the .travis.push.docker.images.sh
+  # DOCKER_PASS=xyz used to push to docker hub
   - secure: "Ys9j6Id5xWbt6AAg6TXpokytGHgqGPN/+T1Abux04u8afTztLY0YrmrQkRLSQlVraYB2sDK+kOkr1wYo4Kr0GveNDbGJMwaXlHC/j2HEmqKy6fxgXgt8Ty93rwjX9w9EHqGYXSkS/O0KKIOpMUB15chhPx1LulNOHYjNo/Bv+qY="
 
 before_cache:
@@ -47,12 +47,24 @@ before_cache:
     rm -Rf "$HOME/.m2";
   fi
 
+# Push the distro to docker hub
 after_success:
-- PROJECT_VERSION=`./mvnw --batch-mode org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['`
-- if [[ "$PROJECT_VERSION" =~ .*SNAPSHOT ]] && [[ "${TRAVIS_BRANCH}" = "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]];
-  then
-    ./mvnw -s .travis.maven.settings.xml deploy -DskipTests -Dlicense.skip=true;
-  fi
-- if [[ "${TRAVIS_TAG}" != "" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-    ./.travis.push.docker.images.sh;
-  fi
+  - export COMMIT_HASH=${TRAVIS_COMMIT}
+  - export DOCKER_VERSION=$(if [ "$TRAVIS_TAG" != "" ]; then echo $TRAVIS_TAG; elif [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi)
+  - export DOCKER_USER=$(if [ "$DOCKER_USER" == "" ]; then echo "unknown"; else echo $DOCKER_USER ; fi)
+  - export DOCKER_PASS=$(if [ "$DOCKER_PASS" == "" ]; then echo "unknown"; else echo $DOCKER_PASS ; fi)
+  - echo DOCKER_VERSION=$DOCKER_VERSION
+  - docker-dist/build.sh "$DOCKER_VERSION" "hawkular/wildfly-hawkular-javagent"
+  - docker --version
+  - docker images
+  - docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+  - docker push hawkular/wildfly-hawkular-javaagent:${DOCKER_VERSION}
+
+# Build only the master branch (for "latest" release) and version tags (e.g. "1.2.3" or "1.1.2.RC2" or "2.1.5.Final")
+# Add branch names below if we want to build and then push docker images built off of those branches.
+branches:
+  only:
+  - master
+  - /^(\d+\.){2}(\d+){1}(\.[a-zA-Z\d]+)?$/
+  - hawkular-1259
+
