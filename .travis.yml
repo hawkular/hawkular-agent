@@ -54,7 +54,7 @@ after_success:
   - export DOCKER_USER=$(if [ "$DOCKER_USER" == "" ]; then echo "unknown"; else echo $DOCKER_USER ; fi)
   - export DOCKER_PASS=$(if [ "$DOCKER_PASS" == "" ]; then echo "unknown"; else echo $DOCKER_PASS ; fi)
   - echo DOCKER_VERSION=$DOCKER_VERSION
-  - docker-dist/build.sh "$DOCKER_VERSION" "hawkular/wildfly-hawkular-javagent"
+  - docker-dist/build.sh "$DOCKER_VERSION" "hawkular/wildfly-hawkular-javaagent"
   - docker --version
   - docker images
   - docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
