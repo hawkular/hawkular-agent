@@ -19,15 +19,11 @@
 
 docker > /dev/null 2>&1 || { echo "docker is required, but is not found. Make sure it is accessible."; exit 1; }
 TAG="${1:-latest}"
+IMAGE="${2:-wildfly-hawkular-javaagent}"
 
 pushd "$( dirname "${BASH_SOURCE[0]}" )"
 
-echo "Building Docker image for Wildfly + Hawkular javaagent with tag $TAG."
-docker build -t wildfly-hawkular-javaagent:$TAG . -f Dockerfile
-
-echo "Building Docker image for Wildfly + Hawkular Wildfly Agent (Standalone) with tag $TAG."
-docker build -t wildfly-hawkular-agent:$TAG -f Dockerfile-wf-agent .
-echo "Building Docker image for Wildfly + Hawkular Wildfly Agent (Domain) with tag $TAG."
-docker build -t wildfly-hawkular-agent-domain:$TAG -f Dockerfile-wf-agent-domain .
+echo "Building Docker image for Wildfly + Hawkular javaagent: $IMAGE:$TAG."
+docker build -t $IMAGE:$TAG . -f Dockerfile
 
 popd
