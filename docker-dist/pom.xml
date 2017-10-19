@@ -34,6 +34,12 @@
   <dependencies>
     <dependency>
       <groupId>org.hawkular.agent</groupId>
+      <artifactId>hawkular-javaagent</artifactId>
+      <version>${project.version}</version>
+      <classifier>shaded</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
       <artifactId>hawkular-javaagent-wildfly-dist</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
@@ -59,6 +65,8 @@
             <exclude>*/test-simple.war</exclude>
             <exclude>*.zip</exclude>
             <exclude>*.adoc</exclude>
+            <exclude>**/*.swp</exclude>
+            <exclude>*-env-file</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -67,6 +75,23 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
+          <execution>
+            <id>copy-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <excludeTransitive>true</excludeTransitive>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.hawkular.agent</groupId>
+                  <artifactId>hawkular-javaagent</artifactId>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
           <execution>
             <id>unpack-deps</id>
             <phase>generate-resources</phase>
@@ -80,6 +105,7 @@
                   <artifactId>hawkular-javaagent-wildfly-dist</artifactId>
                   <type>zip</type>
                   <outputDirectory>${project.build.directory}</outputDirectory>
+                  <includes>**/hawkular-javaagent-config.yaml</includes>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -95,7 +121,8 @@
             <phase>generate-resources</phase>
             <configuration>
               <target>
-                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}" tofile="${project.build.directory}/hawkular-javaagent-wildfly-dist" />
+                <move file="${project.build.directory}/hawkular-javaagent-${project.version}-shaded.jar" tofile="${project.build.directory}/hawkular-javaagent.jar" />
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}/standalone/configuration/hawkular-javaagent-config.yaml" tofile="${project.build.directory}/hawkular-javaagent-config.yaml" />
               </target>
             </configuration>
             <goals>

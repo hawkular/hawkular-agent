@@ -20,26 +20,26 @@ FROM jboss/wildfly:10.1.0.Final
 MAINTAINER Hawkular project <hawkular-dev@lists.jboss.org>
 
 # ADD test-simple.war /opt/jboss/wildfly/standalone/deployments/
-ADD target/hawkular-javaagent-wildfly-dist/bin/standalone.conf $JBOSS_HOME/bin
-ADD target/hawkular-javaagent-wildfly-dist/bin/hawkular-javaagent.jar $JBOSS_HOME/bin
-ADD target/hawkular-javaagent-wildfly-dist/standalone/configuration/hawkular-javaagent-config.yaml $JBOSS_HOME/standalone/configuration/
+COPY target/hawkular-javaagent.jar $JBOSS_HOME/bin/
+COPY target/hawkular-javaagent-config.yaml $JBOSS_HOME/standalone/configuration/
 
 ADD src/main/resources/run_hawkular_javaagent.sh /opt/hawkular/bin/run_hawkular_agent.sh
 
-ENV HAWKULAR_SERVER_PROTOCOL http
-ENV HAWKULAR_SERVER_ADDR hawkular
-ENV HAWKULAR_SERVER_PORT 8080
-ENV HAWKULAR_AGENT_USER=jdoe HAWKULAR_AGENT_PASSWORD=password
-ENV HAWKULAR_IMMUTABLE=true
-ENV JAVA_OPTS="-Xmx256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -XX:MaxMetaspaceSize=256m"
+ENV HAWKULAR_URL=http://hawkular:8080 \
+    HAWKULAR_AGENT_USER=jdoe \
+    HAWKULAR_AGENT_PASSWORD=password \
+    HAWKULAR_IMMUTABLE=true
 
 EXPOSE 8080 9090
 
 USER root
+RUN echo 'JAVA_OPTS="$JAVA_OPTS -Djboss.modules.system.pkgs=org.jboss.byteman,org.jboss.logmanager -Djava.util.logging.manager=org.jboss.logmanager.LogManager -javaagent:$JBOSS_HOME/bin/hawkular-javaagent.jar=config=$JBOSS_HOME/standalone/configuration/hawkular-javaagent-config.yaml,delay=10"' >> $JBOSS_HOME/bin/standalone.conf
+
 RUN yum install --quiet -y openssl && \
     rm -rf /var/cache/yum && \
     chown -RH jboss:0 $JBOSS_HOME/standalone $JAVA_HOME/jre/lib/security/cacerts /opt/hawkular && \
-    chmod -R ug+rw $JBOSS_HOME/standalone $JAVA_HOME/jre/lib/security/cacerts /opt/hawkular
+    chmod -R ug+rw $JBOSS_HOME/standalone $JAVA_HOME/jre/lib/security/cacerts /opt/hawkular && \
+    chmod -R a+rw /opt/hawkular/
 
 USER jboss
 CMD /opt/hawkular/bin/run_hawkular_agent.sh

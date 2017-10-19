@@ -1,57 +1,99 @@
-= Docker
+= Containers: Docker, OpenShift & Kubernetes
 
-This builds a WF 10 server with an agent installed
+The following instructions outline how to build a docker image which contains Wildfly 10.1 with the Hawkular Javaagent installed as well as how to deploy in Docker and on OpenShift or Kubernetes.
 
-== Build
+== Building
 
-This command will build three docker images:
-
-. `wildfly-hawkular-javaagent` - Hawkular Javaagent running along Wildfly in standalone mode.
-. `wildfly-hawkular-agent` - Wildfly 10 running with Hawkular Wildfly Agent subsystem in standalone mode.
-. `wildfly-hawkular-agent-domain` - Wildfly 10 running with Hawkular Wildfly Agent subsystem in domain mode.
+The following command will build the docker images with default image "wildfly-hawkular-javaagent:latest"
 
 ```bash
-sh do.sh
+build.sh
 ```
 
-== Run
-
-Select the type of Hawkular agent you would like to run, once you have a running Hawkular Services you can run it like:
+A parameter can also be used to pass a customized tag to the build. For instance, to build with the a tag of 'devel'
 
 ```bash
-docker run -p 8081:8080 --link hawkular -e  {selected hawkular agent}
+build.sh devel
 ```
 
-It will connect to http://hawkular:8080 using username `jdoe` and password `password`.
+The docker image name can also be customized with an additional parameter. To build with a tag of 'devel' and an image name of 'hawkular/wildfly-javaagent'
 
-You can configure the endpoint, username and password passing the following environment variables.
-
-
-* HAWKULAR_SERVER_PROTOCOL defaults to `http`
-* HAWKULAR_SERVER_ADDR defaults to `hawkular`
-* HAWKULAR_SERVER_PORT defaults to `8080`
-* HAWKULAR_AGENT_USER defaults to `jdoe`
-* HAWKULAR_AGENT_PASSWORD defaults to `password`
-
-e.g.
 ```bash
-docker run -p 8081:8080 --link 2271bcd4adca:hawkular-services -e HAWKULAR_AGENT_PASSWORD=hard-to-guess -e HAWKULAR_SERVER_ADDR=hawkular-services wildfly-hawkular-javaagent
+build.sh devel hawkular/wildfly-javaagent
 ```
 
-=== Connecting to a secured Hawkular Services
+== Running in a docker image
 
-You might also use these docker instances to when connecting to a secured (https) Hawkular Services.
-You need to provide Hawkular Services public certificate in PEM format into `/client-secrets/hawkular-services-public.pem` of your docker Hawkular Agent
-and set `HAWKULAR_SERVER_PROTOCOL` to `https`.
+You will typically need three pieces of information when connecting to a remote Hawkular Services server: the URL for the Hawkular Services server, a username and a password.
 
-WARNING: You need to make sure that the domain name or IP stored in the certificate matches the `HAWKULAR_SERVER_ADDR`
-else it will be rejected when trying to connect.
+This information can be passed to the docker image via environment properties: 'HAWKULAR_URL', 'HAWKULAR_AGENT_USER', 'HAWKULAR_AGENT_PASSWORD'
 
-Below is a full example running Cassandra 3.0.9, Hawkular Services and wildfly-hawkular-javaagent.
+NOTE: For security reasons, it is recommend to only pass secret information such as usernames and passwords via an property file and not as normal parameters.
+
+Please see 'example-env-file' as an example of what this property file should look like.
+
+For example, if you were to make a copy of 'example-env-file' called 'hawkular-env-file' and edit its content to match your Hawkular Services server, you can deploy it using the following command:
 
 ```bash
-mkdir $HOME/hawkular-certificates
-docker run --name hawkular-cassandra -e CASSANDRA_START_RPC=true -d cassandra:3.0.9
-docker run --name hawkular-services --link=hawkular-cassandra -e CASSANDRA_NODES=hawkular-cassandra -e HAWKULAR_HOSTNAME=hawkular-services -e HAWKULAR_USE_SSL=true -p 8443:8443 -v $HOME/hawkular-certificates:/client-secrets/ hawkular/hawkular-services
-docker run --name hawkular-agent-01 --link=hawkular-services -e HAWKULAR_SERVER_PROTOCOL=https -e HAWKULAR_SERVER_ADDR=hawkular-services -e HAWKULAR_SERVER_PORT=8443 -v $HOME/hawkular-certificates:/client-secrets/ wildfly-hawkular-javaagent
+docker run --env-file hawkular-env-file wildfly-hawkular-javaagent:latest
+```
+
+NOTE: if your Hawkular Services server is being accessed over https and is using untrusted https certificates, please see the 'Running with untrused certificates' section below.
+
+== Running in OpenShift and Kubernetes
+
+NOTE: the following instructions are listed using the OpenShift 'oc' command. If you are using Kubernetes you will need to replace the 'oc' command with 'kubectl'
+
+Like in the Docker example, we will need to pass the Hawkular Services URL, username and password to our pod. Unlike in the Docker example, for our pod will will pass this information as a secret.
+
+The process for this is similar to the Docker example. We will create a file which will contain properties 'HAWKULAR_URL', 'HAWKULAR_AGENT_USER', and 'HAWKULAR_AGENT_PASSWORD'.
+
+Please see the 'example-env-file' for an example.
+
+For example, if you were to make a copy of 'example-env-file' called 'hawkular-env-file' and edit its content to match your Hawkular Services server, you can create your secret using the following command:
+
+```bash
+oc create secret generic hawkular-javaagent-example --from-env-file=hawkular-env-file
+```
+
+Once you have create your secret, you can then deploy the 'hawkular-javaagent-example.yaml' deployment
+
+```bash
+oc create hawkular-javaagent-example.yaml
+```
+
+This should create a deployment in your current project with a single replica.
+
+NOTE: if your Hawkular Services server is being accessed over https and is using untrusted https certificates, please see the 'Running with untrused certificates' section below.
+
+== Running with untrused certificates (https)
+
+Running your Hawkular Services server with self signed or untrusted certificates will mean that the agent will not be able to trust and connect to the server.
+
+In order for the agent to trust this connection, you will need to pass the public certificate used to sign the Hawkular Services server. This file will need to be in a PEM format.
+
+If you wish to connect to your Hawkular Services server in this case, you will need to pass to the agent the public CA certificate used to sign the Hawkular Services's certificate.
+
+NOTE: You need to make sure that the domain name or IP stored in the certificate matches the `HAWKULAR_SERVER_ADDR` else it will be rejected when trying to connect.
+
+WARNING: This will add your custom certificate to the system wide Java cacerts. All Java applications running in your docker image will now trust applications which are signed with the CA.
+
+=== Untrusted Certificates and Docker
+
+If running in Docker, you will need to pass the public CA certificate as a volume when you are starting your container.
+
+For instance, if the public CA certificate used to sign the Hawkular Services server is located at /opt/hawkular/hawkular-services-public.pem then you will need to run the following command:
+
+```bash
+docker run --env-file hawkular-env-file -v /opt/hawkular/hawkular-services-public.pem:/client-secrets/hawkular-services-public.pem wildfly-hawkular-javaagent:latest
+```
+
+=== Untrusted Certificates and OpenShift/Kubernetes
+
+If running in OpenShift or Kubernetes you will need to pass to the pod a secret which contains the ca certificate.
+
+For instance, if the public CA certificate used to sign the Hawkular Services server is located at /opt/hawkular/hawkular-services-public.pem then you will need to run the following command before deploying your pod:
+
+```bash
+oc create secret generic hawkular-javaagent-example-ca --from-file=hawkular-services-ca.crt=/opt/hawkular/hawkular-services-public.pem
 ```

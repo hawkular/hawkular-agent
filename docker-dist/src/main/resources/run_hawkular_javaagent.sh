@@ -29,10 +29,17 @@ import_hawkular_services_public_key() {
 }
 
 run_hawkular_agent() {
-    ${JBOSS_HOME}/bin/standalone.sh -b 0.0.0.0 \
-    -Dhawkular.rest.host=${HAWKULAR_SERVER_PROTOCOL}://${HAWKULAR_SERVER_ADDR}:${HAWKULAR_SERVER_PORT} \
-    -Dhawkular.rest.user=${HAWKULAR_AGENT_USER} -Dhawkular.rest.password=${HAWKULAR_AGENT_PASSWORD} \
-    -Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE}
+    # Private information such as passwords need to go into a property file so that they are not leaked to the system (ie via ps)
+    mkdir -p /opt/hawkular/configuration
+    printf "%s\n" \
+        "hawkular.rest.host=${HAWKULAR_URL}" \
+        "hawkular.rest.user=${HAWKULAR_AGENT_USER}" \
+        "hawkular.rest.password=${HAWKULAR_AGENT_PASSWORD}" \
+        "hawkular.agent.immutable=${HAWKULAR_IMMUTABLE}" \
+        "hawkular.agent.in-container=${HAWKULAR_IMMUTABLE}" \
+    > /opt/hawkular/configuration/server.config
+
+    ${JBOSS_HOME}/bin/standalone.sh -b 0.0.0.0 -P /opt/hawkular/configuration/server.config
 }
 
 main() {
