@@ -31,8 +31,7 @@ spec:
     spec:
       containers:
       - name: hawkular-javaagent-example
-        image: wildfly-hawkular-javaagent:latest
-        imagePullPolicy: Never
+        image: hawkular/wildfly-hawkular-javaagent:hawkular-1259
         ports:
         - containerPort: 8080
         env:
