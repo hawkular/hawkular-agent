@@ -63,7 +63,7 @@
     <!--
     <version.org.hawkular.commons>0.9.8.Final-SNAPSHOT</version.org.hawkular.commons>
     -->
-    <version.org.hawkular.commons>0.9.8.Final-SRC-revision-ee3d579b57fb0deeaa4d8fd45743af834655a900</version.org.hawkular.commons>
+    <version.org.hawkular.commons>0.9.8.Final-SRC-revision-ce866b1ade2d7413f055f461eb36d004ff2888d8</version.org.hawkular.commons>
     <version.org.hawkular.metrics>0.26.1.Final</version.org.hawkular.metrics>
 
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
