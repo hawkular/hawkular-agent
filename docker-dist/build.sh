@@ -19,7 +19,7 @@
 
 docker > /dev/null 2>&1 || { echo "docker is required, but is not found. Make sure it is accessible."; exit 1; }
 TAG="${1:-latest}"
-IMAGE="${2:-wildfly-hawkular-javaagent}"
+IMAGE="${2:-hawkular/wildfly-hawkular-javaagent}"
 
 pushd "$( dirname "${BASH_SOURCE[0]}" )"
 

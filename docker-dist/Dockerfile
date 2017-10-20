@@ -39,7 +39,8 @@ RUN yum install --quiet -y openssl && \
     rm -rf /var/cache/yum && \
     chown -RH jboss:0 $JBOSS_HOME/standalone $JAVA_HOME/jre/lib/security/cacerts /opt/hawkular && \
     chmod -R ug+rw $JBOSS_HOME/standalone $JAVA_HOME/jre/lib/security/cacerts /opt/hawkular && \
-    chmod -R a+rw /opt/hawkular/
+    chmod -R a+rw /opt/hawkular/ && \
+    chmod -R a+x $JBOSS_HOME
 
 USER jboss
 CMD /opt/hawkular/bin/run_hawkular_agent.sh
