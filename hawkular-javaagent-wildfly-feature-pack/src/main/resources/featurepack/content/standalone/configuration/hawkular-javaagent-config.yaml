@@ -21,11 +21,9 @@ subsystem:
   immutable: "${hawkular.agent.immutable:false}"
   in-container: "${hawkular.agent.in-container:false}"
   auto-discovery-scan-period-secs: 600
-  min-collection-interval-secs: "${hawkular.agent.minCollectionIntervalSecs:30}"
 
 diagnostics:
   enabled:    true
-  report-to:  LOG
   interval:   1
   time-units: minutes
 
@@ -537,29 +535,6 @@ metric-set-dmr:
     time-units:   seconds
     attribute:    subscription-count
 
-avail-set-dmr:
-- name: Server Availability
-  avail-dmr:
-  - name: Server Availability
-    interval:   30
-    time-units: seconds
-    attribute:  server-state
-    up-regex:   "run.*|.*-required"
-- name: Domain Availability
-  avail-dmr:
-  - name: Domain Availability
-    internal:   30
-    time-units: seconds
-    attribute:  host-state
-    up-regex:   "run.*|-required"
-- name: Deployment Status
-  avail-dmr:
-  - name: Deployment Status
-    interval:   1
-    time-units: minutes
-    attribute:  status
-    up-regex:   "OK"
-
 resource-type-set-dmr:
 - name: Standalone Environment
   resource-type-dmr:
@@ -567,14 +542,10 @@ resource-type-set-dmr:
     resource-name-template: "%ManagedServerName"
     notification-dmr:
     - name: resource-added
-    - name: avail-change
-    - name: avail-starting
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
     - WildFly Aggregated Web Metrics
-    avail-sets:
-    - Server Availability
     resource-config-dmr:
     - name: Name
       attribute: name
@@ -662,8 +633,6 @@ resource-type-set-dmr:
     resource-name-template: "%ManagedServerName"
     notification-dmr:
     - name: resource-added
-    - name: avail-change
-    - name: avail-starting
     resource-config-dmr:
     - name: Product Name
       attribute: product-name
@@ -804,13 +773,9 @@ resource-type-set-dmr:
     - Host Controller
     notification-dmr:
     - name: resource-added
-    - name: avail-change
-    - name: avail-starting
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
-    avail-sets:
-    - Domain Availability
     resource-config-dmr:
     - name: Name
       attribute: name
@@ -852,14 +817,10 @@ resource-type-set-dmr:
     - Domain Host
     notification-dmr:
     - name: resource-added
-    - name: avail-change
-    - name: avail-starting
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
     - WildFly Aggregated Web Metrics
-    avail-sets:
-    - Server Availability
     resource-config-dmr:
     - name: Name
       attribute: name
@@ -908,8 +869,6 @@ resource-type-set-dmr:
     - Domain Host
     notification-dmr:
     - name: resource-added
-    - name: avail-change
-    - name: avail-starting
     resource-config-dmr:
     - name: Name
       attribute: name
@@ -980,34 +939,6 @@ resource-type-set-dmr:
         type:          int
         description:   Timeout in seconds to allow active connections to drain
 
-- name: Hawkular
-  resource-type-dmr:
-  - name: Hawkular WildFly Agent
-    resource-name-template: "Hawkular WildFly Agent"
-    path: "/subsystem=hawkular-wildfly-agent"
-    parents:
-    - WildFly Server
-    - Domain WildFly Server
-    - Domain Host
-    resource-config-dmr:
-    - name: Immutable
-      attribute:           immutable
-      resolve-expressions: true
-    - name: In Container
-      attribute:           in-container
-      resolve-expressions: true
-    operation-dmr:
-    - name: Start
-      internal-name: start
-    - name: Stop
-      internal-name: stop
-    - name: Status
-      internal-name: status
-    - name: Inventory Discovery Scan
-      internal-name: fullDiscoveryScan
-    - name: Inventory Report
-      internal-name: inventoryReport
-
 - name: Deployment
   resource-type-dmr:
   - name: Deployment
@@ -1018,8 +949,6 @@ resource-type-set-dmr:
     - Domain WildFly Server
     metric-sets:
     - Undertow Metrics
-    avail-sets:
-    - Deployment Status
   - name: SubDeployment
     resource-name-template: "%-"
     path: "/subdeployment=*"
@@ -1340,22 +1269,6 @@ metric-set-jmx:
     metric-units: bytes
     metric-type:  gauge
 
-avail-set-jmx:
-- name: Runtime Availability
-  avail-jmx:
-  - name: VM Availability
-    interval:   30
-    time-units: seconds
-    attribute:  StartTime
-    up-regex:   "[0123456789]+"
-- name: Memory Pool Availability
-  avail-jmx:
-  - name: Memory Pool Availability
-    interval:   30
-    time-units: seconds
-    attribute:  Valid
-    up-regex:   "[tT].*"
-
 resource-type-set-jmx:
 - name: Main
   resource-type-jmx:
@@ -1364,8 +1277,6 @@ resource-type-set-jmx:
     object-name: java.lang:type=Runtime
     metric-sets:
     - Runtime Metrics
-    avail-sets:
-    - Runtime Availability
     resource-config-jmx:
     - name: OS Name
       attribute:   Name
@@ -1381,15 +1292,13 @@ resource-type-set-jmx:
     object-name: "java.lang:type=MemoryPool,name=*"
     metric-sets:
     - Memory Pool Metrics
-    avail-sets:
-    - Memory Pool Availability
     resource-config-jmx:
     - name: Type
       attribute: Type
 - name: Hawkular
   resource-type-jmx:
-  - name: Hawkular WildFly Agent
-    resource-name-template: "Hawkular WildFly Agent"
+  - name: Hawkular Java Agent
+    resource-name-template: "Hawkular Java Agent"
     object-name: "org.hawkular:type=hawkular-javaagent"
     resource-config-jmx:
     - name: Immutable

@@ -47,8 +47,6 @@ import org.hawkular.agent.javaagent.config.ConfigManager;
 import org.hawkular.agent.javaagent.config.Configuration;
 import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.dmr.api.OperationBuilder;
-import org.hawkular.dmrclient.Address;
-import org.hawkular.dmrclient.JBossASClient;
 import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
@@ -78,7 +76,6 @@ public abstract class AbstractITest {
 
     protected static final String authentication;
     protected static final String baseHawkularUri;
-    protected static final String baseMetricsUri;
     protected static final String baseGwUri;
     protected static final String baseInvUri;
     protected static final String agentJolokiaUri; // the Jolokia endpoint that we can use to talk to the agent MBean
@@ -116,7 +113,6 @@ public abstract class AbstractITest {
         System.out.println("using REST user [" + hawkularTestUser + "] with password [" + hawkularTestPasword + "]");
         authentication = "{\"username\":\"" + hawkularTestUser + "\",\"password\":\"" + hawkularTestPasword + "\"}";
         baseHawkularUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular";
-        baseMetricsUri = baseHawkularUri + "/metrics";
         baseInvUri = baseHawkularUri + "/inventory";
         baseGwUri = "ws://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/command-gateway";
         agentJolokiaUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/jolokia-war";
@@ -425,12 +421,6 @@ public abstract class AbstractITest {
                 Thread.sleep(8000);
 
                 String response = "";
-                while (!response.contains("STARTED")) {
-                    Thread.sleep(2000);
-                    response = testHelper.getWithRetries(baseMetricsUri + "/status");
-                }
-
-                response = "";
                 while (!response.contains("UP")) {
                     Thread.sleep(2000);
                     response = testHelper.getWithRetries(baseInvUri + "/status");
@@ -465,56 +455,6 @@ public abstract class AbstractITest {
             } catch (Exception e) {
                 throw new RuntimeException("Could not get agent status", e);
             }
-        }
-    }
-
-    /**
-     * Wait for an agent deployed in WildFly as a WildFly subsystem to start.
-     * @param mcc used to connect to WildFly
-     * @return true if the agent is up, false if the wait timed out
-     * @throws Throwable on error
-     */
-    protected boolean waitForAgent(ModelControllerClient mcc) throws Throwable {
-        Address agentAddress = Address.parse("/subsystem=hawkular-wildfly-agent");
-        return waitForAgent(mcc, agentAddress);
-    }
-
-    protected boolean waitForAgent(ModelControllerClient mcc, Address agentAddress) throws Throwable {
-        synchronized (waitForAgentLock) {
-            String agentPath = agentAddress.toAddressPathString();
-            log.info("Checking [" + agentPath + "] status...");
-            int count = 0;
-            while (++count <= 12) {
-                Thread.sleep(5000);
-
-                ModelNode op = JBossASClient.createRequest("status", agentAddress);
-                ModelNode result = new JBossASClient(mcc).execute(op);
-                if (JBossASClient.isSuccess(result)) {
-                    String status = JBossASClient.getResults(result).asString().toUpperCase();
-                    if (ServiceStatus.RUNNING.name().equals(status)) {
-                        log.info("Agent [" + agentPath + "] status=" + status + ", continuing...");
-                        return true;
-                    } else {
-                        log.info("Agent [" + agentPath + "] status=" + status + ", waiting...");
-                    }
-                }
-            }
-            return false;
-        }
-    }
-
-    protected ModelNode getDMRAgentInventoryReport(String host, int managementPort) {
-        try (ModelControllerClient mcc = newModelControllerClient(host, managementPort)) {
-            Address agentAddress = Address.parse("/subsystem=hawkular-wildfly-agent");
-            ModelNode op = JBossASClient.createRequest("inventoryReport", agentAddress);
-            ModelNode inventoryReport = new JBossASClient(mcc).execute(op);
-            if (JBossASClient.isSuccess(inventoryReport)) {
-                return JBossASClient.getResults(inventoryReport);
-            } else {
-                throw new Exception(JBossASClient.getFailureDescription(inventoryReport));
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Could not get inventory report", e);
         }
     }
 

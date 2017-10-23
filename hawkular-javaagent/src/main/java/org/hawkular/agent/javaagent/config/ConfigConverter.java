@@ -23,11 +23,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import javax.management.ObjectName;
 
-import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration.WaitFor;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsConfiguration;
@@ -36,7 +34,6 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.GlobalConf
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.ProtocolConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
-import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.Interval;
@@ -92,19 +89,11 @@ public class ConfigConverter {
                 config.getSubsystem().getEnabled(),
                 config.getSubsystem().getImmutable(),
                 config.getSubsystem().getInContainer(),
-                null,
                 config.getSubsystem().getAutoDiscoveryScanPeriodSecs(),
-                config.getSubsystem().getMinCollectionIntervalSecs(),
-                2,
-                config.getSubsystem().getMetricDispatcherBufferSize(),
-                config.getSubsystem().getMetricDispatcherMaxBatchSize(),
-                config.getSubsystem().getAvailDispatcherBufferSize(),
-                config.getSubsystem().getAvailDispatcherMaxBatchSize(),
-                config.getSubsystem().getPingPeriodSecs());
+                2);
 
         DiagnosticsConfiguration diagnostics = new DiagnosticsConfiguration(
                 config.getDiagnostics().getEnabled(),
-                AgentCoreEngineConfiguration.DiagnosticsReportTo.valueOf(config.getDiagnostics().getReportTo().name()),
                 config.getDiagnostics().getInterval(),
                 config.getDiagnostics().getTimeUnits().toJavaTimeUnit());
 
@@ -116,8 +105,6 @@ public class ConfigConverter {
                 config.getStorageAdapter().getFeedId(),
                 config.getStorageAdapter().getUrl(),
                 config.getStorageAdapter().useSSL(),
-                null, // we don't use socket binding ref
-                config.getStorageAdapter().getMetricsContext(),
                 config.getStorageAdapter().getInventoryContext(),
                 config.getStorageAdapter().getFeedcommContext(),
                 config.getStorageAdapter().getHawkularContext(),
@@ -164,33 +151,10 @@ public class ConfigConverter {
                         metric.getMetricUnits(),
                         metric.getMetricType(),
                         metric.getMetricIdTemplate(),
-                        metric.getMetricTags());
+                        metric.getMetricLabels());
                 typeSet.type(type);
             }
             typeSets.metricTypeSet(typeSet.build());
-        }
-
-        for (DMRAvailSet availSet : config.getDmrAvailSets()) {
-            TypeSetBuilder<AvailType<DMRNodeLocation>> typeSet = TypeSet.<AvailType<DMRNodeLocation>> builder();
-            typeSet.name(new Name(availSet.getName()));
-            typeSet.enabled(availSet.getEnabled());
-            for (DMRAvail avail : availSet.getDmrAvails()) {
-                DMRNodeLocation location = new DMRNodeLocation(
-                        getDmrPathAddress(avail.getPath()),
-                        avail.getResolveExpressions(),
-                        avail.getIncludeDefaults());
-                AttributeLocation<DMRNodeLocation> aLocation = new AttributeLocation<>(location, avail.getAttribute());
-                AvailType<DMRNodeLocation> type = new AvailType<DMRNodeLocation>(
-                        new ID(availSet.getName() + "~" + avail.getName()),
-                        new Name(avail.getName()),
-                        aLocation,
-                        new Interval(avail.getInterval(), avail.getTimeUnits().toJavaTimeUnit()),
-                        Pattern.compile(avail.getUpRegex()),
-                        avail.getMetricIdTemplate(),
-                        avail.getMetricTags());
-                typeSet.type(type);
-            }
-            typeSets.availTypeSet(typeSet.build());
         }
 
         for (DMRResourceTypeSet rtSet : config.getDmrResourceTypeSets()) {
@@ -325,10 +289,9 @@ public class ConfigConverter {
                     getNamesFromStrings(config.getManagedServers().getLocalDmr().getResourceTypeSets()),
                     connectionData,
                     null,
-                    config.getManagedServers().getLocalDmr().getSetAvailOnShutdown(),
                     config.getManagedServers().getLocalDmr().getTenantId(),
                     config.getManagedServers().getLocalDmr().getMetricIdTemplate(),
-                    config.getManagedServers().getLocalDmr().getMetricTags(),
+                    config.getManagedServers().getLocalDmr().getMetricLabels(),
                     null,
                     asWaitForList(config.getManagedServers().getLocalDmr().getWaitFor()));
             managedServers.put(config.getManagedServers().getLocalDmr().getName(), localDmrEndpointConfig);
@@ -353,10 +316,9 @@ public class ConfigConverter {
                         getNamesFromStrings(remoteDmr.getResourceTypeSets()),
                         connectionData,
                         remoteDmr.getSecurityRealmName(),
-                        remoteDmr.getSetAvailOnShutdown(),
                         remoteDmr.getTenantId(),
                         remoteDmr.getMetricIdTemplate(),
-                        remoteDmr.getMetricTags(),
+                        remoteDmr.getMetricLabels(),
                         null,
                         asWaitForList(remoteDmr.getWaitFor()));
 
@@ -387,30 +349,10 @@ public class ConfigConverter {
                         metric.getMetricUnits(),
                         metric.getMetricType(),
                         metric.getMetricIdTemplate(),
-                        metric.getMetricTags());
+                        metric.getMetricLabels());
                 typeSet.type(type);
             }
             typeSets.metricTypeSet(typeSet.build());
-        }
-
-        for (JMXAvailSet availSet : config.getJmxAvailSets()) {
-            TypeSetBuilder<AvailType<JMXNodeLocation>> typeSet = TypeSet.<AvailType<JMXNodeLocation>> builder();
-            typeSet.name(new Name(availSet.getName()));
-            typeSet.enabled(availSet.getEnabled());
-            for (JMXAvail avail : availSet.getJmxAvails()) {
-                JMXNodeLocation location = new JMXNodeLocation(getJmxObjectName(avail.getObjectName()));
-                AttributeLocation<JMXNodeLocation> aLocation = new AttributeLocation<>(location, avail.getAttribute());
-                AvailType<JMXNodeLocation> type = new AvailType<JMXNodeLocation>(
-                        new ID(availSet.getName() + "~" + avail.getName()),
-                        new Name(avail.getName()),
-                        aLocation,
-                        new Interval(avail.getInterval(), avail.getTimeUnits().toJavaTimeUnit()),
-                        Pattern.compile(avail.getUpRegex()),
-                        avail.getMetricIdTemplate(),
-                        avail.getMetricTags());
-                typeSet.type(type);
-            }
-            typeSets.availTypeSet(typeSet.build());
         }
 
         for (JMXResourceTypeSet rtSet : config.getJmxResourceTypeSets()) {
@@ -491,10 +433,9 @@ public class ConfigConverter {
                     getNamesFromStrings(config.getManagedServers().getLocalJmx().getResourceTypeSets()),
                     null,
                     null,
-                    config.getManagedServers().getLocalJmx().getSetAvailOnShutdown(),
                     config.getManagedServers().getLocalJmx().getTenantId(),
                     config.getManagedServers().getLocalJmx().getMetricIdTemplate(),
-                    config.getManagedServers().getLocalJmx().getMetricTags(),
+                    config.getManagedServers().getLocalJmx().getMetricLabels(),
                     Collections.singletonMap(JMXEndpointService.MBEAN_SERVER_NAME_KEY,
                             config.getManagedServers().getLocalJmx().getMbeanServerName()),
                     asWaitForList(config.getManagedServers().getLocalJmx().getWaitFor()));
@@ -521,10 +462,9 @@ public class ConfigConverter {
                         getNamesFromStrings(remoteJmx.getResourceTypeSets()),
                         connectionData,
                         remoteJmx.getSecurityRealmName(),
-                        remoteJmx.getSetAvailOnShutdown(),
                         remoteJmx.getTenantId(),
                         remoteJmx.getMetricIdTemplate(),
-                        remoteJmx.getMetricTags(),
+                        remoteJmx.getMetricLabels(),
                         null,
                         asWaitForList(remoteJmx.getWaitFor()));
 
@@ -878,7 +818,6 @@ public class ConfigConverter {
                     null,
                     null,
                     null,
-                    Avail.DOWN,
                     null,
                     null,
                     null,
@@ -909,14 +848,6 @@ public class ConfigConverter {
             }
         }
 
-        Map<Name, TypeSet<AvailType<L>>> availTypeSets = typeSetsBuilder.getAvailTypeSets();
-        List<Name> availSetNames = resourceTypeBuilder.getAvailSetNames();
-        for (Name availSetName : availSetNames) {
-            TypeSet<AvailType<L>> availSet = availTypeSets.get(availSetName);
-            if (availSet != null && availSet.isEnabled()) {
-                resourceTypeBuilder.availTypes(availSet.getTypeMap().values());
-            }
-        }
     }
 
     private PathAddress getDmrPathAddress(String path) {

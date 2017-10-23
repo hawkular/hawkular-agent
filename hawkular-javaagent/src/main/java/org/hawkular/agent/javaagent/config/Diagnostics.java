@@ -27,10 +27,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
         isGetterVisibility = Visibility.NONE)
 public class Diagnostics implements Validatable {
 
-    public enum ReportTo {
-        LOG, STORAGE
-    };
-
     @JsonProperty
     private Boolean enabled = Boolean.TRUE;
 
@@ -40,9 +36,6 @@ public class Diagnostics implements Validatable {
     @JsonProperty("time-units")
     private TimeUnits timeUnits = TimeUnits.minutes;
 
-    @JsonProperty("report-to")
-    private ReportTo reportTo = ReportTo.LOG;
-
     public Diagnostics() {
     }
 
@@ -50,7 +43,6 @@ public class Diagnostics implements Validatable {
         this.enabled = original.enabled;
         this.interval = original.interval;
         this.timeUnits = original.timeUnits;
-        this.reportTo = original.reportTo;
     }
 
     @Override
@@ -82,13 +74,5 @@ public class Diagnostics implements Validatable {
 
     public void setTimeUnits(TimeUnits timeUnits) {
         this.timeUnits = timeUnits;
-    }
-
-    public ReportTo getReportTo() {
-        return reportTo;
-    }
-
-    public void setReportTo(ReportTo reportTo) {
-        this.reportTo = reportTo;
     }
 }

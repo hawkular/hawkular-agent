@@ -32,7 +32,7 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
     private final org.hawkular.metrics.client.common.MetricType metricType;
     private final Interval interval;
     private final String metricIdTemplate;
-    private final Map<String, String> metricTags;
+    private final Map<String, String> metricLabels;
 
     public MeasurementType(ID id, Name name, org.hawkular.metrics.client.common.MetricType metricType,
             AttributeLocation<L> location, Interval interval, String metricIdTemplate,
@@ -41,7 +41,7 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
         this.metricType = metricType;
         this.interval = interval;
         this.metricIdTemplate = metricIdTemplate;
-        this.metricTags = (metricTags != null) ? Collections.unmodifiableMap(metricTags) : Collections.emptyMap();
+        this.metricLabels = (metricTags != null) ? Collections.unmodifiableMap(metricTags) : Collections.emptyMap();
     }
 
     public org.hawkular.metrics.client.common.MetricType getMetricType() {
@@ -74,13 +74,12 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
     }
 
     /**
-     * @return Defines what Hawkular Metrics tags should be generated for all instances of this measurement type.
-     *         May be empty.
+     * @return Defines what labels are associated for all instances of this measurement type. May be empty.
      *
-     * @see EndpointConfiguration#getMetricTags()
+     * @see EndpointConfiguration#getMetricLabels()
      */
-    public Map<String, String> getMetricTags() {
-        return metricTags;
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
     }
 
 }

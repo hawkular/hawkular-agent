@@ -18,7 +18,6 @@ package org.hawkular.agent.monitor.diagnostics;
 
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 
-import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -30,10 +29,6 @@ public class DiagnosticsImpl implements Diagnostics {
     private final ProtocolDiagnostics jmxDiagnostics;
     private final ProtocolDiagnostics platformDiagnostics;
     private final Meter storageError;
-    private final Counter metricsStorageBuffer;
-    private final Meter metricRate;
-    private final Counter availStorageBuffer;
-    private final Meter availRate;
     private final Meter inventoryRate;
     private final Timer inventoryStorageRequestTimer;
 
@@ -41,7 +36,9 @@ public class DiagnosticsImpl implements Diagnostics {
         return MetricRegistry.name(feedId + ".diagnostics." + name);
     }
 
-    public DiagnosticsImpl(AgentCoreEngineConfiguration.DiagnosticsConfiguration config, MetricRegistry registry,
+    public DiagnosticsImpl(
+            AgentCoreEngineConfiguration.DiagnosticsConfiguration config,
+            MetricRegistry registry,
             String feedId) {
         // we don't need config now, but maybe in future - so keep "config" param here for future API consistency
         this.dmrDiagnostics = newDiagnostics("dmr", feedId, registry);
@@ -49,10 +46,6 @@ public class DiagnosticsImpl implements Diagnostics {
         this.platformDiagnostics = newDiagnostics("platform", feedId, registry);
 
         storageError = registry.meter(name(feedId, "storage.error-rate"));
-        metricsStorageBuffer = registry.counter(name(feedId, "metrics.storage-buffer-size"));
-        metricRate = registry.meter(name(feedId, "metric.rate"));
-        availStorageBuffer = registry.counter(name(feedId, "avail.storage-buffer-size"));
-        availRate = registry.meter(name(feedId, "avail.rate"));
         inventoryRate = registry.meter(name(feedId, "inventory.rate"));
         inventoryStorageRequestTimer = registry.timer(name(feedId, "inventory.storage-request-timer"));
 
@@ -89,26 +82,6 @@ public class DiagnosticsImpl implements Diagnostics {
     @Override
     public Meter getStorageErrorRate() {
         return storageError;
-    }
-
-    @Override
-    public Counter getMetricsStorageBufferSize() {
-        return metricsStorageBuffer;
-    }
-
-    @Override
-    public Meter getMetricRate() {
-        return metricRate;
-    }
-
-    @Override
-    public Counter getAvailStorageBufferSize() {
-        return availStorageBuffer;
-    }
-
-    @Override
-    public Meter getAvailRate() {
-        return availRate;
     }
 
     @Override

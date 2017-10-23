@@ -19,11 +19,9 @@
 subsystem:
   enabled: true
   auto-discovery-scan-period-secs: 15
-  min-collection-interval-secs: 30
 
 diagnostics:
   enabled:    true
-  report-to:  LOG
   interval:   1
   time-units: minutes
 
@@ -532,22 +530,6 @@ metric-set-dmr:
     time-units:   seconds
     attribute:    subscription-count
 
-avail-set-dmr:
-- name: Server Availability
-  avail-dmr:
-  - name: Server Availability
-    interval:   30
-    time-units: seconds
-    attribute:  server-state
-    up-regex:   "run.*|.*-required"
-- name: Deployment Status
-  avail-dmr:
-  - name: Deployment Status
-    interval:   1
-    time-units: minutes
-    attribute:  status
-    up-regex:   "OK"
-
 resource-type-set-dmr:
 - name: Standalone Environment
   resource-type-dmr:
@@ -557,8 +539,6 @@ resource-type-set-dmr:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
     - WildFly Aggregated Web Metrics
-    avail-sets:
-    - Server Availability
     resource-config-dmr:
     - name: Name
       attribute: name
@@ -829,8 +809,6 @@ resource-type-set-dmr:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
     - WildFly Aggregated Web Metrics
-    avail-sets:
-    - Server Availability
     resource-config-dmr:
     - name: Name
       attribute: name
@@ -945,8 +923,8 @@ resource-type-set-dmr:
 
 - name: Hawkular
   resource-type-dmr:
-  - name: Hawkular WildFly Agent
-    resource-name-template: "Hawkular WildFly Agent"
+  - name: Hawkular Java Agent
+    resource-name-template: "Hawkular Java Agent"
     path: "/subsystem=hawkular-wildfly-agent"
     parents:
     - WildFly Server
@@ -981,8 +959,6 @@ resource-type-set-dmr:
     - Domain WildFly Server
     metric-sets:
     - Undertow Metrics
-    avail-sets:
-    - Deployment Status
   - name: SubDeployment
     resource-name-template: "SubDeployment [%-]"
     path: "/subdeployment=*"
@@ -1303,22 +1279,6 @@ metric-set-jmx:
     metric-units: bytes
     metric-type:  gauge
 
-avail-set-jmx:
-- name: Runtime Availability
-  avail-jmx:
-  - name: VM Availability
-    interval:   30
-    time-units: seconds
-    attribute:  StartTime
-    up-regex:   "[0123456789]+"
-- name: Memory Pool Availability
-  avail-jmx:
-  - name: Memory Pool Availability
-    interval:   30
-    time-units: seconds
-    attribute:  Valid
-    up-regex:   "[tT].*"
-
 resource-type-set-jmx:
 - name: Main
   resource-type-jmx:
@@ -1327,8 +1287,6 @@ resource-type-set-jmx:
     object-name: java.lang:type=Runtime
     metric-sets:
     - Runtime Metrics
-    avail-sets:
-    - Runtime Availability
     resource-config-jmx:
     - name: OS Name
       attribute:   Name
@@ -1344,15 +1302,13 @@ resource-type-set-jmx:
     object-name: "java.lang:type=MemoryPool,name=*"
     metric-sets:
     - Memory Pool Metrics
-    avail-sets:
-    - Memory Pool Availability
     resource-config-jmx:
     - name: Type
       attribute: Type
 - name: Hawkular
   resource-type-jmx:
-  - name: Hawkular WildFly Agent
-    resource-name-template: "Hawkular WildFly Agent"
+  - name: Hawkular Java Agent
+    resource-name-template: "Hawkular Java Agent"
     object-name: "org.hawkular:type=hawkular-javaagent"
     resource-config-jmx:
     - name: Immutable
@@ -1496,7 +1452,7 @@ managed-servers:
 
   local-jmx:
     name: Local JMX
-    enabled: false
+    enabled: true
     resource-type-sets:
     - Main
     - Memory Pool

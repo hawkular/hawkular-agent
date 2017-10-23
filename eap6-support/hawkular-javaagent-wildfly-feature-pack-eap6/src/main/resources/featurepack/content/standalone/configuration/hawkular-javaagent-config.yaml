@@ -822,8 +822,8 @@ resource-type-set-dmr:
 
 - name: Hawkular
   resource-type-dmr:
-  - name: Hawkular WildFly Agent
-    resource-name-template: "Hawkular WildFly Agent"
+  - name: Hawkular Java Agent
+    resource-name-template: "Hawkular Java Agent"
     path: "/subsystem=hawkular-wildfly-agent"
     parents:
     - WildFly Server
@@ -1216,8 +1216,8 @@ resource-type-set-jmx:
       attribute: Type
 - name: Hawkular
   resource-type-jmx:
-  - name: Hawkular WildFly Agent
-    resource-name-template: "Hawkular WildFly Agent"
+  - name: Hawkular Java Agent
+    resource-name-template: "Hawkular Java Agent"
     object-name: "org.hawkular:type=hawkular-javaagent"
     resource-config-jmx:
     - name: Immutable

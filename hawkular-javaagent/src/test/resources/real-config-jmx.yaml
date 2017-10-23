@@ -21,11 +21,9 @@ subsystem:
   immutable: "${hawkular.agent.immutable:false}"
   in-container: "${hawkular.agent.in-container:false}"
   auto-discovery-scan-period-secs: 600
-  min-collection-interval-secs: "${hawkular.agent.minCollectionIntervalSecs:30}"
 
 diagnostics:
   enabled:    true
-  report-to:  LOG
   interval:   1
   time-units: minutes
 
@@ -88,22 +86,6 @@ metric-set-jmx:
     metric-units: bytes
     metric-type:  gauge
 
-avail-set-jmx:
-- name: Runtime Availability
-  avail-jmx:
-  - name: VM Availability
-    interval:   30
-    time-units: seconds
-    attribute:  StartTime
-    up-regex:   "[0123456789]+"
-- name: Memory Pool Availability
-  avail-jmx:
-  - name: Memory Pool Availability
-    interval:   30
-    time-units: seconds
-    attribute:  Valid
-    up-regex:   "[tT].*"
-
 resource-type-set-jmx:
 - name: Main
   resource-type-jmx:
@@ -112,8 +94,6 @@ resource-type-set-jmx:
     object-name: java.lang:type=Runtime
     metric-sets:
     - Runtime Metrics
-    avail-sets:
-    - Runtime Availability
     resource-config-jmx:
     - name: OS Name
       attribute:   Name
@@ -129,15 +109,13 @@ resource-type-set-jmx:
     object-name: "java.lang:type=MemoryPool,name=*"
     metric-sets:
     - Memory Pool Metrics
-    avail-sets:
-    - Memory Pool Availability
     resource-config-jmx:
     - name: Type
       attribute: Type
 - name: Hawkular
   resource-type-jmx:
-  - name: Hawkular WildFly Agent
-    resource-name-template: "Hawkular WildFly Agent"
+  - name: Hawkular Java Agent
+    resource-name-template: "Hawkular Java Agent"
     object-name: "org.hawkular:type=hawkular-javaagent"
     resource-config-jmx:
     - name: Immutable

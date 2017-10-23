@@ -46,17 +46,11 @@ public class Configuration implements Validatable {
     @JsonProperty("metric-set-dmr")
     private DMRMetricSet[] dmrMetricSets;
 
-    @JsonProperty("avail-set-dmr")
-    private DMRAvailSet[] dmrAvailSets;
-
     @JsonProperty("resource-type-set-dmr")
     private DMRResourceTypeSet[] dmrResourceTypeSets;
 
     @JsonProperty("metric-set-jmx")
     private JMXMetricSet[] jmxMetricSets;
-
-    @JsonProperty("avail-set-jmx")
-    private JMXAvailSet[] jmxAvailSets;
 
     @JsonProperty("resource-type-set-jmx")
     private JMXResourceTypeSet[] jmxResourceTypeSets;
@@ -77,10 +71,8 @@ public class Configuration implements Validatable {
         this.storageAdapter = new StorageAdapter(original.storageAdapter);
         this.diagnostics = new Diagnostics(original.diagnostics);
         this.dmrMetricSets = Util.cloneArray(original.dmrMetricSets);
-        this.dmrAvailSets = Util.cloneArray(original.dmrAvailSets);
         this.dmrResourceTypeSets = Util.cloneArray(original.dmrResourceTypeSets);
         this.jmxMetricSets = Util.cloneArray(original.jmxMetricSets);
-        this.jmxAvailSets = Util.cloneArray(original.jmxAvailSets);
         this.jmxResourceTypeSets = Util.cloneArray(original.jmxResourceTypeSets);
         this.managedServers = new ManagedServers(original.managedServers);
         this.platform = new Platform(original.platform);
@@ -101,18 +93,12 @@ public class Configuration implements Validatable {
         if (dmrMetricSets == null) {
             dmrMetricSets = new DMRMetricSet[0];
         }
-        if (dmrAvailSets == null) {
-            dmrAvailSets = new DMRAvailSet[0];
-        }
         if (dmrResourceTypeSets == null) {
             dmrResourceTypeSets = new DMRResourceTypeSet[0];
         }
 
         if (jmxMetricSets == null) {
             jmxMetricSets = new JMXMetricSet[0];
-        }
-        if (jmxAvailSets == null) {
-            jmxAvailSets = new JMXAvailSet[0];
         }
         if (jmxResourceTypeSets == null) {
             jmxResourceTypeSets = new JMXResourceTypeSet[0];
@@ -129,16 +115,10 @@ public class Configuration implements Validatable {
         for (DMRMetricSet o : dmrMetricSets) {
             o.validate();
         }
-        for (DMRAvailSet o : dmrAvailSets) {
-            o.validate();
-        }
         for (DMRResourceTypeSet o : dmrResourceTypeSets) {
             o.validate();
         }
         for (JMXMetricSet o : jmxMetricSets) {
-            o.validate();
-        }
-        for (JMXAvailSet o : jmxAvailSets) {
             o.validate();
         }
         for (JMXResourceTypeSet o : jmxResourceTypeSets) {
@@ -249,14 +229,6 @@ public class Configuration implements Validatable {
         this.dmrMetricSets = dmrMetricSets;
     }
 
-    public DMRAvailSet[] getDmrAvailSets() {
-        return dmrAvailSets;
-    }
-
-    public void setDmrAvailSets(DMRAvailSet[] dmrAvailSets) {
-        this.dmrAvailSets = dmrAvailSets;
-    }
-
     public DMRResourceTypeSet[] getDmrResourceTypeSets() {
         return dmrResourceTypeSets;
     }
@@ -271,14 +243,6 @@ public class Configuration implements Validatable {
 
     public void setJmxMetricSets(JMXMetricSet[] jmxMetricSets) {
         this.jmxMetricSets = jmxMetricSets;
-    }
-
-    public JMXAvailSet[] getJmxAvailSets() {
-        return jmxAvailSets;
-    }
-
-    public void setJmxAvailSets(JMXAvailSet[] jmxAvailSets) {
-        this.jmxAvailSets = jmxAvailSets;
     }
 
     public JMXResourceTypeSet[] getJmxResourceTypeSets() {

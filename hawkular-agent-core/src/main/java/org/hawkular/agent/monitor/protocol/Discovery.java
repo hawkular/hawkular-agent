@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
-import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
@@ -95,17 +94,14 @@ public final class Discovery<L> {
                 // get the configuration of the resource
                 discoverResourceConfiguration(id, childType, location, entry.getValue(), builder, session);
 
-                // populate the metrics/avails based on the resource's type
-                addMetricAndAvailInstances(id, childType, location, entry.getValue(), builder, session);
+                // populate the metrics based on the resource's type
+                addMetricInstances(id, childType, location, entry.getValue(), builder, session);
 
                 // build the resource now - we might need it to generate metric IDs
                 Resource<L> resource = builder.build();
 
                 // The resource is built (and measurement instances assigned to it) so we can generate metric IDs.
                 for (MeasurementInstance<L, MetricType<L>> instance : resource.getMetrics()) {
-                    instance.setAssociatedMetricId(samplingService.generateAssociatedMetricId(instance));
-                }
-                for (MeasurementInstance<L, AvailType<L>> instance : resource.getAvails()) {
                     instance.setAssociatedMetricId(samplingService.generateAssociatedMetricId(instance));
                 }
 
@@ -181,7 +177,7 @@ public final class Discovery<L> {
         }
     }
 
-    private <N> void addMetricAndAvailInstances(ID resourceId,
+    private <N> void addMetricInstances(ID resourceId,
             ResourceType<L> type,
             L parentLocation,
             N baseNode,
@@ -206,28 +202,5 @@ public final class Discovery<L> {
                         String.valueOf(parentLocation));
             }
         }
-
-        for (AvailType<L> availType : type.getAvailTypes()) {
-            AttributeLocation<L> location = availType.getAttributeLocation();
-            try {
-                final AttributeLocation<L> instanceLocation = session.getLocationResolver().absolutize(parentLocation,
-                        location);
-                if (session.getDriver().attributeExists(instanceLocation)) {
-                    ID id = InventoryIdUtil.generateAvailInstanceId(session.getFeedId(), resourceId, availType);
-                    Name name = availType.getName();
-
-                    MeasurementInstance<L, AvailType<L>> availInstance = new MeasurementInstance<>(id, name,
-                            instanceLocation, availType);
-                    if (!session.getEndpoint().getEndpointConfiguration().isLocal()) {
-                        availInstance.addProperty("hawkular-services.monitoring-type", "remote");
-                    }
-                    builder.avail(availInstance);
-                }
-            } catch (ProtocolException e) {
-                log.warnFailedToLocate(e, availType.getClass().getName(), String.valueOf(location),
-                        String.valueOf(parentLocation));
-            }
-        }
     }
-
 }

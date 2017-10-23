@@ -23,66 +23,25 @@ import org.hawkular.agent.javaagent.config.Configuration;
 import org.hawkular.agent.javaagent.config.DMRMetric;
 import org.hawkular.agent.javaagent.config.DMRMetricSet;
 import org.hawkular.agent.javaagent.config.TimeUnits;
-import org.hawkular.agent.monitor.util.Util;
-import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.inventory.api.model.Operation;
 import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.PathAddress;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import okhttp3.Request;
-import okhttp3.Response;
-
 public class StandaloneWildFlyITest extends AbstractCommandITest {
     public static final String GROUP = "StandloneWildFlyITest";
 
     @Test(groups = { GROUP })
-    public void configureAgent() throws Throwable {
-        // Test metric collection disable by immediately disabling a datasource metric, we'll check later
-        // to ensure no data points were reported for the metric.
+    public void testAgent() throws Throwable {
         waitForHawkularServerToBeReady();
-
-        waitForAgentViaJMX();
-
-        Resource agentResource = testHelper.waitForResourceContaining(
-                hawkularFeedId, "Hawkular WildFly Agent", null, 5000, 10);
-
-        // disable Datasource Pool Metrics~Active Count
-        String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                + "\"feedId\":\"" + agentResource.getFeedId() + "\","
-                + "\"resourceId\":\"" + agentResource.getId() + "\","
-                + "\"metricTypes\":{\"Datasource Pool Metrics~Active Count\":\"0\",\"Unknown~Metric\":\"666\"},"
-                + "\"availTypes\":{}"
-                + "}";
-        String response = "UpdateCollectionIntervalsResponse={"
-                + "\"feedId\":\"" + agentResource.getFeedId() + "\","
-                + "\"resourceId\":\"" + agentResource.getId() + "\","
-                + "\"destinationSessionId\":\"{{sessionId}}\","
-                + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Update Collection Intervals] on a [Agent[JMX]] given by Feed Id ["
-                + agentResource.getFeedId() + "] Resource Id [" + agentResource.getId() + "]\""
-                + "}";
-
-        try (TestWebSocketClient testClient = TestWebSocketClient.builder()
-                .url(baseGwUri + "/ui/ws")
-                .expectWelcome(req)
-                .expectGenericSuccess(agentResource.getFeedId())
-                .expectText(response, TestWebSocketClient.Answer.CLOSE)
-                .expectClose()
-                .build()) {
-            testClient.validate(10000);
-        }
-
-        // Make sure the agent reboots before executing other itests
         Assert.assertTrue(waitForAgentViaJMX(), "Expected agent to be started.");
-
-        // re-read the agent config - it should have changed with the new values
-        Configuration agentConfig = getAgentConfigurationFromFile();
-        assertMetricInterval(agentConfig, "Datasource Pool Metrics", "Active Count", 0, TimeUnits.seconds);
+        Resource agentResource = testHelper.waitForResourceContaining(
+                hawkularFeedId, "Hawkular Java Agent", null, 5000, 10);
+        Assert.assertNotNull(agentResource);
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAgent" })
     public void operationParameters() throws Throwable {
 
         // get the operation
@@ -109,7 +68,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         Assert.assertNotNull(op.getParameters().get("restart").get("description"));
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAgent" })
     public void socketBindingGroupsInInventory() throws Throwable {
 
         Collection<Resource> bindingGroups = testHelper.getResourceByType(hawkularFeedId, "Socket Binding Group", 0);
@@ -122,7 +81,6 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
             System.out.println("StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> group: " + sbgName);
 
         }
-
 
         // make sure we are testing against what we were expecting
         Assert.assertTrue(dmrSBGNames.contains("standard-sockets"));
@@ -163,7 +121,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         Assert.assertEquals(dmrBindingNames.size(), 1, "Wrong number of outbound socket binding groups");
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAgent" })
     public void datasourcesAddedToInventory() throws Throwable {
         Collection<String> datasourceNames = getDatasourceNames();
         Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", datasourceNames.size());
@@ -190,101 +148,6 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
     private Collection<String> getDatasourceNames() {
         return getDMRChildrenNames("data-source", PathAddress.parseCLIStyleAddress("/subsystem=datasources"));
-    }
-
-    @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
-    public void datasourceMetricsCollected() throws Throwable {
-        long startTime = System.currentTimeMillis();
-        String lastUrl = "";
-        int second = 1000;
-        int timeOutSeconds = 90; // enabled metrics should have been collected at least once in this time
-        for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/gauges").build();
-            Response gaugesResponse = testHelper.client().newCall(request).execute();
-
-            if (gaugesResponse.code() == 200 && !gaugesResponse.body().string().isEmpty()) {
-                boolean found = false;
-
-                for (String datasourceName : getDatasourceNames()) {
-                    // enabled
-                    String id = "MI~R~[" + hawkularFeedId + "/" + hawkularFeedId + "~Local DMR~/subsystem=datasources/data-source="
-                            + datasourceName
-                            + "]~MT~Datasource Pool Metrics~Available Count";
-                    id = Util.urlEncodeQuery(id);
-                    String url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
-                    lastUrl = url;
-                    Response gaugeResponse = testHelper.client()
-                            .newCall(testHelper.newAuthRequest().url(url).get().build()).execute();
-                    if (gaugeResponse.code() == 200) {
-                        String body = gaugeResponse.body().string();
-                        // this should be enough to prove that some metric was written successfully
-                        if (body.contains("\"empty\":false")) {
-                            found = true;
-                        }
-                    }
-
-                    // disabled
-                    id = "MI~R~[" + hawkularFeedId + "/"+ hawkularFeedId + "~Local DMR~/subsystem=datasources/data-source="
-                            + datasourceName
-                            + "]~MT~Datasource Pool Metrics~Active Count";
-                    id = Util.urlEncodeQuery(id);
-                    url = baseMetricsUri + "/gauges/stats?start=" + startTime + "&buckets=1&metrics=" + id;
-                    //System.out.println("url = " + url);
-                    gaugeResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build())
-                            .execute();
-                    if (gaugeResponse.code() == 200) {
-                        String body = gaugeResponse.body().string();
-                        // this should be enough to prove that the metric was not disabled
-                        if (body.contains("\"empty\":false")) {
-                            String msg = String.format("Disabled Gauge gathered after [%d]ms. url=[%s], data=%s",
-                                    (System.currentTimeMillis() - startTime), url, body);
-                            Assert.fail(msg);
-                        }
-                    }
-
-                    // if enabled metric collected and disabled metric not collected then we should be good.
-                    if (found) {
-                        return;
-                    }
-                }
-            }
-            Thread.sleep(second);
-        }
-
-        Assert.fail("Gauge still not gathered after [" + timeOutSeconds + "] seconds: [" + lastUrl + "]");
-    }
-
-    @Test(dependsOnMethods = { "datasourcesAddedToInventory" }, enabled = true)
-    public void serverAvailCollected() throws Throwable {
-        String lastUrl = "";
-        int second = 1000;
-        int timeOutSeconds = 90; // avail should be been collected at least once within this time
-
-        for (int i = 0; i < timeOutSeconds; i++) {
-            Request request = testHelper.newAuthRequest().url(baseMetricsUri + "/availability").build();
-            Response availabilityResponse = testHelper.client().newCall(request).execute();
-
-            if (availabilityResponse.code() == 200 && !availabilityResponse.body().string().isEmpty()) {
-                String id = "AI~R~[" + hawkularFeedId
-                        + "/" + hawkularFeedId + "~Local DMR~~]~AT~Server Availability~Server Availability";
-                id = Util.urlEncode(id);
-                String url = baseMetricsUri + "/availability/" + id + "/raw";
-                availabilityResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build())
-                        .execute();
-                if (availabilityResponse.code() == 200) {
-                    String body = availabilityResponse.body().string();
-                    // this should be enough to prove that some metric was written successfully
-                    if (body.contains("\"value\":\"up\"")) {
-                        return;
-                    }
-                } else {
-                    System.out.println("code = " + availabilityResponse.code());
-                }
-            }
-            Thread.sleep(second);
-        }
-
-        Assert.fail("Availability still not gathered after [" + timeOutSeconds + "] seconds: [" + lastUrl + "]");
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })

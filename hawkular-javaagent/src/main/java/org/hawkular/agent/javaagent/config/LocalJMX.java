@@ -23,7 +23,6 @@ import java.util.Map;
 import javax.management.ObjectName;
 
 import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
-import org.hawkular.agent.monitor.api.Avail;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -51,11 +50,8 @@ public class LocalJMX implements Validatable {
     @JsonProperty("metric-id-template")
     private String metricIdTemplate;
 
-    @JsonProperty("metric-tags")
-    private Map<String, String> metricTags;
-
-    @JsonProperty("set-avail-on-shutdown")
-    private Avail setAvailOnShutdown;
+    @JsonProperty("metric-labels")
+    private Map<String, String> metricLabels;
 
     @JsonProperty("mbean-server-name")
     private String mbeanServerName;
@@ -73,8 +69,7 @@ public class LocalJMX implements Validatable {
         this.resourceTypeSets = original.resourceTypeSets == null ? null
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
         this.metricIdTemplate = original.metricIdTemplate;
-        this.metricTags = original.metricTags == null ? null : new HashMap<>(original.metricTags);
-        this.setAvailOnShutdown = original.setAvailOnShutdown;
+        this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
         this.mbeanServerName = original.mbeanServerName;
         this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
     }
@@ -148,20 +143,12 @@ public class LocalJMX implements Validatable {
         this.metricIdTemplate = metricIdTemplate;
     }
 
-    public Map<String, String> getMetricTags() {
-        return metricTags;
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
     }
 
-    public void setMetricTags(Map<String, String> metricTags) {
-        this.metricTags = metricTags;
-    }
-
-    public Avail getSetAvailOnShutdown() {
-        return setAvailOnShutdown;
-    }
-
-    public void setSetAvailOnShutdown(Avail setAvailOnShutdown) {
-        this.setAvailOnShutdown = setAvailOnShutdown;
+    public void setMetricLabels(Map<String, String> metricLabels) {
+        this.metricLabels = metricLabels;
     }
 
     public String getMbeanServerName() {

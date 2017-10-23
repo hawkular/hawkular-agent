@@ -38,7 +38,6 @@ public class TypeSets<L> {
     }
 
     public static class Builder<L> {
-        private Map<Name, TypeSet<AvailType<L>>> availTypeSets = new LinkedHashMap<>();
         private boolean enabled = true;
         private Map<Name, TypeSet<MetricType<L>>> metricTypeSets = new LinkedHashMap<>();
         private Map<Name, TypeSet<ResourceType<L>>> resourceTypeSets = new LinkedHashMap<>();
@@ -53,28 +52,16 @@ public class TypeSets<L> {
                             log.warnMetricSetDoesNotExist(type.getName().toString(), metricSetName.toString());
                         }
                     }
-                    for (Name availSetName : type.getAvailSets()) {
-                        if (!availTypeSets.containsKey(availSetName)) {
-                            log.warnAvailSetDoesNotExist(type.getName().toString(),
-                                    availSetName.toString());
-                        }
-                    }
                 }
             }
 
             return new TypeSets<>(Collections.unmodifiableMap(resourceTypeSets),
                     Collections.unmodifiableMap(metricTypeSets),
-                    Collections.unmodifiableMap(availTypeSets),
                     enabled);
         }
 
         public Builder<L> enabled(boolean enabled) {
             this.enabled = enabled;
-            return this;
-        }
-
-        public Builder<L> availTypeSet(TypeSet<AvailType<L>> typeSet) {
-            availTypeSets.put(typeSet.getName(), typeSet);
             return this;
         }
 
@@ -90,45 +77,33 @@ public class TypeSets<L> {
 
         // immutable getters in case you need these while building a resource type
 
-        public Map<Name, TypeSet<AvailType<L>>> getAvailTypeSets() {
-            return Collections.unmodifiableMap(availTypeSets);
-        }
-
         public Map<Name, TypeSet<MetricType<L>>> getMetricTypeSets() {
             return Collections.unmodifiableMap(metricTypeSets);
         }
     }
 
-    private static final TypeSets<?> EMPTY = new TypeSets<>(
-            Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), false);
+    private static final TypeSets<?> EMPTY = new TypeSets<>(Collections.emptyMap(), Collections.emptyMap(), false);
 
     @SuppressWarnings("unchecked")
     public static <L> TypeSets<L> empty() {
         return (TypeSets<L>) EMPTY;
     }
 
-    private final Map<Name, TypeSet<AvailType<L>>> availTypeSets;
     private final boolean enabled;
     private final Map<Name, TypeSet<MetricType<L>>> metricTypeSets;
     private final Map<Name, TypeSet<ResourceType<L>>> resourceTypeSets;
 
     private TypeSets(Map<Name, TypeSet<ResourceType<L>>> resourceTypeSets,
             Map<Name, TypeSet<MetricType<L>>> metricTypeSets,
-            Map<Name, TypeSet<AvailType<L>>> availTypeSets,
             boolean enabled) {
         super();
         this.resourceTypeSets = resourceTypeSets;
         this.metricTypeSets = metricTypeSets;
-        this.availTypeSets = availTypeSets;
         this.enabled = enabled;
     }
 
     public boolean isEnabled() {
         return enabled;
-    }
-
-    public Map<Name, TypeSet<AvailType<L>>> getAvailTypeSets() {
-        return availTypeSets;
     }
 
     public Map<Name, TypeSet<MetricType<L>>> getMetricTypeSets() {
@@ -140,6 +115,6 @@ public class TypeSets<L> {
     }
 
     public boolean isDisabledOrEmpty() {
-        return !enabled || (resourceTypeSets.isEmpty() && metricTypeSets.isEmpty() && availTypeSets.isEmpty());
+        return !enabled || (resourceTypeSets.isEmpty() && metricTypeSets.isEmpty());
     }
 }

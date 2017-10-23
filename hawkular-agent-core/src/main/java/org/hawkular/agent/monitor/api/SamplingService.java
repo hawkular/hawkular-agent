@@ -16,20 +16,14 @@
  */
 package org.hawkular.agent.monitor.api;
 
-import java.util.Collection;
 import java.util.Map;
 
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
-import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
-import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NodeLocation;
-import org.hawkular.agent.monitor.storage.AvailDataPoint;
-import org.hawkular.agent.monitor.storage.MetricDataPoint;
-import org.hawkular.agent.monitor.util.Consumer;
 
 /**
  * A service that can be used to sample metrics and avails for the given {@link MonitoredEndpoint}.
@@ -46,17 +40,16 @@ public interface SamplingService<L> {
     MonitoredEndpoint<EndpointConfiguration> getMonitoredEndpoint();
 
     /**
-     * Given a measurement instance, this will generate the tags to be added to the
-     * associated Hawkular Metrics metric definition.
+     * Given a measurement instance, this will generate the labels associated with the metric.
      *
      * The service can use the metric tags provided by the user via
      * {@link MonitoredEndpoint#getEndpointConfiguration() the endpoint configuration} which contains
-     * {@link AbstractEndpointConfiguration#getMetricTags() the metric tags}.
+     * {@link AbstractEndpointConfiguration#getMetricLabels() the metric labels}.
      *
-     * @param instance the measurement instance whose tags are to be generated
-     * @return the measurement tags to be added to the metric definition
+     * @param instance the measurement instance whose labels are to be generated
+     * @return the measurement labels to be added to the metric definition
      */
-    Map<String, String> generateAssociatedMetricTags(MeasurementInstance<L, ? extends MeasurementType<L>> instance);
+    Map<String, String> generateAssociatedMetricLabels(MeasurementInstance<L, ? extends MeasurementType<L>> instance);
 
     /**
      * Given a measurement instance, this will generate the key to be used when
@@ -78,23 +71,4 @@ public interface SamplingService<L> {
     default String generateAssociatedMetricId(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
         return instance.getID().getIDString();
     }
-
-    /**
-     * Checks the availabilities defined by {@code instances} and reports them back to the given {@code consumer}.
-     * If the relevant Endpoint is unreachable all instances are reported as {@code Avail.DOWN}.
-     *
-     * @param instances the availabilities to check
-     * @param consumer the consumer to send the results to
-     */
-    void measureAvails(Collection<MeasurementInstance<L, AvailType<L>>> instances, Consumer<AvailDataPoint> consumer);
-
-    /**
-     * Collects the metrics defined by {@code instances} and reports them back to the given {@code consumer}.
-     *
-     * @param instances the metrics to check
-     * @param consumer the consumer to send the results to
-     */
-    void measureMetrics(Collection<MeasurementInstance<L, MetricType<L>>> instances,
-            Consumer<MetricDataPoint> consumer);
-
 }

@@ -16,14 +16,9 @@
  */
 package org.hawkular.agent.itest.util;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.zip.GZIPInputStream;
 
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResultSet;
@@ -60,20 +55,6 @@ public class ITestHelper {
                 .addHeader("Authorization", hawkularAuthHeader)
                 .addHeader("Accept", "application/json")
                 .addHeader("Hawkular-Tenant", tenantId);
-    }
-
-    private static String decompress(byte[] gzipped) throws IOException {
-        if ((gzipped == null) || (gzipped.length == 0)) {
-            return "";
-        }
-        StringBuilder outStr = new StringBuilder();
-        GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(gzipped));
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(gis, "UTF-8"));
-        String line;
-        while ((line = bufferedReader.readLine()) != null) {
-            outStr.append(line);
-        }
-        return outStr.toString();
     }
 
     public Collection<Resource> getResourceByType(String feedId, String type, int expectedCount)

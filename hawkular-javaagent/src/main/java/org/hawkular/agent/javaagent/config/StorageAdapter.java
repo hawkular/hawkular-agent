@@ -56,9 +56,6 @@ public class StorageAdapter implements Validatable {
     @JsonProperty("security-realm")
     private String securityRealmName;
 
-    @JsonProperty("metrics-context")
-    private String metricsContext = "/hawkular/metrics/";
-
     @JsonProperty("inventory-context")
     private String inventoryContext = "/hawkular/inventory/";
 
@@ -85,7 +82,7 @@ public class StorageAdapter implements Validatable {
         this.password = original.password == null ? null : new StringExpression(original.password);
         this.feedId = original.feedId == null ? null : new StringExpression(original.feedId);
         this.securityRealmName = original.securityRealmName;
-        this.metricsContext = original.metricsContext;
+        this.inventoryContext = original.inventoryContext;
         this.feedcommContext = original.feedcommContext;
         this.hawkularContext = original.hawkularContext;
         this.connectTimeoutSecs = original.connectTimeoutSecs;
@@ -197,14 +194,6 @@ public class StorageAdapter implements Validatable {
 
     public void setSecurityRealmName(String securityRealmName) {
         this.securityRealmName = securityRealmName;
-    }
-
-    public String getMetricsContext() {
-        return metricsContext;
-    }
-
-    public void setMetricsContext(String metricsContext) {
-        this.metricsContext = metricsContext;
     }
 
     public String getInventoryContext() {

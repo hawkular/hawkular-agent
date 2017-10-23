@@ -18,26 +18,11 @@ package org.hawkular.agent.monitor.api;
 
 public class HawkularAgentContextImpl implements HawkularAgentContext {
 
-    private final MetricStorage metricStorage;
-    private final AvailStorage availStorage;
     private final InventoryStorage inventoryStorage;
 
-    public HawkularAgentContextImpl(MetricStorage metricStorage, AvailStorage availStorage,
-            InventoryStorage inventoryStorage) {
-        this.metricStorage = metricStorage;
-        this.availStorage = availStorage;
+    public HawkularAgentContextImpl(InventoryStorage inventoryStorage) {
         this.inventoryStorage = inventoryStorage;
 
-    }
-
-    @Override
-    public MetricStorage getMetricStorage() {
-        return this.metricStorage;
-    }
-
-    @Override
-    public AvailStorage getAvailStorage() {
-        return this.availStorage;
     }
 
     @Override

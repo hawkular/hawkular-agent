@@ -93,7 +93,7 @@ public class ConfigExpressionTest {
 
         yaml = "" +
                 "subsystem:\n" +
-                "  ping-period-secs: 12345";
+                "  auto-discovery-scan-period-secs: 12345";
 
         // make sure the BooleanExpression type is deserialized correctly
         config = mapper.readValue(yaml, Configuration.class);
@@ -115,59 +115,59 @@ public class ConfigExpressionTest {
 
         yaml = "" +
                 "subsystem:\n" +
-                "  ping-period-secs: ${my-sysprop:12345}";
+                "  auto-discovery-scan-period-secs: ${my-sysprop:12345}";
 
         // make sure the IntegerExpression type is deserialized correctly
         config = mapper.readValue(yaml, Configuration.class);
-        Assert.assertEquals(Integer.valueOf(12345), config.getSubsystem().getPingPeriodSecs());
+        Assert.assertEquals(Integer.valueOf(12345), config.getSubsystem().getAutoDiscoveryScanPeriodSecs());
         System.setProperty("my-sysprop", "9876");
-        Assert.assertEquals(Integer.valueOf(9876), config.getSubsystem().getPingPeriodSecs());
+        Assert.assertEquals(Integer.valueOf(9876), config.getSubsystem().getAutoDiscoveryScanPeriodSecs());
         System.clearProperty("my-sysprop");
-        Assert.assertEquals(Integer.valueOf(12345), config.getSubsystem().getPingPeriodSecs());
+        Assert.assertEquals(Integer.valueOf(12345), config.getSubsystem().getAutoDiscoveryScanPeriodSecs());
 
         // make sure the IntegerExpression type is serialized correctly
         serializedYaml = mapper.writeValueAsString(config);
-        Assert.assertTrue(serializedYaml.contains("  ping-period-secs: \"${my-sysprop:12345}\""));
+        Assert.assertTrue(serializedYaml.contains("  auto-discovery-scan-period-secs: \"${my-sysprop:12345}\""));
 
         // TEST EXPRESSION WITH NO DEFAULT
 
         yaml = "" +
                 "subsystem:\n" +
-                "  ping-period-secs: ${my-sysprop}\n";
+                "  auto-discovery-scan-period-secs: ${my-sysprop}\n";
 
         // make sure the IntegerExpression type is deserialized correctly
         config = mapper.readValue(yaml, Configuration.class);
         try {
-            config.getSubsystem().getPingPeriodSecs();
+            config.getSubsystem().getAutoDiscoveryScanPeriodSecs();
             Assert.fail("Should have failed - the integer expression did not evaluate to true or false");
         } catch (Exception expected) {
         }
         System.setProperty("my-sysprop", "9876");
-        Assert.assertEquals(Integer.valueOf(9876), config.getSubsystem().getPingPeriodSecs());
+        Assert.assertEquals(Integer.valueOf(9876), config.getSubsystem().getAutoDiscoveryScanPeriodSecs());
         System.clearProperty("my-sysprop");
         try {
-            config.getSubsystem().getPingPeriodSecs();
+            config.getSubsystem().getAutoDiscoveryScanPeriodSecs();
             Assert.fail("Should have failed - the integer expression did not evaluate to true or false");
         } catch (Exception expected) {
         }
 
         // make sure the IntegerExpression type is serialized correctly
         serializedYaml = mapper.writeValueAsString(config);
-        Assert.assertTrue(serializedYaml.contains("  ping-period-secs: \"${my-sysprop}\""));
+        Assert.assertTrue(serializedYaml.contains("  auto-discovery-scan-period-secs: \"${my-sysprop}\""));
 
         // TEST WITH NO EXPRESSION - ACTUAL VALUE
 
         yaml = "" +
                 "subsystem:\n" +
-                "  ping-period-secs: 12345\n";
+                "  auto-discovery-scan-period-secs: 12345\n";
 
         // make sure the InetgerExpression type is deserialized correctly
         config = mapper.readValue(yaml, Configuration.class);
-        Assert.assertEquals(Integer.valueOf(12345), config.getSubsystem().getPingPeriodSecs());
+        Assert.assertEquals(Integer.valueOf(12345), config.getSubsystem().getAutoDiscoveryScanPeriodSecs());
 
         // make sure the IntegerExpression type is serialized correctly
         serializedYaml = mapper.writeValueAsString(config);
-        Assert.assertTrue(serializedYaml.contains("  ping-period-secs: \"12345\""));
+        Assert.assertTrue(serializedYaml.contains("  auto-discovery-scan-period-secs: \"12345\""));
 
         // TEST WITH MISSING PROPERTY - FALLBACK TO DEFAULT
 
@@ -177,11 +177,11 @@ public class ConfigExpressionTest {
 
         // make sure the IntegerExpression type is deserialized correctly
         config = mapper.readValue(yaml, Configuration.class);
-        Assert.assertEquals(Integer.valueOf(60), config.getSubsystem().getPingPeriodSecs()); // default is 60
+        Assert.assertEquals(Integer.valueOf(600), config.getSubsystem().getAutoDiscoveryScanPeriodSecs()); // default is harcoded
 
         // make sure the IntegerExpression type is serialized correctly
         serializedYaml = mapper.writeValueAsString(config);
-        Assert.assertTrue(serializedYaml.contains("  ping-period-secs: \"60\"")); // default appears in serialized yaml
+        Assert.assertTrue(serializedYaml.contains("  auto-discovery-scan-period-secs: \"600\"")); // default appears in serialized yaml
 
     }
 

@@ -97,17 +97,4 @@ public class InventoryIdUtil {
         ID id = new ID(String.format("MI~R~[%s/%s]~MT~%s", feedId, resourceId, metricType.getID()));
         return id;
     }
-
-    /**
-     * Generates an ID for an {@link AvailInstance}.
-     *
-     * @param resource the resource that owns the AvailInstance
-     * @param availType the type of the AvailInstance whose ID is being generated
-     *
-     * @return the ID
-     */
-    public static ID generateAvailInstanceId(String feedId, ID resourceId, AvailType<?> availType) {
-        ID id = new ID(String.format("AI~R~[%s/%s]~AT~%s", feedId, resourceId, availType.getID()));
-        return id;
-    }
 }

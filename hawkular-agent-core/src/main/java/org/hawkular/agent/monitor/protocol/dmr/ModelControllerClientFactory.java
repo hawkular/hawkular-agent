@@ -49,7 +49,7 @@ public abstract class ModelControllerClientFactory {
             super();
             this.modelController = modelController;
             final ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
-                    "Hawkular-WildFly-Agent-LocalMgmtClient");
+                    "Hawkular-Agent-Local-DMR-Client");
             this.executor = Executors.newCachedThreadPool(threadFactory);
         }
 
