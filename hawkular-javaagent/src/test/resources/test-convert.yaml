@@ -19,8 +19,6 @@
 subsystem:
   enabled: true
   auto-discovery-scan-period-secs: 111
-  min-collection-interval-secs: 222
-  ping-period-secs: 333
 
 security-realm:
 - name: h-server
@@ -53,7 +51,7 @@ metric-set-dmr:
     metric-units: megabytes
     metric-type: counter
     metric-id-template: the template
-    metric-tags:
+    metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric d
@@ -64,7 +62,7 @@ metric-set-dmr:
     metric-units: megabytes
     metric-type: gauge
     metric-id-template: the template
-    metric-tags:
+    metric-labels:
       tag1: value1
       tag2: value2
 - name: second metric set d
@@ -76,40 +74,6 @@ metric-set-dmr:
   - name: fourth metric d
     path: /metric=four
     attribute: attrib1
-
-avail-set-dmr:
-- name: first avail set d
-  avail-dmr:
-  - name: first avail d
-    path: /avail=one
-    attribute: attrib1
-    up-regex: "[up.*]"
-    interval: 12345
-    time-units: milliseconds
-    metric-id-template: the template
-    metric-tags:
-      tag1: value1
-      tag2: value2
-  - name: second avail d
-    path: /avail=two
-    attribute: attrib1
-    up-regex: "[up.*]"
-    interval: 12345
-    time-units: milliseconds
-    metric-id-template: the template
-    metric-tags:
-      tag1: value1
-      tag2: value2
-- name: second avail set d
-  avail-dmr:
-  - name: third avail d
-    path: /avail=three
-    attribute: attrib1
-    up-regex: "[up.*]"
-  - name: fourth avail d
-    path: /avail=four
-    attribute: attrib1
-    up-regex: "[up.*]"
 
 resource-type-set-dmr:
 - name: first resource type set d
@@ -144,7 +108,7 @@ metric-set-jmx:
     metric-units: bytes
     metric-type: gauge
     metric-id-template: the template
-    metric-tags:
+    metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric
@@ -155,7 +119,7 @@ metric-set-jmx:
     metric-units: bytes
     metric-type: gauge
     metric-id-template: the template
-    metric-tags:
+    metric-labels:
       tag1: value1
       tag2: value2
 - name: second metric set
@@ -168,40 +132,6 @@ metric-set-jmx:
     object-name: domain:metric=four
     attribute: attrib1
     metric-type: gauge
-
-avail-set-jmx:
-- name: first avail set
-  avail-jmx:
-  - name: first avail
-    object-name: domain:avail=one
-    attribute: attrib1
-    up-regex: "[up.*]"
-    interval: 12345
-    time-units: seconds
-    metric-id-template: the template
-    metric-tags:
-      tag1: value1
-      tag2: value2
-  - name: second avail
-    object-name: domain:avail=two
-    attribute: attrib1
-    up-regex: "[up.*]"
-    interval: 12345
-    time-units: seconds
-    metric-id-template: the template
-    metric-tags:
-      tag1: value1
-      tag2: value2
-- name: second avail set
-  avail-jmx:
-  - name: third avail
-    object-name: domain:avail=three
-    attribute: attrib1
-    up-regex: "[up.*]"
-  - name: fourth avail
-    object-name: domain:avail=four
-    attribute: attrib1
-    up-regex: "[up.*]"
 
 resource-type-set-jmx:
 - name: first resource type set

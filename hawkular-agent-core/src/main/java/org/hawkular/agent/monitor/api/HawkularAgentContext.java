@@ -17,10 +17,5 @@
 package org.hawkular.agent.monitor.api;
 
 public interface HawkularAgentContext {
-
-    MetricStorage getMetricStorage();
-
-    AvailStorage getAvailStorage();
-
     InventoryStorage getInventoryStorage();
 }

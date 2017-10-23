@@ -33,7 +33,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
 
     public static final String GROUP = "StandaloneDeployApplicationITest";
 
-    @Test(groups = { GROUP }, dependsOnGroups = { UpdateCollectionIntervalsCommandITest.GROUP })
+    @Test(groups = { GROUP }, dependsOnGroups = { ExecuteOperationCommandITest.GROUP })
     public void testAddDeployment() throws Throwable {
         waitForHawkularServerToBeReady();
 

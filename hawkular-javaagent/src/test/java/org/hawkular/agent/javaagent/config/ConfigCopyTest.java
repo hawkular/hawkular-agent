@@ -42,10 +42,8 @@ public class ConfigCopyTest {
         Assert.assertEquals(clone.getStorageAdapter().getUrl(), config.getStorageAdapter().getUrl());
         Assert.assertEquals(clone.getDiagnostics().getEnabled(), config.getDiagnostics().getEnabled());
         Assert.assertEquals(clone.getDmrMetricSets().length, config.getDmrMetricSets().length);
-        Assert.assertEquals(clone.getDmrAvailSets().length, config.getDmrAvailSets().length);
         Assert.assertEquals(clone.getDmrResourceTypeSets().length, config.getDmrResourceTypeSets().length);
         Assert.assertEquals(clone.getJmxMetricSets().length, config.getJmxMetricSets().length);
-        Assert.assertEquals(clone.getJmxAvailSets().length, config.getJmxAvailSets().length);
         Assert.assertEquals(clone.getJmxResourceTypeSets().length, config.getJmxResourceTypeSets().length);
         Assert.assertEquals(clone.getManagedServers().getLocalDmr().getName(),
                 config.getManagedServers().getLocalDmr().getName());
@@ -74,10 +72,8 @@ public class ConfigCopyTest {
         Assert.assertEquals(clone.getStorageAdapter().getUrl(), config.getStorageAdapter().getUrl());
         Assert.assertEquals(clone.getDiagnostics().getEnabled(), config.getDiagnostics().getEnabled());
         Assert.assertEquals(clone.getDmrMetricSets().length, config.getDmrMetricSets().length);
-        Assert.assertEquals(clone.getDmrAvailSets().length, config.getDmrAvailSets().length);
         Assert.assertEquals(clone.getDmrResourceTypeSets().length, config.getDmrResourceTypeSets().length);
         Assert.assertEquals(clone.getJmxMetricSets().length, config.getJmxMetricSets().length);
-        Assert.assertEquals(clone.getJmxAvailSets().length, config.getJmxAvailSets().length);
         Assert.assertEquals(clone.getJmxResourceTypeSets().length, config.getJmxResourceTypeSets().length);
         Assert.assertEquals(clone.getManagedServers().getLocalDmr().getName(),
                 config.getManagedServers().getLocalDmr().getName());

@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
-import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -50,11 +49,8 @@ public class LocalDMR implements Validatable {
     @JsonProperty("metric-id-template")
     private String metricIdTemplate;
 
-    @JsonProperty("metric-tags")
-    private Map<String, String> metricTags;
-
-    @JsonProperty("set-avail-on-shutdown")
-    private Avail setAvailOnShutdown;
+    @JsonProperty("metric-labels")
+    private Map<String, String> metricLabels;
 
     @JsonProperty("wait-for")
     private WaitFor[] waitFor;
@@ -69,8 +65,7 @@ public class LocalDMR implements Validatable {
         this.resourceTypeSets = original.resourceTypeSets == null ? null
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
         this.metricIdTemplate = original.metricIdTemplate;
-        this.metricTags = original.metricTags == null ? null : new HashMap<>(original.metricTags);
-        this.setAvailOnShutdown = original.setAvailOnShutdown;
+        this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
         this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
     }
 
@@ -145,20 +140,12 @@ public class LocalDMR implements Validatable {
         this.metricIdTemplate = metricIdTemplate;
     }
 
-    public Map<String, String> getMetricTags() {
-        return metricTags;
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
     }
 
-    public void setMetricTags(Map<String, String> metricTags) {
-        this.metricTags = metricTags;
-    }
-
-    public Avail getSetAvailOnShutdown() {
-        return setAvailOnShutdown;
-    }
-
-    public void setSetAvailOnShutdown(Avail setAvailOnShutdown) {
-        this.setAvailOnShutdown = setAvailOnShutdown;
+    public void setMetricLabels(Map<String, String> metricLabels) {
+        this.metricLabels = metricLabels;
     }
 
     public WaitFor[] getWaitFor() {

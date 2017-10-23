@@ -43,7 +43,6 @@ public final class ResourceType<L>
         private List<Name> metricSetNames = new ArrayList<>();
         private List<Name> availSetNames = new ArrayList<>();
         private List<MetricType<L>> metricTypes = new ArrayList<>();
-        private List<AvailType<L>> availTypes = new ArrayList<>();
         private List<NotificationType> notificationTypes = new ArrayList<>();
         private List<Operation<L>> operations = new ArrayList<>();
         private List<ResourceConfigurationPropertyType<L>> resourceConfigurationPropertyTypes = new ArrayList<>();
@@ -61,7 +60,6 @@ public final class ResourceType<L>
                     Collections.unmodifiableList(metricSetNames),
                     Collections.unmodifiableList(availSetNames),
                     Collections.unmodifiableList(metricTypes),
-                    Collections.unmodifiableList(availTypes),
                     Collections.unmodifiableList(notificationTypes),
                     Collections.unmodifiableList(operations),
                     Collections.unmodifiableList(resourceConfigurationPropertyTypes));
@@ -89,11 +87,6 @@ public final class ResourceType<L>
 
         public This metricSetNames(Collection<Name> names) {
             this.metricSetNames.addAll(names);
-            return getThis();
-        }
-
-        public This availTypes(Collection<AvailType<L>> types) {
-            this.availTypes.addAll(types);
             return getThis();
         }
 
@@ -154,14 +147,13 @@ public final class ResourceType<L>
     private final Collection<Name> metricSetNames;
     private final Collection<Name> availSetNames;
     private final Collection<MetricType<L>> metricTypes;
-    private final Collection<AvailType<L>> availTypes;
     private final Collection<NotificationType> notifications;
     private final Collection<Operation<L>> operations;
     private final Collection<ResourceConfigurationPropertyType<L>> resourceConfigurationPropertyTypes;
 
     private ResourceType(ID id, Name name, L location, String resourceNameTemplate, Collection<Name> parents,
             Collection<Name> metricSetNames, Collection<Name> availSetNames,
-            Collection<MetricType<L>> metricTypes, Collection<AvailType<L>> availTypes,
+            Collection<MetricType<L>> metricTypes,
             Collection<NotificationType> notifications, Collection<Operation<L>> operations,
             Collection<ResourceConfigurationPropertyType<L>> resourceConfigurationPropertyTypes) {
         super(id, name, location);
@@ -170,7 +162,6 @@ public final class ResourceType<L>
         this.metricSetNames = metricSetNames;
         this.availSetNames = availSetNames;
         this.metricTypes = metricTypes;
-        this.availTypes = availTypes;
         this.notifications = notifications;
         this.operations = operations;
         this.resourceConfigurationPropertyTypes = resourceConfigurationPropertyTypes;
@@ -198,10 +189,6 @@ public final class ResourceType<L>
 
     public Collection<MetricType<L>> getMetricTypes() {
         return metricTypes;
-    }
-
-    public Collection<AvailType<L>> getAvailTypes() {
-        return availTypes;
     }
 
     public Collection<ResourceConfigurationPropertyType<L>> getResourceConfigurationPropertyTypes() {

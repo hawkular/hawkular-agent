@@ -40,7 +40,7 @@ metric-set-dmr:
     metric-units: megabytes
     metric-type: counter
     metric-id-template: the template
-    metric-tags:
+    metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric d
@@ -52,24 +52,6 @@ metric-set-dmr:
     path: /metric=three
     attribute: attrib1
   - name: fourth metric d
-    path: /metric=four
-    attribute: attrib1
-
-avail-set-dmr:
-- name: first avail set d
-  avail-dmr:
-  - name: first avail d
-    path: /metric=one
-    attribute: attrib1
-  - name: second avail d
-    path: /metric=two
-    attribute: attrib1
-- name: second avail set d
-  avail-dmr:
-  - name: third avail d
-    path: /metric=three
-    attribute: attrib1
-  - name: fourth avail d
     path: /metric=four
     attribute: attrib1
 
@@ -102,7 +84,7 @@ metric-set-jmx:
     metric-units: bytes
     metric-type: gauge
     metric-id-template: the template
-    metric-tags:
+    metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric
@@ -112,20 +94,6 @@ metric-set-jmx:
   - name: third metric
     attribute: attrib1
   - name: fourth metric
-    attribute: attrib1
-
-avail-set-jmx:
-- name: first avail set
-  avail-jmx:
-  - name: first avail
-    attribute: attrib1
-  - name: second avail
-    attribute: attrib1
-- name: second avail set
-  avail-jmx:
-  - name: third avail
-    attribute: attrib1
-  - name: fourth avail
     attribute: attrib1
 
 resource-type-set-jmx:

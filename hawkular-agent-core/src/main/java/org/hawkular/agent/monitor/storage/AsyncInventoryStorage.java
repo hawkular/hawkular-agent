@@ -186,7 +186,6 @@ public class AsyncInventoryStorage implements InventoryStorage {
         r.getResourceConfigurationProperties().forEach(c -> rb.config(c.getName().getNameString(), c.getValue()));
         r.getProperties().forEach((k, v) -> rb.property(k, v.toString()));
         r.getMetrics().forEach(m -> rb.metric(buildMetric(m, m.getType().getMetricUnits())));
-        r.getAvails().forEach(m -> rb.metric(buildMetric(m, null)));
         RawResource resource = rb.build();
         log.debugf("Adding resource: %s", resource);
         importResources.add(resource);

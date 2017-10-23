@@ -20,7 +20,6 @@ import java.io.File;
 import java.net.URL;
 
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsReportTo;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -108,8 +107,6 @@ public class ConfigConverterTest {
         Assert.assertTrue(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
 
         Assert.assertEquals(111, agentConfig.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds());
-        Assert.assertEquals(222, agentConfig.getGlobalConfiguration().getMinCollectionIntervalSeconds());
-        Assert.assertEquals(333, agentConfig.getGlobalConfiguration().getPingDispatcherPeriodSeconds());
 
         Assert.assertEquals(StorageReportTo.METRICS, agentConfig.getStorageAdapter().getType());
         Assert.assertEquals("http://hawkular:8181", agentConfig.getStorageAdapter().getUrl());
@@ -121,7 +118,6 @@ public class ConfigConverterTest {
         Assert.assertNull(agentConfig.getStorageAdapter().getKeystorePassword());
         Assert.assertEquals("the feed", agentConfig.getStorageAdapter().getFeedId());
 
-        Assert.assertEquals(DiagnosticsReportTo.LOG, agentConfig.getDiagnostics().getReportTo());
         Assert.assertEquals(5, agentConfig.getDiagnostics().getInterval());
 
         EndpointConfiguration localDmr = agentConfig.getDmrConfiguration().getEndpoints().get("Test Local DMR");

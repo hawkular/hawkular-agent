@@ -16,16 +16,12 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.util.Set;
-
-import org.hawkular.agent.monitor.api.AvailStorage;
 import org.hawkular.agent.monitor.api.InventoryStorage;
-import org.hawkular.agent.monitor.api.MetricStorage;
 import org.hawkular.agent.monitor.api.NotificationStorage;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 
-public interface StorageAdapter extends MetricStorage, AvailStorage, InventoryStorage, NotificationStorage {
+public interface StorageAdapter extends InventoryStorage, NotificationStorage {
 
     /**
      * Initializes the storage adapter.
@@ -50,34 +46,4 @@ public interface StorageAdapter extends MetricStorage, AvailStorage, InventorySt
      * @return the storage adapter's configuration settings
      */
     AgentCoreEngineConfiguration.StorageAdapterConfiguration getStorageAdapterConfiguration();
-
-    /**
-     * Stores the given collected metric data points.
-     * This is an asynchronous call. But if a <code>waitMillis</code> is provided, it indicates the caller is willing
-     * to wait up to that amount of milliseconds for the store to complete before returning.
-     *
-     * Note that if the given data points contain data across multiple tenants, the waitMillis will be the wait
-     * time for each storage attempt per tenant (in other words, if you ask to wait 1000 milliseconds and pass in
-     * data points for two different tenants, the wait time could be up to 2000 milliseconds because you will
-     * wait 1000 for storing the data for tenant 1 and 1000 for storing data for tenant 2).
-     *
-     * @param datapoints the data to be stored
-     * @param waitMillis the amount of milliseconds to wait for the store to complete before returning (0==no wait).
-     */
-    void storeMetrics(Set<MetricDataPoint> datapoints, long waitMillis);
-
-    /**
-     * Stores the given availability check data points.
-     * This is an asynchronous call. But if a <code>waitMillis</code> is provided, it indicates the caller is willing
-     * to wait up to that amount of milliseconds for the store to complete before returning.
-     *
-     * Note that if the given data points contain data across multiple tenants, the waitMillis will be the wait
-     * time for each storage attempt per tenant (in other words, if you ask to wait 1000 milliseconds and pass in
-     * data points for two different tenants, the wait time could be up to 2000 milliseconds because you will
-     * wait 1000 for storing the data for tenant 1 and 1000 for storing data for tenant 2).
-     *
-     * @param datapoints the data to be stored
-     * @param waitMillis the amount of milliseconds to wait for the store to complete before returning (0==no wait).
-     */
-    void storeAvails(Set<AvailDataPoint> datapoints, long waitMillis);
 }

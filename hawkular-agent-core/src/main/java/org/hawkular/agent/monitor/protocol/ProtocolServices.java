@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 
-import org.hawkular.agent.monitor.api.AvailListener;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.ProtocolConfiguration;
@@ -259,18 +258,6 @@ public class ProtocolServices {
         }
     }
 
-    public void addAvailListener(AvailListener listener) {
-        for (ProtocolService<?, ?> service : services) {
-            service.addAvailListener(listener);
-        }
-    }
-
-    public void removeAvailListener(AvailListener listener) {
-        for (ProtocolService<?, ?> service : services) {
-            service.removeAvailListener(listener);
-        }
-    }
-
     public ProtocolService<DMRNodeLocation, DMRSession> getDmrProtocolService() {
         return dmrProtocolService;
     }
@@ -292,7 +279,7 @@ public class ProtocolServices {
             log.infoAutoDiscoveryEnabled(this.autoDiscoveryScanPeriodSecs);
 
             ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
-                    "Hawkular WildFly Agent Auto-Discovery Scan");
+                    "Hawkular-Agent-Auto-Discovery-Scan");
             this.autoDiscoveryExecutor = Executors.newSingleThreadScheduledExecutor(threadFactory);
 
             Runnable job = new Runnable() {

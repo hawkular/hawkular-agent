@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.diagnostics;
 
-import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -49,26 +48,6 @@ public interface Diagnostics {
      * @return tracks how many errors occurred while trying to store data to Hawkular storage
      */
     Meter getStorageErrorRate();
-
-    /**
-     * @return tracks the size of the buffer that holds metrics waiting to get stored
-     */
-    Counter getMetricsStorageBufferSize();
-
-    /**
-     * @return tracks the size of the buffer that holds availability statuses waiting to get stored
-     */
-    Counter getAvailStorageBufferSize();
-
-    /**
-     * @return tracks the number of metrics that have been stored
-     */
-    Meter getMetricRate();
-
-    /**
-     * @return tracks the number of availability statuses that have been stored
-     */
-    Meter getAvailRate();
 
     /**
      * @return tracks the number of resources that have been stored/synced in inventory over time

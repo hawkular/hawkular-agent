@@ -19,7 +19,6 @@ package org.hawkular.agent.monitor.protocol;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,20 +32,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.regex.Pattern;
 
-import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.api.AvailEvent;
-import org.hawkular.agent.monitor.api.AvailListener;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration.WaitFor;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
-import org.hawkular.agent.monitor.inventory.AttributeLocation;
-import org.hawkular.agent.monitor.inventory.AvailManager;
-import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
@@ -61,10 +53,6 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.ServiceStatus;
-import org.hawkular.agent.monitor.storage.AvailDataPoint;
-import org.hawkular.agent.monitor.storage.MetricDataPoint;
-import org.hawkular.agent.monitor.storage.NumericMetricDataPoint;
-import org.hawkular.agent.monitor.storage.StringMetricDataPoint;
 import org.hawkular.agent.monitor.util.Consumer;
 import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
@@ -124,43 +112,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
     }
 
-    private class AvailListenerSupport {
-        private final List<AvailListener> availListeners = new ArrayList<>();
-        private final ReadWriteLock availListenerRWLock = new ReentrantReadWriteLock();
-
-        public void fireAvailStarting(Map<MeasurementInstance<L, AvailType<L>>, Avail> startingAvails) {
-            availListenerRWLock.readLock().lock();
-            try {
-                AvailEvent<L> event = AvailEvent.availStarted(
-                        EndpointService.this,
-                        getAvailManager(),
-                        startingAvails
-                );
-                for (AvailListener availListener : availListeners) {
-                    availListener.receivedEvent(event);
-                }
-            } finally {
-                availListenerRWLock.readLock().unlock();
-            }
-        }
-
-        public void fireAvailChanged(Map<MeasurementInstance<L, AvailType<L>>, Avail> changedAvails) {
-            availListenerRWLock.readLock().lock();
-            try {
-                AvailEvent<L> event = AvailEvent.availChanged(
-                        EndpointService.this,
-                        getAvailManager(),
-                        changedAvails
-                );
-                for (AvailListener availListener : availListeners) {
-                    availListener.receivedEvent(event);
-                }
-            } finally {
-                availListenerRWLock.readLock().unlock();
-            }
-        }
-    }
-
     private class DiscoveryResults {
         private final List<Resource<L>> newOrModifiedResources = new ArrayList<>();
         private final List<ID> discoveredResourceIds = new ArrayList<>(); // to save space, just store the IDs
@@ -207,40 +158,11 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
     }
 
-    private class AvailMeasurementResults {
-        private final Map<MeasurementInstance<L, AvailType<L>>, Avail> startingAvails = new HashMap<>();
-        private final Map<MeasurementInstance<L, AvailType<L>>, Avail> modifiedAvails = new HashMap<>();
-        private final List<ID> unchangedAvails = new ArrayList<>();
-
-        public void starting(MeasurementInstance<L, AvailType<L>> measurementInstance, Avail newAvail) {
-            startingAvails.put(measurementInstance, newAvail);
-        }
-
-        public void modified(MeasurementInstance<L, AvailType<L>> measurementInstance, Avail newAvail) {
-            modifiedAvails.put(measurementInstance, newAvail);
-        }
-
-        public void unchanged(MeasurementInstance<L, AvailType<L>> measurementInstance) {
-            unchangedAvails.add(measurementInstance.getID());
-        }
-
-        public void availMeasurementFinished() {
-            if (startingAvails.size() > 0) {
-                availListenerSupport.fireAvailStarting(startingAvails);
-            }
-            if (modifiedAvails.size() > 0) {
-                availListenerSupport.fireAvailChanged(modifiedAvails);
-            }
-        }
-    }
-
     private final MonitoredEndpoint<EndpointConfiguration> endpoint;
     private final String feedId;
     private final InventoryListenerSupport inventoryListenerSupport = new InventoryListenerSupport();
-    private final AvailListenerSupport availListenerSupport = new AvailListenerSupport();
     private final ResourceManager<L> resourceManager;
     private final ResourceTypeManager<L> resourceTypeManager;
-    private final AvailManager<L> availManager;
     private final LocationResolver<L> locationResolver;
     private final ProtocolDiagnostics diagnostics;
     private final ExecutorService fullDiscoveryScanThreadPool;
@@ -257,7 +179,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         this.endpoint = endpoint;
         this.resourceManager = new ResourceManager<>();
         this.resourceTypeManager = resourceTypeManager;
-        this.availManager = new AvailManager<>();
         this.locationResolver = locationResolver;
         this.diagnostics = diagnostics;
 
@@ -266,7 +187,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         // discovery request queued up. Any other full discovery scan requests will be rejected because they are
         // not needed - the queued discovery scan will do it. This minimizes redundant scans being performed.
         ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
-                "Hawkular WildFly Agent Full Discovery Scan-" + endpoint.getName());
+                "Hawkular-Agent-Full-Discovery-Scan-" + endpoint.getName());
         this.fullDiscoveryScanThreadPool = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(1), threadFactory);
     }
@@ -286,10 +207,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
     public ResourceTypeManager<L> getResourceTypeManager() {
         return resourceTypeManager;
-    }
-
-    public AvailManager<L> getAvailManager() {
-        return availManager;
     }
 
     public LocationResolver<L> getLocationResolver() {
@@ -329,38 +246,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             LOG.debugf("Removed inventory listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
         } finally {
             this.inventoryListenerSupport.inventoryListenerRWLock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Works only before {@link #start()} or after {@link #stop()}.
-     *
-     * @param listener to remove
-     */
-    public void addAvailListener(AvailListener listener) {
-        this.availListenerSupport.availListenerRWLock.writeLock().lock();
-        try {
-            status.assertInitialOrStopped(getClass(), "addAvailListener()");
-            this.availListenerSupport.availListeners.add(listener);
-            LOG.debugf("Added avail listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
-        } finally {
-            this.availListenerSupport.availListenerRWLock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Works only before {@link #start()} or after {@link #stop()}.
-     *
-     * @param listener to remove
-     */
-    public void removeAvailListener(AvailListener listener) {
-        this.availListenerSupport.availListenerRWLock.writeLock().lock();
-        try {
-            status.assertInitialOrStopped(getClass(), "removeAvailListener()");
-            this.availListenerSupport.availListeners.remove(listener);
-            LOG.debugf("Removed avail listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
-        } finally {
-            this.availListenerSupport.availListenerRWLock.writeLock().unlock();
         }
     }
 
@@ -489,152 +374,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     @Override
-    public void measureAvails(Collection<MeasurementInstance<L, AvailType<L>>> instances,
-            Consumer<AvailDataPoint> consumer) {
-
-        status.assertRunning(getClass(), "measureAvails()");
-
-        LOG.debugf("Checking [%d] avails for endpoint [%s]", instances.size(), getMonitoredEndpoint());
-
-        S session = null;
-        Driver<L> driver = null;
-
-        try {
-            session = openSession();
-            driver = session.getDriver();
-        } catch (Exception e) {
-            LOG.errorCouldNotAccess(this, e);
-        }
-
-        try {
-            AvailMeasurementResults availMeasurementResults = new AvailMeasurementResults();
-            for (MeasurementInstance<L, AvailType<L>> instance : instances) {
-                Avail avail = null;
-                if (driver != null) {
-                    AttributeLocation<L> location = instance.getAttributeLocation();
-                    try {
-                        Object o = driver.fetchAttribute(location);
-                        final Pattern pattern = instance.getType().getUpPattern();
-                        if (o instanceof List<?>) {
-                            /* aggregate */
-                            List<?> list = (List<?>) o;
-                            for (Object item : list) {
-                                Avail a = toAvail(pattern, item);
-                                if (avail == null) {
-                                    avail = a;
-                                } else {
-                                    avail = (a == Avail.DOWN) ? Avail.DOWN : avail;
-                                }
-                            }
-                        } else {
-                            avail = toAvail(instance.getType().getUpPattern(), o);
-                        }
-                    } catch (Exception e) {
-                        LOG.errorAvailCheckFailed(e);
-                        avail = Avail.DOWN;
-                    }
-                } else {
-                    avail = Avail.DOWN;
-                }
-                long ts = System.currentTimeMillis();
-                String key = instance.getAssociatedMetricId();
-                AvailDataPoint dataPoint = new AvailDataPoint(key, ts, avail,
-                        getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
-                consumer.accept(dataPoint);
-
-                AvailManager.AddResult addResult = getAvailManager().addAvail(instance, avail);
-                switch (addResult.getEffect()) {
-                    case STARTING:
-                        availMeasurementResults.starting(addResult.getMeasurementInstance(), addResult.getAvail());
-                        break;
-                    case MODIFIED:
-                        availMeasurementResults.modified(addResult.getMeasurementInstance(), addResult.getAvail());
-                        break;
-                    case UNCHANGED:
-                        availMeasurementResults.unchanged(addResult.getMeasurementInstance());
-                        break;
-                    default:
-                        throw new RuntimeException("Bad effect; report this bug: " + addResult.getEffect());
-                }
-            }
-            availMeasurementResults.availMeasurementFinished();
-        } catch (Exception e) {
-            LOG.errorAvailCheckFailed(e);
-        } finally {
-            if (session != null) {
-                try {
-                    session.close();
-                } catch (IOException e) {
-                    LOG.tracef(e, "Failed to close session for endpoint [%s]", session.getEndpoint());
-                }
-            }
-        }
-    }
-
-    @Override
-    public void measureMetrics(Collection<MeasurementInstance<L, MetricType<L>>> instances,
-            Consumer<MetricDataPoint> consumer) {
-
-        status.assertRunning(getClass(), "measureMetrics()");
-
-        LOG.debugf("Collecting [%d] metrics for endpoint [%s]", instances.size(), getMonitoredEndpoint());
-
-        try (S session = openSession()) {
-            Driver<L> driver = session.getDriver();
-            for (MeasurementInstance<L, MetricType<L>> instance : instances) {
-                AttributeLocation<L> location = instance.getAttributeLocation();
-                Object o = driver.fetchAttribute(location);
-                Object metricValue; // will be either a String or Double
-                if (instance.getType().getMetricType() == org.hawkular.metrics.client.common.MetricType.STRING) {
-                    StringBuilder svalue = new StringBuilder();
-                    if (o instanceof List<?>) {
-                        /* aggregate */
-                        List<?> list = (List<?>) o;
-                        for (Object item : list) {
-                            if (svalue.length() > 0) {
-                                svalue.append(",");
-                            }
-                            svalue.append(String.valueOf(item));
-                        }
-                    } else {
-                        svalue.append(String.valueOf(o));
-                    }
-                    metricValue = svalue.toString();
-                } else {
-                    double dvalue = 0;
-                    if (o instanceof List<?>) {
-                        /* aggregate */
-                        List<?> list = (List<?>) o;
-                        for (Object item : list) {
-                            double num = toDouble(item);
-                            dvalue += num;
-                        }
-                    } else {
-                        dvalue = toDouble(o);
-                    }
-                    metricValue = Double.valueOf(dvalue);
-                }
-
-                long ts = System.currentTimeMillis();
-                String key = instance.getAssociatedMetricId();
-                String tenantId = getMonitoredEndpoint().getEndpointConfiguration().getTenantId();
-                MetricDataPoint dataPoint;
-
-                if (instance.getType().getMetricType() == org.hawkular.metrics.client.common.MetricType.STRING) {
-                    dataPoint = new StringMetricDataPoint(key, ts, (String) metricValue, tenantId);
-                } else {
-                    dataPoint = new NumericMetricDataPoint(key, ts, (Double) metricValue,
-                            instance.getType().getMetricType(), tenantId);
-                }
-                consumer.accept(dataPoint);
-            }
-        } catch (Exception e) {
-            LOG.errorCouldNotAccess(this, e);
-        }
-
-    }
-
-    @Override
     public String generateAssociatedMetricId(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
         // the user can configure a metric's ID in one of two places - either in the metric definition itself or
         // in the endpoint configuration. The metric definition takes precedence in case a metric ID template
@@ -654,7 +393,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     @Override
-    public Map<String, String> generateAssociatedMetricTags(
+    public Map<String, String> generateAssociatedMetricLabels(
             MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
         // Metric tags are configured in one of two places - either in the metric definition itself or in the endpoint
         // configuration. If tags are defined in both places, all the tags found in both places are associated with
@@ -662,11 +401,11 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         Map<String, String> generatedTags;
         EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
         Map<String, String> tokenizedTags = new HashMap<>();
-        if (config.getMetricTags() != null) {
-            tokenizedTags.putAll(config.getMetricTags());
+        if (config.getMetricLabels() != null) {
+            tokenizedTags.putAll(config.getMetricLabels());
         }
-        if (instance.getType().getMetricTags() != null) {
-            tokenizedTags.putAll(instance.getType().getMetricTags());
+        if (instance.getType().getMetricLabels() != null) {
+            tokenizedTags.putAll(instance.getType().getMetricLabels());
         }
 
         if (tokenizedTags.isEmpty()) {
@@ -806,34 +545,5 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             return false;
         }
         return true;
-    }
-
-    private double toDouble(Object valueObject) {
-        double value;
-        if (valueObject == null) {
-            value = Double.NaN;
-        } else if (valueObject instanceof Number) {
-            value = ((Number) valueObject).doubleValue();
-        } else {
-            value = Double.valueOf(valueObject.toString());
-        }
-        return value;
-    }
-
-    private Avail toAvail(Pattern pattern, Object value) {
-        if (pattern == null) {
-            if (value instanceof Boolean) {
-                return (Boolean) value ? Avail.UP : Avail.DOWN;
-            } else if (value instanceof String) {
-                return AvailType.getDefaultUpPattern().matcher((String) value).matches() ? Avail.UP : Avail.DOWN;
-            } else if (value instanceof Number) {
-                return ((Number) value).intValue() == 0 ? Avail.DOWN : Avail.UP;
-            } else {
-                throw new RuntimeException(
-                        "Cannot handle an availability value of type [" + value.getClass().getName() + "]");
-            }
-        } else {
-            return pattern.matcher(String.valueOf(value)).matches() ? Avail.UP : Avail.DOWN;
-        }
     }
 }

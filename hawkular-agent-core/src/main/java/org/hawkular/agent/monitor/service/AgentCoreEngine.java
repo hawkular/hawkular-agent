@@ -17,8 +17,6 @@
 package org.hawkular.agent.monitor.service;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +28,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.api.HawkularAgentContext;
 import org.hawkular.agent.monitor.api.HawkularAgentContextImpl;
 import org.hawkular.agent.monitor.cmd.Command;
@@ -38,31 +35,18 @@ import org.hawkular.agent.monitor.cmd.FeedCommProcessor;
 import org.hawkular.agent.monitor.cmd.WebSocketClientBuilder;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter.LoggingLevel;
-import org.hawkular.agent.monitor.diagnostics.StorageReporter;
-import org.hawkular.agent.monitor.inventory.AvailType;
-import org.hawkular.agent.monitor.inventory.MeasurementInstance;
-import org.hawkular.agent.monitor.inventory.Resource;
-import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.protocol.EndpointService;
-import org.hawkular.agent.monitor.protocol.ProtocolService;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
-import org.hawkular.agent.monitor.scheduler.SchedulerConfiguration;
-import org.hawkular.agent.monitor.scheduler.SchedulerService;
-import org.hawkular.agent.monitor.storage.AvailDataPoint;
-import org.hawkular.agent.monitor.storage.AvailStorageProxy;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
-import org.hawkular.agent.monitor.storage.MetricStorageProxy;
 import org.hawkular.agent.monitor.storage.NotificationDispatcher;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
 import org.hawkular.agent.monitor.util.Util;
@@ -106,15 +90,10 @@ public abstract class AgentCoreEngine {
     private WebSocketClientBuilder webSocketClientBuilder;
     private FeedCommProcessor feedComm;
 
-    // scheduled metric and avail collections
-    private SchedulerService schedulerService;
-
     // used to send notifications to the server
     private NotificationDispatcher notificationDispatcher;
 
-    // proxies that are exposed via JNDI so external apps can emit their own inventory, metrics, and avail checks
-    private final MetricStorageProxy metricStorageProxy = new MetricStorageProxy();
-    private final AvailStorageProxy availStorageProxy = new AvailStorageProxy();
+    // proxies if exposed that will allow external apps to store their own inventory
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
 
     // contains endpoint services for all the different protocols that are supported (dmr, jmx, platform)
@@ -140,7 +119,7 @@ public abstract class AgentCoreEngine {
      * @return the context that can be used by others for storing ad-hoc monitoring data
      */
     public HawkularAgentContext getHawkularAgentContext() {
-        return new HawkularAgentContextImpl(metricStorageProxy, availStorageProxy, inventoryStorageProxy);
+        return new HawkularAgentContextImpl(inventoryStorageProxy);
     }
 
     /**
@@ -331,13 +310,6 @@ public abstract class AgentCoreEngine {
                 throw new Exception("Agent cannot start storage adapter");
             }
 
-            try {
-                startScheduler(tenantIds);
-            } catch (Exception e) {
-                log.errorCannotInitializeScheduler(e);
-                throw new Exception("Agent cannot initialize scheduler");
-            }
-
             // now that we started the storage adapter, we can create our dispatcher but only if in hawkular mode
             if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
                 this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
@@ -354,10 +326,8 @@ public abstract class AgentCoreEngine {
                             configuration.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds())
                     .build();
             ps.addInventoryListener(inventoryStorageProxy);
-            ps.addInventoryListener(schedulerService);
             if (notificationDispatcher != null) {
                 ps.addInventoryListener(notificationDispatcher);
-                ps.addAvailListener(notificationDispatcher);
             }
             protocolServices = ps;
 
@@ -443,17 +413,13 @@ public abstract class AgentCoreEngine {
             }
 
             // stop our normal protocol services
-            Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> availsToChange = null;
 
             try {
                 if (protocolServices != null) {
-                    availsToChange = getAvailsToChange();
                     protocolServices.stop();
                     protocolServices.removeInventoryListener(inventoryStorageProxy);
-                    protocolServices.removeInventoryListener(schedulerService);
                     if (notificationDispatcher != null) {
                         protocolServices.removeInventoryListener(notificationDispatcher);
-                        protocolServices.removeAvailListener(notificationDispatcher);
                     }
                     protocolServices = null;
                 }
@@ -462,21 +428,9 @@ public abstract class AgentCoreEngine {
                 log.debug("Cannot shutdown protocol services but will continue shutdown", t);
             }
 
-            // shutdown scheduler and then the storage adapter - make sure we always attempt both
-            try {
-                if (schedulerService != null) {
-                    schedulerService.stop();
-                    schedulerService = null;
-                }
-            } catch (Throwable t) {
-                error.compareAndSet(null, t);
-                log.debug("Cannot shutdown scheduler but will continue shutdown", t);
-            }
-
             // now stop the storage adapter
             try {
                 if (storageAdapter != null) {
-                    changeAvails(availsToChange); // notice we do this AFTER we shutdown the scheduler!
                     storageAdapter.shutdown();
                     storageAdapter = null;
                 }
@@ -513,54 +467,6 @@ public abstract class AgentCoreEngine {
         }
     }
 
-    private void changeAvails(Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> availsToChange) {
-        if (availsToChange != null && !availsToChange.isEmpty() && storageAdapter != null) {
-            long now = System.currentTimeMillis();
-            Set<AvailDataPoint> datapoints = new HashSet<AvailDataPoint>();
-            for (EndpointService<?, ?> endpointService : availsToChange.keySet()) {
-                EndpointConfiguration config = endpointService.getMonitoredEndpoint()
-                        .getEndpointConfiguration();
-                Avail setAvailOnShutdown = config.getSetAvailOnShutdown();
-                if (setAvailOnShutdown != null) {
-                    List<MeasurementInstance<?, AvailType<?>>> avails = availsToChange.get(endpointService);
-                    for (MeasurementInstance avail : avails) {
-                        AvailDataPoint availDataPoint = new AvailDataPoint(
-                                avail.getAssociatedMetricId(),
-                                now,
-                                setAvailOnShutdown,
-                                config.getTenantId());
-                        datapoints.add(availDataPoint);
-                    }
-                }
-            }
-            storageAdapter.storeAvails(datapoints, 60_000L); // wait for the store to complete, but not forever
-        }
-    }
-
-    private Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> getAvailsToChange() {
-        Map<EndpointService<?, ?>, List<MeasurementInstance<?, AvailType<?>>>> avails = new HashMap<>();
-        for (ProtocolService<?, ?> protocolService : protocolServices.getServices()) {
-            for (EndpointService<?, ?> endpointService : protocolService.getEndpointServices().values()) {
-                EndpointConfiguration config = endpointService.getMonitoredEndpoint()
-                        .getEndpointConfiguration();
-                Avail setAvailOnShutdown = config.getSetAvailOnShutdown();
-                if (setAvailOnShutdown != null) {
-                    ResourceManager<?> rm = endpointService.getResourceManager();
-                    if (!rm.getRootResources().isEmpty()) {
-                        List<MeasurementInstance<?, AvailType<?>>> esAvails = new ArrayList<>();
-                        avails.put(endpointService, esAvails);
-                        List<Resource<?>> resources = (List<Resource<?>>) (List<?>) rm.getResourcesBreadthFirst();
-                        for (Resource<?> resource : resources) {
-                            Collection<?> resourceAvails = resource.getAvails();
-                            esAvails.addAll((Collection<MeasurementInstance<?, AvailType<?>>>) resourceAvails);
-                        }
-                    }
-                }
-            }
-        }
-        return avails;
-    }
-
     /**
      * Creates and starts the storage adapter that will be used to store our inventory data and monitoring data.
      *
@@ -576,35 +482,15 @@ public abstract class AgentCoreEngine {
                 httpClientBuilder);
 
         // provide our storage adapter to the proxies - allows external apps to use them to store its own data
-        metricStorageProxy.setStorageAdapter(storageAdapter);
-        availStorageProxy.setStorageAdapter(storageAdapter);
         inventoryStorageProxy.setStorageAdapter(storageAdapter);
 
-        // determine where we are to store our own diagnostic reports
-        switch (configuration.getDiagnostics().getReportTo()) {
-            case LOG: {
-                this.diagnosticsReporter = JBossLoggingReporter.forRegistry(this.diagnostics.getMetricRegistry())
-                        .convertRatesTo(TimeUnit.SECONDS)
-                        .convertDurationsTo(TimeUnit.MILLISECONDS)
-                        .outputTo(Logger.getLogger(getClass()))
-                        .withLoggingLevel(LoggingLevel.DEBUG)
-                        .build();
-                break;
-            }
-            case STORAGE: {
-                this.diagnosticsReporter = StorageReporter
-                        .forRegistry(this.diagnostics.getMetricRegistry(), configuration.getDiagnostics(),
-                                storageAdapter)
-                        .feedId(feedId)
-                        .convertRatesTo(TimeUnit.SECONDS)
-                        .convertDurationsTo(TimeUnit.MILLISECONDS)
-                        .build();
-                break;
-            }
-            default: {
-                throw new Exception("Invalid diagnostics type: " + configuration.getDiagnostics().getReportTo());
-            }
-        }
+        // log our own diagnostic reports
+        this.diagnosticsReporter = JBossLoggingReporter.forRegistry(this.diagnostics.getMetricRegistry())
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .outputTo(Logger.getLogger(getClass()))
+                .withLoggingLevel(LoggingLevel.DEBUG)
+                .build();
 
         if (this.configuration.getDiagnostics().isEnabled()) {
             diagnosticsReporter.start(this.configuration.getDiagnostics().getInterval(),
@@ -612,88 +498,8 @@ public abstract class AgentCoreEngine {
         }
     }
 
-    /**
-     * Builds the scheduler's configuration and starts the scheduler.
-     *
-     * @param tenantIds the tenants our feed is using
-     * @throws Exception on error
-     */
-    private void startScheduler(Set<String> tenantIds) throws Exception {
-        if (this.schedulerService == null) {
-            SchedulerConfiguration schedulerConfig = new SchedulerConfiguration();
-            schedulerConfig.setDiagnosticsConfig(this.configuration.getDiagnostics());
-            schedulerConfig.setStorageAdapterConfig(this.configuration.getStorageAdapter());
-            schedulerConfig.setMetricDispatcherBufferSize(
-                    this.configuration.getGlobalConfiguration().getMetricDispatcherBufferSize());
-            schedulerConfig.setMetricDispatcherMaxBatchSize(
-                    this.configuration.getGlobalConfiguration().getMetricDispatcherMaxBatchSize());
-            schedulerConfig.setAvailDispatcherBufferSize(
-                    this.configuration.getGlobalConfiguration().getAvailDispatcherBufferSize());
-            schedulerConfig.setAvailDispatcherMaxBatchSize(
-                    this.configuration.getGlobalConfiguration().getAvailDispatcherMaxBatchSize());
-            schedulerConfig.setPingDispatcherPeriodSeconds(
-                    this.configuration.getGlobalConfiguration().getPingDispatcherPeriodSeconds());
-            schedulerConfig.setFeedId(this.feedId);
-            schedulerConfig.setTenantIds(tenantIds);
-
-            this.schedulerService = new SchedulerService(schedulerConfig, this.diagnostics, this.storageAdapter);
-        }
-
-        this.schedulerService.start();
-    }
-
     private void waitForHawkularServer() throws Exception {
-        waitForHawkularMetrics();
         waitForHawkularInventory();
-    }
-
-    private void waitForHawkularMetrics() throws Exception {
-        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-        String statusUrl = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
-                configuration.getStorageAdapter().getMetricsContext()).append("status").toString();
-        Request request = this.httpClientBuilder.buildJsonGetRequest(statusUrl, null);
-        int counter = 0;
-        while (true) {
-            Response response = null;
-            try {
-                response = httpclient.newCall(request).execute();
-                if (response.code() != 200) {
-                    if (response.code() != 401) {
-                        log.debugf("Hawkular Metrics is not ready yet: %d/%s", response.code(), response.message());
-                    } else {
-                        log.warnBadHawkularCredentials(response.code(), response.message());
-                    }
-                } else {
-                    String bodyString = response.body().string();
-
-                    boolean metricsReallyUp;
-                    try {
-                        metricsReallyUp = "STARTED"
-                                .equals(new ObjectMapper().readValue(bodyString, Map.class).get("MetricsService"));
-                    } catch (Exception e) {
-                        metricsReallyUp = false;
-                    }
-
-                    if (metricsReallyUp) {
-                        log.infof("Hawkular Metrics is ready: %s", bodyString);
-                        break;
-                    } else {
-                        log.debugf("Hawkular Metrics is still starting: %s", bodyString);
-                    }
-                }
-            } catch (Exception e) {
-                log.debugf("Hawkular Metrics is not ready yet: %s", e.toString());
-            } finally {
-                if (response != null) {
-                    response.body().close();
-                }
-            }
-            Thread.sleep(5000L);
-            counter++;
-            if (counter % 12 == 0) {
-                log.warnConnectionDelayed(counter, "metrics", statusUrl);
-            }
-        }
     }
 
     private void waitForHawkularInventory() throws Exception {
@@ -765,10 +571,6 @@ public abstract class AgentCoreEngine {
      */
     public String getTenantId() {
         return this.configuration.getStorageAdapter().getTenantId();
-    }
-
-    public SchedulerService getSchedulerService() {
-        return schedulerService;
     }
 
     /**

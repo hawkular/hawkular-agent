@@ -35,7 +35,6 @@ security-realm:
 
 diagnostics:
   enabled:    true
-  report-to:  STORAGE
   interval:   1234
   time-units: seconds
 
@@ -47,7 +46,7 @@ storage-adapter:
   password:             password
   feed-id:              autogenerate
   security-realm:       h-server-security-realm
-  metrics-context:      /my-metrics
+  inventory-context:    /my-inventory
   feedcomm-context:     /my-feedcomm
   connect-timeout-secs: 123
   read-timeout-secs:    456
@@ -65,7 +64,7 @@ metric-set-dmr:
     resolve-expressions: true
     include-defaults:    true
     metric-id-template:  metric ID template here
-    metric-tags:
+    metric-labels:
       foo: bar
   - name:      Minimal DMR Details
     path:      "/parent=*/child=*"
@@ -82,7 +81,7 @@ metric-set-jmx:
     object-name:  domain:type=mbean
     attribute:    heap-memory-usage#used
     metric-id-template:  metric ID template here
-    metric-tags:
+    metric-labels:
       foo: bar
   - name:        Minimal JMX Details
     object-name: domain:type=mbean
@@ -97,10 +96,9 @@ managed-servers:
     - LocalTypeSet1
     - TypeSet2
     metric-id-template:    local feed id is %FeedId and metric name is %MetricName
-    metric-tags:
+    metric-labels:
       localdmrtag1: val1
       dmrtag2: val2
-    set-avail-on-shutdown: DOWN
     wait-for:
     - name: /subsystem=undertow
     - name: /
@@ -117,10 +115,9 @@ managed-servers:
     - RemoteTypeSet1
     - TypeSet2
     metric-id-template:    remote feed id is %FeedId and metric name is %MetricName
-    metric-tags:
+    metric-labels:
       remotedmrtag1: val1
       dmrtag2: val2
-    set-avail-on-shutdown: DOWN
     wait-for:
     - name: /subsystem=undertow
 
@@ -132,10 +129,9 @@ managed-servers:
     - jmx LocalTypeSet1
     - jmx TypeSet2
     metric-id-template:    jmx local feed id is %FeedId and metric name is %MetricName
-    metric-tags:
+    metric-labels:
       localjmxtag1: val1
       jmxtag2: val2
-    set-avail-on-shutdown: UNKNOWN
     mbean-server-name:     some-mbs-name
     wait-for:
     - name: java.lang:type=Runtime
@@ -151,10 +147,9 @@ managed-servers:
     - jmx RemoteTypeSet1
     - jmx TypeSet2
     metric-id-template:    jmx remote feed id is %FeedId and metric name is %MetricName
-    metric-tags:
+    metric-labels:
       remotejmxtag1: val1
       jmxtag2: val2
-    set-avail-on-shutdown: UNKNOWN
     wait-for:
     - name: java.lang:type=Runtime
 

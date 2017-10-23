@@ -64,8 +64,8 @@ public class DMRMetric implements Validatable {
     @JsonProperty("metric-id-template")
     private String metricIdTemplate;
 
-    @JsonProperty("metric-tags")
-    private Map<String, String> metricTags;
+    @JsonProperty("metric-labels")
+    private Map<String, String> metricLabels;
 
     public DMRMetric() {
     }
@@ -81,7 +81,7 @@ public class DMRMetric implements Validatable {
         this.metricUnits = original.metricUnits == null ? null : new MeasurementUnitJsonProperty(original.metricUnits);
         this.metricType = original.metricType == null ? null : new MetricTypeJsonProperty(original.metricType);
         this.metricIdTemplate = original.metricIdTemplate;
-        this.metricTags = original.metricTags == null ? null : new HashMap<>(original.metricTags);
+        this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
     }
 
     @Override
@@ -195,11 +195,11 @@ public class DMRMetric implements Validatable {
         this.metricIdTemplate = metricIdTemplate;
     }
 
-    public Map<String, String> getMetricTags() {
-        return metricTags;
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
     }
 
-    public void setMetricTags(Map<String, String> metricTags) {
-        this.metricTags = metricTags;
+    public void setMetricLabels(Map<String, String> metricLabels) {
+        this.metricLabels = metricLabels;
     }
 }
