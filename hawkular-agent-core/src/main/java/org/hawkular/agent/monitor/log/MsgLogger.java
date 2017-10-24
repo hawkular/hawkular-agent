@@ -166,10 +166,6 @@ public interface MsgLogger extends BasicLogger {
     void errorCouldNotAccess(EndpointService<?, ?> endpoint, @Cause Throwable e);
 
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10051, value = "Missing tenant ID")
-    void errorNoTenantIdSpecified();
-
-    @LogMessage(level = Level.ERROR)
     @Message(id = 10052, value = "Could not store metrics for monitored endpoint [%s]")
     void errorFailedToStoreMetrics(String endpoint, @Cause Throwable t);
 

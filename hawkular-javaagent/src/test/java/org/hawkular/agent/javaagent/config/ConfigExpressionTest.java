@@ -188,77 +188,65 @@ public class ConfigExpressionTest {
     @Test
     public void testStringExpression() throws Exception {
         ObjectMapper mapper = createObjectMapper();
-        ManagedServers config;
+        StorageAdapter config;
         String yaml;
         String serializedYaml;
 
         // TEST EXPRESSION WITH A DEFAULT
 
-        yaml = "" +
-                "local-dmr:\n" +
-                "  name: test-name\n" +
-                "  tenant-id: ${my-sysprop:test-tenant}";
+        yaml = "url: ${my-sysprop:http://test}";
 
         // make sure the StringExpression type is deserialized correctly
-        config = mapper.readValue(yaml, ManagedServers.class);
-        Assert.assertEquals("test-tenant", config.getLocalDmr().getTenantId());
-        System.setProperty("my-sysprop", "override-tenant");
-        Assert.assertEquals("override-tenant", config.getLocalDmr().getTenantId());
+        config = mapper.readValue(yaml, StorageAdapter.class);
+        Assert.assertEquals("http://test", config.getUrl());
+        System.setProperty("my-sysprop", "http://override");
+        Assert.assertEquals("http://override", config.getUrl());
         System.clearProperty("my-sysprop");
-        Assert.assertEquals("test-tenant", config.getLocalDmr().getTenantId());
+        Assert.assertEquals("http://test", config.getUrl());
 
         // make sure the StringExpression type is serialized correctly
         serializedYaml = mapper.writeValueAsString(config);
-        Assert.assertTrue(serializedYaml.contains("  tenant-id: \"${my-sysprop:test-tenant}\""));
+        Assert.assertTrue(serializedYaml.contains("url: \"${my-sysprop:http://test}\""));
 
         // TEST EXPRESSION WITH NO DEFAULT
 
-        yaml = "" +
-                "local-dmr:\n" +
-                "  name: test-name\n" +
-                "  tenant-id: ${my-sysprop}";
+        yaml = "url: ${my-sysprop}";
 
         // make sure the StringExpression type is deserialized correctly
-        config = mapper.readValue(yaml, ManagedServers.class);
-        Assert.assertEquals("${my-sysprop}", config.getLocalDmr().getTenantId());
-        System.setProperty("my-sysprop", "override-tenant");
-        Assert.assertEquals("override-tenant", config.getLocalDmr().getTenantId());
+        config = mapper.readValue(yaml, StorageAdapter.class);
+        Assert.assertEquals("${my-sysprop}", config.getUrl());
+        System.setProperty("my-sysprop", "http://override");
+        Assert.assertEquals("http://override", config.getUrl());
         System.clearProperty("my-sysprop");
-        Assert.assertEquals("${my-sysprop}", config.getLocalDmr().getTenantId());
+        Assert.assertEquals("${my-sysprop}", config.getUrl());
 
         // make sure the StringExpression type is serialized correctly
         serializedYaml = mapper.writeValueAsString(config);
-        Assert.assertTrue(serializedYaml.contains("  tenant-id: \"${my-sysprop}\""));
+        Assert.assertTrue(serializedYaml.contains("url: \"${my-sysprop}\""));
 
         // TEST WITH NO EXPRESSION - ACTUAL VALUE
 
-        yaml = "" +
-                "local-dmr:\n" +
-                "  name: test-name\n" +
-                "  tenant-id: test-tenant";
+        yaml = "url: http://test";
 
         // make sure the StringExpression type is deserialized correctly
-        config = mapper.readValue(yaml, ManagedServers.class);
-        Assert.assertEquals("test-tenant", config.getLocalDmr().getTenantId());
+        config = mapper.readValue(yaml, StorageAdapter.class);
+        Assert.assertEquals("http://test", config.getUrl());
 
         // make sure the StringExpression type is serialized correctly
         serializedYaml = mapper.writeValueAsString(config);
-        Assert.assertTrue(serializedYaml.contains("  tenant-id: \"test-tenant\""));
+        Assert.assertTrue(serializedYaml.contains("url: \"http://test\""));
 
         // TEST WITH MISSING PROPERTY - FALLBACK TO DEFAULT
 
-        yaml = "" +
-                "local-dmr:\n" +
-                "  name: test-name\n";
+        yaml = "url: http://required";
 
         // make sure the StringExpression type is deserialized correctly
-        config = mapper.readValue(yaml, ManagedServers.class);
-        Assert.assertNull(config.getLocalDmr().getTenantId()); // default is not set
+        config = mapper.readValue(yaml, StorageAdapter.class);
+        Assert.assertEquals("", config.getUsername()); // username default is empty string
 
         // make sure the StringExpression type is serialized correctly
         serializedYaml = mapper.writeValueAsString(config);
-        Assert.assertFalse(serializedYaml.contains("  tenant-id: \"\""));
-        Assert.assertTrue(serializedYaml.contains("  tenant-id: null"));
+        Assert.assertTrue(serializedYaml.contains("username: \"\""));
     }
 
     private ObjectMapper createObjectMapper() {

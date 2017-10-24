@@ -53,7 +53,6 @@ public class AgentCoreEngineConfiguration {
         private final StorageReportTo type;
         private final String username;
         private final String password;
-        private final String tenantId;
         private final String feedId;
         private final String url;
         private final boolean useSSL;
@@ -70,7 +69,6 @@ public class AgentCoreEngineConfiguration {
                 StorageReportTo type,
                 String username,
                 String password,
-                String tenantId,
                 String feedId,
                 String url,
                 boolean useSSL,
@@ -86,7 +84,6 @@ public class AgentCoreEngineConfiguration {
             this.type = type;
             this.username = username;
             this.password = password;
-            this.tenantId = tenantId;
             this.feedId = (FEED_ID_AUTOGENERATE.equalsIgnoreCase(feedId)) ? null : feedId;
             this.url = url;
             this.useSSL = useSSL;
@@ -110,10 +107,6 @@ public class AgentCoreEngineConfiguration {
 
         public String getPassword() {
             return password;
-        }
-
-        public String getTenantId() {
-            return tenantId;
         }
 
         /**
@@ -315,21 +308,19 @@ public class AgentCoreEngineConfiguration {
         private final boolean enabled;
         private final ConnectionData connectionData;
         private final String securityRealm;
-        private final String tenantId;
         private final String metricIdTemplate;
         private final Map<String, String> metricLabels;
         private final Map<String, ? extends Object> customData;
         private final List<WaitFor> waitForResources;
 
         public AbstractEndpointConfiguration(String name, boolean enabled, ConnectionData connectionData,
-                String securityRealm, String tenantId, String metricIdTemplate, Map<String, String> metricLabels,
+                String securityRealm, String metricIdTemplate, Map<String, String> metricLabels,
                 Map<String, ? extends Object> customData, List<WaitFor> waitForResources) {
             super();
             this.name = name;
             this.enabled = enabled;
             this.connectionData = connectionData;
             this.securityRealm = securityRealm;
-            this.tenantId = tenantId;
             this.metricIdTemplate = metricIdTemplate;
             this.metricLabels = metricLabels;
             this.customData = (customData != null) ? Collections.unmodifiableMap(customData) : Collections.emptyMap();
@@ -351,14 +342,6 @@ public class AgentCoreEngineConfiguration {
 
         public String getSecurityRealm() {
             return securityRealm;
-        }
-
-        /**
-         * @return if not null this is the tenant ID all metrics from this endpoint will be associated with. If null,
-         *         the agent's tenant ID is used.
-         */
-        public String getTenantId() {
-            return tenantId;
         }
 
         /**
@@ -401,10 +384,10 @@ public class AgentCoreEngineConfiguration {
         private final Collection<Name> resourceTypeSets;
 
         public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
-                ConnectionData connectionData, String securityRealm, String tenantId,
+                ConnectionData connectionData, String securityRealm,
                 String metricIdTemplate, Map<String, String> metricLabels, Map<String, ? extends Object> customData,
                 List<WaitFor> waitForResources) {
-            super(name, enabled, connectionData, securityRealm, tenantId, metricIdTemplate, metricLabels, customData,
+            super(name, enabled, connectionData, securityRealm, metricIdTemplate, metricLabels, customData,
                     waitForResources);
             this.resourceTypeSets = resourceTypeSets;
         }

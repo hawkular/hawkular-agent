@@ -36,14 +36,12 @@ public class ITestHelper {
     private static final int ATTEMPT_COUNT = 500;
     private static final long ATTEMPT_DELAY = 5000;
 
-    private final String tenantId;
     private final String hawkularAuthHeader;
     private final String baseInvUri;
     private final OkHttpClient client;
     private final ObjectMapper mapper;
 
-    public ITestHelper(String tenantId, String hawkularAuthHeader, String baseInvUri) {
-        this.tenantId = tenantId;
+    public ITestHelper(String hawkularAuthHeader, String baseInvUri) {
         this.hawkularAuthHeader = hawkularAuthHeader;
         this.baseInvUri = baseInvUri;
         this.mapper = new ObjectMapper(new JsonFactory());
@@ -53,8 +51,7 @@ public class ITestHelper {
     public Request.Builder newAuthRequest() {
         return new Request.Builder()
                 .addHeader("Authorization", hawkularAuthHeader)
-                .addHeader("Accept", "application/json")
-                .addHeader("Hawkular-Tenant", tenantId);
+                .addHeader("Accept", "application/json");
     }
 
     public Collection<Resource> getResourceByType(String feedId, String type, int expectedCount)
@@ -144,9 +141,5 @@ public class ITestHelper {
 
     public ObjectMapper mapper() {
         return mapper;
-    }
-
-    public String getTenantId() {
-        return tenantId;
     }
 }

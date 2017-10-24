@@ -303,7 +303,6 @@ public class ConfigManagerTest {
         // storage adapter
         StorageAdapter sa = new StorageAdapter();
         Assert.assertEquals(StorageAdapter.Type.HAWKULAR, sa.getType());
-        Assert.assertEquals("hawkular", sa.getTenantId());
         Assert.assertEquals("/hawkular/inventory/", sa.getInventoryContext());
         Assert.assertEquals("/hawkular/command-gateway/", sa.getFeedcommContext());
         Assert.assertEquals(10, sa.getConnectTimeoutSecs().intValue());
@@ -414,7 +413,6 @@ public class ConfigManagerTest {
         // storage-adapter
         Assert.assertEquals(StorageAdapter.Type.HAWKULAR, config.getStorageAdapter().getType());
         Assert.assertEquals("http://127.0.0.1:8080", config.getStorageAdapter().getUrl());
-        Assert.assertEquals("hawkular", config.getStorageAdapter().getTenantId());
         Assert.assertEquals(expectedStorageAdapterUsername, config.getStorageAdapter().getUsername());
         Assert.assertEquals("password", config.getStorageAdapter().getPassword());
         Assert.assertEquals("autogenerate", config.getStorageAdapter().getFeedId());
@@ -428,7 +426,6 @@ public class ConfigManagerTest {
         LocalDMR ldmr = config.getManagedServers().getLocalDmr();
         Assert.assertEquals("Local WildFly", ldmr.getName());
         Assert.assertEquals(Boolean.FALSE, ldmr.getEnabled());
-        Assert.assertEquals("local wildfly tenant", ldmr.getTenantId());
         Assert.assertEquals("LocalTypeSet1", ldmr.getResourceTypeSets()[0]);
         Assert.assertEquals("TypeSet2", ldmr.getResourceTypeSets()[1]);
         Assert.assertEquals("local feed id is %FeedId and metric name is %MetricName", ldmr.getMetricIdTemplate());
@@ -440,7 +437,6 @@ public class ConfigManagerTest {
         LocalJMX ljmx = config.getManagedServers().getLocalJmx();
         Assert.assertEquals("Local JMX", ljmx.getName());
         Assert.assertEquals(Boolean.FALSE, ljmx.getEnabled());
-        Assert.assertEquals("jmx local wildfly tenant", ljmx.getTenantId());
         Assert.assertEquals("jmx LocalTypeSet1", ljmx.getResourceTypeSets()[0]);
         Assert.assertEquals("jmx TypeSet2", ljmx.getResourceTypeSets()[1]);
         Assert.assertEquals("jmx local feed id is %FeedId and metric name is %MetricName", ljmx.getMetricIdTemplate());
@@ -453,7 +449,6 @@ public class ConfigManagerTest {
         RemoteDMR rdmr = config.getManagedServers().getRemoteDmrs()[0];
         Assert.assertEquals("Remote WildFly", rdmr.getName());
         Assert.assertEquals(Boolean.FALSE, rdmr.getEnabled());
-        Assert.assertEquals("remote wildfly tenant", rdmr.getTenantId());
         Assert.assertEquals("RemoteTypeSet1", rdmr.getResourceTypeSets()[0]);
         Assert.assertEquals("TypeSet2", rdmr.getResourceTypeSets()[1]);
         Assert.assertEquals("remote feed id is %FeedId and metric name is %MetricName", rdmr.getMetricIdTemplate());
@@ -465,7 +460,6 @@ public class ConfigManagerTest {
         RemoteJMX rjmx = config.getManagedServers().getRemoteJmxs()[0];
         Assert.assertEquals("Remote JMX", rjmx.getName());
         Assert.assertEquals(Boolean.FALSE, rjmx.getEnabled());
-        Assert.assertEquals("jmx remote wildfly tenant", rjmx.getTenantId());
         Assert.assertEquals("jmx RemoteTypeSet1", rjmx.getResourceTypeSets()[0]);
         Assert.assertEquals("jmx TypeSet2", rjmx.getResourceTypeSets()[1]);
         Assert.assertEquals("jmx remote feed id is %FeedId and metric name is %MetricName",

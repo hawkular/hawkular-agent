@@ -16,11 +16,7 @@
  */
 package org.hawkular.agent.monitor.service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,7 +30,6 @@ import org.hawkular.agent.monitor.cmd.Command;
 import org.hawkular.agent.monitor.cmd.FeedCommProcessor;
 import org.hawkular.agent.monitor.cmd.WebSocketClientBuilder;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
@@ -224,11 +219,6 @@ public abstract class AgentCoreEngine {
                 return;
             }
 
-            if (this.configuration.getStorageAdapter().getTenantId() == null) {
-                log.errorNoTenantIdSpecified();
-                throw new Exception("Missing tenant ID");
-            }
-
             this.trustOnlySSLContextValues = buildTrustOnlySSLContextValues(this.configuration);
             this.trustOnlyTrustManagersValues = buildTrustOnlyTrustManagersValues(this.configuration);
 
@@ -265,9 +255,6 @@ public abstract class AgentCoreEngine {
             // build the diagnostics object that will be used to track our own performance
             final MetricRegistry metricRegistry = new MetricRegistry();
             this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
-
-            // We need the tenantIds to register our feed (in Hawkular mode) and to schedule pings
-            Set<String> tenantIds = getTenantIds();
 
             // Before we go on, we must make sure the Hawkular Server is up and ready
             waitForHawkularServer();
@@ -346,26 +333,6 @@ public abstract class AgentCoreEngine {
             // artificially shutdown the agent - agent will be disabled now
             stopHawkularAgent();
         }
-    }
-
-    /**
-     * @return tenant IDs of the agent and its monitored endpoints (even if those monitored endpoints are not enabled)
-     */
-    private Set<String> getTenantIds() {
-        Set<String> tenantIds = new HashSet<String>();
-        List<AbstractEndpointConfiguration> endpoints = new ArrayList<>();
-        endpoints.addAll(configuration.getDmrConfiguration().getEndpoints().values());
-        endpoints.addAll(configuration.getJmxConfiguration().getEndpoints().values());
-        endpoints.addAll(configuration.getPlatformConfiguration().getEndpoints().values());
-
-        tenantIds.add(configuration.getStorageAdapter().getTenantId()); // always register agent's global tenant ID
-        for (AbstractEndpointConfiguration endpoint : endpoints) {
-            String tenantId = endpoint.getTenantId();
-            if (tenantId != null) {
-                tenantIds.add(tenantId);
-            }
-        }
-        return tenantIds;
     }
 
     /**
@@ -564,13 +531,6 @@ public abstract class AgentCoreEngine {
      */
     public String getFeedId() {
         return this.feedId;
-    }
-
-    /**
-     * @return tenant ID of the agent
-     */
-    public String getTenantId() {
-        return this.configuration.getStorageAdapter().getTenantId();
     }
 
     /**

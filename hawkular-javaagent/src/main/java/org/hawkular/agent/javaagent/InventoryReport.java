@@ -46,12 +46,10 @@ public class InventoryReport {
                     EndpointConfiguration endpointConfig = endpoint.getEndpointConfiguration();
                     ConnectionData endpointConnectionData = endpointConfig.getConnectionData();
                     Map<String, ? extends Object> endpointCustomData = endpointConfig.getCustomData();
-                    String tenantId = endpointConfig.getTenantId();
 
                     ModelNode endpointNode = protocolServiceNode.get(endpoint.getName());
 
                     endpointNode.get("Feed ID").set(agent.getFeedId());
-                    endpointNode.get("Tenant ID").set(tenantId != null ? tenantId : agent.getTenantId());
 
                     if (endpointConnectionData != null) {
                         ModelNode connDataNode = endpointNode.get("Connection Data");

@@ -17,8 +17,6 @@
 package org.hawkular.agent.monitor.storage;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +41,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
     private Diagnostics diagnostics;
     private HttpClientBuilder httpClientBuilder;
     private AsyncInventoryStorage inventoryStorage;
-    private Map<String, String> agentTenantIdHeader;
 
     public HawkularStorageAdapter() {
     }
@@ -57,7 +54,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
         this.config = config;
         this.diagnostics = diag;
         this.httpClientBuilder = httpClientBuilder;
-        this.agentTenantIdHeader = getTenantHeader(config.getTenantId());
 
         switch (config.getType()) {
             case HAWKULAR:
@@ -98,16 +94,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
         }
     }
 
-    /**
-     * Builds the header necessary for the tenant ID.
-     *
-     * @param tenantId the tenant ID string - this is the value of the returned map
-     * @return the tenant header consisting of the header key and the value
-     */
-    private Map<String, String> getTenantHeader(String tenantId) {
-        return Collections.singletonMap("Hawkular-Tenant", tenantId);
-    }
-
     @Override
     public NotificationPayloadBuilder createNotificationPayloadBuilder() {
         return new NotificationPayloadBuilderImpl();
@@ -129,7 +115,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
             url.append("notification");
 
             // now send the REST request
-            Request request = this.httpClientBuilder.buildJsonPutRequest(url.toString(), agentTenantIdHeader, payload);
+            Request request = this.httpClientBuilder.buildJsonPutRequest(url.toString(), null, payload);
             final CountDownLatch latch = (waitMillis <= 0) ? null : new CountDownLatch(1);
 
             this.httpClientBuilder.getHttpClient().newCall(request).enqueue(new Callback() {

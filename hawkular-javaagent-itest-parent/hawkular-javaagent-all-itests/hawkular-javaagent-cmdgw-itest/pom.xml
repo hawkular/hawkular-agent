@@ -153,7 +153,6 @@
 
         <hawkular.agent.itest.mgmt.user>itest-admin</hawkular.agent.itest.mgmt.user>
         <hawkular.agent.itest.mgmt.password>itest-admin-password</hawkular.agent.itest.mgmt.password>
-        <hawkular.agent.itest.rest.tenantId>itest-rest-tenant</hawkular.agent.itest.rest.tenantId>
         <hawkular.agent.itest.rest.feedId>itest-rest-feed</hawkular.agent.itest.rest.feedId>
 
         <hawkular.bind.address>127.0.0.1</hawkular.bind.address>
@@ -282,7 +281,6 @@
                 <hawkular.agent.itest.mgmt.user>${hawkular.agent.itest.mgmt.user}</hawkular.agent.itest.mgmt.user>
                 <hawkular.agent.itest.mgmt.password>${hawkular.agent.itest.mgmt.password}</hawkular.agent.itest.mgmt.password>
 
-                <hawkular.agent.itest.rest.tenantId>${hawkular.agent.itest.rest.tenantId}</hawkular.agent.itest.rest.tenantId>
                 <hawkular.agent.itest.rest.feedId>${hawkular.agent.itest.rest.feedId}</hawkular.agent.itest.rest.feedId>
 
                 <!-- we put application in here so our test can deploy it -->
@@ -353,7 +351,6 @@
                     <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
                     <javaOpt>-Dhawkular.rest.user=${hawkular.itest.rest.user}</javaOpt>
                     <javaOpt>-Dhawkular.rest.password=${hawkular.itest.rest.password}</javaOpt>
-                    <javaOpt>-Dhawkular.rest.tenantId=${hawkular.agent.itest.rest.tenantId}</javaOpt>
                     <javaOpt>-Dhawkular.log.root=${hawkular.log.root}</javaOpt>
                     <javaOpt>-Dhawkular.log.console=${hawkular.log.console}</javaOpt>
                     <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
