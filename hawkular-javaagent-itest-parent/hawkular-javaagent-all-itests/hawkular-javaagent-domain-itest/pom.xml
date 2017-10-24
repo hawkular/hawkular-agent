@@ -135,7 +135,6 @@
 
         <hawkular.agent.itest.mgmt.user>itest-admin</hawkular.agent.itest.mgmt.user>
         <hawkular.agent.itest.mgmt.password>itest-admin-password</hawkular.agent.itest.mgmt.password>
-        <hawkular.agent.itest.rest.tenantId>itest-rest-tenant</hawkular.agent.itest.rest.tenantId>
         <hawkular.agent.itest.rest.feedId>itest-rest-feed</hawkular.agent.itest.rest.feedId>
 
 
@@ -264,7 +263,6 @@
                 <hawkular.agent.itest.mgmt.user>${hawkular.agent.itest.mgmt.user}</hawkular.agent.itest.mgmt.user>
                 <hawkular.agent.itest.mgmt.password>${hawkular.agent.itest.mgmt.password}</hawkular.agent.itest.mgmt.password>
 
-                <hawkular.agent.itest.rest.tenantId>${hawkular.agent.itest.rest.tenantId}</hawkular.agent.itest.rest.tenantId>
                 <hawkular.agent.itest.rest.feedId>${hawkular.agent.itest.rest.feedId}</hawkular.agent.itest.rest.feedId>
 
                 <plain-wildfly.bind.address>${plain-wildfly.bind.address}</plain-wildfly.bind.address>
@@ -342,7 +340,6 @@
                     <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
                     <javaOpt>-Dhawkular.rest.user=unused</javaOpt>
                     <javaOpt>-Dhawkular.rest.password=unused</javaOpt>
-                    <javaOpt>-Dhawkular.rest.tenantId=unused</javaOpt>
                     <javaOpt>-Dhawkular.log.root=${hawkular.log.root}</javaOpt>
                     <javaOpt>-Dhawkular.log.console=${hawkular.log.console}</javaOpt>
                     <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>

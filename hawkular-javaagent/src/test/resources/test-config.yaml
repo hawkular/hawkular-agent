@@ -22,7 +22,6 @@ subsystem:
 storage-adapter:
   type:      HAWKULAR
   url:       http://127.0.0.1:8080
-  tenant-id: hawkular
   username:  jdoe
   password:  password
   feed-id:   autogenerate

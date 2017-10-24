@@ -32,7 +32,6 @@ security-realm:
 storage-adapter:
   type:           METRICS
   url:            http://hawkular:8181
-  tenant-id:      custom tenant
   username:       the user
   password:       the pass
   feed-id:        the feed

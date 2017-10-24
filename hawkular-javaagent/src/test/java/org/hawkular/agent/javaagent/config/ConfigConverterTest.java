@@ -110,7 +110,6 @@ public class ConfigConverterTest {
 
         Assert.assertEquals(StorageReportTo.METRICS, agentConfig.getStorageAdapter().getType());
         Assert.assertEquals("http://hawkular:8181", agentConfig.getStorageAdapter().getUrl());
-        Assert.assertEquals("custom tenant", agentConfig.getStorageAdapter().getTenantId());
         Assert.assertEquals("the user", agentConfig.getStorageAdapter().getUsername());
         Assert.assertEquals("the pass", agentConfig.getStorageAdapter().getPassword());
         Assert.assertEquals("h-server", agentConfig.getStorageAdapter().getSecurityRealm());

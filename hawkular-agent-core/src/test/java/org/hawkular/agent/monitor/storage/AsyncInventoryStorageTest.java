@@ -119,7 +119,6 @@ public class AsyncInventoryStorageTest {
         // Mock SamplingService > MonitoredEndpoint > EndpointConfiguration
         AgentCoreEngineConfiguration.EndpointConfiguration endpointConfiguration
                 = mock(AgentCoreEngineConfiguration.EndpointConfiguration.class);
-        when(endpointConfiguration.getTenantId()).thenReturn("tenant_id");
         when(endpointConfiguration.getName()).thenReturn("");
         MonitoredEndpoint<AgentCoreEngineConfiguration.EndpointConfiguration> endpoint = MonitoredEndpoint.of(
                 endpointConfiguration, null);

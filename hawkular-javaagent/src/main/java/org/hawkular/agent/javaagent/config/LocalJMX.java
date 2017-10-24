@@ -22,8 +22,6 @@ import java.util.Map;
 
 import javax.management.ObjectName;
 
-import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -40,9 +38,6 @@ public class LocalJMX implements Validatable {
 
     @JsonProperty
     private BooleanExpression enabled = new BooleanExpression(Boolean.TRUE);
-
-    @JsonProperty("tenant-id")
-    private StringExpression tenantId;
 
     @JsonProperty("resource-type-sets")
     private String[] resourceTypeSets;
@@ -65,7 +60,6 @@ public class LocalJMX implements Validatable {
     public LocalJMX(LocalJMX original) {
         this.name = original.name;
         this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
-        this.tenantId = original.tenantId == null ? null : new StringExpression(original.tenantId);
         this.resourceTypeSets = original.resourceTypeSets == null ? null
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
         this.metricIdTemplate = original.metricIdTemplate;
@@ -112,18 +106,6 @@ public class LocalJMX implements Validatable {
             this.enabled.set(enabled);
         } else {
             this.enabled = new BooleanExpression(enabled);
-        }
-    }
-
-    public String getTenantId() {
-        return tenantId == null ? null : tenantId.get().toString();
-    }
-
-    public void setTenantId(String tenantId) {
-        if (this.tenantId != null) {
-            this.tenantId.set(new StringValue(tenantId));
-        } else {
-            this.tenantId = new StringExpression(tenantId);
         }
     }
 

@@ -53,9 +53,6 @@ public class RemoteJMX implements Validatable {
     @JsonProperty("security-realm")
     private String securityRealmName;
 
-    @JsonProperty("tenant-id")
-    private StringExpression tenantId;
-
     @JsonProperty("resource-type-sets")
     private String[] resourceTypeSets;
 
@@ -78,7 +75,6 @@ public class RemoteJMX implements Validatable {
         this.username = original.username == null ? null : new StringExpression(original.username);
         this.password = original.password == null ? null : new StringExpression(original.password);
         this.securityRealmName = original.securityRealmName;
-        this.tenantId = original.tenantId == null ? null : new StringExpression(original.tenantId);
         this.resourceTypeSets = original.resourceTypeSets == null ? null
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
         this.metricIdTemplate = original.metricIdTemplate;
@@ -172,18 +168,6 @@ public class RemoteJMX implements Validatable {
 
     public void setSecurityRealmName(String securityRealmName) {
         this.securityRealmName = securityRealmName;
-    }
-
-    public String getTenantId() {
-        return tenantId == null ? null : tenantId.get().toString();
-    }
-
-    public void setTenantId(String tenantId) {
-        if (this.tenantId != null) {
-            this.tenantId.set(new StringValue(tenantId));
-        } else {
-            this.tenantId = new StringExpression(tenantId);
-        }
     }
 
     public String[] getResourceTypeSets() {

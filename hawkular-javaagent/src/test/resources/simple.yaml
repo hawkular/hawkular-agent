@@ -41,7 +41,6 @@ diagnostics:
 storage-adapter:
   type:                 HAWKULAR
   url:                  http://127.0.0.1:8080
-  tenant-id:            hawkular
   username:             jdoe
   password:             password
   feed-id:              autogenerate
@@ -91,7 +90,6 @@ managed-servers:
   local-dmr:
     name:                  Local WildFly
     enabled:               false
-    tenant-id:             local wildfly tenant
     resource-type-sets:
     - LocalTypeSet1
     - TypeSet2
@@ -110,7 +108,6 @@ managed-servers:
     port:                  9999
     use-ssl:               true
     security-realm:        remote security realm name
-    tenant-id:             remote wildfly tenant
     resource-type-sets:
     - RemoteTypeSet1
     - TypeSet2
@@ -124,7 +121,6 @@ managed-servers:
   local-jmx:
     name:                  Local JMX
     enabled:               false
-    tenant-id:             jmx local wildfly tenant
     resource-type-sets:
     - jmx LocalTypeSet1
     - jmx TypeSet2
@@ -142,7 +138,6 @@ managed-servers:
     enabled:               false
     url:                   http://localhost:8080/jolokia-war
     security-realm:        jmx remote security realm name
-    tenant-id:             jmx remote wildfly tenant
     resource-type-sets:
     - jmx RemoteTypeSet1
     - jmx TypeSet2
