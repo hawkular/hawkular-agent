@@ -18,14 +18,14 @@ package org.hawkular.agent.javaagent.config;
 
 import java.util.Locale;
 
-import org.hawkular.metrics.client.common.MetricType;
+import org.hawkular.agent.monitor.inventory.SupportedMetricType;
 
-public class MetricTypeJsonProperty extends AbstractStringifiedProperty<MetricType> {
+public class MetricTypeJsonProperty extends AbstractStringifiedProperty<SupportedMetricType> {
     public MetricTypeJsonProperty() {
         super();
     }
 
-    public MetricTypeJsonProperty(MetricType initialValue) {
+    public MetricTypeJsonProperty(SupportedMetricType initialValue) {
         super(initialValue);
     }
 
@@ -38,28 +38,20 @@ public class MetricTypeJsonProperty extends AbstractStringifiedProperty<MetricTy
     }
 
     @Override
-    protected MetricType deserialize(String valueAsString) {
+    protected SupportedMetricType deserialize(String valueAsString) {
         if (valueAsString != null) {
-            return assertIsSupportedMetricType(MetricType.valueOf(valueAsString.toUpperCase(Locale.ENGLISH)));
+            return SupportedMetricType.valueOf(valueAsString.toUpperCase(Locale.ENGLISH));
         } else {
             throw new IllegalArgumentException("Metric type is not specified");
         }
     }
 
     @Override
-    protected String serialize(MetricType value) {
+    protected String serialize(SupportedMetricType value) {
         if (value != null) {
-            return assertIsSupportedMetricType(value).name().toLowerCase();
+            return value.name().toLowerCase();
         } else {
             throw new IllegalArgumentException("Metric type is not specified");
         }
-    }
-
-    private MetricType assertIsSupportedMetricType(MetricType mt) {
-        // TODO: in the future we may support STRING type so we'd add it here
-        if (mt != MetricType.GAUGE && mt != MetricType.COUNTER) {
-            throw new UnsupportedOperationException("Metric type [" + valueAsString + "] is not supported");
-        }
-        return mt;
     }
 }

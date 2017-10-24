@@ -21,7 +21,7 @@ import java.util.Map;
 
 import javax.management.ObjectName;
 
-import org.hawkular.metrics.client.common.MetricType;
+import org.hawkular.agent.monitor.inventory.SupportedMetricType;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -54,7 +54,7 @@ public class JMXMetric implements Validatable {
     private MeasurementUnitJsonProperty metricUnits = new MeasurementUnitJsonProperty(MeasurementUnit.NONE);
 
     @JsonProperty("metric-type")
-    private MetricTypeJsonProperty metricType = new MetricTypeJsonProperty(MetricType.GAUGE);
+    private MetricTypeJsonProperty metricType = new MetricTypeJsonProperty(SupportedMetricType.GAUGE);
 
     @JsonProperty("metric-id-template")
     private String metricIdTemplate;
@@ -152,11 +152,11 @@ public class JMXMetric implements Validatable {
         }
     }
 
-    public MetricType getMetricType() {
+    public SupportedMetricType getMetricType() {
         return metricType == null ? null : metricType.get();
     }
 
-    public void setMetricType(MetricType mt) {
+    public void setMetricType(SupportedMetricType mt) {
         if (metricType != null) {
             metricType.set(mt);
         } else {

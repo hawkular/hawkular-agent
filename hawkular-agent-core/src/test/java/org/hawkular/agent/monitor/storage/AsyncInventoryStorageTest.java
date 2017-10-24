@@ -44,6 +44,7 @@ import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
+import org.hawkular.agent.monitor.inventory.SupportedMetricType;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.junit.Assert;
 import org.junit.Before;
@@ -79,7 +80,7 @@ public class AsyncInventoryStorageTest {
             new AttributeLocation<>(new AnyLocation(""), "foo"),
             new Interval(60, TimeUnit.SECONDS),
             MeasurementUnit.CELSIUS,
-            org.hawkular.metrics.client.common.MetricType.GAUGE,
+            SupportedMetricType.GAUGE,
             null,
             null);
     private final ResourceType<AnyLocation> RT_1 = ResourceType.<AnyLocation> builder()
