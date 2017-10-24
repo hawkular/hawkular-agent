@@ -29,8 +29,13 @@ public final class MetricType<L> extends MeasurementType<L> {
 
     private final MeasurementUnit metricUnits;
 
-    public MetricType(ID id, Name name, AttributeLocation<L> location, Interval interval, MeasurementUnit metricUnits,
-            org.hawkular.metrics.client.common.MetricType metricType, String metricIdTemplate,
+    public MetricType(
+            ID id,
+            Name name,
+            AttributeLocation<L> location, Interval interval,
+            MeasurementUnit metricUnits,
+            SupportedMetricType metricType,
+            String metricIdTemplate,
             Map<String, String> metricTags) {
         super(id, name, metricType, location, interval, metricIdTemplate, metricTags);
         this.metricUnits = metricUnits;

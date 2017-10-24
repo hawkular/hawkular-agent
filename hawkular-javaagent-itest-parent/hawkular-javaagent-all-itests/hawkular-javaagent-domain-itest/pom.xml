@@ -154,10 +154,7 @@
         <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
         <hawkular.log.inventory>INFO</hawkular.log.inventory>
         <hawkular.log.inventory.rest.requests>INFO</hawkular.log.inventory.rest.requests>
-        <hawkular.log.metrics>INFO</hawkular.log.metrics>
         <hawkular.log.nest>INFO</hawkular.log.nest>
-        <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
-        <hawkular.log.cassandra>INFO</hawkular.log.cassandra>
       </properties>
 
       <build>
@@ -347,13 +344,9 @@
                     <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>
                     <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>
                     <javaOpt>-Dhawkular.log.inventory.rest.requests=${hawkular.log.inventory.rest.requests}</javaOpt>
-                    <javaOpt>-Dhawkular.log.metrics=${hawkular.log.metrics}</javaOpt>
                     <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
-                    <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
-                    <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
-                    <javaOpt>-Dhawkular.backend=embedded_cassandra</javaOpt>
                     <javaOpt>${debug.hawkular.argLine}</javaOpt>
-                    <javaOpt>-javaagent:${hawkular.agent.itest.javaagent.dir}/hawkular-javaagent-shaded.jar=config=${hawkular.agent.itest.javaagent.configfile},delay=30</javaOpt>
+                    <javaOpt>-javaagent:${hawkular.agent.itest.javaagent.dir}/hawkular-javaagent-shaded.jar=config=${hawkular.agent.itest.javaagent.configfile},delay=1</javaOpt>
                   </javaOpts>
                   <add-user>
                     <users>

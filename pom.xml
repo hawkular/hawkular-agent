@@ -62,7 +62,6 @@
     <version.org.hamcrest>1.3</version.org.hamcrest>
     <version.org.hawkular.commons>0.9.8.Final-SNAPSHOT</version.org.hawkular.commons>
     <version.org.hawkular.metrics>0.26.1.Final</version.org.hawkular.metrics>
-
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.5</version.org.jolokia>
@@ -142,12 +141,6 @@
         <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-inventory-api</artifactId>
         <version>${version.org.hawkular.commons}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.hawkular.metrics</groupId>
-        <artifactId>hawkular-metrics-clients-common</artifactId>
-        <version>${version.org.hawkular.metrics}</version>
       </dependency>
 
       <dependency>

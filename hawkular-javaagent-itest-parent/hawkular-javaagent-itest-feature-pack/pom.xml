@@ -41,20 +41,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.commons</groupId>
-      <artifactId>hawkular-commons-embedded-cassandra-war</artifactId>
-      <type>war</type>
-      <version>${version.org.hawkular.commons}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.metrics</groupId>
-      <artifactId>hawkular-metrics-component-dist</artifactId>
-      <version>${version.org.hawkular.metrics}</version>
-      <type>ear</type>
-    </dependency>
-
-    <dependency>
       <groupId>org.wildfly</groupId>
       <artifactId>wildfly-clustering-infinispan-extension</artifactId>
       <version>${version.org.wildfly}</version>

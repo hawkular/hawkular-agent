@@ -21,7 +21,7 @@ import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.net.URL;
 
-import org.hawkular.metrics.client.common.MetricType;
+import org.hawkular.agent.monitor.inventory.SupportedMetricType;
 import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.junit.Assert;
 import org.junit.Test;
@@ -197,7 +197,8 @@ public class ConfigManagerTest {
         Assert.assertEquals(TimeUnits.milliseconds, config.getDmrMetricSets()[0].getDmrMetrics()[0].getTimeUnits());
         Assert.assertEquals(MeasurementUnit.MEGABYTES,
                 config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricUnits());
-        Assert.assertEquals(MetricType.COUNTER, config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricType());
+        Assert.assertEquals(SupportedMetricType.COUNTER,
+                config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricType());
         Assert.assertEquals("the template", config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricIdTemplate());
         Assert.assertEquals("{tag1=value1, tag2=value2}",
                 config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricLabels().toString());
@@ -265,7 +266,8 @@ public class ConfigManagerTest {
         Assert.assertEquals(12345, config.getJmxMetricSets()[0].getJmxMetrics()[0].getInterval().intValue());
         Assert.assertEquals(TimeUnits.seconds, config.getJmxMetricSets()[0].getJmxMetrics()[0].getTimeUnits());
         Assert.assertEquals(MeasurementUnit.BYTES, config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricUnits());
-        Assert.assertEquals(MetricType.GAUGE, config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricType());
+        Assert.assertEquals(SupportedMetricType.GAUGE,
+                config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricType());
         Assert.assertEquals("the template", config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricIdTemplate());
         Assert.assertEquals("{tag1=value1, tag2=value2}",
                 config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricLabels().toString());

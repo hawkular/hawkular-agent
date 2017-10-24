@@ -44,6 +44,7 @@ import org.hawkular.agent.monitor.inventory.OperationParam;
 import org.hawkular.agent.monitor.inventory.ResourceConfigurationPropertyType;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceType.Builder;
+import org.hawkular.agent.monitor.inventory.SupportedMetricType;
 import org.hawkular.agent.monitor.inventory.TypeSet;
 import org.hawkular.agent.monitor.inventory.TypeSet.TypeSetBuilder;
 import org.hawkular.agent.monitor.inventory.TypeSets;
@@ -521,7 +522,7 @@ public class ConfigConverter {
                         PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeId().getIDString()),
                 osInterval,
                 MeasurementUnit.PERCENTAGE,
-                org.hawkular.metrics.client.common.MetricType.GAUGE,
+                SupportedMetricType.GAUGE,
                 null,
                 null);
 
@@ -533,7 +534,7 @@ public class ConfigConverter {
                         PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeId().getIDString()),
                 osInterval,
                 MeasurementUnit.NONE,
-                org.hawkular.metrics.client.common.MetricType.GAUGE,
+                SupportedMetricType.GAUGE,
                 null,
                 null);
 
@@ -545,7 +546,7 @@ public class ConfigConverter {
                         PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeId().getIDString()),
                 osInterval,
                 MeasurementUnit.NONE,
-                org.hawkular.metrics.client.common.MetricType.GAUGE,
+                SupportedMetricType.GAUGE,
                 null,
                 null);
 
@@ -586,7 +587,7 @@ public class ConfigConverter {
                             PlatformMetricType.FILE_STORE_USABLE_SPACE.getMetricTypeId().getIDString()),
                     interval,
                     MeasurementUnit.BYTES,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
+                    SupportedMetricType.GAUGE,
                     null,
                     null);
 
@@ -598,7 +599,7 @@ public class ConfigConverter {
                             PlatformMetricType.FILE_STORE_TOTAL_SPACE.getMetricTypeId().getIDString()),
                     interval,
                     MeasurementUnit.BYTES,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
+                    SupportedMetricType.GAUGE,
                     null,
                     null);
 
@@ -646,7 +647,7 @@ public class ConfigConverter {
                             PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeId().getIDString()),
                     interval,
                     MeasurementUnit.BYTES,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
+                    SupportedMetricType.GAUGE,
                     null,
                     null);
 
@@ -658,7 +659,7 @@ public class ConfigConverter {
                             PlatformMetricType.MEMORY_TOTAL.getMetricTypeId().getIDString()),
                     interval,
                     MeasurementUnit.BYTES,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
+                    SupportedMetricType.GAUGE,
                     null,
                     null);
 
@@ -706,7 +707,7 @@ public class ConfigConverter {
                             PlatformMetricType.PROCESSOR_CPU_USAGE.getMetricTypeId().getIDString()),
                     interval,
                     MeasurementUnit.PERCENTAGE,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
+                    SupportedMetricType.GAUGE,
                     null,
                     null);
 
@@ -754,7 +755,7 @@ public class ConfigConverter {
                                     .getIDString()),
                     interval,
                     MeasurementUnit.PERCENTAGE,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
+                    SupportedMetricType.GAUGE,
                     null,
                     null);
 
@@ -766,7 +767,7 @@ public class ConfigConverter {
                             PlatformMetricType.POWER_SOURCE_TIME_REMAINING.getMetricTypeId().getIDString()),
                     interval,
                     MeasurementUnit.SECONDS,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
+                    SupportedMetricType.GAUGE,
                     null,
                     null);
 

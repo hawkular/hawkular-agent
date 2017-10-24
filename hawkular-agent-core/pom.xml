@@ -92,11 +92,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hawkular.metrics</groupId>
-      <artifactId>hawkular-metrics-clients-common</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
       <!-- We need to hardcode this version to ensure that calls like LOG.debugf("x", 1) don't link to
