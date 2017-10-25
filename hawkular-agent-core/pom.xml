@@ -66,6 +66,16 @@
     </dependency>
 
     <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_httpserver</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.hawkular.commons</groupId>
       <artifactId>hawkular-command-gateway-api</artifactId>
     </dependency>
@@ -122,6 +132,11 @@
       <artifactId>wildfly-controller-client</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+    </dependency>
+
     <!-- these logging dependencies are only compile-time deps for generating log messages -->
     <dependency>
       <groupId>org.jboss.logging</groupId>
@@ -156,6 +171,25 @@
         <filtering>true</filtering>
       </resource>
     </resources>
+    <plugins>
+      <!-- ignore the prometheus stuff - we forked it and want to keep the code as identical as possible -->
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <excludes combine.children="append">
+            <exclude>src/main/java/io/prometheus/jmx/*.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <configuration>
+          <excludes>src/main/java/io/prometheus/jmx/*.java</excludes>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 
 </project>
