@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.NotificationPayloadBuilder;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
@@ -54,25 +53,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
         this.config = config;
         this.diagnostics = diag;
         this.httpClientBuilder = httpClientBuilder;
-
-        switch (config.getType()) {
-            case HAWKULAR:
-                // We are in a full hawkular environment - so we will integrate with inventory.
-                this.inventoryStorage = new AsyncInventoryStorage(
-                        feedId,
-                        config,
-                        httpClientBuilder,
-                        diagnostics);
-                break;
-
-            case METRICS:
-                // We are only integrating with standalone Hawkular Metrics which does not support inventory.
-                this.inventoryStorage = null;
-                break;
-
-            default:
-                throw new IllegalArgumentException("Invalid type. Please report this bug: " + config.getType());
-        }
+        this.inventoryStorage = new AsyncInventoryStorage(feedId, config, httpClientBuilder, diagnostics);
     }
 
     @Override
@@ -101,11 +82,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
 
     @Override
     public void store(NotificationPayloadBuilder payloadBuilder, long waitMillis) {
-        // if we are not in full hawkular mode, there is nothing for us to do
-        if (this.config.getType() != StorageReportTo.HAWKULAR) {
-            return;
-        }
-
         try {
             // get the payload
             String payload = Util.toJson(payloadBuilder.toPayload());

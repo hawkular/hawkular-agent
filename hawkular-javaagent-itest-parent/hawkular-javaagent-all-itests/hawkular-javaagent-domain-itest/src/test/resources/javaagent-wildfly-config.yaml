@@ -26,7 +26,6 @@ diagnostics:
   time-units: minutes
 
 storage-adapter:
-  type:      HAWKULAR
   feed-id:   itest-rest-feed
   url:       http://127.0.0.1:8080
   username:  itest-rest

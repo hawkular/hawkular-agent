@@ -37,6 +37,9 @@ public class Configuration implements Validatable {
     @JsonProperty("security-realm")
     private SecurityRealm[] securityRealms;
 
+    @JsonProperty("metrics-exporter")
+    private MetricsExporter metricsExporter = new MetricsExporter();
+
     @JsonProperty("storage-adapter")
     private StorageAdapter storageAdapter = new StorageAdapter();
 
@@ -67,6 +70,7 @@ public class Configuration implements Validatable {
     /** copy constructor */
     public Configuration(Configuration original) {
         this.subsystem = new Subsystem(original.subsystem);
+        this.metricsExporter = new MetricsExporter(original.metricsExporter);
         this.securityRealms = Util.cloneArray(original.securityRealms);
         this.storageAdapter = new StorageAdapter(original.storageAdapter);
         this.diagnostics = new Diagnostics(original.diagnostics);
@@ -107,6 +111,7 @@ public class Configuration implements Validatable {
         // validate all components of the configuration
 
         subsystem.validate();
+        metricsExporter.validate();
         storageAdapter.validate();
         for (SecurityRealm o : securityRealms) {
             o.validate();
@@ -195,6 +200,14 @@ public class Configuration implements Validatable {
 
     public void setSubsystem(Subsystem subsystem) {
         this.subsystem = subsystem;
+    }
+
+    public MetricsExporter getMetricsExporter() {
+        return metricsExporter;
+    }
+
+    public void setMetricsExporter(MetricsExporter metricsExporter) {
+        this.metricsExporter = metricsExporter;
     }
 
     public SecurityRealm[] getSecurityRealms() {

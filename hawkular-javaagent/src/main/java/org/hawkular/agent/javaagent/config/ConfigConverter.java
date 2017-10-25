@@ -31,6 +31,7 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEn
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.GlobalConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.MetricsExporterConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.ProtocolConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
@@ -93,13 +94,18 @@ public class ConfigConverter {
                 config.getSubsystem().getAutoDiscoveryScanPeriodSecs(),
                 2);
 
+        MetricsExporterConfiguration metricsExporter = new MetricsExporterConfiguration(
+                config.getMetricsExporter().getEnabled(),
+                config.getMetricsExporter().getHost(),
+                config.getMetricsExporter().getPort(),
+                config.getMetricsExporter().getConfigFile());
+
         DiagnosticsConfiguration diagnostics = new DiagnosticsConfiguration(
                 config.getDiagnostics().getEnabled(),
                 config.getDiagnostics().getInterval(),
                 config.getDiagnostics().getTimeUnits().toJavaTimeUnit());
 
         StorageAdapterConfiguration storageAdapter = new StorageAdapterConfiguration(
-                AgentCoreEngineConfiguration.StorageReportTo.valueOf(config.getStorageAdapter().getType().name()),
                 config.getStorageAdapter().getUsername(),
                 config.getStorageAdapter().getPassword(),
                 config.getStorageAdapter().getFeedId(),
@@ -120,6 +126,7 @@ public class ConfigConverter {
 
         AgentCoreEngineConfiguration agentConfig = new AgentCoreEngineConfiguration(
                 globalConfiguration,
+                metricsExporter,
                 diagnostics,
                 storageAdapter,
                 dmrConfiguration,

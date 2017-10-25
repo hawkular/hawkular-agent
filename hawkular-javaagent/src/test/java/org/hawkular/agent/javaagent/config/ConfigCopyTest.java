@@ -69,6 +69,10 @@ public class ConfigCopyTest {
         Configuration config = loadTestConfigFile("/test-convert.yaml");
         Configuration clone = new Configuration(config);
         Assert.assertEquals(clone.getSubsystem().getEnabled(), config.getSubsystem().getEnabled());
+        Assert.assertEquals(clone.getMetricsExporter().getEnabled(), config.getMetricsExporter().getEnabled());
+        Assert.assertEquals(clone.getMetricsExporter().getHost(), config.getMetricsExporter().getHost());
+        Assert.assertEquals(clone.getMetricsExporter().getPort(), config.getMetricsExporter().getPort());
+        Assert.assertEquals(clone.getMetricsExporter().getConfigFile(), config.getMetricsExporter().getConfigFile());
         Assert.assertEquals(clone.getStorageAdapter().getUrl(), config.getStorageAdapter().getUrl());
         Assert.assertEquals(clone.getDiagnostics().getEnabled(), config.getDiagnostics().getEnabled());
         Assert.assertEquals(clone.getDmrMetricSets().length, config.getDmrMetricSets().length);

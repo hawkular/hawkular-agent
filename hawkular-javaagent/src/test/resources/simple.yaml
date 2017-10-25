@@ -39,7 +39,6 @@ diagnostics:
   time-units: seconds
 
 storage-adapter:
-  type:                 HAWKULAR
   url:                  http://127.0.0.1:8080
   username:             jdoe
   password:             password
