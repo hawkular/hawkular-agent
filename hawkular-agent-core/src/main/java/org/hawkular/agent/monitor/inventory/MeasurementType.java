@@ -22,7 +22,8 @@ import java.util.Map;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 
 /**
- * A common superclass for {@link AvailType} and {@link MetricType}.
+ * A superclass for {@link MetricType} and any other types of metrics that might be needed
+ * (perhaps an "availability metric" type in the future?).
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}

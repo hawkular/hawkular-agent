@@ -55,7 +55,7 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.agent.monitor.util.Consumer;
 import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.hawkular.inventory.api.model.MetricUnit;
 
 import com.codahale.metrics.Timer.Context;
 
@@ -422,7 +422,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     private String replaceTokens(MeasurementInstance<L, ?> instance, EndpointConfiguration config, String string) {
-        MeasurementUnit units = null;
+        MetricUnit units = null;
         if (instance.getType() instanceof MetricType) {
             units = ((MetricType<?>) instance.getType()).getMetricUnits();
         }

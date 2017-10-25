@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.hawkular.agent.monitor.inventory.SupportedMetricType;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.hawkular.inventory.api.model.MetricUnit;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -56,7 +56,7 @@ public class DMRMetric implements Validatable {
     private TimeUnits timeUnits = TimeUnits.minutes;
 
     @JsonProperty("metric-units")
-    private MeasurementUnitJsonProperty metricUnits = new MeasurementUnitJsonProperty(MeasurementUnit.NONE);
+    private MetricUnitJsonProperty metricUnits = new MetricUnitJsonProperty(MetricUnit.NONE);
 
     @JsonProperty("metric-type")
     private MetricTypeJsonProperty metricType = new MetricTypeJsonProperty(SupportedMetricType.GAUGE);
@@ -78,7 +78,7 @@ public class DMRMetric implements Validatable {
         this.includeDefaults = original.includeDefaults;
         this.interval = original.interval;
         this.timeUnits = original.timeUnits;
-        this.metricUnits = original.metricUnits == null ? null : new MeasurementUnitJsonProperty(original.metricUnits);
+        this.metricUnits = original.metricUnits == null ? null : new MetricUnitJsonProperty(original.metricUnits);
         this.metricType = original.metricType == null ? null : new MetricTypeJsonProperty(original.metricType);
         this.metricIdTemplate = original.metricIdTemplate;
         this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
@@ -163,15 +163,15 @@ public class DMRMetric implements Validatable {
         this.timeUnits = timeUnits;
     }
 
-    public MeasurementUnit getMetricUnits() {
+    public MetricUnit getMetricUnits() {
         return metricUnits == null ? null : metricUnits.get();
     }
 
-    public void setMetricUnits(MeasurementUnit mu) {
+    public void setMetricUnits(MetricUnit mu) {
         if (metricUnits != null) {
             metricUnits.set(mu);
         } else {
-            metricUnits = new MeasurementUnitJsonProperty(mu);
+            metricUnits = new MetricUnitJsonProperty(mu);
         }
     }
 
