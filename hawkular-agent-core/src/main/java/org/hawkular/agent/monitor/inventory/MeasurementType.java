@@ -41,12 +41,13 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
             AttributeLocation<L> location,
             Interval interval,
             String metricIdTemplate,
-            Map<String, String> metricTags) {
+            Map<String, String> metricLabels) {
         super(id, name, location);
         this.metricType = metricType;
         this.interval = interval;
         this.metricIdTemplate = metricIdTemplate;
-        this.metricLabels = (metricTags != null) ? Collections.unmodifiableMap(metricTags) : Collections.emptyMap();
+        this.metricLabels = (metricLabels != null) ? Collections.unmodifiableMap(metricLabels)
+                : Collections.emptyMap();
     }
 
     public SupportedMetricType getMetricType() {
