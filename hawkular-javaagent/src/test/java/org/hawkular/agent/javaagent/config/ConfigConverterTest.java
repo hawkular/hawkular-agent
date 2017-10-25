@@ -21,7 +21,6 @@ import java.net.URL;
 
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.junit.Assert;
 import org.junit.Test;
@@ -108,7 +107,11 @@ public class ConfigConverterTest {
 
         Assert.assertEquals(111, agentConfig.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds());
 
-        Assert.assertEquals(StorageReportTo.METRICS, agentConfig.getStorageAdapter().getType());
+        Assert.assertEquals(true, agentConfig.getMetricsExporterConfiguration().isEnabled());
+        Assert.assertEquals("thehost", agentConfig.getMetricsExporterConfiguration().getHost());
+        Assert.assertEquals(12345, agentConfig.getMetricsExporterConfiguration().getPort());
+        Assert.assertEquals("exporter/config.yaml", agentConfig.getMetricsExporterConfiguration().getConfigFile());
+
         Assert.assertEquals("http://hawkular:8181", agentConfig.getStorageAdapter().getUrl());
         Assert.assertEquals("the user", agentConfig.getStorageAdapter().getUsername());
         Assert.assertEquals("the pass", agentConfig.getStorageAdapter().getPassword());

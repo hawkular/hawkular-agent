@@ -28,7 +28,6 @@ diagnostics:
   time-units: minutes
 
 storage-adapter:
-  type:      HAWKULAR
   feed-id:   "${hawkular.rest.feedId:autogenerate}"
   url:       http://hawkular-server:8080
   username:  "${hawkular.rest.user}"

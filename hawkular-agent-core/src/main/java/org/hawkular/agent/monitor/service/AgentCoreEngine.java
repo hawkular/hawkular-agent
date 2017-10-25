@@ -30,7 +30,6 @@ import org.hawkular.agent.monitor.cmd.Command;
 import org.hawkular.agent.monitor.cmd.FeedCommProcessor;
 import org.hawkular.agent.monitor.cmd.WebSocketClientBuilder;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
@@ -52,6 +51,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.prometheus.jmx.WebServer;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -259,34 +259,21 @@ public abstract class AgentCoreEngine {
             // Before we go on, we must make sure the Hawkular Server is up and ready
             waitForHawkularServer();
 
-            // perform some things that are dependent upon what mode the agent is in
-            switch (this.configuration.getStorageAdapter().getType()) {
-                case HAWKULAR:
-                    // if we are participating in a full Hawkular environment, we need to do some additional things:
-                    // try to connect to the server via command-gateway channel; keep going on error
-                    try {
-                        this.webSocketClientBuilder = new WebSocketClientBuilder(
-                                this.configuration.getStorageAdapter(), ssl, x509TrustManager);
-                        this.feedComm = new FeedCommProcessor(
-                                this.webSocketClientBuilder,
-                                buildAdditionalCommands(),
-                                this.feedId,
-                                this);
-                        this.feedComm.connect();
-                    } catch (Exception e) {
-                        if (e instanceof InterruptedException) {
-                            Thread.currentThread().interrupt();
-                        }
-                        log.errorCannotEstablishFeedComm(e);
-                    }
-                    break;
-
-                case METRICS:
-                    // nothing special needs to be done
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            "Unknown storage adapter type: " + this.configuration.getStorageAdapter().getType());
+            // try to connect to the server via command-gateway channel; keep going on error
+            try {
+                this.webSocketClientBuilder = new WebSocketClientBuilder(
+                        this.configuration.getStorageAdapter(), ssl, x509TrustManager);
+                this.feedComm = new FeedCommProcessor(
+                        this.webSocketClientBuilder,
+                        buildAdditionalCommands(),
+                        this.feedId,
+                        this);
+                this.feedComm.connect();
+            } catch (Exception e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                log.errorCannotEstablishFeedComm(e);
             }
 
             // start the storage adapter
@@ -297,12 +284,8 @@ public abstract class AgentCoreEngine {
                 throw new Exception("Agent cannot start storage adapter");
             }
 
-            // now that we started the storage adapter, we can create our dispatcher but only if in hawkular mode
-            if (this.configuration.getStorageAdapter().getType() == StorageReportTo.HAWKULAR) {
-                this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
-            } else {
-                this.notificationDispatcher = null;
-            }
+            // now that we started the storage adapter, we can create our dispatcher
+            this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
 
             // build the protocol services
             ProtocolServices ps = createProtocolServicesBuilder()
@@ -320,6 +303,23 @@ public abstract class AgentCoreEngine {
 
             // start all protocol services - this should perform the initial discovery scans
             protocolServices.start();
+
+            // start the metrics exporter if enabled
+            if (configuration.getMetricsExporterConfiguration().isEnabled()) {
+                String host = configuration.getMetricsExporterConfiguration().getHost();
+                int port = configuration.getMetricsExporterConfiguration().getPort();
+                String configFile = configuration.getMetricsExporterConfiguration().getConfigFile();
+                String hostPort;
+                if (host != null) {
+                    hostPort = String.format("%s:%d", host, port);
+                } else {
+                    hostPort = String.format("%d", port);
+                }
+                log.infoStartMetricsExporter(hostPort, configFile);
+                new WebServer().main(new String[] { hostPort, configFile });
+            } else {
+                log.infoMetricsExporterDisabled();
+            }
 
             setStatus(ServiceStatus.RUNNING);
 

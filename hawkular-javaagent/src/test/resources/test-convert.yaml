@@ -20,6 +20,12 @@ subsystem:
   enabled: true
   auto-discovery-scan-period-secs: 111
 
+metrics-exporter:
+  enabled: true
+  host: thehost
+  port: 12345
+  config-file: exporter/config.yaml
+
 security-realm:
 - name: h-server
   keystore-path:     kpath
@@ -30,7 +36,6 @@ security-realm:
   keystore-password: myrealmkpass
 
 storage-adapter:
-  type:           METRICS
   url:            http://hawkular:8181
   username:       the user
   password:       the pass
