@@ -46,7 +46,6 @@ import org.hawkular.inventory.api.model.Inventory;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.RawResource;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 import com.codahale.metrics.Timer;
 
@@ -192,7 +191,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     private <L, M extends MeasurementType<L>> Metric buildMetric(MeasurementInstance<L, M> m,
-                                                                 MeasurementUnit metricUnits) {
+            MetricUnit metricUnits) {
         Metric.Builder mb = Metric.builder()
                 .name(m.getName().getNameString())
                 .type(m.getType().getName().getNameString());

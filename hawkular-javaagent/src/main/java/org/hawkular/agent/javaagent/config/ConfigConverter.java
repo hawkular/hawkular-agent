@@ -57,8 +57,8 @@ import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceTy
 import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 import org.hawkular.agent.monitor.protocol.platform.PlatformPath;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
+import org.hawkular.inventory.api.model.MetricUnit;
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 /**
  * Converts the YAML configuration to the configuration used by the agent ({@link AgentCoreEngineConfiguration}).
@@ -521,7 +521,7 @@ public class ConfigConverter {
                         new PlatformNodeLocation(PlatformPath.empty()),
                         PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeId().getIDString()),
                 osInterval,
-                MeasurementUnit.PERCENTAGE,
+                MetricUnit.PERCENTAGE,
                 SupportedMetricType.GAUGE,
                 null,
                 null);
@@ -533,7 +533,7 @@ public class ConfigConverter {
                         new PlatformNodeLocation(PlatformPath.empty()),
                         PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeId().getIDString()),
                 osInterval,
-                MeasurementUnit.NONE,
+                MetricUnit.NONE,
                 SupportedMetricType.GAUGE,
                 null,
                 null);
@@ -545,7 +545,7 @@ public class ConfigConverter {
                         new PlatformNodeLocation(PlatformPath.empty()),
                         PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeId().getIDString()),
                 osInterval,
-                MeasurementUnit.NONE,
+                MetricUnit.NONE,
                 SupportedMetricType.GAUGE,
                 null,
                 null);
@@ -586,7 +586,7 @@ public class ConfigConverter {
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.FILE_STORE_USABLE_SPACE.getMetricTypeId().getIDString()),
                     interval,
-                    MeasurementUnit.BYTES,
+                    MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     null,
                     null);
@@ -598,7 +598,7 @@ public class ConfigConverter {
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.FILE_STORE_TOTAL_SPACE.getMetricTypeId().getIDString()),
                     interval,
-                    MeasurementUnit.BYTES,
+                    MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     null,
                     null);
@@ -646,7 +646,7 @@ public class ConfigConverter {
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeId().getIDString()),
                     interval,
-                    MeasurementUnit.BYTES,
+                    MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     null,
                     null);
@@ -658,7 +658,7 @@ public class ConfigConverter {
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.MEMORY_TOTAL.getMetricTypeId().getIDString()),
                     interval,
-                    MeasurementUnit.BYTES,
+                    MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     null,
                     null);
@@ -706,7 +706,7 @@ public class ConfigConverter {
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.PROCESSOR_CPU_USAGE.getMetricTypeId().getIDString()),
                     interval,
-                    MeasurementUnit.PERCENTAGE,
+                    MetricUnit.PERCENTAGE,
                     SupportedMetricType.GAUGE,
                     null,
                     null);
@@ -754,7 +754,7 @@ public class ConfigConverter {
                             PlatformMetricType.POWER_SOURCE_REMAINING_CAPACITY.getMetricTypeId()
                                     .getIDString()),
                     interval,
-                    MeasurementUnit.PERCENTAGE,
+                    MetricUnit.PERCENTAGE,
                     SupportedMetricType.GAUGE,
                     null,
                     null);
@@ -766,7 +766,7 @@ public class ConfigConverter {
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.POWER_SOURCE_TIME_REMAINING.getMetricTypeId().getIDString()),
                     interval,
-                    MeasurementUnit.SECONDS,
+                    MetricUnit.SECONDS,
                     SupportedMetricType.GAUGE,
                     null,
                     null);

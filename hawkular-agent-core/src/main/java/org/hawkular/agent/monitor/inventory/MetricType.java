@@ -18,7 +18,7 @@ package org.hawkular.agent.monitor.inventory;
 
 import java.util.Map;
 
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.hawkular.inventory.api.model.MetricUnit;
 
 /**
  * @author John Mazzitelli
@@ -27,13 +27,13 @@ import org.jboss.as.controller.client.helpers.MeasurementUnit;
  */
 public final class MetricType<L> extends MeasurementType<L> {
 
-    private final MeasurementUnit metricUnits;
+    private final MetricUnit metricUnits;
 
     public MetricType(
             ID id,
             Name name,
             AttributeLocation<L> location, Interval interval,
-            MeasurementUnit metricUnits,
+            MetricUnit metricUnits,
             SupportedMetricType metricType,
             String metricIdTemplate,
             Map<String, String> metricLabels) {
@@ -41,7 +41,7 @@ public final class MetricType<L> extends MeasurementType<L> {
         this.metricUnits = metricUnits;
     }
 
-    public MeasurementUnit getMetricUnits() {
+    public MetricUnit getMetricUnits() {
         return metricUnits;
     }
 

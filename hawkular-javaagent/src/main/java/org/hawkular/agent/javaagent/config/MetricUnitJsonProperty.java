@@ -18,36 +18,36 @@ package org.hawkular.agent.javaagent.config;
 
 import java.util.Locale;
 
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.hawkular.inventory.api.model.MetricUnit;
 
-public class MeasurementUnitJsonProperty extends AbstractStringifiedProperty<MeasurementUnit> {
-    public MeasurementUnitJsonProperty() {
+public class MetricUnitJsonProperty extends AbstractStringifiedProperty<MetricUnit> {
+    public MetricUnitJsonProperty() {
         super();
     }
 
-    public MeasurementUnitJsonProperty(MeasurementUnit initialValue) {
+    public MetricUnitJsonProperty(MetricUnit initialValue) {
         super(initialValue);
     }
 
-    public MeasurementUnitJsonProperty(String valueAsString) {
+    public MetricUnitJsonProperty(String valueAsString) {
         super(valueAsString);
     }
 
-    public MeasurementUnitJsonProperty(MeasurementUnitJsonProperty original) {
+    public MetricUnitJsonProperty(MetricUnitJsonProperty original) {
         super(original);
     }
 
     @Override
-    protected MeasurementUnit deserialize(String valueAsString) {
+    protected MetricUnit deserialize(String valueAsString) {
         if (valueAsString != null) {
-            return MeasurementUnit.valueOf(valueAsString.toUpperCase(Locale.ENGLISH));
+            return MetricUnit.valueOf(valueAsString.toUpperCase(Locale.ENGLISH));
         } else {
             throw new IllegalArgumentException("Measurement units not specified");
         }
     }
 
     @Override
-    protected String serialize(MeasurementUnit value) {
+    protected String serialize(MetricUnit value) {
         if (value != null) {
             return value.name().toLowerCase();
         } else {

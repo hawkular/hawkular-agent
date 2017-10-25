@@ -22,7 +22,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.hawkular.agent.monitor.inventory.SupportedMetricType;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.hawkular.inventory.api.model.MetricUnit;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -195,7 +195,7 @@ public class ConfigManagerTest {
         Assert.assertEquals("attrib1", config.getDmrMetricSets()[0].getDmrMetrics()[0].getAttribute());
         Assert.assertEquals(12345, config.getDmrMetricSets()[0].getDmrMetrics()[0].getInterval().intValue());
         Assert.assertEquals(TimeUnits.milliseconds, config.getDmrMetricSets()[0].getDmrMetrics()[0].getTimeUnits());
-        Assert.assertEquals(MeasurementUnit.MEGABYTES,
+        Assert.assertEquals(MetricUnit.MEGABYTES,
                 config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricUnits());
         Assert.assertEquals(SupportedMetricType.COUNTER,
                 config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricType());
@@ -265,7 +265,7 @@ public class ConfigManagerTest {
         Assert.assertEquals("attrib1", config.getJmxMetricSets()[0].getJmxMetrics()[0].getAttribute());
         Assert.assertEquals(12345, config.getJmxMetricSets()[0].getJmxMetrics()[0].getInterval().intValue());
         Assert.assertEquals(TimeUnits.seconds, config.getJmxMetricSets()[0].getJmxMetrics()[0].getTimeUnits());
-        Assert.assertEquals(MeasurementUnit.BYTES, config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricUnits());
+        Assert.assertEquals(MetricUnit.BYTES, config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricUnits());
         Assert.assertEquals(SupportedMetricType.GAUGE,
                 config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricType());
         Assert.assertEquals("the template", config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricIdTemplate());
