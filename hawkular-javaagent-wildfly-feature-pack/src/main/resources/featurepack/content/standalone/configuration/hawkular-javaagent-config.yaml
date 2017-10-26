@@ -34,8 +34,8 @@ storage-adapter:
   tenant-id: "${hawkular.rest.tenantId:hawkular}"
   feed-id:   "${hawkular.rest.feedId:autogenerate}"
   url:       "${hawkular.rest.host:http://hawkular-server:8080}"
-  username:  "${hawkular.rest.user}"
-  password:  "${hawkular.rest.password}"
+  username:  "${env.HAWKULAR_AGENT_USER}"
+  password:  "${env.HAWKULAR_AGENT_PASSWORD}"
 
 # DMR
 

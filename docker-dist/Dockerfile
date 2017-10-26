@@ -34,6 +34,10 @@ EXPOSE 8080 9090
 
 USER root
 RUN echo 'JAVA_OPTS="$JAVA_OPTS -Djboss.modules.system.pkgs=org.jboss.byteman,org.jboss.logmanager -Djava.util.logging.manager=org.jboss.logmanager.LogManager -javaagent:$JBOSS_HOME/bin/hawkular-javaagent.jar=config=$JBOSS_HOME/standalone/configuration/hawkular-javaagent-config.yaml,delay=10"' >> $JBOSS_HOME/bin/standalone.conf
+RUN echo 'JAVA_OPTS="$JAVA_OPTS ' \
+'-Dhawkular.rest.host=${HAWKULAR_URL} ' \
+'-Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE}"' >> $JBOSS_HOME/bin/standalone.conf
+
 
 RUN yum install --quiet -y openssl && \
     rm -rf /var/cache/yum && \
