@@ -16,6 +16,7 @@
  */
 package org.hawkular.agent.monitor.service;
 
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,6 +31,7 @@ import org.hawkular.agent.monitor.cmd.Command;
 import org.hawkular.agent.monitor.cmd.FeedCommProcessor;
 import org.hawkular.agent.monitor.cmd.WebSocketClientBuilder;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.MetricsExporterConfiguration;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
@@ -305,21 +307,7 @@ public abstract class AgentCoreEngine {
             protocolServices.start();
 
             // start the metrics exporter if enabled
-            if (configuration.getMetricsExporterConfiguration().isEnabled()) {
-                String host = configuration.getMetricsExporterConfiguration().getHost();
-                int port = configuration.getMetricsExporterConfiguration().getPort();
-                String configFile = configuration.getMetricsExporterConfiguration().getConfigFile();
-                String hostPort;
-                if (host != null) {
-                    hostPort = String.format("%s:%d", host, port);
-                } else {
-                    hostPort = String.format("%d", port);
-                }
-                log.infoStartMetricsExporter(hostPort, configFile);
-                new WebServer().main(new String[] { hostPort, configFile });
-            } else {
-                log.infoMetricsExporterDisabled();
-            }
+            startMetricsExporter();
 
             setStatus(ServiceStatus.RUNNING);
 
@@ -465,6 +453,28 @@ public abstract class AgentCoreEngine {
         }
     }
 
+    private void startMetricsExporter() throws Exception {
+        MetricsExporterConfiguration meConfig = configuration.getMetricsExporterConfiguration();
+        if (meConfig.isEnabled()) {
+            String hostPort;
+            if (meConfig.getHost() != null) {
+                hostPort = String.format("%s:%d", meConfig.getHost(), meConfig.getPort());
+            } else {
+                hostPort = String.format("%d", meConfig.getPort());
+            }
+            File configFile = downloadMetricsExporterConfigFile();
+            if (configFile != null) {
+                String[] args = new String[] { hostPort, configFile.getAbsolutePath() };
+                log.infoStartMetricsExporter(args[0], args[1]);
+                new WebServer().main(args);
+            } else {
+                log.infoMetricsExporterDisabled();
+            }
+        } else {
+            log.infoMetricsExporterDisabled();
+        }
+    }
+
     private void waitForHawkularServer() throws Exception {
         waitForHawkularInventory();
     }
@@ -507,6 +517,60 @@ public abstract class AgentCoreEngine {
                 log.warnConnectionDelayed(counter, "inventory", statusUrl);
             }
         }
+    }
+
+    private File downloadMetricsExporterConfigFile() throws Exception {
+        MetricsExporterConfiguration meConfig = configuration.getMetricsExporterConfiguration();
+        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
+        String url = Util.getContextUrlString(
+                configuration.getStorageAdapter().getUrl(),
+                configuration.getStorageAdapter().getInventoryContext())
+                .append("get-jmx-exporter-config")
+                .append("/")
+                .append(meConfig.getConfigFile())
+                .toString();
+        Request request = this.httpClientBuilder.buildGetRequest(url, null);
+        Response response = null;
+        File configFileToWrite = null;
+        try {
+            response = httpclient.newCall(request).execute();
+            if (response.code() != 200) {
+                log.errorf("Cannot download metrics exporter config file [%s]: %d/%s",
+                        meConfig.getConfigFile(),
+                        response.code(),
+                        response.message());
+            } else {
+                String bodyString = response.body().string();
+                configFileToWrite = expectedMetricsExporterFile();
+                Util.write(bodyString, configFileToWrite);
+            }
+        } catch (Exception e) {
+            log.errorf("Failed to download metrics exporter config file [%s]", meConfig.getConfigFile(), e);
+            configFileToWrite = null;
+        } finally {
+            if (response != null) {
+                response.body().close();
+            }
+        }
+
+        if (configFileToWrite == null) {
+            // if we couldn't download the current version, attempt to use an old version if we have one already
+            File oldConfigFile = expectedMetricsExporterFile();
+            if (oldConfigFile.canRead()) {
+                log.warnf("Using existing metrics exporter config file at [%s]", oldConfigFile.getAbsolutePath());
+                configFileToWrite = oldConfigFile;
+            }
+        }
+
+        return configFileToWrite;
+    }
+
+    private File expectedMetricsExporterFile() {
+        String configFileName = configuration.getMetricsExporterConfiguration().getConfigFile();
+        if (!configFileName.endsWith("-jmx-exporter.yaml")) {
+            configFileName += "-jmx-exporter.yaml";
+        }
+        return new File(configuration.getMetricsExporterConfiguration().getConfigDir(), configFileName);
     }
 
     /**

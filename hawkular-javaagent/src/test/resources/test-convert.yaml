@@ -24,7 +24,8 @@ metrics-exporter:
   enabled: true
   host: thehost
   port: 12345
-  config-file: exporter/config.yaml
+  config-dir: exporter
+  config-file: config.yaml
 
 security-realm:
 - name: h-server

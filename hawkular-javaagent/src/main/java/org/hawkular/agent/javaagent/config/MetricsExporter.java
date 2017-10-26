@@ -38,6 +38,9 @@ public class MetricsExporter implements Validatable {
     @JsonProperty
     private IntegerExpression port = new IntegerExpression(9779);
 
+    @JsonProperty("config-dir")
+    private StringExpression configDir = new StringExpression(".");
+
     @JsonProperty("config-file")
     private StringExpression configFile = new StringExpression("");
 
@@ -48,6 +51,7 @@ public class MetricsExporter implements Validatable {
         this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
         this.host = original.host == null ? null : new StringExpression(original.host);
         this.port = original.port == null ? null : new IntegerExpression(original.port);
+        this.configDir = original.configDir == null ? null : new StringExpression(original.configDir);
         this.configFile = original.configFile == null ? null : new StringExpression(original.configFile);
     }
 
@@ -59,6 +63,9 @@ public class MetricsExporter implements Validatable {
             }
             if (port == null || port.get() <= 0) {
                 throw new Exception("metrics-exporter port must be specified");
+            }
+            if (configDir == null || configDir.get().toString().trim().isEmpty()) {
+                throw new Exception("metrics-exporter config-dir must be specified");
             }
             if (configFile == null || configFile.get().toString().trim().isEmpty()) {
                 throw new Exception("metrics-exporter config-file must be specified");
@@ -99,6 +106,18 @@ public class MetricsExporter implements Validatable {
             this.port.set(port);
         } else {
             this.port = new IntegerExpression(port);
+        }
+    }
+
+    public String getConfigDir() {
+        return configDir == null ? null : configDir.get().toString();
+    }
+
+    public void setConfigDir(String configDir) {
+        if (this.configDir != null) {
+            this.configDir.set(new StringValue(configDir));
+        } else {
+            this.configDir = new StringExpression(new StringValue(configDir));
         }
     }
 
