@@ -20,7 +20,7 @@ package org.hawkular.agent.javaagent.config;
 import java.io.File;
 
 // Below is a copy of org.jboss.security.util.StringPropertyReplacer with some minor alterations
-// and the addditional feature of supporting environment variables via ${ENV~name:default}
+// and the addditional feature of supporting environment variables via ${env.name:default}
 
 /*
  * JBoss, Home of Professional Open Source
