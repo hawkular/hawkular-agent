@@ -224,16 +224,19 @@ public class AgentCoreEngineConfiguration {
         private final boolean enabled;
         private final String host;
         private final int port;
+        private final String configDir;
         private final String configFile;
 
         public MetricsExporterConfiguration(
                 boolean enabled,
                 String host,
                 int port,
+                String configDir,
                 String configFile) {
             this.enabled = enabled;
             this.host = host;
             this.port = port;
+            this.configDir = configDir;
             this.configFile = configFile;
         }
 
@@ -247,6 +250,10 @@ public class AgentCoreEngineConfiguration {
 
         public int getPort() {
             return port;
+        }
+
+        public String getConfigDir() {
+            return configDir;
         }
 
         public String getConfigFile() {

@@ -98,6 +98,7 @@ public class ConfigConverter {
                 config.getMetricsExporter().getEnabled(),
                 config.getMetricsExporter().getHost(),
                 config.getMetricsExporter().getPort(),
+                config.getMetricsExporter().getConfigDir(),
                 config.getMetricsExporter().getConfigFile());
 
         DiagnosticsConfiguration diagnostics = new DiagnosticsConfiguration(

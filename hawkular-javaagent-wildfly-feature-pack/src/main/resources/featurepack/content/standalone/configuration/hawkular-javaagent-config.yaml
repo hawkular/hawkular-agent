@@ -26,7 +26,8 @@ metrics-exporter:
   enabled: true
   host: 127.0.0.1
   port: 9779
-  config-file: ${jboss.server.config.dir}/jmx-exporter.yaml
+  config-dir: ${jboss.server.config.dir}
+  config-file: wildfly-10
 
 diagnostics:
   enabled:    true

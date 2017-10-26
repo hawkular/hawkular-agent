@@ -64,6 +64,22 @@ public class HttpClientBuilder extends BaseHttpClientGenerator {
                 .build());
     }
 
+    public Request buildGetRequest(String url, Map<String, String> headers) {
+        String base64Credentials = buildBase64Credentials();
+
+        Builder requestBuilder = new Request.Builder()
+                .url(url)
+                .addHeader("Authorization", "Basic " + base64Credentials);
+
+        if (headers != null) {
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                requestBuilder.addHeader(header.getKey(), header.getValue());
+            }
+        }
+
+        return requestBuilder.get().build();
+    }
+
     public Request buildJsonGetRequest(String url, Map<String, String> headers) {
         String base64Credentials = buildBase64Credentials();
 
