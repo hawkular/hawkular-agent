@@ -23,5 +23,5 @@ You attach the Hawkular Java Agent to your own application, so running your appl
 If you want to test the Hawkular Java Agent, you can run it standalone and just point it to a remote Java application to manage (you do this by addinga remote-dmr or remote-jmx managed server definition to its configuration file). You can run it like this:
 
 ```
-java -Dhawkular.rest.user=jdoe -Dhawkular.rest.password=password -Dhawkular.rest.host=http://localhost:8080 -jar hawkular-javaagent/target/hawkular-javaagent-*-shaded.jar config=hawkular-javaagent-wildfly-feature-pack/src/main/resources/featurepack/content/standalone/configuration/hawkular-javaagent-config.yaml
+java -Dhawkular.rest.user=jdoe -Dhawkular.rest.password=password -Dhawkular.rest.url=http://localhost:8080 -jar hawkular-javaagent/target/hawkular-javaagent-*-shaded.jar config=hawkular-javaagent-wildfly-feature-pack/src/main/resources/featurepack/content/standalone/configuration/hawkular-javaagent-config.yaml
 ```
