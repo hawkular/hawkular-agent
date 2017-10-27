@@ -29,10 +29,18 @@ import_hawkular_services_public_key() {
 }
 
 run_hawkular_agent() {
-    ${JBOSS_HOME}/bin/standalone.sh -b 0.0.0.0
+    ${JBOSS_HOME}/bin/${HAWKULAR_MODE}.sh -b 0.0.0.0
 }
 
 main() {
+  HAWKULAR_MODE=`echo ${HAWKULAR_MODE} | tr '[:upper:]' '[:lower:]'`
+  if [[ "${HAWKULAR_MODE}" != "standalone" ]] && [[ "${HAWKULAR_MODE}" != "domain" ]]; then
+    echo 'HAWKULAR_MODE must be set to "standalone" or "domain", found:' ${HAWKULAR_MODE}
+    exit
+  fi
+  if [[ "${HAWKULAR_MODE}" == "domain" ]]; then
+    sed -i "s|- Standalone Environment|- Domain Environment|g" /opt/hawkular/configuration/hawkular-javaagent-config.yaml
+  fi
   import_hawkular_services_public_key
   run_hawkular_agent "$@"
 }

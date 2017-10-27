@@ -15,28 +15,32 @@
 # limitations under the License.
 #
 
-FROM jboss/wildfly:10.1.0.Final
+FROM jboss/wildfly:11.0.0.Final
 
 MAINTAINER Hawkular project <hawkular-dev@lists.jboss.org>
 
 # ADD test-simple.war /opt/jboss/wildfly/standalone/deployments/
 COPY target/hawkular-javaagent.jar $JBOSS_HOME/bin/
-COPY target/hawkular-javaagent-config.yaml $JBOSS_HOME/standalone/configuration/
+COPY target/hawkular-javaagent-config.yaml /opt/hawkular/configuration/
 
 ADD src/main/resources/run_hawkular_javaagent.sh /opt/hawkular/bin/run_hawkular_agent.sh
 
 ENV HAWKULAR_URL=http://hawkular:8080 \
     HAWKULAR_AGENT_USER=jdoe \
     HAWKULAR_AGENT_PASSWORD=password \
-    HAWKULAR_IMMUTABLE=true
+    HAWKULAR_IMMUTABLE=true \
+    HAWKULAR_MODE=standalone
 
 EXPOSE 8080 9090
 
 USER root
-RUN echo 'JAVA_OPTS="$JAVA_OPTS -Djboss.modules.system.pkgs=org.jboss.byteman,org.jboss.logmanager -Djava.util.logging.manager=org.jboss.logmanager.LogManager -javaagent:$JBOSS_HOME/bin/hawkular-javaagent.jar=config=$JBOSS_HOME/standalone/configuration/hawkular-javaagent-config.yaml,delay=10"' >> $JBOSS_HOME/bin/standalone.conf
-RUN echo 'JAVA_OPTS="$JAVA_OPTS ' \
-'-Dhawkular.rest.host=${HAWKULAR_URL} ' \
-'-Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE}"' >> $JBOSS_HOME/bin/standalone.conf
+RUN printf 'JAVA_OPTS="$JAVA_OPTS' >> $JBOSS_HOME/bin/standalone.conf
+RUN printf 'HOST_CONTROLLER_JAVA_OPTS="$HOST_CONTROLLER_JAVA_OPTS' >> $JBOSS_HOME/bin/domain.conf
+RUN printf ' -Djboss.modules.system.pkgs=org.jboss.byteman,org.jboss.logmanager -Djava.util.logging.manager=org.jboss.logmanager.LogManager -javaagent:$JBOSS_HOME/bin/hawkular-javaagent.jar=config=/opt/hawkular/configuration/hawkular-javaagent-config.yaml,delay=10' \
+| tee -a $JBOSS_HOME/bin/standalone.conf $JBOSS_HOME/bin/domain.conf  > /dev/null
+RUN printf ' -Djboss.host.server-excluded-properties=jboss.modules.system.pkgs,java.util.logging.manager' >> $JBOSS_HOME/bin/domain.conf
+RUN printf ' -Dhawkular.rest.url=${HAWKULAR_URL} -Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE}"\n' \
+| tee -a $JBOSS_HOME/bin/standalone.conf $JBOSS_HOME/bin/domain.conf  > /dev/null
 
 
 RUN yum install --quiet -y openssl && \
