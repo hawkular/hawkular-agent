@@ -337,20 +337,18 @@ public class AgentCoreEngineConfiguration {
         private final boolean enabled;
         private final ConnectionData connectionData;
         private final String securityRealm;
-        private final String metricIdTemplate;
         private final Map<String, String> metricLabels;
         private final Map<String, ? extends Object> customData;
         private final List<WaitFor> waitForResources;
 
         public AbstractEndpointConfiguration(String name, boolean enabled, ConnectionData connectionData,
-                String securityRealm, String metricIdTemplate, Map<String, String> metricLabels,
-                Map<String, ? extends Object> customData, List<WaitFor> waitForResources) {
+                String securityRealm, Map<String, String> metricLabels, Map<String, ? extends Object> customData,
+                List<WaitFor> waitForResources) {
             super();
             this.name = name;
             this.enabled = enabled;
             this.connectionData = connectionData;
             this.securityRealm = securityRealm;
-            this.metricIdTemplate = metricIdTemplate;
             this.metricLabels = metricLabels;
             this.customData = (customData != null) ? Collections.unmodifiableMap(customData) : Collections.emptyMap();
             this.waitForResources = (waitForResources != null) ? Collections.unmodifiableList(waitForResources)
@@ -374,17 +372,8 @@ public class AgentCoreEngineConfiguration {
         }
 
         /**
-         * @return if not null this is the template to use to create all metric IDs for this managed server.
-         */
-        public String getMetricIdTemplate() {
-            return metricIdTemplate;
-        }
-
-        /**
          * @return if not null this is name/value pairs of labels to be associated with metrics that are
-         *         associated with resources associated with this managed server. These labels are tokenized,
-         *         meanining they can have substrings such as "%ManagedServerName" in them which are meant to
-         *         be replaced at runtime with the values of the tokens.
+         *         associated with resources associated with this managed server.
          */
         public Map<String, String> getMetricLabels() {
             return metricLabels;
@@ -413,11 +402,9 @@ public class AgentCoreEngineConfiguration {
         private final Collection<Name> resourceTypeSets;
 
         public EndpointConfiguration(String name, boolean enabled, Collection<Name> resourceTypeSets,
-                ConnectionData connectionData, String securityRealm,
-                String metricIdTemplate, Map<String, String> metricLabels, Map<String, ? extends Object> customData,
-                List<WaitFor> waitForResources) {
-            super(name, enabled, connectionData, securityRealm, metricIdTemplate, metricLabels, customData,
-                    waitForResources);
+                ConnectionData connectionData, String securityRealm, Map<String, String> metricLabels,
+                Map<String, ? extends Object> customData, List<WaitFor> waitForResources) {
+            super(name, enabled, connectionData, securityRealm, metricLabels, customData, waitForResources);
             this.resourceTypeSets = resourceTypeSets;
         }
 

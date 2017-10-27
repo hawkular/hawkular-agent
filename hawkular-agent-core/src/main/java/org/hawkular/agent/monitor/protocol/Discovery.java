@@ -100,9 +100,10 @@ public final class Discovery<L> {
                 // build the resource now - we might need it to generate metric IDs
                 Resource<L> resource = builder.build();
 
-                // The resource is built (and measurement instances assigned to it) so we can generate metric IDs.
+                // The resource is built (and measurement instances assigned to it) so we can generate family names/labels
                 for (MeasurementInstance<L, MetricType<L>> instance : resource.getMetrics()) {
-                    instance.setAssociatedMetricId(samplingService.generateAssociatedMetricId(instance));
+                    instance.setMetricFamily(samplingService.generateMetricFamily(instance));
+                    instance.setMetricLabels(samplingService.generateMetricLabels(instance));
                 }
 
                 log.debugf("Discovered resource [%s]", resource);

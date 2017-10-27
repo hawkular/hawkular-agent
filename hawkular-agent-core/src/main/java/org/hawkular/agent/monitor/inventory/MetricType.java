@@ -21,7 +21,7 @@ import java.util.Map;
 import org.hawkular.inventory.api.model.MetricUnit;
 
 /**
- * @author John Mazzitelli
+ * Metadata for a type of metric.
  *
  * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}
  */
@@ -32,12 +32,12 @@ public final class MetricType<L> extends MeasurementType<L> {
     public MetricType(
             ID id,
             Name name,
-            AttributeLocation<L> location, Interval interval,
+            AttributeLocation<L> location,
             MetricUnit metricUnits,
             SupportedMetricType metricType,
-            String metricIdTemplate,
+            String metricFamily,
             Map<String, String> metricLabels) {
-        super(id, name, metricType, location, interval, metricIdTemplate, metricLabels);
+        super(id, name, metricType, location, metricFamily, metricLabels);
         this.metricUnits = metricUnits;
     }
 

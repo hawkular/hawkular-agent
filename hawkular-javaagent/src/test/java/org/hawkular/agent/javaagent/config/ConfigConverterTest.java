@@ -79,14 +79,14 @@ public class ConfigConverterTest {
 
     @Test
     public void testRealConfig() throws Exception {
-        Configuration config = loadTestConfigFile("/real-config.yaml");
+        Configuration config = loadTestConfigFile("/wildfly10/hawkular-javaagent-config.yaml");
         AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
         Assert.assertTrue(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
     }
 
     @Test
     public void testRealConfigEAP6() throws Exception {
-        Configuration config = loadTestConfigFile("/real-config-eap6.yaml");
+        Configuration config = loadTestConfigFile("/eap6/hawkular-javaagent-config.yaml");
         AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
         Assert.assertTrue(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
     }

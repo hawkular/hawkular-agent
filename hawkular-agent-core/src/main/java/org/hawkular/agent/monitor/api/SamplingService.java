@@ -26,7 +26,7 @@ import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.NodeLocation;
 
 /**
- * A service that can be used to sample metrics and avails for the given {@link MonitoredEndpoint}.
+ * A service that can be used to sample metrics for the given {@link MonitoredEndpoint}.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
@@ -40,35 +40,22 @@ public interface SamplingService<L> {
     MonitoredEndpoint<EndpointConfiguration> getMonitoredEndpoint();
 
     /**
-     * Given a measurement instance, this will generate the labels associated with the metric.
+     * Given a measurement instance, this will generate its family name.
+     *
+     * @param instance the measurement instance whose family name is to be generated
+     * @return the metric family
+     */
+    String generateMetricFamily(MeasurementInstance<L, ? extends MeasurementType<L>> instance);
+
+    /**
+     * Given a measurement instance, this will generate its labels.
      *
      * The service can use the metric tags provided by the user via
      * {@link MonitoredEndpoint#getEndpointConfiguration() the endpoint configuration} which contains
      * {@link AbstractEndpointConfiguration#getMetricLabels() the metric labels}.
      *
      * @param instance the measurement instance whose labels are to be generated
-     * @return the measurement labels to be added to the metric definition
+     * @return the measurement labels to be added to the instance definition
      */
-    Map<String, String> generateAssociatedMetricLabels(MeasurementInstance<L, ? extends MeasurementType<L>> instance);
-
-    /**
-     * Given a measurement instance, this will generate the key to be used when
-     * storing that measurement instance's collected data to storage. In the Hawkular Metrics
-     * REST API, this key is known as the "metric id".
-     *
-     * The service can generate a default one or can use the metric ID template provided by the user
-     * via {@link MonitoredEndpoint#getEndpointConfiguration() the endpoint configuration} which contains a
-     * {@link AbstractEndpointConfiguration#getMetricIdTemplate() metric ID template}.
-     *
-     * If this method is not implemented, the default behavior is to return the ID of
-     * the measurement instance itself.
-     *
-     * @param instance the measurement instance whose key is to be generated
-     * @return the measurement key to be used to identify measured data for the given instance
-     * @see MeasurementInstance#getAssociatedMetricId(String)
-     * @see MeasurementInstance#setAssociatedMetricId(String)
-     */
-    default String generateAssociatedMetricId(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
-        return instance.getID().getIDString();
-    }
+    Map<String, String> generateMetricLabels(MeasurementInstance<L, ? extends MeasurementType<L>> instance);
 }

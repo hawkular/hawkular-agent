@@ -17,10 +17,8 @@
 
 ---
 subsystem:
-  enabled: "${hawkular.agent.enabled:true}"
-  immutable: "${hawkular.agent.immutable:false}"
-  in-container: "${hawkular.agent.in-container:false}"
-  auto-discovery-scan-period-secs: 600
+  enabled: true
+  auto-discovery-scan-period-secs: 15
 
 diagnostics:
   enabled:    true
@@ -28,10 +26,10 @@ diagnostics:
   time-units: minutes
 
 storage-adapter:
-  feed-id:   "${hawkular.rest.feedId:autogenerate}"
-  url:       http://hawkular-server:8080
-  username:  "${hawkular.rest.user}"
-  password:  "${hawkular.rest.password}"
+  feed-id:   itest-rest-feed
+  url:       http://127.0.0.1:8080
+  username:  itest-rest
+  password:  itest-rest-password
 
 # DMR
 
@@ -39,477 +37,404 @@ metric-set-dmr:
 - name: WildFly Memory Metrics
   metric-dmr:
   - name: Heap Used
-    interval:     30
-    time-units:   seconds
     metric-units: bytes
-    metric-type:  gauge
     path:         /core-service=platform-mbean/type=memory
     attribute:    heap-memory-usage#used
+    metric-family: TODO
   - name: Heap Committed
-    interval:     1
-    time-units:   minutes
     metric-units: bytes
-    metric-type:  gauge
     path:         /core-service=platform-mbean/type=memory
     attribute:    heap-memory-usage#committed
+    metric-family: TODO
   - name: Heap Max
-    interval:     1
-    time-units:   minutes
     metric-units: bytes
-    metric-type:  gauge
     path:         /core-service=platform-mbean/type=memory
     attribute:    heap-memory-usage#max
+    metric-family: TODO
   - name: NonHeap Used
-    interval:     30
-    time-units:   seconds
     metric-units: bytes
     path:         /core-service=platform-mbean/type=memory
     attribute:    non-heap-memory-usage#used
+    metric-family: TODO
   - name: NonHeap Committed
-    interval:     1
-    time-units:   minutes
     metric-units: bytes
     path:         /core-service=platform-mbean/type=memory
     attribute:    non-heap-memory-usage#committed
+    metric-family: TODO
   - name: Accumulated GC Duration
-    interval:     1
-    time-units:   minutes
     metric-units: milliseconds
     metric-type:  counter
     path:         "/core-service=platform-mbean/type=garbage-collector/name=*"
     attribute:    collection-time
+    metric-family: TODO
 - name: WildFly Threading Metrics
   metric-dmr:
   - name: Thread Count
-    interval:     2
-    time-units:   minutes
     metric-type:  gauge
     path:         /core-service=platform-mbean/type=threading
     attribute:    thread-count
+    metric-family: TODO
 - name: WildFly Aggregated Web Metrics
   metric-dmr:
   - name: Aggregated Active Web Sessions
-    interval:   1
-    time-units: minutes
-    path:       "/deployment=*/subsystem=web"
+    path:       "/deployment=*/subsystem=undertow"
     attribute:  active-sessions
+    metric-family: TODO
   - name: Aggregated Max Active Web Sessions
-    interval:   1
-    time-units: minutes
-    path:       "/deployment=*/subsystem=web"
+    path:       "/deployment=*/subsystem=undertow"
     attribute:  max-active-sessions
+    metric-family: TODO
   - name: Aggregated Expired Web Sessions
-    interval:   1
-    time-units: minutes
-    path:       "/deployment=*/subsystem=web"
+    path:       "/deployment=*/subsystem=undertow"
     attribute:  expired-sessions
+    metric-family: TODO
   - name: Aggregated Rejected Web Sessions
-    interval:   1
-    time-units: minutes
-    path:       "/deployment=*/subsystem=web"
+    path:       "/deployment=*/subsystem=undertow"
     attribute:  rejected-sessions
+    metric-family: TODO
   - name: Aggregated Servlet Request Time
-    interval:   1
-    time-units: minutes
-    path:       "/deployment=*/subsystem=web/servlet=*"
-    attribute:  processingTime
+    path:       "/deployment=*/subsystem=undertow/servlet=*"
+    attribute:  total-request-time
+    metric-family: TODO
   - name: Aggregated Servlet Request Count
-    interval:   1
-    time-units: minutes
-    path:       "/deployment=*/subsystem=web/servlet=*"
-    attribute:  requestCount
-- name: Web Subsystem Metrics
+    path:       "/deployment=*/subsystem=undertow/servlet=*"
+    attribute:  request-count
+    metric-family: TODO
+- name: Undertow Metrics
   metric-dmr:
   - name: Active Sessions
-    interval:   2
-    time-units: minutes
-    path:       "/subsystem=web"
+    path:       "/subsystem=undertow"
     attribute:  active-sessions
+    metric-family: TODO
   - name: Sessions Created
-    interval:   2
-    time-units: minutes
-    path:       "/subsystem=web"
+    path:       "/subsystem=undertow"
     attribute:  sessions-created
     metric-type: counter
+    metric-family: TODO
   - name: Expired Sessions
-    interval:   2
-    time-units: minutes
-    path:       "/subsystem=web"
+    path:       "/subsystem=undertow"
     attribute:  expired-sessions
     metric-type: counter
+    metric-family: TODO
   - name: Rejected Sessions
-    interval:   2
-    time-units: minutes
-    path:       "/subsystem=web"
+    path:       "/subsystem=undertow"
     attribute:  rejected-sessions
     metric-type: counter
+    metric-family: TODO
   - name: Max Active Sessions
-    interval:   2
-    time-units: minutes
-    path:       "/subsystem=web"
+    path:       "/subsystem=undertow"
     attribute:  max-active-sessions
+    metric-family: TODO
 - name: Servlet Metrics
   metric-dmr:
   - name: Max Request Time
-    interval:     5
-    time-units:   minutes
-    attribute:    maxTime
+    attribute:    max-request-time
     metric-units: milliseconds
+    metric-family: TODO
   - name: Min Request Time
-    interval:     5
-    time-units:   minutes
-    attribute:    min-time
+    attribute:    min-request-time
     metric-units: milliseconds
+    metric-family: TODO
   - name: Total Request Time
-    interval:     5
-    time-units:   minutes
-    attribute:    processingTime
+    attribute:    total-request-time
     metric-units: milliseconds
+    metric-family: TODO
   - name: Request Count
-    interval:     5
-    time-units:   minutes
-    attribute:    requestCount
+    attribute:    request-count
     metric-type:  counter
+    metric-family: TODO
 - name: Singleton EJB Metrics
   metric-dmr:
   - name: Execution Time
-    interval:     5
-    time-units:   minutes
     attribute:    execution-time
+    metric-family: TODO
   - name: Invocations
-    interval:     5
-    time-units:   minutes
     attribute:    invocations
     metric-type:  counter
+    metric-family: TODO
   - name: Peak Concurrent Invocations
-    interval:     5
-    time-units:   minutes
     attribute:    peak-concurrent-invocations
+    metric-family: TODO
   - name: Wait Time
-    interval:     5
-    time-units:   minutes
     attribute:    wait-time
+    metric-family: TODO
 - name: Message Driven EJB Metrics
   metric-dmr:
   - name: Execution Time
-    interval:     5
-    time-units:   minutes
     attribute:    execution-time
+    metric-family: TODO
   - name: Invocations
-    interval:     5
-    time-units:   minutes
     attribute:    invocations
     metric-type:  counter
+    metric-family: TODO
   - name: Peak Concurrent Invocations
-    interval:     5
-    time-units:   minutes
     attribute:    peak-concurrent-invocations
+    metric-family: TODO
   - name: Wait Time
-    interval:     5
-    time-units:   minutes
     attribute:    wait-time
+    metric-family: TODO
   - name: Pool Available Count
-    interval:     5
-    time-units:   minutes
     attribute:    pool-available-count
+    metric-family: TODO
   - name: Pool Create Count
-    interval:     5
-    time-units:   minutes
     attribute:    pool-create-count
+    metric-family: TODO
   - name: Pool Current Size
-    interval:     5
-    time-units:   minutes
     attribute:    pool-current-size
+    metric-family: TODO
   - name: Pool Max Size
-    interval:     5
-    time-units:   minutes
     attribute:    pool-max-size
+    metric-family: TODO
   - name: Pool Remove Count
-    interval:     5
-    time-units:   minutes
     attribute:    pool-remove-count
+    metric-family: TODO
 - name: Stateless Session EJB Metrics
   metric-dmr:
   - name: Execution Time
-    interval:     5
-    time-units:   minutes
     attribute:    execution-time
+    metric-family: TODO
   - name: Invocations
-    interval:     5
-    time-units:   minutes
     attribute:    invocations
     metric-type:  counter
+    metric-family: TODO
   - name: Peak Concurrent Invocations
-    interval:     5
-    time-units:   minutes
     attribute:    peak-concurrent-invocations
+    metric-family: TODO
   - name: Wait Time
-    interval:     5
-    time-units:   minutes
     attribute:    wait-time
+    metric-family: TODO
   - name: Pool Available Count
-    interval:     5
-    time-units:   minutes
     attribute:    pool-available-count
+    metric-family: TODO
   - name: Pool Create Count
-    interval:     5
-    time-units:   minutes
     attribute:    pool-create-count
+    metric-family: TODO
   - name: Pool Current Size
-    interval:     5
-    time-units:   minutes
     attribute:    pool-current-size
+    metric-family: TODO
   - name: Pool Max Size
-    interval:     5
-    time-units:   minutes
     attribute:    pool-max-size
+    metric-family: TODO
   - name: Pool Remove Count
-    interval:     5
-    time-units:   minutes
     attribute:    pool-remove-count
+    metric-family: TODO
 - name: Stateful Session EJB Metrics
   metric-dmr:
   - name: Execution Time
-    interval:     5
-    time-units:   minutes
     attribute:    execution-time
+    metric-family: TODO
   - name: Invocations
-    interval:     5
-    time-units:   minutes
     attribute:    invocations
     metric-type:  counter
+    metric-family: TODO
   - name: Peak Concurrent Invocations
-    interval:     5
-    time-units:   minutes
     attribute:    peak-concurrent-invocations
+    metric-family: TODO
   - name: Wait Time
-    interval:     5
-    time-units:   minutes
     attribute:    wait-time
+    metric-family: TODO
   - name: Cache Size
-    interval:     5
-    time-units:   minutes
     attribute:    cache-size
+    metric-family: TODO
   - name: Total Size
-    interval:     5
-    time-units:   minutes
     attribute:    total-size
+    metric-family: TODO
 - name: Datasource JDBC Metrics
   metric-dmr:
   - name: Prepared Statement Cache Access Count
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=jdbc"
     attribute:    PreparedStatementCacheAccessCount
+    metric-family: TODO
   - name: Prepared Statement Cache Add Count
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=jdbc"
     attribute:    PreparedStatementCacheAddCount
+    metric-family: TODO
   - name: Prepared Statement Cache Current Size
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=jdbc"
     attribute:    PreparedStatementCacheCurrentSize
+    metric-family: TODO
   - name: Prepared Statement Cache Delete Count
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=jdbc"
     attribute:    PreparedStatementCacheDeleteCount
+    metric-family: TODO
   - name: Prepared Statement Cache Hit Count
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=jdbc"
     attribute:    PreparedStatementCacheHitCount
+    metric-family: TODO
   - name: Prepared Statement Cache Miss Count
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=jdbc"
     attribute:    PreparedStatementCacheMissCount
+    metric-family: TODO
 - name: Datasource Pool Metrics
   metric-dmr:
   - name: Active Count
-    interval:     30
-    time-units:   seconds
     path:         "/statistics=pool"
     attribute:    ActiveCount
+    metric-family: TODO
   - name: Available Count
-    interval:     30
-    time-units:   seconds
     path:         "/statistics=pool"
     attribute:    AvailableCount
+    metric-family: TODO
   - name: Average Blocking Time
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=pool"
     attribute:    AverageBlockingTime
+    metric-family: TODO
   - name: Average Creation Time
-    interval:     30
-    time-units:   seconds
     path:         "/statistics=pool"
     attribute:    AverageCreationTime
+    metric-family: TODO
+  - name: Average Get Time
+    path:         "/statistics=pool"
+    attribute:    AverageGetTime
+    metric-family: TODO
+  - name: Blocking Failure Count
+    path:         "/statistics=pool"
+    attribute:    BlockingFailureCount
+    metric-family: TODO
   - name: Created Count
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=pool"
     attribute:    CreatedCount
+    metric-family: TODO
   - name: Destroyed Count
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=pool"
     attribute:    DestroyedCount
+    metric-family: TODO
+  - name: Idle Count
+    path:         "/statistics=pool"
+    attribute:    IdleCount
+    metric-family: TODO
   - name: In Use Count
-    interval:     30
-    time-units:   seconds
     path:         "/statistics=pool"
     attribute:    InUseCount
+    metric-family: TODO
   - name: Max Creation Time
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=pool"
     attribute:    MaxCreationTime
+    metric-family: TODO
+  - name: Max Get Time
+    path:         "/statistics=pool"
+    attribute:    MaxGetTime
+    metric-family: TODO
   - name: Max Used Count
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=pool"
     attribute:    MaxUsedCount
+    metric-family: TODO
   - name: Max Wait Count
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=pool"
     attribute:    MaxWaitCount
+    metric-family: TODO
   - name: Max Wait Time
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=pool"
     attribute:    MaxWaitTime
+    metric-family: TODO
   - name: Timed Out
-    interval:     30
-    time-units:   seconds
     path:         "/statistics=pool"
     attribute:    TimedOut
+    metric-family: TODO
   - name: Total Blocking Time
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=pool"
     attribute:    TotalBlockingTime
+    metric-family: TODO
   - name: Total Creation Time
-    interval:     10
-    time-units:   minutes
     path:         "/statistics=pool"
     attribute:    TotalCreationTime
+    metric-family: TODO
+  - name: Total Get Time
+    path:         "/statistics=pool"
+    attribute:    TotalGetTime
+    metric-family: TODO
+  - name: Wait Count
+    path:         "/statistics=pool"
+    attribute:    WaitCount
+    metric-family: TODO
 - name: Transactions Metrics
   metric-dmr:
   - name: Number of Aborted Transactions
-    interval:     30
-    time-units:   seconds
     attribute:    number-of-aborted-transactions
     metric-type:  counter
+    metric-family: TODO
   - name: Number of Application Rollbacks
-    interval:     30
-    time-units:   seconds
     attribute:    number-of-application-rollbacks
     metric-type:  counter
+    metric-family: TODO
   - name: Number of Committed Transactions
-    interval:     30
-    time-units:   seconds
     attribute:    number-of-committed-transactions
     metric-type:  counter
+    metric-family: TODO
   - name: Number of Heuristics
-    interval:     30
-    time-units:   seconds
     attribute:    number-of-heuristics
     metric-type:  counter
+    metric-family: TODO
   - name: Number of In-Flight Transactions
-    interval:     30
-    time-units:   seconds
     attribute:    number-of-inflight-transactions
+    metric-family: TODO
   - name: Number of Nested Transactions
-    interval:     30
-    time-units:   seconds
     attribute:    number-of-nested-transactions
     metric-type:  counter
+    metric-family: TODO
   - name: Number of Resource Rollbacks
-    interval:     30
-    time-units:   seconds
     attribute:    number-of-resource-rollbacks
     metric-type:  counter
+    metric-family: TODO
   - name: Number of Timed Out Transactions
-    interval:     30
-    time-units:   seconds
     attribute:    number-of-timed-out-transactions
     metric-type:  counter
+    metric-family: TODO
   - name: Number of Transactions
-    interval:     30
-    time-units:   seconds
     attribute:    number-of-transactions
     metric-type:  counter
+    metric-family: TODO
 - name: JMS Queue Metrics
   metric-dmr:
   - name: Consumer Count
-    interval:     30
-    time-units:   seconds
     attribute:    consumer-count
+    metric-family: TODO
   - name: Delivering Count
-    interval:     30
-    time-units:   seconds
     attribute:    delivering-count
+    metric-family: TODO
   - name: Message Count
-    interval:     30
-    time-units:   seconds
     attribute:    message-count
+    metric-family: TODO
   - name: Messages Added
-    interval:     30
-    time-units:   seconds
     attribute:    messages-added
     metric-type:  counter
+    metric-family: TODO
   - name: Scheduled Count
-    interval:     30
-    time-units:   seconds
     attribute:    scheduled-count
+    metric-family: TODO
 - name: JMS Topic Metrics
   metric-dmr:
   - name: Durable Message Count
-    interval:     30
-    time-units:   seconds
     attribute:    durable-message-count
+    metric-family: TODO
   - name: Durable Subscription Count
-    interval:     30
-    time-units:   seconds
     attribute:    durable-subscription-count
+    metric-family: TODO
   - name: Delivering Count
-    interval:     30
-    time-units:   seconds
     attribute:    delivering-count
+    metric-family: TODO
   - name: Message Count
-    interval:     30
-    time-units:   seconds
     attribute:    message-count
+    metric-family: TODO
   - name: Messages Added
-    interval:     30
-    time-units:   seconds
     attribute:    messages-added
     metric-type:  counter
+    metric-family: TODO
   - name: Non-Durable Message Count
-    interval:     30
-    time-units:   seconds
     attribute:    non-durable-message-count
+    metric-family: TODO
   - name: Non-Durable Subscription Count
-    interval:     30
-    time-units:   seconds
     attribute:    non-durable-subscription-count
+    metric-family: TODO
   - name: Subscription Count
-    interval:     30
-    time-units:   seconds
     attribute:    subscription-count
+    metric-family: TODO
 
 resource-type-set-dmr:
 - name: Standalone Environment
   resource-type-dmr:
   - name: WildFly Server
     resource-name-template: "WildFly Server [%ManagedServerName]"
-    notification-dmr:
-    - name: resource-added
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -525,6 +450,10 @@ resource-type-set-dmr:
       attribute: running-mode
     - name: Server State
       attribute: server-state
+    - name: Suspend State
+      attribute: suspend-state
+    - name: UUID
+      attribute: uuid
     - name: Home Directory
       attribute: home-dir
       path:      /core-service=server-environment
@@ -553,14 +482,29 @@ resource-type-set-dmr:
       - name: use-current-server-config
         type:          bool
         default-value: "false"
+    - name: Resume
+      internal-name: resume
+      modifies:      true
     - name: Shutdown
       internal-name: shutdown
       modifies:      true
       params:
+      - name: timeout
+        type:          int
+        default-value: "0"
+        description:   Timeout in seconds to allow active connections to drain
       - name: restart
         type:          bool
         default-value: "false"
         description:   "Should the server be restarted after shutdown?"
+    - name: Suspend
+      internal-name: suspend
+      modifies:      true
+      params:
+      - name: timeout
+        type:          int
+        default-value: "0"
+        description:   Timeout in seconds to allow active connections to drain
     - name: Deploy
       internal-name: deploy
       modifies:      true
@@ -581,8 +525,6 @@ resource-type-set-dmr:
   resource-type-dmr:
   - name: Host Controller
     resource-name-template: "Host Controller [%ManagedServerName]"
-    notification-dmr:
-    - name: resource-added
     resource-config-dmr:
     - name: Product Name
       attribute: product-name
@@ -593,15 +535,49 @@ resource-type-set-dmr:
     - name: Local Host Name
       attribute: local-host-name
     operation-dmr:
+    - name: Reload Servers
+      internal-name: reload-servers
+      modifies:      true
+      params:
+      - name: blocking
+        type:          bool
+        description:   Wait until the servers are stopped before returning from the operation.
     - name: Restart Servers
       internal-name: restart-servers
+      modifies:      true
+      params:
+      - name: blocking
+        type:          bool
+        description:   Wait until the servers are stopped before returning from the operation.
+    - name: Resume Servers
+      internal-name: resume-servers
       modifies:      true
     - name: Start Servers
       internal-name: start-servers
       modifies:      true
+      params:
+      - name: blocking
+        type:          bool
+        description:   Wait until the servers are stopped before returning from the operation.
     - name: Stop Servers
       internal-name: stop-servers
       modifies:      true
+      params:
+      - name: blocking
+        type:          bool
+        description:   Wait until the servers are stopped before returning from the operation.
+      - name: timeout
+        type:          int
+        default-value: "0"
+        description:   Timeout in seconds to allow active connections to drain
+    - name: Suspend Servers
+      internal-name: suspend-servers
+      modifies:      true
+      params:
+      - name: timeout
+        type:          int
+        default-value: "0"
+        description:   Timeout in seconds to allow active connections to drain
     - name: Deploy
       internal-name: deploy
       modifies:      true
@@ -636,23 +612,57 @@ resource-type-set-dmr:
     - name: Profile
       attribute: profile
     operation-dmr:
+    - name: Reload Servers
+      internal-name: reload-servers
+      modifies:      true
+      params:
+      - name: blocking
+        type:          bool
+        default-value: false
+        description:   Wait until the servers are stopped before returning from the operation.
     - name: Restart Servers
       internal-name: restart-servers
+      modifies:      true
+      params:
+      - name: blocking
+        type:          bool
+        default-value: false
+        description:   Wait until the servers are stopped before returning from the operation.
+    - name: Resume Servers
+      internal-name: resume-servers
       modifies:      true
     - name: Start Servers
       internal-name: start-servers
       modifies:      true
+      params:
+      - name: blocking
+        type:          bool
+        default-value: false
+        description:   Wait until the servers are stopped before returning from the operation.
     - name: Stop Servers
       internal-name: stop-servers
       modifies:      true
+      params:
+      - name: blocking
+        type:          bool
+        default-value: false
+        description:   Wait until the servers are stopped before returning from the operation.
+      - name: timeout
+        type:          int
+        description:   Timeout in seconds to allow active connections to drain
+    - name: Suspend Servers
+      internal-name: suspend-servers
+      modifies:      true
+      params:
+      - name: timeout
+        type:          int
+        description:   Timeout in seconds to allow active connections to drain
 
   - name: Domain Host
     resource-name-template: "Domain Host [%-]"
     path: "/host=*"
     parents:
     - Host Controller
-    notification-dmr:
-    - name: resource-added
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -671,6 +681,10 @@ resource-type-set-dmr:
       attribute: running-mode
     - name: Server State
       attribute: server-state
+    - name: Suspend State
+      attribute: suspend-state
+    - name: UUID
+      attribute: uuid
     - name: Home Directory
       attribute: home-dir
       path:      /core-service=server-environment
@@ -691,8 +705,6 @@ resource-type-set-dmr:
     path: "/server=*"
     parents:
     - Domain Host
-    notification-dmr:
-    - name: resource-added
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
@@ -714,6 +726,10 @@ resource-type-set-dmr:
       attribute: running-mode
     - name: Server State
       attribute: server-state
+    - name: Suspend State
+      attribute: suspend-state
+    - name: UUID
+      attribute: uuid
     - name: Hostname
       attribute: qualified-host-name
       path:      /core-service=server-environment
@@ -735,8 +751,6 @@ resource-type-set-dmr:
     path: "/server-config=*"
     parents:
     - Domain Host
-    notification-dmr:
-    - name: resource-added
     resource-config-dmr:
     - name: Name
       attribute: name
@@ -753,6 +767,16 @@ resource-type-set-dmr:
     - name: Kill
       internal-name: kill
       modifies:      true
+    - name: Reload
+      internal-name: reload
+      modifies:      true
+      params:
+      - name: server
+        description: The name of the server.
+      - name: blocking
+        type:          bool
+        default-value: "false"
+        description:   Wait until the servers are stopped before returning from the operation.
     - name: Restart
       internal-name: restart
       modifies:      true
@@ -763,6 +787,9 @@ resource-type-set-dmr:
         type:          bool
         default-value: "false"
         description:   Wait until the servers are stopped before returning from the operation.
+    - name: Resume
+      internal-name: resume
+      modifies:      true
     - name: Start
       internal-name: start
       modifies:      true
@@ -783,6 +810,16 @@ resource-type-set-dmr:
         type:          bool
         default-value: "false"
         description:   Wait until the servers are stopped before returning from the operation.
+      - name: timeout
+        type:          int
+        description:   Timeout in seconds to allow active connections to drain
+    - name: Suspend
+      internal-name: suspend
+      modifies:      true
+      params:
+      - name: timeout
+        type:          int
+        description:   Timeout in seconds to allow active connections to drain
 
 - name: Hawkular
   resource-type-dmr:
@@ -821,20 +858,20 @@ resource-type-set-dmr:
     - WildFly Server
     - Domain WildFly Server
     metric-sets:
-    - Web Subsystem Metrics
+    - Undertow Metrics
   - name: SubDeployment
     resource-name-template: "SubDeployment [%-]"
     path: "/subdeployment=*"
     parents:
     - Deployment
     metric-sets:
-    - Web Subsystem Metrics
+    - Undertow Metrics
 
 - name: Web Component
   resource-type-dmr:
   - name: Servlet
     resource-name-template: "Servlet [%-]"
-    path: "/subsystem=web/servlet=*"
+    path: "/subsystem=undertow/servlet=*"
     parents:
     - Deployment
     - SubDeployment
@@ -890,7 +927,7 @@ resource-type-set-dmr:
     resource-config-dmr:
     - name: Connection URL
       attribute: connection-url
-      resolve-expressions: false
+      resolve-expressions: true
     - name: Driver Name
       attribute: driver-name
     - name: Driver Class
@@ -974,7 +1011,7 @@ resource-type-set-dmr:
   resource-type-dmr:
   - name: Messaging Server
     resource-name-template: "Messaging Server [%-]"
-    path: "/subsystem=messaging/hornetq-server=*"
+    path: "/subsystem=messaging-activemq/server=*"
     parents:
     - WildFly Server
     - Domain WildFly Server
@@ -1006,7 +1043,7 @@ resource-type-set-dmr:
       attribute: name
     - name: Port Offset
       attribute: port-offset
-      resolve-expressions: false
+      resolve-expressions: true
     - name: Default Interface
       attribute: default-interface
   - name: Socket Binding
@@ -1021,10 +1058,10 @@ resource-type-set-dmr:
       attribute: interface
     - name: Port
       attribute: port
-      resolve-expressions: false
+      resolve-expressions: true
     - name: Multicast Address
       attribute: multicast-address
-      resolve-expressions: false
+      resolve-expressions: true
     - name: Multicast Port
       attribute: multicast-port
   - name: Remote Destination Outbound Socket Binding
@@ -1059,6 +1096,18 @@ resource-type-set-dmr:
     parents:
     - WildFly Server
     - Domain WildFly Server
+  - name: JGroups Channel
+    resource-name-template: "JGroups Channel [%-]"
+    path:                   "/channel=*"
+    parents:
+    - JGroups
+    resource-config-dmr:
+    - name: Cluster Name
+      attribute: cluster
+    - name: IP Address
+      attribute: address
+    - name: Group Membership View
+      attribute: view
 
   - name: Infinispan
     resource-name-template: "Infinispan"
@@ -1086,49 +1135,42 @@ metric-set-jmx:
   metric-jmx:
   - name: VM Uptime
     attribute:    Uptime
-    interval:     30
-    time-units:   seconds
     metric-units: milliseconds
     metric-type:  counter
+    metric-family: TODO
   - name: Used Heap Memory
     object-name:  java.lang:type=Memory
     attribute:    HeapMemoryUsage#used
-    interval:     30
-    time-units:   seconds
     metric-units: bytes
     metric-type:  gauge
+    metric-family: TODO
   - name: Aggregate GC Collection Time
     object-name:  "java.lang:type=GarbageCollector,name=*"
     attribute:    CollectionTime
-    interval:     30
-    time-units:   seconds
     metric-units: milliseconds
+    metric-family: TODO
 - name: Memory Pool Metrics
   metric-jmx:
   - name: Initial
     attribute:    Usage#init
-    interval:     2
-    time-units:   minutes
     metric-units: bytes
     metric-type:  gauge
+    metric-family: TODO
   - name: Used
     attribute:    Usage#used
-    interval:     1
-    time-units:   minutes
     metric-units: bytes
     metric-type:  gauge
+    metric-family: TODO
   - name: Committed
     attribute:    Usage#committed
-    interval:     1
-    time-units:   minutes
     metric-units: bytes
     metric-type:  gauge
+    metric-family: TODO
   - name: Max
     attribute:    Usage#max
-    interval:     2
-    time-units:   minutes
     metric-units: bytes
     metric-type:  gauge
+    metric-family: TODO
 
 resource-type-set-jmx:
 - name: Main
@@ -1177,17 +1219,118 @@ resource-type-set-jmx:
       internal-name: fullDiscoveryScan
     - name: Inventory Report
       internal-name: inventoryReport
+- name: For Integration Test
+  resource-type-jmx:
+  - name: Simple ITest MBean
+    resource-name-template: "Simple ITest MBean"
+    object-name: org.hawkular.agent.itest:type=simple
+    resource-config-jmx:
+    - name: Immutable
+      attribute: Immutable
+    - name: TestString
+      attribute: TestString
+    - name: TestIntegerPrimitive
+      attribute: TestIntegerPrimitive
+    - name: TestInteger
+      attribute: TestInteger
+    - name: TestBooleanPrimitive
+      attribute: TestBooleanPrimitive
+    - name: TestBoolean
+      attribute: TestBoolean
+    - name: TestLongPrimitive
+      attribute: TestLongPrimitive
+    - name: TestLong
+      attribute: TestLong
+    - name: TestDoublePrimitive
+      attribute: TestDoublePrimitive
+    - name: TestDouble
+      attribute: TestDouble
+    - name: TestFloatPrimitive
+      attribute: TestFloatPrimitive
+    - name: TestFloat
+      attribute: TestFloat
+    - name: TestShortPrimitive
+      attribute: TestShortPrimitive
+    - name: TestShort
+      attribute: TestShort
+    - name: TestCharPrimitive
+      attribute: TestCharPrimitive
+    - name: TestChar
+      attribute: TestChar
+    - name: TestBytePrimitive
+      attribute: TestBytePrimitive
+    - name: TestByte
+      attribute: TestByte
+    operation-jmx:
+    - name: testOperationNoParams
+      internal-name: testOperationNoParams
+    - name: testOperation
+      internal-name: testOperation
+      params:
+      - name: s
+        type: String
+        #default-value: "yaml default"
+      - name: i
+        type: Integer
+        #default-value: "111"
+      - name: b
+        type: Boolean
+        #default-value: "false"
+      - name: l
+        type: Long
+        #default-value: "222"
+      - name: d
+        type: Double
+        #default-value: "3.33"
+      - name: f
+        type: Float
+        #default-value: "4.44"
+      - name: h
+        type: Short
+        #default-value: "5"
+      - name: c
+        type: Character
+        #default-value: "x"
+      - name: y
+        type: Byte
+    - name: testOperationPrimitive
+      internal-name: testOperationPrimitive
+      params:
+      - name: s
+        type: string
+        default-value: "yaml default"
+      - name: i
+        type: int
+        default-value: "111"
+      - name: b
+        type: bool
+        default-value: "false"
+      - name: l
+        type: long
+        default-value: "222"
+      - name: d
+        type: double
+        default-value: "3.33"
+      - name: f
+        type: float
+        default-value: "4.44"
+      - name: h
+        type: short
+        default-value: "5"
+      - name: c
+        type: char
+        default-value: "x"
+      - name: y
+        type: byte
 
 # MANAGED SERVERS
 
 managed-servers:
   local-dmr:
-    name: Local DMR
+    name: Local DMR UNUSED
     enabled: false
-    wait-for:
-    - name: /
     resource-type-sets:
-    - Standalone Environment
+    - Domain Environment
     - Deployment
     - Web Component
     - EJB
@@ -1203,25 +1346,21 @@ managed-servers:
   local-jmx:
     name: Local JMX
     enabled: true
-    wait-for:
-    - name: java.lang:type=Runtime
     resource-type-sets:
     - Main
     - Memory Pool
     - Hawkular
+    - For Integration Test
 
   remote-dmr:
-  - name: Remote DMR EAP6
-    enabled: false
-    protocol: remote
+  - name: Local DMR
+    enabled: true
     host: 127.0.0.1
-    port: 9999
-    username: adminUser
-    password: adminPass
-    wait-for:
-    - name: /
+    port: 9980
+    username: itest-admin
+    password: itest-admin-password
     resource-type-sets:
-    - Standalone Environment
+    - Domain Environment
     - Deployment
     - Web Component
     - EJB
@@ -1233,18 +1372,6 @@ managed-servers:
     - Socket Binding Group
     - Clustering
 
-  remote-jmx:
-  - name: Remote Jolokia Server
-    enabled: false
-    url: http://localhost:8080/jolokia-war
-    wait-for:
-    - name: java.lang:type=Runtime
-    resource-type-sets:
-    - Main
-    - Memory Pool
-
 platform:
   enabled:      true
-  interval:     5
-  time-units:   minutes
   #machine-id:   my-machine-id-here

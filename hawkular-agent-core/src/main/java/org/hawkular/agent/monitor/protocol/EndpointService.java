@@ -374,27 +374,12 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     @Override
-    public String generateAssociatedMetricId(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
-        // the user can configure a metric's ID in one of two places - either in the metric definition itself or
-        // in the endpoint configuration. The metric definition takes precedence in case a metric ID template
-        // is provided in both.
-        String generatedKey;
-        EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
-        String metricIdTemplate = instance.getType().getMetricIdTemplate();
-        if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
-            metricIdTemplate = config.getMetricIdTemplate();
-        }
-        if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
-            generatedKey = instance.getID().getIDString();
-        } else {
-            generatedKey = replaceTokens(instance, config, metricIdTemplate);
-        }
-        return generatedKey;
+    public String generateMetricFamily(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
+        return instance.getType().getMetricFamily();
     }
 
     @Override
-    public Map<String, String> generateAssociatedMetricLabels(
-            MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
+    public Map<String, String> generateMetricLabels(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
         // Metric tags are configured in one of two places - either in the metric definition itself or in the endpoint
         // configuration. If tags are defined in both places, all the tags found in both places are associated with
         // the metric. If, however, both places define the same tag name, the metric definition takes precedence.
@@ -427,15 +412,20 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             units = ((MetricType<?>) instance.getType()).getMetricUnits();
         }
 
+        // this replaces any positional tokens that might exist in the string (like "%1", "%key%", "%-", etc).
+        string = getLocationResolver().applyTemplate(
+                string,
+                instance.getAttributeLocation().getLocation(),
+                config.getName());
+
+        // replace additional types of tokens that are supported
         return string
                 .replaceAll("%FeedId", getFeedId())
                 .replaceAll("%ManagedServerName", config.getName())
                 .replaceAll("%ResourceName", instance.getResource().getName().getNameString())
-                .replaceAll("%ResourceID", instance.getResource().getID().getIDString())
+                .replaceAll("%AttributeName", instance.getAttributeLocation().getAttribute())
                 .replaceAll("%MetricTypeName", instance.getType().getName().getNameString())
-                .replaceAll("%MetricTypeID", instance.getType().getID().getIDString())
-                .replaceAll("%MetricTypeUnits", units == null ? "" : units.toString())
-                .replaceAll("%MetricInstanceID", instance.getID().getIDString());
+                .replaceAll("%MetricTypeUnits", units == null ? "" : units.toString());
     }
 
     /**

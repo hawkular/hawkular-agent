@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.SamplingService;
@@ -36,7 +35,6 @@ import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.Interval;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -78,7 +76,6 @@ public class AsyncInventoryStorageTest {
             new ID("mt1"),
             new Name("Metric type 1"),
             new AttributeLocation<>(new AnyLocation(""), "foo"),
-            new Interval(60, TimeUnit.SECONDS),
             MetricUnit.CELSIUS,
             SupportedMetricType.GAUGE,
             null,

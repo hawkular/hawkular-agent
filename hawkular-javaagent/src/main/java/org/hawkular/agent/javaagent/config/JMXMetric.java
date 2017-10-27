@@ -44,20 +44,14 @@ public class JMXMetric implements Validatable {
     @JsonProperty(required = true)
     private String attribute;
 
-    @JsonProperty
-    private Integer interval = 5;
-
-    @JsonProperty("time-units")
-    private TimeUnits timeUnits = TimeUnits.minutes;
-
     @JsonProperty("metric-units")
     private MetricUnitJsonProperty metricUnits = new MetricUnitJsonProperty(MetricUnit.NONE);
 
     @JsonProperty("metric-type")
     private MetricTypeJsonProperty metricType = new MetricTypeJsonProperty(SupportedMetricType.GAUGE);
 
-    @JsonProperty("metric-id-template")
-    private String metricIdTemplate;
+    @JsonProperty("metric-family")
+    private String metricFamily;
 
     @JsonProperty("metric-labels")
     private Map<String, String> metricLabels;
@@ -69,11 +63,9 @@ public class JMXMetric implements Validatable {
         this.name = original.name;
         this.objectName = original.objectName;
         this.attribute = original.attribute;
-        this.interval = original.interval;
-        this.timeUnits = original.timeUnits;
         this.metricUnits = original.metricUnits == null ? null : new MetricUnitJsonProperty(original.metricUnits);
         this.metricType = original.metricType == null ? null : new MetricTypeJsonProperty(original.metricType);
-        this.metricIdTemplate = original.metricIdTemplate;
+        this.metricFamily = original.metricFamily;
         this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
     }
 
@@ -83,12 +75,12 @@ public class JMXMetric implements Validatable {
             throw new Exception("metric-jmx name must be specified");
         }
 
-        if (attribute == null || attribute.trim().isEmpty()) {
-            throw new Exception("metric-jmx [" + name + "] attribute must be specified");
+        if (metricFamily == null || metricFamily.trim().isEmpty()) {
+            throw new Exception("metric-jmx [" + name + "] metric-family must be specified");
         }
 
-        if (interval == null || interval.intValue() < 0) {
-            throw new Exception("metric-jmx [" + name + "] interval must be greater than or equal to 0");
+        if (attribute == null || attribute.trim().isEmpty()) {
+            throw new Exception("metric-jmx [" + name + "] attribute must be specified");
         }
 
         if (objectName != null) {
@@ -124,22 +116,6 @@ public class JMXMetric implements Validatable {
         this.attribute = attribute;
     }
 
-    public Integer getInterval() {
-        return interval;
-    }
-
-    public void setInterval(Integer interval) {
-        this.interval = interval;
-    }
-
-    public TimeUnits getTimeUnits() {
-        return timeUnits;
-    }
-
-    public void setTimeUnits(TimeUnits timeUnits) {
-        this.timeUnits = timeUnits;
-    }
-
     public MetricUnit getMetricUnits() {
         return metricUnits == null ? null : metricUnits.get();
     }
@@ -164,12 +140,12 @@ public class JMXMetric implements Validatable {
         }
     }
 
-    public String getMetricIdTemplate() {
-        return metricIdTemplate;
+    public String getMetricFamily() {
+        return metricFamily;
     }
 
-    public void setMetricIdTemplate(String metricIdTemplate) {
-        this.metricIdTemplate = metricIdTemplate;
+    public void setMetricFamily(String metricFamily) {
+        this.metricFamily = metricFamily;
     }
 
     public Map<String, String> getMetricLabels() {

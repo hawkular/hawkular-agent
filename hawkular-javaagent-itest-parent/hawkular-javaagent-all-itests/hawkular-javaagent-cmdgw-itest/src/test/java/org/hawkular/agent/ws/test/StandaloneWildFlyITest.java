@@ -19,10 +19,6 @@ package org.hawkular.agent.ws.test;
 import java.util.Collection;
 import java.util.Optional;
 
-import org.hawkular.agent.javaagent.config.Configuration;
-import org.hawkular.agent.javaagent.config.DMRMetric;
-import org.hawkular.agent.javaagent.config.DMRMetricSet;
-import org.hawkular.agent.javaagent.config.TimeUnits;
 import org.hawkular.inventory.api.model.Operation;
 import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.PathAddress;
@@ -176,26 +172,4 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         Resource platform = platforms.iterator().next();
         Assert.assertTrue(platform.getConfig().containsKey("Machine Id"));
     }
-
-    private void assertMetricInterval(Configuration agentConfig, String setName, String metricName, int expectedVal,
-            TimeUnits expectedUnits) {
-        for (DMRMetricSet s : agentConfig.getDmrMetricSets()) {
-            if (s.getName().equals(setName)) {
-                for (DMRMetric m : s.getDmrMetrics()) {
-                    if (m.getName().equals(metricName)) {
-                        if (m.getInterval().intValue() == expectedVal) {
-                            return;
-                        } else {
-                            Assert.fail(String.format("Metric type [%s~%s] expected to be [%d] but was [%d]",
-                                    setName, metricName,
-                                    expectedVal, expectedUnits.name(),
-                                    m.getInterval().intValue(), m.getTimeUnits().name()));
-                        }
-                    }
-                }
-            }
-        }
-        Assert.fail(String.format("Agent missing metric type [%s~%s]", setName, metricName));
-    }
-
 }

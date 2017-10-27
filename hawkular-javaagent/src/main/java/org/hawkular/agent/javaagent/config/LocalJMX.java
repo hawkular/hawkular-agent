@@ -42,9 +42,6 @@ public class LocalJMX implements Validatable {
     @JsonProperty("resource-type-sets")
     private String[] resourceTypeSets;
 
-    @JsonProperty("metric-id-template")
-    private String metricIdTemplate;
-
     @JsonProperty("metric-labels")
     private Map<String, String> metricLabels;
 
@@ -62,7 +59,6 @@ public class LocalJMX implements Validatable {
         this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
         this.resourceTypeSets = original.resourceTypeSets == null ? null
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
-        this.metricIdTemplate = original.metricIdTemplate;
         this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
         this.mbeanServerName = original.mbeanServerName;
         this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
@@ -115,14 +111,6 @@ public class LocalJMX implements Validatable {
 
     public void setResourceTypeSets(String[] resourceTypeSets) {
         this.resourceTypeSets = resourceTypeSets;
-    }
-
-    public String getMetricIdTemplate() {
-        return metricIdTemplate;
-    }
-
-    public void setMetricIdTemplate(String metricIdTemplate) {
-        this.metricIdTemplate = metricIdTemplate;
     }
 
     public Map<String, String> getMetricLabels() {

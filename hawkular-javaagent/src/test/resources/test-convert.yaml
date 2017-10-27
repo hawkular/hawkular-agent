@@ -51,22 +51,18 @@ metric-set-dmr:
   - name: first metric d
     path: /metric=one
     attribute: attrib1
-    interval: 12345
-    time-units: milliseconds
     metric-units: megabytes
     metric-type: counter
-    metric-id-template: the template
+    metric-family: the template
     metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric d
     path: /metric=two
     attribute: attrib1
-    interval: 12345
-    time-units: milliseconds
     metric-units: megabytes
     metric-type: gauge
-    metric-id-template: the template
+    metric-family: the template
     metric-labels:
       tag1: value1
       tag2: value2
@@ -76,9 +72,11 @@ metric-set-dmr:
     path: /metric=three
     attribute: attrib1
     metric-type: gauge
+    metric-family: the family
   - name: fourth metric d
     path: /metric=four
     attribute: attrib1
+    metric-family: the family
 
 resource-type-set-dmr:
 - name: first resource type set d
@@ -108,22 +106,18 @@ metric-set-jmx:
   - name: first metric
     object-name: domain:metric=one
     attribute: attrib1
-    interval: 12345
-    time-units: seconds
     metric-units: bytes
     metric-type: gauge
-    metric-id-template: the template
+    metric-family: the template
     metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric
     object-name: domain:metric=two
     attribute: attrib1
-    interval: 12345
-    time-units: seconds
     metric-units: bytes
     metric-type: gauge
-    metric-id-template: the template
+    metric-family: the template
     metric-labels:
       tag1: value1
       tag2: value2
@@ -133,10 +127,12 @@ metric-set-jmx:
     object-name: domain:metric=three
     attribute: attrib1
     metric-type: gauge
+    metric-family: the family
   - name: fourth metric
     object-name: domain:metric=four
     attribute: attrib1
     metric-type: gauge
+    metric-family: the family
 
 resource-type-set-jmx:
 - name: first resource type set
@@ -225,26 +221,16 @@ managed-servers:
 
 platform:
   enabled:      true
-  interval:     12345
-  time-units:   seconds
   machine-id:   my-machine-id-here
 
   file-stores:
     enabled:    true
-    interval:   11111
-    time-units: milliseconds
 
   memory:
     enabled:    true
-    interval:   22222
-    time-units: seconds
 
   processors:
     enabled:    true
-    interval:   33333
-    time-units: minutes
 
   power-sources:
     enabled:    false
-    interval:   44444
-    time-units: minutes

@@ -545,7 +545,7 @@ public abstract class AgentCoreEngine {
                 Util.write(bodyString, configFileToWrite);
             }
         } catch (Exception e) {
-            log.errorf("Failed to download metrics exporter config file [%s]", meConfig.getConfigFile(), e);
+            log.errorf(e, "Failed to download metrics exporter config file [%s]", meConfig.getConfigFile());
             configFileToWrite = null;
         } finally {
             if (response != null) {

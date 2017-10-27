@@ -38,32 +38,19 @@ public class Platform implements Validatable {
         @JsonProperty
         private BooleanExpression enabled = new BooleanExpression(Boolean.TRUE);
 
-        @JsonProperty
-        private Integer interval = 5;
-
-        @JsonProperty("time-units")
-        private TimeUnits timeUnits = TimeUnits.minutes;
-
         public PlatformChild() {
         }
 
         public PlatformChild(PlatformChild original) {
             this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
-            this.interval = original.interval;
-            this.timeUnits = original.timeUnits;
         }
 
         public PlatformChild(Boolean e, Integer i, TimeUnits t) {
             this.enabled = new BooleanExpression(e);
-            this.interval = i;
-            this.timeUnits = t;
         }
 
         @Override
         public void validate() throws Exception {
-            if (interval == null || interval.intValue() < 0) {
-                throw new Exception("platform intervals must be greater than or equal to 0");
-            }
         }
 
         public Boolean getEnabled() {
@@ -77,32 +64,10 @@ public class Platform implements Validatable {
                 this.enabled = new BooleanExpression(enabled);
             }
         }
-
-        public Integer getInterval() {
-            return interval;
-        }
-
-        public void setInterval(Integer interval) {
-            this.interval = interval;
-        }
-
-        public TimeUnits getTimeUnits() {
-            return timeUnits;
-        }
-
-        public void setTimeUnits(TimeUnits timeUnits) {
-            this.timeUnits = timeUnits;
-        }
     }
 
     @JsonProperty
     private BooleanExpression enabled = new BooleanExpression(Boolean.FALSE);
-
-    @JsonProperty
-    private Integer interval = 5;
-
-    @JsonProperty("time-units")
-    private TimeUnits timeUnits = TimeUnits.minutes;
 
     @JsonProperty("machine-id")
     private StringExpression machineId;
@@ -127,8 +92,6 @@ public class Platform implements Validatable {
 
     public Platform(Platform original) {
         this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
-        this.interval = original.interval;
-        this.timeUnits = original.timeUnits;
         this.machineId = original.machineId == null ? null : new StringExpression(original.machineId);
         this.containerId = original.containerId == null ? null : new StringExpression(original.containerId);
         this.fileStores = new PlatformChild(original.fileStores);
@@ -139,9 +102,6 @@ public class Platform implements Validatable {
 
     @Override
     public void validate() throws Exception {
-        if (interval == null || interval.intValue() < 0) {
-            throw new Exception("platform intervals must be greater than or equal to 0");
-        }
     }
 
     public Boolean getEnabled() {
@@ -154,22 +114,6 @@ public class Platform implements Validatable {
         } else {
             this.enabled = new BooleanExpression(enabled);
         }
-    }
-
-    public Integer getInterval() {
-        return interval;
-    }
-
-    public void setInterval(Integer interval) {
-        this.interval = interval;
-    }
-
-    public TimeUnits getTimeUnits() {
-        return timeUnits;
-    }
-
-    public void setTimeUnits(TimeUnits timeUnits) {
-        this.timeUnits = timeUnits;
     }
 
     public String getMachineId() {

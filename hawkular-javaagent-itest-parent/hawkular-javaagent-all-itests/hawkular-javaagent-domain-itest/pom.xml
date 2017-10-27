@@ -35,7 +35,7 @@
     <hawkular.agent.itest.staging.dir>${project.build.directory}/staging</hawkular.agent.itest.staging.dir>
     <hawkular.agent.itest.javaagent.dir>${project.build.directory}/javaagent</hawkular.agent.itest.javaagent.dir>
     <hawkular.agent.itest.hawkularserver.dir>${project.build.directory}/hawkular</hawkular.agent.itest.hawkularserver.dir>
-    <hawkular.agent.itest.javaagent.configfile>${project.build.directory}/test-classes/javaagent-wildfly-config.yaml</hawkular.agent.itest.javaagent.configfile>
+    <hawkular.agent.itest.javaagent.configfile>${project.build.directory}/test-classes/hawkular-javaagent-itest-config.yaml</hawkular.agent.itest.javaagent.configfile>
     <hawkular.agent.itest.plain-wildfly.dir>${project.build.directory}/plain-wildfly</hawkular.agent.itest.plain-wildfly.dir>
   </properties>
 

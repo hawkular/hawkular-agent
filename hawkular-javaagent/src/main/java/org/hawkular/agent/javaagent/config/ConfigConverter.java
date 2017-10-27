@@ -37,7 +37,6 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageAda
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.Interval;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.Operation;
@@ -155,10 +154,9 @@ public class ConfigConverter {
                         new ID(metricSet.getName() + "~" + metric.getName()),
                         new Name(metric.getName()),
                         aLocation,
-                        new Interval(metric.getInterval(), metric.getTimeUnits().toJavaTimeUnit()),
                         metric.getMetricUnits(),
                         metric.getMetricType(),
-                        metric.getMetricIdTemplate(),
+                        metric.getMetricFamily(),
                         metric.getMetricLabels());
                 typeSet.type(type);
             }
@@ -297,7 +295,6 @@ public class ConfigConverter {
                     getNamesFromStrings(config.getManagedServers().getLocalDmr().getResourceTypeSets()),
                     connectionData,
                     null,
-                    config.getManagedServers().getLocalDmr().getMetricIdTemplate(),
                     config.getManagedServers().getLocalDmr().getMetricLabels(),
                     null,
                     asWaitForList(config.getManagedServers().getLocalDmr().getWaitFor()));
@@ -323,7 +320,6 @@ public class ConfigConverter {
                         getNamesFromStrings(remoteDmr.getResourceTypeSets()),
                         connectionData,
                         remoteDmr.getSecurityRealmName(),
-                        remoteDmr.getMetricIdTemplate(),
                         remoteDmr.getMetricLabels(),
                         null,
                         asWaitForList(remoteDmr.getWaitFor()));
@@ -351,10 +347,9 @@ public class ConfigConverter {
                         new ID(metricSet.getName() + "~" + metric.getName()),
                         new Name(metric.getName()),
                         aLocation,
-                        new Interval(metric.getInterval(), metric.getTimeUnits().toJavaTimeUnit()),
                         metric.getMetricUnits(),
                         metric.getMetricType(),
-                        metric.getMetricIdTemplate(),
+                        metric.getMetricFamily(),
                         metric.getMetricLabels());
                 typeSet.type(type);
             }
@@ -439,7 +434,6 @@ public class ConfigConverter {
                     getNamesFromStrings(config.getManagedServers().getLocalJmx().getResourceTypeSets()),
                     null,
                     null,
-                    config.getManagedServers().getLocalJmx().getMetricIdTemplate(),
                     config.getManagedServers().getLocalJmx().getMetricLabels(),
                     Collections.singletonMap(JMXEndpointService.MBEAN_SERVER_NAME_KEY,
                             config.getManagedServers().getLocalJmx().getMbeanServerName()),
@@ -467,7 +461,6 @@ public class ConfigConverter {
                         getNamesFromStrings(remoteJmx.getResourceTypeSets()),
                         connectionData,
                         remoteJmx.getSecurityRealmName(),
-                        remoteJmx.getMetricIdTemplate(),
                         remoteJmx.getMetricLabels(),
                         null,
                         asWaitForList(remoteJmx.getWaitFor()));
@@ -519,16 +512,12 @@ public class ConfigConverter {
 
         // OS top-level metrics
 
-        Interval osInterval = new Interval(config.getPlatform().getInterval(),
-                config.getPlatform().getTimeUnits().toJavaTimeUnit());
-
         MetricType<PlatformNodeLocation> systemCpuLoad = new MetricType<PlatformNodeLocation>(
                 PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeId(),
                 PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeName(),
                 new AttributeLocation<>(
                         new PlatformNodeLocation(PlatformPath.empty()),
                         PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeId().getIDString()),
-                osInterval,
                 MetricUnit.PERCENTAGE,
                 SupportedMetricType.GAUGE,
                 null,
@@ -540,7 +529,6 @@ public class ConfigConverter {
                 new AttributeLocation<>(
                         new PlatformNodeLocation(PlatformPath.empty()),
                         PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeId().getIDString()),
-                osInterval,
                 MetricUnit.NONE,
                 SupportedMetricType.GAUGE,
                 null,
@@ -552,7 +540,6 @@ public class ConfigConverter {
                 new AttributeLocation<>(
                         new PlatformNodeLocation(PlatformPath.empty()),
                         PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeId().getIDString()),
-                osInterval,
                 MetricUnit.NONE,
                 SupportedMetricType.GAUGE,
                 null,
@@ -584,8 +571,6 @@ public class ConfigConverter {
         // now add children types if they are enabled
 
         if (config.getPlatform().getFileStores() != null && config.getPlatform().getFileStores().getEnabled()) {
-            Interval interval = new Interval(config.getPlatform().getFileStores().getInterval(),
-                    config.getPlatform().getFileStores().getTimeUnits().toJavaTimeUnit());
 
             MetricType<PlatformNodeLocation> usableSpace = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.FILE_STORE_USABLE_SPACE.getMetricTypeId(),
@@ -593,7 +578,6 @@ public class ConfigConverter {
                     new AttributeLocation<>(
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.FILE_STORE_USABLE_SPACE.getMetricTypeId().getIDString()),
-                    interval,
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     null,
@@ -605,7 +589,6 @@ public class ConfigConverter {
                     new AttributeLocation<>(
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.FILE_STORE_TOTAL_SPACE.getMetricTypeId().getIDString()),
-                    interval,
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     null,
@@ -644,16 +627,12 @@ public class ConfigConverter {
         }
 
         if (config.getPlatform().getMemory() != null && config.getPlatform().getMemory().getEnabled()) {
-            Interval interval = new Interval(config.getPlatform().getMemory().getInterval(),
-                    config.getPlatform().getMemory().getTimeUnits().toJavaTimeUnit());
-
             MetricType<PlatformNodeLocation> available = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeId(),
                     PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeName(),
                     new AttributeLocation<>(
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeId().getIDString()),
-                    interval,
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     null,
@@ -665,7 +644,6 @@ public class ConfigConverter {
                     new AttributeLocation<>(
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.MEMORY_TOTAL.getMetricTypeId().getIDString()),
-                    interval,
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     null,
@@ -703,9 +681,6 @@ public class ConfigConverter {
         }
 
         if (config.getPlatform().getProcessors() != null && config.getPlatform().getProcessors().getEnabled()) {
-            Interval interval = new Interval(config.getPlatform().getProcessors().getInterval(),
-                    config.getPlatform().getProcessors().getTimeUnits().toJavaTimeUnit());
-
             // this is the Processor.getProcessorCpuLoadBetweenTicks value
             MetricType<PlatformNodeLocation> cpuUsage = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.PROCESSOR_CPU_USAGE.getMetricTypeId(),
@@ -713,7 +688,6 @@ public class ConfigConverter {
                     new AttributeLocation<>(
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.PROCESSOR_CPU_USAGE.getMetricTypeId().getIDString()),
-                    interval,
                     MetricUnit.PERCENTAGE,
                     SupportedMetricType.GAUGE,
                     null,
@@ -751,9 +725,6 @@ public class ConfigConverter {
         }
 
         if (config.getPlatform().getPowerSources() != null && config.getPlatform().getPowerSources().getEnabled()) {
-            Interval interval = new Interval(config.getPlatform().getPowerSources().getInterval(),
-                    config.getPlatform().getPowerSources().getTimeUnits().toJavaTimeUnit());
-
             MetricType<PlatformNodeLocation> remainingCap = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.POWER_SOURCE_REMAINING_CAPACITY.getMetricTypeId(),
                     PlatformMetricType.POWER_SOURCE_REMAINING_CAPACITY.getMetricTypeName(),
@@ -761,7 +732,6 @@ public class ConfigConverter {
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.POWER_SOURCE_REMAINING_CAPACITY.getMetricTypeId()
                                     .getIDString()),
-                    interval,
                     MetricUnit.PERCENTAGE,
                     SupportedMetricType.GAUGE,
                     null,
@@ -773,7 +743,6 @@ public class ConfigConverter {
                     new AttributeLocation<>(
                             new PlatformNodeLocation(PlatformPath.empty()),
                             PlatformMetricType.POWER_SOURCE_TIME_REMAINING.getMetricTypeId().getIDString()),
-                    interval,
                     MetricUnit.SECONDS,
                     SupportedMetricType.GAUGE,
                     null,
@@ -819,7 +788,6 @@ public class ConfigConverter {
             EndpointConfiguration localPlatform = new EndpointConfiguration(
                     "platform",
                     true,
-                    null,
                     null,
                     null,
                     null,
