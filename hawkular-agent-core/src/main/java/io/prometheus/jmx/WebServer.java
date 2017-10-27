@@ -5,13 +5,13 @@ import java.net.InetSocketAddress;
 
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
+import io.prometheus.client.hotspot.DefaultExports;
 
 public class WebServer {
 
    public static void main(String[] args) throws Exception {
      if (args.length < 2) {
-       System.err.println("Usage: WebServer <[hostname:]port> <yaml configuration file>");
-       System.exit(1);
+       throw new Exception("Usage: WebServer <[hostname:]port> <yaml configuration file>");
      }
 
      String[] hostnamePort = args[0].split(":");
@@ -27,6 +27,7 @@ public class WebServer {
      }
 
      new JmxCollector(new File(args[1])).register();
-     new HTTPServer(socket, CollectorRegistry.defaultRegistry);
+     DefaultExports.initialize();
+     new HTTPServer(socket, CollectorRegistry.defaultRegistry, true); // true == daemon
    }
 }
