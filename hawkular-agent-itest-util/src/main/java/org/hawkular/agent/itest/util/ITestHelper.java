@@ -20,35 +20,20 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import java.util.zip.GZIPInputStream;
 
-import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.ExtendedInventoryStructure;
-import org.hawkular.inventory.api.model.InventoryStructure;
-import org.hawkular.inventory.json.InventoryJacksonConfig;
-import org.hawkular.inventory.paths.CanonicalPath;
-import org.hawkular.inventory.paths.RelativePath;
-import org.hawkular.inventory.paths.SegmentType;
+import org.hawkular.inventory.api.model.Resource;
+import org.hawkular.inventory.api.model.ResultSet;
 import org.testng.AssertJUnit;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Throwables;
 
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class ITestHelper {
@@ -67,7 +52,6 @@ public class ITestHelper {
         this.hawkularAuthHeader = hawkularAuthHeader;
         this.baseInvUri = baseInvUri;
         this.mapper = new ObjectMapper(new JsonFactory());
-        InventoryJacksonConfig.configure(mapper);
         this.client = new OkHttpClient();
     }
 
@@ -76,77 +60,6 @@ public class ITestHelper {
                 .addHeader("Authorization", hawkularAuthHeader)
                 .addHeader("Accept", "application/json")
                 .addHeader("Hawkular-Tenant", tenantId);
-    }
-
-    private Optional<InventoryStructure> extractStructureFromResponse(String responseBody) {
-        List<ExtendedInventoryStructure> l = extractStructuresFromResponse(responseBody);
-        if (l.size() != 1) {
-            return Optional.empty();
-        }
-        return Optional.of(l.get(0).getStructure());
-    }
-
-    private List<ExtendedInventoryStructure> extractStructuresFromResponse(String responseBody) {
-        try {
-            JsonNode responseNode = mapper.readTree(responseBody);
-            return StreamSupport.stream(responseNode.spliterator(), true)
-                    .map(node -> node.get("data"))
-                    .map(this::rebuildFromChunks)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw Throwables.propagate(e);
-        }
-    }
-
-    private Optional<ExtendedInventoryStructure> rebuildFromChunks(JsonNode dataNode) {
-        if (!dataNode.has(0)) {
-            return Optional.empty();
-        }
-        try {
-            JsonNode masterNode = dataNode.get(0);
-            final byte[] all;
-            if (masterNode.has("tags") && masterNode.get("tags").has("chunks")) {
-                int nbChunks = masterNode.get("tags").get("chunks").asInt();
-                int totalSize = masterNode.get("tags").get("size").asInt();
-                byte[] master = masterNode.get("value").binaryValue();
-                if (master.length == 0) {
-                    return Optional.empty();
-                }
-                if (nbChunks > dataNode.size()) {
-                    // Race condition: some, but not all chunks have been written on DB while reading?
-                    // Then, caller must just wait a little bit before retrying
-                    return Optional.empty();
-                }
-                long masterTimestamp = masterNode.get("timestamp").asLong();
-                all = new byte[totalSize];
-                int pos = 0;
-                System.arraycopy(master, 0, all, pos, master.length);
-                pos += master.length;
-                for (int i = 1; i < nbChunks; i++) {
-                    JsonNode slaveNode = dataNode.get(i);
-                    // Perform sanity check using timestamps; they should all be contiguous, in decreasing order
-                    long slaveTimestamp = slaveNode.get("timestamp").asLong();
-                    if (slaveTimestamp != masterTimestamp-i) {
-                        // Race condition: some, but not all chunks have been written on DB while reading?
-                        // Then, caller must just wait a little bit before retrying
-                        return Optional.empty();
-                    }
-                    byte[] slave = slaveNode.get("value").binaryValue();
-                    System.arraycopy(slave, 0, all, pos, slave.length);
-                    pos += slave.length;
-                }
-            } else {
-                // Not chunked
-                all = masterNode.get("value").binaryValue();
-            }
-            String decompressed = decompress(all);
-            ExtendedInventoryStructure structure = mapper.readValue(decompressed, ExtendedInventoryStructure.class);
-            return Optional.of(structure);
-        } catch (Exception e) {
-            throw Throwables.propagate(e);
-        }
     }
 
     private static String decompress(byte[] gzipped) throws IOException {
@@ -163,88 +76,23 @@ public class ITestHelper {
         return outStr.toString();
     }
 
-    public Optional<InventoryStructure> getInventoryStructure(String feedId, String type, String id) throws Throwable {
-        // Fetch metrics by tag
-        String url = baseInvUri + "/raw/query";
-        String tags = "module:inventory,type:" + type + ",feed:" + feedId + ",id:" + id;
-        String params = "{\"tags\":\"" + tags + "\"," +
-                "\"fromEarliest\":true," +
-                "\"order\":\"DESC\"}";
-        String response = getWithRetries(newAuthRequest()
-                .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json"), params))
-                .build());
-        return Optional.of(response)
-                .filter(r -> !r.isEmpty())
-                .flatMap(this::extractStructureFromResponse);
-    }
-
-    public Optional<Blueprint> getBlueprintFromCP(CanonicalPath path) throws Throwable {
-        Iterator<CanonicalPath> upDown = path.descendingIterator();
-        if (!upDown.hasNext()) {
-            return Optional.empty();
-        }
-        // Ignore tenant
-        upDown.next();
-        if (!upDown.hasNext()) {
-            return Optional.empty();
-        }
-        String feed = upDown.next().getSegment().getElementId();
-        if (!upDown.hasNext()) {
-            return Optional.empty();
-        }
-        CanonicalPath itemPath = upDown.next();
-        Optional<InventoryStructure> inventoryStructure = getInventoryStructure(
-                feed,
-                itemPath.getSegment().getElementType().getSerialized(),
-                itemPath.getSegment().getElementId());
-        return inventoryStructure.map(struct -> (Blueprint) struct.get(path.relativeTo(itemPath)));
-    }
-
-    public Map<CanonicalPath, Blueprint> getBlueprintsByType(String feedId, String type, int expectedCount)
+    public Collection<Resource> getResourceByType(String feedId, String type, int expectedCount)
             throws Throwable {
         for (int attempt = 0; attempt < ATTEMPT_COUNT; attempt++) {
-            // Fetch metrics by tag
-            String url = baseInvUri + "/raw/query";
-            String tags = "module:inventory,type:r,feed:" + feedId + ",restypes:.*|" + type + "|.*";
-            String params = "{\"tags\":\"" + tags + "\"," +
-                    "\"fromEarliest\":true," +
-                    "\"order\":\"DESC\"}";
+            // TODO [lponce] this call is not paginating, perhaps enough for itest but it should be adapted in the future
+            String url = baseInvUri + "/resources?feedId=" + feedId + "&typeId=" + type;
             String response = getWithRetries(newAuthRequest()
                     .url(url)
-                    .post(RequestBody.create(MediaType.parse("application/json"), params))
+                    .get()
                     .build());
             if (response.isEmpty()) {
-                return new HashMap<>();
+                return new ArrayList<>();
             }
-
-            // Now find each collected resource path in their belonging InventoryStructure
-            List<ExtendedInventoryStructure> structures = extractStructuresFromResponse(response);
-            Map<CanonicalPath, Blueprint> matchingResources = new HashMap<>();
-            CanonicalPath feedPath = feedPath(feedId).get();
-            structures.forEach(structure -> {
-                Collection<String> childResources = structure.getTypesIndex().get(type);
-                if (childResources != null) {
-                    CanonicalPath rootPath = feedPath.modified()
-                            .extend(SegmentType.r, structure.getStructure().getRoot().getId()).get();
-                    for (String resourcePath : childResources) {
-                        RelativePath relativePath = RelativePath.fromString(resourcePath);
-                        Blueprint bp = structure.getStructure().get(relativePath);
-                        if (bp != null) {
-                            CanonicalPath absolutePath = relativePath.applyTo(rootPath);
-                            matchingResources.put(absolutePath, bp);
-                        }
-                    }
-                }
-            });
-
-            if (matchingResources.size() >= expectedCount) {
-                return matchingResources;
+            ResultSet<Resource> rs = mapper.readValue(response, ResultSet.class);
+            if (rs.getResults().size() >= expectedCount) {
+                return rs.getResults();
             }
-
-            Thread.sleep(ATTEMPT_DELAY);
         }
-
         throw new IllegalStateException("Cannot get expected number of resources. Retries have been exceeded.");
     }
 
@@ -274,14 +122,14 @@ public class ITestHelper {
         throw e;
     }
 
-    public Map.Entry<CanonicalPath, Blueprint> waitForResourceContaining(String feed, String rType, String containing,
+    public Resource waitForResourceContaining(String feed, String rType, String containing,
             long sleep, int attempts)
             throws Throwable {
         for (int i = 0; i < attempts; i++) {
-            Optional<Map.Entry<CanonicalPath, Blueprint>> resource = getBlueprintsByType(feed, rType, 0)
-                    .entrySet().stream()
+            Optional<Resource> resource = getResourceByType(feed, rType, 0)
+                    .stream()
                     .filter(e -> containing == null
-                            || ((Entity.Blueprint) (e.getValue())).getId().contains(containing))
+                            || e.getName().contains(containing))
                     .findFirst();
             if (resource.isPresent()) {
                 return resource.get();
@@ -295,10 +143,10 @@ public class ITestHelper {
     public void waitForNoResourceContaining(String feed, String rType, String containing, long sleep, int attempts)
             throws Throwable {
         for (int i = 0; i < attempts; i++) {
-            Optional<Map.Entry<CanonicalPath, Blueprint>> resource = getBlueprintsByType(feed, rType, 0)
-                    .entrySet().stream()
+            Optional<Resource> resource = getResourceByType(feed, rType, 0)
+                    .stream()
                     .filter(e -> containing == null
-                            || ((Entity.Blueprint) (e.getValue())).getId().contains(containing))
+                            || e.getName().contains(containing))
                     .findFirst();
             if (!resource.isPresent()) {
                 return;
@@ -307,10 +155,6 @@ public class ITestHelper {
         }
         throw new AssertionError("Resource [type=" + rType + ", containing=" + containing + "] still found after "
                 + attempts + " attempts.");
-    }
-
-    public CanonicalPath.FeedBuilder feedPath(String feedId) {
-        return CanonicalPath.of().tenant(tenantId).feed(feedId);
     }
 
     public OkHttpClient client() {

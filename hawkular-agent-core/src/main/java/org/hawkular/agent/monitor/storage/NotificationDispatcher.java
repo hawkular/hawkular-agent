@@ -31,7 +31,6 @@ import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.client.api.NotificationType;
-import org.hawkular.inventory.paths.CanonicalPath;
 
 /**
  * @author Jay Shaughnessy
@@ -48,24 +47,15 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
     }
 
     @Override public <L> void receivedEvent(InventoryEvent<L> event) {
-        MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
-        String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
-        String tenantId = (null != endpointTenantId) ? endpointTenantId
-                : storageAdapter.getStorageAdapterConfiguration().getTenantId();
-
         event.getAddedOrModified().stream()
                 .filter(r -> r.getResourceType().getNotifications().contains(NotificationType.RESOURCE_ADDED))
                 .forEach(r -> {
-                    CanonicalPath cp = CanonicalPath.of()
-                            .tenant(tenantId)
-                            .feed(feedId)
-                            .resource(r.getID().getIDString())
-                            .get();
                     try {
                         NotificationPayloadBuilder b = storageAdapter.createNotificationPayloadBuilder();
                         b.addNotificationType(NotificationType.RESOURCE_ADDED);
+                        b.addProperty("feedId", this.feedId);
                         b.addProperty("resourceType", r.getResourceType().getName().getNameString());
-                        b.addProperty("resourcePath", cp.toString());
+                        b.addProperty("resourceId", r.getID().getIDString());
                         storageAdapter.store(b, 0);
                     } catch (Exception e) {
                         log.errorFailedToCreateNotification(e, NotificationType.RESOURCE_ADDED.name());
@@ -89,16 +79,12 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
         avails.keySet().stream()
                 .filter(mi -> mi.getResource().getResourceType().getNotifications().contains(notificationType))
                 .forEach(mi ->  {
-                    CanonicalPath cp = CanonicalPath.of()
-                            .tenant(tenantId)
-                            .feed(feedId)
-                            .resource(mi.getResource().getID().getIDString())
-                            .get();
                     try {
                         NotificationPayloadBuilder b = storageAdapter.createNotificationPayloadBuilder();
                         b.addNotificationType(notificationType);
+                        b.addProperty("feedId", this.feedId);
                         b.addProperty("resourceType", mi.getResource().getResourceType().getName().getNameString());
-                        b.addProperty("resourcePath", cp.toString());
+                        b.addProperty("resourceId", mi.getResource().getID().getIDString());
                         b.addProperty("availType", mi.getType().getName().getNameString());
                         b.addProperty("newAvail", avails.get(mi).name());
                         storageAdapter.store(b, 0);

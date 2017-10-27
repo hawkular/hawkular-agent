@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #
 # Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
 # and other contributors as indicated by the @author tags.
@@ -15,10 +16,14 @@
 # limitations under the License.
 #
 
-handlers=java.util.logging.ConsoleHandler
-java.util.logging.ConsoleHandler.level=DEBUG
 
-.level=DEBUG
-org.hawkular.cmdgw.ws.test.TestWebSocketClient.level = DEBUG
-org.hawkular.cmdgw.ws.test.AbstractCommandITest.level = DEBUG
-org.hawkular.cmdgw.ws.test.StandaloneDeployApplicationITest.level = DEBUG
+docker > /dev/null 2>&1 || { echo "docker is required, but is not found. Make sure it is accessible."; exit 1; }
+TAG="${1:-latest}"
+IMAGE="${2:-hawkular/wildfly-hawkular-javaagent}"
+
+pushd "$( dirname "${BASH_SOURCE[0]}" )"
+
+echo "Building Docker image for Wildfly + Hawkular javaagent: $IMAGE:$TAG."
+docker build -t $IMAGE:$TAG . -f Dockerfile
+
+popd

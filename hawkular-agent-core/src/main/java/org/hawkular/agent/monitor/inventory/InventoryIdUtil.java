@@ -26,12 +26,18 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEn
 public class InventoryIdUtil {
     public static class ResourceIdParts {
 
+        private final String feedId;
         private final String managedServerName;
         private final String idPart;
 
-        private ResourceIdParts(String managedServerName, String idPart) {
+        private ResourceIdParts(String feedId, String managedServerName, String idPart) {
+            this.feedId = feedId;
             this.managedServerName = managedServerName;
             this.idPart = idPart;
+        }
+
+        public String getFeedId() {
+            return feedId;
         }
 
         public String getManagedServerName() {
@@ -44,7 +50,7 @@ public class InventoryIdUtil {
     }
 
     /**
-     * Given a resource ID generated via {@link InventoryIdUtil#generateResourceId(ManagedServer, String)}
+     * Given a resource ID generated via {@link InventoryIdUtil#generateResourceId}
      * this returns the different parts that make up that resource ID.
      *
      * @param resourceId the full resource ID to be parsed
@@ -55,11 +61,11 @@ public class InventoryIdUtil {
             throw new IllegalArgumentException("Invalid resource ID - cannot be null");
         }
 
-        String[] parts = resourceId.split("~", 2);
-        if (parts.length != 2) {
+        String[] parts = resourceId.split("~", 3);
+        if (parts.length != 3) {
             throw new IllegalArgumentException("Cannot parse invalid ID: " + resourceId);
         }
-        return new ResourceIdParts(parts[0], parts[1]);
+        return new ResourceIdParts(parts[0], parts[1], parts[2]);
     }
 
     /**
@@ -71,9 +77,11 @@ public class InventoryIdUtil {
      *
      * @return the resource ID
      */
-    public static ID generateResourceId(MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint,
+    public static ID generateResourceId(
+            String feedId,
+            MonitoredEndpoint<? extends AbstractEndpointConfiguration> endpoint,
             String idPart) {
-        ID id = new ID(String.format("%s~%s", endpoint.getName(), idPart));
+        ID id = new ID(String.format("%s~%s~%s", feedId, endpoint.getName(), idPart));
         return id;
     }
 

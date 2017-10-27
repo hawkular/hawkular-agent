@@ -29,7 +29,6 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,8 +49,7 @@ import org.hawkular.agent.monitor.service.ServiceStatus;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmrclient.Address;
 import org.hawkular.dmrclient.JBossASClient;
-import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.Operations;
@@ -79,6 +77,7 @@ public abstract class AbstractITest {
     protected static final String hawkularAuthHeader;
 
     protected static final String authentication;
+    protected static final String baseHawkularUri;
     protected static final String baseMetricsUri;
     protected static final String baseGwUri;
     protected static final String baseInvUri;
@@ -116,8 +115,9 @@ public abstract class AbstractITest {
 
         System.out.println("using REST user [" + hawkularTestUser + "] with password [" + hawkularTestPasword + "]");
         authentication = "{\"username\":\"" + hawkularTestUser + "\",\"password\":\"" + hawkularTestPasword + "\"}";
-        baseMetricsUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/metrics";
-        baseInvUri = baseMetricsUri + "/strings";
+        baseHawkularUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular";
+        baseMetricsUri = baseHawkularUri + "/metrics";
+        baseInvUri = baseHawkularUri + "/inventory";
         baseGwUri = "ws://" + hawkularHost + ":" + hawkularHttpPort + "/hawkular/command-gateway";
         agentJolokiaUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/jolokia-war";
 
@@ -430,6 +430,12 @@ public abstract class AbstractITest {
                     response = testHelper.getWithRetries(baseMetricsUri + "/status");
                 }
 
+                response = "";
+                while (!response.contains("UP")) {
+                    Thread.sleep(2000);
+                    response = testHelper.getWithRetries(baseInvUri + "/status");
+                }
+
                 hawkularServerIsReady = true;
             }
         }
@@ -541,28 +547,15 @@ public abstract class AbstractITest {
     }
 
     /**
-     * Return the {@link CanonicalPath} of the only WildFly server present in inventory under the hawkular feed.
+     * Return the {@link Resource} of the only WildFly server present in inventory under the hawkular feed.
      * This is the Hawkular Server itself.
      *
      * @return path of hawkular wildfly server resource
      */
-    protected CanonicalPath getHawkularWildFlyServerResourcePath() throws Throwable {
-        Map<CanonicalPath, Blueprint> wildflyServers = testHelper.getBlueprintsByType(hawkularFeedId, "WildFly Server",
-                1);
+    protected Resource getHawkularWildFlyServerResource() throws Throwable {
+        Collection<Resource> wildflyServers = testHelper.getResourceByType(hawkularFeedId, "WildFly Server", 1);
         AssertJUnit.assertEquals(1, wildflyServers.size());
-        return wildflyServers.keySet().iterator().next();
-    }
-
-    /**
-     * Return the {@link CanonicalPath} of the only WildFly Host Controller present in inventory under the feed
-     * found in the given client config.
-     *
-     * @return path of host controller
-     */
-    protected CanonicalPath getHostController() throws Throwable {
-        Map<CanonicalPath, Blueprint> hcs = testHelper.getBlueprintsByType(hawkularFeedId, "Host Controller", 1);
-        AssertJUnit.assertEquals(1, hcs.size());
-        return hcs.keySet().iterator().next();
+        return wildflyServers.iterator().next();
     }
 
     protected File getTestApplicationFile() {

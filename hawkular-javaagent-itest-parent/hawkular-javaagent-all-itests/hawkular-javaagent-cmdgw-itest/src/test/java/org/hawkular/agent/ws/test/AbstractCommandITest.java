@@ -17,7 +17,7 @@
 package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.javaagent.itest.util.AbstractITest;
 
 /**
@@ -29,24 +29,27 @@ public abstract class AbstractCommandITest extends AbstractITest {
 
         waitForAgentViaJMX();
 
-        CanonicalPath agentPath = testHelper.waitForResourceContaining(
-                hawkularFeedId, "Hawkular WildFly Agent", null, 5000, 10).getKey();
+        Resource agentResource = testHelper.waitForResourceContaining(
+                hawkularFeedId, "Hawkular WildFly Agent", null, 5000, 10);
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agentPath.toString() + "\","
+                + "\"feedId\":\"" + agentResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + agentResource.getId() + "\","
                 + "\"operationName\":\"Inventory Discovery Scan\""
                 + "}";
         String response = "ExecuteOperationResponse={"
                 + "\"operationName\":\"Inventory Discovery Scan\","
-                + "\"resourcePath\":\"" + agentPath + "\","
+                + "\"feedId\":\"" + agentResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + agentResource.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Inventory Discovery Scan] on a [JMX MBean] given by Inventory path ["
-                + agentPath + "]: Full inventory discovery scan completed in"; // will match anything after
+                + "\"message\":\"Performed [Inventory Discovery Scan] on a [JMX MBean] given by Feed Id ["
+                + agentResource.getFeedId() + "] Resource Id [" + agentResource.getId()
+                + "]: Full inventory discovery scan completed in"; // will match anything after
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(agentPath.ids().getFeedId())
+                .expectGenericSuccess(agentResource.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {

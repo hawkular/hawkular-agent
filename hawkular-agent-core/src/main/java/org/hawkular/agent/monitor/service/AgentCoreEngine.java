@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.monitor.service;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -573,7 +572,6 @@ public abstract class AgentCoreEngine {
         this.storageAdapter.initialize(
                 feedId,
                 configuration.getStorageAdapter(),
-                configuration.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds(),
                 diagnostics,
                 httpClientBuilder);
 
@@ -645,8 +643,12 @@ public abstract class AgentCoreEngine {
     }
 
     private void waitForHawkularServer() throws Exception {
-        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
+        waitForHawkularMetrics();
+        waitForHawkularInventory();
+    }
 
+    private void waitForHawkularMetrics() throws Exception {
+        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
         String statusUrl = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
                 configuration.getStorageAdapter().getMetricsContext()).append("status").toString();
         Request request = this.httpClientBuilder.buildJsonGetRequest(statusUrl, null);
@@ -663,8 +665,17 @@ public abstract class AgentCoreEngine {
                     }
                 } else {
                     String bodyString = response.body().string();
-                    if (checkReallyUp(bodyString)) {
-                        log.debugf("Hawkular Metrics is ready: %s", bodyString);
+
+                    boolean metricsReallyUp;
+                    try {
+                        metricsReallyUp = "STARTED"
+                                .equals(new ObjectMapper().readValue(bodyString, Map.class).get("MetricsService"));
+                    } catch (Exception e) {
+                        metricsReallyUp = false;
+                    }
+
+                    if (metricsReallyUp) {
+                        log.infof("Hawkular Metrics is ready: %s", bodyString);
                         break;
                     } else {
                         log.debugf("Hawkular Metrics is still starting: %s", bodyString);
@@ -685,24 +696,61 @@ public abstract class AgentCoreEngine {
         }
     }
 
+    private void waitForHawkularInventory() throws Exception {
+        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
+        String statusUrl = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
+                configuration.getStorageAdapter().getInventoryContext()).append("status").toString();
+        Request request = this.httpClientBuilder.buildJsonGetRequest(statusUrl, null);
+        int counter = 0;
+        while (true) {
+            Response response = null;
+            try {
+                response = httpclient.newCall(request).execute();
+                if (response.code() != 200) {
+                    if (response.code() != 401) {
+                        log.debugf("Hawkular Inventory is not ready yet: %d/%s", response.code(), response.message());
+                    } else {
+                        log.warnBadHawkularCredentials(response.code(), response.message());
+                    }
+                } else {
+                    String bodyString = response.body().string();
+                    if (checkStatusReallyUp(bodyString)) {
+                        log.infof("Hawkular Inventory is ready: %s", bodyString);
+                        break;
+                    } else {
+                        log.debugf("Hawkular Inventory is still starting: %s", bodyString);
+                    }
+                }
+            } catch (Exception e) {
+                log.debugf("Hawkular Inventory is not ready yet: %s", e.toString());
+            } finally {
+                if (response != null) {
+                    response.body().close();
+                }
+            }
+            Thread.sleep(5000L);
+            counter++;
+            if (counter % 12 == 0) {
+                log.warnConnectionDelayed(counter, "inventory", statusUrl);
+            }
+        }
+    }
+
     /**
      * If the server returns a 200 OK, we still need to check the content if the server
      * is really up. This is explained here: https://twitter.com/heiglandreas/status/801137903149654017
      * @param bodyString String representation of the body
      * @return true if it is really up, false otherwise (still starting).
      */
-    private boolean checkReallyUp(String bodyString) {
-
-        ObjectMapper mapper = new ObjectMapper(); // We don't need it later
-        Map result = null;
+    private boolean checkStatusReallyUp(String bodyString) {
+        Map<?, ?> result = null;
         try {
-            result = mapper.readValue(bodyString, Map.class);
-        } catch (IOException e) {
+            result = new ObjectMapper().readValue(bodyString, Map.class);
+        } catch (Exception e) {
             return false;
         }
-        String status = (String) result.get("MetricsService");
-
-        return "STARTED".equals(status);
+        String status = (String) result.get("status");
+        return "UP".equals(status);
     }
 
     /**

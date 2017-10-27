@@ -17,7 +17,7 @@
 package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.annotations.Test;
 
@@ -31,18 +31,19 @@ public class ExportJdrCommandITest extends AbstractCommandITest {
     public void exportJdrCommand() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient ignored = newHawkularModelControllerClient()) {
             String req = "ExportJdrRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\""
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\""
                     + "}";
             String responsePattern = "\\QExportJdrResponse={\\E.*";
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .readTimeout(240)//seconds
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(wfResource.getFeedId())
                     .expectBinary(responsePattern, new TestWebSocketClient.ZipWithOneEntryMatcher(), TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {

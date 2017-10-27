@@ -1,0 +1,3 @@
+HAWKULAR_URL=http://hawkular.example.com:8080
+HAWKULAR_AGENT_USER=jdoe
+HAWKULAR_AGENT_PASSWORD=password

@@ -18,7 +18,7 @@ package org.hawkular.agent.ws.test;
 
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
 import org.hawkular.dmrclient.Address;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.junit.AfterClass;
 import org.testng.annotations.Test;
@@ -36,12 +36,13 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     public void testEnableStatistics() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
             String req = "StatisticsControlRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"web\":\"ENABLED\","
                     + "\"transactions\":\"ENABLED\","
                     + "\"datasources\":\"ENABLED\","
@@ -57,10 +58,11 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "\"infinispan\":\"ENABLED\","
                     + "\"ejb3\":\"ENABLED\","
                     + "\"messaging\":\"ENABLED\","
-                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Statistics for server [" + wfPath.toString()
+                    + "\"message\":\"Statistics for server [" + wfResource.getId()
                     + "] have been enabled for subsystems "
                     + "[datasources, EJB3, infinispan, messaging, transactions, web]"
                     + ", disabled for subsystems []"
@@ -71,7 +73,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(wfResource.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
@@ -109,12 +111,13 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     public void testDisableStatistics() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
             String req = "StatisticsControlRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"web\":\"DISABLED\","
                     + "\"transactions\":\"DISABLED\","
                     + "\"datasources\":\"DISABLED\","
@@ -130,10 +133,11 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "\"infinispan\":\"DISABLED\","
                     + "\"ejb3\":\"DISABLED\","
                     + "\"messaging\":\"DISABLED\","
-                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Statistics for server [" + wfPath.toString()
+                    + "\"message\":\"Statistics for server [" + wfResource.getId()
                     + "] have been enabled for subsystems [], disabled for subsystems "
                     + "[datasources, EJB3, infinispan, messaging, transactions, web]"
                     + ", and left as-is for subsystems []\","
@@ -143,7 +147,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(wfResource.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
@@ -179,7 +183,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     private void testReadOnlyStatistics(boolean expectedEnabledFlag) throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
@@ -201,7 +205,8 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
 
             // just ask for statistics settings only - we aren't turning on or off any
             String req = "StatisticsControlRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\""
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\""
                     + "}";
 
             String response = "StatisticsControlResponse={"
@@ -211,10 +216,11 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "\"infinispan\":\"" + flagString + "\","
                     + "\"ejb3\":\"" + flagString + "\","
                     + "\"messaging\":\"" + flagString + "\","
-                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Statistics for server [" + wfPath.toString()
+                    + "\"message\":\"Statistics for server [" + wfResource.getId()
                     + "] have been enabled for subsystems [], disabled for subsystems []"
                     + ", and left as-is for subsystems "
                     + "[datasources, EJB3, infinispan, messaging, transactions, web]\""
@@ -223,7 +229,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(wfResource.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {
@@ -236,7 +242,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
     public void testEnableStatisticsSubset() throws Throwable {
         waitForHawkularServerToBeReady();
 
-        CanonicalPath wfPath = getHawkularWildFlyServerResourcePath();
+        Resource wfResource = getHawkularWildFlyServerResource();
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
 
@@ -256,7 +262,8 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
 
             // turn on statistics for only one subsystem, leaving the rest disabled
             String req = "StatisticsControlRequest={\"authentication\":" + authentication + ", "
-                    + "\"resourcePath\":\"" + wfPath.toString() + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"transactions\":\"ENABLED\""
                     + "}";
 
@@ -267,10 +274,11 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
                     + "\"infinispan\":\"DISABLED\","
                     + "\"ejb3\":\"DISABLED\","
                     + "\"messaging\":\"DISABLED\","
-                    + "\"resourcePath\":\"" + wfPath + "\","
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
                     + "\"destinationSessionId\":\"{{sessionId}}\","
                     + "\"status\":\"OK\","
-                    + "\"message\":\"Statistics for server [" + wfPath.toString()
+                    + "\"message\":\"Statistics for server [" + wfResource.getId()
                     + "] have been enabled for subsystems [transactions], disabled for subsystems []"
                     + ", and left as-is for subsystems [datasources, EJB3, infinispan, messaging, web]\","
                     + "\"serverRefreshIndicator\":\"RELOAD-REQUIRED\""
@@ -279,7 +287,7 @@ public class StatisticsControlCommandITest extends AbstractCommandITest {
             try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                     .url(baseGwUri + "/ui/ws")
                     .expectWelcome(req)
-                    .expectGenericSuccess(wfPath.ids().getFeedId())
+                    .expectGenericSuccess(wfResource.getFeedId())
                     .expectText(response, TestWebSocketClient.Answer.CLOSE)
                     .expectClose()
                     .build()) {

@@ -29,14 +29,18 @@ import_hawkular_services_public_key() {
 }
 
 run_hawkular_agent() {
-    JAVA_OPTS="${JAVA_OPTS} \
-    -Dhawkular.rest.host=${HAWKULAR_SERVER_PROTOCOL}://${HAWKULAR_SERVER_ADDR}:${HAWKULAR_SERVER_PORT} \
-    -Dhawkular.rest.user=${HAWKULAR_AGENT_USER} -Dhawkular.rest.password=${HAWKULAR_AGENT_PASSWORD} \
-    -Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE}"
-    ${JBOSS_HOME}/bin/standalone.sh -b 0.0.0.0
+    ${JBOSS_HOME}/bin/${HAWKULAR_MODE}.sh -b 0.0.0.0
 }
 
 main() {
+  HAWKULAR_MODE=`echo ${HAWKULAR_MODE} | tr '[:upper:]' '[:lower:]'`
+  if [[ "${HAWKULAR_MODE}" != "standalone" ]] && [[ "${HAWKULAR_MODE}" != "domain" ]]; then
+    echo 'HAWKULAR_MODE must be set to "standalone" or "domain", found:' ${HAWKULAR_MODE}
+    exit
+  fi
+  if [[ "${HAWKULAR_MODE}" == "domain" ]]; then
+    sed -i "s|- Standalone Environment|- Domain Environment|g" /opt/hawkular/configuration/hawkular-javaagent-config.yaml
+  fi
   import_hawkular_services_public_key
   run_hawkular_agent "$@"
 }

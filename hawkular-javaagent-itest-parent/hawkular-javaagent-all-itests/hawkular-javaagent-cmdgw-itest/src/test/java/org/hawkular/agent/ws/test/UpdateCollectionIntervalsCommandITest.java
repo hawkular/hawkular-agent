@@ -16,6 +16,8 @@
  */
 package org.hawkular.agent.ws.test;
 
+import java.util.Collection;
+
 import org.hawkular.agent.javaagent.config.Configuration;
 import org.hawkular.agent.javaagent.config.DMRAvail;
 import org.hawkular.agent.javaagent.config.DMRAvailSet;
@@ -23,7 +25,7 @@ import org.hawkular.agent.javaagent.config.DMRMetric;
 import org.hawkular.agent.javaagent.config.DMRMetricSet;
 import org.hawkular.agent.javaagent.config.TimeUnits;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.paths.CanonicalPath;
+import org.hawkular.inventory.api.model.Resource;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -39,8 +41,10 @@ public class UpdateCollectionIntervalsCommandITest extends AbstractCommandITest 
 
         waitForAgentViaJMX();
 
-        CanonicalPath agentPath = testHelper.getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent", 1)
-                .keySet().iterator().next();
+        Collection<Resource> agents = testHelper.getResourceByType(hawkularFeedId, "Hawkular WildFly Agent", 1);
+        Assert.assertEquals(1, agents.size());
+        Resource agent = agents.iterator().next();
+
 
         // check we are starting with our original defaults - this is just a sanity check
         Configuration agentConfig = getAgentConfigurationFromFile();
@@ -48,22 +52,24 @@ public class UpdateCollectionIntervalsCommandITest extends AbstractCommandITest 
         assertAvailInterval(agentConfig, "Server Availability", "Server Availability", 30, TimeUnits.seconds);
 
         String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agentPath.toString() + "\","
+                + "\"feedId\":\"" + agent.getFeedId() + "\","
+                + "\"resourceId\":\"" + agent.getId() + "\","
                 + "\"metricTypes\":{\"WildFly Memory Metrics~NonHeap Committed\":\"0\",\"Unknown~Metric\":\"666\"},"
                 + "\"availTypes\":{\"Server Availability~Server Availability\":\"0\",\"Unknown~Avail\":\"666\"}"
                 + "}";
         String response = "UpdateCollectionIntervalsResponse={"
-                + "\"resourcePath\":\"" + agentPath + "\","
+                + "\"feedId\":\"" + agent.getFeedId() + "\","
+                + "\"resourceId\":\"" + agent.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Update Collection Intervals] on a [Agent[JMX]] given by Inventory path ["
-                + agentPath + "]\""
+                + "\"message\":\"Performed [Update Collection Intervals] on a [Agent[JMX]] given by Feed Id ["
+                + agent.getFeedId() + "] Resource Id [" + agent.getId() + "]\""
                 + "}";
 
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(agentPath.ids().getFeedId())
+                .expectGenericSuccess(agent.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {

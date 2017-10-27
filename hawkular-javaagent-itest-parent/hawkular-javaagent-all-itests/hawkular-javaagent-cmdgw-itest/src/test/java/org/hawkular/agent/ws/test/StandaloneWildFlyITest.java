@@ -17,7 +17,6 @@
 package org.hawkular.agent.ws.test;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 
 import org.hawkular.agent.javaagent.config.Configuration;
@@ -26,15 +25,8 @@ import org.hawkular.agent.javaagent.config.DMRMetricSet;
 import org.hawkular.agent.javaagent.config.TimeUnits;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.inventory.api.model.Blueprint;
-import org.hawkular.inventory.api.model.DataEntity;
-import org.hawkular.inventory.api.model.Entity;
-import org.hawkular.inventory.api.model.InventoryStructure;
-import org.hawkular.inventory.api.model.OperationType;
-import org.hawkular.inventory.api.model.ResourceType;
-import org.hawkular.inventory.api.model.StructuredData;
-import org.hawkular.inventory.paths.CanonicalPath;
-import org.hawkular.inventory.paths.SegmentType;
+import org.hawkular.inventory.api.model.Operation;
+import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.PathAddress;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -53,27 +45,29 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
         waitForAgentViaJMX();
 
-        CanonicalPath agentPath = testHelper.getBlueprintsByType(hawkularFeedId, "Hawkular WildFly Agent", 1)
-                .keySet().iterator().next();
+        Resource agentResource = testHelper.waitForResourceContaining(
+                hawkularFeedId, "Hawkular WildFly Agent", null, 5000, 10);
 
         // disable Datasource Pool Metrics~Active Count
         String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                + "\"resourcePath\":\"" + agentPath.toString() + "\","
+                + "\"feedId\":\"" + agentResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + agentResource.getId() + "\","
                 + "\"metricTypes\":{\"Datasource Pool Metrics~Active Count\":\"0\",\"Unknown~Metric\":\"666\"},"
                 + "\"availTypes\":{}"
                 + "}";
         String response = "UpdateCollectionIntervalsResponse={"
-                + "\"resourcePath\":\"" + agentPath + "\","
+                + "\"feedId\":\"" + agentResource.getFeedId() + "\","
+                + "\"resourceId\":\"" + agentResource.getId() + "\","
                 + "\"destinationSessionId\":\"{{sessionId}}\","
                 + "\"status\":\"OK\","
-                + "\"message\":\"Performed [Update Collection Intervals] on a [Agent[JMX]] given by Inventory path ["
-                + agentPath + "]\""
+                + "\"message\":\"Performed [Update Collection Intervals] on a [Agent[JMX]] given by Feed Id ["
+                + agentResource.getFeedId() + "] Resource Id [" + agentResource.getId() + "]\""
                 + "}";
 
         try (TestWebSocketClient testClient = TestWebSocketClient.builder()
                 .url(baseGwUri + "/ui/ws")
                 .expectWelcome(req)
-                .expectGenericSuccess(agentPath.ids().getFeedId())
+                .expectGenericSuccess(agentResource.getFeedId())
                 .expectText(response, TestWebSocketClient.Answer.CLOSE)
                 .expectClose()
                 .build()) {
@@ -92,51 +86,54 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     public void operationParameters() throws Throwable {
 
         // get the operation
-        CanonicalPath shutdownPath = testHelper.feedPath(hawkularFeedId)
-                .resourceType("WildFly Server").operationType("Shutdown").get();
-        OperationType.Blueprint op = (OperationType.Blueprint) testHelper.getBlueprintFromCP(shutdownPath).get();
-        Assert.assertEquals("Shutdown", op.getId());
+        Resource wfResource = getHawkularWildFlyServerResource();
+        Optional<Operation> operation = wfResource.getType()
+                .getOperations()
+                .stream()
+                .filter(o -> o.getName().equals("Shutdown"))
+                .findFirst();
+        Assert.assertTrue(operation.isPresent());
+        Operation op = operation.get();
+
         System.out.println("StandaloneWildFlyITest.operationParameters() ===> " + op);
 
         // get parameters
-        CanonicalPath configPath = shutdownPath.extend(SegmentType.d, "parameterTypes").get();
-        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(configPath).get();
-        Assert.assertNotNull(data);
-        Map<String, StructuredData> paramsMap = data.getValue().map();
-        Map<String, StructuredData> timeoutParam = paramsMap.get("timeout").map();
-        Assert.assertEquals("int", timeoutParam.get("type").string());
-        Assert.assertEquals("0", timeoutParam.get("defaultValue").string());
-        Assert.assertNotNull(timeoutParam.get("description").string());
+        Assert.assertNotNull(op.getParameters().get("timeout"));
+        Assert.assertEquals("int", op.getParameters().get("timeout").get("type"));
+        Assert.assertEquals("0", op.getParameters().get("timeout").get("defaultValue"));
+        Assert.assertNotNull(op.getParameters().get("timeout").get("description"));
 
-        Map<String, StructuredData> restartParam = paramsMap.get("restart").map();
-        Assert.assertEquals("bool", restartParam.get("type").string());
-        Assert.assertEquals("false", restartParam.get("defaultValue").string());
-        Assert.assertNotNull(restartParam.get("description").string());
+        Assert.assertNotNull(op.getParameters().get("restart"));
+        Assert.assertEquals("bool", op.getParameters().get("restart").get("type"));
+        Assert.assertEquals("false", op.getParameters().get("restart").get("defaultValue"));
+        Assert.assertNotNull(op.getParameters().get("restart").get("description"));
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
     public void socketBindingGroupsInInventory() throws Throwable {
 
-        Collection<Blueprint> blueprints = testHelper.getBlueprintsByType(hawkularFeedId, "Socket Binding Group", 1)
-                .values();
+        Collection<Resource> bindingGroups = testHelper.getResourceByType(hawkularFeedId, "Socket Binding Group", 0);
+
         Collection<String> dmrSBGNames = getSocketBindingGroupNames();
         for (String sbgName : dmrSBGNames) {
-            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
-                    && ((Entity.Blueprint) bp).getId().contains(sbgName));
+            boolean hasMatch = bindingGroups.stream()
+                    .anyMatch(bg -> bg.getName().contains(sbgName));
             Assert.assertTrue(hasMatch);
             System.out.println("StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> group: " + sbgName);
+
         }
+
 
         // make sure we are testing against what we were expecting
         Assert.assertTrue(dmrSBGNames.contains("standard-sockets"));
         Assert.assertEquals(dmrSBGNames.size(), 1, "Wrong number of socket binding groups");
 
         // there is only one group - get the names of all the bindings (incoming and outbound) in that group
-        blueprints = testHelper.getBlueprintsByType(hawkularFeedId, "Socket Binding", 7).values();
+        Collection<Resource> socketBindings = testHelper.getResourceByType(hawkularFeedId, "Socket Binding", 0);
         Collection<String> dmrBindingNames = getSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
-            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
-                    && ((Entity.Blueprint) bp).getId().contains(bindingName));
+            boolean hasMatch = socketBindings.stream()
+                    .anyMatch(sb -> sb.getName().contains(bindingName));
             Assert.assertTrue(hasMatch);
             System.out.println("StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> binding: " + bindingName);
         }
@@ -151,12 +148,11 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         Assert.assertTrue(dmrBindingNames.contains("txn-status-manager"));
         Assert.assertEquals(dmrBindingNames.size(), 7, "Wrong number of socket binding groups");
 
-        blueprints = testHelper.getBlueprintsByType(hawkularFeedId, "Remote Destination Outbound Socket Binding", 1)
-                .values();
+        Collection<Resource> oSocketBindings = testHelper.getResourceByType(hawkularFeedId, "Remote Destination Outbound Socket Binding", 1);
         dmrBindingNames = getOutboundSocketBindingNames();
         for (String bindingName : dmrBindingNames) {
-            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
-                    && ((Entity.Blueprint) bp).getId().contains(bindingName));
+            boolean hasMatch = oSocketBindings.stream()
+                    .anyMatch(osb -> osb.getName().contains(bindingName));
             Assert.assertTrue(hasMatch);
             System.out.println(
                     "StandaloneWildFlyITest.socketBindingGroupsInInventory() ===> out-binding: " + bindingName);
@@ -170,11 +166,9 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     @Test(groups = { GROUP }, dependsOnMethods = { "configureAgent" })
     public void datasourcesAddedToInventory() throws Throwable {
         Collection<String> datasourceNames = getDatasourceNames();
-        Collection<Blueprint> blueprints = testHelper
-                .getBlueprintsByType(hawkularFeedId, "Datasource", datasourceNames.size()).values();
+        Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", datasourceNames.size());
         for (String datasourceName : datasourceNames) {
-            boolean hasMatch = blueprints.stream().anyMatch(bp -> bp instanceof Entity.Blueprint
-                    && ((Entity.Blueprint) bp).getId().contains(datasourceName));
+            boolean hasMatch = datasources.stream().anyMatch(ds -> ds.getId().contains(datasourceName));
             Assert.assertTrue(hasMatch);
             System.out.println("StandaloneWildFlyITest.datasourcesAddedToInventory() ===> " + datasourceName);
         }
@@ -213,7 +207,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
                 for (String datasourceName : getDatasourceNames()) {
                     // enabled
-                    String id = "MI~R~[" + hawkularFeedId + "/Local DMR~/subsystem=datasources/data-source="
+                    String id = "MI~R~[" + hawkularFeedId + "/" + hawkularFeedId + "~Local DMR~/subsystem=datasources/data-source="
                             + datasourceName
                             + "]~MT~Datasource Pool Metrics~Available Count";
                     id = Util.urlEncodeQuery(id);
@@ -230,7 +224,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
                     }
 
                     // disabled
-                    id = "MI~R~[" + hawkularFeedId + "/Local DMR~/subsystem=datasources/data-source="
+                    id = "MI~R~[" + hawkularFeedId + "/"+ hawkularFeedId + "~Local DMR~/subsystem=datasources/data-source="
                             + datasourceName
                             + "]~MT~Datasource Pool Metrics~Active Count";
                     id = Util.urlEncodeQuery(id);
@@ -272,7 +266,7 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
             if (availabilityResponse.code() == 200 && !availabilityResponse.body().string().isEmpty()) {
                 String id = "AI~R~[" + hawkularFeedId
-                        + "/Local DMR~~]~AT~Server Availability~Server Availability";
+                        + "/" + hawkularFeedId + "~Local DMR~~]~AT~Server Availability~Server Availability";
                 id = Util.urlEncode(id);
                 String url = baseMetricsUri + "/availability/" + id + "/raw";
                 availabilityResponse = testHelper.client().newCall(testHelper.newAuthRequest().url(url).get().build())
@@ -291,61 +285,33 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
         }
 
         Assert.fail("Availability still not gathered after [" + timeOutSeconds + "] seconds: [" + lastUrl + "]");
-
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void resourceConfig() throws Throwable {
-        CanonicalPath wfPath = getWildFlyServerResourcePath().extend(SegmentType.d, "configuration").get();
-        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(wfPath).get();
-        Map<String, StructuredData> resConfig = data.getValue().map();
-        Assert.assertEquals("NORMAL", resConfig.get("Running Mode").string());
-        Assert.assertEquals("RUNNING", resConfig.get("Suspend State").string());
-        Assert.assertTrue(resConfig.containsKey("Name"));
-        Assert.assertTrue(resConfig.containsKey("UUID"));
-        Assert.assertTrue(resConfig.containsKey("Hostname"));
-        Assert.assertTrue(resConfig.containsKey("Product Name"));
-        Assert.assertTrue(resConfig.containsKey("Server State"));
-        Assert.assertTrue(resConfig.containsKey("Node Name"));
-        Assert.assertTrue(resConfig.containsKey("Version"));
-        Assert.assertTrue(resConfig.containsKey("Home Directory"));
-        Assert.assertTrue(resConfig.containsKey("Bound Address"));
-    }
-
-    private CanonicalPath getWildFlyServerResourcePath() throws Throwable {
-        Map<CanonicalPath, Blueprint> servers = testHelper.getBlueprintsByType(hawkularFeedId, "WildFly Server", 1);
+        Collection<Resource> servers = testHelper.getResourceByType(hawkularFeedId, "WildFly Server", 1);
         Assert.assertEquals(1, servers.size());
-        return servers.keySet().iterator().next();
+        Resource server = servers.iterator().next();
+
+        Assert.assertEquals("NORMAL", server.getConfig().get("Running Mode"));
+        Assert.assertEquals("RUNNING", server.getConfig().get("Suspend State"));
+        Assert.assertTrue(server.getConfig().containsKey("Name"));
+        Assert.assertTrue(server.getConfig().containsKey("UUID"));
+        Assert.assertTrue(server.getConfig().containsKey("Hostname"));
+        Assert.assertTrue(server.getConfig().containsKey("Product Name"));
+        Assert.assertTrue(server.getConfig().containsKey("Server State"));
+        Assert.assertTrue(server.getConfig().containsKey("Node Name"));
+        Assert.assertTrue(server.getConfig().containsKey("Version"));
+        Assert.assertTrue(server.getConfig().containsKey("Home Directory"));
+        Assert.assertTrue(server.getConfig().containsKey("Bound Address"));
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void machineId() throws Throwable {
-        CanonicalPath osTypePath = getOperatingSystemResourceTypePath().extend(SegmentType.d, "configurationSchema")
-                .get();
-        DataEntity.Blueprint data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(osTypePath).get();
-        Map<String, StructuredData> schema = data.getValue().map();
-        Assert.assertTrue(schema.containsKey("Machine Id"));
-
-        CanonicalPath osPath = getOperatingSystemResourcePath().extend(SegmentType.d, "configuration").get();
-        data = (DataEntity.Blueprint) testHelper.getBlueprintFromCP(osPath).get();
-        Map<String, StructuredData> resConfig = data.getValue().map();
-        Assert.assertTrue(resConfig.containsKey("Machine Id"));
-    }
-
-    private CanonicalPath getOperatingSystemResourceTypePath() throws Throwable {
-        Optional<InventoryStructure> optInventoryStructure = testHelper.getInventoryStructure(hawkularFeedId, "rt",
-                "Platform_Operating System");
-        Assert.assertTrue(optInventoryStructure.isPresent());
-        InventoryStructure.Offline<ResourceType.Blueprint> osType = (InventoryStructure.Offline<ResourceType.Blueprint>) optInventoryStructure
-                .get();
-        return testHelper.feedPath(hawkularFeedId).resourceType(osType.getRoot().getId()).get();
-    }
-
-    private CanonicalPath getOperatingSystemResourcePath() throws Throwable {
-        Map<CanonicalPath, Blueprint> os = testHelper.getBlueprintsByType(hawkularFeedId, "Platform_Operating System",
-                1);
-        Assert.assertEquals(1, os.size());
-        return os.keySet().iterator().next();
+        Collection<Resource> platforms = testHelper.getResourceByType(hawkularFeedId, "Platform_Operating System", 1);
+        Assert.assertEquals(1, platforms.size());
+        Resource platform = platforms.iterator().next();
+        Assert.assertTrue(platform.getConfig().containsKey("Machine Id"));
     }
 
     private void assertMetricInterval(Configuration agentConfig, String setName, String metricName, int expectedVal,

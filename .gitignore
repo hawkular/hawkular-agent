@@ -25,3 +25,6 @@ nb-configuration.xml
 
 # MacOS DS_Store
 .DS_Store
+
+# Swap files
+*.swp

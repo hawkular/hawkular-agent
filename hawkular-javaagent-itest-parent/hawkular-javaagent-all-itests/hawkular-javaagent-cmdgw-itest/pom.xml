@@ -60,7 +60,7 @@
 
     <dependency>
       <groupId>org.hawkular.agent</groupId>
-      <artifactId>hawkular-wildfly-agent</artifactId>
+      <artifactId>hawkular-javaagent</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -90,12 +90,6 @@
       <scope>test</scope>
       <type>test-jar</type>
       <version>${version.org.hawkular.commons}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hawkular.commons</groupId>
-      <artifactId>hawkular-inventory-paths</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

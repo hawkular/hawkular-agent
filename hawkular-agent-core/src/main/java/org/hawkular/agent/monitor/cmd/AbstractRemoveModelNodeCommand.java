@@ -23,8 +23,8 @@ import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.dmr.DMRSession;
 import org.hawkular.bus.common.BasicMessageWithExtraData;
 import org.hawkular.bus.common.BinaryData;
-import org.hawkular.cmdgw.api.ResourcePathRequest;
-import org.hawkular.cmdgw.api.ResourcePathResponse;
+import org.hawkular.cmdgw.api.ResourceRequest;
+import org.hawkular.cmdgw.api.ResourceResponse;
 import org.hawkular.dmr.api.DmrApiException;
 import org.hawkular.dmr.api.OperationBuilder;
 import org.hawkular.dmr.api.OperationBuilder.OperationResult;
@@ -35,7 +35,7 @@ import org.jboss.as.controller.client.ModelControllerClient;
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public abstract class AbstractRemoveModelNodeCommand<Q extends ResourcePathRequest, S extends ResourcePathResponse>
+public abstract class AbstractRemoveModelNodeCommand<Q extends ResourceRequest, S extends ResourceResponse>
         extends AbstractDMRResourcePathCommand<Q, S> {
     private static final MsgLogger log = AgentLoggers.getLogger(AbstractRemoveModelNodeCommand.class);
 

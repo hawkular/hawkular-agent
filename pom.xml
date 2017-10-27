@@ -41,21 +41,9 @@
     <module>hawkular-javaagent</module>
     <module>hawkular-javaagent-wildfly-feature-pack</module>
     <module>hawkular-javaagent-wildfly-dist</module>
-    <module>hawkular-wildfly-agent</module>
-    <module>hawkular-wildfly-agent-download</module>
-    <module>hawkular-wildfly-agent-feature-pack</module>
-    <module>hawkular-wildfly-agent-wf-extension</module>
-    <module>eap6-support/hawkular-wildfly-agent-feature-pack-eap6</module>
-    <module>eap6-support/hawkular-wildfly-agent-wf-extension-eap6</module>
     <module>eap6-support/hawkular-javaagent-wildfly-feature-pack-eap6</module>
     <module>hawkular-agent-itest-util</module>
     <module>hawkular-javaagent-itest-parent</module>
-    <module>hawkular-wildfly-agent-itest-parent</module>
-    <module>wildfly-module-installer</module>
-    <module>hawkular-wildfly-agent-installer</module>
-    <module>hawkular-wildfly-agent-installer-full</module>
-    <module>hawkular-wildfly-agent-dist</module>
-    <module>hawkular-swarm-agents</module>
     <module>docker-dist</module>
   </modules>
 
@@ -72,8 +60,11 @@
     <version.com.samskivert.jmustache>1.11</version.com.samskivert.jmustache>
     <version.io.dropwizard.metrics>3.1.2</version.io.dropwizard.metrics>
     <version.org.hamcrest>1.3</version.org.hamcrest>
-    <version.org.hawkular.commons>0.9.7.Final</version.org.hawkular.commons>
-    <version.org.hawkular.metrics>0.26.2.Final</version.org.hawkular.metrics>
+    <!--
+    <version.org.hawkular.commons>0.9.8.Final-SNAPSHOT</version.org.hawkular.commons>
+    -->
+    <version.org.hawkular.commons>0.9.8.Final-SRC-revision-ce866b1ade2d7413f055f461eb36d004ff2888d8</version.org.hawkular.commons>
+    <version.org.hawkular.metrics>0.26.1.Final</version.org.hawkular.metrics>
 
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
@@ -133,13 +124,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.hawkular.agent</groupId>
-        <artifactId>hawkular-wildfly-agent-feature-pack</artifactId>
-        <version>${project.version}</version>
-        <type>zip</type>
-      </dependency>
-
-      <dependency>
         <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-command-gateway-api</artifactId>
         <version>${version.org.hawkular.commons}</version>
@@ -153,12 +137,6 @@
 
       <dependency>
         <groupId>org.hawkular.commons</groupId>
-        <artifactId>hawkular-inventory-paths</artifactId>
-        <version>${version.org.hawkular.commons}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-client-api</artifactId>
         <version>${version.org.hawkular.commons}</version>
       </dependency>
@@ -166,12 +144,6 @@
       <dependency>
         <groupId>org.hawkular.commons</groupId>
         <artifactId>hawkular-inventory-api</artifactId>
-        <version>${version.org.hawkular.commons}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.hawkular.commons</groupId>
-        <artifactId>hawkular-inventory-json-helper</artifactId>
         <version>${version.org.hawkular.commons}</version>
       </dependency>
 

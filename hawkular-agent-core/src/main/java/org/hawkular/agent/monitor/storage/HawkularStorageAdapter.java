@@ -65,7 +65,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
     public void initialize(
             String feedId,
             AgentCoreEngineConfiguration.StorageAdapterConfiguration config,
-            int autoDiscoveryScanPeriodSeconds,
             Diagnostics diag,
             HttpClientBuilder httpClientBuilder) {
         this.config = config;
@@ -79,7 +78,6 @@ public class HawkularStorageAdapter implements StorageAdapter {
                 this.inventoryStorage = new AsyncInventoryStorage(
                         feedId,
                         config,
-                        autoDiscoveryScanPeriodSeconds,
                         httpClientBuilder,
                         diagnostics);
                 break;
