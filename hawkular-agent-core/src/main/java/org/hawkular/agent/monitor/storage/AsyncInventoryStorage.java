@@ -202,10 +202,12 @@ public class AsyncInventoryStorage implements InventoryStorage {
         // don't copy properties - we are using the inventory properties for P labels right now
         //m.getProperties().forEach((k, v) -> mb.property(k, v.toString()));
 
-        // map to the Prometheus metric timeseries
-        mb.property("hawkular.metric.family", m.getMetricFamily());
-        if (m.getMetricLabels() != null) {
-            mb.properties(m.getMetricLabels());
+        // map to the Prometheus metric timeseries if the Prometheus metadata is defined
+        if (m.getMetricFamily() != null) {
+            mb.property("hawkular.metric.family", m.getMetricFamily());
+            if (m.getMetricLabels() != null) {
+                mb.properties(m.getMetricLabels());
+            }
         }
 
         return mb.build();
