@@ -25,14 +25,12 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointCo
  * A superclass for {@link MetricType} and any other types of metrics that might be needed
  * (perhaps an "availability metric" type in the future?).
  *
- * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}
  */
 public class MeasurementType<L> extends AttributeLocationProvider<L> {
 
     private final SupportedMetricType metricType;
-    private final Interval interval;
-    private final String metricIdTemplate;
+    private final String metricFamily;
     private final Map<String, String> metricLabels;
 
     public MeasurementType(
@@ -40,13 +38,11 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
             Name name,
             SupportedMetricType metricType,
             AttributeLocation<L> location,
-            Interval interval,
-            String metricIdTemplate,
+            String metricFamily,
             Map<String, String> metricLabels) {
         super(id, name, location);
         this.metricType = metricType;
-        this.interval = interval;
-        this.metricIdTemplate = metricIdTemplate;
+        this.metricFamily = metricFamily;
         this.metricLabels = (metricLabels != null) ? Collections.unmodifiableMap(metricLabels)
                 : Collections.emptyMap();
     }
@@ -56,34 +52,19 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
     }
 
     /**
-     * @return how often should instances of this type be measured
-     */
-    public Interval getInterval() {
-        return interval;
-    }
-
-    /**
-     * @return true if collection is disabled for this MeasurementType
-     */
-    public boolean isDisabled() {
-        return interval.seconds() <= 0;
-    }
-
-    /**
-     * @return if not null, this should be used to generate the Hawkular Metrics metric ID
-     *         for all instances of this measurement type.
+     * @return this name of the metric family of all metrics of this measurement type
      *
-     * @see EndpointConfiguration#getMetricIdTemplate()
-     * @see MeasurementInstance#getAssociatedMetricId()
+     * @see MeasurementInstance#getMetricFamily()
      */
-    public String getMetricIdTemplate() {
-        return metricIdTemplate;
+    public String getMetricFamily() {
+        return metricFamily;
     }
 
     /**
-     * @return Defines what labels are associated for all instances of this measurement type. May be empty.
+     * @return Defines what the labels are associated for all instances of this measurement type. May be empty.
      *
      * @see EndpointConfiguration#getMetricLabels()
+     * @see MeasurementInstance#getMetricLabels()
      */
     public Map<String, String> getMetricLabels() {
         return metricLabels;

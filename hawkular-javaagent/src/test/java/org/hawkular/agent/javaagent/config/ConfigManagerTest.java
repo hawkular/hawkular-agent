@@ -193,13 +193,11 @@ public class ConfigManagerTest {
 
         Assert.assertEquals("/metric=one", config.getDmrMetricSets()[0].getDmrMetrics()[0].getPath());
         Assert.assertEquals("attrib1", config.getDmrMetricSets()[0].getDmrMetrics()[0].getAttribute());
-        Assert.assertEquals(12345, config.getDmrMetricSets()[0].getDmrMetrics()[0].getInterval().intValue());
-        Assert.assertEquals(TimeUnits.milliseconds, config.getDmrMetricSets()[0].getDmrMetrics()[0].getTimeUnits());
         Assert.assertEquals(MetricUnit.MEGABYTES,
                 config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricUnits());
         Assert.assertEquals(SupportedMetricType.COUNTER,
                 config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricType());
-        Assert.assertEquals("the template", config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricIdTemplate());
+        Assert.assertEquals("the template", config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricFamily());
         Assert.assertEquals("{tag1=value1, tag2=value2}",
                 config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricLabels().toString());
 
@@ -263,12 +261,10 @@ public class ConfigManagerTest {
 
         Assert.assertEquals("domain:metric=one", config.getJmxMetricSets()[0].getJmxMetrics()[0].getObjectName());
         Assert.assertEquals("attrib1", config.getJmxMetricSets()[0].getJmxMetrics()[0].getAttribute());
-        Assert.assertEquals(12345, config.getJmxMetricSets()[0].getJmxMetrics()[0].getInterval().intValue());
-        Assert.assertEquals(TimeUnits.seconds, config.getJmxMetricSets()[0].getJmxMetrics()[0].getTimeUnits());
         Assert.assertEquals(MetricUnit.BYTES, config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricUnits());
         Assert.assertEquals(SupportedMetricType.GAUGE,
                 config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricType());
-        Assert.assertEquals("the template", config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricIdTemplate());
+        Assert.assertEquals("the template", config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricFamily());
         Assert.assertEquals("{tag1=value1, tag2=value2}",
                 config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricLabels().toString());
 
@@ -313,24 +309,14 @@ public class ConfigManagerTest {
         // platform
         Platform p = new Platform();
         Assert.assertEquals(false, p.getEnabled());
-        Assert.assertEquals(5, p.getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getTimeUnits());
 
         Assert.assertEquals(true, p.getMemory().getEnabled());
-        Assert.assertEquals(5, p.getMemory().getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getMemory().getTimeUnits());
 
         Assert.assertEquals(true, p.getFileStores().getEnabled());
-        Assert.assertEquals(5, p.getFileStores().getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getFileStores().getTimeUnits());
 
         Assert.assertEquals(true, p.getProcessors().getEnabled());
-        Assert.assertEquals(5, p.getProcessors().getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getProcessors().getTimeUnits());
 
         Assert.assertEquals(false, p.getPowerSources().getEnabled());
-        Assert.assertEquals(5, p.getPowerSources().getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getPowerSources().getTimeUnits());
 
         // managed servers
         LocalDMR ldmr = new LocalDMR();
@@ -430,7 +416,6 @@ public class ConfigManagerTest {
         Assert.assertEquals(Boolean.FALSE, ldmr.getEnabled());
         Assert.assertEquals("LocalTypeSet1", ldmr.getResourceTypeSets()[0]);
         Assert.assertEquals("TypeSet2", ldmr.getResourceTypeSets()[1]);
-        Assert.assertEquals("local feed id is %FeedId and metric name is %MetricName", ldmr.getMetricIdTemplate());
         Assert.assertEquals(2, ldmr.getMetricLabels().size());
         Assert.assertEquals("val1", ldmr.getMetricLabels().get("localdmrtag1"));
         Assert.assertEquals("val2", ldmr.getMetricLabels().get("dmrtag2"));
@@ -441,7 +426,6 @@ public class ConfigManagerTest {
         Assert.assertEquals(Boolean.FALSE, ljmx.getEnabled());
         Assert.assertEquals("jmx LocalTypeSet1", ljmx.getResourceTypeSets()[0]);
         Assert.assertEquals("jmx TypeSet2", ljmx.getResourceTypeSets()[1]);
-        Assert.assertEquals("jmx local feed id is %FeedId and metric name is %MetricName", ljmx.getMetricIdTemplate());
         Assert.assertEquals(2, ljmx.getMetricLabels().size());
         Assert.assertEquals("val1", ljmx.getMetricLabels().get("localjmxtag1"));
         Assert.assertEquals("val2", ljmx.getMetricLabels().get("jmxtag2"));
@@ -453,7 +437,6 @@ public class ConfigManagerTest {
         Assert.assertEquals(Boolean.FALSE, rdmr.getEnabled());
         Assert.assertEquals("RemoteTypeSet1", rdmr.getResourceTypeSets()[0]);
         Assert.assertEquals("TypeSet2", rdmr.getResourceTypeSets()[1]);
-        Assert.assertEquals("remote feed id is %FeedId and metric name is %MetricName", rdmr.getMetricIdTemplate());
         Assert.assertEquals(2, rdmr.getMetricLabels().size());
         Assert.assertEquals("val1", rdmr.getMetricLabels().get("remotedmrtag1"));
         Assert.assertEquals("val2", rdmr.getMetricLabels().get("dmrtag2"));
@@ -464,29 +447,17 @@ public class ConfigManagerTest {
         Assert.assertEquals(Boolean.FALSE, rjmx.getEnabled());
         Assert.assertEquals("jmx RemoteTypeSet1", rjmx.getResourceTypeSets()[0]);
         Assert.assertEquals("jmx TypeSet2", rjmx.getResourceTypeSets()[1]);
-        Assert.assertEquals("jmx remote feed id is %FeedId and metric name is %MetricName",
-                rjmx.getMetricIdTemplate());
         Assert.assertEquals(2, rjmx.getMetricLabels().size());
         Assert.assertEquals("val1", rjmx.getMetricLabels().get("remotejmxtag1"));
         Assert.assertEquals("val2", rjmx.getMetricLabels().get("jmxtag2"));
 
         // platform
         Assert.assertEquals(true, config.getPlatform().getEnabled());
-        Assert.assertEquals(Integer.valueOf(1234), config.getPlatform().getInterval());
-        Assert.assertEquals(TimeUnits.seconds, config.getPlatform().getTimeUnits());
         Assert.assertEquals("my-machine-id-here", config.getPlatform().getMachineId());
         Assert.assertEquals("my-container-id-here", config.getPlatform().getContainerId());
         Assert.assertEquals(Boolean.TRUE, config.getPlatform().getFileStores().getEnabled());
-        Assert.assertEquals(Integer.valueOf(5000), config.getPlatform().getFileStores().getInterval());
-        Assert.assertEquals(TimeUnits.milliseconds, config.getPlatform().getFileStores().getTimeUnits());
         Assert.assertEquals(Boolean.TRUE, config.getPlatform().getMemory().getEnabled());
-        Assert.assertEquals(Integer.valueOf(30), config.getPlatform().getMemory().getInterval());
-        Assert.assertEquals(TimeUnits.seconds, config.getPlatform().getMemory().getTimeUnits());
         Assert.assertEquals(Boolean.TRUE, config.getPlatform().getProcessors().getEnabled());
-        Assert.assertEquals(Integer.valueOf(1), config.getPlatform().getProcessors().getInterval());
-        Assert.assertEquals(TimeUnits.minutes, config.getPlatform().getProcessors().getTimeUnits());
         Assert.assertEquals(Boolean.FALSE, config.getPlatform().getPowerSources().getEnabled());
-        Assert.assertEquals(Integer.valueOf(5), config.getPlatform().getPowerSources().getInterval());
-        Assert.assertEquals(TimeUnits.minutes, config.getPlatform().getPowerSources().getTimeUnits());
     }
 }

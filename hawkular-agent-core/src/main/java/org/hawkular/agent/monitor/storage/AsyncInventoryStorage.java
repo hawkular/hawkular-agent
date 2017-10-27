@@ -160,7 +160,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
 
         } catch (Exception e) {
-            log.errorf("Failed to process inventory event: ", e.toString());
+            log.errorf(e, "Failed to process inventory event");
         }
     }
 
@@ -198,12 +198,16 @@ public class AsyncInventoryStorage implements InventoryStorage {
         if (metricUnits != null) {
             mb.unit(MetricUnit.valueOf(metricUnits.name()));
         }
-        m.getProperties().forEach((k, v) -> mb.property(k, v.toString()));
 
-        // TODO remove these once h-metrics integration is removed
-        mb.property("hawkular.metric.type", m.getType().getMetricType().name());
-        mb.property("hawkular.metric.typeId", m.getType().getID().getIDString());
-        mb.property("hawkular.metric.id", m.getID().getIDString());
+        // don't copy properties - we are using the inventory properties for P labels right now
+        //m.getProperties().forEach((k, v) -> mb.property(k, v.toString()));
+
+        // map to the Prometheus metric timeseries
+        mb.property("hawkular.metric.family", m.getMetricFamily());
+        if (m.getMetricLabels() != null) {
+            mb.properties(m.getMetricLabels());
+        }
+
         return mb.build();
     }
 

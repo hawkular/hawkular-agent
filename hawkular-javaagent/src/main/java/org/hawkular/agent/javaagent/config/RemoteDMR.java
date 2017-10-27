@@ -64,9 +64,6 @@ public class RemoteDMR implements Validatable {
     @JsonProperty("resource-type-sets")
     private String[] resourceTypeSets;
 
-    @JsonProperty("metric-id-template")
-    private String metricIdTemplate;
-
     @JsonProperty("metric-labels")
     private Map<String, String> metricLabels;
 
@@ -88,7 +85,6 @@ public class RemoteDMR implements Validatable {
         this.securityRealmName = original.securityRealmName;
         this.resourceTypeSets = original.resourceTypeSets == null ? null
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
-        this.metricIdTemplate = original.metricIdTemplate;
         this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
         this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
     }
@@ -225,14 +221,6 @@ public class RemoteDMR implements Validatable {
 
     public void setResourceTypeSets(String[] resourceTypeSets) {
         this.resourceTypeSets = resourceTypeSets;
-    }
-
-    public String getMetricIdTemplate() {
-        return metricIdTemplate;
-    }
-
-    public void setMetricIdTemplate(String metricIdTemplate) {
-        this.metricIdTemplate = metricIdTemplate;
     }
 
     public Map<String, String> getMetricLabels() {

@@ -36,25 +36,26 @@ metric-set-dmr:
   - name: first metric d
     path: /metric=one
     attribute: attrib1
-    interval: 12345
-    time-units: milliseconds
     metric-units: megabytes
     metric-type: counter
-    metric-id-template: the template
+    metric-family: the template
     metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric d
     path: /metric=two
     attribute: attrib1
+    metric-family: the family
 - name: second metric set d
   metric-dmr:
   - name: third metric d
     path: /metric=three
     attribute: attrib1
+    metric-family: the family
   - name: fourth metric d
     path: /metric=four
     attribute: attrib1
+    metric-family: the family
 
 resource-type-set-dmr:
 - name: first resource type set d
@@ -80,22 +81,23 @@ metric-set-jmx:
   - name: first metric
     object-name: domain:metric=one
     attribute: attrib1
-    interval: 12345
-    time-units: seconds
     metric-units: bytes
     metric-type: gauge
-    metric-id-template: the template
+    metric-family: the template
     metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric
     attribute: attrib1
+    metric-family: the family
 - name: second metric set
   metric-jmx:
   - name: third metric
     attribute: attrib1
+    metric-family: the family
   - name: fourth metric
     attribute: attrib1
+    metric-family: the family
 
 resource-type-set-jmx:
 - name: first resource type set

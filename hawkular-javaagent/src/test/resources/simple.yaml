@@ -53,37 +53,35 @@ metric-set-dmr:
 - name: Some DMR Set
   metric-dmr:
   - name:         Full DMR Details
-    interval:     30
-    time-units:   seconds
     metric-units: bytes
     metric-type:  gauge
     path:         /core-service=platform-mbean/type=memory
     attribute:    heap-memory-usage#used
     resolve-expressions: true
     include-defaults:    true
-    metric-id-template:  metric ID template here
+    metric-family: metric ID template here
     metric-labels:
       foo: bar
   - name:      Minimal DMR Details
     path:      "/parent=*/child=*"
     attribute: some-attrib#subattrib
+    metric-family: family
 
 metric-set-jmx:
 - name: Some JMX Set
   metric-jmx:
   - name:         Full JMX Details
-    interval:     30
-    time-units:   seconds
     metric-units: bytes
     metric-type:  gauge
     object-name:  domain:type=mbean
     attribute:    heap-memory-usage#used
-    metric-id-template:  metric ID template here
+    metric-family: metric ID template here
     metric-labels:
       foo: bar
   - name:        Minimal JMX Details
     object-name: domain:type=mbean
     attribute:   some-attrib#subattrib
+    metric-family: family
 
 managed-servers:
   local-dmr:
@@ -92,7 +90,6 @@ managed-servers:
     resource-type-sets:
     - LocalTypeSet1
     - TypeSet2
-    metric-id-template:    local feed id is %FeedId and metric name is %MetricName
     metric-labels:
       localdmrtag1: val1
       dmrtag2: val2
@@ -110,7 +107,6 @@ managed-servers:
     resource-type-sets:
     - RemoteTypeSet1
     - TypeSet2
-    metric-id-template:    remote feed id is %FeedId and metric name is %MetricName
     metric-labels:
       remotedmrtag1: val1
       dmrtag2: val2
@@ -123,7 +119,6 @@ managed-servers:
     resource-type-sets:
     - jmx LocalTypeSet1
     - jmx TypeSet2
-    metric-id-template:    jmx local feed id is %FeedId and metric name is %MetricName
     metric-labels:
       localjmxtag1: val1
       jmxtag2: val2
@@ -140,7 +135,6 @@ managed-servers:
     resource-type-sets:
     - jmx RemoteTypeSet1
     - jmx TypeSet2
-    metric-id-template:    jmx remote feed id is %FeedId and metric name is %MetricName
     metric-labels:
       remotejmxtag1: val1
       jmxtag2: val2
@@ -149,27 +143,17 @@ managed-servers:
 
 platform:
   enabled:      true
-  interval:     1234
-  time-units:   seconds
   machine-id:   my-machine-id-here
   container-id: my-container-id-here
 
   file-stores:
     enabled:    true
-    interval:   5000
-    time-units: milliseconds
 
   memory:
     enabled:    true
-    interval:   30
-    time-units: seconds
 
   processors:
     enabled:    true
-    interval:   1
-    time-units: minutes
 
   power-sources:
     enabled:    false
-    interval:   5
-    time-units: minutes

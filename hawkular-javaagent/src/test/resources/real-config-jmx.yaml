@@ -40,49 +40,37 @@ metric-set-jmx:
   metric-jmx:
   - name: VM Uptime
     attribute:    Uptime
-    interval:     30
-    time-units:   seconds
     metric-units: milliseconds
     metric-type:  counter
+    metric-family: jvm_uptime
   - name: Used Heap Memory
     object-name:  java.lang:type=Memory
     attribute:    HeapMemoryUsage#used
-    interval:     30
-    time-units:   seconds
     metric-units: bytes
     metric-type:  gauge
-  - name: Aggregate GC Collection Time
-    object-name:  "java.lang:type=GarbageCollector,name=*"
-    attribute:    CollectionTime
-    interval:     30
-    time-units:   seconds
-    metric-units: milliseconds
+    metric-family: jvm_memory_heap_used
 - name: Memory Pool Metrics
   metric-jmx:
   - name: Initial
     attribute:    Usage#init
-    interval:     2
-    time-units:   minutes
     metric-units: bytes
     metric-type:  gauge
+    metric-family: jvm_memory_pool_initial
   - name: Used
     attribute:    Usage#used
-    interval:     1
-    time-units:   minutes
     metric-units: bytes
     metric-type:  gauge
+    metric-family: jvm_memory_pool_used
   - name: Committed
     attribute:    Usage#committed
-    interval:     1
-    time-units:   minutes
     metric-units: bytes
     metric-type:  gauge
+    metric-family: jvm_memory_pool_committed
   - name: Max
     attribute:    Usage#max
-    interval:     2
-    time-units:   minutes
     metric-units: bytes
     metric-type:  gauge
+    metric-family: jvm_memory_pool_max
 
 resource-type-set-jmx:
 - name: Main
@@ -157,6 +145,4 @@ managed-servers:
 
 platform:
   enabled:      true
-  interval:     5
-  time-units:   minutes
   #machine-id:   my-machine-id-here

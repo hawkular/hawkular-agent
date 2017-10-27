@@ -36,7 +36,7 @@ public class ConfigCopyTest {
 
     @Test
     public void testRealConfig() throws Exception {
-        Configuration config = loadTestConfigFile("/real-config.yaml");
+        Configuration config = loadTestConfigFile("/wildfly10/hawkular-javaagent-config.yaml");
         Configuration clone = new Configuration(config);
         Assert.assertEquals(clone.getSubsystem().getEnabled(), config.getSubsystem().getEnabled());
         Assert.assertEquals(clone.getStorageAdapter().getUrl(), config.getStorageAdapter().getUrl());
