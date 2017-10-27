@@ -171,25 +171,6 @@
         <filtering>true</filtering>
       </resource>
     </resources>
-    <plugins>
-      <!-- ignore the prometheus stuff - we forked it and want to keep the code as identical as possible -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <configuration>
-          <excludes combine.children="append">
-            <exclude>src/main/java/io/prometheus/jmx/*.java</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <configuration>
-          <excludes>src/main/java/io/prometheus/jmx/*.java</excludes>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 
 </project>
