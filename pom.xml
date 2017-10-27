@@ -59,7 +59,7 @@
     <version.com.github.dblock>2.6.2</version.com.github.dblock>
     <version.com.samskivert.jmustache>1.11</version.com.samskivert.jmustache>
     <version.io.dropwizard.metrics>3.1.2</version.io.dropwizard.metrics>
-    <version.io.prometheus.simpleclient>0.0.26</version.io.prometheus.simpleclient>
+    <version.io.prometheus.jmx>0.1.0</version.io.prometheus.jmx>
     <version.io.prometheus.simpleclient.httpserver>0.1.0</version.io.prometheus.simpleclient.httpserver>
     <version.org.hamcrest>1.3</version.org.hamcrest>
     <version.org.hawkular.commons>1.0.0.Final-SRC-revision-e4a832862b3446d7f4d629bb05790f2df578e035</version.org.hawkular.commons>
@@ -67,7 +67,6 @@
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.5</version.org.jolokia>
-    <version.org.yaml>1.16</version.org.yaml>
   </properties>
 
   <dependencyManagement>
@@ -103,9 +102,9 @@
       </dependency>
 
       <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient</artifactId>
-        <version>${version.io.prometheus.simpleclient}</version>
+        <groupId>io.prometheus.jmx</groupId>
+        <artifactId>collector</artifactId>
+        <version>${version.io.prometheus.jmx}</version>
       </dependency>
 
       <dependency>
@@ -226,12 +225,6 @@
         <groupId>org.wildfly.core</groupId>
         <artifactId>wildfly-subsystem-test-framework</artifactId>
         <version>${version.org.wildfly.core}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.yaml</groupId>
-        <artifactId>snakeyaml</artifactId>
-        <version>${version.org.yaml}</version>
       </dependency>
 
       <dependency>
