@@ -60,6 +60,7 @@
     <version.com.samskivert.jmustache>1.11</version.com.samskivert.jmustache>
     <version.io.dropwizard.metrics>3.1.2</version.io.dropwizard.metrics>
     <version.io.prometheus.jmx>0.1.0</version.io.prometheus.jmx>
+    <version.io.prometheus.simpleclient.hotspot>0.1.0</version.io.prometheus.simpleclient.hotspot>
     <version.io.prometheus.simpleclient.httpserver>0.1.0</version.io.prometheus.simpleclient.httpserver>
     <version.org.hamcrest>1.3</version.org.hamcrest>
     <version.org.hawkular.commons>1.0.0.Final-SRC-revision-e4a832862b3446d7f4d629bb05790f2df578e035</version.org.hawkular.commons>
@@ -105,6 +106,12 @@
         <groupId>io.prometheus.jmx</groupId>
         <artifactId>collector</artifactId>
         <version>${version.io.prometheus.jmx}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient_hotspot</artifactId>
+        <version>${version.io.prometheus.simpleclient.hotspot}</version>
       </dependency>
 
       <dependency>
