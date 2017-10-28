@@ -67,6 +67,9 @@
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.5</version.org.jolokia>
+
+    <!-- our wildfly+agent distro need this specific version so domain mode can work -->
+    <version.org.wildfly.distro>11.0.0.Final</version.org.wildfly.distro>
   </properties>
 
   <dependencyManagement>
