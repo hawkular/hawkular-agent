@@ -1343,7 +1343,7 @@ managed-servers:
 
   local-jmx:
     name: Local JMX
-    enabled: true
+    enabled: false
     resource-type-sets:
     - Main
     - Memory Pool
