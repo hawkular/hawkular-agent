@@ -548,10 +548,10 @@ avail-set-dmr:
 - name: Domain Availability
   avail-dmr:
   - name: Domain Availability
-    internal:   30
+    interval:   30
     time-units: seconds
     attribute:  host-state
-    up-regex:   "run.*|-required"
+    up-regex:   "run.*|.*-required"
 - name: Deployment Status
   avail-dmr:
   - name: Deployment Status
