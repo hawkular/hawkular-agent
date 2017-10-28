@@ -247,9 +247,11 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         // make sure to discover the mbean resources (same MBean discovered by local and remote managed server)
         forceInventoryDiscoveryScan();
 
+        // just to help debug stuff - will just print out to the console all the things in inventory
+        testHelper.printAllResources(hawkularFeedId);
+
         Collection<Resource> mbeans = testHelper.getResourceByType(hawkularFeedId, "Simple ITest MBean", 2);
         Optional<Resource> localMbean = mbeans.stream()
-                // TODO [lponce] this is not 100% right, id should be opaque but Local JMX and Remote JMX have same name
                 .filter(e -> e.getId().equals(hawkularFeedId + "~Local JMX~org.hawkular.agent.itest:type=simple"))
                 .findFirst();
         if (!localMbean.isPresent()) {
@@ -258,7 +260,6 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         invokeJMXOperations(localMbean.get());
 
         Optional<Resource> remoteMbean = mbeans.stream()
-                // TODO [lponce] this is not 100% right, id should be opaque but Local JMX and Remote JMX have same name
                 .filter(e -> e.getId().equals(hawkularFeedId + "~Remote JMX~org.hawkular.agent.itest:type=simple"))
                 .findFirst();
         if (!remoteMbean.isPresent()) {

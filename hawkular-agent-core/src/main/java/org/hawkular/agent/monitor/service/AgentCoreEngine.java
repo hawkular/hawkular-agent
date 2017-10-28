@@ -104,6 +104,9 @@ public abstract class AgentCoreEngine {
     private Map<String, SSLContext> trustOnlySSLContextValues;
     private Map<String, TrustManager[]> trustOnlyTrustManagersValues;
 
+    // the endpoint that emits metrics
+    private WebServer metricsExporter;
+
     public AgentCoreEngine(AgentCoreEngineConfiguration configuration) {
         this.configuration = configuration;
     }
@@ -352,9 +355,17 @@ public abstract class AgentCoreEngine {
         AtomicReference<Throwable> error = new AtomicReference<>(null);  // will hold the first error we encountered
 
         try {
-            // We must do a few things first before we can shutdown the scheduler.
-            // But we also must make sure we shutdown the scheduler so we kill its threads.
-            // Otherwise we hang the shutdown of the entire server. So make sure we get to "stopScheduler".
+            // disconnect from the feed comm channel
+            try {
+                if (metricsExporter != null) {
+                    log.infoStopMetricsExporter();
+                    metricsExporter.stop();
+                    metricsExporter = null;
+                }
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+                log.debug("Cannot shutdown metrics exporter but will continue shutdown", t);
+            }
 
             // disconnect from the feed comm channel
             try {
@@ -368,7 +379,6 @@ public abstract class AgentCoreEngine {
             }
 
             // stop our normal protocol services
-
             try {
                 if (protocolServices != null) {
                     protocolServices.stop();
@@ -466,7 +476,8 @@ public abstract class AgentCoreEngine {
             if (configFile != null) {
                 String[] args = new String[] { hostPort, configFile.getAbsolutePath() };
                 log.infoStartMetricsExporter(args[0], args[1]);
-                new WebServer().main(args);
+                metricsExporter = new WebServer();
+                metricsExporter.start(args);
             } else {
                 log.infoMetricsExporterDisabled();
             }
