@@ -221,4 +221,8 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.INFO)
     @Message(id = 10087, value = "Metrics exporter is disabled; this agent will not expose any metrics")
     void infoMetricsExporterDisabled();
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10088, value = "Metrics exporter is stopping")
+    void infoStopMetricsExporter();
 }

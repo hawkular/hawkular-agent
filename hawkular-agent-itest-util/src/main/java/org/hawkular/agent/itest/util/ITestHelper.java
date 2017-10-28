@@ -54,6 +54,34 @@ public class ITestHelper {
                 .addHeader("Accept", "application/json");
     }
 
+    public void printAllResources(String feedId) throws Throwable {
+        Collection<Resource> all = getAllResources(feedId);
+        System.out.println("ALL RESOURCES IN HAWKULAR INVENTORY: " + all.size());
+        System.out.println("=====");
+        for (Resource r : all) {
+            System.out.println("---");
+            System.out.println(String.format("%s", r.getName()));
+            System.out.println(String.format("\tid:     %s", r.getId()));
+            System.out.println(String.format("\tparent: %s", r.getParentId()));
+            System.out.println(String.format("\ttype:    %s", r.getType().getId()));
+        }
+        System.out.println("=====");
+    }
+    public Collection<Resource> getAllResources(String feedId)
+            throws Throwable {
+        // TODO [lponce] this call is not paginating, perhaps enough for itest but it should be adapted in the future
+        String url = baseInvUri + "/resources?feedId=" + feedId;
+        String response = getWithRetries(newAuthRequest()
+                .url(url)
+                .get()
+                .build());
+        if (response.isEmpty()) {
+            return new ArrayList<>();
+        }
+        ResultSet<Resource> rs = mapper.readValue(response, ResultSet.class);
+        return rs.getResults();
+    }
+
     public Collection<Resource> getResourceByType(String feedId, String type, int expectedCount)
             throws Throwable {
         for (int attempt = 0; attempt < ATTEMPT_COUNT; attempt++) {
@@ -70,6 +98,7 @@ public class ITestHelper {
             if (rs.getResults().size() >= expectedCount) {
                 return rs.getResults();
             }
+            Thread.sleep(ATTEMPT_DELAY);
         }
         throw new IllegalStateException("Cannot get expected number of resources. Retries have been exceeded.");
     }

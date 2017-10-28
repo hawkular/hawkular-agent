@@ -66,5 +66,5 @@ branches:
   only:
   - master
   - /^(\d+\.){2}(\d+){1}(\.[a-zA-Z\d]+)?$/
-  - hawkular-1259
+  - hawkular-1275
 

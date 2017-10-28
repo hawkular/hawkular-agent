@@ -182,11 +182,6 @@ public class ConfigConverter {
                         rtBuilder.metricSetName(new Name(metricSet));
                     }
                 }
-                if (rt.getAvailSets() != null) {
-                    for (String availSet : rt.getAvailSets()) {
-                        rtBuilder.availSetName(new Name(availSet));
-                    }
-                }
 
                 if (rt.getDmrNotifications() != null) {
                     for (DMRNotification notification : rt.getDmrNotifications()) {
@@ -236,7 +231,11 @@ public class ConfigConverter {
                     }
                 }
 
-                populateMetricAndAvailTypesForResourceType(rtBuilder, typeSets);
+                if (rt.getMetricLabels() != null) {
+                    rtBuilder.metricLabels(rt.getMetricLabels());
+                }
+
+                populateMetricTypesForResourceType(rtBuilder, typeSets);
                 typeSet.type(rtBuilder.build());
             }
             typeSets.resourceTypeSet(typeSet.build());
@@ -375,11 +374,6 @@ public class ConfigConverter {
                         rtBuilder.metricSetName(new Name(metricSet));
                     }
                 }
-                if (rt.getAvailSets() != null) {
-                    for (String availSet : rt.getAvailSets()) {
-                        rtBuilder.availSetName(new Name(availSet));
-                    }
-                }
 
                 if (rt.getJmxResourceConfigs() != null) {
                     for (JMXResourceConfig resConfig : rt.getJmxResourceConfigs()) {
@@ -419,7 +413,11 @@ public class ConfigConverter {
                     }
                 }
 
-                populateMetricAndAvailTypesForResourceType(rtBuilder, typeSets);
+                if (rt.getMetricLabels() != null) {
+                    rtBuilder.metricLabels(rt.getMetricLabels());
+                }
+
+                populateMetricTypesForResourceType(rtBuilder, typeSets);
                 typeSet.type(rtBuilder.build());
             }
             typeSets.resourceTypeSet(typeSet.build());
@@ -556,7 +554,7 @@ public class ConfigConverter {
         typeSets.metricTypeSet(osMetrics);
 
         rootTypeBldr.metricSetName(osMetrics.getName());
-        populateMetricAndAvailTypesForResourceType(rootTypeBldr, typeSets);
+        populateMetricTypesForResourceType(rootTypeBldr, typeSets);
 
         ResourceType<PlatformNodeLocation> rootType = rootTypeBldr.build();
         TypeSet<ResourceType<PlatformNodeLocation>> rootTypeSet = TypeSet
@@ -614,7 +612,7 @@ public class ConfigConverter {
                     .parent(rootType.getName())
                     .metricSetName(fileStoreMetrics.getName());
 
-            populateMetricAndAvailTypesForResourceType(fileStoreBldr, typeSets);
+            populateMetricTypesForResourceType(fileStoreBldr, typeSets);
 
             ResourceType<PlatformNodeLocation> fileStore = fileStoreBldr.build();
             TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
@@ -668,7 +666,7 @@ public class ConfigConverter {
                     .metricSetName(memoryMetrics.getName())
                     .resourceNameTemplate(PlatformResourceType.MEMORY.getResourceTypeName().getNameString());
 
-            populateMetricAndAvailTypesForResourceType(memoryBldr, typeSets);
+            populateMetricTypesForResourceType(memoryBldr, typeSets);
 
             ResourceType<PlatformNodeLocation> memory = memoryBldr.build();
             TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
@@ -712,7 +710,7 @@ public class ConfigConverter {
                     .resourceNameTemplate(
                             PlatformResourceType.PROCESSOR.getResourceTypeName().getNameString() + " [%s]");
 
-            populateMetricAndAvailTypesForResourceType(processorBldr, typeSets);
+            populateMetricTypesForResourceType(processorBldr, typeSets);
 
             ResourceType<PlatformNodeLocation> processor = processorBldr.build();
             TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
@@ -768,7 +766,7 @@ public class ConfigConverter {
                     .resourceNameTemplate(
                             PlatformResourceType.POWER_SOURCE.getResourceTypeName().getNameString() + " [%s]");
 
-            populateMetricAndAvailTypesForResourceType(powerSourceBldr, typeSets);
+            populateMetricTypesForResourceType(powerSourceBldr, typeSets);
 
             ResourceType<PlatformNodeLocation> powerSource = powerSourceBldr.build();
             TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
@@ -801,12 +799,12 @@ public class ConfigConverter {
     }
 
     /**
-     * Given a resource type builder, this will fill in its metric types and avail types.
+     * Given a resource type builder, this will fill in its metric types.
      *
-     * @param resourceTypeBuilder the type being built whose metric and avail types are to be filled in
-     * @param typeSetsBuilder all type metadata - this is where our metrics and avails are
+     * @param resourceTypeBuilder the type being built whose metric types are to be filled in
+     * @param typeSetsBuilder all type metadata - this is where our metrics are
      */
-    private static <L> void populateMetricAndAvailTypesForResourceType(
+    private static <L> void populateMetricTypesForResourceType(
             ResourceType.Builder<?, L> resourceTypeBuilder,
             TypeSets.Builder<L> typeSetsBuilder) {
 

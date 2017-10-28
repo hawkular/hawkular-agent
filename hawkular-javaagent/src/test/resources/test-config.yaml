@@ -67,6 +67,9 @@ resource-type-set-dmr:
     - name: second resconfig d
       path: /config=two
       attribute: attrib2#subattrib2
+    metric-labels:
+      label1: label1value
+      label2: label2value
   - name: second resource type d
 - name: second resource type set d
   resource-type-dmr:
@@ -111,6 +114,9 @@ resource-type-set-jmx:
     - name: second resconfig
       object-name: domain:type=two
       attribute: attrib2#subattrib2
+    metric-labels:
+      label1: label1valueJMX
+      label2: label2valueJMX
   - name: second resource type
     object-name: domain:type=two
     resource-name-template: second
