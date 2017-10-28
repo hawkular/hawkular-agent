@@ -191,6 +191,15 @@ public class ConfigManagerTest {
         Assert.assertEquals("fourth resource type d",
                 config.getDmrResourceTypeSets()[1].getDmrResourceTypes()[1].getName());
 
+        Assert.assertEquals(2,
+                config.getDmrResourceTypeSets()[0].getDmrResourceTypes()[0].getMetricLabels().size());
+        Assert.assertEquals("label1value",
+                config.getDmrResourceTypeSets()[0].getDmrResourceTypes()[0].getMetricLabels().get("label1"));
+        Assert.assertEquals("label2value",
+                config.getDmrResourceTypeSets()[0].getDmrResourceTypes()[0].getMetricLabels().get("label2"));
+        Assert.assertEquals(0,
+                config.getDmrResourceTypeSets()[0].getDmrResourceTypes()[1].getMetricLabels().size());
+
         Assert.assertEquals("/metric=one", config.getDmrMetricSets()[0].getDmrMetrics()[0].getPath());
         Assert.assertEquals("attrib1", config.getDmrMetricSets()[0].getDmrMetrics()[0].getAttribute());
         Assert.assertEquals(MetricUnit.MEGABYTES,
@@ -258,6 +267,15 @@ public class ConfigManagerTest {
                 config.getJmxResourceTypeSets()[1].getJmxResourceTypes()[0].getName());
         Assert.assertEquals("fourth resource type",
                 config.getJmxResourceTypeSets()[1].getJmxResourceTypes()[1].getName());
+
+        Assert.assertEquals(2,
+                config.getJmxResourceTypeSets()[0].getJmxResourceTypes()[0].getMetricLabels().size());
+        Assert.assertEquals("label1valueJMX",
+                config.getJmxResourceTypeSets()[0].getJmxResourceTypes()[0].getMetricLabels().get("label1"));
+        Assert.assertEquals("label2valueJMX",
+                config.getJmxResourceTypeSets()[0].getJmxResourceTypes()[0].getMetricLabels().get("label2"));
+        Assert.assertEquals(0,
+                config.getJmxResourceTypeSets()[0].getJmxResourceTypes()[1].getMetricLabels().size());
 
         Assert.assertEquals("domain:metric=one", config.getJmxMetricSets()[0].getJmxMetrics()[0].getObjectName());
         Assert.assertEquals("attrib1", config.getJmxMetricSets()[0].getJmxMetrics()[0].getAttribute());
