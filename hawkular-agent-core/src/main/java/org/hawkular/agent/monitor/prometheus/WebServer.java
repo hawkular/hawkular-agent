@@ -26,7 +26,14 @@ import io.prometheus.jmx.JmxCollector;
 
 public class WebServer {
 
-    public static void main(String[] args) throws Exception {
+    private HTTPServer server;
+    private JmxCollector jmxCollector;
+
+    public synchronized void start(String[] args) throws Exception {
+        if (server != null) {
+            return;
+        }
+
         if (args.length < 2) {
             throw new Exception("Usage: WebServer <[hostname:]port> <yaml configuration file>");
         }
@@ -42,8 +49,23 @@ public class WebServer {
             socket = new InetSocketAddress(port);
         }
 
-        new JmxCollector(new File(args[1])).register();
+        jmxCollector = new JmxCollector(new File(args[1]));
+        jmxCollector.register();
+
         DefaultExports.initialize();
-        new HTTPServer(socket, CollectorRegistry.defaultRegistry, true); // true == daemon
+        server = new HTTPServer(socket, CollectorRegistry.defaultRegistry, true); // true == daemon
+    }
+
+    public synchronized void stop() {
+        if (server == null) {
+            return;
+        }
+
+        try {
+            CollectorRegistry.defaultRegistry.unregister(jmxCollector);
+            server.stop();
+        } finally {
+            server = null;
+        }
     }
 }
