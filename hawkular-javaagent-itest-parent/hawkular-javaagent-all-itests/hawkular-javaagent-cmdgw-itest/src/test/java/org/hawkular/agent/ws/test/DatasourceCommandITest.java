@@ -168,7 +168,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
         Optional<Resource> datasource = datasources.stream()
-                // TODO [lponce] name has format "Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(datasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
@@ -228,7 +227,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
         Optional<Resource> datasource = datasources.stream()
-                // TODO [lponce] name has format "XA Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(xaDatasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
@@ -289,7 +287,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
         Optional<Resource> datasource = datasources.stream()
-                // TODO [lponce] name has format "Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(datasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
@@ -337,7 +334,6 @@ public class DatasourceCommandITest extends AbstractCommandITest {
 
         Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
         Optional<Resource> datasource = datasources.stream()
-                // TODO [lponce] name has format "XA Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(xaDatasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
@@ -345,6 +341,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
         Resource ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
+
+        testHelper.printAllResources(hawkularFeedId, xaDatasourceName + " exists and will be removed");
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
@@ -372,6 +370,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             }
 
             assertResourceExists(mcc, dsAddress, false);
+
+            testHelper.printAllResources(hawkularFeedId, xaDatasourceName + " deleted, should be out of inventory");
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
             testHelper.waitForNoResourceContaining(hawkularFeedId, "XA Datasource", xaDatasourceName,

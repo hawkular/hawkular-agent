@@ -35,10 +35,10 @@ diagnostics:
   time-units: minutes
 
 storage-adapter:
-  feed-id:   itest-rest-feed
-  url:       http://127.0.0.1:8080
-  username:  itest-rest
-  password:  itest-rest-password
+  feed-id:   "${hawkular.rest.feedId:autogenerate}"
+  url:       "${hawkular.rest.url:http://hawkular-server:8080}"
+  username:  "${env.HAWKULAR_AGENT_USER}"
+  password:  "${env.HAWKULAR_AGENT_PASSWORD}"
 
 # DMR
 

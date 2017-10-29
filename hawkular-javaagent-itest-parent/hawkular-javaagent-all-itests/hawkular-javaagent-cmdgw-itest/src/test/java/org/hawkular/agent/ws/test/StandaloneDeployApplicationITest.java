@@ -248,7 +248,7 @@ public class StandaloneDeployApplicationITest extends AbstractCommandITest {
         forceInventoryDiscoveryScan();
 
         // just to help debug stuff - will just print out to the console all the things in inventory
-        testHelper.printAllResources(hawkularFeedId);
+        //testHelper.printAllResources(hawkularFeedId, null);
 
         Collection<Resource> mbeans = testHelper.getResourceByType(hawkularFeedId, "Simple ITest MBean", 2);
         Optional<Resource> localMbean = mbeans.stream()

@@ -54,10 +54,14 @@ public class ITestHelper {
                 .addHeader("Accept", "application/json");
     }
 
-    public void printAllResources(String feedId) throws Throwable {
+    public void printAllResources(String feedId, String msg) throws Throwable {
         Collection<Resource> all = getAllResources(feedId);
         System.out.println("ALL RESOURCES IN HAWKULAR INVENTORY: " + all.size());
         System.out.println("=====");
+        if (msg != null) {
+            System.out.println(msg);
+            System.out.println("=====");
+        }
         for (Resource r : all) {
             System.out.println("---");
             System.out.println(String.format("%s", r.getName()));

@@ -147,13 +147,15 @@
 
         <hawkular.agent.itest.includes>**/*ITest.class</hawkular.agent.itest.includes>
 
-        <!-- do not change these two names - these are the names expected by cmdgw test utils -->
+        <!-- do not change these names - these are the names expected by itest utils -->
         <hawkular.itest.rest.user>itest-rest</hawkular.itest.rest.user>
         <hawkular.itest.rest.password>itest-rest-password</hawkular.itest.rest.password>
+        <hawkular.itest.rest.feedId>itest-rest-feed</hawkular.itest.rest.feedId>
+
+        <hawkular.itest.rest.url>http://127.0.0.1:8080</hawkular.itest.rest.url>
 
         <hawkular.agent.itest.mgmt.user>itest-admin</hawkular.agent.itest.mgmt.user>
         <hawkular.agent.itest.mgmt.password>itest-admin-password</hawkular.agent.itest.mgmt.password>
-        <hawkular.agent.itest.rest.feedId>itest-rest-feed</hawkular.agent.itest.rest.feedId>
         <hawkular.agent.itest.discovery.scan.period>10</hawkular.agent.itest.discovery.scan.period>
 
         <hawkular.bind.address>127.0.0.1</hawkular.bind.address>
@@ -275,11 +277,10 @@
 
                 <hawkular.itest.rest.user>${hawkular.itest.rest.user}</hawkular.itest.rest.user>
                 <hawkular.itest.rest.password>${hawkular.itest.rest.password}</hawkular.itest.rest.password>
+                <hawkular.itest.rest.feedId>${hawkular.itest.rest.feedId}</hawkular.itest.rest.feedId>
 
                 <hawkular.agent.itest.mgmt.user>${hawkular.agent.itest.mgmt.user}</hawkular.agent.itest.mgmt.user>
                 <hawkular.agent.itest.mgmt.password>${hawkular.agent.itest.mgmt.password}</hawkular.agent.itest.mgmt.password>
-
-                <hawkular.agent.itest.rest.feedId>${hawkular.agent.itest.rest.feedId}</hawkular.agent.itest.rest.feedId>
 
                 <!-- we put application in here so our test can deploy it -->
                 <hawkular.agent.itest.staging.dir>${hawkular.agent.itest.staging.dir}</hawkular.agent.itest.staging.dir>
@@ -335,6 +336,10 @@
                 <configuration>
                   <jboss-home>${project.build.directory}/${project.build.finalName}</jboss-home>
                   <port>${hawkular.management.port}</port>
+                  <env>
+                    <HAWKULAR_AGENT_USER>${hawkular.itest.rest.user}</HAWKULAR_AGENT_USER>
+                    <HAWKULAR_AGENT_PASSWORD>${hawkular.itest.rest.password}</HAWKULAR_AGENT_PASSWORD>
+                  </env>
                   <javaOpts>
                     <javaOpt>-server</javaOpt>
                     <javaOpt>-Xms64m</javaOpt>
@@ -349,6 +354,8 @@
                     <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
                     <javaOpt>-Dhawkular.rest.user=${hawkular.itest.rest.user}</javaOpt>
                     <javaOpt>-Dhawkular.rest.password=${hawkular.itest.rest.password}</javaOpt>
+                    <javaOpt>-Dhawkular.rest.feedId=${hawkular.itest.rest.feedId}</javaOpt>
+                    <javaOpt>-Dhawkular.rest.url=${hawkular.itest.rest.url}</javaOpt>
                     <javaOpt>-Dhawkular.agent.auto-discovery-scan-period-secs=${hawkular.agent.itest.discovery.scan.period}</javaOpt>
                     <javaOpt>-Dhawkular.log.root=${hawkular.log.root}</javaOpt>
                     <javaOpt>-Dhawkular.log.console=${hawkular.log.console}</javaOpt>
