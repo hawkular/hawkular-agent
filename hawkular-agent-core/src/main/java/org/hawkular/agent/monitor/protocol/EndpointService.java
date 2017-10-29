@@ -19,7 +19,6 @@ package org.hawkular.agent.monitor.protocol;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -380,52 +379,72 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
 
     @Override
     public Map<String, String> generateMetricLabels(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
-        // Metric tags are configured in one of two places - either in the metric definition itself or in the endpoint
-        // configuration. If tags are defined in both places, all the tags found in both places are associated with
-        // the metric. If, however, both places define the same tag name, the metric definition takes precedence.
-        Map<String, String> generatedTags;
+        // Metric labels are configured in one of three places - either in the metric definition itself, or on
+        // the resource type hierarchy, or in the endpoint configuration.
+        // If labels are defined in more than one place, all the labels found in all places are associated with
+        // the metric. If, however, more than one place define the same label name, the metric definition takes precedence
+        // over the the endpoint config but the resource type labels takes precedence over all.
+        Map<String, String> generatedLabels = new HashMap<>();
+        Map<String, String> tokenizedLabels = new HashMap<>();
+
+        // first do the endpoint configuration's metric labels
         EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
-        Map<String, String> tokenizedTags = new HashMap<>();
         if (config.getMetricLabels() != null) {
-            tokenizedTags.putAll(config.getMetricLabels());
-        }
-        if (instance.getType().getMetricLabels() != null) {
-            tokenizedTags.putAll(instance.getType().getMetricLabels());
+            tokenizedLabels.putAll(config.getMetricLabels());
         }
 
-        if (tokenizedTags.isEmpty()) {
-            generatedTags = Collections.emptyMap();
-        } else {
-            generatedTags = new HashMap<>(tokenizedTags.size());
-            for (Map.Entry<String, String> tokenizedTag : tokenizedTags.entrySet()) {
-                String name = replaceTokens(instance, config, tokenizedTag.getKey());
-                String value = replaceTokens(instance, config, tokenizedTag.getValue());
-                generatedTags.put(name, value);
+        // second do the metric definitions metric labels
+        if (instance.getType().getMetricLabels() != null) {
+            tokenizedLabels.putAll(instance.getType().getMetricLabels());
+        }
+
+        if (!tokenizedLabels.isEmpty()) {
+            for (Map.Entry<String, String> tokenizedLabel : tokenizedLabels.entrySet()) {
+                String name = replaceTokens(instance.getAttributeLocation().getLocation(), instance, config,
+                        tokenizedLabel.getKey());
+                String value = replaceTokens(instance.getAttributeLocation().getLocation(), instance, config,
+                        tokenizedLabel.getValue());
+                generatedLabels.put(name, value);
             }
         }
-        return generatedTags;
+
+        // third do all metric labels for all types in the resource's ancestry
+        Resource<L> r = instance.getResource();
+        while (r != null) {
+            if (r.getResourceType().getMetricLabels() != null) {
+                for (Map.Entry<String, String> tokenizedLabel : r.getResourceType().getMetricLabels().entrySet()) {
+                    // we must use the parent resource location, not metric's resource location
+                    String name = replaceTokens(r.getLocation(), instance, config, tokenizedLabel.getKey());
+                    String value = replaceTokens(r.getLocation(), instance, config, tokenizedLabel.getValue());
+                    generatedLabels.put(name, value);
+                }
+            }
+            r = r.getParent();
+        }
+
+        return generatedLabels;
     }
 
-    private String replaceTokens(MeasurementInstance<L, ?> instance, EndpointConfiguration config, String string) {
+    private String replaceTokens(L location, MeasurementInstance<L, ?> instance, EndpointConfiguration config,
+            String string) {
         MetricUnit units = null;
         if (instance.getType() instanceof MetricType) {
             units = ((MetricType<?>) instance.getType()).getMetricUnits();
         }
 
-        // this replaces any positional tokens that might exist in the string (like "%1", "%key%", "%-", etc).
-        string = getLocationResolver().applyTemplate(
-                string,
-                instance.getAttributeLocation().getLocation(),
-                config.getName());
-
         // replace additional types of tokens that are supported
-        return string
+        string = string
                 .replaceAll("%FeedId", getFeedId())
                 .replaceAll("%ManagedServerName", config.getName())
                 .replaceAll("%ResourceName", instance.getResource().getName().getNameString())
                 .replaceAll("%AttributeName", instance.getAttributeLocation().getAttribute())
                 .replaceAll("%MetricTypeName", instance.getType().getName().getNameString())
                 .replaceAll("%MetricTypeUnits", units == null ? "" : units.toString());
+
+        // this replaces any positional tokens that might exist in the string (like "%1", "%key%", "%-", etc).
+        string = getLocationResolver().applyTemplate(string, location, config.getName());
+
+        return string;
     }
 
     /**

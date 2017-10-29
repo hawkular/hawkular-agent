@@ -63,7 +63,7 @@
     <version.io.prometheus.simpleclient.hotspot>0.1.0</version.io.prometheus.simpleclient.hotspot>
     <version.io.prometheus.simpleclient.httpserver>0.1.0</version.io.prometheus.simpleclient.httpserver>
     <version.org.hamcrest>1.3</version.org.hamcrest>
-    <version.org.hawkular.commons>1.0.0.Final-SRC-revision-055e4393b2a1944cda2d97955ba7771bb61041a6</version.org.hawkular.commons>
+    <version.org.hawkular.commons>1.0.0.Final-SNAPSHOT</version.org.hawkular.commons>
     <version.org.jboss.aesh>0.66.7</version.org.jboss.aesh>
     <version.org.jgrapht>0.9.1</version.org.jgrapht>
     <version.org.jolokia>1.3.5</version.org.jolokia>
