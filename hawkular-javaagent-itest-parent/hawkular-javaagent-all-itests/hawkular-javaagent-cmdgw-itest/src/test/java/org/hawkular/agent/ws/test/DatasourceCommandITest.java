@@ -114,7 +114,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                 5000, 10);
     }
 
-    @Test(groups = { GROUP }, dependsOnGroups = { ExportJdrCommandITest.GROUP })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAddDatasource" })
     public void testAddXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
@@ -162,7 +162,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                 5000, 10);
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testAddDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAddXaDatasource" })
     public void testUpdateDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
@@ -221,7 +221,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testAddXaDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateDatasource" })
     public void testUpdateXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
@@ -281,7 +281,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateXaDatasource" })
     public void testRemoveDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
@@ -328,7 +328,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateXaDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testRemoveDatasource" })
     public void testRemoveXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
