@@ -85,7 +85,7 @@ public abstract class AbstractITest {
     protected static final String hawkularTestUser = System.getProperty("hawkular.itest.rest.user");
     protected static final String hawkularTestPasword = System.getProperty("hawkular.itest.rest.password");
 
-    protected static final String hawkularFeedId = System.getProperty("hawkular.agent.itest.rest.feedId");
+    protected static final String hawkularFeedId = System.getProperty("hawkular.itest.rest.feedId");
 
     protected static final File agentConfigFile = new File(
             System.getProperty("hawkular.agent.itest.javaagent.configfile"));
