@@ -85,7 +85,6 @@ public class DomainResourcesITest extends AbstractDomainITestSuite {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "wfStarted" })
     public void serversInInventory() throws Throwable {
-        testHelper.printAllResources(hawkularFeedId);
         Collection<Resource> servers = testHelper.getResourceByType(hawkularFeedId, "Domain WildFly Server", 2);
         Collection<String> dmrServerNames = getServerNames();
         for (String serverName : dmrServerNames) {
