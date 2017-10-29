@@ -53,11 +53,6 @@
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
         <configuration>
-          <mapping>
-            <Dockerfile-wf-agent>SCRIPT_STYLE</Dockerfile-wf-agent>
-            <Dockerfile-wf-agent-domain>SCRIPT_STYLE</Dockerfile-wf-agent-domain>
-          </mapping>
-
           <excludes>
             <exclude>.dockerignore</exclude>
             <exclude>**/*.war</exclude>
