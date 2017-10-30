@@ -29,7 +29,7 @@ You will typically need three pieces of information when connecting to a remote 
 This information can be passed to the docker image via environment properties: 'HAWKULAR_URL', 'HAWKULAR_USER', 'HAWKULAR_PASSWORD'
 
 By default, the docker image will start a Wildfly in standalone mode. You can control if you want to start a Wildfly
-in domain mode by setting the environment property 'HAWKULAR_MODE' to 'domain'.
+in domain mode by setting the environment property 'HAWKULAR_AGENT_MODE' to 'domain'.
 
 NOTE: For security reasons, it is recommend to only pass secret information such as usernames and passwords via an property file and not as normal parameters.
 
