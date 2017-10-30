@@ -26,9 +26,9 @@ COPY target/hawkular-javaagent-config.yaml /opt/hawkular/configuration/
 ADD src/main/resources/run_hawkular_javaagent.sh /opt/hawkular/bin/run_hawkular_agent.sh
 
 ENV HAWKULAR_URL=http://hawkular:8080 \
-    HAWKULAR_AGENT_USER=jdoe \
-    HAWKULAR_AGENT_PASSWORD=password \
-    HAWKULAR_IMMUTABLE=true \
+    HAWKULAR_USER=jdoe \
+    HAWKULAR_PASSWORD=password \
+    HAWKULAR_AGENT_IMMUTABLE=true \
     HAWKULAR_AGENT_METRICS_PORT=9779 \
     HAWKULAR_MODE=standalone
 
@@ -40,7 +40,7 @@ RUN printf 'HOST_CONTROLLER_JAVA_OPTS="$HOST_CONTROLLER_JAVA_OPTS' >> $JBOSS_HOM
 RUN printf ' -Djboss.modules.system.pkgs=org.jboss.byteman,org.jboss.logmanager -Djava.util.logging.manager=org.jboss.logmanager.LogManager -javaagent:$JBOSS_HOME/bin/hawkular-javaagent.jar=config=/opt/hawkular/configuration/hawkular-javaagent-config.yaml,delay=10' \
 | tee -a $JBOSS_HOME/bin/standalone.conf $JBOSS_HOME/bin/domain.conf  > /dev/null
 RUN printf ' -Djboss.host.server-excluded-properties=jboss.modules.system.pkgs,java.util.logging.manager' >> $JBOSS_HOME/bin/domain.conf
-RUN printf ' -Dhawkular.rest.url=${HAWKULAR_URL} -Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.metrics.port=${HAWKULAR_AGENT_METRICS_PORT}"\n' \
+RUN printf ' -Dhawkular.rest.url=${HAWKULAR_URL} -Dhawkular.agent.immutable=${HAWKULAR_AGENT_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_AGENT_IMMUTABLE} -Dhawkular.agent.metrics.port=${HAWKULAR_AGENT_METRICS_PORT}"\n' \
 | tee -a $JBOSS_HOME/bin/standalone.conf $JBOSS_HOME/bin/domain.conf  > /dev/null
 
 

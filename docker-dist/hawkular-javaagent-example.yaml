@@ -40,16 +40,16 @@ spec:
               secretKeyRef:
                 name: hawkular-javaagent-example
                 key: HAWKULAR_URL
-          - name: HAWKULAR_AGENT_USER
+          - name: HAWKULAR_USER
             valueFrom:
               secretKeyRef:
                 name: hawkular-javaagent-example
-                key: HAWKULAR_AGENT_USER
-          - name: HAWKULAR_AGENT_PASSWORD
+                key: HAWKULAR_USER
+          - name: HAWKULAR_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: hawkular-javaagent-example
-                key: HAWKULAR_AGENT_PASSWORD
+                key: HAWKULAR_PASSWORD
         volumeMounts:
         - name: secrets
           mountPath: /client-secrets
