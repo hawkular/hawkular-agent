@@ -26,10 +26,10 @@ build.sh devel hawkular/wildfly-javaagent
 
 You will typically need three pieces of information when connecting to a remote Hawkular Services server: the URL for the Hawkular Services server, a username and a password.
 
-This information can be passed to the docker image via environment properties: 'HAWKULAR_URL', 'HAWKULAR_AGENT_USER', 'HAWKULAR_AGENT_PASSWORD'
+This information can be passed to the docker image via environment properties: 'HAWKULAR_URL', 'HAWKULAR_USER', 'HAWKULAR_PASSWORD'
 
 By default, the docker image will start a Wildfly in standalone mode. You can control if you want to start a Wildfly
-in domain mode by setting the environment property 'HAWKULAR_MODE' to 'domain'.
+in domain mode by setting the environment property 'HAWKULAR_AGENT_MODE' to 'domain'.
 
 NOTE: For security reasons, it is recommend to only pass secret information such as usernames and passwords via an property file and not as normal parameters.
 
@@ -49,7 +49,7 @@ NOTE: the following instructions are listed using the OpenShift 'oc' command. If
 
 Like in the Docker example, we will need to pass the Hawkular Services URL, username and password to our pod. Unlike in the Docker example, for our pod will will pass this information as a secret.
 
-The process for this is similar to the Docker example. We will create a file which will contain properties 'HAWKULAR_URL', 'HAWKULAR_AGENT_USER', and 'HAWKULAR_AGENT_PASSWORD'.
+The process for this is similar to the Docker example. We will create a file which will contain properties 'HAWKULAR_URL', 'HAWKULAR_USER', and 'HAWKULAR_PASSWORD'.
 
 Please see the 'example-env-file' for an example.
 

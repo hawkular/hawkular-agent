@@ -337,8 +337,8 @@
                   <jboss-home>${project.build.directory}/${project.build.finalName}</jboss-home>
                   <port>${hawkular.management.port}</port>
                   <env>
-                    <HAWKULAR_AGENT_USER>${hawkular.itest.rest.user}</HAWKULAR_AGENT_USER>
-                    <HAWKULAR_AGENT_PASSWORD>${hawkular.itest.rest.password}</HAWKULAR_AGENT_PASSWORD>
+                    <HAWKULAR_USER>${hawkular.itest.rest.user}</HAWKULAR_USER>
+                    <HAWKULAR_PASSWORD>${hawkular.itest.rest.password}</HAWKULAR_PASSWORD>
                   </env>
                   <javaOpts>
                     <javaOpt>-server</javaOpt>
