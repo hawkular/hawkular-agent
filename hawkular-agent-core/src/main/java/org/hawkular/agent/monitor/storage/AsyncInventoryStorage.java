@@ -193,22 +193,21 @@ public class AsyncInventoryStorage implements InventoryStorage {
     private <L, M extends MeasurementType<L>> Metric buildMetric(MeasurementInstance<L, M> m,
             MetricUnit metricUnits) {
         Metric.Builder mb = Metric.builder()
-                .name(m.getName().getNameString())
-                .type(m.getType().getName().getNameString());
+                .displayName(m.getName().getNameString());
+
         if (metricUnits != null) {
             mb.unit(MetricUnit.valueOf(metricUnits.name()));
         }
 
-        // don't copy properties - we are using the inventory properties for P labels right now
-        //m.getProperties().forEach((k, v) -> mb.property(k, v.toString()));
-
-        // map to the Prometheus metric timeseries if the Prometheus metadata is defined
         if (m.getMetricFamily() != null) {
-            mb.property("hawkular.metric.family", m.getMetricFamily());
-            if (m.getMetricLabels() != null) {
-                mb.properties(m.getMetricLabels());
-            }
+            mb.family(m.getMetricFamily());
         }
+
+        if (m.getMetricLabels() != null) {
+            mb.labels(m.getMetricLabels());
+        }
+
+        m.getProperties().forEach((k, v) -> mb.property(k, v.toString()));
 
         return mb.build();
     }
