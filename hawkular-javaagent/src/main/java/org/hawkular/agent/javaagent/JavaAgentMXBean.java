@@ -27,6 +27,8 @@ public interface JavaAgentMXBean {
 
     boolean getInContainer();
 
+    String getMetricsEndpoint();
+
     // JMX Operations
     void start();
 
