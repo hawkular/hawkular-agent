@@ -39,7 +39,7 @@ RUN printf 'HOST_CONTROLLER_JAVA_OPTS="$HOST_CONTROLLER_JAVA_OPTS' >> $JBOSS_HOM
 RUN printf ' -Djboss.modules.system.pkgs=org.jboss.byteman,org.jboss.logmanager -Djava.util.logging.manager=org.jboss.logmanager.LogManager -javaagent:$JBOSS_HOME/bin/hawkular-javaagent.jar=config=/opt/hawkular/configuration/hawkular-javaagent-config.yaml,delay=10' \
 | tee -a $JBOSS_HOME/bin/standalone.conf $JBOSS_HOME/bin/domain.conf  > /dev/null
 RUN printf ' -Djboss.host.server-excluded-properties=jboss.modules.system.pkgs,java.util.logging.manager' >> $JBOSS_HOME/bin/domain.conf
-RUN printf ' -Dhawkular.rest.url=${HAWKULAR_URL} -Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE}"\n' \
+RUN printf ' -Dhawkular.rest.host=${HAWKULAR_URL} -Dhawkular.agent.immutable=${HAWKULAR_IMMUTABLE} -Dhawkular.agent.in-container=${HAWKULAR_IMMUTABLE}"\n' \
 | tee -a $JBOSS_HOME/bin/standalone.conf $JBOSS_HOME/bin/domain.conf  > /dev/null
 
 
