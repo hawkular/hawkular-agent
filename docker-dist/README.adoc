@@ -62,7 +62,7 @@ oc create secret generic hawkular-javaagent-example --from-env-file=hawkular-env
 Once you have create your secret, you can then deploy the 'hawkular-javaagent-example.yaml' deployment
 
 ```bash
-oc create hawkular-javaagent-example.yaml
+oc create -f hawkular-javaagent-example.yaml
 ```
 
 This should create a deployment in your current project with a single replica.
