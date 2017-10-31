@@ -29,7 +29,7 @@ import_hawkular_services_public_key() {
 }
 
 run_hawkular_agent() {
-    ${JBOSS_HOME}/bin/${HAWKULAR_MODE}.sh -b 0.0.0.0
+    exec ${JBOSS_HOME}/bin/${HAWKULAR_MODE}.sh -b 0.0.0.0
 }
 
 main() {
