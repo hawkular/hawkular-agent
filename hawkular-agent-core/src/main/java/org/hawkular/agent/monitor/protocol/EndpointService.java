@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
@@ -165,6 +166,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     private final LocationResolver<L> locationResolver;
     private final ProtocolDiagnostics diagnostics;
     private final ExecutorService fullDiscoveryScanThreadPool;
+    private final ReentrantReadWriteLock discoveryScanRWLock;
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
@@ -173,13 +175,13 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             ResourceTypeManager<L> resourceTypeManager,
             LocationResolver<L> locationResolver,
             ProtocolDiagnostics diagnostics) {
-        super();
         this.feedId = feedId;
         this.endpoint = endpoint;
         this.resourceManager = new ResourceManager<>();
         this.resourceTypeManager = resourceTypeManager;
         this.locationResolver = locationResolver;
         this.diagnostics = diagnostics;
+        this.discoveryScanRWLock = new ReentrantReadWriteLock();
 
         // This thread pool is used to limit the number of full discovery scans that are performed at any one time.
         // At most one full discovery scan is being performed at a single time, with at most one other full
@@ -200,6 +202,12 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         return endpoint;
     }
 
+    /**
+     * Returns the resource manager which contain the internal inventory known to the agent.
+     * Be very careful with this object - if a discovery scan is running, its contents can change under you.
+     *
+     * @return resource manager with the agent's currently known inventory (this is its internal inventory)
+     */
     public ResourceManager<L> getResourceManager() {
         return resourceManager;
     }
@@ -263,6 +271,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      * as defined by {@link ResourceTypeManager#getRootResourceTypes()} and then obtain all their
      * children (recursively down to all descendents). Effectively, this discovers the full
      * resource hierarchy.
+     *
+     * This method does not block - it runs the discovery in another thread.
      */
     public void discoverAll() {
         status.assertRunning(getClass(), "discoverAll()");
@@ -270,26 +280,33 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                DiscoveryResults discoveryResults = new DiscoveryResults();
+                WriteLock lock = EndpointService.this.discoveryScanRWLock.writeLock();
+                lock.lock();
+                try {
+                    DiscoveryResults discoveryResults = new DiscoveryResults();
 
-                LOG.infoDiscoveryRequested(getMonitoredEndpoint());
-                long duration = -1;
-                try (S session = openSession()) {
-                    Set<ResourceType<L>> rootTypes = getResourceTypeManager().getRootResourceTypes();
-                    Context timer = getDiagnostics().getFullDiscoveryScanTimer().time();
-                    for (ResourceType<L> rootType : rootTypes) {
-                        discoverChildren(null, rootType, session, discoveryResults);
+                    LOG.infoDiscoveryRequested(getMonitoredEndpoint());
+                    long duration = -1;
+                    try (S session = openSession()) {
+                        Set<ResourceType<L>> rootTypes = getResourceTypeManager().getRootResourceTypes();
+                        Context timer = getDiagnostics().getFullDiscoveryScanTimer().time();
+                        for (ResourceType<L> rootType : rootTypes) {
+                            discoverChildren(null, rootType, session, discoveryResults);
+                        }
+                        long nanos = timer.stop();
+                        duration = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS);
+                    } catch (Exception e) {
+                        LOG.errorCouldNotAccess(EndpointService.this, e);
+                        discoveryResults.error(e);
                     }
-                    long nanos = timer.stop();
-                    duration = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS);
-                } catch (Exception e) {
-                    LOG.errorCouldNotAccess(EndpointService.this, e);
-                    discoveryResults.error(e);
+
+                    getResourceManager().logTreeGraph("Discovered all resources for: " + getMonitoredEndpoint(),
+                            duration);
+
+                    discoveryResults.discoveryFinished();
+                } finally {
+                    lock.unlock();
                 }
-
-                getResourceManager().logTreeGraph("Discovered all resources for: " + getMonitoredEndpoint(), duration);
-
-                discoveryResults.discoveryFinished();
             }
         };
 
@@ -322,7 +339,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         try {
             sessionToUse = (session == null) ? openSession() : session;
 
-            /* FIXME: resourceManager should be write-locked here over find and add */
+            // If discoveryChildren is ever called concurrently then we need to synchronize around the
+            // resource manager's calls to findResources and addResource. Because we don't need it today,
+            // this locking is not performed. But this is a reminder for the future.
             List<Resource<L>> parents;
             if (parentLocation != null) {
                 parents = getResourceManager().findResources(parentLocation, sessionToUse.getLocationResolver());
@@ -450,13 +469,24 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     /**
      * Remove resources matching the given {@code location} and all their direct and indirect descendant resources.
      *
+     * Note that this method may block if a discovery scan is currently in progress. The removal will occur when
+     * the discovery scan finishes - only then will this method return.
+     *
      * @param location a location that can contain wildcards
      */
     public void removeResources(L location) {
         status.assertRunning(getClass(), "removeResources()");
         try (S session = openSession()) {
-            List<Resource<L>> removed = getResourceManager().removeResources(location, session.getLocationResolver());
-            inventoryListenerSupport.fireResourcesRemoved(removed);
+            // we must not alter the resource manager while a discovery scan is in progress
+            WriteLock lock = EndpointService.this.discoveryScanRWLock.writeLock();
+            lock.lock();
+            try {
+                List<Resource<L>> removed = getResourceManager().removeResources(location,
+                        session.getLocationResolver());
+                inventoryListenerSupport.fireResourcesRemoved(removed);
+            } finally {
+                lock.unlock();
+            }
         } catch (Exception e) {
             LOG.errorCouldNotAccess(this, e);
         }
