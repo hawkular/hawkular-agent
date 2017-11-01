@@ -95,7 +95,7 @@ docker run --env-file hawkular-env-file -v /opt/hawkular/hawkular-services-publi
 
 If running in OpenShift or Kubernetes you will need to pass to the pod a secret which contains the ca certificate.
 
-For instance, if the public CA certificate used to sign the Hawkular Services server is located at /opt/hawkular/hawkular-services-public.pem then you will need to run the following command before deploying your pod:
+For instance, if the public CA certificate used to sign the Hawkular Services server is located at /opt/hawkular/hawkular-services-public.pem then you will need to run the following command (Available on https://github.com/openshift/origin/releases/[oc 3.7]) before deploying your pod:
 
 ```bash
 oc create secret generic hawkular-javaagent-example-ca --from-file=hawkular-services-ca.crt=/opt/hawkular/hawkular-services-public.pem
