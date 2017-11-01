@@ -207,8 +207,8 @@ public interface MsgLogger extends BasicLogger {
     void errorFailedToStoreNotification(@Cause Throwable t, String data);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10084, value = "%s version %s")
-    void infoTypeAndVersion(String type, String version);
+    @Message(id = 10084, value = "%s")
+    void infoVersion(String version);
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10085, value = "Failed to create notification: %s")
