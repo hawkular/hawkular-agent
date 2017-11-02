@@ -158,21 +158,24 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
     @Override
     public String applyTemplate(String nameTemplate, DMRNodeLocation location, String endpointName) {
 
-        ArrayList<String> args = new ArrayList<>();
-        for (PathElement segment : location.getPathAddress()) {
-            args.add(segment.getKey());
-            args.add(segment.getValue());
-        }
-
         // The name template can have %# where # is the index number of the address part that should be substituted.
         // For example, suppose a resource has an address of "/hello=world/foo=bar" and the template is "Name [%2]".
         // The %2 will get substituted with the second address part (which is "world" - indices start at 1).
+        // The name template can have %key% where key is the key of an address whose value is used to replace the
+        // token. For example, "Name [%foo%]" will end up being "Name [bar]".
+        //
         // String.format() requires "$s" after the "%#" to denote the type of value is a string (all our address
         // parts are strings, so we know "$s" is what we want).
         // This replaceAll just replaces all occurrances of "%#" with "%#$s" so String.format will work.
         // We also allow for the special %- notation to mean "the last address part" since that's usually the one we
         // want and sometimes you can't know its positional value.
         // We also support %ManagedServerName which can help distinguish similar resources running in different servers.
+        List<String> args = new ArrayList<>();
+        for (PathElement segment : location.getPathAddress()) {
+            args.add(segment.getKey());
+            args.add(segment.getValue());
+            nameTemplate = nameTemplate.replace("%" + segment.getKey() + "%", segment.getValue());
+        }
         nameTemplate = nameTemplate.replaceAll("%(\\d+)", "%$1\\$s");
         nameTemplate = nameTemplate.replaceAll("%(-)", "%" + args.size() + "\\$s");
         nameTemplate = nameTemplate.replaceAll("%ManagedServerName", endpointName);
