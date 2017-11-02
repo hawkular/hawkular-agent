@@ -1522,7 +1522,7 @@ managed-servers:
     wait-for:
     - name: /
     metric-labels:
-      feed-id: "%FeedId"
+      feed_id: "%FeedId"
 
   local-jmx:
     name: Local JMX
@@ -1535,7 +1535,7 @@ managed-servers:
     wait-for:
     - name: java.lang:type=Runtime
     metric-labels:
-      feed-id: "%FeedId"
+      feed_id: "%FeedId"
 
   remote-dmr:
   - name: Local DMR
@@ -1560,7 +1560,7 @@ managed-servers:
     wait-for:
     - name: /
     metric-labels:
-      feed-id: "%FeedId"
+      feed_id: "%FeedId"
 
 platform:
   enabled:      true
