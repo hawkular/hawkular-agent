@@ -48,6 +48,7 @@ import org.hawkular.agent.javaagent.log.JavaAgentLoggers;
 import org.hawkular.agent.javaagent.log.MsgLogger;
 import org.hawkular.agent.monitor.cmd.Command;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.MetricsExporterConfiguration;
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.service.AgentCoreEngine;
 import org.hawkular.agent.monitor.service.ServiceStatus;
@@ -218,6 +219,12 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
     @Override
     public boolean getInContainer() {
         return getConfiguration().getGlobalConfiguration().isInContainer();
+    }
+
+    @Override
+    public String getMetricsEndpoint() {
+        MetricsExporterConfiguration mec = getConfiguration().getMetricsExporterConfiguration();
+        return String.format("%s:%d", mec.getHost(), mec.getPort());
     }
 
     @Override
