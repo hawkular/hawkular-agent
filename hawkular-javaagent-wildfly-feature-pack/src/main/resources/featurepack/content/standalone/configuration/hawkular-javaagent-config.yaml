@@ -97,6 +97,7 @@ metric-set-dmr:
     attribute:    collection-time
     metric-family: jvm_gc_collection_seconds_sum
     # no metric-labels because we want to aggregate across all of them
+
 - name: WildFly Threading Metrics
   metric-dmr:
   - name: Thread Count
@@ -104,7 +105,8 @@ metric-set-dmr:
     path:         /core-service=platform-mbean/type=threading
     attribute:    thread-count
     metric-family: jvm_threads_current
-- name: WildFly Aggregated Web Metrics
+
+- name: Undertow Aggregated Web Metrics
   metric-dmr:
   - name: Aggregated Active Web Sessions
     path:       "/deployment=*/subsystem=undertow"
@@ -130,6 +132,30 @@ metric-set-dmr:
     path:       "/deployment=*/subsystem=undertow/servlet=*"
     attribute:  request-count
     metric-family: wildfly_servlet_request_count
+
+- name: Undertow Subsystem Metrics
+  metric-dmr:
+  - name: Request Count
+    attribute: request-count
+    metric-type:  counter
+    metric-family: wildfly_undertow_request_count
+  - name: Error Count
+    attribute: error-count
+    metric-type:  counter
+    metric-family: wildfly_undertow_error_count
+  - name: Bytes Sent
+    attribute: bytes-sent
+    metric-units: bytes
+    metric-family: wildfly_undertow_bytes_sent
+  - name: Bytes Received
+    attribute: bytes-received
+    metric-units: bytes
+    metric-family: wildfly_undertow_bytes_received
+  - name: Processing Time
+    attribute: processing-time
+    metric-units: milliseconds
+    metric-family: wildfly_undertow_processing_time
+
 - name: Undertow Metrics
   metric-dmr:
   - name: Active Sessions
@@ -155,6 +181,7 @@ metric-set-dmr:
     path:       "/subsystem=undertow"
     attribute:  max-active-sessions
     metric-family: wildfly_deployment_max_active_sessions
+
 - name: Servlet Metrics
   metric-dmr:
   - name: Max Request Time
@@ -173,6 +200,7 @@ metric-set-dmr:
     attribute:    request-count
     metric-type:  counter
     metric-family: wildfly_servlet_request_count
+
 - name: Singleton EJB Metrics
   metric-dmr:
   - name: Execution Time
@@ -196,6 +224,7 @@ metric-set-dmr:
     metric-family: wildfly_ejb_wait_time
     metric-labels:
       type: singleton
+
 - name: Message Driven EJB Metrics
   metric-dmr:
   - name: Execution Time
@@ -244,6 +273,7 @@ metric-set-dmr:
     metric-family: wildfly_ejb_pool_remove_count
     metric-labels:
       type: message-driven
+
 - name: Stateless Session EJB Metrics
   metric-dmr:
   - name: Execution Time
@@ -292,6 +322,7 @@ metric-set-dmr:
     metric-family: wildfly_ejb_pool_remove_count
     metric-labels:
       type: stateless-session
+
 - name: Stateful Session EJB Metrics
   metric-dmr:
   - name: Execution Time
@@ -325,6 +356,7 @@ metric-set-dmr:
     metric-family: TODO
     metric-labels:
       type: stateful-session
+
 - name: Datasource JDBC Metrics
   metric-dmr:
   - name: Prepared Statement Cache Access Count
@@ -351,6 +383,7 @@ metric-set-dmr:
     path:         "/statistics=jdbc"
     attribute:    PreparedStatementCacheMissCount
     metric-family: wildfly_datasource_jdbc_prepared_statement_cache_miss_count
+
 - name: Datasource Pool Metrics
   metric-dmr:
   - name: Active Count
@@ -433,6 +466,7 @@ metric-set-dmr:
     path:         "/statistics=pool"
     attribute:    WaitCount
     metric-family: wildfly_datasorce_pool_wait_count
+
 - name: Transactions Metrics
   metric-dmr:
   - name: Number of Aborted Transactions
@@ -470,6 +504,7 @@ metric-set-dmr:
     attribute:    number-of-transactions
     metric-type:  counter
     metric-family: wildfly_transactions_transactions
+
 - name: JMS Queue Metrics
   metric-dmr:
   - name: Consumer Count
@@ -488,6 +523,7 @@ metric-set-dmr:
   - name: Scheduled Count
     attribute:    scheduled-count
     metric-family: wildfly_messaging_scheduled_count
+
 - name: JMS Topic Metrics
   metric-dmr:
   - name: Durable Message Count
@@ -516,6 +552,12 @@ metric-set-dmr:
     attribute:    subscription-count
     metric-family: wildfly_messaging_subscription_count
 
+- name: Deployment Status
+  metric-dmr:
+  - name: Deployment Status
+    attribute:    status
+    metric-family: wildfly_deployment_availability
+
 resource-type-set-dmr:
 - name: Standalone Environment
   resource-type-dmr:
@@ -526,7 +568,7 @@ resource-type-set-dmr:
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
-    - WildFly Aggregated Web Metrics
+    - Undertow Aggregated Web Metrics
     resource-config-dmr:
     - name: Name
       attribute: name
@@ -801,7 +843,7 @@ resource-type-set-dmr:
     metric-sets:
     - WildFly Memory Metrics
     - WildFly Threading Metrics
-    - WildFly Aggregated Web Metrics
+    - Undertow Aggregated Web Metrics
     resource-config-dmr:
     - name: Name
       attribute: name
@@ -920,6 +962,37 @@ resource-type-set-dmr:
         type:          int
         description:   Timeout in seconds to allow active connections to drain
 
+- name: Undertow Subsystem
+  resource-type-dmr:
+  - name: Undertow Server
+    resource-name-template: "%-"
+    path: "/subsystem=undertow/server=*"
+    parents:
+    - WildFly Server
+    - Domain WildFly Server
+  - name: HTTP Listener
+    parents:
+    - Undertow Server
+    resource-name-template: "%-"
+    path: "/http-listener=*"
+    metric-sets:
+    - Undertow Subsystem Metrics
+    metric-labels:
+      protocol: http
+      server: "%server%"
+      listener: "%-"
+  - name: HTTPS Listener
+    parents:
+    - Undertow Server
+    resource-name-template: "%-"
+    path: "/https-listener=*"
+    metric-sets:
+    - Undertow Subsystem Metrics
+    metric-labels:
+      protocol: https
+      server: "%server%"
+      listener: "%-"
+
 - name: Deployment
   resource-type-dmr:
   - name: Deployment
@@ -930,6 +1003,7 @@ resource-type-set-dmr:
     - Domain WildFly Server
     metric-sets:
     - Undertow Metrics
+    - Deployment Status
     metric-labels:
       deployment: "%-"
   - name: SubDeployment
@@ -1112,7 +1186,8 @@ resource-type-set-dmr:
     metric-sets:
     - JMS Queue Metrics
     metric-labels:
-      name: "%-"
+      queue: "%-"
+      server: "%server%"
   - name: JMS Topic
     resource-name-template: "%-"
     path: "/jms-topic=*"
@@ -1121,7 +1196,8 @@ resource-type-set-dmr:
     metric-sets:
     - JMS Topic Metrics
     metric-labels:
-      name: "%-"
+      topic: "%-"
+      server: "%server%"
 
 - name: Socket Binding Group
   resource-type-dmr:
@@ -1244,6 +1320,7 @@ metric-set-jmx:
     attribute:    CollectionTime
     metric-units: seconds
     metric-family: jvm_gc_collection_seconds_sum
+
 - name: Memory Pool Metrics
   metric-jmx:
   - name: Initial
@@ -1281,6 +1358,7 @@ resource-type-set-jmx:
       object-name: java.lang:type=OperatingSystem
     - name: Java VM Name
       attribute:   VmName
+
 - name: Memory Pool
   resource-type-jmx:
   - name: Memory Pool MBean
@@ -1293,6 +1371,7 @@ resource-type-set-jmx:
     resource-config-jmx:
     - name: Type
       attribute: Type
+
 - name: Hawkular
   resource-type-jmx:
   - name: Hawkular Java Agent
@@ -1325,6 +1404,7 @@ managed-servers:
     enabled: true
     resource-type-sets:
     - Standalone Environment
+    - Undertow Subsystem
     - Deployment
     - Web Component
     - EJB
@@ -1361,6 +1441,7 @@ managed-servers:
     password: adminPass
     resource-type-sets:
     - Standalone Environment
+    - Undertow Subsystem
     - Deployment
     - Web Component
     - EJB
