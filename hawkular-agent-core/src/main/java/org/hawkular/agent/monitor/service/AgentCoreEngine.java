@@ -41,6 +41,7 @@ import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.prometheus.WebServer;
 import org.hawkular.agent.monitor.protocol.ProtocolServices;
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
+import org.hawkular.agent.monitor.protocol.platform.PlatformMBeanGenerator;
 import org.hawkular.agent.monitor.storage.HawkularStorageAdapter;
 import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
@@ -89,6 +90,9 @@ public abstract class AgentCoreEngine {
 
     // used to send notifications to the server
     private NotificationDispatcher notificationDispatcher;
+
+    // used to wrap platform resources with MBeans
+    private PlatformMBeanGenerator platformMBeanGenerator;
 
     // proxies if exposed that will allow external apps to store their own inventory
     private final InventoryStorageProxy inventoryStorageProxy = new InventoryStorageProxy();
@@ -289,6 +293,9 @@ public abstract class AgentCoreEngine {
             // now that we started the storage adapter, we can create our dispatcher
             this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
 
+            // this wraps the platform resources with MBeans so their metrics can be exposed via JMX
+            this.platformMBeanGenerator = new PlatformMBeanGenerator();
+
             // build the protocol services
             ProtocolServices ps = createProtocolServicesBuilder()
                     .dmrProtocolService(this.localModelControllerClientFactory, configuration.getDmrConfiguration())
@@ -298,6 +305,7 @@ public abstract class AgentCoreEngine {
                             configuration.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds())
                     .build();
             ps.addInventoryListener(inventoryStorageProxy);
+            ps.addInventoryListener(platformMBeanGenerator);
             if (notificationDispatcher != null) {
                 ps.addInventoryListener(notificationDispatcher);
             }
@@ -379,7 +387,13 @@ public abstract class AgentCoreEngine {
             try {
                 if (protocolServices != null) {
                     protocolServices.stop();
-                    protocolServices.removeInventoryListener(inventoryStorageProxy);
+                    if (inventoryStorageProxy != null) {
+                        protocolServices.removeInventoryListener(inventoryStorageProxy);
+                    }
+                    if (platformMBeanGenerator != null) {
+                        protocolServices.removeInventoryListener(platformMBeanGenerator);
+                        platformMBeanGenerator.unregisterAllMBeans();
+                    }
                     if (notificationDispatcher != null) {
                         protocolServices.removeInventoryListener(notificationDispatcher);
                     }

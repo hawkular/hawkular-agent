@@ -23,15 +23,17 @@ import java.util.Optional;
 import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.agent.monitor.protocol.Session;
 
 /**
  * A event for discovery scans.
  *
  * @see InventoryListener
  */
-public class InventoryEvent<L> {
+public class InventoryEvent<L, S extends Session<L>> {
 
-    private final SamplingService<L> samplingService;
+    private final EndpointService<L, S> service;
     private final ResourceManager<L> resourceManager;
     private final Optional<ResourceTypeManager<L>> resourceTypeManager;
     private final List<Resource<L>> addedOrModified;
@@ -39,22 +41,25 @@ public class InventoryEvent<L> {
 
     /**
      * Creates an inventory event.
-     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
-     *                        identify the resources in the event, plus has methods that can be used to monitor
-     *                        the resources in the event.
+     *
+     * @param service a service that provides details such as feed ID and endpoint information that helps
+     *                identify the resources in the event, plus has methods that can be used to monitor
+     *                the resources in the event.
      * @param resourceManager the resources associated with the event
      * @param resourceTypeManager the resource types associated with the event. Omit if resource type sync is not
-     *                           needed
+     *                            needed
      * @param addedOrModified list of added or modified resources
-     * @param removed         list of removed resources
+     * @param removed list of removed resources
      */
-    private InventoryEvent(SamplingService<L> samplingService,
-                          ResourceManager<L> resourceManager,
-                          Optional<ResourceTypeManager<L>> resourceTypeManager,
-                          List<Resource<L>> addedOrModified,
-                          List<Resource<L>> removed) {
-        if (samplingService == null) {
-            throw new IllegalArgumentException("Sampling service cannot be null");
+    private InventoryEvent(
+            EndpointService<L, S> service,
+            ResourceManager<L> resourceManager,
+            Optional<ResourceTypeManager<L>> resourceTypeManager,
+            List<Resource<L>> addedOrModified,
+            List<Resource<L>> removed) {
+
+        if (service == null) {
+            throw new IllegalArgumentException("service cannot be null");
         }
 
         if (resourceManager == null) {
@@ -65,7 +70,7 @@ public class InventoryEvent<L> {
             throw new IllegalArgumentException("Resource type manager cannot be null");
         }
 
-        this.samplingService = samplingService;
+        this.service = service;
         this.resourceManager = resourceManager;
         this.resourceTypeManager = resourceTypeManager;
         this.addedOrModified = addedOrModified;
@@ -73,68 +78,67 @@ public class InventoryEvent<L> {
     }
 
     /**
-     * Build an {@link InventoryEvent} for removed resources
-     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
-     *                        identify the resources in the event, plus has methods that can be used to monitor
-     *                        the resources in the event.
+     * Build an {@link InventoryEvent} for removed resources.
+     *
+     * @param service a service that provides details such as feed ID and endpoint information that helps
+     *                identify the resources in the event, plus has methods that can be used to monitor
+     *                the resources in the event.
      * @param resourceManager the resources associated with the event
-     * @param removed         list of removed resources
+     * @param removed list of removed resources
      */
-    public static <L> InventoryEvent<L> removed(SamplingService<L> samplingService,
-                                              ResourceManager<L> resourceManager,
-                                              List<Resource<L>> removed) {
-        return new InventoryEvent<>(samplingService, resourceManager, Optional.empty(), new ArrayList<>(), removed);
+    public static <L, S extends Session<L>> InventoryEvent<L, S> removed(
+            EndpointService<L, S> service,
+            ResourceManager<L> resourceManager,
+            List<Resource<L>> removed) {
+        return new InventoryEvent<>(service, resourceManager, Optional.empty(), new ArrayList<>(), removed);
     }
 
     /**
-     * Build an {@link InventoryEvent} for added or modified resources
-     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
-     *                        identify the resources in the event, plus has methods that can be used to monitor
-     *                        the resources in the event.
+     * Build an {@link InventoryEvent} for added or modified resources.
+     *
+     * @param service a service that provides details such as feed ID and endpoint information that helps
+     *                identify the resources in the event, plus has methods that can be used to monitor
+     *                the resources in the event.
      * @param resourceManager the resources associated with the event
      * @param addedOrModified list of added or modified resources
      */
-    public static <L> InventoryEvent<L> addedOrModified(SamplingService<L> samplingService,
-                                              ResourceManager<L> resourceManager,
-                                              List<Resource<L>> addedOrModified) {
-        return new InventoryEvent<>(samplingService, resourceManager, Optional.empty(), addedOrModified, new ArrayList<>());
+    public static <L, S extends Session<L>> InventoryEvent<L, S> addedOrModified(
+            EndpointService<L, S> service,
+            ResourceManager<L> resourceManager,
+            List<Resource<L>> addedOrModified) {
+        return new InventoryEvent<>(service, resourceManager, Optional.empty(), addedOrModified, new ArrayList<>());
     }
 
     /**
-     * Build an {@link InventoryEvent} for added or modified resources
-     * @param samplingService a service that provides details such as feed ID and endpoint information that helps
-     *                        identify the resources in the event, plus has methods that can be used to monitor
-     *                        the resources in the event.
+     * Build an {@link InventoryEvent} for added or modified resources.
+     *
+     * @param service a service that provides details such as feed ID and endpoint information that helps
+     *                identify the resources in the event, plus has methods that can be used to monitor
+     *                the resources in the event.
      * @param resourceManager the resources associated with the event
      * @param resourceTypeManager the resource types associated with the event
      * @param addedOrModified list of added or modified resources
-     * @param removed         list of removed resources
+     * @param removed list of removed resources
      */
-    public static <L> InventoryEvent<L> discovery(SamplingService<L> samplingService,
-                                                     ResourceManager<L> resourceManager,
-                                                     ResourceTypeManager<L> resourceTypeManager,
-                                                     List<Resource<L>> addedOrModified,
-                                                     List<Resource<L>> removed) {
+    public static <L, S extends Session<L>> InventoryEvent<L, S> discovery(
+            EndpointService<L, S> service,
+            ResourceManager<L> resourceManager,
+            ResourceTypeManager<L> resourceTypeManager,
+            List<Resource<L>> addedOrModified,
+            List<Resource<L>> removed) {
         return new InventoryEvent<>(
-                samplingService,
+                service,
                 resourceManager,
                 Optional.of(resourceTypeManager),
                 addedOrModified,
                 removed);
     }
 
-    private static <T> Resource<T> getRootResource(Resource<T> resource) {
-        if (resource.getParent() == null) {
-            return resource;
-        }
-        return getRootResource(resource.getParent());
-    }
-
     /**
      * @return the contextual sampling service associated with the event
      */
-    public SamplingService<L> getSamplingService() {
-        return samplingService;
+    public EndpointService<L, S> getEndpointService() {
+        return service;
     }
 
     /**

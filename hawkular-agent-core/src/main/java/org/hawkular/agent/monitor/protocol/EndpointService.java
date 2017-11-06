@@ -35,7 +35,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
-import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration.WaitFor;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
@@ -68,7 +67,7 @@ import com.codahale.metrics.Timer.Context;
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
  * @param <S> the protocol specific {@link Session}
  */
-public abstract class EndpointService<L, S extends Session<L>> implements SamplingService<L> {
+public abstract class EndpointService<L, S extends Session<L>> {
     private static final MsgLogger LOG = AgentLoggers.getLogger(EndpointService.class);
 
     private class InventoryListenerSupport {
@@ -80,7 +79,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 inventoryListenerRWLock.readLock().lock();
                 try {
                     LOG.debugf("Firing inventory event for [%d] removed resources", resources.size());
-                    InventoryEvent<L> event = InventoryEvent.removed(
+                    InventoryEvent<L, S> event = InventoryEvent.removed(
                             EndpointService.this,
                             getResourceManager(),
                             resources);
@@ -97,7 +96,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             inventoryListenerRWLock.readLock().lock();
             try {
                 LOG.debugf("Firing inventory event for discovery complete");
-                InventoryEvent<L> event = InventoryEvent.discovery(
+                InventoryEvent<L, S> event = InventoryEvent.discovery(
                         EndpointService.this,
                         getResourceManager(),
                         getResourceTypeManager(),
@@ -197,7 +196,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         return feedId;
     }
 
-    @Override
     public MonitoredEndpoint<EndpointConfiguration> getMonitoredEndpoint() {
         return endpoint;
     }
@@ -391,12 +389,10 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
     }
 
-    @Override
     public String generateMetricFamily(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
         return instance.getType().getMetricFamily();
     }
 
-    @Override
     public Map<String, String> generateMetricLabels(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
         // Metric labels are configured in one of three places - either in the metric definition itself, or on
         // the resource type hierarchy, or in the endpoint configuration.
