@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.InventoryIdUtil;
@@ -59,11 +58,11 @@ public final class Discovery<L> {
      * @param samplingService the service that collects measurements - this is used here just to generate metric IDs
      * @param resourceConsumer if not null, will be a listener that gets notified when resources are discovered
      */
-    public <N> void discoverChildren(
+    public <N, S extends Session<L>> void discoverChildren(
             Resource<L> parent,
             ResourceType<L> childType,
             Session<L> session,
-            SamplingService<L> samplingService,
+            EndpointService<L, S> service,
             Consumer<Resource<L>> resourceConsumer) {
 
         try {
@@ -102,8 +101,8 @@ public final class Discovery<L> {
 
                 // The resource is built (and measurement instances assigned to it) so we can generate family names/labels
                 for (MeasurementInstance<L, MetricType<L>> instance : resource.getMetrics()) {
-                    instance.setMetricFamily(samplingService.generateMetricFamily(instance));
-                    instance.setMetricLabels(samplingService.generateMetricLabels(instance));
+                    instance.setMetricFamily(service.generateMetricFamily(instance));
+                    instance.setMetricLabels(service.generateMetricLabels(instance));
                 }
 
                 log.debugf("Discovered resource [%s]", resource);
@@ -117,7 +116,7 @@ public final class Discovery<L> {
                 Set<ResourceType<L>> childTypes = session.getResourceTypeManager()
                         .getChildren(childType);
                 for (ResourceType<L> nextLevelChildType : childTypes) {
-                    discoverChildren(resource, nextLevelChildType, session, samplingService, resourceConsumer);
+                    discoverChildren(resource, nextLevelChildType, session, service, resourceConsumer);
                 }
 
             }
