@@ -41,6 +41,7 @@ import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.Session;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.Inventory;
 import org.hawkular.inventory.api.model.Metric;
@@ -83,9 +84,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public <L> void receivedEvent(InventoryEvent<L> event) {
+    public <L, S extends Session<L>> void receivedEvent(InventoryEvent<L, S> event) {
         try {
-            MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
+            MonitoredEndpoint<EndpointConfiguration> endpoint = event.getEndpointService().getMonitoredEndpoint();
             log.debugf("Received inventory event for endpoint: %s", endpoint);
 
             long timestamp = System.currentTimeMillis();

@@ -21,6 +21,7 @@ import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.NotificationPayloadBuilder;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.Session;
 import org.hawkular.client.api.NotificationType;
 
 /**
@@ -37,7 +38,8 @@ public class NotificationDispatcher implements InventoryListener {
         this.feedId = feedId;
     }
 
-    @Override public <L> void receivedEvent(InventoryEvent<L> event) {
+    @Override
+    public <L, S extends Session<L>> void receivedEvent(InventoryEvent<L, S> event) {
         event.getAddedOrModified().stream()
                 .filter(r -> r.getResourceType().getNotifications().contains(NotificationType.RESOURCE_ADDED))
                 .forEach(r -> {

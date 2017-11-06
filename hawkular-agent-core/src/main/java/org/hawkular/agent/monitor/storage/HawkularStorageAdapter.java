@@ -26,6 +26,7 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.Session;
 import org.hawkular.agent.monitor.util.Util;
 
 import okhttp3.Call;
@@ -62,7 +63,7 @@ public class HawkularStorageAdapter implements StorageAdapter {
     }
 
     @Override
-    public <L> void receivedEvent(InventoryEvent<L> event) {
+    public <L, S extends Session<L>> void receivedEvent(InventoryEvent<L, S> event) {
         if (inventoryStorage != null) {
             inventoryStorage.receivedEvent(event);
         }

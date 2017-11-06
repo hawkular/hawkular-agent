@@ -491,7 +491,8 @@ public class ConfigConverter {
                 .name(osName)
                 .location(new PlatformNodeLocation(
                         PlatformPath.builder().any(PlatformResourceType.OPERATING_SYSTEM).build()))
-                .resourceNameTemplate("%s");
+                .resourceNameTemplate("%s")
+                .metricLabel("feed_id", "%FeedId");
 
         ResourceConfigurationPropertyType<PlatformNodeLocation> machineIdConfigType = //
                 new ResourceConfigurationPropertyType<>(
@@ -518,8 +519,8 @@ public class ConfigConverter {
                         PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeId().getIDString()),
                 MetricUnit.PERCENTAGE,
                 SupportedMetricType.GAUGE,
-                null,
-                null);
+                "hawkular_platform_operatingsystem_system_cpu_load",
+                Collections.singletonMap("name", "%ResourceName"));
 
         MetricType<PlatformNodeLocation> systemLoadAverage = new MetricType<PlatformNodeLocation>(
                 PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeId(),
@@ -529,8 +530,8 @@ public class ConfigConverter {
                         PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeId().getIDString()),
                 MetricUnit.NONE,
                 SupportedMetricType.GAUGE,
-                null,
-                null);
+                "hawkular_platform_operatingsystem_system_load_average",
+                Collections.singletonMap("name", "%ResourceName"));
 
         MetricType<PlatformNodeLocation> processCount = new MetricType<PlatformNodeLocation>(
                 PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeId(),
@@ -540,8 +541,8 @@ public class ConfigConverter {
                         PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeId().getIDString()),
                 MetricUnit.NONE,
                 SupportedMetricType.GAUGE,
-                null,
-                null);
+                "hawkular_platform_operatingsystem_process_count",
+                Collections.singletonMap("name", "%ResourceName"));
 
         TypeSet<MetricType<PlatformNodeLocation>> osMetrics = TypeSet
                 .<MetricType<PlatformNodeLocation>> builder()
@@ -578,8 +579,8 @@ public class ConfigConverter {
                             PlatformMetricType.FILE_STORE_USABLE_SPACE.getMetricTypeId().getIDString()),
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
-                    null,
-                    null);
+                    "hawkular_platform_filestore_usable_space",
+                    Collections.singletonMap("name", "%ResourceName"));
 
             MetricType<PlatformNodeLocation> totalSpace = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.FILE_STORE_TOTAL_SPACE.getMetricTypeId(),
@@ -589,8 +590,8 @@ public class ConfigConverter {
                             PlatformMetricType.FILE_STORE_TOTAL_SPACE.getMetricTypeId().getIDString()),
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
-                    null,
-                    null);
+                    "hawkular_platform_filestore_total_space",
+                    Collections.singletonMap("name", "%ResourceName"));
 
             TypeSet<MetricType<PlatformNodeLocation>> fileStoreMetrics = TypeSet
                     .<MetricType<PlatformNodeLocation>> builder()
@@ -610,6 +611,7 @@ public class ConfigConverter {
                     .resourceNameTemplate(
                             PlatformResourceType.FILE_STORE.getResourceTypeName().getNameString() + " [%s]")
                     .parent(rootType.getName())
+                    .metricLabel("feed_id", "%FeedId")
                     .metricSetName(fileStoreMetrics.getName());
 
             populateMetricTypesForResourceType(fileStoreBldr, typeSets);
@@ -633,8 +635,8 @@ public class ConfigConverter {
                             PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeId().getIDString()),
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
-                    null,
-                    null);
+                    "hawkular_platform_memory_available_memory",
+                    Collections.singletonMap("name", "%ResourceName"));
 
             MetricType<PlatformNodeLocation> total = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.MEMORY_TOTAL.getMetricTypeId(),
@@ -644,8 +646,8 @@ public class ConfigConverter {
                             PlatformMetricType.MEMORY_TOTAL.getMetricTypeId().getIDString()),
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
-                    null,
-                    null);
+                    "hawkular_platform_memory_total_memory",
+                    Collections.singletonMap("name", "%ResourceName"));
 
             TypeSet<MetricType<PlatformNodeLocation>> memoryMetrics = TypeSet
                     .<MetricType<PlatformNodeLocation>> builder()
@@ -663,6 +665,7 @@ public class ConfigConverter {
                     .name(PlatformResourceType.MEMORY.getResourceTypeName())
                     .parent(rootType.getName())
                     .location(memoryLocation)
+                    .metricLabel("feed_id", "%FeedId")
                     .metricSetName(memoryMetrics.getName())
                     .resourceNameTemplate(PlatformResourceType.MEMORY.getResourceTypeName().getNameString());
 
@@ -688,8 +691,8 @@ public class ConfigConverter {
                             PlatformMetricType.PROCESSOR_CPU_USAGE.getMetricTypeId().getIDString()),
                     MetricUnit.PERCENTAGE,
                     SupportedMetricType.GAUGE,
-                    null,
-                    null);
+                    "hawkular_platform_processor_cpu_usage",
+                    Collections.singletonMap("name", "%ResourceName"));
 
             TypeSet<MetricType<PlatformNodeLocation>> processorMetrics = TypeSet
                     .<MetricType<PlatformNodeLocation>> builder()
@@ -706,6 +709,7 @@ public class ConfigConverter {
                     .name(PlatformResourceType.PROCESSOR.getResourceTypeName())
                     .parent(rootType.getName())
                     .location(processorsLocation)
+                    .metricLabel("feed_id", "%FeedId")
                     .metricSetName(processorMetrics.getName())
                     .resourceNameTemplate(
                             PlatformResourceType.PROCESSOR.getResourceTypeName().getNameString() + " [%s]");
@@ -732,8 +736,8 @@ public class ConfigConverter {
                                     .getIDString()),
                     MetricUnit.PERCENTAGE,
                     SupportedMetricType.GAUGE,
-                    null,
-                    null);
+                    "hawkular_platform_powersource_remaining_capacity",
+                    Collections.singletonMap("name", "%ResourceName"));
 
             MetricType<PlatformNodeLocation> timeRemaining = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.POWER_SOURCE_TIME_REMAINING.getMetricTypeId(),
@@ -743,8 +747,8 @@ public class ConfigConverter {
                             PlatformMetricType.POWER_SOURCE_TIME_REMAINING.getMetricTypeId().getIDString()),
                     MetricUnit.SECONDS,
                     SupportedMetricType.GAUGE,
-                    null,
-                    null);
+                    "hawkular_platform_powersource_time_remaining",
+                    Collections.singletonMap("name", "%ResourceName"));
 
             TypeSet<MetricType<PlatformNodeLocation>> powerSourceMetrics = TypeSet
                     .<MetricType<PlatformNodeLocation>> builder()
@@ -762,6 +766,7 @@ public class ConfigConverter {
                     .name(PlatformResourceType.POWER_SOURCE.getResourceTypeName())
                     .parent(rootType.getName())
                     .location(powerSourcesLocation)
+                    .metricLabel("feed_id", "%FeedId")
                     .metricSetName(powerSourceMetrics.getName())
                     .resourceNameTemplate(
                             PlatformResourceType.POWER_SOURCE.getResourceTypeName().getNameString() + " [%s]");
