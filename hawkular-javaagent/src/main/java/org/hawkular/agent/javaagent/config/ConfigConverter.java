@@ -169,12 +169,14 @@ public class ConfigConverter {
             typeSet.enabled(rtSet.getEnabled());
             for (DMRResourceType rt : rtSet.getDmrResourceTypes()) {
                 Builder<?, DMRNodeLocation> rtBuilder = ResourceType.<DMRNodeLocation> builder();
-                rtBuilder.name(new Name(rt.getName()));
+                rtBuilder.name(new Name(sourceConfig.getSubsystem().getTypeVersion() != null ?
+                        rt.getName() + ' ' + sourceConfig.getSubsystem().getTypeVersion() : rt.getName()));
                 rtBuilder.location(DMRNodeLocation.of(rt.getPath()));
                 rtBuilder.resourceNameTemplate(rt.getResourceNameTemplate());
                 if (rt.getParents() != null) {
                     for (String parent : rt.getParents()) {
-                        rtBuilder.parent(new Name(parent));
+                        rtBuilder.parent(new Name(sourceConfig.getSubsystem().getTypeVersion() != null ?
+                                parent + ' ' + sourceConfig.getSubsystem().getTypeVersion() : parent));
                     }
                 }
                 if (rt.getMetricSets() != null) {
@@ -361,12 +363,14 @@ public class ConfigConverter {
             typeSet.enabled(rtSet.getEnabled());
             for (JMXResourceType rt : rtSet.getJmxResourceTypes()) {
                 Builder<?, JMXNodeLocation> rtBuilder = ResourceType.<JMXNodeLocation> builder();
-                rtBuilder.name(new Name(rt.getName()));
+                rtBuilder.name(new Name(sourceConfig.getSubsystem().getTypeVersion() != null ?
+                        rt.getName() + ' ' + sourceConfig.getSubsystem().getTypeVersion() : rt.getName()));
                 rtBuilder.location(new JMXNodeLocation(getJmxObjectName(rt.getObjectName())));
                 rtBuilder.resourceNameTemplate(rt.getResourceNameTemplate());
                 if (rt.getParents() != null) {
                     for (String parent : rt.getParents()) {
-                        rtBuilder.parent(new Name(parent));
+                        rtBuilder.parent(new Name(sourceConfig.getSubsystem().getTypeVersion() != null ?
+                                parent + ' ' + sourceConfig.getSubsystem().getTypeVersion() : parent));
                     }
                 }
                 if (rt.getMetricSets() != null) {

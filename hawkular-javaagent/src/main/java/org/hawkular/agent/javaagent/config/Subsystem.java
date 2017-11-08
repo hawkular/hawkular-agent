@@ -39,6 +39,9 @@ public class Subsystem implements Validatable {
     @JsonProperty("in-container")
     private BooleanExpression inContainer = new BooleanExpression(Boolean.FALSE);
 
+    @JsonProperty("type-version")
+    private String typeVersion;
+
     public Subsystem() {
     }
 
@@ -48,6 +51,7 @@ public class Subsystem implements Validatable {
                 : new IntegerExpression(original.autoDiscoveryScanPeriodSecs);
         this.immutable = original.immutable == null ? null : new BooleanExpression(original.immutable);
         this.inContainer = original.inContainer == null ? null : new BooleanExpression(original.inContainer);
+        this.typeVersion = original.typeVersion;
     }
 
     @Override
@@ -105,4 +109,11 @@ public class Subsystem implements Validatable {
         }
     }
 
+    public String getTypeVersion() {
+        return typeVersion;
+    }
+
+    public void setTypeVersion(String typeVersion) {
+        this.typeVersion = typeVersion;
+    }
 }

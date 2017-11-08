@@ -166,6 +166,24 @@ public class ConfigConverterTest {
         }
     }
 
+    @Test
+    public void testTypeVersion() throws Exception {
+        Configuration config = loadTestConfigFile("/all-resource-type-sets-with-type-version.yaml");
+        AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
+        Assert.assertNotNull(agentConfig.getDmrConfiguration()
+                .getTypeSets()
+                .getResourceTypeSets()
+                .get(new Name("dmr type set 1"))
+                .getTypeMap()
+                .get(new Name("dmr type 1 EAPX")));
+        Assert.assertNotNull(agentConfig.getDmrConfiguration()
+                .getTypeSets()
+                .getResourceTypeSets()
+                .get(new Name("dmr type set 1"))
+                .getTypeMap()
+                .get(new Name("dmr type 2 EAPX")));
+    }
+
     private Configuration loadTestConfigFile(String path) throws Exception {
         URL url = ConfigConverterTest.class.getResource(path);
         Assert.assertNotNull("yaml config file not found", url);
