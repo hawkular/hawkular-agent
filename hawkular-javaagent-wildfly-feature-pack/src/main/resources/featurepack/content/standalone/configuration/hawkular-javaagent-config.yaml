@@ -21,6 +21,7 @@ subsystem:
   immutable: "${hawkular.agent.immutable:false}"
   in-container: "${hawkular.agent.in-container:false}"
   auto-discovery-scan-period-secs: ${hawkular.agent.auto-discovery-scan-period-secs:600}
+  type-version: WF10
 
 metrics-exporter:
   enabled: true

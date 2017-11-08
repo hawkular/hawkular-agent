@@ -21,13 +21,14 @@ subsystem:
   immutable: "${hawkular.agent.immutable:false}"
   in-container: "${hawkular.agent.in-container:false}"
   auto-discovery-scan-period-secs: ${hawkular.agent.auto-discovery-scan-period-secs:600}
+  type-version: EAP6
 
 metrics-exporter:
   enabled: true
   host: ${hawkular.agent.metrics.host:127.0.0.1}
   port: ${hawkular.agent.metrics.port:9779}
   config-dir: ${jboss.server.config.dir}
-  config-file: wildfly-10
+  config-file: eap-6
 
 diagnostics:
   enabled:    true
@@ -1239,7 +1240,7 @@ resource-type-set-jmx:
 managed-servers:
   local-dmr:
     name: Local DMR
-    enabled: true
+    enabled: false
     resource-type-sets:
     - Standalone Environment
     - Web Subsystem
@@ -1272,7 +1273,7 @@ managed-servers:
 
   remote-dmr:
   - name: Remote DMR EAP6
-    enabled: false
+    enabled: true
     protocol: remote
     host: 127.0.0.1
     port: 9999
