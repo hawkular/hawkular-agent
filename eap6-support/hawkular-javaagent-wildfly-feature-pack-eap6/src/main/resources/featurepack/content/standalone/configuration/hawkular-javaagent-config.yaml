@@ -349,12 +349,12 @@ metric-set-dmr:
       type: stateful-session
   - name: Cache Size
     attribute:    cache-size
-    metric-family: TODO
+    metric-family: wildfly_ejb_cache_size
     metric-labels:
       type: stateful-session
   - name: Total Size
     attribute:    total-size
-    metric-family: TODO
+    metric-family: wildfly_ejb_total_size
     metric-labels:
       type: stateful-session
 
@@ -1166,7 +1166,7 @@ metric-set-jmx:
     attribute:    Usage#init
     metric-units: bytes
     metric-type:  gauge
-    metric-family: TODO
+    metric-family: jvm_memory_pool_bytes_init
   - name: Used
     attribute:    Usage#used
     metric-units: bytes
