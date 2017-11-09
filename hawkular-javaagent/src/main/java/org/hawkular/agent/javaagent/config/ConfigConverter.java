@@ -91,6 +91,7 @@ public class ConfigConverter {
                 config.getSubsystem().getImmutable(),
                 config.getSubsystem().getInContainer(),
                 config.getSubsystem().getAutoDiscoveryScanPeriodSecs(),
+                config.getSubsystem().getTypeVersion(),
                 2);
 
         MetricsExporterConfiguration metricsExporter = new MetricsExporterConfiguration(

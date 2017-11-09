@@ -182,6 +182,7 @@ public class AgentCoreEngineConfiguration {
         private final boolean immutable;
         private final boolean inContainer;
         private final int autoDiscoveryScanPeriodSeconds;
+        private final String typeVersion;
         private final int numDmrSchedulerThreads;
 
         public GlobalConfiguration(
@@ -189,12 +190,14 @@ public class AgentCoreEngineConfiguration {
                 boolean immutable,
                 boolean inContainer,
                 int autoDiscoveryScanPeriodSeconds,
+                String typeVersion,
                 int numDmrSchedulerThreads) {
             super();
             this.subsystemEnabled = subsystemEnabled;
             this.immutable = immutable;
             this.inContainer = inContainer;
             this.autoDiscoveryScanPeriodSeconds = autoDiscoveryScanPeriodSeconds;
+            this.typeVersion = typeVersion;
             this.numDmrSchedulerThreads = numDmrSchedulerThreads;
         }
 
@@ -212,6 +215,10 @@ public class AgentCoreEngineConfiguration {
 
         public int getAutoDiscoveryScanPeriodSeconds() {
             return autoDiscoveryScanPeriodSeconds;
+        }
+
+        public String getTypeVersion() {
+            return typeVersion;
         }
 
         public int getNumDmrSchedulerThreads() {
