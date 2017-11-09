@@ -74,7 +74,7 @@ public class ConfigConverterTest {
     public void testEmpty() throws Exception {
         Configuration config = loadTestConfigFile("/empty.yaml");
         AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
-        Assert.assertFalse(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
+        Assert.assertEquals("empty", agentConfig.getGlobalConfiguration().getTypeVersion());
     }
 
     @Test

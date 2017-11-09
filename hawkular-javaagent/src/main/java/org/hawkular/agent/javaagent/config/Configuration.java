@@ -17,6 +17,8 @@
 package org.hawkular.agent.javaagent.config;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.hawkular.agent.javaagent.Util;
 
@@ -242,12 +244,50 @@ public class Configuration implements Validatable {
         this.dmrMetricSets = dmrMetricSets;
     }
 
+    public void addDmrMetricSets(DMRMetricSet[] additionalSets) {
+        if (additionalSets == null || additionalSets.length == 0) {
+            return;
+        }
+        if (this.dmrMetricSets == null) {
+            this.dmrMetricSets = additionalSets;
+            return;
+        }
+        // if a name is the same, the new one overwrites the old one
+        Map<String, DMRMetricSet> combined = new HashMap<>();
+        for (DMRMetricSet set : this.dmrMetricSets) {
+            combined.put(set.getName(), set);
+        }
+        for (DMRMetricSet set : additionalSets) {
+            combined.put(set.getName(), set);
+        }
+        this.dmrMetricSets = combined.values().toArray(new DMRMetricSet[combined.size()]);
+    }
+
     public DMRResourceTypeSet[] getDmrResourceTypeSets() {
         return dmrResourceTypeSets;
     }
 
     public void setDmrResourceTypeSets(DMRResourceTypeSet[] dmrResourceTypeSets) {
         this.dmrResourceTypeSets = dmrResourceTypeSets;
+    }
+
+    public void addDmrResourceTypeSets(DMRResourceTypeSet[] additionalSets) {
+        if (additionalSets == null || additionalSets.length == 0) {
+            return;
+        }
+        if (this.dmrResourceTypeSets == null) {
+            this.dmrResourceTypeSets = additionalSets;
+            return;
+        }
+        // if a name is the same, the new one overwrites the old one
+        Map<String, DMRResourceTypeSet> combined = new HashMap<>();
+        for (DMRResourceTypeSet set : this.dmrResourceTypeSets) {
+            combined.put(set.getName(), set);
+        }
+        for (DMRResourceTypeSet set : additionalSets) {
+            combined.put(set.getName(), set);
+        }
+        this.dmrResourceTypeSets = combined.values().toArray(new DMRResourceTypeSet[combined.size()]);
     }
 
     public JMXMetricSet[] getJmxMetricSets() {
@@ -258,12 +298,50 @@ public class Configuration implements Validatable {
         this.jmxMetricSets = jmxMetricSets;
     }
 
+    public void addJmxMetricSets(JMXMetricSet[] additionalSets) {
+        if (additionalSets == null || additionalSets.length == 0) {
+            return;
+        }
+        if (this.jmxMetricSets == null) {
+            this.jmxMetricSets = additionalSets;
+            return;
+        }
+        // if a name is the same, the new one overwrites the old one
+        Map<String, JMXMetricSet> combined = new HashMap<>();
+        for (JMXMetricSet set : this.jmxMetricSets) {
+            combined.put(set.getName(), set);
+        }
+        for (JMXMetricSet set : additionalSets) {
+            combined.put(set.getName(), set);
+        }
+        this.jmxMetricSets = combined.values().toArray(new JMXMetricSet[combined.size()]);
+    }
+
     public JMXResourceTypeSet[] getJmxResourceTypeSets() {
         return jmxResourceTypeSets;
     }
 
     public void setJmxResourceTypeSets(JMXResourceTypeSet[] jmxResourceTypeSets) {
         this.jmxResourceTypeSets = jmxResourceTypeSets;
+    }
+
+    public void addJmxResourceTypeSets(JMXResourceTypeSet[] additionalSets) {
+        if (additionalSets == null || additionalSets.length == 0) {
+            return;
+        }
+        if (this.jmxResourceTypeSets == null) {
+            this.jmxResourceTypeSets = additionalSets;
+            return;
+        }
+        // if a name is the same, the new one overwrites the old one
+        Map<String, JMXResourceTypeSet> combined = new HashMap<>();
+        for (JMXResourceTypeSet set : this.jmxResourceTypeSets) {
+            combined.put(set.getName(), set);
+        }
+        for (JMXResourceTypeSet set : additionalSets) {
+            combined.put(set.getName(), set);
+        }
+        this.jmxResourceTypeSets = combined.values().toArray(new JMXResourceTypeSet[combined.size()]);
     }
 
     public ManagedServers getManagedServers() {

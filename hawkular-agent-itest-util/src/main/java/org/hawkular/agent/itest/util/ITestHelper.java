@@ -40,10 +40,12 @@ public class ITestHelper {
     private final String baseInvUri;
     private final OkHttpClient client;
     private final ObjectMapper mapper;
+    private final String typeVersion;
 
-    public ITestHelper(String hawkularAuthHeader, String baseInvUri) {
+    public ITestHelper(String hawkularAuthHeader, String baseInvUri, String typeVersion) {
         this.hawkularAuthHeader = hawkularAuthHeader;
         this.baseInvUri = baseInvUri;
+        this.typeVersion = typeVersion;
         this.mapper = new ObjectMapper(new JsonFactory());
         this.client = new OkHttpClient();
     }
@@ -86,11 +88,17 @@ public class ITestHelper {
         return rs.getResults();
     }
 
-    public Collection<Resource> getResourceByType(String feedId, String type, int expectedCount)
-            throws Throwable {
+    public Collection<Resource> getResourceByTypeAndTypeVersion(String feedId, String type, String typeVersion,
+            int expectedCount) throws Throwable {
         for (int attempt = 0; attempt < ATTEMPT_COUNT; attempt++) {
+            String typeId;
+            if (typeVersion != null && typeVersion.length() > 0) {
+                typeId = type + " " + typeVersion;
+            } else {
+                typeId = type;
+            }
             // TODO [lponce] this call is not paginating, perhaps enough for itest but it should be adapted in the future
-            String url = baseInvUri + "/resources?feedId=" + feedId + "&typeId=" + type;
+            String url = baseInvUri + "/resources?feedId=" + feedId + "&typeId=" + typeId;
             String response = getWithRetries(newAuthRequest()
                     .url(url)
                     .get()
@@ -105,6 +113,12 @@ public class ITestHelper {
             Thread.sleep(ATTEMPT_DELAY);
         }
         throw new IllegalStateException("Cannot get expected number of resources. Retries have been exceeded.");
+    }
+
+    // assumes the type is distinguished by the type version defined in the agent config
+    public Collection<Resource> getResourceByType(String feedId, String type, int expectedCount)
+            throws Throwable {
+        return getResourceByTypeAndTypeVersion(feedId, type, this.typeVersion, expectedCount);
     }
 
     public String getWithRetries(String url) throws Throwable {

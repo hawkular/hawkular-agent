@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.service;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -212,11 +213,16 @@ public abstract class AgentCoreEngine {
 
             log.infoStarting();
 
-            // determine the configuration to use
+            // Determine the configuration to use immediately.
+            // WARNING! Do not use any inventory metadata (e.g. metric types, resource types) from this
+            // configuration yet. We have not attempted to download the full configuration from the server.
+            // Until we do, we might have non-existent or out-of-date inventory metadata.
+            // But we need this configuration now for things like getting the server endpoint information
+            // so we can connect to the server in the first place (which is needed in order to download
+            // the rest of the configuration).
             if (null != newConfiguration) {
                 this.configuration = newConfiguration;
             }
-            this.configuration = loadRuntimeConfiguration(this.configuration);
 
             // if the agent has been disabled, abort startup and return immediately
             if (!this.configuration.getGlobalConfiguration().isSubsystemEnabled()) {
@@ -258,12 +264,17 @@ public abstract class AgentCoreEngine {
                 this.feedId = autoGenerateFeedId();
             }
 
+            // Before we go on, we must make sure the Hawkular Server is up and ready
+            waitForHawkularServer();
+
+            // Now attempt to download the inventory metadata configuration from the server,
+            // overlaying it over the current configuration. Once this call completes, we will
+            // have our full configuration and can use even the inventory metadata configuration.
+            downloadAndOverlayConfiguration();
+
             // build the diagnostics object that will be used to track our own performance
             final MetricRegistry metricRegistry = new MetricRegistry();
             this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
-
-            // Before we go on, we must make sure the Hawkular Server is up and ready
-            waitForHawkularServer();
 
             // try to connect to the server via command-gateway channel; keep going on error
             try {
@@ -541,6 +552,54 @@ public abstract class AgentCoreEngine {
         }
     }
 
+    private void downloadAndOverlayConfiguration() throws Exception {
+        // If we have no inventory metadata at all, we are required to download the config successfully;
+        // an exception is thrown if we cannot download and overlay the config.
+        // If we already have some inventory metadata already, then we will not abort with an exception
+        // on download/overlay failure - we'll just continue with the old inventory metadata.
+        boolean requireDownload = this.configuration.getDmrConfiguration().getTypeSets().isDisabledOrEmpty()
+                && this.configuration.getJmxConfiguration().getTypeSets().isDisabledOrEmpty();
+
+        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
+        String url = Util.getContextUrlString(
+                configuration.getStorageAdapter().getUrl(),
+                configuration.getStorageAdapter().getInventoryContext())
+                .append("get-inventory-config")
+                .append("/")
+                .append(this.configuration.getGlobalConfiguration().getTypeVersion())
+                .toString();
+        Request request = this.httpClientBuilder.buildGetRequest(url, null);
+        Response response = null;
+        Exception error = null;
+        try {
+            log.debugf("Downloading inventory configuration from server: %s", url);
+            response = httpclient.newCall(request).execute();
+            if (response.code() != 200) {
+                error = new Exception(String.format("Cannot download inventory configuration [%s]: %d/%s",
+                        this.configuration.getGlobalConfiguration().getTypeVersion(),
+                        response.code(),
+                        response.message()));
+            } else {
+                this.configuration = overlayConfiguration(response.body().byteStream());
+            }
+        } catch (Exception e) {
+            error = new Exception(String.format("Failed to download and overlay inventory configuration [%s]",
+                    this.configuration.getGlobalConfiguration().getTypeVersion()), e);
+        } finally {
+            if (response != null) {
+                response.body().close();
+            }
+        }
+
+        if (error != null) {
+            if (requireDownload) {
+                throw error;
+            } else {
+                log.errorf(error, "%s. Will continue with the previous inventory configuration.");
+            }
+        }
+    }
+
     private File downloadMetricsExporterConfigFile() throws Exception {
         MetricsExporterConfiguration meConfig = configuration.getMetricsExporterConfiguration();
         OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
@@ -555,6 +614,7 @@ public abstract class AgentCoreEngine {
         Response response = null;
         File configFileToWrite = null;
         try {
+            log.debugf("Downloading jmx exporter configuration from server: %s", url);
             response = httpclient.newCall(request).execute();
             if (response.code() != 200) {
                 log.errorf("Cannot download metrics exporter config file [%s]: %d/%s",
@@ -672,17 +732,13 @@ public abstract class AgentCoreEngine {
     protected abstract ModelControllerClientFactory buildLocalModelControllerClientFactory();
 
     /**
-     * This is called when the agent is starting up and needs to load runtime configuration
-     * based on the given static configuration.
+     * This is called when the agent is starting up has obtained a configuration file
+     * that needs to be overlaid on top of the current configuration.
      *
-     * Subclass implementations are free to tweak the given static configuration and return the true
-     * runtime configuration the agent needs to use while running. If no changes are needed, subclasses
-     * should simply return <code>config</code>.
-     *
-     * @param config the boot configuration as it is known now at startup
+     * @param newConfig the stream containing the new overlay configuration file
      * @return the new runtime configuration to be used by the running agent
      */
-    protected abstract AgentCoreEngineConfiguration loadRuntimeConfiguration(AgentCoreEngineConfiguration config);
+    protected abstract AgentCoreEngineConfiguration overlayConfiguration(InputStream newConfig);
 
     /**
      * Subclasses are free to override if there are things that need to be done while shutting down.

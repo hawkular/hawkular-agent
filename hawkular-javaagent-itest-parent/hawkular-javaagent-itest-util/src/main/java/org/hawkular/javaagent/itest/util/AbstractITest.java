@@ -117,7 +117,7 @@ public abstract class AbstractITest {
         agentJolokiaUri = "http://" + hawkularHost + ":" + hawkularHttpPort + "/jolokia-war";
 
         try {
-            AGENT_MBEAN_OBJECT_NAME = new ObjectName("org.hawkular:type=hawkular-javaagent");
+            AGENT_MBEAN_OBJECT_NAME = new ObjectName("org.hawkular.agent:type=hawkular-javaagent");
         } catch (Exception e) {
             throw new RuntimeException("Cannot build agent mbean object name", e);
         }
@@ -180,7 +180,13 @@ public abstract class AbstractITest {
 
     @BeforeMethod
     public void before() {
-        testHelper = new ITestHelper(hawkularAuthHeader, baseInvUri);
+        String typeVersion;
+        try {
+            typeVersion = getAgentConfigurationFromFile().getSubsystem().getTypeVersion();
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot run tests - can't get type version from config file");
+        }
+        testHelper = new ITestHelper(hawkularAuthHeader, baseInvUri, typeVersion);
     }
 
     @AfterMethod

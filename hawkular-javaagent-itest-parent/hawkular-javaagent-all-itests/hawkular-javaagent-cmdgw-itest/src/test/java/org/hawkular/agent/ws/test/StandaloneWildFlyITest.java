@@ -167,7 +167,8 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
 
     @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
     public void machineId() throws Throwable {
-        Collection<Resource> platforms = testHelper.getResourceByType(hawkularFeedId, "Platform_Operating System", 1);
+        Collection<Resource> platforms = testHelper.getResourceByTypeAndTypeVersion(hawkularFeedId,
+                "Platform_Operating System", null, 1);
         Assert.assertEquals(1, platforms.size());
         Resource platform = platforms.iterator().next();
         Assert.assertTrue(platform.getConfig().containsKey("Machine Id"));

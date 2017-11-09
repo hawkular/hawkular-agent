@@ -60,7 +60,7 @@ import org.hawkular.bus.common.BasicMessage;
  */
 public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean {
     private static final MsgLogger log = JavaAgentLoggers.getLogger(JavaAgentEngine.class);
-    private static final String MBEAN_OBJECT_NAME = "org.hawkular:type=hawkular-javaagent";
+    private static final String MBEAN_OBJECT_NAME = "org.hawkular.agent:type=hawkular-javaagent";
 
     private final ConfigManager configurationManager;
     private final Map<String, TrustManager[]> trustOnlyTrustManagers = new HashMap<>();
@@ -190,8 +190,15 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
     }
 
     @Override
-    protected AgentCoreEngineConfiguration loadRuntimeConfiguration(AgentCoreEngineConfiguration config) {
-        return config;
+    protected AgentCoreEngineConfiguration overlayConfiguration(InputStream newConfig) {
+        try {
+            this.configurationManager.overlayConfiguration(newConfig, false);
+            AgentCoreEngineConfiguration agentConfig;
+            agentConfig = new ConfigConverter(this.configurationManager.getConfiguration()).convert();
+            return agentConfig;
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot convert overlaid configuration - config is invalid", e);
+        }
     }
 
     @Override
