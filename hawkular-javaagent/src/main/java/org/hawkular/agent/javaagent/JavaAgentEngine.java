@@ -52,6 +52,7 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.MetricsExp
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.service.AgentCoreEngine;
 import org.hawkular.agent.monitor.service.ServiceStatus;
+import org.hawkular.agent.monitor.service.Version;
 import org.hawkular.bus.common.BasicMessage;
 
 /**
@@ -210,6 +211,11 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
     }
 
     // JMX Interface
+
+    @Override
+    public String getVersion() {
+        return Version.getVersionString();
+    }
 
     @Override
     public boolean getImmutable() {
