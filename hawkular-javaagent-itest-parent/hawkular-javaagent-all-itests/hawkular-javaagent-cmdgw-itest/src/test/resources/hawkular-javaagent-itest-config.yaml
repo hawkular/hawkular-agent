@@ -176,6 +176,7 @@ managed-servers:
     resource-type-sets:
     - Main
     - Memory Pool
+    - Platform
     - Hawkular
     - Platform
     - For Integration Test

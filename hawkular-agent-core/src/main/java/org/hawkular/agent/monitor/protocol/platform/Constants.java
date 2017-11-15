@@ -31,11 +31,10 @@ import org.hawkular.agent.monitor.inventory.Name;
  * @author John Mazzitelli
  */
 public interface Constants {
-    // this is a special resource config property on the platform OS resource itself
+    // these are special resource config properties on the platform OS resource itself
     String MACHINE_ID = "Machine Id";
-
-    // this is a special resource config property on the platform OS resource itself
     String CONTAINER_ID = "Container Id";
+    String OS_VERSION = "Version";
 
     enum PlatformResourceType {
         OPERATING_SYSTEM("Operating System"), //
@@ -50,7 +49,7 @@ public interface Constants {
         private Collection<ID> metricTypeIds;
 
         PlatformResourceType(String name) {
-            this.resourceTypeId = new ID("Platform_" + name);
+            this.resourceTypeId = new ID(name);
             this.resourceTypeName = new Name(name);
         }
 

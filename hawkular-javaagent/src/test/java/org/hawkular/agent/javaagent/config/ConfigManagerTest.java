@@ -407,6 +407,9 @@ public class ConfigManagerTest {
 
         Assert.assertEquals(false, p.getPowerSources().getEnabled());
 
+        Assert.assertEquals(null, p.getMachineId());
+        Assert.assertEquals(null, p.getContainerId());
+
         // managed servers
         LocalDMR ldmr = new LocalDMR();
         Assert.assertEquals(true, ldmr.getEnabled());

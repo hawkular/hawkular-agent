@@ -305,18 +305,18 @@ public abstract class AgentCoreEngine {
             this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
 
             // this wraps the platform resources with MBeans so their metrics can be exposed via JMX
-            this.platformMBeanGenerator = new PlatformMBeanGenerator();
+            this.platformMBeanGenerator = new PlatformMBeanGenerator(this.feedId,
+                    configuration.getPlatformConfiguration());
+            this.platformMBeanGenerator.registerAllMBeans();
 
             // build the protocol services
             ProtocolServices ps = createProtocolServicesBuilder()
                     .dmrProtocolService(this.localModelControllerClientFactory, configuration.getDmrConfiguration())
                     .jmxProtocolService(configuration.getJmxConfiguration())
-                    .platformProtocolService(configuration.getPlatformConfiguration())
                     .autoDiscoveryScanPeriodSecs(
                             configuration.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds())
                     .build();
             ps.addInventoryListener(inventoryStorageProxy);
-            ps.addInventoryListener(platformMBeanGenerator);
             if (notificationDispatcher != null) {
                 ps.addInventoryListener(notificationDispatcher);
             }
@@ -402,7 +402,6 @@ public abstract class AgentCoreEngine {
                         protocolServices.removeInventoryListener(inventoryStorageProxy);
                     }
                     if (platformMBeanGenerator != null) {
-                        protocolServices.removeInventoryListener(platformMBeanGenerator);
                         platformMBeanGenerator.unregisterAllMBeans();
                     }
                     if (notificationDispatcher != null) {
