@@ -505,7 +505,7 @@ public class FeedCommProcessor implements WebSocketListener {
 
     private class ReconnectJobThread extends Thread {
         public ReconnectJobThread() {
-            super("Hawkular WildFly Monitor Websocket Reconnect Thread");
+            super("Hawkular Agent Websocket Reconnect Thread");
             setDaemon(true);
         }
 

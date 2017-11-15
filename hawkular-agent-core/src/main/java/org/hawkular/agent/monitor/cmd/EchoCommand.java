@@ -26,7 +26,7 @@ public class EchoCommand implements Command<EchoRequest, EchoResponse> {
     @Override
     public BasicMessageWithExtraData<EchoResponse> execute(BasicMessageWithExtraData<EchoRequest> envelope,
             CommandContext context) {
-        String reply = String.format("WildFly Monitor Agent Echo: [%s]", envelope.getBasicMessage().getEchoMessage());
+        String reply = String.format("Hawkular Agent Echo: [%s]", envelope.getBasicMessage().getEchoMessage());
 
         // return the response
         EchoResponse echoResponse = new EchoResponse();
