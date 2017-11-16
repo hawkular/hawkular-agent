@@ -62,6 +62,7 @@ metric-set-dmr:
     metric-family: metric ID template here
     metric-labels:
       foo: bar
+    metric-expression: sum($metric)
   - name:      Minimal DMR Details
     path:      "/parent=*/child=*"
     attribute: some-attrib#subattrib
@@ -78,6 +79,7 @@ metric-set-jmx:
     metric-family: metric ID template here
     metric-labels:
       foo: bar
+    metric-expression: sum($metric)
   - name:        Minimal JMX Details
     object-name: domain:type=mbean
     attribute:   some-attrib#subattrib

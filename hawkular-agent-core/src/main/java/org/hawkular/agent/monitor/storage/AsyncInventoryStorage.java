@@ -208,6 +208,8 @@ public class AsyncInventoryStorage implements InventoryStorage {
             mb.labels(m.getMetricLabels());
         }
 
+        mb.expression(m.resolveExpression());
+
         m.getProperties().forEach((k, v) -> mb.property(k, v.toString()));
 
         return mb.build();
