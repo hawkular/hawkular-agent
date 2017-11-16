@@ -113,26 +113,32 @@ metric-set-dmr:
     path:       "/deployment=*/subsystem=web"
     attribute:  active-sessions
     metric-family: wildfly_deployment_active_sessions
+    metric-expression: sum($metric)
   - name: Aggregated Max Active Web Sessions
     path:       "/deployment=*/subsystem=web"
     attribute:  max-active-sessions
     metric-family: wildfly_deployment_max_active_sessions
+    metric-expression: sum($metric)
   - name: Aggregated Expired Web Sessions
     path:       "/deployment=*/subsystem=web"
     attribute:  expired-sessions
     metric-family: wildfly_deployment_expired_sessions
+    metric-expression: sum($metric)
   - name: Aggregated Rejected Web Sessions
     path:       "/deployment=*/subsystem=web"
     attribute:  rejected-sessions
     metric-family: wildfly_deployment_rejected_sessions
+    metric-expression: sum($metric)
   - name: Aggregated Servlet Request Time
     path:       "/deployment=*/subsystem=web/servlet=*"
     attribute:  processingTime
     metric-family: wildfly_servlet_total_processing_time
+    metric-expression: sum($metric)
   - name: Aggregated Servlet Request Count
     path:       "/deployment=*/subsystem=web/servlet=*"
     attribute:  requestCount
     metric-family: wildfly_servlet_request_count
+    metric-expression: sum($metric)
 
 - name: Web Subsystem Metrics
   metric-dmr:
@@ -1159,6 +1165,7 @@ metric-set-jmx:
     attribute:    CollectionTime
     metric-units: seconds
     metric-family: jvm_gc_collection_seconds_sum
+    metric-expression: sum($metric)
 
 - name: Memory Pool Metrics
   metric-jmx:

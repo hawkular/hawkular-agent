@@ -158,7 +158,8 @@ public class ConfigConverter {
                         metric.getMetricUnits(),
                         metric.getMetricType(),
                         metric.getMetricFamily(),
-                        metric.getMetricLabels());
+                        metric.getMetricLabels(),
+                        metric.getMetricExpression());
                 typeSet.type(type);
             }
             typeSets.metricTypeSet(typeSet.build());
@@ -352,7 +353,8 @@ public class ConfigConverter {
                         metric.getMetricUnits(),
                         metric.getMetricType(),
                         metric.getMetricFamily(),
-                        metric.getMetricLabels());
+                        metric.getMetricLabels(),
+                        metric.getMetricExpression());
                 typeSet.type(type);
             }
             typeSets.metricTypeSet(typeSet.build());
@@ -525,7 +527,8 @@ public class ConfigConverter {
                 MetricUnit.PERCENTAGE,
                 SupportedMetricType.GAUGE,
                 "hawkular_platform_operatingsystem_system_cpu_load",
-                Collections.singletonMap("name", "%ResourceName"));
+                Collections.singletonMap("name", "%ResourceName"),
+                null);
 
         MetricType<PlatformNodeLocation> systemLoadAverage = new MetricType<PlatformNodeLocation>(
                 PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeId(),
@@ -536,7 +539,8 @@ public class ConfigConverter {
                 MetricUnit.NONE,
                 SupportedMetricType.GAUGE,
                 "hawkular_platform_operatingsystem_system_load_average",
-                Collections.singletonMap("name", "%ResourceName"));
+                Collections.singletonMap("name", "%ResourceName"),
+                null);
 
         MetricType<PlatformNodeLocation> processCount = new MetricType<PlatformNodeLocation>(
                 PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeId(),
@@ -547,7 +551,8 @@ public class ConfigConverter {
                 MetricUnit.NONE,
                 SupportedMetricType.GAUGE,
                 "hawkular_platform_operatingsystem_process_count",
-                Collections.singletonMap("name", "%ResourceName"));
+                Collections.singletonMap("name", "%ResourceName"),
+                null);
 
         TypeSet<MetricType<PlatformNodeLocation>> osMetrics = TypeSet
                 .<MetricType<PlatformNodeLocation>> builder()
@@ -585,7 +590,8 @@ public class ConfigConverter {
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     "hawkular_platform_filestore_usable_space",
-                    Collections.singletonMap("name", "%ResourceName"));
+                    Collections.singletonMap("name", "%ResourceName"),
+                    null);
 
             MetricType<PlatformNodeLocation> totalSpace = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.FILE_STORE_TOTAL_SPACE.getMetricTypeId(),
@@ -596,7 +602,8 @@ public class ConfigConverter {
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     "hawkular_platform_filestore_total_space",
-                    Collections.singletonMap("name", "%ResourceName"));
+                    Collections.singletonMap("name", "%ResourceName"),
+                    null);
 
             TypeSet<MetricType<PlatformNodeLocation>> fileStoreMetrics = TypeSet
                     .<MetricType<PlatformNodeLocation>> builder()
@@ -641,7 +648,8 @@ public class ConfigConverter {
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     "hawkular_platform_memory_available_memory",
-                    Collections.singletonMap("name", "%ResourceName"));
+                    Collections.singletonMap("name", "%ResourceName"),
+                    null);
 
             MetricType<PlatformNodeLocation> total = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.MEMORY_TOTAL.getMetricTypeId(),
@@ -652,7 +660,8 @@ public class ConfigConverter {
                     MetricUnit.BYTES,
                     SupportedMetricType.GAUGE,
                     "hawkular_platform_memory_total_memory",
-                    Collections.singletonMap("name", "%ResourceName"));
+                    Collections.singletonMap("name", "%ResourceName"),
+                    null);
 
             TypeSet<MetricType<PlatformNodeLocation>> memoryMetrics = TypeSet
                     .<MetricType<PlatformNodeLocation>> builder()
@@ -697,7 +706,8 @@ public class ConfigConverter {
                     MetricUnit.PERCENTAGE,
                     SupportedMetricType.GAUGE,
                     "hawkular_platform_processor_cpu_usage",
-                    Collections.singletonMap("name", "%ResourceName"));
+                    Collections.singletonMap("name", "%ResourceName"),
+                    null);
 
             TypeSet<MetricType<PlatformNodeLocation>> processorMetrics = TypeSet
                     .<MetricType<PlatformNodeLocation>> builder()
@@ -742,7 +752,8 @@ public class ConfigConverter {
                     MetricUnit.PERCENTAGE,
                     SupportedMetricType.GAUGE,
                     "hawkular_platform_powersource_remaining_capacity",
-                    Collections.singletonMap("name", "%ResourceName"));
+                    Collections.singletonMap("name", "%ResourceName"),
+                    null);
 
             MetricType<PlatformNodeLocation> timeRemaining = new MetricType<PlatformNodeLocation>(
                     PlatformMetricType.POWER_SOURCE_TIME_REMAINING.getMetricTypeId(),
@@ -753,7 +764,8 @@ public class ConfigConverter {
                     MetricUnit.SECONDS,
                     SupportedMetricType.GAUGE,
                     "hawkular_platform_powersource_time_remaining",
-                    Collections.singletonMap("name", "%ResourceName"));
+                    Collections.singletonMap("name", "%ResourceName"),
+                    null);
 
             TypeSet<MetricType<PlatformNodeLocation>> powerSourceMetrics = TypeSet
                     .<MetricType<PlatformNodeLocation>> builder()

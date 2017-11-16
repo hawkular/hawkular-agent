@@ -24,8 +24,6 @@ import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointCo
 /**
  * A measurement instance that can be used to represent either numeric metric data or availability data.
  *
- * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
- *
  * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}
  * @param <T> the measurement type
  */
@@ -74,5 +72,46 @@ public final class MeasurementInstance<L, T extends MeasurementType<L>> extends 
         } else {
             this.metricLabels = new HashMap<>(metricLabels);
         }
+    }
+
+    /**
+     * Returns the actual expression that is to be used to evaluate the metric value.
+     * This takes the optional {@link MeasurementType#getMetricExpression()} and returns
+     * a non-null expression with the $metric token replaced appropriately. Note that if
+     * {@link MeasurementType#getMetricExpression()} returns null, then it will be
+     * assumed "$metric" and this method will return that expression resolved.
+     *
+     * $metric is resolved as: family{labelName1="labelValue1", ...}
+     * If this metric instance has no labels, $metric is resolved simply as the family name.
+     *
+     * @return the resolved expression used to evaluate the metric value.
+     */
+    public String resolveExpression() {
+        String expr = getType().getMetricExpression();
+        if (expr == null || expr.isEmpty()) {
+            expr = "$metric";
+        }
+        if (expr.contains("$metric")) {
+            StringBuilder metricString = new StringBuilder();
+            if (getMetricFamily() != null) {
+                metricString.append(getMetricFamily());
+            }
+            if (getMetricLabels() != null && !getMetricLabels().isEmpty()) {
+                String comma = "";
+                metricString.append("{");
+                for (Map.Entry<String, String> label : getMetricLabels().entrySet()) {
+                    metricString.append(comma)
+                            .append(label.getKey())
+                            .append("=\"")
+                            .append(label.getValue())
+                            .append("\"");
+                    comma = ",";
+                }
+                metricString.append("}");
+            }
+            expr = expr.replace("$metric", metricString.toString());
+        }
+
+        return expr;
     }
 }

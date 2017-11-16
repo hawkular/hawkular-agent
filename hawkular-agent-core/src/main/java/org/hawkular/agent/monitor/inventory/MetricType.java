@@ -36,8 +36,9 @@ public final class MetricType<L> extends MeasurementType<L> {
             MetricUnit metricUnits,
             SupportedMetricType metricType,
             String metricFamily,
-            Map<String, String> metricLabels) {
-        super(id, name, metricType, location, metricFamily, metricLabels);
+            Map<String, String> metricLabels,
+            String metricExpression) {
+        super(id, name, metricType, location, metricFamily, metricLabels, metricExpression);
         this.metricUnits = metricUnits;
     }
 
