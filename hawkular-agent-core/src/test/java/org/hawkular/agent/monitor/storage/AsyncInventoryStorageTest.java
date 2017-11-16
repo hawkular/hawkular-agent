@@ -79,6 +79,7 @@ public class AsyncInventoryStorageTest {
             MetricUnit.CELSIUS,
             SupportedMetricType.GAUGE,
             null,
+            null,
             null);
     private final ResourceType<AnyLocation> RT_1 = ResourceType.<AnyLocation> builder()
             .id(new ID("rt1"))

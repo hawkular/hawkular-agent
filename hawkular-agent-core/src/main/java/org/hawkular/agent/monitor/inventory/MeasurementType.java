@@ -32,6 +32,7 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
     private final SupportedMetricType metricType;
     private final String metricFamily;
     private final Map<String, String> metricLabels;
+    private final String metricExpression;
 
     public MeasurementType(
             ID id,
@@ -39,12 +40,14 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
             SupportedMetricType metricType,
             AttributeLocation<L> location,
             String metricFamily,
-            Map<String, String> metricLabels) {
+            Map<String, String> metricLabels,
+            String metricExpression) {
         super(id, name, location);
         this.metricType = metricType;
         this.metricFamily = metricFamily;
         this.metricLabels = (metricLabels != null) ? Collections.unmodifiableMap(metricLabels)
                 : Collections.emptyMap();
+        this.metricExpression = metricExpression;
     }
 
     public SupportedMetricType getMetricType() {
@@ -70,4 +73,19 @@ public class MeasurementType<L> extends AttributeLocationProvider<L> {
         return metricLabels;
     }
 
+    /**
+     * This is an optional metric expression that is to be used to evaluate the metric value.
+     *
+     * An expression should include the token "$metric" which is meant to be replaced with
+     * the true expression "family{labels...}" or just "family" if there are no labels associated
+     * with this metric. See {@link MeasurementInstance#resolveExpression()} for the method that
+     * can do this for you.
+     *
+     * If not specified (i.e. if null is returned), caller should assume "$metric".
+     *
+     * @return an optional metric expression that is to be used to evaluate the metric value.
+     */
+    public String getMetricExpression() {
+        return metricExpression;
+    }
 }
