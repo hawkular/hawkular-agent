@@ -74,7 +74,7 @@ public class ConfigConverterTest {
     public void testEmpty() throws Exception {
         Configuration config = loadTestConfigFile("/empty.yaml");
         AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
-        Assert.assertFalse(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
+        Assert.assertEquals("empty", agentConfig.getGlobalConfiguration().getTypeVersion());
     }
 
     @Test
@@ -152,9 +152,6 @@ public class ConfigConverterTest {
         EndpointConfiguration remoteJmx2 = agentConfig.getJmxConfiguration().getEndpoints().get("Test Remote JMX 2");
         Assert.assertEquals(true, remoteJmx2.isEnabled());
         Assert.assertEquals(0, remoteJmx2.getWaitForResources().size());
-
-        EndpointConfiguration platform = agentConfig.getPlatformConfiguration().getEndpoints().get("platform");
-        Assert.assertEquals(true, platform.isEnabled());
     }
 
     @Test

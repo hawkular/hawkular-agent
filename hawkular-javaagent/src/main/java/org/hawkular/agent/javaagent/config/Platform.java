@@ -45,7 +45,7 @@ public class Platform implements Validatable {
             this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
         }
 
-        public PlatformChild(Boolean e, Integer i, TimeUnits t) {
+        public PlatformChild(Boolean e) {
             this.enabled = new BooleanExpression(e);
         }
 
@@ -76,16 +76,16 @@ public class Platform implements Validatable {
     private StringExpression containerId;
 
     @JsonProperty("file-stores")
-    private PlatformChild fileStores = new PlatformChild(true, 5, TimeUnits.minutes);
+    private PlatformChild fileStores = new PlatformChild(true);
 
     @JsonProperty
-    private PlatformChild memory = new PlatformChild(true, 5, TimeUnits.minutes);
+    private PlatformChild memory = new PlatformChild(true);
 
     @JsonProperty
-    private PlatformChild processors = new PlatformChild(true, 5, TimeUnits.minutes);
+    private PlatformChild processors = new PlatformChild(true);
 
     @JsonProperty("power-sources")
-    private PlatformChild powerSources = new PlatformChild(false, 5, TimeUnits.minutes);
+    private PlatformChild powerSources = new PlatformChild(false);
 
     public Platform() {
     }

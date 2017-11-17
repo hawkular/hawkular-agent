@@ -22,10 +22,6 @@ import org.hawkular.agent.monitor.protocol.dmr.DMRLocationResolver;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXLocationResolver;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
-import org.hawkular.agent.monitor.protocol.platform.Constants;
-import org.hawkular.agent.monitor.protocol.platform.PlatformLocationResolver;
-import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
-import org.hawkular.agent.monitor.protocol.platform.PlatformPath;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -73,18 +69,6 @@ public class LocationResolverTest {
             Assert.fail("Single location was missing 'matchme' key - should have failed");
         } catch (ProtocolException expected) {
         }
-    }
-
-    @Test
-    public void testFindWildcardMatchPlatform() throws Exception {
-        PlatformNodeLocation multiTargetLocation = new PlatformNodeLocation(
-                PlatformPath.builder().segment(Constants.PlatformResourceType.OPERATING_SYSTEM, "linux")
-                        .any(Constants.PlatformResourceType.FILE_STORE).build());
-        PlatformNodeLocation singleLocation = new PlatformNodeLocation(
-                PlatformPath.builder().segment(Constants.PlatformResourceType.OPERATING_SYSTEM, "linux")
-                        .segment(Constants.PlatformResourceType.FILE_STORE, "foo").build());
-        PlatformLocationResolver resolver = new PlatformLocationResolver();
-        Assert.assertEquals("foo", resolver.findWildcardMatch(multiTargetLocation, singleLocation));
     }
 
 }

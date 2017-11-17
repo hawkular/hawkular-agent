@@ -19,6 +19,7 @@ package org.hawkular.agent.ws.test;
 import java.util.Collection;
 import java.util.Optional;
 
+import org.hawkular.agent.monitor.protocol.platform.Constants;
 import org.hawkular.inventory.api.model.Operation;
 import org.hawkular.inventory.api.model.Resource;
 import org.jboss.as.controller.PathAddress;
@@ -166,10 +167,12 @@ public class StandaloneWildFlyITest extends AbstractCommandITest {
     }
 
     @Test(groups = { GROUP }, dependsOnMethods = { "datasourcesAddedToInventory" })
-    public void machineId() throws Throwable {
-        Collection<Resource> platforms = testHelper.getResourceByType(hawkularFeedId, "Platform_Operating System", 1);
-        Assert.assertEquals(1, platforms.size());
+    public void platformConfig() throws Throwable {
+        Collection<Resource> platforms = testHelper.getResourceByType(hawkularFeedId, "Platform Operating System", 1);
+        Assert.assertEquals(platforms.size(), 2); // there are two because we enabled "Local JMX" and "Remote JMX" in our tests
         Resource platform = platforms.iterator().next();
-        Assert.assertTrue(platform.getConfig().containsKey("Machine Id"));
+        Assert.assertTrue(platform.getConfig().containsKey(Constants.MACHINE_ID));
+        Assert.assertTrue(platform.getConfig().containsKey(Constants.CONTAINER_ID));
+        Assert.assertTrue(platform.getConfig().containsKey(Constants.OS_VERSION));
     }
 }

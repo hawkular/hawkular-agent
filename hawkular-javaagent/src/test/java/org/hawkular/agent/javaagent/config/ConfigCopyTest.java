@@ -62,6 +62,8 @@ public class ConfigCopyTest {
                 config.getPlatform().getProcessors().getEnabled());
         Assert.assertEquals(clone.getPlatform().getPowerSources().getEnabled(),
                 config.getPlatform().getPowerSources().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getMachineId(), config.getPlatform().getMachineId());
+        Assert.assertEquals(clone.getPlatform().getContainerId(), config.getPlatform().getContainerId());
     }
 
     @Test
@@ -97,6 +99,8 @@ public class ConfigCopyTest {
                 config.getPlatform().getProcessors().getEnabled());
         Assert.assertEquals(clone.getPlatform().getPowerSources().getEnabled(),
                 config.getPlatform().getPowerSources().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getMachineId(), config.getPlatform().getMachineId());
+        Assert.assertEquals(clone.getPlatform().getContainerId(), config.getPlatform().getContainerId());
     }
 
     private Configuration loadTestConfigFile(String path) throws Exception {
