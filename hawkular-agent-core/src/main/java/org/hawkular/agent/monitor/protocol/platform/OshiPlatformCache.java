@@ -364,15 +364,16 @@ public class OshiPlatformCache {
     }
 
     /**
-     * Given a platform resource node and a metric name, this will return that metric's value,
-     * or null if there is no resource that can be identified by the node.
+     * Given a platform resource type, a name, and a metric name, this will return that metric's value,
+     * or null if there is no resource that can be identified by the name and type.
      *
-     * @param node identifies the platform resource whose metric is to be collected
+     * @param type identifies the platform resource whose metric is to be collected
+     * @param name name of the resource whose metric is to be collected
      * @param metricToCollect the metric to collect
-     * @return the value of the metric, or null if there is no resource identified by the node
+     * @return the value of the metric, or null if there is no resource identified by the name
      */
-    public Double getMetric(PlatformResourceNode node, ID metricToCollect) {
-        switch (node.getType()) {
+    public Double getMetric(PlatformResourceType type, String name, ID metricToCollect) {
+        switch (type) {
             case OPERATING_SYSTEM: {
                 return getOperatingSystemMetric(metricToCollect);
             }
@@ -380,124 +381,19 @@ public class OshiPlatformCache {
                 return getMemoryMetric(metricToCollect);
             }
             case FILE_STORE: {
-                return getFileStoreMetric(node.getId(), metricToCollect);
+                return getFileStoreMetric(name, metricToCollect);
             }
             case PROCESSOR: {
-                return getProcessorMetric(node.getId(), metricToCollect);
+                return getProcessorMetric(name, metricToCollect);
             }
             case POWER_SOURCE: {
-                return getPowerSourceMetric(node.getId(), metricToCollect);
+                return getPowerSourceMetric(name, metricToCollect);
             }
             default: {
-                throw new IllegalArgumentException("Platform resource node [" + node + "] does not have metrics");
+                throw new IllegalArgumentException(
+                        "Platform resource [" + type + "][" + name + "] does not have metrics");
             }
         }
-    }
-
-    /**
-     * Helps with discovery of platform resources by obtaining all the resources of the given path.
-     * Since we know the OSHI hierarchy is only one level deep (OS is the root parent, and all the rest
-     * are underneath (e.g. file stores, memory, processors, powersources), this method looks at the
-     * given path's last segment name to determine what it should return.
-     *
-     * @param platformPath the path of the resources to find.
-     * @return the resources found
-     */
-    public Map<PlatformPath, PlatformResourceNode> discoverResources(PlatformPath platformPath) {
-        HashMap<PlatformPath, PlatformResourceNode> results = new HashMap<>();
-
-        // we will need the os path regardless of what we do in this method, so build it now
-        OperatingSystem os = getOperatingSystem();
-        String osId = this.feedId + "_OperatingSystem";
-        PlatformPath osPath = PlatformPath.builder()
-                .segment(PlatformResourceType.OPERATING_SYSTEM, osId)
-                .build();
-
-        // The type hierarchy is fixed; it is all based on what SystemInfo provides us. So alot of our discovery
-        // is really hardwired since we already know what resources we should be expecting.
-        // We know we will get a top level operating system resource. It will always be discovered.
-        // We know all the resources remaining will have this top level operating system resource as their parent.
-        // There are no deeper level resources in the hierarchy - so if we have a null parent, we know we are to
-        // discover the top OS resource; if we have a non-null parent we know we are to discover one of the
-        // different sub-types like memory, processors, file stores, etc.
-
-        PlatformResourceType searchType = platformPath.getLastSegment().getType();
-        String searchName = platformPath.getLastSegment().getName();
-
-        if (searchType == PlatformResourceType.OPERATING_SYSTEM) {
-
-            if (PlatformPath.ANY_NAME.equals(searchName) || searchName.equals(osId)) {
-                // we are being asked to discover the top-most resource - the operating system resource
-                PlatformResourceNode resNode = new PlatformResourceNode(PlatformResourceType.OPERATING_SYSTEM, osId);
-                results.put(osPath, resNode);
-            }
-
-        } else {
-
-            // we are being asked to discover children of the top-level OS resource
-            if (searchType == PlatformResourceType.FILE_STORE) {
-
-                Map<String, OSFileStore> fileStores = getFileStores();
-                for (OSFileStore fileStore : fileStores.values()) {
-                    String id = fileStore.getName();
-                    if (PlatformPath.ANY_NAME.equals(searchName) || searchName.equals(id)) {
-                        PlatformPath resourcePath = PlatformPath.builder()
-                                .segments(osPath)
-                                .segment(PlatformResourceType.FILE_STORE, id)
-                                .build();
-                        PlatformResourceNode resNode = new PlatformResourceNode(PlatformResourceType.FILE_STORE, id);
-                        results.put(resourcePath, resNode);
-                    }
-                }
-
-            } else if (searchType == PlatformResourceType.MEMORY) {
-
-                String id = PlatformResourceType.MEMORY.getResourceTypeName().getNameString();
-                if (PlatformPath.ANY_NAME.equals(searchName) || searchName.equals(id)) {
-                    PlatformPath resourcePath = PlatformPath.builder()
-                            .segments(osPath)
-                            .segment(PlatformResourceType.MEMORY, id)
-                            .build();
-                    PlatformResourceNode resNode = new PlatformResourceNode(PlatformResourceType.MEMORY, id);
-                    results.put(resourcePath, resNode);
-                }
-
-            } else if (searchType == PlatformResourceType.PROCESSOR) {
-
-                CentralProcessor centralProcessor = getProcessor();
-                for (int i = 0; i < centralProcessor.getLogicalProcessorCount(); i++) {
-                    String id = String.valueOf(i);
-                    if (PlatformPath.ANY_NAME.equals(searchName) || searchName.equals(id)) {
-                        PlatformPath resourcePath = PlatformPath.builder()
-                                .segments(osPath)
-                                .segment(PlatformResourceType.PROCESSOR, id)
-                                .build();
-                        PlatformResourceNode resNode = new PlatformResourceNode(PlatformResourceType.PROCESSOR, id);
-                        results.put(resourcePath, resNode);
-                    }
-                }
-
-            } else if (searchType == PlatformResourceType.POWER_SOURCE) {
-
-                Map<String, PowerSource> powerSources = getPowerSources();
-                for (PowerSource powerSource : powerSources.values()) {
-                    String id = powerSource.getName();
-                    if (PlatformPath.ANY_NAME.equals(searchName) || searchName.equals(id)) {
-                        PlatformPath resourcePath = PlatformPath.builder()
-                                .segments(osPath)
-                                .segment(PlatformResourceType.POWER_SOURCE, id)
-                                .build();
-                        PlatformResourceNode resNode = new PlatformResourceNode(PlatformResourceType.POWER_SOURCE, id);
-                        results.put(resourcePath, resNode);
-                    }
-                }
-
-            } else {
-                throw new IllegalArgumentException("Invalid type - please report this: " + searchType);
-            }
-        }
-
-        return results;
     }
 
     /**

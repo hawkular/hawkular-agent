@@ -30,7 +30,6 @@ import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
-import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
 
 /**
  * This represents the monitor service extension's XML configuration in a more consumable form.
@@ -268,6 +267,62 @@ public class AgentCoreEngineConfiguration {
         }
     }
 
+    public static class PlatformConfiguration {
+
+        private final boolean enabled;
+        private final boolean memoryEnabled;
+        private final boolean fileStoresEnabled;
+        private final boolean processorsEnabled;
+        private final boolean powerSourcesEnabled;
+        private final String machineId;
+        private final String containerId;
+
+        public PlatformConfiguration(
+                boolean enabled,
+                boolean memoryEnabled,
+                boolean fileStoresEnabled,
+                boolean processorsEnabled,
+                boolean powerSourcesEnabled,
+                String machineId,
+                String containerId) {
+            this.enabled = enabled;
+            this.memoryEnabled = memoryEnabled;
+            this.fileStoresEnabled = fileStoresEnabled;
+            this.processorsEnabled = processorsEnabled;
+            this.powerSourcesEnabled = powerSourcesEnabled;
+            this.machineId = machineId;
+            this.containerId = containerId;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public boolean isMemoryEnabled() {
+            return memoryEnabled;
+        }
+
+        public boolean isFileStoresEnabled() {
+            return fileStoresEnabled;
+        }
+
+        public boolean isProcessorsEnabled() {
+            return processorsEnabled;
+        }
+
+        public boolean isPowerSourcesEnabled() {
+            return powerSourcesEnabled;
+        }
+
+        public String getMachineId() {
+            return machineId;
+        }
+
+        public String getContainerId() {
+            return containerId;
+        }
+    }
+
     public static class ProtocolConfiguration<L> {
 
         public static <L> Builder<L> builder() {
@@ -424,26 +479,37 @@ public class AgentCoreEngineConfiguration {
     private final MetricsExporterConfiguration metricsExporterConfiguration;
     private final DiagnosticsConfiguration diagnostics;
     private final StorageAdapterConfiguration storageAdapter;
+    private final PlatformConfiguration platformConfiguration;
     private final ProtocolConfiguration<DMRNodeLocation> dmrConfiguration;
     private final ProtocolConfiguration<JMXNodeLocation> jmxConfiguration;
-    private final ProtocolConfiguration<PlatformNodeLocation> platformConfiguration;
 
     public AgentCoreEngineConfiguration(
             GlobalConfiguration globalConfiguration,
             MetricsExporterConfiguration metricsExporterConfiguration,
             DiagnosticsConfiguration diagnostics,
             StorageAdapterConfiguration storageAdapter,
+            PlatformConfiguration platformConfiguration,
             ProtocolConfiguration<DMRNodeLocation> dmrConfiguration,
-            ProtocolConfiguration<JMXNodeLocation> jmxConfiguration,
-            ProtocolConfiguration<PlatformNodeLocation> platformConfiguration) {
+            ProtocolConfiguration<JMXNodeLocation> jmxConfiguration) {
         super();
         this.globalConfiguration = globalConfiguration;
         this.metricsExporterConfiguration = metricsExporterConfiguration;
         this.diagnostics = diagnostics;
         this.storageAdapter = storageAdapter;
+        this.platformConfiguration = platformConfiguration;
         this.dmrConfiguration = dmrConfiguration;
         this.jmxConfiguration = jmxConfiguration;
-        this.platformConfiguration = platformConfiguration;
+    }
+
+    public AgentCoreEngineConfiguration cloneWith(StorageAdapterConfiguration newStorageAdapter) {
+        return new AgentCoreEngineConfiguration(
+                globalConfiguration,
+                metricsExporterConfiguration,
+                diagnostics,
+                newStorageAdapter,
+                platformConfiguration,
+                dmrConfiguration,
+                jmxConfiguration);
     }
 
     public GlobalConfiguration getGlobalConfiguration() {
@@ -462,15 +528,8 @@ public class AgentCoreEngineConfiguration {
         return diagnostics;
     }
 
-    public AgentCoreEngineConfiguration cloneWith(StorageAdapterConfiguration newStorageAdapter) {
-        return new AgentCoreEngineConfiguration(
-                globalConfiguration,
-                metricsExporterConfiguration,
-                diagnostics,
-                newStorageAdapter,
-                dmrConfiguration,
-                jmxConfiguration,
-                platformConfiguration);
+    public PlatformConfiguration getPlatformConfiguration() {
+        return platformConfiguration;
     }
 
     public ProtocolConfiguration<DMRNodeLocation> getDmrConfiguration() {
@@ -479,9 +538,5 @@ public class AgentCoreEngineConfiguration {
 
     public ProtocolConfiguration<JMXNodeLocation> getJmxConfiguration() {
         return jmxConfiguration;
-    }
-
-    public ProtocolConfiguration<PlatformNodeLocation> getPlatformConfiguration() {
-        return platformConfiguration;
     }
 }

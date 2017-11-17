@@ -49,7 +49,7 @@ public class ExecuteOperationCommandITest extends AbstractCommandITest {
             }
         }
         Assert.assertNotNull(agentNode);
-        Assert.assertEquals(agentNode.get("Name").asText(), "Hawkular Java Agent");
-        Assert.assertEquals(agentNode.get("Type ID").asText(), "Hawkular Java Agent");
+        Assert.assertTrue(agentNode.get("Name").asText().startsWith("Hawkular Java Agent"));
+        Assert.assertTrue(agentNode.get("Type ID").asText().startsWith("Hawkular Java Agent"));
     }
 }

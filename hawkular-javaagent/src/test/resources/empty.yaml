@@ -18,4 +18,4 @@
 # This is an empty but valid configuration file.
 
 subsystem:
-  enabled: false
+  type-version: empty

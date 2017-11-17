@@ -16,15 +16,20 @@
  */
 package org.hawkular.agent.javaagent.config;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.hawkular.agent.monitor.inventory.SupportedMetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
+import org.jboss.util.file.Files;
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ConfigManagerTest {
 
@@ -156,12 +161,15 @@ public class ConfigManagerTest {
     }
 
     @Test
-    public void testFullConfigDmr() throws Exception {
+    public void testFullConfigDmrFromFile() throws Exception {
         File file = loadTestConfigFile("/test-config.yaml");
         ConfigManager configManager = new ConfigManager(file);
         Configuration config = configManager.getConfiguration(false);
         Assert.assertTrue(configManager.hasConfiguration());
+        testFullConfigDmr(config);
+    }
 
+    private void testFullConfigDmr(Configuration config) throws Exception {
         Assert.assertEquals(2, config.getDmrMetricSets().length);
         Assert.assertEquals(2, config.getDmrResourceTypeSets().length);
 
@@ -233,12 +241,15 @@ public class ConfigManagerTest {
     }
 
     @Test
-    public void testFullConfigJmx() throws Exception {
+    public void testFullConfigJmxFromFile() throws Exception {
         File file = loadTestConfigFile("/test-config.yaml");
         ConfigManager configManager = new ConfigManager(file);
         Configuration config = configManager.getConfiguration(false);
         Assert.assertTrue(configManager.hasConfiguration());
+        testFullConfigJmx(config);
+    }
 
+    private void testFullConfigJmx(Configuration config) throws Exception {
         Assert.assertEquals(2, config.getJmxMetricSets().length);
         Assert.assertEquals(2, config.getJmxResourceTypeSets().length);
 
@@ -310,6 +321,66 @@ public class ConfigManagerTest {
     }
 
     @Test
+    public void testFullConfigFromOverlay() throws Exception {
+        // get a full configuration object - we'll use it as an overlay
+        File file = loadTestConfigFile("/test-config.yaml");
+        Configuration fullConfig = new ConfigManager(file).getConfiguration(false);
+
+        // overwrite the config manager with all inventory metadata emptied out
+        Configuration emptyConfig = new Configuration();
+        emptyConfig.setSubsystem(fullConfig.getSubsystem());
+        emptyConfig.setManagedServers(fullConfig.getManagedServers());
+        ConfigManager configManager = new ConfigManager(file);
+        configManager.updateConfiguration(emptyConfig, true); // back it up so we can restore it in finally block
+        try {
+            Assert.assertNull(configManager.getConfiguration().getDmrMetricSets());
+            Assert.assertNull(configManager.getConfiguration().getDmrResourceTypeSets());
+            Assert.assertNull(configManager.getConfiguration().getJmxMetricSets());
+            Assert.assertNull(configManager.getConfiguration().getJmxResourceTypeSets());
+
+            // now overlay the empty config with the full config and test that it has everything expected
+            InputStream stream = new ByteArrayInputStream(new ObjectMapper().writeValueAsBytes(fullConfig));
+            configManager.overlayConfiguration(stream, false);
+            testFullConfigDmr(configManager.getConfiguration());
+            testFullConfigJmx(configManager.getConfiguration());
+        } finally {
+            // put the test file back the way it was so other tests can work with it
+            Files.copy(new File(file.getAbsolutePath() + ".bak"), file);
+        }
+    }
+
+    @Test
+    public void testConfigAppendFromOverlay() throws Exception {
+        // this tests that existing types remain - overlay just gets added to them
+
+        File file1 = loadTestConfigFile("/test-overlay1.yaml");
+        ConfigManager configManager = new ConfigManager(file1);
+        Configuration config1 = configManager.getConfiguration(false);
+
+        // overwrite the config manager with all inventory metadata emptied out
+        try {
+            Assert.assertEquals(1, config1.getDmrMetricSets().length);
+            Assert.assertEquals(1, config1.getDmrResourceTypeSets().length);
+            Assert.assertEquals(1, config1.getJmxMetricSets().length);
+            Assert.assertEquals(1, config1.getJmxResourceTypeSets().length);
+
+            // now overlay a new config over the original config and test that it has everything expected
+            File file2 = loadTestConfigFile("/test-overlay2.yaml");
+            Configuration config2 = new ConfigManager(file2).getConfiguration(true);
+            InputStream stream = new ByteArrayInputStream(new ObjectMapper().writeValueAsBytes(config2));
+            configManager.overlayConfiguration(stream, true);
+            Configuration newConfig = configManager.getConfiguration();
+            Assert.assertEquals(2, newConfig.getDmrMetricSets().length);
+            Assert.assertEquals(2, newConfig.getDmrResourceTypeSets().length);
+            Assert.assertEquals(2, newConfig.getJmxMetricSets().length);
+            Assert.assertEquals(2, newConfig.getJmxResourceTypeSets().length);
+        } finally {
+            // put the test file back the way it was so other tests can work with it
+            Files.copy(new File(file1.getAbsolutePath() + ".bak"), file1);
+        }
+    }
+
+    @Test
     public void testDefaults() {
         // subsystem
         Subsystem s = new Subsystem();
@@ -335,6 +406,9 @@ public class ConfigManagerTest {
         Assert.assertEquals(true, p.getProcessors().getEnabled());
 
         Assert.assertEquals(false, p.getPowerSources().getEnabled());
+
+        Assert.assertEquals(null, p.getMachineId());
+        Assert.assertEquals(null, p.getContainerId());
 
         // managed servers
         LocalDMR ldmr = new LocalDMR();

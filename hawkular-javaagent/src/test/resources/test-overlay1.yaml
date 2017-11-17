@@ -1,0 +1,71 @@
+#
+# Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
+# and other contributors as indicated by the @author tags.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+subsystem:
+  enabled: true
+
+# DMR
+
+metric-set-dmr:
+- name: original metric set dmr
+  metric-dmr:
+  - name: original metric dmr
+    attribute: attrib
+    metric-family: original_metric_dmr
+
+resource-type-set-dmr:
+- name: original resource type set dmr
+  resource-type-dmr:
+  - name: original resource type dmr
+    path: /orig=orig
+    resource-name-template: original dmr
+    metric-sets:
+    - original metric set dmr
+
+# JMX
+
+metric-set-jmx:
+- name: original metric set jmx
+  metric-jmx:
+  - name: original metric jmx
+    attribute: attrib
+    metric-family: original_metric_jmx
+
+resource-type-set-jmx:
+- name: original resource type set jmx
+  resource-type-jmx:
+  - name: original resource type jmx
+    object-name: domain:metric=orig
+    resource-name-template: original jmx
+    metric-sets:
+    - original metric set jmx
+
+# MANAGED SERVERS
+
+managed-servers:
+  local-dmr:
+    name: Test Local DMR
+    enabled: true
+    resource-type-sets:
+    - original metric set dmr
+
+  local-jmx:
+    name: Test Local JMX
+    enabled: true
+    resource-type-sets:
+    - original metric set jmx
