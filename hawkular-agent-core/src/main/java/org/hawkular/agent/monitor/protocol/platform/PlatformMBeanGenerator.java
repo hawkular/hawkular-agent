@@ -169,14 +169,18 @@ public class PlatformMBeanGenerator {
 
         // there is only one operating system mbean
         objectName = getOperatingSystemObjectName();
-        mbean = new PlatformMBean(buildOperatingSystemMBeanInfo(), PlatformResourceType.OPERATING_SYSTEM, "os");
-        mbeans.put(objectName, mbean);
+        if (objectName != null) {
+            mbean = new PlatformMBean(buildOperatingSystemMBeanInfo(), PlatformResourceType.OPERATING_SYSTEM, "os");
+            mbeans.put(objectName, mbean);
+        }
 
         // there is only one memory mbean
         if (platformConfiguration.isMemoryEnabled()) {
             objectName = getMemoryObjectName();
-            mbean = new PlatformMBean(buildMemoryMBeanInfo(), PlatformResourceType.MEMORY, "memory");
-            mbeans.put(objectName, mbean);
+            if (objectName != null) {
+                mbean = new PlatformMBean(buildMemoryMBeanInfo(), PlatformResourceType.MEMORY, "memory");
+                mbeans.put(objectName, mbean);
+            }
         } else {
             log.debugf("Platform memory monitoring is disabled; no memory MBeans will be registered");
         }
@@ -187,8 +191,10 @@ public class PlatformMBeanGenerator {
             if (fileStores != null) {
                 for (String name : fileStores.keySet()) {
                     objectName = getFileStoreObjectName(name);
-                    mbean = new PlatformMBean(buildFileStoreMBeanInfo(), PlatformResourceType.FILE_STORE, name);
-                    mbeans.put(objectName, mbean);
+                    if (objectName != null) {
+                        mbean = new PlatformMBean(buildFileStoreMBeanInfo(), PlatformResourceType.FILE_STORE, name);
+                        mbeans.put(objectName, mbean);
+                    }
                 }
             }
         } else {
@@ -200,9 +206,11 @@ public class PlatformMBeanGenerator {
             int processorCount = platformCache.getProcessor().getLogicalProcessorCount();
             for (int processor = 0; processor < processorCount; processor++) {
                 objectName = getProcessorObjectName(processor);
-                mbean = new PlatformMBean(buildProcessorMBeanInfo(), PlatformResourceType.PROCESSOR,
-                        String.valueOf(processor));
-                mbeans.put(objectName, mbean);
+                if (objectName != null) {
+                    mbean = new PlatformMBean(buildProcessorMBeanInfo(), PlatformResourceType.PROCESSOR,
+                            String.valueOf(processor));
+                    mbeans.put(objectName, mbean);
+                }
             }
         } else {
             log.debugf("Platform processor monitoring is disabled; no processor MBeans will be registered");
@@ -214,8 +222,11 @@ public class PlatformMBeanGenerator {
             if (powerSources != null) {
                 for (String name : powerSources.keySet()) {
                     objectName = getPowerSourceObjectName(name);
-                    mbean = new PlatformMBean(buildPowerSourceMBeanInfo(), PlatformResourceType.POWER_SOURCE, name);
-                    mbeans.put(objectName, mbean);
+                    if (objectName != null) {
+                        mbean = new PlatformMBean(buildPowerSourceMBeanInfo(), PlatformResourceType.POWER_SOURCE,
+                                name);
+                        mbeans.put(objectName, mbean);
+                    }
                 }
             }
         } else {
@@ -225,22 +236,24 @@ public class PlatformMBeanGenerator {
         // register all the mbeans
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         for (Map.Entry<ObjectName, PlatformMBean> entry : mbeans.entrySet()) {
-            if (!mbs.isRegistered(entry.getKey())) {
+            ObjectName on = entry.getKey();
+            if (!mbs.isRegistered(on)) {
                 try {
-                    mbs.registerMBean(entry.getValue(), entry.getKey());
-                    registeredMBeans.add(entry.getKey());
-                    log.debugf("Registered platform MBean [%s]", entry.getKey());
+                    mbs.registerMBean(entry.getValue(), on);
+                    registeredMBeans.add(on);
+                    log.debugf("Registered platform MBean [%s]", on);
                 } catch (Exception e) {
-                    log.errorf(e, "Cannot register platform MBean [%s]", entry.getKey());
+                    log.errorf(e, "Cannot register platform MBean [%s]", on);
                 }
             }
         }
     }
 
     public void unregisterAllMBeans() {
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         for (ObjectName doomed : registeredMBeans) {
             try {
-                ManagementFactory.getPlatformMBeanServer().unregisterMBean(doomed);
+                mbs.unregisterMBean(doomed);
             } catch (Exception e) {
                 log.errorf(e, "Cannot unregister MBean: " + doomed);
             }
@@ -268,21 +281,22 @@ public class PlatformMBeanGenerator {
     }
 
     private String getSubtypeObjectNameString(PlatformResourceType type) {
+        String baseObjectName = "org.hawkular.agent:type=platform,subtype=";
         switch (type) {
             case OPERATING_SYSTEM: {
-                return "org.hawkular.agent:type=platform,subtype=operatingsystem";
+                return baseObjectName + "operatingsystem";
             }
             case FILE_STORE: {
-                return "org.hawkular.agent:type=platform,subtype=filestore";
+                return baseObjectName + "filestore";
             }
             case MEMORY: {
-                return "org.hawkular.agent:type=platform,subtype=memory";
+                return baseObjectName + "memory";
             }
             case PROCESSOR: {
-                return "org.hawkular.agent:type=platform,subtype=processor";
+                return baseObjectName + "processor";
             }
             case POWER_SOURCE: {
-                return "org.hawkular.agent:type=platform,subtype=powersource";
+                return baseObjectName + "powersource";
             }
             default: {
                 throw new IllegalArgumentException("Bad type - please report this bug: " + type);
@@ -293,12 +307,13 @@ public class PlatformMBeanGenerator {
     private ObjectName createObjectName(PlatformResourceType type, String name) {
         StringBuilder objectNameString = new StringBuilder(getSubtypeObjectNameString(type));
         if (name != null) {
-            objectNameString.append(",name=").append(name);
+            objectNameString.append(",name=").append(name.replaceAll("[:,?*]", "_")); // avoid invalid JMX ObjectName
         }
         try {
             return ObjectName.getInstance(objectNameString.toString());
         } catch (Exception e) {
-            log.debugf(e, "Cannot create object name [%s] for type [%s] and name [%s]", objectNameString, type, name);
+            log.errorf("Invalid object name [%s] for platform MBean [%s]/[%s]; will not be able to register it: %s",
+                    objectNameString, type, name, e.toString());
             return null;
         }
     }
