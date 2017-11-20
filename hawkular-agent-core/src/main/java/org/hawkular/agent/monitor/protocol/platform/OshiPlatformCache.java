@@ -128,7 +128,7 @@ public class OshiPlatformCache {
         try {
             if (!sysInfoCache.containsKey(PlatformResourceType.FILE_STORE)) {
                 HashMap<String, OSFileStore> cache = new HashMap<>();
-                OSFileStore[] arr = sysInfo.getHardware().getFileStores();
+                OSFileStore[] arr = sysInfo.getOperatingSystem().getFileSystem().getFileStores();
                 if (arr != null) {
                     for (OSFileStore item : arr) {
                         cache.put(item.getName(), item);
@@ -349,15 +349,12 @@ public class OshiPlatformCache {
      * @return the value of the metric
      */
     public Double getOperatingSystemMetric(ID metricId) {
-
-        CentralProcessor cp = getProcessor();
-
         if (PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeId().equals(metricId)) {
-            return Double.valueOf(cp.getSystemCpuLoad());
+            return Double.valueOf(getProcessor().getSystemCpuLoad());
         } else if (PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeId().equals(metricId)) {
-            return Double.valueOf(cp.getSystemLoadAverage());
+            return Double.valueOf(getProcessor().getSystemLoadAverage());
         } else if (PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeId().equals(metricId)) {
-            return Double.valueOf(cp.getProcessCount());
+            return Double.valueOf(getOperatingSystem().getProcessCount());
         } else {
             throw new UnsupportedOperationException("Invalid OS metric to collect: " + metricId);
         }

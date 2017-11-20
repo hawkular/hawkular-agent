@@ -56,7 +56,7 @@
 
   <properties>
     <version.commons.io>2.4</version.commons.io>
-    <version.com.github.dblock>2.6.2</version.com.github.dblock>
+    <version.com.github.oshi>3.4.4</version.com.github.oshi>
     <version.com.samskivert.jmustache>1.11</version.com.samskivert.jmustache>
     <version.io.dropwizard.metrics>3.1.2</version.io.dropwizard.metrics>
     <version.io.prometheus.jmx>0.1.0</version.io.prometheus.jmx>
@@ -81,9 +81,9 @@
       <!-- - A element's inner order is <groupId>, <artifactId>, [<type>,] [<classifier>,] <version> -->
 
       <dependency>
-        <groupId>com.github.dblock</groupId>
+        <groupId>com.github.oshi</groupId>
         <artifactId>oshi-core</artifactId>
-        <version>${version.com.github.dblock}</version>
+        <version>${version.com.github.oshi}</version>
       </dependency>
 
       <dependency>
