@@ -47,19 +47,6 @@ managed-servers:
   local-dmr:
     name: Local DMR
     enabled: true
-    resource-type-sets:
-    - Standalone Environment
-    - Undertow Subsystem
-    - Deployment
-    - Web Component
-    - EJB
-    - Datasource
-    - XA Datasource
-    - JDBC Driver
-    - Transaction Manager
-    - Messaging
-    - Socket Binding Group
-    - Clustering
     wait-for:
     - name: /
     metric-labels:
@@ -68,11 +55,6 @@ managed-servers:
   local-jmx:
     name: Local JMX
     enabled: true
-    resource-type-sets:
-    - Main
-    - Memory Pool
-    - Platform
-    - Hawkular
     wait-for:
     - name: java.lang:type=Runtime
     metric-labels:
@@ -85,33 +67,8 @@ managed-servers:
     port: 9990
     username: adminUser
     password: adminPass
-    resource-type-sets:
-    - Standalone Environment
-    - Undertow Subsystem
-    - Deployment
-    - Web Component
-    - EJB
-    - Datasource
-    - XA Datasource
-    - JDBC Driver
-    - Transaction Manager
-    - Messaging
-    - Socket Binding Group
-    - Clustering
     wait-for:
     - name: /
-    metric-labels:
-      feed_id: "%FeedId"
-
-  remote-jmx:
-  - name: Remote Jolokia Server
-    enabled: false
-    url: http://localhost:8080/jolokia-war
-    resource-type-sets:
-    - Main
-    - Memory Pool
-    wait-for:
-    - name: java.lang:type=Runtime
     metric-labels:
       feed_id: "%FeedId"
 
