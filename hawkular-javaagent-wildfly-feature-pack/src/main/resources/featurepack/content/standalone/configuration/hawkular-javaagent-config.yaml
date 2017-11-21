@@ -31,15 +31,15 @@ metrics-exporter:
   config-file: WF10
 
 diagnostics:
-  enabled:    true
-  interval:   1
+  enabled: true
+  interval: 1
   time-units: minutes
 
 storage-adapter:
-  feed-id:   "${hawkular.rest.feedId:autogenerate}"
-  url:       "${hawkular.rest.url:http://hawkular-server:8080}"
-  username:  "${env.HAWKULAR_USER}"
-  password:  "${env.HAWKULAR_PASSWORD}"
+  feed-id: "${hawkular.rest.feedId:autogenerate}"
+  url: "${hawkular.rest.url:http://hawkular-server:8080}"
+  username: "${env.HAWKULAR_USER}"
+  password: "${env.HAWKULAR_PASSWORD}"
 
 # MANAGED SERVERS
 
@@ -116,5 +116,5 @@ managed-servers:
       feed_id: "%FeedId"
 
 platform:
-  enabled:      true
-  #machine-id:   my-machine-id-here
+  enabled: true
+  #machine-id: my-machine-id-here
