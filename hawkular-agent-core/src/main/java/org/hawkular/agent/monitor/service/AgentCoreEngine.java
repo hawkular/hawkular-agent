@@ -263,6 +263,7 @@ public abstract class AgentCoreEngine {
             } else {
                 this.feedId = autoGenerateFeedId();
             }
+            log.infoAgentFeedId(this.feedId);
 
             // Before we go on, we must make sure the Hawkular Server is up and ready
             waitForHawkularServer();
