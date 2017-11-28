@@ -208,7 +208,32 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
 
     @Override
     protected String autoGenerateFeedId() throws Exception {
-        return InetAddress.getLocalHost().getCanonicalHostName();
+        // Try to figure out a good feed ID to use.
+        // If we are attached to WildFly/EAP, certain system properties may be set to uniquely
+        // identify the server - we'll use that identification for our feed ID.
+        // Otherwise, try to figure out a feed ID using the hostname.
+        String feedId;
+
+        feedId = System.getProperty("jboss.server.management.uuid"); // all newer WildFly servers have this
+        if (feedId == null) {
+            feedId = System.getProperty("jboss.host.name"); // domain mode
+            if (feedId == null) {
+                feedId = System.getProperty("jboss.node.name"); // standalone mode
+                if (feedId == null) {
+                    // Does not look like we are in WildFly, use hostname. Note that we check the same things
+                    // in the same order as: https://docs.jboss.org/author/display/WFLY10/Domain+Setup
+                    feedId = System.getenv("HOSTNAME");
+                    if (feedId == null) {
+                        feedId = System.getenv("COMPUTERNAME");
+                        if (feedId == null) {
+                            feedId = InetAddress.getLocalHost().getCanonicalHostName();
+                        }
+                    }
+                }
+            }
+        }
+
+        return feedId;
     }
 
     @Override

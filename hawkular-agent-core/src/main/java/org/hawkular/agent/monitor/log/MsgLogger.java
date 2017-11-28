@@ -49,6 +49,10 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10002, value = "Hawkular Agent is disabled - it will not be started")
     void infoAgentDisabled();
 
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10003, value = "Hawkular Agent Feed ID = [%s]")
+    void infoAgentFeedId(String feedId);
+
     @LogMessage(level = Level.WARN)
     @Message(id = 10016, value = "The resource type [%s] wants to use an unknown metric set [%s]")
     void warnMetricSetDoesNotExist(String resourceTypeName, String metricSetName);
