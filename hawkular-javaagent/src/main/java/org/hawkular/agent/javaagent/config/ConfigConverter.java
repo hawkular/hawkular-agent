@@ -167,7 +167,15 @@ public class ConfigConverter {
             typeSets.metricTypeSet(typeSet.build());
         }
 
+        // We will need to build this in case a managed server does not declare a list of resource type sets.
+        // In that case, the default is for the managed server to use all enabled resource type sets.
+        List<String> enabledResourceTypeSets = new ArrayList<>();
+
         for (DMRResourceTypeSet rtSet : config.getDmrResourceTypeSets()) {
+            if (rtSet.getEnabled() != Boolean.FALSE) {
+                enabledResourceTypeSets.add(rtSet.getName());
+            }
+
             TypeSetBuilder<ResourceType<DMRNodeLocation>> typeSet = TypeSet.<ResourceType<DMRNodeLocation>> builder();
             typeSet.name(new Name(rtSet.getName()));
             typeSet.enabled(rtSet.getEnabled());
@@ -294,10 +302,14 @@ public class ConfigConverter {
 
             connectionData = new ConnectionData(localProtocol, localHost, localPort + localPortOffset, null, null);
 
+            String[] resourceTypeSets = config.getManagedServers().getLocalDmr().getResourceTypeSets();
+            if (resourceTypeSets == null || resourceTypeSets.length == 0) {
+                resourceTypeSets = enabledResourceTypeSets.toArray(new String[enabledResourceTypeSets.size()]);
+            }
             EndpointConfiguration localDmrEndpointConfig = new EndpointConfiguration(
                     config.getManagedServers().getLocalDmr().getName(),
                     config.getManagedServers().getLocalDmr().getEnabled(),
-                    getNamesFromStrings(config.getManagedServers().getLocalDmr().getResourceTypeSets()),
+                    getNamesFromStrings(resourceTypeSets),
                     connectionData,
                     null,
                     config.getManagedServers().getLocalDmr().getMetricLabels(),
@@ -319,10 +331,15 @@ public class ConfigConverter {
                         remoteDmr.getUsername(),
                         remoteDmr.getPassword());
 
+                String[] resourceTypeSets = remoteDmr.getResourceTypeSets();
+                if (resourceTypeSets == null || resourceTypeSets.length == 0) {
+                    resourceTypeSets = enabledResourceTypeSets.toArray(new String[enabledResourceTypeSets.size()]);
+                }
+
                 EndpointConfiguration remoteDmrEndpointConfig = new EndpointConfiguration(
                         remoteDmr.getName(),
                         remoteDmr.getEnabled(),
-                        getNamesFromStrings(remoteDmr.getResourceTypeSets()),
+                        getNamesFromStrings(resourceTypeSets),
                         connectionData,
                         remoteDmr.getSecurityRealmName(),
                         remoteDmr.getMetricLabels(),
@@ -362,7 +379,15 @@ public class ConfigConverter {
             typeSets.metricTypeSet(typeSet.build());
         }
 
+        // We will need to build this in case a managed server does not declare a list of resource type sets.
+        // In that case, the default is for the managed server to use all enabled resource type sets.
+        List<String> enabledResourceTypeSets = new ArrayList<>();
+
         for (JMXResourceTypeSet rtSet : config.getJmxResourceTypeSets()) {
+            if (rtSet.getEnabled() != Boolean.FALSE) {
+                enabledResourceTypeSets.add(rtSet.getName());
+            }
+
             TypeSetBuilder<ResourceType<JMXNodeLocation>> typeSet = TypeSet.<ResourceType<JMXNodeLocation>> builder();
             typeSet.name(new Name(rtSet.getName()));
             typeSet.enabled(rtSet.getEnabled());
@@ -435,10 +460,15 @@ public class ConfigConverter {
         Map<String, EndpointConfiguration> managedServers = new HashMap<>();
 
         if (config.getManagedServers().getLocalJmx() != null) {
+            String[] resourceTypeSets = config.getManagedServers().getLocalJmx().getResourceTypeSets();
+            if (resourceTypeSets == null || resourceTypeSets.length == 0) {
+                resourceTypeSets = enabledResourceTypeSets.toArray(new String[enabledResourceTypeSets.size()]);
+            }
+
             EndpointConfiguration localJmx = new EndpointConfiguration(
                     config.getManagedServers().getLocalJmx().getName(),
                     config.getManagedServers().getLocalJmx().getEnabled(),
-                    getNamesFromStrings(config.getManagedServers().getLocalJmx().getResourceTypeSets()),
+                    getNamesFromStrings(resourceTypeSets),
                     null,
                     null,
                     config.getManagedServers().getLocalJmx().getMetricLabels(),
@@ -462,10 +492,15 @@ public class ConfigConverter {
                         remoteJmx.getUsername(),
                         remoteJmx.getPassword());
 
+                String[] resourceTypeSets = remoteJmx.getResourceTypeSets();
+                if (resourceTypeSets == null || resourceTypeSets.length == 0) {
+                    resourceTypeSets = enabledResourceTypeSets.toArray(new String[enabledResourceTypeSets.size()]);
+                }
+
                 EndpointConfiguration remoteJmxEndpointConfig = new EndpointConfiguration(
                         remoteJmx.getName(),
                         remoteJmx.getEnabled(),
-                        getNamesFromStrings(remoteJmx.getResourceTypeSets()),
+                        getNamesFromStrings(resourceTypeSets),
                         connectionData,
                         remoteJmx.getSecurityRealmName(),
                         remoteJmx.getMetricLabels(),

@@ -51,8 +51,7 @@ public class ConfigCopyTest {
                 config.getManagedServers().getLocalJmx().getName());
         Assert.assertEquals(clone.getManagedServers().getRemoteDmrs()[0].getName(),
                 config.getManagedServers().getRemoteDmrs()[0].getName());
-        Assert.assertEquals(clone.getManagedServers().getRemoteJmxs()[0].getName(),
-                config.getManagedServers().getRemoteJmxs()[0].getName());
+        Assert.assertNull(clone.getManagedServers().getRemoteJmxs());
         Assert.assertEquals(clone.getPlatform().getEnabled(), config.getPlatform().getEnabled());
         Assert.assertEquals(clone.getPlatform().getFileStores().getEnabled(),
                 config.getPlatform().getFileStores().getEnabled());

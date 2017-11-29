@@ -46,20 +46,7 @@ storage-adapter:
 managed-servers:
   local-dmr:
     name: Local DMR
-    enabled: false
-    resource-type-sets:
-    - Standalone Environment
-    - Web Subsystem
-    - Deployment
-    - Web Component
-    - EJB
-    - Datasource
-    - XA Datasource
-    - JDBC Driver
-    - Transaction Manager
-    - Messaging
-    - Socket Binding Group
-    - Clustering
+    enabled: true
     wait-for:
     - name: /
     metric-labels:
@@ -68,49 +55,6 @@ managed-servers:
   local-jmx:
     name: Local JMX
     enabled: true
-    resource-type-sets:
-    - Main
-    - Memory Pool
-    - Platform
-    - Hawkular
-    wait-for:
-    - name: java.lang:type=Runtime
-    metric-labels:
-      feed_id: "%FeedId"
-
-  remote-dmr:
-  - name: Remote DMR EAP6
-    enabled: true
-    protocol: remote
-    host: 127.0.0.1
-    port: 9999
-    username: adminUser
-    password: adminPass
-    resource-type-sets:
-    - Standalone Environment
-    - Web Subsystem
-    - Deployment
-    - Web Component
-    - EJB
-    - Datasource
-    - XA Datasource
-    - JDBC Driver
-    - Transaction Manager
-    - Messaging
-    - Socket Binding Group
-    - Clustering
-    wait-for:
-    - name: /
-    metric-labels:
-      feed_id: "%FeedId"
-
-  remote-jmx:
-  - name: Remote Jolokia Server
-    enabled: false
-    url: http://localhost:8080/jolokia-war
-    resource-type-sets:
-    - Main
-    - Memory Pool
     wait-for:
     - name: java.lang:type=Runtime
     metric-labels:

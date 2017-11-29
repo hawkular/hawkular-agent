@@ -39,7 +39,7 @@ main() {
     exit
   fi
   if [[ "${HAWKULAR_AGENT_MODE}" == "domain" ]]; then
-    sed -i "s|- Standalone Environment|- Domain Environment|g" /opt/hawkular/configuration/hawkular-javaagent-config.yaml
+    sed -i "s|WF10|WF10-DOMAIN|g" /opt/hawkular/configuration/hawkular-javaagent-config.yaml
   fi
   import_hawkular_services_public_key
   run_hawkular_agent "$@"
