@@ -20,6 +20,16 @@ subsystem:
   enabled:                         true
   auto-discovery-scan-period-secs: 600
 
+metrics-exporter:
+  enabled: false
+  host: metrics-exporter-host
+  port: 12345
+  config-dir: /metrics/exporter/config/dir
+  config-file: metrics-exporter-config-file
+  proxy:
+    mode: master
+    data-dir: /where/proxy/files/go
+
 security-realm:
 - name: h-server-security-realm
   keystore-path:           /my/keystore/path

@@ -52,17 +52,29 @@ public class GenerateFeedIdTest {
 
         // If one of these sysprops is set, it will be used for feed ID. The order of precedence is:
         // jboss.server.management.uuid
-        // jboss.host.name
         // jboss.node.name
+        // jboss.host.name
+        // jboss.server.name
+        // jboss.qualified.host.name
         String expectedFeedId;
 
-        expectedFeedId = "feed-jboss-node-name";
-        System.setProperty("jboss.node.name", expectedFeedId);
+        expectedFeedId = "feed-jboss-qhost-name";
+        System.setProperty("jboss.qualified.host.name", expectedFeedId);
+        feedId = agent.autoGenerateFeedId();
+        Assert.assertEquals(expectedFeedId, feedId);
+
+        expectedFeedId = "feed-jboss-server-name";
+        System.setProperty("jboss.server.name", expectedFeedId);
         feedId = agent.autoGenerateFeedId();
         Assert.assertEquals(expectedFeedId, feedId);
 
         expectedFeedId = "feed-jboss-host-name";
         System.setProperty("jboss.host.name", expectedFeedId);
+        feedId = agent.autoGenerateFeedId();
+        Assert.assertEquals(expectedFeedId, feedId);
+
+        expectedFeedId = "feed-jboss-node-name";
+        System.setProperty("jboss.node.name", expectedFeedId);
         feedId = agent.autoGenerateFeedId();
         Assert.assertEquals(expectedFeedId, feedId);
 

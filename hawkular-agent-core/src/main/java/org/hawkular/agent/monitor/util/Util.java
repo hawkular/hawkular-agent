@@ -32,6 +32,7 @@ import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.util.Base64;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -386,5 +387,64 @@ public class Util {
         }
 
         return null;
+    }
+
+    /**
+     * This takes an expression of the form "<property-name>|<regex-with-groups>|<comma-separated-list-of-names>".
+     * This method will look at the system property with the given property name and parse it with the given regex.
+     * The regex should have groups defined: each group value that matches is assigned a name found in the
+     * comma-separated list of names in the order the name is found. The resulting name/value pairs are returned
+     * in the given Properties object.
+     *
+     * For example (and this is the typical use-case for this method), if the expression is:
+     *
+     * jboss.node.name|([^:]+)[:]?(.*)?|domain_host,domain_server
+     *
+     * This method will look for a system property called "jboss.node.name", parse it with the
+     * regex "([^:]+)[:]?(.*)?" (which is basically either a one-part name or a two-part name separated
+     * with a : character) and will return a Properties object that has two properties in it - one named
+     * "domain_host" and one named "domain_server" where the "domain_host" property value is the value of what
+     * matched group #1 and "domain_server" of what matched group #2. If it was a one-part value (there
+     * was no : in the value) then "domain_host" will be set and "domain_server" will not be since
+     * group #1 will match but there is no non-empty group #2 value.
+     *
+     * @param expression describes what to return - see description for details. If this is null or empty string
+     *                   an empty properties object is returned.
+     *
+     * @return name/value pairs as extracted from the property using the regex in the expression.
+     */
+    public static Properties extractPropertiesFromExpression(String expression) {
+        Properties props = new Properties();
+
+        if (expression == null || expression.isEmpty()) {
+            return props;
+        }
+
+        String[] expressionArr = expression.split("\\|");
+        if (expressionArr.length != 3) {
+            throw new IllegalArgumentException("Bad expression: " + expression);
+        }
+
+        String propertyName = expressionArr[0];
+        Pattern regex = Pattern.compile(expressionArr[1]);
+        String[] labelNames = expressionArr[2].split(",");
+
+        if (labelNames.length > 0) {
+            String propertyValue = System.getProperty(propertyName, "");
+            Matcher matcher = regex.matcher(propertyValue);
+            if (matcher.matches()) {
+                if (matcher.groupCount() == 0) {
+                    props.put(labelNames[0], matcher.group(0)); // put the entire match in the first label
+                } else {
+                    for (int g = 1, l = 0; g <= matcher.groupCount() && l < labelNames.length; g++, l++) {
+                        String groupValue = matcher.group(g);
+                        if (!groupValue.isEmpty()) {
+                            props.put(labelNames[l], matcher.group(g));
+                        }
+                    }
+                }
+            }
+        }
+        return props;
     }
 }

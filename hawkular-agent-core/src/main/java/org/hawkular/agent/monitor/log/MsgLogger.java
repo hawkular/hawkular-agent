@@ -53,6 +53,10 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10003, value = "Hawkular Agent Feed ID = [%s]")
     void infoAgentFeedId(String feedId);
 
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10004, value = "Hawkular Agent is in metrics-only mode")
+    void infoMetricsOnlyMode();
+
     @LogMessage(level = Level.WARN)
     @Message(id = 10016, value = "The resource type [%s] wants to use an unknown metric set [%s]")
     void warnMetricSetDoesNotExist(String resourceTypeName, String metricSetName);

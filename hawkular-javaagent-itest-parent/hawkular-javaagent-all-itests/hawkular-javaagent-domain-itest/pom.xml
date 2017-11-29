@@ -344,6 +344,7 @@
                     <javaOpt>-Dhawkular.rest.password=unused</javaOpt>
                     <javaOpt>-Dhawkular.rest.feedId=${hawkular.itest.rest.feedId}</javaOpt>
                     <javaOpt>-Dhawkular.rest.url=${hawkular.itest.rest.url}</javaOpt>
+                    <javaOpt>-Dhawkular.agent.metadata.domain=true</javaOpt>
                     <javaOpt>-Dhawkular.agent.auto-discovery-scan-period-secs=${hawkular.agent.itest.discovery.scan.period}</javaOpt>
                     <javaOpt>-Dhawkular.log.root=${hawkular.log.root}</javaOpt>
                     <javaOpt>-Dhawkular.log.console=${hawkular.log.console}</javaOpt>

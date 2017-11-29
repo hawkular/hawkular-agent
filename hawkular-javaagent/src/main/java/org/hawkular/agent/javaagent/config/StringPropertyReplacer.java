@@ -258,10 +258,44 @@ public final class StringPropertyReplacer {
     private static String getReplacementString(String key, Properties props) {
         String value;
 
+        // If the key starts with "env." the value is obtained from an environment variable or null if not defined.
+        // If the key starts with "<set>" the value is "true" if the named system property exists; "false" otherwise.
+        // If the key starts with "<set>env." the value is "true" if the named env var exists; "false" otherwise.
+        // If the key starts with "<notset>" the value is "false" if the named system property exists; "true" otherwise.
+        // If the key starts with "<notset>env." the value is "false" if the named env var exists; "true" otherwise.
+        // Otherwise, the value is obtained from a system property, or null if not defined.
         final String envPrefix = "env.";
+        final String setPrefix = "<set>";
+        final String notsetPrefix = "<notset>";
         if (key.startsWith(envPrefix)) {
             key = key.substring(envPrefix.length());
             value = System.getenv(key);
+        } else if (key.startsWith(setPrefix)) {
+            if (key.contains(",") || key.contains(":")) {
+                throw new IllegalArgumentException(
+                        "'<set>' expressions always resolve to a value. "
+                                + "Specifying a composite key or a default value is invalid: " + key);
+            }
+            key = key.substring(setPrefix.length());
+            if (key.startsWith(envPrefix)) {
+                key = key.substring(envPrefix.length());
+                value = Boolean.valueOf(System.getenv(key) != null).toString();
+            } else {
+                value = Boolean.valueOf(System.getProperty(key) != null).toString();
+            }
+        } else if (key.startsWith(notsetPrefix)) {
+            if (key.contains(",") || key.contains(":")) {
+                throw new IllegalArgumentException(
+                        "<notset>' expressions always resolve to a value. "
+                                + "Specifying a composite key or a default value is invalid: " + key);
+            }
+            key = key.substring(notsetPrefix.length());
+            if (key.startsWith(envPrefix)) {
+                key = key.substring(envPrefix.length());
+                value = Boolean.valueOf(System.getenv(key) == null).toString();
+            } else {
+                value = Boolean.valueOf(System.getProperty(key) == null).toString();
+            }
         } else {
             if (props != null) {
                 value = props.getProperty(key);

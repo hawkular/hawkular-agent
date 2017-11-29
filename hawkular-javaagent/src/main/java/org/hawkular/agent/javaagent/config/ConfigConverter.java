@@ -93,7 +93,10 @@ public class ConfigConverter {
                 config.getMetricsExporter().getHost(),
                 config.getMetricsExporter().getPort(),
                 config.getMetricsExporter().getConfigDir(),
-                config.getMetricsExporter().getConfigFile());
+                config.getMetricsExporter().getConfigFile(),
+                MetricsExporterConfiguration.Mode.valueOf(config.getMetricsExporter().getProxy().getMode().name()),
+                config.getMetricsExporter().getProxy().getDataDir(),
+                config.getMetricsExporter().getProxy().getMetricLabelsExpression());
 
         DiagnosticsConfiguration diagnostics = new DiagnosticsConfiguration(
                 config.getDiagnostics().getEnabled(),
