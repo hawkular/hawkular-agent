@@ -152,19 +152,6 @@ managed-servers:
   local-dmr:
     name: Local DMR UNUSED
     enabled: false
-    resource-type-sets:
-    - Standalone Environment
-    - Undertow Subsystem
-    - Deployment
-    - Web Component
-    - EJB
-    - Datasource
-    - XA Datasource
-    - JDBC Driver
-    - Transaction Manager
-    - Messaging
-    - Socket Binding Group
-    - Clustering
     wait-for:
     - name: /
     metric-labels:
@@ -173,13 +160,6 @@ managed-servers:
   local-jmx:
     name: Local JMX
     enabled: true
-    resource-type-sets:
-    - Main
-    - Memory Pool
-    - Platform
-    - Hawkular
-    - Platform
-    - For Integration Test
     wait-for:
     - name: java.lang:type=Runtime
     metric-labels:
@@ -192,19 +172,6 @@ managed-servers:
     port: 9990
     username: itest-admin
     password: itest-admin-password
-    resource-type-sets:
-    - Standalone Environment
-    - Undertow Subsystem
-    - Deployment
-    - Web Component
-    - EJB
-    - Datasource
-    - XA Datasource
-    - JDBC Driver
-    - Transaction Manager
-    - Messaging
-    - Socket Binding Group
-    - Clustering
     wait-for:
     - name: /
     metric-labels:
@@ -214,11 +181,6 @@ managed-servers:
   - name: Remote JMX
     enabled: true
     url: http://127.0.0.1:8080/jolokia-war
-    resource-type-sets:
-    - Main
-    - Memory Pool
-    - Platform
-    - For Integration Test
     wait-for:
     - name: java.lang:type=Runtime
     metric-labels:

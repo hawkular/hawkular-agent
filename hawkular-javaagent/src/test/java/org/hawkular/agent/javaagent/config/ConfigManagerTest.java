@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.inventory.SupportedMetricType;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.jboss.util.file.Files;
@@ -374,6 +375,49 @@ public class ConfigManagerTest {
             Assert.assertEquals(2, newConfig.getDmrResourceTypeSets().length);
             Assert.assertEquals(2, newConfig.getJmxMetricSets().length);
             Assert.assertEquals(2, newConfig.getJmxResourceTypeSets().length);
+        } finally {
+            // put the test file back the way it was so other tests can work with it
+            Files.copy(new File(file1.getAbsolutePath() + ".bak"), file1);
+        }
+    }
+
+    @Test
+    public void testOverlayWithAllResourceTypes() throws Exception {
+        // this tests overlaying config with managed servers not setting resource types sets
+        // which means the managed servers should use all defined type sets
+
+        File file1 = loadTestConfigFile("/test-overlay-all-resource-types-1.yaml");
+        ConfigManager configManager = new ConfigManager(file1);
+        Configuration config1 = configManager.getConfiguration(false);
+
+        // overwrite the config manager with all inventory metadata emptied out
+        try {
+            Assert.assertEquals(1, config1.getDmrMetricSets().length);
+            Assert.assertEquals(2, config1.getDmrResourceTypeSets().length);
+            Assert.assertEquals(1, config1.getJmxMetricSets().length);
+            Assert.assertEquals(2, config1.getJmxResourceTypeSets().length);
+
+            // now overlay a new config over the original config and test that it has everything expected
+            File file2 = loadTestConfigFile("/test-overlay-all-resource-types-2.yaml");
+            Configuration config2 = new ConfigManager(file2).getConfiguration(true);
+            InputStream stream = new ByteArrayInputStream(new ObjectMapper().writeValueAsBytes(config2));
+            configManager.overlayConfiguration(stream, true);
+            Configuration newConfig = configManager.getConfiguration();
+            newConfig.validate();
+            Assert.assertEquals(2, newConfig.getDmrMetricSets().length);
+            Assert.assertEquals(4, newConfig.getDmrResourceTypeSets().length);
+            Assert.assertEquals(2, newConfig.getJmxMetricSets().length);
+            Assert.assertEquals(4, newConfig.getJmxResourceTypeSets().length);
+
+            Assert.assertNull(newConfig.getManagedServers().getLocalDmr().getResourceTypeSets());
+            Assert.assertNull(newConfig.getManagedServers().getLocalJmx().getResourceTypeSets());
+
+            AgentCoreEngineConfiguration coreConfig = new ConfigConverter(newConfig).convert();
+            Assert.assertEquals(2, coreConfig.getDmrConfiguration().getEndpoints().values().iterator().next()
+                    .getResourceTypeSets().size());
+            Assert.assertEquals(2, coreConfig.getJmxConfiguration().getEndpoints().values().iterator().next()
+                    .getResourceTypeSets().size());
+
         } finally {
             // put the test file back the way it was so other tests can work with it
             Files.copy(new File(file1.getAbsolutePath() + ".bak"), file1);

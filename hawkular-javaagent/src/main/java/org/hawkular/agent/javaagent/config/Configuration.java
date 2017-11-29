@@ -16,7 +16,6 @@
  */
 package org.hawkular.agent.javaagent.config;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -132,66 +131,6 @@ public class Configuration implements Validatable {
             o.validate();
         }
         managedServers.validate();
-
-        // if a managed server's resource type sets are empty, assume it wants all of them
-
-        LocalJMX localJmx = managedServers.getLocalJmx();
-        if (localJmx != null) {
-            String[] localJmxManagedServerResourceTypeSets = localJmx.getResourceTypeSets();
-            if (localJmxManagedServerResourceTypeSets == null || localJmxManagedServerResourceTypeSets.length == 0) {
-                ArrayList<String> allEnabledResourceTypeSets = new ArrayList<>();
-                for (JMXResourceTypeSet resourceTypeSet : jmxResourceTypeSets) {
-                    if (resourceTypeSet.getEnabled() != Boolean.FALSE) {
-                        allEnabledResourceTypeSets.add(resourceTypeSet.getName());
-                    }
-                }
-                localJmx.setResourceTypeSets(allEnabledResourceTypeSets.toArray(new String[0]));
-            }
-        }
-        if (managedServers.getRemoteJmxs() != null) {
-            for (RemoteJMX remoteJmx : managedServers.getRemoteJmxs()) {
-                String[] remoteJmxManagedServerResourceTypeSets = remoteJmx.getResourceTypeSets();
-                if (remoteJmxManagedServerResourceTypeSets == null
-                        || remoteJmxManagedServerResourceTypeSets.length == 0) {
-                    ArrayList<String> allEnabledResourceTypeSets = new ArrayList<>();
-                    for (JMXResourceTypeSet resourceTypeSet : jmxResourceTypeSets) {
-                        if (resourceTypeSet.getEnabled() != Boolean.FALSE) {
-                            allEnabledResourceTypeSets.add(resourceTypeSet.getName());
-                        }
-                    }
-                    remoteJmx.setResourceTypeSets(allEnabledResourceTypeSets.toArray(new String[0]));
-                }
-            }
-        }
-
-        LocalDMR localDmr = managedServers.getLocalDmr();
-        if (localDmr != null) {
-            String[] localDmrManagedServerResourceTypeSets = localDmr.getResourceTypeSets();
-            if (localDmrManagedServerResourceTypeSets == null || localDmrManagedServerResourceTypeSets.length == 0) {
-                ArrayList<String> allEnabledResourceTypeSets = new ArrayList<>();
-                for (DMRResourceTypeSet resourceTypeSet : dmrResourceTypeSets) {
-                    if (resourceTypeSet.getEnabled() != Boolean.FALSE) {
-                        allEnabledResourceTypeSets.add(resourceTypeSet.getName());
-                    }
-                }
-                localDmr.setResourceTypeSets(allEnabledResourceTypeSets.toArray(new String[0]));
-            }
-        }
-        if (managedServers.getRemoteDmrs() != null) {
-            for (RemoteDMR remoteDmr : managedServers.getRemoteDmrs()) {
-                String[] remoteDmrManagedServerResourceTypeSets = remoteDmr.getResourceTypeSets();
-                if (remoteDmrManagedServerResourceTypeSets == null
-                        || remoteDmrManagedServerResourceTypeSets.length == 0) {
-                    ArrayList<String> allEnabledResourceTypeSets = new ArrayList<>();
-                    for (DMRResourceTypeSet resourceTypeSet : dmrResourceTypeSets) {
-                        if (resourceTypeSet.getEnabled() != Boolean.FALSE) {
-                            allEnabledResourceTypeSets.add(resourceTypeSet.getName());
-                        }
-                    }
-                    remoteDmr.setResourceTypeSets(allEnabledResourceTypeSets.toArray(new String[0]));
-                }
-            }
-        }
 
         platform.validate();
     }

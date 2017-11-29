@@ -21,14 +21,14 @@ subsystem:
   immutable: "${hawkular.agent.immutable:false}"
   in-container: "${hawkular.agent.in-container:false}"
   auto-discovery-scan-period-secs: ${hawkular.agent.auto-discovery-scan-period-secs:600}
-  type-version: WF10
+  type-version: WF10-DOMAIN
 
 metrics-exporter:
   enabled: true
   host: ${hawkular.agent.metrics.host:127.0.0.1}
   port: ${hawkular.agent.metrics.port:9779}
   config-dir: ${jboss.server.config.dir}
-  config-file: WF10
+  config-file: WF10-DOMAIN
 
 diagnostics:
   enabled: true
@@ -152,19 +152,6 @@ managed-servers:
   local-dmr:
     name: Local DMR UNUSED
     enabled: false
-    resource-type-sets:
-    - Domain Environment
-    - Undertow Subsystem
-    - Deployment
-    - Web Component
-    - EJB
-    - Datasource
-    - XA Datasource
-    - JDBC Driver
-    - Transaction Manager
-    - Messaging
-    - Socket Binding Group
-    - Clustering
     wait-for:
     - name: /
     metric-labels:
@@ -173,12 +160,6 @@ managed-servers:
   local-jmx:
     name: Local JMX
     enabled: false
-    resource-type-sets:
-    - Main
-    - Memory Pool
-    - Platform
-    - Hawkular
-    - For Integration Test
     wait-for:
     - name: java.lang:type=Runtime
     metric-labels:
@@ -191,19 +172,6 @@ managed-servers:
     port: 9980
     username: itest-admin
     password: itest-admin-password
-    resource-type-sets:
-    - Domain Environment
-    - Undertow Subsystem
-    - Deployment
-    - Web Component
-    - EJB
-    - Datasource
-    - XA Datasource
-    - JDBC Driver
-    - Transaction Manager
-    - Messaging
-    - Socket Binding Group
-    - Clustering
     wait-for:
     - name: /
     metric-labels:

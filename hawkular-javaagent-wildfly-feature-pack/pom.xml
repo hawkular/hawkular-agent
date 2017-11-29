@@ -96,8 +96,8 @@
                   overwrite="true" />
                 <replaceregexp
                   file="${project.build.directory}/feature-pack-resources/content/domain/configuration/hawkular-javaagent-config.yaml"
-                  match="- Standalone Environment"
-                  replace="- Domain Environment"
+                  match="WF10"
+                  replace="WF10-DOMAIN"
                   flags="s"
                   byline="true" />
               </target>
