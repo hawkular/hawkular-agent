@@ -327,7 +327,11 @@ public abstract class AgentCoreEngine {
             protocolServices.start();
 
             // start the metrics exporter if enabled
-            startMetricsExporter();
+            try {
+                startMetricsExporter();
+            } catch (Exception e) {
+                log.errorf(e, "Cannot start metrics exporter - continuing but no metrics will be available");
+            }
 
             setStatus(ServiceStatus.RUNNING);
 
