@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.protocol.dmr;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
@@ -34,6 +35,8 @@ import org.jboss.dmr.ModelNode;
  */
 public class DMREndpointService
         extends EndpointService<DMRNodeLocation, DMRSession> {
+
+    public static final String ENABLE_STATISTICS_KEY = "enable-statistics";
 
     public static String lookupServerIdentifier(ModelControllerClient client) throws IOException {
         ModelNode rootNode = OperationBuilder.readResource().includeRuntime().execute(client).assertSuccess()
@@ -105,4 +108,21 @@ public class DMREndpointService
                 getLocationResolver(), client);
     }
 
+    @Override
+    protected void postStart() {
+        // see if we are to enable statistics - default is 'yes'
+        Boolean enable = Boolean.TRUE;
+        Map<String, ? extends Object> customData = getMonitoredEndpoint().getEndpointConfiguration().getCustomData();
+        if (customData != null && customData.containsKey(ENABLE_STATISTICS_KEY)) {
+            enable = (Boolean) customData.get(ENABLE_STATISTICS_KEY);
+        }
+
+        if (enable) {
+            try (ModelControllerClient mcc = this.modelControllerClientFactory.createClient()) {
+                new StatisticsControl().enableStatistics(mcc);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

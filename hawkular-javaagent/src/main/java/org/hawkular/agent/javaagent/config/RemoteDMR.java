@@ -70,6 +70,9 @@ public class RemoteDMR implements Validatable {
     @JsonProperty("wait-for")
     private WaitFor[] waitFor;
 
+    @JsonProperty("enable-statistics")
+    private BooleanExpression enableStatistics = new BooleanExpression(Boolean.TRUE);
+
     public RemoteDMR() {
     }
 
@@ -87,6 +90,8 @@ public class RemoteDMR implements Validatable {
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
         this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
         this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
+        this.enableStatistics = original.enableStatistics == null ? null
+                : new BooleanExpression(original.enableStatistics);
     }
 
     @Override
@@ -237,5 +242,17 @@ public class RemoteDMR implements Validatable {
 
     public void setWaitFor(WaitFor[] waitFor) {
         this.waitFor = waitFor;
+    }
+
+    public Boolean getEnableStatistics() {
+        return enableStatistics == null ? null : enableStatistics.get();
+    }
+
+    public void setEnableStatistics(Boolean enableStatistics) {
+        if (this.enableStatistics != null) {
+            this.enableStatistics.set(enableStatistics);
+        } else {
+            this.enableStatistics = new BooleanExpression(enableStatistics);
+        }
     }
 }
