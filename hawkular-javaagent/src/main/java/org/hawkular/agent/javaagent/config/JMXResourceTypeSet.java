@@ -33,7 +33,7 @@ public class JMXResourceTypeSet implements Validatable {
     private String name;
 
     @JsonProperty
-    private Boolean enabled = Boolean.TRUE;
+    private BooleanExpression enabled = new BooleanExpression(Boolean.TRUE);
 
     @JsonProperty("resource-type-jmx")
     private JMXResourceType[] jmxResourceTypes;
@@ -43,7 +43,7 @@ public class JMXResourceTypeSet implements Validatable {
 
     public JMXResourceTypeSet(JMXResourceTypeSet original) {
         this.name = original.name;
-        this.enabled = original.enabled;
+        this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
         this.jmxResourceTypes = Util.cloneArray(original.jmxResourceTypes);
     }
 
@@ -69,11 +69,15 @@ public class JMXResourceTypeSet implements Validatable {
     }
 
     public Boolean getEnabled() {
-        return enabled;
+        return enabled == null ? null : enabled.get();
     }
 
     public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
+        if (this.enabled != null) {
+            this.enabled.set(enabled);
+        } else {
+            this.enabled = new BooleanExpression(enabled);
+        }
     }
 
     public JMXResourceType[] getJmxResourceTypes() {

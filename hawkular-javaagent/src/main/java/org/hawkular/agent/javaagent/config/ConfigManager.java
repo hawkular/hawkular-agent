@@ -143,10 +143,11 @@ public class ConfigManager {
      *
      * @param configStream the overlay configuration is found in the given input stream.
      *                     Caller is responsible for closing it.
-     * @param createBackup if true a .bak file is copied from the original as a backup
+     * @param save if true, the new config is saved over the original
+     * @param createBackup if true a .bak file is copied from the original as a backup (ignored if save==false)
      * @throws Exception if the new configuration cannot be written to the file
      */
-    public void overlayConfiguration(InputStream configStream, boolean createBackup) throws Exception {
+    public void overlayConfiguration(InputStream configStream, boolean save, boolean createBackup) throws Exception {
         if (configStream == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -165,8 +166,11 @@ public class ConfigManager {
             // make sure the new config is OK
             newConfig.validate();
 
-            // save the new config and remember it
-            save(this.configFile, newConfig, createBackup);
+            if (save) {
+                // keep in mind, if multiple agents share the config (aka domain mode) they clobber each other
+                save(this.configFile, newConfig, createBackup);
+            }
+
             this.configuration = new Configuration(newConfig);
         } finally {
             lock.unlock();

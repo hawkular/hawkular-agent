@@ -226,24 +226,36 @@ public class AgentCoreEngineConfiguration {
     }
 
     public static class MetricsExporterConfiguration {
+        public static enum Mode {
+            disabled, master, slave
+        };
 
         private final boolean enabled;
         private final String host;
         private final int port;
         private final String configDir;
         private final String configFile;
+        private final Mode proxyMode;
+        private final String proxyDataDir;
+        private final String proxyMetricLabelsExpression;
 
         public MetricsExporterConfiguration(
                 boolean enabled,
                 String host,
                 int port,
                 String configDir,
-                String configFile) {
+                String configFile,
+                Mode proxyMode,
+                String proxyDataDir,
+                String proxyMetricLabelsExpression) {
             this.enabled = enabled;
             this.host = host;
             this.port = port;
             this.configDir = configDir;
             this.configFile = configFile;
+            this.proxyMode = proxyMode;
+            this.proxyDataDir = proxyDataDir;
+            this.proxyMetricLabelsExpression = proxyMetricLabelsExpression;
         }
 
         public boolean isEnabled() {
@@ -264,6 +276,18 @@ public class AgentCoreEngineConfiguration {
 
         public String getConfigFile() {
             return configFile;
+        }
+
+        public Mode getProxyMode() {
+            return proxyMode;
+        }
+
+        public String getProxyDataDir() {
+            return proxyDataDir;
+        }
+
+        public String getProxyMetricLabelsExpression() {
+            return proxyMetricLabelsExpression;
         }
     }
 

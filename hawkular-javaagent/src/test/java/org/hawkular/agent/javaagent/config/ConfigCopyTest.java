@@ -75,6 +75,12 @@ public class ConfigCopyTest {
         Assert.assertEquals(clone.getMetricsExporter().getPort(), config.getMetricsExporter().getPort());
         Assert.assertEquals(clone.getMetricsExporter().getConfigDir(), config.getMetricsExporter().getConfigDir());
         Assert.assertEquals(clone.getMetricsExporter().getConfigFile(), config.getMetricsExporter().getConfigFile());
+        Assert.assertEquals(clone.getMetricsExporter().getProxy().getMode(),
+                config.getMetricsExporter().getProxy().getMode());
+        Assert.assertEquals(clone.getMetricsExporter().getProxy().getDataDir(),
+                config.getMetricsExporter().getProxy().getDataDir());
+        Assert.assertEquals(clone.getMetricsExporter().getProxy().getMetricLabelsExpression(),
+                config.getMetricsExporter().getProxy().getMetricLabelsExpression());
         Assert.assertEquals(clone.getStorageAdapter().getUrl(), config.getStorageAdapter().getUrl());
         Assert.assertEquals(clone.getDiagnostics().getEnabled(), config.getDiagnostics().getEnabled());
         Assert.assertEquals(clone.getDmrMetricSets().length, config.getDmrMetricSets().length);

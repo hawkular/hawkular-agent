@@ -17,6 +17,7 @@
 package org.hawkular.agent.monitor.protocol.dmr;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.hawkular.agent.monitor.protocol.LocationResolver;
@@ -164,6 +165,17 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
         // The name template can have %key% where key is the key of an address whose value is used to replace the
         // token. For example, "Name [%foo%]" will end up being "Name [bar]".
         //
+        // Here is an interesting case we have to watch out for.
+        // The WildFly API for PathAddress does NOT allow for duplicate keys so this kind of DMR path is
+        // actually illegal: /one=1/two=2/one=another1. However, the WildFly API PathAddress class has hardcoded in it
+        // a special case (to support domain mode obviously) - path element keys named 'host' and 'server'
+        // can be duplicated if the first part of the path is /host=h/server=s.
+        // So this is allowed: /host=h/server=s/foo=bar/server=anothers.
+        // But what happens if we need a template to look for "server"? Which one do we pick? The first or second one?
+        // This is why the code below supports a name template with "%-key%" token, which is the same as %key% except
+        // the key is searched starting at the end of the path, not at the beginning (so %-server% will pick the
+        // second "server" path element not the first, which is what %server% will do).
+        //
         // String.format() requires "$s" after the "%#" to denote the type of value is a string (all our address
         // parts are strings, so we know "$s" is what we want).
         // This replaceAll just replaces all occurrances of "%#" with "%#$s" so String.format will work.
@@ -171,13 +183,29 @@ public class DMRLocationResolver implements LocationResolver<DMRNodeLocation> {
         // want and sometimes you can't know its positional value.
         // We also support %ManagedServerName which can help distinguish similar resources running in different servers.
         List<String> args = new ArrayList<>();
+        List<PathElement> reverseSegments = new ArrayList<>();
+
         for (PathElement segment : location.getPathAddress()) {
+            reverseSegments.add(segment);
             args.add(segment.getKey());
             args.add(segment.getValue());
+
+            // %key%
             nameTemplate = nameTemplate.replace("%" + segment.getKey() + "%", segment.getValue());
         }
+        Collections.reverse(reverseSegments);
+
+        // -%key%
+        for (PathElement segment : reverseSegments) {
+            nameTemplate = nameTemplate.replace("%-" + segment.getKey() + "%", segment.getValue());
+        }
+
+        // %#
         nameTemplate = nameTemplate.replaceAll("%(\\d+)", "%$1\\$s");
+
+        // %-
         nameTemplate = nameTemplate.replaceAll("%(-)", "%" + args.size() + "\\$s");
+
         nameTemplate = nameTemplate.replaceAll("%ManagedServerName", endpointName);
         String nameStr = String.format(nameTemplate, args.toArray());
         return nameStr;

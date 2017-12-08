@@ -44,6 +44,9 @@ public class MetricsExporter implements Validatable {
     @JsonProperty("config-file")
     private StringExpression configFile = new StringExpression("");
 
+    @JsonProperty
+    private MetricsExporterProxy proxy = new MetricsExporterProxy();
+
     public MetricsExporter() {
     }
 
@@ -53,6 +56,7 @@ public class MetricsExporter implements Validatable {
         this.port = original.port == null ? null : new IntegerExpression(original.port);
         this.configDir = original.configDir == null ? null : new StringExpression(original.configDir);
         this.configFile = original.configFile == null ? null : new StringExpression(original.configFile);
+        this.proxy = original.proxy == null ? null : new MetricsExporterProxy(original.proxy);
     }
 
     @Override
@@ -69,6 +73,9 @@ public class MetricsExporter implements Validatable {
             }
             if (configFile == null || configFile.get().toString().trim().isEmpty()) {
                 throw new Exception("metrics-exporter config-file must be specified");
+            }
+            if (proxy != null) {
+                proxy.validate();
             }
         }
     }
@@ -133,4 +140,11 @@ public class MetricsExporter implements Validatable {
         }
     }
 
+    public MetricsExporterProxy getProxy() {
+        return proxy;
+    }
+
+    public void setProxy(MetricsExporterProxy proxy) {
+        this.proxy = proxy;
+    }
 }

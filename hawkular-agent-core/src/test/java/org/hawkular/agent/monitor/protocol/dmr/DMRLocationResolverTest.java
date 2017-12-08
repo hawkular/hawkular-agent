@@ -113,4 +113,32 @@ public class DMRLocationResolverTest {
         Assert.assertEquals("hello one.1.two.2.[eName]", str);
     }
 
+    @Test
+    public void testApplyTemplateWithDuplicateKeys() {
+        // WildFly API PathAddress does NOT allow for duplicate keys so this is actually illegal: /one=1/two=2/one=1.
+        // However, that API has hardcoded in it a special case - 'host' and 'server' can be duplicated if the first
+        // part of the path is /host=h/server=s (to support domain mode obviously): /host=h/server=s/foo=bar/server=s.
+
+        DMRLocationResolver resolver = new DMRLocationResolver();
+        DMRNodeLocation location = DMRNodeLocation
+                .of("/host=master/server=server-one/subsystem=undertow/server=default-server/http-listener=default");
+        String endpointName = "eName";
+        String str;
+
+        str = resolver.applyTemplate("%subsystem%", location, endpointName);
+        Assert.assertEquals("undertow", str);
+        str = resolver.applyTemplate("hello %subsystem%", location, endpointName);
+        Assert.assertEquals("hello undertow", str);
+
+        str = resolver.applyTemplate("%server%", location, endpointName);
+        Assert.assertEquals("server-one", str);
+        str = resolver.applyTemplate("hello %server%", location, endpointName);
+        Assert.assertEquals("hello server-one", str);
+
+        str = resolver.applyTemplate("%-server%", location, endpointName);
+        Assert.assertEquals("default-server", str);
+        str = resolver.applyTemplate("hello %-server%", location, endpointName);
+        Assert.assertEquals("hello default-server", str);
+    }
+
 }

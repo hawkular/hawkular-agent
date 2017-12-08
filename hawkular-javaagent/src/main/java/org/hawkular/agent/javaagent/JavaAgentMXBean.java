@@ -29,7 +29,7 @@ public interface JavaAgentMXBean {
 
     boolean getInContainer();
 
-    String getMetricsEndpoint();
+    String getMetricsEndpoints();
 
     // JMX Operations
     void start();
