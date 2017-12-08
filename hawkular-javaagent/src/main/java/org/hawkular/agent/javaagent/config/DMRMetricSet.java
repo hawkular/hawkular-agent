@@ -33,7 +33,7 @@ public class DMRMetricSet implements Validatable {
     private String name;
 
     @JsonProperty
-    private Boolean enabled = Boolean.TRUE;
+    private BooleanExpression enabled = new BooleanExpression(Boolean.TRUE);
 
     @JsonProperty("metric-dmr")
     private DMRMetric[] dmrMetrics;
@@ -43,7 +43,7 @@ public class DMRMetricSet implements Validatable {
 
     public DMRMetricSet(DMRMetricSet original) {
         this.name = original.name;
-        this.enabled = original.enabled;
+        this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
         this.dmrMetrics = Util.cloneArray(original.dmrMetrics);
     }
 
@@ -69,11 +69,15 @@ public class DMRMetricSet implements Validatable {
     }
 
     public Boolean getEnabled() {
-        return enabled;
+        return enabled == null ? null : enabled.get();
     }
 
     public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
+        if (this.enabled != null) {
+            this.enabled.set(enabled);
+        } else {
+            this.enabled = new BooleanExpression(enabled);
+        }
     }
 
     public DMRMetric[] getDmrMetrics() {

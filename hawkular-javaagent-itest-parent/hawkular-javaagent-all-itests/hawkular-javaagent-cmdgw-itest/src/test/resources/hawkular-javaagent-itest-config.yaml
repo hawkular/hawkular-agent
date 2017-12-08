@@ -25,10 +25,13 @@ subsystem:
 
 metrics-exporter:
   enabled: true
-  host: ${hawkular.agent.metrics.host:127.0.0.1}
+  host: ${hawkular.agent.metrics.host,jboss.bind.address:127.0.0.1}
   port: ${hawkular.agent.metrics.port:9779}
   config-dir: ${jboss.server.config.dir}
   config-file: WF10
+  proxy:
+    mode: disabled
+    data-dir: ${jboss.server.data.dir}/hawkular-metrics-exporter
 
 diagnostics:
   enabled: true
@@ -38,8 +41,8 @@ diagnostics:
 storage-adapter:
   feed-id: "${hawkular.rest.feedId:autogenerate}"
   url: "${hawkular.rest.url:http://hawkular-server:8080}"
-  username: "${env.HAWKULAR_USER}"
-  password: "${env.HAWKULAR_PASSWORD}"
+  username: "${env.HAWKULAR_USER,hawkular.rest.username}"
+  password: "${env.HAWKULAR_PASSWORD,hawkular.rest.password}"
 
 resource-type-set-jmx:
 - name: For Integration Test

@@ -26,6 +26,9 @@ metrics-exporter:
   port: 12345
   config-dir: exporter
   config-file: config.yaml
+  proxy:
+    mode: slave
+    data-dir: proxy/data/dir
 
 security-realm:
 - name: h-server

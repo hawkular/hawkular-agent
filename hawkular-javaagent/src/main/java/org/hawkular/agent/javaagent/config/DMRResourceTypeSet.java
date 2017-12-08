@@ -33,7 +33,7 @@ public class DMRResourceTypeSet implements Validatable {
     private String name;
 
     @JsonProperty
-    private Boolean enabled = Boolean.TRUE;
+    private BooleanExpression enabled = new BooleanExpression(Boolean.TRUE);
 
     @JsonProperty("resource-type-dmr")
     private DMRResourceType[] dmrResourceTypes;
@@ -43,7 +43,7 @@ public class DMRResourceTypeSet implements Validatable {
 
     public DMRResourceTypeSet(DMRResourceTypeSet original) {
         this.name = original.name;
-        this.enabled = original.enabled;
+        this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
         this.dmrResourceTypes = Util.cloneArray(original.dmrResourceTypes);
     }
 
@@ -69,11 +69,15 @@ public class DMRResourceTypeSet implements Validatable {
     }
 
     public Boolean getEnabled() {
-        return enabled;
+        return enabled == null ? null : enabled.get();
     }
 
     public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
+        if (this.enabled != null) {
+            this.enabled.set(enabled);
+        } else {
+            this.enabled = new BooleanExpression(enabled);
+        }
     }
 
     public DMRResourceType[] getDmrResourceTypes() {

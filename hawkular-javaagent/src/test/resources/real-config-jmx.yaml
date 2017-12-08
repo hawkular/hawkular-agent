@@ -108,8 +108,8 @@ resource-type-set-jmx:
       attribute: Immutable
     - name: In Container
       attribute: InContainer
-    - name: Metrics Endpoint
-      attribute: MetricsEndpoint
+    - name: Metrics Endpoints
+      attribute: MetricsEndpoints
     operation-jmx:
     - name: Start
       internal-name: start

@@ -21,6 +21,7 @@ import java.net.URL;
 
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.MetricsExporterConfiguration.Mode;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.junit.Assert;
 import org.junit.Test;
@@ -112,6 +113,8 @@ public class ConfigConverterTest {
         Assert.assertEquals(12345, agentConfig.getMetricsExporterConfiguration().getPort());
         Assert.assertEquals("exporter", agentConfig.getMetricsExporterConfiguration().getConfigDir());
         Assert.assertEquals("config.yaml", agentConfig.getMetricsExporterConfiguration().getConfigFile());
+        Assert.assertEquals(Mode.slave, agentConfig.getMetricsExporterConfiguration().getProxyMode());
+        Assert.assertEquals("proxy/data/dir", agentConfig.getMetricsExporterConfiguration().getProxyDataDir());
 
         Assert.assertEquals("http://hawkular:8181", agentConfig.getStorageAdapter().getUrl());
         Assert.assertEquals("the user", agentConfig.getStorageAdapter().getUsername());

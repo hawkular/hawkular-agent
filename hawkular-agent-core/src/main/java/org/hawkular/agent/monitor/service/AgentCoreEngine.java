@@ -17,8 +17,17 @@
 package org.hawkular.agent.monitor.service;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -33,6 +42,7 @@ import org.hawkular.agent.monitor.cmd.FeedCommProcessor;
 import org.hawkular.agent.monitor.cmd.WebSocketClientBuilder;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.MetricsExporterConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.diagnostics.JBossLoggingReporter;
@@ -48,6 +58,7 @@ import org.hawkular.agent.monitor.storage.HttpClientBuilder;
 import org.hawkular.agent.monitor.storage.InventoryStorageProxy;
 import org.hawkular.agent.monitor.storage.NotificationDispatcher;
 import org.hawkular.agent.monitor.storage.StorageAdapter;
+import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.bus.common.BasicMessage;
 import org.jboss.logging.Logger;
@@ -111,6 +122,10 @@ public abstract class AgentCoreEngine {
 
     // the endpoint that emits metrics
     private WebServer metricsExporter;
+
+    // job to check a directory for metric exporters and adds any it finds to the set of proxied metrics exporters
+    private ScheduledExecutorService metricsExporterDiscoveryExecutor;
+    private Set<String> metricsExportersThatAreProxied = Collections.synchronizedSet(new HashSet<>());
 
     public AgentCoreEngine(AgentCoreEngineConfiguration configuration) {
         this.configuration = configuration;
@@ -255,76 +270,83 @@ public abstract class AgentCoreEngine {
             this.httpClientBuilder = new HttpClientBuilder(this.configuration.getStorageAdapter(), ssl,
                     x509TrustManager);
 
-            // get our self identifiers
-            this.localModelControllerClientFactory = buildLocalModelControllerClientFactory();
-
-            if (this.configuration.getStorageAdapter().getFeedId() != null) {
-                this.feedId = this.configuration.getStorageAdapter().getFeedId();
-            } else {
-                this.feedId = autoGenerateFeedId();
-            }
-            log.infoAgentFeedId(this.feedId);
-
             // Before we go on, we must make sure the Hawkular Server is up and ready
-            waitForHawkularServer();
+            waitForHawkularServer(this.httpClientBuilder, this.configuration.getStorageAdapter());
 
             // Now attempt to download the inventory metadata configuration from the server,
             // overlaying it over the current configuration. Once this call completes, we will
             // have our full configuration and can use even the inventory metadata configuration.
-            downloadAndOverlayConfiguration();
-
-            // build the diagnostics object that will be used to track our own performance
-            final MetricRegistry metricRegistry = new MetricRegistry();
-            this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
-
-            // try to connect to the server via command-gateway channel; keep going on error
-            try {
-                this.webSocketClientBuilder = new WebSocketClientBuilder(
-                        this.configuration.getStorageAdapter(), ssl, x509TrustManager);
-                this.feedComm = new FeedCommProcessor(
-                        this.webSocketClientBuilder,
-                        buildAdditionalCommands(),
-                        this.feedId,
-                        this);
-                this.feedComm.connect();
-            } catch (Exception e) {
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                }
-                log.errorCannotEstablishFeedComm(e);
-            }
-
-            // start the storage adapter
-            try {
-                startStorageAdapter();
-            } catch (Exception e) {
-                log.errorCannotStartStorageAdapter(e);
-                throw new Exception("Agent cannot start storage adapter");
-            }
-
-            // now that we started the storage adapter, we can create our dispatcher
-            this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
+            this.configuration = downloadAndOverlayConfiguration(this.httpClientBuilder, this.configuration);
 
             // this wraps the platform resources with MBeans so their metrics can be exposed via JMX
             this.platformMBeanGenerator = new PlatformMBeanGenerator(this.feedId,
                     configuration.getPlatformConfiguration());
             this.platformMBeanGenerator.registerAllMBeans();
 
-            // build the protocol services
-            ProtocolServices ps = createProtocolServicesBuilder()
-                    .dmrProtocolService(this.localModelControllerClientFactory, configuration.getDmrConfiguration())
-                    .jmxProtocolService(configuration.getJmxConfiguration())
-                    .autoDiscoveryScanPeriodSecs(
-                            configuration.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds())
-                    .build();
-            ps.addInventoryListener(inventoryStorageProxy);
-            if (notificationDispatcher != null) {
-                ps.addInventoryListener(notificationDispatcher);
-            }
-            protocolServices = ps;
+            // IF the agent is in full non-metrics-only mode, initialize everything needed for inventory
+            if (!isMetricsOnlyMode(this.configuration)) {
 
-            // start all protocol services - this should perform the initial discovery scans
-            protocolServices.start();
+                // get our self identifiers
+                this.localModelControllerClientFactory = buildLocalModelControllerClientFactory();
+
+                if (this.configuration.getStorageAdapter().getFeedId() != null) {
+                    this.feedId = this.configuration.getStorageAdapter().getFeedId();
+                } else {
+                    this.feedId = autoGenerateFeedId();
+                }
+                log.infoAgentFeedId(this.feedId);
+
+                // build the diagnostics object that will be used to track our own performance
+                final MetricRegistry metricRegistry = new MetricRegistry();
+                this.diagnostics = new DiagnosticsImpl(configuration.getDiagnostics(), metricRegistry, feedId);
+
+                // try to connect to the server via command-gateway channel; keep going on error
+                try {
+                    this.webSocketClientBuilder = new WebSocketClientBuilder(
+                            this.configuration.getStorageAdapter(), ssl, x509TrustManager);
+                    this.feedComm = new FeedCommProcessor(
+                            this.webSocketClientBuilder,
+                            buildAdditionalCommands(),
+                            this.feedId,
+                            this);
+                    this.feedComm.connect();
+                } catch (Exception e) {
+                    if (e instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                    log.errorCannotEstablishFeedComm(e);
+                }
+
+                // start the storage adapter
+                try {
+                    startStorageAdapter();
+                } catch (Exception e) {
+                    log.errorCannotStartStorageAdapter(e);
+                    throw new Exception("Agent cannot start storage adapter");
+                }
+
+                // now that we started the storage adapter, we can create our dispatcher
+                this.notificationDispatcher = new NotificationDispatcher(this.storageAdapter, this.feedId);
+
+                // build the protocol services
+                ProtocolServices ps = createProtocolServicesBuilder()
+                        .dmrProtocolService(this.localModelControllerClientFactory,
+                                configuration.getDmrConfiguration())
+                        .jmxProtocolService(configuration.getJmxConfiguration())
+                        .autoDiscoveryScanPeriodSecs(
+                                configuration.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds())
+                        .build();
+                ps.addInventoryListener(inventoryStorageProxy);
+                if (notificationDispatcher != null) {
+                    ps.addInventoryListener(notificationDispatcher);
+                }
+                protocolServices = ps;
+
+                // start all protocol services - this should perform the initial discovery scans
+                protocolServices.start();
+            } else {
+                log.infoMetricsOnlyMode();
+            }
 
             // start the metrics exporter if enabled
             try {
@@ -376,13 +398,9 @@ public abstract class AgentCoreEngine {
         AtomicReference<Throwable> error = new AtomicReference<>(null);  // will hold the first error we encountered
 
         try {
-            // disconnect from the feed comm channel
+            // stop the metrics exporter endpoint
             try {
-                if (metricsExporter != null) {
-                    log.infoStopMetricsExporter();
-                    metricsExporter.stop();
-                    metricsExporter = null;
-                }
+                stopMetricsExporter();
             } catch (Throwable t) {
                 error.compareAndSet(null, t);
                 log.debug("Cannot shutdown metrics exporter but will continue shutdown", t);
@@ -496,7 +514,7 @@ public abstract class AgentCoreEngine {
             if (meConfig.getHost() != null) {
                 hostPort = String.format("%s:%d", meConfig.getHost(), meConfig.getPort());
             } else {
-                hostPort = String.format("%d", meConfig.getPort());
+                hostPort = String.format("127.0.0.1:%d", meConfig.getPort());
             }
             File configFile = downloadMetricsExporterConfigFile();
             if (configFile != null) {
@@ -507,20 +525,125 @@ public abstract class AgentCoreEngine {
             } else {
                 log.infoMetricsExporterDisabled();
             }
+
+            // The below is mainly to support WildFly domain mode where we need a metrics-only agent in each
+            // slave server but a normal agent in the host controller to obtain inventory.
+            // In proxy mode of "slave" this agent is probably running in a slave server so we need to write
+            // a file in the proxy data directory to let the master know what our metrics exporter endpoint is.
+            // In proxy mode of "master" this agent will look at all files in the proxy data directory and will
+            // put all the endpoint information in a set to be picked up later by an MBean attribute. That MBean
+            // attribute will be a resource configuration property on an agent resource - any changes to that attribute
+            // will cause the server to write new scrape files for Prometheus to read. Those metrics will look like
+            // they are coming from this agent because the metrics will be labeled with our agent's feed ID (hence
+            // why we call it is a proxy).
+            switch (meConfig.getProxyMode()) {
+                case master: {
+                    Runnable job = new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                File dataDir = new File(meConfig.getProxyDataDir());
+                                File[] files = dataDir.listFiles();
+                                if (files != null) {
+                                    // each file has a name "host:port" - that's what we want to proxy
+                                    Set<String> toBeProxied = new HashSet<>();
+                                    for (File file : files) {
+                                        Properties labels = new Properties();
+                                        try (FileReader fr = new FileReader(file)) {
+                                            labels.load(fr);
+                                        }
+                                        String endpointDescription = file.getName();
+                                        if (labels.size() > 0) {
+                                            endpointDescription += labels.toString(); // toString is {n1=v1,n2=v2,...}
+                                        }
+                                        toBeProxied.add(endpointDescription);
+                                    }
+                                    // if something was added or removed, force an inventory update
+                                    if (!metricsExportersThatAreProxied.equals(toBeProxied)) {
+                                        log.infof("Change in set of metrics exporters to be proxied: %s",
+                                                toBeProxied);
+                                        synchronized (metricsExportersThatAreProxied) {
+                                            metricsExportersThatAreProxied.clear();
+                                            metricsExportersThatAreProxied.addAll(toBeProxied);
+                                        }
+                                        getProtocolServices().discoverAll();
+                                    }
+                                }
+                            } catch (Throwable t) {
+                                // make sure we don't let exceptions bubble out - that would stop all future scans from executing
+                                log.errorf(t, "Cannot proxy metrics exporters");
+                            }
+                        }
+                    };
+
+                    log.infof("Metrics exporter proxy mode 'master' - data dir: %s", meConfig.getProxyDataDir());
+                    metricsExportersThatAreProxied.clear();
+                    ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
+                            "Hawkular-Agent-Metrics-Exporter-Discovery-Scan");
+                    metricsExporterDiscoveryExecutor = Executors.newSingleThreadScheduledExecutor(threadFactory);
+                    metricsExporterDiscoveryExecutor.scheduleAtFixedRate(job, 0, 30, TimeUnit.SECONDS);
+                    break;
+                }
+                case slave: {
+                    // create a file whose name is "host:port" whose content are name/value pairs that are the
+                    // labels that we want attached to all of the slave metrics.
+                    File dataDir = new File(meConfig.getProxyDataDir());
+                    dataDir.mkdirs();
+                    File dataFile = new File(dataDir, hostPort);
+                    dataFile.delete(); // remove anything that might have existed before
+                    try {
+                        Properties labels = Util
+                                .extractPropertiesFromExpression(meConfig.getProxyMetricLabelsExpression());
+                        try (FileWriter fw = new FileWriter(dataFile)) {
+                            labels.store(fw, null);
+                        }
+                        log.infof("Metrics exporter proxy mode 'slave' - data file [%s] with metric labels [%s]",
+                                dataFile, labels);
+                    } catch (Exception e) {
+                        log.errorf(e, "Failed to write metrics exporter proxy data file: %s", dataFile);
+                    }
+                    break;
+                }
+                default: {
+                    log.debugf("Metrics exporter proxy mode is disabled");
+                    break;
+                }
+            }
         } else {
             log.infoMetricsExporterDisabled();
         }
     }
 
-    private void waitForHawkularServer() throws Exception {
-        waitForHawkularInventory();
+    private void stopMetricsExporter() throws Exception {
+        if (metricsExporter != null) {
+            log.infoStopMetricsExporter();
+            metricsExporter.stop();
+            metricsExporter = null;
+        }
+        if (metricsExporterDiscoveryExecutor != null) {
+            log.debugf("Shutting down metric endpoint proxy discovery job");
+            metricsExporterDiscoveryExecutor.shutdownNow();
+            metricsExporterDiscoveryExecutor = null;
+        }
+
     }
 
-    private void waitForHawkularInventory() throws Exception {
-        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-        String statusUrl = Util.getContextUrlString(configuration.getStorageAdapter().getUrl(),
-                configuration.getStorageAdapter().getInventoryContext()).append("status").toString();
-        Request request = this.httpClientBuilder.buildJsonGetRequest(statusUrl, null);
+    // this method should not rely on agent fields (like this.configuration) because we want to make sure
+    // this method doesn't use fields that aren't initialized yet. Pass everything through parameters.
+    private void waitForHawkularServer(HttpClientBuilder hcb, StorageAdapterConfiguration storageAdapterConfig)
+            throws Exception {
+        waitForHawkularInventory(hcb, storageAdapterConfig);
+    }
+
+    // this method should not rely on agent fields (like this.configuration) because we want to make sure
+    // this method doesn't use fields that aren't initialized yet. Pass everything through parameters.
+    private void waitForHawkularInventory(HttpClientBuilder hcb, StorageAdapterConfiguration storageAdapterConfig)
+            throws Exception {
+        OkHttpClient httpclient = hcb.getHttpClient();
+        String statusUrl = Util
+                .getContextUrlString(storageAdapterConfig.getUrl(), storageAdapterConfig.getInventoryContext())
+                .append("status").toString();
+        Request request = hcb.buildJsonGetRequest(statusUrl, null);
         int counter = 0;
         while (true) {
             Response response = null;
@@ -556,52 +679,73 @@ public abstract class AgentCoreEngine {
         }
     }
 
-    private void downloadAndOverlayConfiguration() throws Exception {
-        // If we have no inventory metadata at all, we are required to download the config successfully;
-        // an exception is thrown if we cannot download and overlay the config.
+    // this method should not rely on agent fields (like this.configuration) because we want to make sure
+    // this method doesn't use fields that aren't initialized yet. Pass everything through parameters.
+    private AgentCoreEngineConfiguration downloadAndOverlayConfiguration(
+            HttpClientBuilder hcb,
+            AgentCoreEngineConfiguration initialConfig)
+            throws Exception {
+
+        AgentCoreEngineConfiguration newOverlaidConfiguration = initialConfig;
+
+        String typeVersionToDownload = initialConfig.getGlobalConfiguration().getTypeVersion();
+
+        // If there is no type version declared, download and overlay nothing.
+        // If we have no inventory metadata at all, and we are not in metrics only mode
+        // then we are required to download the config successfully;
+        // an exception is thrown if we cannot download and overlay the config in that case.
         // If we already have some inventory metadata already, then we will not abort with an exception
         // on download/overlay failure - we'll just continue with the old inventory metadata.
-        boolean requireDownload = this.configuration.getDmrConfiguration().getTypeSets().isDisabledOrEmpty()
-                && this.configuration.getJmxConfiguration().getTypeSets().isDisabledOrEmpty();
-
-        OkHttpClient httpclient = this.httpClientBuilder.getHttpClient();
-        String url = Util.getContextUrlString(
-                configuration.getStorageAdapter().getUrl(),
-                configuration.getStorageAdapter().getInventoryContext())
-                .append("get-inventory-config")
-                .append("/")
-                .append(this.configuration.getGlobalConfiguration().getTypeVersion())
-                .toString();
-        Request request = this.httpClientBuilder.buildGetRequest(url, null);
-        Response response = null;
+        boolean requireDownload = false;
         Exception error = null;
-        try {
-            log.debugf("Downloading inventory configuration from server: %s", url);
-            response = httpclient.newCall(request).execute();
-            if (response.code() != 200) {
-                error = new Exception(String.format("Cannot download inventory configuration [%s]: %d/%s",
-                        this.configuration.getGlobalConfiguration().getTypeVersion(),
-                        response.code(),
-                        response.message()));
-            } else {
-                this.configuration = overlayConfiguration(response.body().byteStream());
+
+        if (typeVersionToDownload != null) {
+            if (initialConfig.getDmrConfiguration().getTypeSets().isDisabledOrEmpty()
+                    && initialConfig.getJmxConfiguration().getTypeSets().isDisabledOrEmpty()) {
+                requireDownload = !isMetricsOnlyMode(initialConfig);
             }
-        } catch (Exception e) {
-            error = new Exception(String.format("Failed to download and overlay inventory configuration [%s]",
-                    this.configuration.getGlobalConfiguration().getTypeVersion()), e);
-        } finally {
-            if (response != null) {
-                response.body().close();
+
+            OkHttpClient httpclient = hcb.getHttpClient();
+            String url = Util.getContextUrlString(
+                    initialConfig.getStorageAdapter().getUrl(),
+                    initialConfig.getStorageAdapter().getInventoryContext())
+                    .append("get-inventory-config")
+                    .append("/")
+                    .append(typeVersionToDownload)
+                    .toString();
+            Request request = hcb.buildGetRequest(url, null);
+            Response response = null;
+            try {
+                log.debugf("Downloading inventory configuration from server: %s", url);
+                response = httpclient.newCall(request).execute();
+                if (response.code() != 200) {
+                    error = new Exception(String.format("Cannot download inventory configuration [%s]: %d/%s",
+                            typeVersionToDownload, response.code(), response.message()));
+                } else {
+                    newOverlaidConfiguration = overlayConfiguration(response.body().byteStream());
+                }
+            } catch (Exception e) {
+                error = new Exception(String.format("Failed to download and overlay inventory configuration [%s]",
+                        typeVersionToDownload), e);
+            } finally {
+                if (response != null) {
+                    response.body().close();
+                }
             }
+        } else {
+            log.debugf("No inventory type version declared; no configuration will be downloaded. "
+                    + "Original configuration will be used as-is.");
         }
 
         if (error != null) {
             if (requireDownload) {
                 throw error;
             } else {
-                log.errorf(error, "%s. Will continue with the previous inventory configuration.");
+                log.errorf(error, "Will continue with the previous inventory configuration.");
             }
         }
+
+        return newOverlaidConfiguration;
     }
 
     private File downloadMetricsExporterConfigFile() throws Exception {
@@ -628,6 +772,7 @@ public abstract class AgentCoreEngine {
             } else {
                 String bodyString = response.body().string();
                 configFileToWrite = expectedMetricsExporterFile();
+                configFileToWrite.getParentFile().mkdirs();
                 Util.write(bodyString, configFileToWrite);
             }
         } catch (Exception e) {
@@ -676,8 +821,17 @@ public abstract class AgentCoreEngine {
         return "UP".equals(status);
     }
 
+    protected boolean isMetricsOnlyMode(AgentCoreEngineConfiguration config) {
+        // if there are no managed servers defined, we are in metrics only mode
+        return (config.getDmrConfiguration().getEndpoints().isEmpty()
+                && config.getJmxConfiguration().getEndpoints().isEmpty());
+    }
+
     /**
-     * @return feed ID of the agent if the agent has started and the feed was registered; null otherwise
+     * The Feed ID of the agent if the agent has started and the feed was generated. If this agent is not
+     * registering inventory with the server (i.e. is in metrics-only mode) this will be null.
+     *
+     * @return feed ID or null if this agent is not associated with a feed
      */
     public String getFeedId() {
         return this.feedId;
@@ -711,6 +865,17 @@ public abstract class AgentCoreEngine {
      */
     public boolean isImmutable() {
         return this.configuration.getGlobalConfiguration().isImmutable();
+    }
+
+    /**
+     * The set of all metrics exporters that this agent knows about and that should be proxied to look like they
+     * come from ths agent. This is only useful when in metrics exporter proxy mode of "master".
+     * @return a set of all known metric exporters that we want to proxy.
+     */
+    protected Set<String> getMetricsExportersThatAreProxied() {
+        synchronized (metricsExportersThatAreProxied) {
+            return new HashSet<>(metricsExportersThatAreProxied);
+        }
     }
 
     /**

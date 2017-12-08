@@ -18,12 +18,77 @@ package org.hawkular.agent.monitor.util;
 
 import java.net.MalformedURLException;
 import java.util.HashMap;
+import java.util.Properties;
 
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class UtilTest {
+    @Test
+    public void testExtractPropertiesFromExpression() {
+        Properties props;
+
+        // this is the main use-case
+        System.setProperty("jboss.node.name", "master:server-one");
+        props = Util.extractPropertiesFromExpression("jboss.node.name|([^:]+)[:]?(.*)?|domain_host,domain_server");
+        Assert.assertEquals(2, props.size());
+        Assert.assertEquals("master", props.get("domain_host"));
+        Assert.assertEquals("server-one", props.get("domain_server"));
+
+        System.setProperty("jboss.node.name", "server-one");
+        props = Util.extractPropertiesFromExpression("jboss.node.name|([^:]+)[:]?(.*)?|domain_host,domain_server");
+        Assert.assertEquals(1, props.size());
+        Assert.assertEquals("server-one", props.get("domain_host"));
+
+        // just test some odd things
+
+        // null or empty expression
+        props = Util.extractPropertiesFromExpression(null);
+        Assert.assertEquals(0, props.size());
+        props = Util.extractPropertiesFromExpression("");
+        Assert.assertEquals(0, props.size());
+
+        // no sysprop defined
+        System.clearProperty("my.prop");
+
+        props = Util.extractPropertiesFromExpression("my.prop|([^:]+)[:]?(.*)?|abc,xyz");
+        Assert.assertEquals(0, props.size());
+
+        // regex could have two groups, but actual value only has one
+        System.setProperty("my.prop", "foo");
+        props = Util.extractPropertiesFromExpression("my.prop|([^:]+)[:]?(.*)?|abc,xyz");
+        Assert.assertEquals(1, props.size());
+        Assert.assertEquals("foo", props.get("abc"));
+
+        // regex has only one group, but more labels are specified
+        System.setProperty("my.prop", "foo");
+        props = Util.extractPropertiesFromExpression("my.prop|(.+)|abc,xyz");
+        Assert.assertEquals(1, props.size());
+        Assert.assertEquals("foo", props.get("abc"));
+
+        // regex has no groups - should use group(0) (the whole thing)
+        System.setProperty("my.prop", "foo");
+        props = Util.extractPropertiesFromExpression("my.prop|.+|abc,xyz");
+        System.out.println(props);
+        Assert.assertEquals(1, props.size());
+        Assert.assertEquals("foo", props.get("abc"));
+
+        System.clearProperty("my.prop");
+
+        // bad expression
+        try {
+            Util.extractPropertiesFromExpression("my.prop|(.+)");
+            Assert.fail("bad expression: missing labels");
+        } catch (Exception expected) {
+        }
+        try {
+            Util.extractPropertiesFromExpression("my.prop|(.+)|a,b|this is bad");
+            Assert.fail("bad expression");
+        } catch (Exception expected) {
+        }
+    }
+
     @Test
     public void testExtractHashFromString() {
         Assert.assertNull(Util.extractDockerContainerIdFromString(null));

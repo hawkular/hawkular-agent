@@ -341,7 +341,7 @@ public class ConfigManagerTest {
 
             // now overlay the empty config with the full config and test that it has everything expected
             InputStream stream = new ByteArrayInputStream(new ObjectMapper().writeValueAsBytes(fullConfig));
-            configManager.overlayConfiguration(stream, false);
+            configManager.overlayConfiguration(stream, false, false);
             testFullConfigDmr(configManager.getConfiguration());
             testFullConfigJmx(configManager.getConfiguration());
         } finally {
@@ -369,7 +369,7 @@ public class ConfigManagerTest {
             File file2 = loadTestConfigFile("/test-overlay2.yaml");
             Configuration config2 = new ConfigManager(file2).getConfiguration(true);
             InputStream stream = new ByteArrayInputStream(new ObjectMapper().writeValueAsBytes(config2));
-            configManager.overlayConfiguration(stream, true);
+            configManager.overlayConfiguration(stream, true, true);
             Configuration newConfig = configManager.getConfiguration();
             Assert.assertEquals(2, newConfig.getDmrMetricSets().length);
             Assert.assertEquals(2, newConfig.getDmrResourceTypeSets().length);
@@ -401,7 +401,7 @@ public class ConfigManagerTest {
             File file2 = loadTestConfigFile("/test-overlay-all-resource-types-2.yaml");
             Configuration config2 = new ConfigManager(file2).getConfiguration(true);
             InputStream stream = new ByteArrayInputStream(new ObjectMapper().writeValueAsBytes(config2));
-            configManager.overlayConfiguration(stream, true);
+            configManager.overlayConfiguration(stream, true, true);
             Configuration newConfig = configManager.getConfiguration();
             newConfig.validate();
             Assert.assertEquals(2, newConfig.getDmrMetricSets().length);
