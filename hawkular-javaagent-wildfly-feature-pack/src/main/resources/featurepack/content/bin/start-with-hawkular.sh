@@ -66,7 +66,7 @@ while [[ $# -gt 0 ]]; do
       HAWKULAR_PASSWORD="${key#*=}"
       ;;
     *)
-      _ARGS = "${_ARGS} $1"
+      _ARGS="${_ARGS} $1"
       ;;
   esac
   shift
