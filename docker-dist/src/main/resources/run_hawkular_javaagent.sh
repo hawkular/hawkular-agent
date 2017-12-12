@@ -29,7 +29,11 @@ import_hawkular_services_public_key() {
 }
 
 run_hawkular_agent() {
-    ${JBOSS_HOME}/bin/${HAWKULAR_AGENT_MODE}.sh -b 0.0.0.0
+    local START_WITH_HAWKULAR_PARAMS="-s ${HAWKULAR_URL}"
+    if [[ "${HAWKULAR_AGENT_MODE}" == "domain" ]]; then
+      START_WITH_HAWKULAR_PARAMS="$START_WITH_HAWKULAR_PARAMS -d"
+    fi
+    ${JBOSS_HOME}/bin/start-with-hawkular.sh ${START_WITH_HAWKULAR_PARAMS} "$@"
 }
 
 main() {
@@ -37,9 +41,6 @@ main() {
   if [[ "${HAWKULAR_AGENT_MODE}" != "standalone" ]] && [[ "${HAWKULAR_AGENT_MODE}" != "domain" ]]; then
     echo 'HAWKULAR_AGENT_MODE must be set to "standalone" or "domain", found:' ${HAWKULAR_AGENT_MODE}
     exit
-  fi
-  if [[ "${HAWKULAR_AGENT_MODE}" == "domain" ]]; then
-    sed -i "s|WF10|WF10-DOMAIN|g" /opt/hawkular/configuration/hawkular-javaagent-config.yaml
   fi
   import_hawkular_services_public_key
   run_hawkular_agent "$@"
