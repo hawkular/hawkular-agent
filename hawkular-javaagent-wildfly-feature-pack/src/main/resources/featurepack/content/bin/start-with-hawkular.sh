@@ -21,7 +21,7 @@ _METRICS_HOST=`hostname`
 usage() {
   echo "Usage: $0"
   echo "  -d|--domain - to run in domain mode as opposed to standalone mode"
-  echo "  -s|--server <server-name> - the host where the Hawkular Server is running"
+  echo "  -s|--server <server-url> - the url where the Hawkular Server is running"
   echo "  -u|--username <username> - the username to use when logging into the Hawkular Server"
   echo "  -p|--password <password> - the username credentials"
   echo "  [-h|--metrics-host <host/IP>] - the hostname to bind the metrics exporter"
@@ -73,7 +73,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ -z "$_SERVER" ]; then
-  echo "Specify the server"
+  echo "Specify the server url"
   usage
   exit 1
 fi
@@ -95,8 +95,8 @@ export HAWKULAR_PASSWORD
 
 _DIR="$( cd "$( dirname "${0}" )" && pwd )"
 if [ -z "$_DOMAIN_MODE" ]; then
-  ${_DIR}/standalone.sh -Dhawkular.rest.url=http://${_SERVER}:8080 -Dhawkular.agent.metrics.host=${_METRICS_HOST} ${_ARGS}
+  ${_DIR}/standalone.sh -Dhawkular.rest.url=${_SERVER} -Dhawkular.agent.metrics.host=${_METRICS_HOST} ${_ARGS}
 else
-  ${_DIR}/domain.sh --host-config=host-hawkular.xml -Dhawkular.rest.url=http://${_SERVER}:8080 -Dhawkular.agent.metrics.host=${_METRICS_HOST} ${_ARGS}
+  ${_DIR}/domain.sh --host-config=host-hawkular.xml -Dhawkular.rest.url=${_SERVER} -Dhawkular.agent.metrics.host=${_METRICS_HOST} ${_ARGS}
 fi
 
