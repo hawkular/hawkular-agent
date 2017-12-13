@@ -159,6 +159,7 @@ managed-servers:
     - name: /
     metric-labels:
       feed_id: "%FeedId"
+    enable-statistics: false
 
   local-jmx:
     name: Local JMX
@@ -179,6 +180,7 @@ managed-servers:
     - name: /
     metric-labels:
       feed_id: "%FeedId"
+    enable-statistics: false
 
   remote-jmx:
   - name: Remote JMX

@@ -555,6 +555,7 @@ public class ConfigManagerTest {
         Assert.assertEquals(2, ldmr.getMetricLabels().size());
         Assert.assertEquals("val1", ldmr.getMetricLabels().get("localdmrtag1"));
         Assert.assertEquals("val2", ldmr.getMetricLabels().get("dmrtag2"));
+        Assert.assertEquals(Boolean.TRUE, ldmr.getEnableStatistics());
 
         // managed-servers - local jmx
         LocalJMX ljmx = config.getManagedServers().getLocalJmx();
@@ -576,6 +577,7 @@ public class ConfigManagerTest {
         Assert.assertEquals(2, rdmr.getMetricLabels().size());
         Assert.assertEquals("val1", rdmr.getMetricLabels().get("remotedmrtag1"));
         Assert.assertEquals("val2", rdmr.getMetricLabels().get("dmrtag2"));
+        Assert.assertEquals(Boolean.FALSE, rdmr.getEnableStatistics());
 
         // managed-servers - remote jmx
         RemoteJMX rjmx = config.getManagedServers().getRemoteJmxs()[0];

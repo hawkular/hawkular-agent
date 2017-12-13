@@ -48,6 +48,7 @@ import org.hawkular.agent.monitor.inventory.ResourceType.Builder;
 import org.hawkular.agent.monitor.inventory.TypeSet;
 import org.hawkular.agent.monitor.inventory.TypeSet.TypeSetBuilder;
 import org.hawkular.agent.monitor.inventory.TypeSets;
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXEndpointService;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
@@ -316,7 +317,8 @@ public class ConfigConverter {
                     connectionData,
                     null,
                     config.getManagedServers().getLocalDmr().getMetricLabels(),
-                    null,
+                    Collections.singletonMap(DMREndpointService.ENABLE_STATISTICS_KEY,
+                            config.getManagedServers().getLocalDmr().getEnableStatistics()),
                     asWaitForList(config.getManagedServers().getLocalDmr().getWaitFor()));
             managedServers.put(config.getManagedServers().getLocalDmr().getName(), localDmrEndpointConfig);
         }
@@ -346,7 +348,8 @@ public class ConfigConverter {
                         connectionData,
                         remoteDmr.getSecurityRealmName(),
                         remoteDmr.getMetricLabels(),
-                        null,
+                        Collections.singletonMap(DMREndpointService.ENABLE_STATISTICS_KEY,
+                                remoteDmr.getEnableStatistics()),
                         asWaitForList(remoteDmr.getWaitFor()));
 
                 managedServers.put(remoteDmr.getName(), remoteDmrEndpointConfig);
