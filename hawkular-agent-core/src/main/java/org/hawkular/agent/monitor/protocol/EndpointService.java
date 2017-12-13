@@ -508,9 +508,18 @@ public abstract class EndpointService<L, S extends Session<L>> {
             } while (!ready);
         }
 
+        postStart();
+
         status = ServiceStatus.RUNNING;
 
         LOG.debugf("Started [%s]", toString());
+    }
+
+    /**
+     * Let subclasses perform some stuff after the service is ready and about to start.
+     */
+    protected void postStart() {
+        // no-op
     }
 
     public void stop() {

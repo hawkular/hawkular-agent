@@ -108,6 +108,7 @@ managed-servers:
     wait-for:
     - name: /subsystem=undertow
     - name: /
+    enable-statistics: true
 
   remote-dmr:
   - name:                  Remote WildFly
@@ -124,6 +125,7 @@ managed-servers:
       dmrtag2: val2
     wait-for:
     - name: /subsystem=undertow
+    enable-statistics: false
 
   local-jmx:
     name:                  Local JMX
