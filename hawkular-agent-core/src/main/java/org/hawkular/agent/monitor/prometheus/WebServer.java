@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
-import io.prometheus.jmx.JmxCollector;
 
 public class WebServer {
 
