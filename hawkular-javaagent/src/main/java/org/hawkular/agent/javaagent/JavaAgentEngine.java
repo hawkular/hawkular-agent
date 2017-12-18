@@ -31,6 +31,7 @@ import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -39,7 +40,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.hawkular.agent.javaagent.cmd.UpdateCollectionIntervalsCommand;
+import org.hawkular.agent.javaagent.cmd.EchoCommand;
 import org.hawkular.agent.javaagent.config.ConfigConverter;
 import org.hawkular.agent.javaagent.config.ConfigManager;
 import org.hawkular.agent.javaagent.config.Configuration;
@@ -48,9 +49,11 @@ import org.hawkular.agent.javaagent.log.JavaAgentLoggers;
 import org.hawkular.agent.javaagent.log.MsgLogger;
 import org.hawkular.agent.monitor.cmd.Command;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.MetricsExporterConfiguration;
 import org.hawkular.agent.monitor.protocol.dmr.ModelControllerClientFactory;
 import org.hawkular.agent.monitor.service.AgentCoreEngine;
 import org.hawkular.agent.monitor.service.ServiceStatus;
+import org.hawkular.agent.monitor.service.Version;
 import org.hawkular.bus.common.BasicMessage;
 
 /**
@@ -58,7 +61,7 @@ import org.hawkular.bus.common.BasicMessage;
  */
 public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean {
     private static final MsgLogger log = JavaAgentLoggers.getLogger(JavaAgentEngine.class);
-    private static final String MBEAN_OBJECT_NAME = "org.hawkular:type=hawkular-javaagent";
+    private static final String MBEAN_OBJECT_NAME = "org.hawkular.agent:type=hawkular-javaagent";
 
     private final ConfigManager configurationManager;
     private final Map<String, TrustManager[]> trustOnlyTrustManagers = new HashMap<>();
@@ -188,8 +191,15 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
     }
 
     @Override
-    protected AgentCoreEngineConfiguration loadRuntimeConfiguration(AgentCoreEngineConfiguration config) {
-        return config;
+    protected AgentCoreEngineConfiguration overlayConfiguration(InputStream newConfig) {
+        try {
+            this.configurationManager.overlayConfiguration(newConfig, false, false);
+            AgentCoreEngineConfiguration agentConfig;
+            agentConfig = new ConfigConverter(this.configurationManager.getConfiguration()).convert();
+            return agentConfig;
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot convert overlaid configuration - config is invalid", e);
+        }
     }
 
     @Override
@@ -199,17 +209,73 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
 
     @Override
     protected String autoGenerateFeedId() throws Exception {
-        return InetAddress.getLocalHost().getCanonicalHostName();
+        // Try to figure out a good feed ID to use.
+        // If we are attached to WildFly/EAP, certain system properties may be set to uniquely
+        // identify the server - we'll use that identification for our feed ID.
+        // Otherwise, try to figure out a feed ID using the hostname.
+        // If nothing works, use the local host name as known via Java API.
+        final class FeedIdLocation {
+            private static final String SYSPROP = "System Property";
+            private static final String ENVVAR = "Environment Variable";
+            private static final String JAVAAPI = "Java API";
+            private String where;
+            private String name;
+
+            private FeedIdLocation(String where, String name) {
+                this.where = where;
+                this.name = name;
+            }
+
+            private String getFeedId() throws Exception {
+                String feedId;
+                if (SYSPROP.equals(this.where)) {
+                    feedId = System.getProperty(this.name);
+                } else if (ENVVAR.equals(this.where)) {
+                    feedId = System.getenv(this.name);
+                } else {
+                    feedId = InetAddress.getLocalHost().getCanonicalHostName();
+                }
+
+                if (feedId != null) {
+                    // log it so we know where we are getting it from
+                    log.debugf("Got feed ID from [%s '%s']=[%s]", this.where, this.name, feedId);
+                }
+                return feedId;
+            }
+        }
+
+        FeedIdLocation[] feedIdLocations = new FeedIdLocation[] {
+                new FeedIdLocation(FeedIdLocation.SYSPROP, "jboss.server.management.uuid"),
+                new FeedIdLocation(FeedIdLocation.SYSPROP, "jboss.node.name"),
+                new FeedIdLocation(FeedIdLocation.SYSPROP, "jboss.host.name"),
+                new FeedIdLocation(FeedIdLocation.SYSPROP, "jboss.server.name"),
+                new FeedIdLocation(FeedIdLocation.SYSPROP, "jboss.qualified.host.name"),
+                new FeedIdLocation(FeedIdLocation.ENVVAR, "HOSTNAME"),
+                new FeedIdLocation(FeedIdLocation.ENVVAR, "COMPUTERNAME"),
+                new FeedIdLocation(FeedIdLocation.JAVAAPI, "InetAddress.getLocalHost().getCanonicalHostName()")
+        };
+
+        for (FeedIdLocation fil : feedIdLocations) {
+            String feedId = fil.getFeedId();
+            if (feedId != null) {
+                return feedId;
+            }
+        }
+        throw new IllegalStateException("Cannot autogenerate feed ID");
     }
 
     @Override
     protected Map<String, Class<? extends Command<? extends BasicMessage, ? extends BasicMessage>>> //
             buildAdditionalCommands() {
-        return Collections.singletonMap(UpdateCollectionIntervalsCommand.REQUEST_CLASS.getName(),
-                UpdateCollectionIntervalsCommand.class);
+        return Collections.singletonMap(EchoCommand.REQUEST_CLASS.getName(), EchoCommand.class);
     }
 
     // JMX Interface
+
+    @Override
+    public String getVersion() {
+        return Version.getVersionString();
+    }
 
     @Override
     public boolean getImmutable() {
@@ -219,6 +285,17 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
     @Override
     public boolean getInContainer() {
         return getConfiguration().getGlobalConfiguration().isInContainer();
+    }
+
+    @Override
+    public String getMetricsEndpoints() {
+        MetricsExporterConfiguration mec = getConfiguration().getMetricsExporterConfiguration();
+        StringBuilder endpoints = new StringBuilder(String.format("%s:%d", mec.getHost(), mec.getPort()));
+        Set<String> proxiedEndpoints = getMetricsExportersThatAreProxied();
+        for (String proxiedEndpoint : proxiedEndpoints) {
+            endpoints.append("|").append(proxiedEndpoint);
+        }
+        return endpoints.toString();
     }
 
     @Override
@@ -248,10 +325,14 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
         try {
             ServiceStatus status = getStatus();
             if (status == ServiceStatus.RUNNING) {
-                long start = System.currentTimeMillis();
-                getProtocolServices().discoverAll();
-                long duration = System.currentTimeMillis() - start;
-                return String.format("Full inventory discovery scan completed in [%d] milliseconds", duration);
+                if (!isMetricsOnlyMode(getConfiguration())) {
+                    long start = System.currentTimeMillis();
+                    getProtocolServices().discoverAll();
+                    long duration = System.currentTimeMillis() - start;
+                    return String.format("Full inventory discovery scan completed in [%d] milliseconds", duration);
+                } else {
+                    return String.format("Cannot run discovery scan because the agent is in metrics-only mode");
+                }
             } else {
                 return String.format("Cannot run discovery scan because the agent is not running. Status is [%s]",
                         status);
@@ -263,6 +344,10 @@ public class JavaAgentEngine extends AgentCoreEngine implements JavaAgentMXBean 
 
     @Override
     public String inventoryReport() {
+        if (isMetricsOnlyMode(getConfiguration())) {
+            return "Cannot obtain inventory report because the agent is in metrics-only mode";
+        }
+
         try {
             return InventoryReport.getInventoryReport(this);
         } catch (Exception e) {

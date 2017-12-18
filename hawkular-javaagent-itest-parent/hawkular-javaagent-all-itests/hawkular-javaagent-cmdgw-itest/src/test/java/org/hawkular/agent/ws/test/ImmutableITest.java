@@ -18,21 +18,13 @@ package org.hawkular.agent.ws.test;
 
 import java.util.Optional;
 
-import org.hamcrest.CoreMatchers;
 import org.hawkular.agent.javaagent.config.ConfigManager;
 import org.hawkular.agent.javaagent.config.Configuration;
-import org.hawkular.agent.javaagent.config.DMRMetric;
-import org.hawkular.agent.javaagent.config.DMRMetricSet;
-import org.hawkular.agent.javaagent.config.TimeUnits;
 import org.hawkular.cmdgw.ws.test.TestWebSocketClient;
-import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent;
-import org.hawkular.cmdgw.ws.test.TestWebSocketClient.ExpectedEvent.ExpectedMessage;
-import org.hawkular.cmdgw.ws.test.TestWebSocketClient.PatternMatcher;
 import org.hawkular.inventory.api.model.Resource;
+import org.jboss.as.controller.client.ModelControllerClient;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import okhttp3.ws.WebSocket;
 
 /**
  * @author <a href="https://github.com/jshaughn">Jay Shaughnessy</a>
@@ -46,7 +38,7 @@ public class ImmutableITest extends AbstractCommandITest {
 
         waitForAgentViaJMX();
 
-        Optional<Resource> agent = testHelper.getResourceByType(hawkularFeedId, "Hawkular WildFly Agent", 1)
+        Optional<Resource> agent = testHelper.getResourceByType(hawkularFeedId, "Hawkular Java Agent", 1)
                 .stream()
                 .findFirst();
         if (!agent.isPresent()) {
@@ -56,39 +48,13 @@ public class ImmutableITest extends AbstractCommandITest {
         // check we are starting with our original defaults - this is just a sanity check
         Configuration config = getAgentConfigurationFromFile();
         Assert.assertEquals(config.getSubsystem().getImmutable().booleanValue(), false);
-        assertMetricInterval(config, "WildFly Threading Metrics", "Thread Count", 2, TimeUnits.minutes);
 
         // make the agent immutable by flipping the flag and restarting it
         config.getSubsystem().setImmutable(true);
         new ConfigManager(agentConfigFile).updateConfiguration(config, true);
         restartJMXAgent();
 
-        String req = "UpdateCollectionIntervalsRequest={\"authentication\":" + authentication + ", "
-                + "\"feedId\":\"" + agent.get().getFeedId() + "\","
-                + "\"resourceId\":\"" + agent.get().getId() + "\","
-                + "\"metricTypes\":{\"WildFly Threading Metrics~Thread Count\":\"159\"},"
-                + "\"availTypes\":{}"
-                + "}";
-
-        String response = ".*\"status\":\"ERROR\""
-                + ".*\"message\":\"Could not perform.*Command not allowed because the agent is immutable.*";
-
-        ExpectedEvent expectedEvent = new ExpectedMessage(new PatternMatcher(response),
-                CoreMatchers.equalTo(WebSocket.TEXT), TestWebSocketClient.Answer.CLOSE);
-
-        try (TestWebSocketClient testClient = TestWebSocketClient.builder()
-                .url(baseGwUri + "/ui/ws")
-                .expectWelcome(req)
-                .expectGenericSuccess(agent.get().getFeedId())
-                .expectMessage(expectedEvent)
-                .expectClose()
-                .build()) {
-            testClient.validate(10000);
-        }
-
-        // value should not have changed
-        config = getAgentConfigurationFromFile();
-        assertMetricInterval(config, "WildFly Threading Metrics", "Thread Count", 2, TimeUnits.minutes);
+        changeSomething();
 
         // make the agent mutable again so future tests can change things if need be
         config.getSubsystem().setImmutable(false);
@@ -96,25 +62,41 @@ public class ImmutableITest extends AbstractCommandITest {
         restartJMXAgent();
     }
 
-    private void assertMetricInterval(Configuration agentConfig, String setName, String metricName, int expectedVal,
-            TimeUnits expectedUnits) {
-        for (DMRMetricSet s : agentConfig.getDmrMetricSets()) {
-            if (s.getName().equals(setName)) {
-                for (DMRMetric m : s.getDmrMetrics()) {
-                    if (m.getName().equals(metricName)) {
-                        if (m.getInterval().intValue() == expectedVal) {
-                            return;
-                        } else {
-                            Assert.fail(String.format("Metric type [%s~%s] expected to be [%d %s] but was [%d %s]",
-                                    setName, metricName,
-                                    expectedVal, expectedUnits.name(),
-                                    m.getInterval().intValue(), m.getTimeUnits().name()));
-                        }
-                    }
-                }
+    public void changeSomething() throws Throwable {
+        // attempt to flip some statistic enabled flags - if we are immutable, this should not be allowed
+        Resource wfResource = getHawkularWildFlyServerResource();
+
+        try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
+
+            String req = "StatisticsControlRequest={\"authentication\":" + authentication + ", "
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
+                    + "\"web\":\"ENABLED\","
+                    + "\"transactions\":\"ENABLED\","
+                    + "\"datasources\":\"ENABLED\","
+                    + "\"infinispan\":\"ENABLED\","
+                    + "\"ejb3\":\"ENABLED\","
+                    + "\"messaging\":\"ENABLED\""
+                    + "}";
+
+            String response = "StatisticsControlResponse={"
+                    + "\"feedId\":\"" + wfResource.getFeedId() + "\","
+                    + "\"resourceId\":\"" + wfResource.getId() + "\","
+                    + "\"destinationSessionId\":\"{{sessionId}}\","
+                    + "\"status\":\"ERROR\","
+                    + "\"message\":\"\\E.*\\QCommand not allowed because the agent is immutable\""
+                    + "}";
+
+            try (TestWebSocketClient testClient = TestWebSocketClient.builder()
+                    .url(baseGwUri + "/ui/ws")
+                    .expectWelcome(req)
+                    .expectGenericSuccess(wfResource.getFeedId())
+                    .expectText(response, TestWebSocketClient.Answer.CLOSE)
+                    .expectClose()
+                    .build()) {
+                testClient.validate(10000);
             }
         }
-        Assert.fail(String.format("Agent missing metric type [%s~%s]", setName, metricName));
     }
 
 }

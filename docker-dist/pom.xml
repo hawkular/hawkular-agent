@@ -53,11 +53,6 @@
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
         <configuration>
-          <mapping>
-            <Dockerfile-wf-agent>SCRIPT_STYLE</Dockerfile-wf-agent>
-            <Dockerfile-wf-agent-domain>SCRIPT_STYLE</Dockerfile-wf-agent-domain>
-          </mapping>
-
           <excludes>
             <exclude>.dockerignore</exclude>
             <exclude>**/*.war</exclude>
@@ -105,7 +100,6 @@
                   <artifactId>hawkular-javaagent-wildfly-dist</artifactId>
                   <type>zip</type>
                   <outputDirectory>${project.build.directory}</outputDirectory>
-                  <includes>**/hawkular-javaagent-config.yaml</includes>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -121,8 +115,20 @@
             <phase>generate-resources</phase>
             <configuration>
               <target>
-                <move file="${project.build.directory}/hawkular-javaagent-${project.version}-shaded.jar" tofile="${project.build.directory}/hawkular-javaagent.jar" />
-                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}/standalone/configuration/hawkular-javaagent-config.yaml" tofile="${project.build.directory}/hawkular-javaagent-config.yaml" />
+                <!-- Global -->
+                <move file="${project.build.directory}/hawkular-javaagent-${project.version}-shaded.jar" tofile="${project.build.directory}/hawkular/bin/hawkular-javaagent.jar" />
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}/bin/start-with-hawkular.sh" tofile="${project.build.directory}/hawkular/bin/start-with-hawkular.sh" />
+
+                <!-- Standalone -->
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}/standalone/configuration/hawkular-javaagent-config.yaml" tofile="${project.build.directory}/hawkular/standalone/configuration/hawkular-javaagent-config.yaml" />
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}/bin/standalone.conf" tofile="${project.build.directory}/hawkular/bin/standalone.conf" />
+
+                <!-- Domain -->
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}/domain/configuration/hawkular-javaagent-config-domain.yaml" tofile="${project.build.directory}/hawkular/domain/configuration/hawkular-javaagent-config-domain.yaml" />
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}/domain/configuration/hawkular-javaagent-config-metrics-only.yaml" tofile="${project.build.directory}/hawkular/domain/configuration/hawkular-javaagent-config-metrics-only.yaml" />
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}/domain/configuration/host-hawkular.xml" tofile="${project.build.directory}/hawkular/domain/configuration/host-hawkular.xml" />
+                <move file="${project.build.directory}/hawkular-javaagent-wildfly-dist-${project.version}/bin/domain.conf" tofile="${project.build.directory}/hawkular/bin/domain.conf" />
+
               </target>
             </configuration>
             <goals>

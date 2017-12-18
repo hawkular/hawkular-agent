@@ -16,7 +16,8 @@
  */
 package org.hawkular.agent.javaagent.config;
 
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.hawkular.agent.javaagent.Util;
 
@@ -37,6 +38,9 @@ public class Configuration implements Validatable {
     @JsonProperty("security-realm")
     private SecurityRealm[] securityRealms;
 
+    @JsonProperty("metrics-exporter")
+    private MetricsExporter metricsExporter = new MetricsExporter();
+
     @JsonProperty("storage-adapter")
     private StorageAdapter storageAdapter = new StorageAdapter();
 
@@ -46,17 +50,11 @@ public class Configuration implements Validatable {
     @JsonProperty("metric-set-dmr")
     private DMRMetricSet[] dmrMetricSets;
 
-    @JsonProperty("avail-set-dmr")
-    private DMRAvailSet[] dmrAvailSets;
-
     @JsonProperty("resource-type-set-dmr")
     private DMRResourceTypeSet[] dmrResourceTypeSets;
 
     @JsonProperty("metric-set-jmx")
     private JMXMetricSet[] jmxMetricSets;
-
-    @JsonProperty("avail-set-jmx")
-    private JMXAvailSet[] jmxAvailSets;
 
     @JsonProperty("resource-type-set-jmx")
     private JMXResourceTypeSet[] jmxResourceTypeSets;
@@ -73,14 +71,13 @@ public class Configuration implements Validatable {
     /** copy constructor */
     public Configuration(Configuration original) {
         this.subsystem = new Subsystem(original.subsystem);
+        this.metricsExporter = new MetricsExporter(original.metricsExporter);
         this.securityRealms = Util.cloneArray(original.securityRealms);
         this.storageAdapter = new StorageAdapter(original.storageAdapter);
         this.diagnostics = new Diagnostics(original.diagnostics);
         this.dmrMetricSets = Util.cloneArray(original.dmrMetricSets);
-        this.dmrAvailSets = Util.cloneArray(original.dmrAvailSets);
         this.dmrResourceTypeSets = Util.cloneArray(original.dmrResourceTypeSets);
         this.jmxMetricSets = Util.cloneArray(original.jmxMetricSets);
-        this.jmxAvailSets = Util.cloneArray(original.jmxAvailSets);
         this.jmxResourceTypeSets = Util.cloneArray(original.jmxResourceTypeSets);
         this.managedServers = new ManagedServers(original.managedServers);
         this.platform = new Platform(original.platform);
@@ -101,18 +98,12 @@ public class Configuration implements Validatable {
         if (dmrMetricSets == null) {
             dmrMetricSets = new DMRMetricSet[0];
         }
-        if (dmrAvailSets == null) {
-            dmrAvailSets = new DMRAvailSet[0];
-        }
         if (dmrResourceTypeSets == null) {
             dmrResourceTypeSets = new DMRResourceTypeSet[0];
         }
 
         if (jmxMetricSets == null) {
             jmxMetricSets = new JMXMetricSet[0];
-        }
-        if (jmxAvailSets == null) {
-            jmxAvailSets = new JMXAvailSet[0];
         }
         if (jmxResourceTypeSets == null) {
             jmxResourceTypeSets = new JMXResourceTypeSet[0];
@@ -121,6 +112,7 @@ public class Configuration implements Validatable {
         // validate all components of the configuration
 
         subsystem.validate();
+        metricsExporter.validate();
         storageAdapter.validate();
         for (SecurityRealm o : securityRealms) {
             o.validate();
@@ -129,82 +121,16 @@ public class Configuration implements Validatable {
         for (DMRMetricSet o : dmrMetricSets) {
             o.validate();
         }
-        for (DMRAvailSet o : dmrAvailSets) {
-            o.validate();
-        }
         for (DMRResourceTypeSet o : dmrResourceTypeSets) {
             o.validate();
         }
         for (JMXMetricSet o : jmxMetricSets) {
             o.validate();
         }
-        for (JMXAvailSet o : jmxAvailSets) {
-            o.validate();
-        }
         for (JMXResourceTypeSet o : jmxResourceTypeSets) {
             o.validate();
         }
         managedServers.validate();
-
-        // if a managed server's resource type sets are empty, assume it wants all of them
-
-        LocalJMX localJmx = managedServers.getLocalJmx();
-        if (localJmx != null) {
-            String[] localJmxManagedServerResourceTypeSets = localJmx.getResourceTypeSets();
-            if (localJmxManagedServerResourceTypeSets == null || localJmxManagedServerResourceTypeSets.length == 0) {
-                ArrayList<String> allEnabledResourceTypeSets = new ArrayList<>();
-                for (JMXResourceTypeSet resourceTypeSet : jmxResourceTypeSets) {
-                    if (resourceTypeSet.getEnabled() != Boolean.FALSE) {
-                        allEnabledResourceTypeSets.add(resourceTypeSet.getName());
-                    }
-                }
-                localJmx.setResourceTypeSets(allEnabledResourceTypeSets.toArray(new String[0]));
-            }
-        }
-        if (managedServers.getRemoteJmxs() != null) {
-            for (RemoteJMX remoteJmx : managedServers.getRemoteJmxs()) {
-                String[] remoteJmxManagedServerResourceTypeSets = remoteJmx.getResourceTypeSets();
-                if (remoteJmxManagedServerResourceTypeSets == null
-                        || remoteJmxManagedServerResourceTypeSets.length == 0) {
-                    ArrayList<String> allEnabledResourceTypeSets = new ArrayList<>();
-                    for (JMXResourceTypeSet resourceTypeSet : jmxResourceTypeSets) {
-                        if (resourceTypeSet.getEnabled() != Boolean.FALSE) {
-                            allEnabledResourceTypeSets.add(resourceTypeSet.getName());
-                        }
-                    }
-                    remoteJmx.setResourceTypeSets(allEnabledResourceTypeSets.toArray(new String[0]));
-                }
-            }
-        }
-
-        LocalDMR localDmr = managedServers.getLocalDmr();
-        if (localDmr != null) {
-            String[] localDmrManagedServerResourceTypeSets = localDmr.getResourceTypeSets();
-            if (localDmrManagedServerResourceTypeSets == null || localDmrManagedServerResourceTypeSets.length == 0) {
-                ArrayList<String> allEnabledResourceTypeSets = new ArrayList<>();
-                for (DMRResourceTypeSet resourceTypeSet : dmrResourceTypeSets) {
-                    if (resourceTypeSet.getEnabled() != Boolean.FALSE) {
-                        allEnabledResourceTypeSets.add(resourceTypeSet.getName());
-                    }
-                }
-                localDmr.setResourceTypeSets(allEnabledResourceTypeSets.toArray(new String[0]));
-            }
-        }
-        if (managedServers.getRemoteDmrs() != null) {
-            for (RemoteDMR remoteDmr : managedServers.getRemoteDmrs()) {
-                String[] remoteDmrManagedServerResourceTypeSets = remoteDmr.getResourceTypeSets();
-                if (remoteDmrManagedServerResourceTypeSets == null
-                        || remoteDmrManagedServerResourceTypeSets.length == 0) {
-                    ArrayList<String> allEnabledResourceTypeSets = new ArrayList<>();
-                    for (DMRResourceTypeSet resourceTypeSet : dmrResourceTypeSets) {
-                        if (resourceTypeSet.getEnabled() != Boolean.FALSE) {
-                            allEnabledResourceTypeSets.add(resourceTypeSet.getName());
-                        }
-                    }
-                    remoteDmr.setResourceTypeSets(allEnabledResourceTypeSets.toArray(new String[0]));
-                }
-            }
-        }
 
         platform.validate();
     }
@@ -215,6 +141,14 @@ public class Configuration implements Validatable {
 
     public void setSubsystem(Subsystem subsystem) {
         this.subsystem = subsystem;
+    }
+
+    public MetricsExporter getMetricsExporter() {
+        return metricsExporter;
+    }
+
+    public void setMetricsExporter(MetricsExporter metricsExporter) {
+        this.metricsExporter = metricsExporter;
     }
 
     public SecurityRealm[] getSecurityRealms() {
@@ -249,12 +183,23 @@ public class Configuration implements Validatable {
         this.dmrMetricSets = dmrMetricSets;
     }
 
-    public DMRAvailSet[] getDmrAvailSets() {
-        return dmrAvailSets;
-    }
-
-    public void setDmrAvailSets(DMRAvailSet[] dmrAvailSets) {
-        this.dmrAvailSets = dmrAvailSets;
+    public void addDmrMetricSets(DMRMetricSet[] additionalSets) {
+        if (additionalSets == null || additionalSets.length == 0) {
+            return;
+        }
+        if (this.dmrMetricSets == null) {
+            this.dmrMetricSets = additionalSets;
+            return;
+        }
+        // if a name is the same, the new one overwrites the old one
+        Map<String, DMRMetricSet> combined = new HashMap<>();
+        for (DMRMetricSet set : this.dmrMetricSets) {
+            combined.put(set.getName(), set);
+        }
+        for (DMRMetricSet set : additionalSets) {
+            combined.put(set.getName(), set);
+        }
+        this.dmrMetricSets = combined.values().toArray(new DMRMetricSet[combined.size()]);
     }
 
     public DMRResourceTypeSet[] getDmrResourceTypeSets() {
@@ -265,6 +210,25 @@ public class Configuration implements Validatable {
         this.dmrResourceTypeSets = dmrResourceTypeSets;
     }
 
+    public void addDmrResourceTypeSets(DMRResourceTypeSet[] additionalSets) {
+        if (additionalSets == null || additionalSets.length == 0) {
+            return;
+        }
+        if (this.dmrResourceTypeSets == null) {
+            this.dmrResourceTypeSets = additionalSets;
+            return;
+        }
+        // if a name is the same, the new one overwrites the old one
+        Map<String, DMRResourceTypeSet> combined = new HashMap<>();
+        for (DMRResourceTypeSet set : this.dmrResourceTypeSets) {
+            combined.put(set.getName(), set);
+        }
+        for (DMRResourceTypeSet set : additionalSets) {
+            combined.put(set.getName(), set);
+        }
+        this.dmrResourceTypeSets = combined.values().toArray(new DMRResourceTypeSet[combined.size()]);
+    }
+
     public JMXMetricSet[] getJmxMetricSets() {
         return jmxMetricSets;
     }
@@ -273,12 +237,23 @@ public class Configuration implements Validatable {
         this.jmxMetricSets = jmxMetricSets;
     }
 
-    public JMXAvailSet[] getJmxAvailSets() {
-        return jmxAvailSets;
-    }
-
-    public void setJmxAvailSets(JMXAvailSet[] jmxAvailSets) {
-        this.jmxAvailSets = jmxAvailSets;
+    public void addJmxMetricSets(JMXMetricSet[] additionalSets) {
+        if (additionalSets == null || additionalSets.length == 0) {
+            return;
+        }
+        if (this.jmxMetricSets == null) {
+            this.jmxMetricSets = additionalSets;
+            return;
+        }
+        // if a name is the same, the new one overwrites the old one
+        Map<String, JMXMetricSet> combined = new HashMap<>();
+        for (JMXMetricSet set : this.jmxMetricSets) {
+            combined.put(set.getName(), set);
+        }
+        for (JMXMetricSet set : additionalSets) {
+            combined.put(set.getName(), set);
+        }
+        this.jmxMetricSets = combined.values().toArray(new JMXMetricSet[combined.size()]);
     }
 
     public JMXResourceTypeSet[] getJmxResourceTypeSets() {
@@ -287,6 +262,25 @@ public class Configuration implements Validatable {
 
     public void setJmxResourceTypeSets(JMXResourceTypeSet[] jmxResourceTypeSets) {
         this.jmxResourceTypeSets = jmxResourceTypeSets;
+    }
+
+    public void addJmxResourceTypeSets(JMXResourceTypeSet[] additionalSets) {
+        if (additionalSets == null || additionalSets.length == 0) {
+            return;
+        }
+        if (this.jmxResourceTypeSets == null) {
+            this.jmxResourceTypeSets = additionalSets;
+            return;
+        }
+        // if a name is the same, the new one overwrites the old one
+        Map<String, JMXResourceTypeSet> combined = new HashMap<>();
+        for (JMXResourceTypeSet set : this.jmxResourceTypeSets) {
+            combined.put(set.getName(), set);
+        }
+        for (JMXResourceTypeSet set : additionalSets) {
+            combined.put(set.getName(), set);
+        }
+        this.jmxResourceTypeSets = combined.values().toArray(new JMXResourceTypeSet[combined.size()]);
     }
 
     public ManagedServers getManagedServers() {

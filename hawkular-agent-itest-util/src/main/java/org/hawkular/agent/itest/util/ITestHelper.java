@@ -16,14 +16,9 @@
  */
 package org.hawkular.agent.itest.util;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.zip.GZIPInputStream;
 
 import org.hawkular.inventory.api.model.Resource;
 import org.hawkular.inventory.api.model.ResultSet;
@@ -41,16 +36,16 @@ public class ITestHelper {
     private static final int ATTEMPT_COUNT = 500;
     private static final long ATTEMPT_DELAY = 5000;
 
-    private final String tenantId;
     private final String hawkularAuthHeader;
     private final String baseInvUri;
     private final OkHttpClient client;
     private final ObjectMapper mapper;
+    private final String typeVersion;
 
-    public ITestHelper(String tenantId, String hawkularAuthHeader, String baseInvUri) {
-        this.tenantId = tenantId;
+    public ITestHelper(String hawkularAuthHeader, String baseInvUri, String typeVersion) {
         this.hawkularAuthHeader = hawkularAuthHeader;
         this.baseInvUri = baseInvUri;
+        this.typeVersion = typeVersion;
         this.mapper = new ObjectMapper(new JsonFactory());
         this.client = new OkHttpClient();
     }
@@ -58,29 +53,52 @@ public class ITestHelper {
     public Request.Builder newAuthRequest() {
         return new Request.Builder()
                 .addHeader("Authorization", hawkularAuthHeader)
-                .addHeader("Accept", "application/json")
-                .addHeader("Hawkular-Tenant", tenantId);
+                .addHeader("Accept", "application/json");
     }
 
-    private static String decompress(byte[] gzipped) throws IOException {
-        if ((gzipped == null) || (gzipped.length == 0)) {
-            return "";
+    public void printAllResources(String feedId, String msg) throws Throwable {
+        Collection<Resource> all = getAllResources(feedId);
+        System.out.println("ALL RESOURCES IN HAWKULAR INVENTORY: " + all.size());
+        System.out.println("=====");
+        if (msg != null) {
+            System.out.println(msg);
+            System.out.println("=====");
         }
-        StringBuilder outStr = new StringBuilder();
-        GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(gzipped));
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(gis, "UTF-8"));
-        String line;
-        while ((line = bufferedReader.readLine()) != null) {
-            outStr.append(line);
+        for (Resource r : all) {
+            System.out.println("---");
+            System.out.println(String.format("%s", r.getName()));
+            System.out.println(String.format("\tid:     %s", r.getId()));
+            System.out.println(String.format("\tparent: %s", r.getParentId()));
+            System.out.println(String.format("\ttype:    %s", r.getType().getId()));
         }
-        return outStr.toString();
+        System.out.println("=====");
     }
-
-    public Collection<Resource> getResourceByType(String feedId, String type, int expectedCount)
+    public Collection<Resource> getAllResources(String feedId)
             throws Throwable {
+        // TODO [lponce] this call is not paginating, perhaps enough for itest but it should be adapted in the future
+        String url = baseInvUri + "/resources?feedId=" + feedId;
+        String response = getWithRetries(newAuthRequest()
+                .url(url)
+                .get()
+                .build());
+        if (response.isEmpty()) {
+            return new ArrayList<>();
+        }
+        ResultSet<Resource> rs = mapper.readValue(response, ResultSet.class);
+        return rs.getResults();
+    }
+
+    public Collection<Resource> getResourceByTypeAndTypeVersion(String feedId, String type, String typeVersion,
+            int expectedCount) throws Throwable {
         for (int attempt = 0; attempt < ATTEMPT_COUNT; attempt++) {
+            String typeId;
+            if (typeVersion != null && typeVersion.length() > 0) {
+                typeId = type + " " + typeVersion;
+            } else {
+                typeId = type;
+            }
             // TODO [lponce] this call is not paginating, perhaps enough for itest but it should be adapted in the future
-            String url = baseInvUri + "/resources?feedId=" + feedId + "&typeId=" + type;
+            String url = baseInvUri + "/resources?feedId=" + feedId + "&typeId=" + typeId;
             String response = getWithRetries(newAuthRequest()
                     .url(url)
                     .get()
@@ -92,8 +110,15 @@ public class ITestHelper {
             if (rs.getResults().size() >= expectedCount) {
                 return rs.getResults();
             }
+            Thread.sleep(ATTEMPT_DELAY);
         }
         throw new IllegalStateException("Cannot get expected number of resources. Retries have been exceeded.");
+    }
+
+    // assumes the type is distinguished by the type version defined in the agent config
+    public Collection<Resource> getResourceByType(String feedId, String type, int expectedCount)
+            throws Throwable {
+        return getResourceByTypeAndTypeVersion(feedId, type, this.typeVersion, expectedCount);
     }
 
     public String getWithRetries(String url) throws Throwable {
@@ -163,9 +188,5 @@ public class ITestHelper {
 
     public ObjectMapper mapper() {
         return mapper;
-    }
-
-    public String getTenantId() {
-        return tenantId;
     }
 }

@@ -20,6 +20,16 @@ subsystem:
   enabled:                         true
   auto-discovery-scan-period-secs: 600
 
+metrics-exporter:
+  enabled: false
+  host: metrics-exporter-host
+  port: 12345
+  config-dir: /metrics/exporter/config/dir
+  config-file: metrics-exporter-config-file
+  proxy:
+    mode: master
+    data-dir: /where/proxy/files/go
+
 security-realm:
 - name: h-server-security-realm
   keystore-path:           /my/keystore/path
@@ -35,19 +45,16 @@ security-realm:
 
 diagnostics:
   enabled:    true
-  report-to:  STORAGE
   interval:   1234
   time-units: seconds
 
 storage-adapter:
-  type:                 HAWKULAR
   url:                  http://127.0.0.1:8080
-  tenant-id:            hawkular
   username:             jdoe
   password:             password
   feed-id:              autogenerate
   security-realm:       h-server-security-realm
-  metrics-context:      /my-metrics
+  inventory-context:    /my-inventory
   feedcomm-context:     /my-feedcomm
   connect-timeout-secs: 123
   read-timeout-secs:    456
@@ -56,54 +63,52 @@ metric-set-dmr:
 - name: Some DMR Set
   metric-dmr:
   - name:         Full DMR Details
-    interval:     30
-    time-units:   seconds
     metric-units: bytes
     metric-type:  gauge
     path:         /core-service=platform-mbean/type=memory
     attribute:    heap-memory-usage#used
     resolve-expressions: true
     include-defaults:    true
-    metric-id-template:  metric ID template here
-    metric-tags:
+    metric-family: metric ID template here
+    metric-labels:
       foo: bar
+    metric-expression: sum($metric)
   - name:      Minimal DMR Details
     path:      "/parent=*/child=*"
     attribute: some-attrib#subattrib
+    metric-family: family
 
 metric-set-jmx:
 - name: Some JMX Set
   metric-jmx:
   - name:         Full JMX Details
-    interval:     30
-    time-units:   seconds
     metric-units: bytes
     metric-type:  gauge
     object-name:  domain:type=mbean
     attribute:    heap-memory-usage#used
-    metric-id-template:  metric ID template here
-    metric-tags:
+    metric-family: metric ID template here
+    metric-labels:
       foo: bar
+    metric-expression: sum($metric)
   - name:        Minimal JMX Details
     object-name: domain:type=mbean
     attribute:   some-attrib#subattrib
+    metric-family: family
 
 managed-servers:
   local-dmr:
     name:                  Local WildFly
     enabled:               false
-    tenant-id:             local wildfly tenant
     resource-type-sets:
     - LocalTypeSet1
     - TypeSet2
-    metric-id-template:    local feed id is %FeedId and metric name is %MetricName
-    metric-tags:
+    metric-labels:
       localdmrtag1: val1
       dmrtag2: val2
-    set-avail-on-shutdown: DOWN
     wait-for:
     - name: /subsystem=undertow
     - name: /
+    enable-statistics: true
 
   remote-dmr:
   - name:                  Remote WildFly
@@ -112,30 +117,25 @@ managed-servers:
     port:                  9999
     use-ssl:               true
     security-realm:        remote security realm name
-    tenant-id:             remote wildfly tenant
     resource-type-sets:
     - RemoteTypeSet1
     - TypeSet2
-    metric-id-template:    remote feed id is %FeedId and metric name is %MetricName
-    metric-tags:
+    metric-labels:
       remotedmrtag1: val1
       dmrtag2: val2
-    set-avail-on-shutdown: DOWN
     wait-for:
     - name: /subsystem=undertow
+    enable-statistics: false
 
   local-jmx:
     name:                  Local JMX
     enabled:               false
-    tenant-id:             jmx local wildfly tenant
     resource-type-sets:
     - jmx LocalTypeSet1
     - jmx TypeSet2
-    metric-id-template:    jmx local feed id is %FeedId and metric name is %MetricName
-    metric-tags:
+    metric-labels:
       localjmxtag1: val1
       jmxtag2: val2
-    set-avail-on-shutdown: UNKNOWN
     mbean-server-name:     some-mbs-name
     wait-for:
     - name: java.lang:type=Runtime
@@ -146,41 +146,28 @@ managed-servers:
     enabled:               false
     url:                   http://localhost:8080/jolokia-war
     security-realm:        jmx remote security realm name
-    tenant-id:             jmx remote wildfly tenant
     resource-type-sets:
     - jmx RemoteTypeSet1
     - jmx TypeSet2
-    metric-id-template:    jmx remote feed id is %FeedId and metric name is %MetricName
-    metric-tags:
+    metric-labels:
       remotejmxtag1: val1
       jmxtag2: val2
-    set-avail-on-shutdown: UNKNOWN
     wait-for:
     - name: java.lang:type=Runtime
 
 platform:
   enabled:      true
-  interval:     1234
-  time-units:   seconds
   machine-id:   my-machine-id-here
   container-id: my-container-id-here
 
   file-stores:
     enabled:    true
-    interval:   5000
-    time-units: milliseconds
 
   memory:
     enabled:    true
-    interval:   30
-    time-units: seconds
 
   processors:
     enabled:    true
-    interval:   1
-    time-units: minutes
 
   power-sources:
     enabled:    false
-    interval:   5
-    time-units: minutes

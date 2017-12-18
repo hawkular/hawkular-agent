@@ -17,6 +17,8 @@
 package org.hawkular.agent.javaagent.config;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.management.ObjectName;
 
@@ -48,14 +50,14 @@ public class JMXResourceType implements Validatable {
     @JsonProperty("metric-sets")
     private String[] metricSets;
 
-    @JsonProperty("avail-sets")
-    private String[] availSets;
-
     @JsonProperty("resource-config-jmx")
     private JMXResourceConfig[] jmxResourceConfigs;
 
     @JsonProperty("operation-jmx")
     private JMXOperation[] jmxOperations;
+
+    @JsonProperty("metric-labels")
+    private Map<String, String> metricLabels;
 
     public JMXResourceType() {
     }
@@ -68,10 +70,9 @@ public class JMXResourceType implements Validatable {
                 : Arrays.copyOf(original.parents, original.parents.length);
         this.metricSets = original.metricSets == null ? null
                 : Arrays.copyOf(original.metricSets, original.metricSets.length);
-        this.availSets = original.availSets == null ? null
-                : Arrays.copyOf(original.availSets, original.availSets.length);
         this.jmxResourceConfigs = Util.cloneArray(original.jmxResourceConfigs);
         this.jmxOperations = Util.cloneArray(original.jmxOperations);
+        this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
     }
 
     @Override
@@ -107,6 +108,10 @@ public class JMXResourceType implements Validatable {
             for (JMXOperation o : jmxOperations) {
                 o.validate();
             }
+        }
+
+        if (metricLabels == null) {
+            metricLabels = new HashMap<>(0);
         }
     }
 
@@ -150,14 +155,6 @@ public class JMXResourceType implements Validatable {
         this.metricSets = metricSets;
     }
 
-    public String[] getAvailSets() {
-        return availSets;
-    }
-
-    public void setAvailSets(String[] availSets) {
-        this.availSets = availSets;
-    }
-
     public JMXResourceConfig[] getJmxResourceConfigs() {
         return jmxResourceConfigs;
     }
@@ -172,5 +169,13 @@ public class JMXResourceType implements Validatable {
 
     public void setJmxOperations(JMXOperation[] jmxOperations) {
         this.jmxOperations = jmxOperations;
+    }
+
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
+    }
+
+    public void setMetricLabels(Map<String, String> metricLabels) {
+        this.metricLabels = metricLabels;
     }
 }

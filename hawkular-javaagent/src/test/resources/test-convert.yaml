@@ -19,8 +19,16 @@
 subsystem:
   enabled: true
   auto-discovery-scan-period-secs: 111
-  min-collection-interval-secs: 222
-  ping-period-secs: 333
+
+metrics-exporter:
+  enabled: true
+  host: thehost
+  port: 12345
+  config-dir: exporter
+  config-file: config.yaml
+  proxy:
+    mode: slave
+    data-dir: proxy/data/dir
 
 security-realm:
 - name: h-server
@@ -32,9 +40,7 @@ security-realm:
   keystore-password: myrealmkpass
 
 storage-adapter:
-  type:           METRICS
   url:            http://hawkular:8181
-  tenant-id:      custom tenant
   username:       the user
   password:       the pass
   feed-id:        the feed
@@ -48,23 +54,19 @@ metric-set-dmr:
   - name: first metric d
     path: /metric=one
     attribute: attrib1
-    interval: 12345
-    time-units: milliseconds
     metric-units: megabytes
     metric-type: counter
-    metric-id-template: the template
-    metric-tags:
+    metric-family: the template
+    metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric d
     path: /metric=two
     attribute: attrib1
-    interval: 12345
-    time-units: milliseconds
     metric-units: megabytes
     metric-type: gauge
-    metric-id-template: the template
-    metric-tags:
+    metric-family: the template
+    metric-labels:
       tag1: value1
       tag2: value2
 - name: second metric set d
@@ -73,43 +75,11 @@ metric-set-dmr:
     path: /metric=three
     attribute: attrib1
     metric-type: gauge
+    metric-family: the family
   - name: fourth metric d
     path: /metric=four
     attribute: attrib1
-
-avail-set-dmr:
-- name: first avail set d
-  avail-dmr:
-  - name: first avail d
-    path: /avail=one
-    attribute: attrib1
-    up-regex: "[up.*]"
-    interval: 12345
-    time-units: milliseconds
-    metric-id-template: the template
-    metric-tags:
-      tag1: value1
-      tag2: value2
-  - name: second avail d
-    path: /avail=two
-    attribute: attrib1
-    up-regex: "[up.*]"
-    interval: 12345
-    time-units: milliseconds
-    metric-id-template: the template
-    metric-tags:
-      tag1: value1
-      tag2: value2
-- name: second avail set d
-  avail-dmr:
-  - name: third avail d
-    path: /avail=three
-    attribute: attrib1
-    up-regex: "[up.*]"
-  - name: fourth avail d
-    path: /avail=four
-    attribute: attrib1
-    up-regex: "[up.*]"
+    metric-family: the family
 
 resource-type-set-dmr:
 - name: first resource type set d
@@ -122,6 +92,9 @@ resource-type-set-dmr:
     - name: second resconfig d
       path: /config=two
       attribute: attrib2#subattrib2
+    metric-labels:
+      label1: label1value
+      label2: label2value
   - name: second resource type d
     path: /hello=world
 - name: second resource type set d
@@ -139,23 +112,19 @@ metric-set-jmx:
   - name: first metric
     object-name: domain:metric=one
     attribute: attrib1
-    interval: 12345
-    time-units: seconds
     metric-units: bytes
     metric-type: gauge
-    metric-id-template: the template
-    metric-tags:
+    metric-family: the template
+    metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric
     object-name: domain:metric=two
     attribute: attrib1
-    interval: 12345
-    time-units: seconds
     metric-units: bytes
     metric-type: gauge
-    metric-id-template: the template
-    metric-tags:
+    metric-family: the template
+    metric-labels:
       tag1: value1
       tag2: value2
 - name: second metric set
@@ -164,44 +133,12 @@ metric-set-jmx:
     object-name: domain:metric=three
     attribute: attrib1
     metric-type: gauge
+    metric-family: the family
   - name: fourth metric
     object-name: domain:metric=four
     attribute: attrib1
     metric-type: gauge
-
-avail-set-jmx:
-- name: first avail set
-  avail-jmx:
-  - name: first avail
-    object-name: domain:avail=one
-    attribute: attrib1
-    up-regex: "[up.*]"
-    interval: 12345
-    time-units: seconds
-    metric-id-template: the template
-    metric-tags:
-      tag1: value1
-      tag2: value2
-  - name: second avail
-    object-name: domain:avail=two
-    attribute: attrib1
-    up-regex: "[up.*]"
-    interval: 12345
-    time-units: seconds
-    metric-id-template: the template
-    metric-tags:
-      tag1: value1
-      tag2: value2
-- name: second avail set
-  avail-jmx:
-  - name: third avail
-    object-name: domain:avail=three
-    attribute: attrib1
-    up-regex: "[up.*]"
-  - name: fourth avail
-    object-name: domain:avail=four
-    attribute: attrib1
-    up-regex: "[up.*]"
+    metric-family: the family
 
 resource-type-set-jmx:
 - name: first resource type set
@@ -216,6 +153,10 @@ resource-type-set-jmx:
     - name: second resconfig
       object-name: domain:config=two
       attribute: attrib2#subattrib2
+    metric-labels:
+      label1: label1valueJMX
+      label2: label2valueJMX
+
   - name: second resource type
     object-name: domain:type=two
     resource-name-template: BBB %type%
@@ -290,26 +231,16 @@ managed-servers:
 
 platform:
   enabled:      true
-  interval:     12345
-  time-units:   seconds
   machine-id:   my-machine-id-here
 
   file-stores:
     enabled:    true
-    interval:   11111
-    time-units: milliseconds
 
   memory:
     enabled:    true
-    interval:   22222
-    time-units: seconds
 
   processors:
     enabled:    true
-    interval:   33333
-    time-units: minutes
 
   power-sources:
     enabled:    false
-    interval:   44444
-    time-units: minutes

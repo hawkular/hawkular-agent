@@ -22,13 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.hawkular.agent.monitor.api.AvailListener;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.inventory.NodeLocation;
-import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
-import org.hawkular.agent.monitor.scheduler.SchedulerService;
 
 /**
  * A collection of {@link EndpointService}s that all handle a single protocol.
@@ -72,7 +69,6 @@ public class ProtocolService<L, S extends Session<L>> {
 
     // need to remember the listeners in case new endpoints are added after things have started
     private final List<InventoryListener> inventoryListeners = Collections.synchronizedList(new ArrayList<>());
-    private final List<AvailListener> availListeners = Collections.synchronizedList(new ArrayList<>());
 
     public ProtocolService(String name, Map<String, EndpointService<L, S>> endpointServices) {
         this.name = name;
@@ -129,20 +125,6 @@ public class ProtocolService<L, S extends Session<L>> {
         this.inventoryListeners.remove(listener);
     }
 
-    public void addAvailListener(AvailListener listener) {
-        for (EndpointService<L, S> service : getEndpointServices().values()) {
-            service.addAvailListener(listener);
-        }
-        this.availListeners.add(listener);
-    }
-
-    public void removeAvailListener(AvailListener listener) {
-        for (EndpointService<L, S> service : getEndpointServices().values()) {
-            service.removeAvailListener(listener);
-        }
-        this.availListeners.remove(listener);
-    }
-
     /**
      * This will add a new endpoint service to the list. Once added, the new service
      * will immediately be started.
@@ -160,12 +142,6 @@ public class ProtocolService<L, S extends Session<L>> {
             }
         }
 
-        synchronized (this.availListeners) {
-            for (AvailListener listener : this.availListeners) {
-                newEndpointService.addAvailListener(listener);
-            }
-        }
-
         endpointServices.put(newEndpointService.getMonitoredEndpoint().getName(), newEndpointService);
         newEndpointService.start();
         log.infoAddedEndpointService(newEndpointService.toString());
@@ -177,16 +153,11 @@ public class ProtocolService<L, S extends Session<L>> {
      * This will stop the given endpoint service and remove it from the list of endpoint services.
      *
      * @param name identifies the endpoint service to remove
-     * @param scheduler the scheduler that is currently collecting metrics for this service
      */
-    public void remove(String name, SchedulerService scheduler) {
+    public void remove(String name) {
         EndpointService<L, S> service = endpointServices.remove(name);
         if (service != null) {
             service.stop();
-
-            List<Resource<L>> allResources = service.getResourceManager().getResourcesBreadthFirst();
-            scheduler.unschedule(service, allResources);
-
             log.infoRemovedEndpointService(service.toString());
         }
     }

@@ -29,17 +29,18 @@ import_hawkular_services_public_key() {
 }
 
 run_hawkular_agent() {
-    exec ${JBOSS_HOME}/bin/${HAWKULAR_MODE}.sh -b 0.0.0.0
+    local START_WITH_HAWKULAR_PARAMS="-s ${HAWKULAR_URL}"
+    if [[ "${HAWKULAR_AGENT_MODE}" == "domain" ]]; then
+      START_WITH_HAWKULAR_PARAMS="$START_WITH_HAWKULAR_PARAMS -d"
+    fi
+    ${JBOSS_HOME}/bin/start-with-hawkular.sh ${START_WITH_HAWKULAR_PARAMS} "$@"
 }
 
 main() {
-  HAWKULAR_MODE=`echo ${HAWKULAR_MODE} | tr '[:upper:]' '[:lower:]'`
-  if [[ "${HAWKULAR_MODE}" != "standalone" ]] && [[ "${HAWKULAR_MODE}" != "domain" ]]; then
-    echo 'HAWKULAR_MODE must be set to "standalone" or "domain", found:' ${HAWKULAR_MODE}
+  HAWKULAR_AGENT_MODE=`echo ${HAWKULAR_AGENT_MODE} | tr '[:upper:]' '[:lower:]'`
+  if [[ "${HAWKULAR_AGENT_MODE}" != "standalone" ]] && [[ "${HAWKULAR_AGENT_MODE}" != "domain" ]]; then
+    echo 'HAWKULAR_AGENT_MODE must be set to "standalone" or "domain", found:' ${HAWKULAR_AGENT_MODE}
     exit
-  fi
-  if [[ "${HAWKULAR_MODE}" == "domain" ]]; then
-    sed -i "s|- Standalone Environment|- Domain Environment|g" /opt/hawkular/configuration/hawkular-javaagent-config.yaml
   fi
   import_hawkular_services_public_key
   run_hawkular_agent "$@"

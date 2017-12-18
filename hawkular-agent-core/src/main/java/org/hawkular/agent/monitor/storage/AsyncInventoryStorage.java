@@ -41,12 +41,12 @@ import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.Session;
 import org.hawkular.agent.monitor.util.Util;
 import org.hawkular.inventory.api.model.Inventory;
 import org.hawkular.inventory.api.model.Metric;
 import org.hawkular.inventory.api.model.MetricUnit;
 import org.hawkular.inventory.api.model.RawResource;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 import com.codahale.metrics.Timer;
 
@@ -84,9 +84,9 @@ public class AsyncInventoryStorage implements InventoryStorage {
     }
 
     @Override
-    public <L> void receivedEvent(InventoryEvent<L> event) {
+    public <L, S extends Session<L>> void receivedEvent(InventoryEvent<L, S> event) {
         try {
-            MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
+            MonitoredEndpoint<EndpointConfiguration> endpoint = event.getEndpointService().getMonitoredEndpoint();
             log.debugf("Received inventory event for endpoint: %s", endpoint);
 
             long timestamp = System.currentTimeMillis();
@@ -161,7 +161,7 @@ public class AsyncInventoryStorage implements InventoryStorage {
             }
 
         } catch (Exception e) {
-            log.errorf("Failed to process inventory event: ", e.toString());
+            log.errorf(e, "Failed to process inventory event");
         }
     }
 
@@ -186,26 +186,32 @@ public class AsyncInventoryStorage implements InventoryStorage {
         r.getResourceConfigurationProperties().forEach(c -> rb.config(c.getName().getNameString(), c.getValue()));
         r.getProperties().forEach((k, v) -> rb.property(k, v.toString()));
         r.getMetrics().forEach(m -> rb.metric(buildMetric(m, m.getType().getMetricUnits())));
-        r.getAvails().forEach(m -> rb.metric(buildMetric(m, null)));
         RawResource resource = rb.build();
         log.debugf("Adding resource: %s", resource);
         importResources.add(resource);
     }
 
     private <L, M extends MeasurementType<L>> Metric buildMetric(MeasurementInstance<L, M> m,
-                                                                 MeasurementUnit metricUnits) {
+            MetricUnit metricUnits) {
         Metric.Builder mb = Metric.builder()
-                .name(m.getName().getNameString())
-                .type(m.getType().getName().getNameString());
+                .displayName(m.getName().getNameString());
+
         if (metricUnits != null) {
             mb.unit(MetricUnit.valueOf(metricUnits.name()));
         }
+
+        if (m.getMetricFamily() != null) {
+            mb.family(m.getMetricFamily());
+        }
+
+        if (m.getMetricLabels() != null) {
+            mb.labels(m.getMetricLabels());
+        }
+
+        mb.expression(m.resolveExpression());
+
         m.getProperties().forEach((k, v) -> mb.property(k, v.toString()));
 
-        // TODO remove these once h-metrics integration is removed
-        mb.property("hawkular.metric.type", m.getType().getMetricType().name());
-        mb.property("hawkular.metric.typeId", m.getType().getID().getIDString());
-        mb.property("hawkular.metric.id", m.getID().getIDString());
         return mb.build();
     }
 

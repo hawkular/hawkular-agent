@@ -49,37 +49,17 @@ public interface MsgLogger extends BasicLogger {
     @Message(id = 10002, value = "Hawkular Agent is disabled - it will not be started")
     void infoAgentDisabled();
 
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10008, value = "A metric collection failed")
-    void errorMetricCollectionFailed(@Cause Throwable t);
-
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10009, value = "An availability check failed")
-    void errorAvailCheckFailed(@Cause Throwable t);
-
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10010, value = "Failed to store metric data: %s")
-    void errorFailedToStoreMetricData(@Cause Throwable t, String data);
-
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10011, value = "Failed to store avail data: %s")
-    void errorFailedToStoreAvailData(@Cause Throwable t, String data);
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10003, value = "Hawkular Agent Feed ID = [%s]")
+    void infoAgentFeedId(String feedId);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10012, value = "Starting scheduler")
-    void infoStartingScheduler();
-
-    @LogMessage(level = Level.INFO)
-    @Message(id = 10013, value = "Stopping scheduler")
-    void infoStoppingScheduler();
+    @Message(id = 10004, value = "Hawkular Agent is in metrics-only mode")
+    void infoMetricsOnlyMode();
 
     @LogMessage(level = Level.WARN)
     @Message(id = 10016, value = "The resource type [%s] wants to use an unknown metric set [%s]")
     void warnMetricSetDoesNotExist(String resourceTypeName, String metricSetName);
-
-    @LogMessage(level = Level.WARN)
-    @Message(id = 10017, value = "The resource type [%s] wants to use an unknown avail set [%s]")
-    void warnAvailSetDoesNotExist(String resourceTypeName, String availSetName);
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10019, value = "Managed server [%s] is disabled. It will not be monitored.")
@@ -100,10 +80,6 @@ public interface MsgLogger extends BasicLogger {
     @LogMessage(level = Level.ERROR)
     @Message(id = 10028, value = "Cannot start storage adapter; aborting startup")
     void errorCannotStartStorageAdapter(@Cause Throwable t);
-
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10029, value = "Scheduler failed to initialize; aborting startup")
-    void errorCannotInitializeScheduler(@Cause Throwable t);
 
     @LogMessage(level = Level.INFO)
     @Message(id = 10030, value = "Using keystore at [%s]")
@@ -166,18 +142,6 @@ public interface MsgLogger extends BasicLogger {
     void errorCouldNotAccess(EndpointService<?, ?> endpoint, @Cause Throwable e);
 
     @LogMessage(level = Level.ERROR)
-    @Message(id = 10051, value = "Missing tenant ID")
-    void errorNoTenantIdSpecified();
-
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10052, value = "Could not store metrics for monitored endpoint [%s]")
-    void errorFailedToStoreMetrics(String endpoint, @Cause Throwable t);
-
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10053, value = "Could not store availability data for monitored endpoint [%s]")
-    void errorFailedToStoreAvails(String endpoint, @Cause Throwable t);
-
-    @LogMessage(level = Level.ERROR)
     @Message(id = 10054, value = "Agent encountered errors during start up and will be stopped.")
     void errorFailedToStartAgent(@Cause Throwable t);
 
@@ -230,10 +194,6 @@ public interface MsgLogger extends BasicLogger {
             + "Make sure at least one of these resource types are defined and enabled: %s")
     void errorInvalidRootResourceType(String idString, Collection<Name> parents);
 
-    @LogMessage(level = Level.ERROR)
-    @Message(id = 10077, value = "Failed to store metric tags: %s")
-    void errorFailedToStoreMetricTags(@Cause Throwable t, String data);
-
     @LogMessage(level = Level.WARN)
     @Message(id = 10078, value = "Tried %d times to reach the server %s endpoint at %s. Is it up?")
     void warnConnectionDelayed(int count, String what, String url);
@@ -255,10 +215,22 @@ public interface MsgLogger extends BasicLogger {
     void errorFailedToStoreNotification(@Cause Throwable t, String data);
 
     @LogMessage(level = Level.INFO)
-    @Message(id = 10084, value = "%s version %s")
-    void infoTypeAndVersion(String type, String version);
+    @Message(id = 10084, value = "%s")
+    void infoVersion(String version);
 
     @LogMessage(level = Level.ERROR)
     @Message(id = 10085, value = "Failed to create notification: %s")
     void errorFailedToCreateNotification(@Cause Throwable t, String notificationName);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10086, value = "Metrics exporter starting - binding to [%s] using configuration [%s]")
+    void infoStartMetricsExporter(String hostPort, String configFile);
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10087, value = "Metrics exporter is disabled; this agent will not expose any metrics")
+    void infoMetricsExporterDisabled();
+
+    @LogMessage(level = Level.INFO)
+    @Message(id = 10088, value = "Metrics exporter is stopping")
+    void infoStopMetricsExporter();
 }

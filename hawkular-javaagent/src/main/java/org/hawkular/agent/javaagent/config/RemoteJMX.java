@@ -23,7 +23,6 @@ import java.util.Map;
 import javax.management.ObjectName;
 
 import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
-import org.hawkular.agent.monitor.api.Avail;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -54,20 +53,11 @@ public class RemoteJMX implements Validatable {
     @JsonProperty("security-realm")
     private String securityRealmName;
 
-    @JsonProperty("tenant-id")
-    private StringExpression tenantId;
-
     @JsonProperty("resource-type-sets")
     private String[] resourceTypeSets;
 
-    @JsonProperty("metric-id-template")
-    private String metricIdTemplate;
-
-    @JsonProperty("metric-tags")
-    private Map<String, String> metricTags;
-
-    @JsonProperty("set-avail-on-shutdown")
-    private Avail setAvailOnShutdown;
+    @JsonProperty("metric-labels")
+    private Map<String, String> metricLabels;
 
     @JsonProperty("wait-for")
     private WaitFor[] waitFor;
@@ -82,12 +72,9 @@ public class RemoteJMX implements Validatable {
         this.username = original.username == null ? null : new StringExpression(original.username);
         this.password = original.password == null ? null : new StringExpression(original.password);
         this.securityRealmName = original.securityRealmName;
-        this.tenantId = original.tenantId == null ? null : new StringExpression(original.tenantId);
         this.resourceTypeSets = original.resourceTypeSets == null ? null
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
-        this.metricIdTemplate = original.metricIdTemplate;
-        this.metricTags = original.metricTags == null ? null : new HashMap<>(original.metricTags);
-        this.setAvailOnShutdown = original.setAvailOnShutdown;
+        this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
         this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
     }
 
@@ -179,18 +166,6 @@ public class RemoteJMX implements Validatable {
         this.securityRealmName = securityRealmName;
     }
 
-    public String getTenantId() {
-        return tenantId == null ? null : tenantId.get().toString();
-    }
-
-    public void setTenantId(String tenantId) {
-        if (this.tenantId != null) {
-            this.tenantId.set(new StringValue(tenantId));
-        } else {
-            this.tenantId = new StringExpression(tenantId);
-        }
-    }
-
     public String[] getResourceTypeSets() {
         return resourceTypeSets;
     }
@@ -199,28 +174,12 @@ public class RemoteJMX implements Validatable {
         this.resourceTypeSets = resourceTypeSets;
     }
 
-    public String getMetricIdTemplate() {
-        return metricIdTemplate;
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
     }
 
-    public void setMetricIdTemplate(String metricIdTemplate) {
-        this.metricIdTemplate = metricIdTemplate;
-    }
-
-    public Map<String, String> getMetricTags() {
-        return metricTags;
-    }
-
-    public void setMetricTags(Map<String, String> metricTags) {
-        this.metricTags = metricTags;
-    }
-
-    public Avail getSetAvailOnShutdown() {
-        return setAvailOnShutdown;
-    }
-
-    public void setSetAvailOnShutdown(Avail setAvailOnShutdown) {
-        this.setAvailOnShutdown = setAvailOnShutdown;
+    public void setMetricLabels(Map<String, String> metricLabels) {
+        this.metricLabels = metricLabels;
     }
 
     public WaitFor[] getWaitFor() {

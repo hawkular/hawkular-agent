@@ -18,25 +18,31 @@ package org.hawkular.agent.monitor.inventory;
 
 import java.util.Map;
 
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.hawkular.inventory.api.model.MetricUnit;
 
 /**
- * @author John Mazzitelli
+ * Metadata for a type of metric.
  *
  * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}
  */
 public final class MetricType<L> extends MeasurementType<L> {
 
-    private final MeasurementUnit metricUnits;
+    private final MetricUnit metricUnits;
 
-    public MetricType(ID id, Name name, AttributeLocation<L> location, Interval interval, MeasurementUnit metricUnits,
-            org.hawkular.metrics.client.common.MetricType metricType, String metricIdTemplate,
-            Map<String, String> metricTags) {
-        super(id, name, metricType, location, interval, metricIdTemplate, metricTags);
+    public MetricType(
+            ID id,
+            Name name,
+            AttributeLocation<L> location,
+            MetricUnit metricUnits,
+            SupportedMetricType metricType,
+            String metricFamily,
+            Map<String, String> metricLabels,
+            String metricExpression) {
+        super(id, name, metricType, location, metricFamily, metricLabels, metricExpression);
         this.metricUnits = metricUnits;
     }
 
-    public MeasurementUnit getMetricUnits() {
+    public MetricUnit getMetricUnits() {
         return metricUnits;
     }
 

@@ -35,7 +35,6 @@ public final class Resource<L> extends NodeLocationProvider<L> {
         private ResourceType<L> resourceType;
         private Resource<L> parent;
         private Set<MeasurementInstance<L, MetricType<L>>> metrics = new HashSet<>();
-        private Set<MeasurementInstance<L, AvailType<L>>> avails = new HashSet<>();
         private Set<ResourceConfigurationPropertyInstance<L>> resourceConfigurationProperties = new HashSet<>();
 
         private Builder() {
@@ -48,9 +47,6 @@ public final class Resource<L> extends NodeLocationProvider<L> {
             type(template.getResourceType());
             for (MeasurementInstance<L, MetricType<L>> m : template.getMetrics()) {
                 metric(new MeasurementInstance<>(m, true));
-            }
-            for (MeasurementInstance<L, AvailType<L>> a : template.getAvails()) {
-                avail(new MeasurementInstance<>(a, true));
             }
             for (ResourceConfigurationPropertyInstance<L> r : template.getResourceConfigurationProperties()) {
                 resourceConfigurationProperty(new ResourceConfigurationPropertyInstance<>(r, true));
@@ -72,11 +68,6 @@ public final class Resource<L> extends NodeLocationProvider<L> {
             return this;
         }
 
-        public Builder<L> avail(MeasurementInstance<L, AvailType<L>> avail) {
-            avails.add(avail);
-            return this;
-        }
-
         public Builder<L> resourceConfigurationProperty(
                 ResourceConfigurationPropertyInstance<L> //
                 resourceConfigurationProperty) {
@@ -86,7 +77,7 @@ public final class Resource<L> extends NodeLocationProvider<L> {
 
         public Resource<L> build() {
             return new Resource<L>(id, name, location, resourceType, parent, Collections.unmodifiableSet(metrics),
-                    Collections.unmodifiableSet(avails), Collections.unmodifiableSet(resourceConfigurationProperties));
+                    Collections.unmodifiableSet(resourceConfigurationProperties));
         }
     }
 
@@ -108,7 +99,6 @@ public final class Resource<L> extends NodeLocationProvider<L> {
     private final ResourceType<L> resourceType;
     private final Resource<L> parent;
     private final Set<MeasurementInstance<L, MetricType<L>>> metrics;
-    private final Set<MeasurementInstance<L, AvailType<L>>> avails;
     private final Set<ResourceConfigurationPropertyInstance<L>> resourceConfigurationProperties;
 
     private Resource(ID id,
@@ -117,16 +107,13 @@ public final class Resource<L> extends NodeLocationProvider<L> {
             ResourceType<L> resourceType,
             Resource<L> parent,
             Set<MeasurementInstance<L, MetricType<L>>> metrics,
-            Set<MeasurementInstance<L, AvailType<L>>> avails,
             Set<ResourceConfigurationPropertyInstance<L>> resourceConfigurationProperties) {
         super(id, name, location);
         this.resourceType = resourceType;
         this.parent = parent;
         this.metrics = metrics;
-        this.avails = avails;
         this.resourceConfigurationProperties = resourceConfigurationProperties;
         assignToThisResource(this.metrics);
-        assignToThisResource(this.avails);
         assignToThisResource(this.resourceConfigurationProperties);
     }
 
@@ -148,10 +135,6 @@ public final class Resource<L> extends NodeLocationProvider<L> {
 
     public Collection<MeasurementInstance<L, MetricType<L>>> getMetrics() {
         return metrics;
-    }
-
-    public Collection<MeasurementInstance<L, AvailType<L>>> getAvails() {
-        return avails;
     }
 
     public Collection<ResourceConfigurationPropertyInstance<L>> getResourceConfigurationProperties() {

@@ -1,0 +1,40 @@
+#
+# Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
+# and other contributors as indicated by the @author tags.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+subsystem:
+  enabled: "${hawkular.agent.enabled:true}"
+
+metrics-exporter:
+  enabled: true
+  host: ${hawkular.agent.metrics.host,jboss.bind.address:127.0.0.1}
+  port: ${hawkular.agent.metrics.port:9779}
+  config-dir: ${jboss.server.config.dir}
+  config-file: WF10
+  proxy:
+    mode: slave
+    data-dir: ${jboss.server.data.dir}/hawkular-metrics-exporter
+
+storage-adapter:
+  feed-id: "${hawkular.rest.feedId:autogenerate}"
+  url: "${hawkular.rest.url:http://hawkular-server:8080}"
+  username: "${env.HAWKULAR_USER,hawkular.rest.username}"
+  password: "${env.HAWKULAR_PASSWORD,hawkular.rest.password}"
+
+platform:
+  enabled: true
+  #machine-id: my-machine-id-here

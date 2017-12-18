@@ -23,23 +23,21 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import javax.management.ObjectName;
 
-import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration.WaitFor;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.GlobalConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.MetricsExporterConfiguration;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.PlatformConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.ProtocolConfiguration;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageAdapterConfiguration;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
-import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ConnectionData;
 import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.Interval;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.hawkular.agent.monitor.inventory.Operation;
@@ -50,17 +48,12 @@ import org.hawkular.agent.monitor.inventory.ResourceType.Builder;
 import org.hawkular.agent.monitor.inventory.TypeSet;
 import org.hawkular.agent.monitor.inventory.TypeSet.TypeSetBuilder;
 import org.hawkular.agent.monitor.inventory.TypeSets;
+import org.hawkular.agent.monitor.protocol.dmr.DMREndpointService;
 import org.hawkular.agent.monitor.protocol.dmr.DMRNodeLocation;
 import org.hawkular.agent.monitor.protocol.jmx.JMXEndpointService;
 import org.hawkular.agent.monitor.protocol.jmx.JMXNodeLocation;
-import org.hawkular.agent.monitor.protocol.platform.Constants;
-import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformMetricType;
-import org.hawkular.agent.monitor.protocol.platform.Constants.PlatformResourceType;
-import org.hawkular.agent.monitor.protocol.platform.PlatformNodeLocation;
-import org.hawkular.agent.monitor.protocol.platform.PlatformPath;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
 
 /**
  * Converts the YAML configuration to the configuration used by the agent ({@link AgentCoreEngineConfiguration}).
@@ -92,32 +85,31 @@ public class ConfigConverter {
                 config.getSubsystem().getEnabled(),
                 config.getSubsystem().getImmutable(),
                 config.getSubsystem().getInContainer(),
-                null,
                 config.getSubsystem().getAutoDiscoveryScanPeriodSecs(),
-                config.getSubsystem().getMinCollectionIntervalSecs(),
-                2,
-                config.getSubsystem().getMetricDispatcherBufferSize(),
-                config.getSubsystem().getMetricDispatcherMaxBatchSize(),
-                config.getSubsystem().getAvailDispatcherBufferSize(),
-                config.getSubsystem().getAvailDispatcherMaxBatchSize(),
-                config.getSubsystem().getPingPeriodSecs());
+                config.getSubsystem().getTypeVersion(),
+                2);
+
+        MetricsExporterConfiguration metricsExporter = new MetricsExporterConfiguration(
+                config.getMetricsExporter().getEnabled(),
+                config.getMetricsExporter().getHost(),
+                config.getMetricsExporter().getPort(),
+                config.getMetricsExporter().getConfigDir(),
+                config.getMetricsExporter().getConfigFile(),
+                MetricsExporterConfiguration.Mode.valueOf(config.getMetricsExporter().getProxy().getMode().name()),
+                config.getMetricsExporter().getProxy().getDataDir(),
+                config.getMetricsExporter().getProxy().getMetricLabelsExpression());
 
         DiagnosticsConfiguration diagnostics = new DiagnosticsConfiguration(
                 config.getDiagnostics().getEnabled(),
-                AgentCoreEngineConfiguration.DiagnosticsReportTo.valueOf(config.getDiagnostics().getReportTo().name()),
                 config.getDiagnostics().getInterval(),
                 config.getDiagnostics().getTimeUnits().toJavaTimeUnit());
 
         StorageAdapterConfiguration storageAdapter = new StorageAdapterConfiguration(
-                AgentCoreEngineConfiguration.StorageReportTo.valueOf(config.getStorageAdapter().getType().name()),
                 config.getStorageAdapter().getUsername(),
                 config.getStorageAdapter().getPassword(),
-                config.getStorageAdapter().getTenantId(),
                 config.getStorageAdapter().getFeedId(),
                 config.getStorageAdapter().getUrl(),
                 config.getStorageAdapter().useSSL(),
-                null, // we don't use socket binding ref
-                config.getStorageAdapter().getMetricsContext(),
                 config.getStorageAdapter().getInventoryContext(),
                 config.getStorageAdapter().getFeedcommContext(),
                 config.getStorageAdapter().getHawkularContext(),
@@ -127,17 +119,26 @@ public class ConfigConverter {
                 config.getStorageAdapter().getConnectTimeoutSecs(),
                 config.getStorageAdapter().getReadTimeoutSecs());
 
+        PlatformConfiguration platformConfiguration = new PlatformConfiguration(
+                config.getPlatform().getEnabled(),
+                config.getPlatform().getMemory().getEnabled(),
+                config.getPlatform().getFileStores().getEnabled(),
+                config.getPlatform().getProcessors().getEnabled(),
+                config.getPlatform().getPowerSources().getEnabled(),
+                config.getPlatform().getMachineId(),
+                config.getPlatform().getContainerId());
+
         ProtocolConfiguration<DMRNodeLocation> dmrConfiguration = buildDmrConfiguration(config);
         ProtocolConfiguration<JMXNodeLocation> jmxConfiguration = buildJmxConfiguration(config);
-        ProtocolConfiguration<PlatformNodeLocation> platformConfiguration = buildPlatformConfiguration(config);
 
         AgentCoreEngineConfiguration agentConfig = new AgentCoreEngineConfiguration(
                 globalConfiguration,
+                metricsExporter,
                 diagnostics,
                 storageAdapter,
+                platformConfiguration,
                 dmrConfiguration,
-                jmxConfiguration,
-                platformConfiguration);
+                jmxConfiguration);
         return agentConfig;
     }
 
@@ -160,61 +161,43 @@ public class ConfigConverter {
                         new ID(metricSet.getName() + "~" + metric.getName()),
                         new Name(metric.getName()),
                         aLocation,
-                        new Interval(metric.getInterval(), metric.getTimeUnits().toJavaTimeUnit()),
                         metric.getMetricUnits(),
                         metric.getMetricType(),
-                        metric.getMetricIdTemplate(),
-                        metric.getMetricTags());
+                        metric.getMetricFamily(),
+                        metric.getMetricLabels(),
+                        metric.getMetricExpression());
                 typeSet.type(type);
             }
             typeSets.metricTypeSet(typeSet.build());
         }
 
-        for (DMRAvailSet availSet : config.getDmrAvailSets()) {
-            TypeSetBuilder<AvailType<DMRNodeLocation>> typeSet = TypeSet.<AvailType<DMRNodeLocation>> builder();
-            typeSet.name(new Name(availSet.getName()));
-            typeSet.enabled(availSet.getEnabled());
-            for (DMRAvail avail : availSet.getDmrAvails()) {
-                DMRNodeLocation location = new DMRNodeLocation(
-                        getDmrPathAddress(avail.getPath()),
-                        avail.getResolveExpressions(),
-                        avail.getIncludeDefaults());
-                AttributeLocation<DMRNodeLocation> aLocation = new AttributeLocation<>(location, avail.getAttribute());
-                AvailType<DMRNodeLocation> type = new AvailType<DMRNodeLocation>(
-                        new ID(availSet.getName() + "~" + avail.getName()),
-                        new Name(avail.getName()),
-                        aLocation,
-                        new Interval(avail.getInterval(), avail.getTimeUnits().toJavaTimeUnit()),
-                        Pattern.compile(avail.getUpRegex()),
-                        avail.getMetricIdTemplate(),
-                        avail.getMetricTags());
-                typeSet.type(type);
-            }
-            typeSets.availTypeSet(typeSet.build());
-        }
+        // We will need to build this in case a managed server does not declare a list of resource type sets.
+        // In that case, the default is for the managed server to use all enabled resource type sets.
+        List<String> enabledResourceTypeSets = new ArrayList<>();
 
         for (DMRResourceTypeSet rtSet : config.getDmrResourceTypeSets()) {
+            if (rtSet.getEnabled() != Boolean.FALSE) {
+                enabledResourceTypeSets.add(rtSet.getName());
+            }
+
             TypeSetBuilder<ResourceType<DMRNodeLocation>> typeSet = TypeSet.<ResourceType<DMRNodeLocation>> builder();
             typeSet.name(new Name(rtSet.getName()));
             typeSet.enabled(rtSet.getEnabled());
             for (DMRResourceType rt : rtSet.getDmrResourceTypes()) {
                 Builder<?, DMRNodeLocation> rtBuilder = ResourceType.<DMRNodeLocation> builder();
-                rtBuilder.name(new Name(rt.getName()));
+                rtBuilder.name(new Name(sourceConfig.getSubsystem().getTypeVersion() != null ?
+                        rt.getName() + ' ' + sourceConfig.getSubsystem().getTypeVersion() : rt.getName()));
                 rtBuilder.location(DMRNodeLocation.of(rt.getPath()));
                 rtBuilder.resourceNameTemplate(rt.getResourceNameTemplate());
                 if (rt.getParents() != null) {
                     for (String parent : rt.getParents()) {
-                        rtBuilder.parent(new Name(parent));
+                        rtBuilder.parent(new Name(sourceConfig.getSubsystem().getTypeVersion() != null ?
+                                parent + ' ' + sourceConfig.getSubsystem().getTypeVersion() : parent));
                     }
                 }
                 if (rt.getMetricSets() != null) {
                     for (String metricSet : rt.getMetricSets()) {
                         rtBuilder.metricSetName(new Name(metricSet));
-                    }
-                }
-                if (rt.getAvailSets() != null) {
-                    for (String availSet : rt.getAvailSets()) {
-                        rtBuilder.availSetName(new Name(availSet));
                     }
                 }
 
@@ -266,7 +249,11 @@ public class ConfigConverter {
                     }
                 }
 
-                populateMetricAndAvailTypesForResourceType(rtBuilder, typeSets);
+                if (rt.getMetricLabels() != null) {
+                    rtBuilder.metricLabels(rt.getMetricLabels());
+                }
+
+                populateMetricTypesForResourceType(rtBuilder, typeSets);
                 typeSet.type(rtBuilder.build());
             }
             typeSets.resourceTypeSet(typeSet.build());
@@ -319,17 +306,19 @@ public class ConfigConverter {
 
             connectionData = new ConnectionData(localProtocol, localHost, localPort + localPortOffset, null, null);
 
+            String[] resourceTypeSets = config.getManagedServers().getLocalDmr().getResourceTypeSets();
+            if (resourceTypeSets == null || resourceTypeSets.length == 0) {
+                resourceTypeSets = enabledResourceTypeSets.toArray(new String[enabledResourceTypeSets.size()]);
+            }
             EndpointConfiguration localDmrEndpointConfig = new EndpointConfiguration(
                     config.getManagedServers().getLocalDmr().getName(),
                     config.getManagedServers().getLocalDmr().getEnabled(),
-                    getNamesFromStrings(config.getManagedServers().getLocalDmr().getResourceTypeSets()),
+                    getNamesFromStrings(resourceTypeSets),
                     connectionData,
                     null,
-                    config.getManagedServers().getLocalDmr().getSetAvailOnShutdown(),
-                    config.getManagedServers().getLocalDmr().getTenantId(),
-                    config.getManagedServers().getLocalDmr().getMetricIdTemplate(),
-                    config.getManagedServers().getLocalDmr().getMetricTags(),
-                    null,
+                    config.getManagedServers().getLocalDmr().getMetricLabels(),
+                    Collections.singletonMap(DMREndpointService.ENABLE_STATISTICS_KEY,
+                            config.getManagedServers().getLocalDmr().getEnableStatistics()),
                     asWaitForList(config.getManagedServers().getLocalDmr().getWaitFor()));
             managedServers.put(config.getManagedServers().getLocalDmr().getName(), localDmrEndpointConfig);
         }
@@ -347,17 +336,20 @@ public class ConfigConverter {
                         remoteDmr.getUsername(),
                         remoteDmr.getPassword());
 
+                String[] resourceTypeSets = remoteDmr.getResourceTypeSets();
+                if (resourceTypeSets == null || resourceTypeSets.length == 0) {
+                    resourceTypeSets = enabledResourceTypeSets.toArray(new String[enabledResourceTypeSets.size()]);
+                }
+
                 EndpointConfiguration remoteDmrEndpointConfig = new EndpointConfiguration(
                         remoteDmr.getName(),
                         remoteDmr.getEnabled(),
-                        getNamesFromStrings(remoteDmr.getResourceTypeSets()),
+                        getNamesFromStrings(resourceTypeSets),
                         connectionData,
                         remoteDmr.getSecurityRealmName(),
-                        remoteDmr.getSetAvailOnShutdown(),
-                        remoteDmr.getTenantId(),
-                        remoteDmr.getMetricIdTemplate(),
-                        remoteDmr.getMetricTags(),
-                        null,
+                        remoteDmr.getMetricLabels(),
+                        Collections.singletonMap(DMREndpointService.ENABLE_STATISTICS_KEY,
+                                remoteDmr.getEnableStatistics()),
                         asWaitForList(remoteDmr.getWaitFor()));
 
                 managedServers.put(remoteDmr.getName(), remoteDmrEndpointConfig);
@@ -383,58 +375,43 @@ public class ConfigConverter {
                         new ID(metricSet.getName() + "~" + metric.getName()),
                         new Name(metric.getName()),
                         aLocation,
-                        new Interval(metric.getInterval(), metric.getTimeUnits().toJavaTimeUnit()),
                         metric.getMetricUnits(),
                         metric.getMetricType(),
-                        metric.getMetricIdTemplate(),
-                        metric.getMetricTags());
+                        metric.getMetricFamily(),
+                        metric.getMetricLabels(),
+                        metric.getMetricExpression());
                 typeSet.type(type);
             }
             typeSets.metricTypeSet(typeSet.build());
         }
 
-        for (JMXAvailSet availSet : config.getJmxAvailSets()) {
-            TypeSetBuilder<AvailType<JMXNodeLocation>> typeSet = TypeSet.<AvailType<JMXNodeLocation>> builder();
-            typeSet.name(new Name(availSet.getName()));
-            typeSet.enabled(availSet.getEnabled());
-            for (JMXAvail avail : availSet.getJmxAvails()) {
-                JMXNodeLocation location = new JMXNodeLocation(getJmxObjectName(avail.getObjectName()));
-                AttributeLocation<JMXNodeLocation> aLocation = new AttributeLocation<>(location, avail.getAttribute());
-                AvailType<JMXNodeLocation> type = new AvailType<JMXNodeLocation>(
-                        new ID(availSet.getName() + "~" + avail.getName()),
-                        new Name(avail.getName()),
-                        aLocation,
-                        new Interval(avail.getInterval(), avail.getTimeUnits().toJavaTimeUnit()),
-                        Pattern.compile(avail.getUpRegex()),
-                        avail.getMetricIdTemplate(),
-                        avail.getMetricTags());
-                typeSet.type(type);
-            }
-            typeSets.availTypeSet(typeSet.build());
-        }
+        // We will need to build this in case a managed server does not declare a list of resource type sets.
+        // In that case, the default is for the managed server to use all enabled resource type sets.
+        List<String> enabledResourceTypeSets = new ArrayList<>();
 
         for (JMXResourceTypeSet rtSet : config.getJmxResourceTypeSets()) {
+            if (rtSet.getEnabled() != Boolean.FALSE) {
+                enabledResourceTypeSets.add(rtSet.getName());
+            }
+
             TypeSetBuilder<ResourceType<JMXNodeLocation>> typeSet = TypeSet.<ResourceType<JMXNodeLocation>> builder();
             typeSet.name(new Name(rtSet.getName()));
             typeSet.enabled(rtSet.getEnabled());
             for (JMXResourceType rt : rtSet.getJmxResourceTypes()) {
                 Builder<?, JMXNodeLocation> rtBuilder = ResourceType.<JMXNodeLocation> builder();
-                rtBuilder.name(new Name(rt.getName()));
+                rtBuilder.name(new Name(sourceConfig.getSubsystem().getTypeVersion() != null ?
+                        rt.getName() + ' ' + sourceConfig.getSubsystem().getTypeVersion() : rt.getName()));
                 rtBuilder.location(new JMXNodeLocation(getJmxObjectName(rt.getObjectName())));
                 rtBuilder.resourceNameTemplate(rt.getResourceNameTemplate());
                 if (rt.getParents() != null) {
                     for (String parent : rt.getParents()) {
-                        rtBuilder.parent(new Name(parent));
+                        rtBuilder.parent(new Name(sourceConfig.getSubsystem().getTypeVersion() != null ?
+                                parent + ' ' + sourceConfig.getSubsystem().getTypeVersion() : parent));
                     }
                 }
                 if (rt.getMetricSets() != null) {
                     for (String metricSet : rt.getMetricSets()) {
                         rtBuilder.metricSetName(new Name(metricSet));
-                    }
-                }
-                if (rt.getAvailSets() != null) {
-                    for (String availSet : rt.getAvailSets()) {
-                        rtBuilder.availSetName(new Name(availSet));
                     }
                 }
 
@@ -476,7 +453,11 @@ public class ConfigConverter {
                     }
                 }
 
-                populateMetricAndAvailTypesForResourceType(rtBuilder, typeSets);
+                if (rt.getMetricLabels() != null) {
+                    rtBuilder.metricLabels(rt.getMetricLabels());
+                }
+
+                populateMetricTypesForResourceType(rtBuilder, typeSets);
                 typeSet.type(rtBuilder.build());
             }
             typeSets.resourceTypeSet(typeSet.build());
@@ -485,16 +466,18 @@ public class ConfigConverter {
         Map<String, EndpointConfiguration> managedServers = new HashMap<>();
 
         if (config.getManagedServers().getLocalJmx() != null) {
+            String[] resourceTypeSets = config.getManagedServers().getLocalJmx().getResourceTypeSets();
+            if (resourceTypeSets == null || resourceTypeSets.length == 0) {
+                resourceTypeSets = enabledResourceTypeSets.toArray(new String[enabledResourceTypeSets.size()]);
+            }
+
             EndpointConfiguration localJmx = new EndpointConfiguration(
                     config.getManagedServers().getLocalJmx().getName(),
                     config.getManagedServers().getLocalJmx().getEnabled(),
-                    getNamesFromStrings(config.getManagedServers().getLocalJmx().getResourceTypeSets()),
+                    getNamesFromStrings(resourceTypeSets),
                     null,
                     null,
-                    config.getManagedServers().getLocalJmx().getSetAvailOnShutdown(),
-                    config.getManagedServers().getLocalJmx().getTenantId(),
-                    config.getManagedServers().getLocalJmx().getMetricIdTemplate(),
-                    config.getManagedServers().getLocalJmx().getMetricTags(),
+                    config.getManagedServers().getLocalJmx().getMetricLabels(),
                     Collections.singletonMap(JMXEndpointService.MBEAN_SERVER_NAME_KEY,
                             config.getManagedServers().getLocalJmx().getMbeanServerName()),
                     asWaitForList(config.getManagedServers().getLocalJmx().getWaitFor()));
@@ -515,16 +498,18 @@ public class ConfigConverter {
                         remoteJmx.getUsername(),
                         remoteJmx.getPassword());
 
+                String[] resourceTypeSets = remoteJmx.getResourceTypeSets();
+                if (resourceTypeSets == null || resourceTypeSets.length == 0) {
+                    resourceTypeSets = enabledResourceTypeSets.toArray(new String[enabledResourceTypeSets.size()]);
+                }
+
                 EndpointConfiguration remoteJmxEndpointConfig = new EndpointConfiguration(
                         remoteJmx.getName(),
                         remoteJmx.getEnabled(),
-                        getNamesFromStrings(remoteJmx.getResourceTypeSets()),
+                        getNamesFromStrings(resourceTypeSets),
                         connectionData,
                         remoteJmx.getSecurityRealmName(),
-                        remoteJmx.getSetAvailOnShutdown(),
-                        remoteJmx.getTenantId(),
-                        remoteJmx.getMetricIdTemplate(),
-                        remoteJmx.getMetricTags(),
+                        remoteJmx.getMetricLabels(),
                         null,
                         asWaitForList(remoteJmx.getWaitFor()));
 
@@ -535,368 +520,13 @@ public class ConfigConverter {
         return new ProtocolConfiguration<JMXNodeLocation>(typeSets.build(), managedServers);
     }
 
-    private ProtocolConfiguration<PlatformNodeLocation> buildPlatformConfiguration(Configuration config) {
-        // assume they are disabled unless configured otherwise
-
-        if (!config.getPlatform().getEnabled()) {
-            Map<String, EndpointConfiguration> managedServers = new HashMap<>();
-            return new ProtocolConfiguration<PlatformNodeLocation>(TypeSets.empty(), managedServers);
-        }
-
-        TypeSets.Builder<PlatformNodeLocation> typeSets = TypeSets.builder();
-
-        // all the type metadata is dependent upon the capabilities of the oshi SystemInfo API
-
-        // since platform monitoring is enabled, we will always have at least the root OS type
-        final ID osId = PlatformResourceType.OPERATING_SYSTEM.getResourceTypeId();
-        final Name osName = PlatformResourceType.OPERATING_SYSTEM.getResourceTypeName();
-
-        Builder<?, PlatformNodeLocation> rootTypeBldr = ResourceType.<PlatformNodeLocation> builder()
-                .id(osId)
-                .name(osName)
-                .location(new PlatformNodeLocation(
-                        PlatformPath.builder().any(PlatformResourceType.OPERATING_SYSTEM).build()))
-                .resourceNameTemplate("%s");
-
-        ResourceConfigurationPropertyType<PlatformNodeLocation> machineIdConfigType = //
-                new ResourceConfigurationPropertyType<>(
-                        ID.NULL_ID,
-                        new Name(Constants.MACHINE_ID),
-                        new AttributeLocation<>(new PlatformNodeLocation(PlatformPath.empty()), Constants.MACHINE_ID));
-        rootTypeBldr.resourceConfigurationPropertyType(machineIdConfigType);
-
-        ResourceConfigurationPropertyType<PlatformNodeLocation> containerIdConfigType = //
-                new ResourceConfigurationPropertyType<>(
-                        ID.NULL_ID,
-                        new Name(Constants.CONTAINER_ID),
-                        new AttributeLocation<>(new PlatformNodeLocation(PlatformPath.empty()),
-                                Constants.CONTAINER_ID));
-        rootTypeBldr.resourceConfigurationPropertyType(containerIdConfigType);
-
-        // OS top-level metrics
-
-        Interval osInterval = new Interval(config.getPlatform().getInterval(),
-                config.getPlatform().getTimeUnits().toJavaTimeUnit());
-
-        MetricType<PlatformNodeLocation> systemCpuLoad = new MetricType<PlatformNodeLocation>(
-                PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeId(),
-                PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeName(),
-                new AttributeLocation<>(
-                        new PlatformNodeLocation(PlatformPath.empty()),
-                        PlatformMetricType.OS_SYS_CPU_LOAD.getMetricTypeId().getIDString()),
-                osInterval,
-                MeasurementUnit.PERCENTAGE,
-                org.hawkular.metrics.client.common.MetricType.GAUGE,
-                null,
-                null);
-
-        MetricType<PlatformNodeLocation> systemLoadAverage = new MetricType<PlatformNodeLocation>(
-                PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeId(),
-                PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeName(),
-                new AttributeLocation<>(
-                        new PlatformNodeLocation(PlatformPath.empty()),
-                        PlatformMetricType.OS_SYS_LOAD_AVG.getMetricTypeId().getIDString()),
-                osInterval,
-                MeasurementUnit.NONE,
-                org.hawkular.metrics.client.common.MetricType.GAUGE,
-                null,
-                null);
-
-        MetricType<PlatformNodeLocation> processCount = new MetricType<PlatformNodeLocation>(
-                PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeId(),
-                PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeName(),
-                new AttributeLocation<>(
-                        new PlatformNodeLocation(PlatformPath.empty()),
-                        PlatformMetricType.OS_PROCESS_COUNT.getMetricTypeId().getIDString()),
-                osInterval,
-                MeasurementUnit.NONE,
-                org.hawkular.metrics.client.common.MetricType.GAUGE,
-                null,
-                null);
-
-        TypeSet<MetricType<PlatformNodeLocation>> osMetrics = TypeSet
-                .<MetricType<PlatformNodeLocation>> builder()
-                .name(PlatformResourceType.OPERATING_SYSTEM.getResourceTypeName())
-                .type(systemCpuLoad)
-                .type(systemLoadAverage)
-                .type(processCount)
-                .build();
-
-        typeSets.metricTypeSet(osMetrics);
-
-        rootTypeBldr.metricSetName(osMetrics.getName());
-        populateMetricAndAvailTypesForResourceType(rootTypeBldr, typeSets);
-
-        ResourceType<PlatformNodeLocation> rootType = rootTypeBldr.build();
-        TypeSet<ResourceType<PlatformNodeLocation>> rootTypeSet = TypeSet
-                .<ResourceType<PlatformNodeLocation>> builder()
-                .enabled(true)
-                .name(osName)
-                .type(rootType)
-                .build();
-
-        typeSets.resourceTypeSet(rootTypeSet);
-
-        // now add children types if they are enabled
-
-        if (config.getPlatform().getFileStores() != null && config.getPlatform().getFileStores().getEnabled()) {
-            Interval interval = new Interval(config.getPlatform().getFileStores().getInterval(),
-                    config.getPlatform().getFileStores().getTimeUnits().toJavaTimeUnit());
-
-            MetricType<PlatformNodeLocation> usableSpace = new MetricType<PlatformNodeLocation>(
-                    PlatformMetricType.FILE_STORE_USABLE_SPACE.getMetricTypeId(),
-                    PlatformMetricType.FILE_STORE_USABLE_SPACE.getMetricTypeName(),
-                    new AttributeLocation<>(
-                            new PlatformNodeLocation(PlatformPath.empty()),
-                            PlatformMetricType.FILE_STORE_USABLE_SPACE.getMetricTypeId().getIDString()),
-                    interval,
-                    MeasurementUnit.BYTES,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
-                    null,
-                    null);
-
-            MetricType<PlatformNodeLocation> totalSpace = new MetricType<PlatformNodeLocation>(
-                    PlatformMetricType.FILE_STORE_TOTAL_SPACE.getMetricTypeId(),
-                    PlatformMetricType.FILE_STORE_TOTAL_SPACE.getMetricTypeName(),
-                    new AttributeLocation<>(
-                            new PlatformNodeLocation(PlatformPath.empty()),
-                            PlatformMetricType.FILE_STORE_TOTAL_SPACE.getMetricTypeId().getIDString()),
-                    interval,
-                    MeasurementUnit.BYTES,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
-                    null,
-                    null);
-
-            TypeSet<MetricType<PlatformNodeLocation>> fileStoreMetrics = TypeSet
-                    .<MetricType<PlatformNodeLocation>> builder()
-                    .name(PlatformResourceType.FILE_STORE.getResourceTypeName())
-                    .type(usableSpace)
-                    .type(totalSpace)
-                    .build();
-
-            typeSets.metricTypeSet(fileStoreMetrics);
-
-            PlatformNodeLocation fileStoreLocation = new PlatformNodeLocation(
-                    PlatformPath.builder().any(PlatformResourceType.FILE_STORE).build());
-            Builder<?, PlatformNodeLocation> fileStoreBldr = ResourceType.<PlatformNodeLocation> builder()
-                    .id(PlatformResourceType.FILE_STORE.getResourceTypeId())
-                    .name(PlatformResourceType.FILE_STORE.getResourceTypeName())
-                    .location(fileStoreLocation)
-                    .resourceNameTemplate(
-                            PlatformResourceType.FILE_STORE.getResourceTypeName().getNameString() + " [%s]")
-                    .parent(rootType.getName())
-                    .metricSetName(fileStoreMetrics.getName());
-
-            populateMetricAndAvailTypesForResourceType(fileStoreBldr, typeSets);
-
-            ResourceType<PlatformNodeLocation> fileStore = fileStoreBldr.build();
-            TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
-                    .<ResourceType<PlatformNodeLocation>> builder()
-                    .name(PlatformResourceType.FILE_STORE.getResourceTypeName())
-                    .type(fileStore)
-                    .build();
-
-            typeSets.resourceTypeSet(typeSet);
-        }
-
-        if (config.getPlatform().getMemory() != null && config.getPlatform().getMemory().getEnabled()) {
-            Interval interval = new Interval(config.getPlatform().getMemory().getInterval(),
-                    config.getPlatform().getMemory().getTimeUnits().toJavaTimeUnit());
-
-            MetricType<PlatformNodeLocation> available = new MetricType<PlatformNodeLocation>(
-                    PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeId(),
-                    PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeName(),
-                    new AttributeLocation<>(
-                            new PlatformNodeLocation(PlatformPath.empty()),
-                            PlatformMetricType.MEMORY_AVAILABLE.getMetricTypeId().getIDString()),
-                    interval,
-                    MeasurementUnit.BYTES,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
-                    null,
-                    null);
-
-            MetricType<PlatformNodeLocation> total = new MetricType<PlatformNodeLocation>(
-                    PlatformMetricType.MEMORY_TOTAL.getMetricTypeId(),
-                    PlatformMetricType.MEMORY_TOTAL.getMetricTypeName(),
-                    new AttributeLocation<>(
-                            new PlatformNodeLocation(PlatformPath.empty()),
-                            PlatformMetricType.MEMORY_TOTAL.getMetricTypeId().getIDString()),
-                    interval,
-                    MeasurementUnit.BYTES,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
-                    null,
-                    null);
-
-            TypeSet<MetricType<PlatformNodeLocation>> memoryMetrics = TypeSet
-                    .<MetricType<PlatformNodeLocation>> builder()
-                    .name(PlatformResourceType.MEMORY.getResourceTypeName())
-                    .type(available)
-                    .type(total)
-                    .build();
-
-            typeSets.metricTypeSet(memoryMetrics);
-
-            PlatformNodeLocation memoryLocation = new PlatformNodeLocation(
-                    PlatformPath.builder().any(PlatformResourceType.MEMORY).build());
-            Builder<?, PlatformNodeLocation> memoryBldr = ResourceType.<PlatformNodeLocation> builder()
-                    .id(PlatformResourceType.MEMORY.getResourceTypeId())
-                    .name(PlatformResourceType.MEMORY.getResourceTypeName())
-                    .parent(rootType.getName())
-                    .location(memoryLocation)
-                    .metricSetName(memoryMetrics.getName())
-                    .resourceNameTemplate(PlatformResourceType.MEMORY.getResourceTypeName().getNameString());
-
-            populateMetricAndAvailTypesForResourceType(memoryBldr, typeSets);
-
-            ResourceType<PlatformNodeLocation> memory = memoryBldr.build();
-            TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
-                    .<ResourceType<PlatformNodeLocation>> builder()
-                    .name(PlatformResourceType.MEMORY.getResourceTypeName())
-                    .type(memory)
-                    .build();
-
-            typeSets.resourceTypeSet(typeSet);
-        }
-
-        if (config.getPlatform().getProcessors() != null && config.getPlatform().getProcessors().getEnabled()) {
-            Interval interval = new Interval(config.getPlatform().getProcessors().getInterval(),
-                    config.getPlatform().getProcessors().getTimeUnits().toJavaTimeUnit());
-
-            // this is the Processor.getProcessorCpuLoadBetweenTicks value
-            MetricType<PlatformNodeLocation> cpuUsage = new MetricType<PlatformNodeLocation>(
-                    PlatformMetricType.PROCESSOR_CPU_USAGE.getMetricTypeId(),
-                    PlatformMetricType.PROCESSOR_CPU_USAGE.getMetricTypeName(),
-                    new AttributeLocation<>(
-                            new PlatformNodeLocation(PlatformPath.empty()),
-                            PlatformMetricType.PROCESSOR_CPU_USAGE.getMetricTypeId().getIDString()),
-                    interval,
-                    MeasurementUnit.PERCENTAGE,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
-                    null,
-                    null);
-
-            TypeSet<MetricType<PlatformNodeLocation>> processorMetrics = TypeSet
-                    .<MetricType<PlatformNodeLocation>> builder()
-                    .name(PlatformResourceType.PROCESSOR.getResourceTypeName())
-                    .type(cpuUsage)
-                    .build();
-
-            typeSets.metricTypeSet(processorMetrics);
-
-            PlatformNodeLocation processorsLocation = new PlatformNodeLocation(
-                    PlatformPath.builder().any(PlatformResourceType.PROCESSOR).build());
-            Builder<?, PlatformNodeLocation> processorBldr = ResourceType.<PlatformNodeLocation> builder()
-                    .id(PlatformResourceType.PROCESSOR.getResourceTypeId())
-                    .name(PlatformResourceType.PROCESSOR.getResourceTypeName())
-                    .parent(rootType.getName())
-                    .location(processorsLocation)
-                    .metricSetName(processorMetrics.getName())
-                    .resourceNameTemplate(
-                            PlatformResourceType.PROCESSOR.getResourceTypeName().getNameString() + " [%s]");
-
-            populateMetricAndAvailTypesForResourceType(processorBldr, typeSets);
-
-            ResourceType<PlatformNodeLocation> processor = processorBldr.build();
-            TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
-                    .<ResourceType<PlatformNodeLocation>> builder()
-                    .name(PlatformResourceType.PROCESSOR.getResourceTypeName())
-                    .type(processor)
-                    .build();
-
-            typeSets.resourceTypeSet(typeSet);
-        }
-
-        if (config.getPlatform().getPowerSources() != null && config.getPlatform().getPowerSources().getEnabled()) {
-            Interval interval = new Interval(config.getPlatform().getPowerSources().getInterval(),
-                    config.getPlatform().getPowerSources().getTimeUnits().toJavaTimeUnit());
-
-            MetricType<PlatformNodeLocation> remainingCap = new MetricType<PlatformNodeLocation>(
-                    PlatformMetricType.POWER_SOURCE_REMAINING_CAPACITY.getMetricTypeId(),
-                    PlatformMetricType.POWER_SOURCE_REMAINING_CAPACITY.getMetricTypeName(),
-                    new AttributeLocation<>(
-                            new PlatformNodeLocation(PlatformPath.empty()),
-                            PlatformMetricType.POWER_SOURCE_REMAINING_CAPACITY.getMetricTypeId()
-                                    .getIDString()),
-                    interval,
-                    MeasurementUnit.PERCENTAGE,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
-                    null,
-                    null);
-
-            MetricType<PlatformNodeLocation> timeRemaining = new MetricType<PlatformNodeLocation>(
-                    PlatformMetricType.POWER_SOURCE_TIME_REMAINING.getMetricTypeId(),
-                    PlatformMetricType.POWER_SOURCE_TIME_REMAINING.getMetricTypeName(),
-                    new AttributeLocation<>(
-                            new PlatformNodeLocation(PlatformPath.empty()),
-                            PlatformMetricType.POWER_SOURCE_TIME_REMAINING.getMetricTypeId().getIDString()),
-                    interval,
-                    MeasurementUnit.SECONDS,
-                    org.hawkular.metrics.client.common.MetricType.GAUGE,
-                    null,
-                    null);
-
-            TypeSet<MetricType<PlatformNodeLocation>> powerSourceMetrics = TypeSet
-                    .<MetricType<PlatformNodeLocation>> builder()
-                    .name(PlatformResourceType.POWER_SOURCE.getResourceTypeName())
-                    .type(remainingCap)
-                    .type(timeRemaining)
-                    .build();
-
-            typeSets.metricTypeSet(powerSourceMetrics);
-
-            PlatformNodeLocation powerSourcesLocation = new PlatformNodeLocation(
-                    PlatformPath.builder().any(PlatformResourceType.POWER_SOURCE).build());
-            Builder<?, PlatformNodeLocation> powerSourceBldr = ResourceType.<PlatformNodeLocation> builder()
-                    .id(PlatformResourceType.POWER_SOURCE.getResourceTypeId())
-                    .name(PlatformResourceType.POWER_SOURCE.getResourceTypeName())
-                    .parent(rootType.getName())
-                    .location(powerSourcesLocation)
-                    .metricSetName(powerSourceMetrics.getName())
-                    .resourceNameTemplate(
-                            PlatformResourceType.POWER_SOURCE.getResourceTypeName().getNameString() + " [%s]");
-
-            populateMetricAndAvailTypesForResourceType(powerSourceBldr, typeSets);
-
-            ResourceType<PlatformNodeLocation> powerSource = powerSourceBldr.build();
-            TypeSet<ResourceType<PlatformNodeLocation>> typeSet = TypeSet
-                    .<ResourceType<PlatformNodeLocation>> builder()
-                    .name(PlatformResourceType.POWER_SOURCE.getResourceTypeName())
-                    .type(powerSource)
-                    .build();
-
-            typeSets.resourceTypeSet(typeSet);
-        }
-
-        Map<String, EndpointConfiguration> managedServers = new HashMap<>();
-        if (config.getPlatform().getEnabled()) {
-            Map<String, String> customData = new HashMap<>(2);
-            customData.put(Constants.MACHINE_ID, config.getPlatform().getMachineId());
-            customData.put(Constants.CONTAINER_ID, config.getPlatform().getContainerId());
-            EndpointConfiguration localPlatform = new EndpointConfiguration(
-                    "platform",
-                    true,
-                    null,
-                    null,
-                    null,
-                    Avail.DOWN,
-                    null,
-                    null,
-                    null,
-                    customData,
-                    null);
-            managedServers.put("platform", localPlatform);
-        }
-
-        return new ProtocolConfiguration<PlatformNodeLocation>(typeSets.build(), managedServers);
-    }
-
     /**
-     * Given a resource type builder, this will fill in its metric types and avail types.
+     * Given a resource type builder, this will fill in its metric types.
      *
-     * @param resourceTypeBuilder the type being built whose metric and avail types are to be filled in
-     * @param typeSetsBuilder all type metadata - this is where our metrics and avails are
+     * @param resourceTypeBuilder the type being built whose metric types are to be filled in
+     * @param typeSetsBuilder all type metadata - this is where our metrics are
      */
-    private static <L> void populateMetricAndAvailTypesForResourceType(
+    private static <L> void populateMetricTypesForResourceType(
             ResourceType.Builder<?, L> resourceTypeBuilder,
             TypeSets.Builder<L> typeSetsBuilder) {
 
@@ -909,14 +539,6 @@ public class ConfigConverter {
             }
         }
 
-        Map<Name, TypeSet<AvailType<L>>> availTypeSets = typeSetsBuilder.getAvailTypeSets();
-        List<Name> availSetNames = resourceTypeBuilder.getAvailSetNames();
-        for (Name availSetName : availSetNames) {
-            TypeSet<AvailType<L>> availSet = availTypeSets.get(availSetName);
-            if (availSet != null && availSet.isEnabled()) {
-                resourceTypeBuilder.availTypes(availSet.getTypeMap().values());
-            }
-        }
     }
 
     private PathAddress getDmrPathAddress(String path) {

@@ -33,29 +33,14 @@ public class Subsystem implements Validatable {
     @JsonProperty("auto-discovery-scan-period-secs")
     private IntegerExpression autoDiscoveryScanPeriodSecs = new IntegerExpression(600);
 
-    @JsonProperty("min-collection-interval-secs")
-    private IntegerExpression minCollectionIntervalSecs = new IntegerExpression(30);
-
     @JsonProperty
     private BooleanExpression immutable = new BooleanExpression(Boolean.FALSE);
 
     @JsonProperty("in-container")
     private BooleanExpression inContainer = new BooleanExpression(Boolean.FALSE);
 
-    @JsonProperty("metric-dispatcher-buffer-size")
-    private Integer metricDispatcherBufferSize = 1000;
-
-    @JsonProperty("metric-dispatcher-max-batch-size")
-    private Integer metricDispatcherMaxBatchSize = 100;
-
-    @JsonProperty("avail-dispatcher-buffer-size")
-    private Integer availDispatcherBufferSize = 500;
-
-    @JsonProperty("avail-dispatcher-max-batch-size")
-    private Integer availDispatcherMaxBatchSize = 50;
-
-    @JsonProperty("ping-period-secs")
-    private IntegerExpression pingPeriodSecs = new IntegerExpression(60);
+    @JsonProperty("type-version")
+    private String typeVersion;
 
     public Subsystem() {
     }
@@ -64,40 +49,15 @@ public class Subsystem implements Validatable {
         this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
         this.autoDiscoveryScanPeriodSecs = original.autoDiscoveryScanPeriodSecs == null ? null
                 : new IntegerExpression(original.autoDiscoveryScanPeriodSecs);
-        this.minCollectionIntervalSecs = original.minCollectionIntervalSecs == null ? null
-                : new IntegerExpression(original.minCollectionIntervalSecs);
         this.immutable = original.immutable == null ? null : new BooleanExpression(original.immutable);
         this.inContainer = original.inContainer == null ? null : new BooleanExpression(original.inContainer);
-        this.metricDispatcherBufferSize = original.metricDispatcherBufferSize;
-        this.metricDispatcherMaxBatchSize = original.metricDispatcherMaxBatchSize;
-        this.availDispatcherBufferSize = original.availDispatcherBufferSize;
-        this.availDispatcherMaxBatchSize = original.availDispatcherMaxBatchSize;
-        this.pingPeriodSecs = original.pingPeriodSecs == null ? null
-                : new IntegerExpression(original.pingPeriodSecs);
+        this.typeVersion = original.typeVersion;
     }
 
     @Override
     public void validate() throws Exception {
         if (autoDiscoveryScanPeriodSecs != null && autoDiscoveryScanPeriodSecs.get() <= 0) {
             throw new Exception("subsystem auto-discovery-scan-period-secs must be greater than 0");
-        }
-        if (minCollectionIntervalSecs != null && minCollectionIntervalSecs.get() <= 0) {
-            throw new Exception("subsystem min-collection-interval-secs must be greater than 0");
-        }
-        if (metricDispatcherBufferSize != null && metricDispatcherBufferSize <= 0) {
-            throw new Exception("subsystem metric-dispatcher-buffer-size must be greater than 0");
-        }
-        if (metricDispatcherMaxBatchSize != null && metricDispatcherMaxBatchSize <= 0) {
-            throw new Exception("subsystem metric-dispatcher-max-batch-size must be greater than 0");
-        }
-        if (availDispatcherBufferSize != null && availDispatcherBufferSize <= 0) {
-            throw new Exception("subsystem avail-dispatcher-buffer-size must be greater than 0");
-        }
-        if (availDispatcherMaxBatchSize != null && availDispatcherMaxBatchSize <= 0) {
-            throw new Exception("subsystem avail-dispatcher-max-batch-size must be greater than 0");
-        }
-        if (pingPeriodSecs != null && pingPeriodSecs.get() < 0) {
-            throw new Exception("subsystem ping-period-secs must be greater than or equal to 0");
         }
     }
 
@@ -125,18 +85,6 @@ public class Subsystem implements Validatable {
         }
     }
 
-    public Integer getMinCollectionIntervalSecs() {
-        return minCollectionIntervalSecs == null ? null : minCollectionIntervalSecs.get();
-    }
-
-    public void setMinCollectionIntervalSecs(Integer minCollectionIntervalSecs) {
-        if (this.minCollectionIntervalSecs != null) {
-            this.minCollectionIntervalSecs.set(minCollectionIntervalSecs);
-        } else {
-            this.minCollectionIntervalSecs = new IntegerExpression(minCollectionIntervalSecs);
-        }
-    }
-
     public Boolean getImmutable() {
         return immutable == null ? null : immutable.get();
     }
@@ -161,47 +109,11 @@ public class Subsystem implements Validatable {
         }
     }
 
-    public Integer getMetricDispatcherBufferSize() {
-        return metricDispatcherBufferSize;
+    public String getTypeVersion() {
+        return typeVersion;
     }
 
-    public void setMetricDispatcherBufferSize(Integer metricDispatcherBufferSize) {
-        this.metricDispatcherBufferSize = metricDispatcherBufferSize;
-    }
-
-    public Integer getMetricDispatcherMaxBatchSize() {
-        return metricDispatcherMaxBatchSize;
-    }
-
-    public void setMetricDispatcherMaxBatchSize(Integer metricDispatcherMaxBatchSize) {
-        this.metricDispatcherMaxBatchSize = metricDispatcherMaxBatchSize;
-    }
-
-    public Integer getAvailDispatcherBufferSize() {
-        return availDispatcherBufferSize;
-    }
-
-    public void setAvailDispatcherBufferSize(Integer availDispatcherBufferSize) {
-        this.availDispatcherBufferSize = availDispatcherBufferSize;
-    }
-
-    public Integer getAvailDispatcherMaxBatchSize() {
-        return availDispatcherMaxBatchSize;
-    }
-
-    public void setAvailDispatcherMaxBatchSize(Integer availDispatcherMaxBatchSize) {
-        this.availDispatcherMaxBatchSize = availDispatcherMaxBatchSize;
-    }
-
-    public Integer getPingPeriodSecs() {
-        return pingPeriodSecs == null ? null : pingPeriodSecs.get();
-    }
-
-    public void setPingPeriodSecs(Integer pingPeriodSecs) {
-        if (this.pingPeriodSecs != null) {
-            this.pingPeriodSecs.set(pingPeriodSecs);
-        } else {
-            this.pingPeriodSecs = new IntegerExpression(pingPeriodSecs);
-        }
+    public void setTypeVersion(String typeVersion) {
+        this.typeVersion = typeVersion;
     }
 }

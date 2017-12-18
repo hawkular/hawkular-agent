@@ -41,9 +41,6 @@ public class StorageAdapter implements Validatable {
     @JsonProperty
     private StringExpression url = new StringExpression("http://127.0.0.1:8080");
 
-    @JsonProperty("tenant-id")
-    private StringExpression tenantId = new StringExpression("hawkular");
-
     @JsonProperty
     private StringExpression username = new StringExpression("");
 
@@ -55,9 +52,6 @@ public class StorageAdapter implements Validatable {
 
     @JsonProperty("security-realm")
     private String securityRealmName;
-
-    @JsonProperty("metrics-context")
-    private String metricsContext = "/hawkular/metrics/";
 
     @JsonProperty("inventory-context")
     private String inventoryContext = "/hawkular/inventory/";
@@ -80,12 +74,11 @@ public class StorageAdapter implements Validatable {
     public StorageAdapter(StorageAdapter original) {
         this.type = original.type;
         this.url = original.url == null ? null : new StringExpression(original.url);
-        this.tenantId = original.tenantId == null ? null : new StringExpression(original.tenantId);
         this.username = original.username == null ? null : new StringExpression(original.username);
         this.password = original.password == null ? null : new StringExpression(original.password);
         this.feedId = original.feedId == null ? null : new StringExpression(original.feedId);
         this.securityRealmName = original.securityRealmName;
-        this.metricsContext = original.metricsContext;
+        this.inventoryContext = original.inventoryContext;
         this.feedcommContext = original.feedcommContext;
         this.hawkularContext = original.hawkularContext;
         this.connectTimeoutSecs = original.connectTimeoutSecs;
@@ -143,18 +136,6 @@ public class StorageAdapter implements Validatable {
         }
     }
 
-    public String getTenantId() {
-        return tenantId == null ? null : tenantId.get().toString();
-    }
-
-    public void setTenantId(String tenantId) {
-        if (this.tenantId != null) {
-            this.tenantId.set(new StringValue(tenantId));
-        } else {
-            this.tenantId = new StringExpression(tenantId);
-        }
-    }
-
     public String getUsername() {
         return username == null ? null : username.get().toString();
     }
@@ -197,14 +178,6 @@ public class StorageAdapter implements Validatable {
 
     public void setSecurityRealmName(String securityRealmName) {
         this.securityRealmName = securityRealmName;
-    }
-
-    public String getMetricsContext() {
-        return metricsContext;
-    }
-
-    public void setMetricsContext(String metricsContext) {
-        this.metricsContext = metricsContext;
     }
 
     public String getInventoryContext() {

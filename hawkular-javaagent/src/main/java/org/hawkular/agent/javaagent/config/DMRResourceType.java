@@ -17,6 +17,8 @@
 package org.hawkular.agent.javaagent.config;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.hawkular.agent.javaagent.Util;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
@@ -47,9 +49,6 @@ public class DMRResourceType implements Validatable {
     @JsonProperty("metric-sets")
     private String[] metricSets;
 
-    @JsonProperty("avail-sets")
-    private String[] availSets;
-
     @JsonProperty("notification-dmr")
     private DMRNotification[] dmrNotifications;
 
@@ -58,6 +57,9 @@ public class DMRResourceType implements Validatable {
 
     @JsonProperty("operation-dmr")
     private DMROperation[] dmrOperations;
+
+    @JsonProperty("metric-labels")
+    private Map<String, String> metricLabels;
 
     public DMRResourceType() {
     }
@@ -70,12 +72,11 @@ public class DMRResourceType implements Validatable {
                 : Arrays.copyOf(original.parents, original.parents.length);
         this.metricSets = original.metricSets == null ? null
                 : Arrays.copyOf(original.metricSets, original.metricSets.length);
-        this.availSets = original.availSets == null ? null
-                : Arrays.copyOf(original.availSets, original.availSets.length);
         this.dmrNotifications = original.dmrNotifications == null ? null
                 : Arrays.copyOf(original.dmrNotifications, original.dmrNotifications.length);
         this.dmrResourceConfigs = Util.cloneArray(original.dmrResourceConfigs);
         this.dmrOperations = Util.cloneArray(original.dmrOperations);
+        this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
     }
 
     @Override
@@ -108,6 +109,10 @@ public class DMRResourceType implements Validatable {
             for (DMRNotification o : dmrNotifications) {
                 o.validate();
             }
+        }
+
+        if (metricLabels == null) {
+            metricLabels = new HashMap<>(0);
         }
     }
 
@@ -151,14 +156,6 @@ public class DMRResourceType implements Validatable {
         this.metricSets = metricSets;
     }
 
-    public String[] getAvailSets() {
-        return availSets;
-    }
-
-    public void setAvailSets(String[] availSets) {
-        this.availSets = availSets;
-    }
-
     public DMRResourceConfig[] getDmrResourceConfigs() {
         return dmrResourceConfigs;
     }
@@ -181,5 +178,13 @@ public class DMRResourceType implements Validatable {
 
     public void setDmrNotifications(DMRNotification[] dmrNotifications) {
         this.dmrNotifications = dmrNotifications;
+    }
+
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
+    }
+
+    public void setMetricLabels(Map<String, String> metricLabels) {
+        this.metricLabels = metricLabels;
     }
 }

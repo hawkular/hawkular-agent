@@ -100,6 +100,44 @@
 
     <plugins>
       <plugin>
+        <!-- rather than have our own dups of this, use the real config for our testing -->
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-test-resources-wildfly10</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/target/test-classes/wildfly10</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>../hawkular-javaagent-wildfly-feature-pack/src/main/resources/featurepack/content/standalone/configuration/</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-test-resources-eap6</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/target/test-classes/eap6</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>../eap6-support/hawkular-javaagent-wildfly-feature-pack-eap6/src/main/resources/featurepack/content/standalone/configuration/</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>

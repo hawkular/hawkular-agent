@@ -20,8 +20,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hawkular.agent.javaagent.config.StringExpression.StringValue;
-import org.hawkular.agent.monitor.api.Avail;
 import org.hawkular.agent.monitor.util.WildflyCompatibilityUtils;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -41,23 +39,17 @@ public class LocalDMR implements Validatable {
     @JsonProperty
     private BooleanExpression enabled = new BooleanExpression(Boolean.TRUE);
 
-    @JsonProperty("tenant-id")
-    private StringExpression tenantId;
-
     @JsonProperty("resource-type-sets")
     private String[] resourceTypeSets;
 
-    @JsonProperty("metric-id-template")
-    private String metricIdTemplate;
-
-    @JsonProperty("metric-tags")
-    private Map<String, String> metricTags;
-
-    @JsonProperty("set-avail-on-shutdown")
-    private Avail setAvailOnShutdown;
+    @JsonProperty("metric-labels")
+    private Map<String, String> metricLabels;
 
     @JsonProperty("wait-for")
     private WaitFor[] waitFor;
+
+    @JsonProperty("enable-statistics")
+    private BooleanExpression enableStatistics = new BooleanExpression(Boolean.TRUE);
 
     public LocalDMR() {
     }
@@ -65,13 +57,12 @@ public class LocalDMR implements Validatable {
     public LocalDMR(LocalDMR original) {
         this.name = original.name;
         this.enabled = original.enabled == null ? null : new BooleanExpression(original.enabled);
-        this.tenantId = original.tenantId == null ? null : new StringExpression(original.tenantId);
         this.resourceTypeSets = original.resourceTypeSets == null ? null
                 : Arrays.copyOf(original.resourceTypeSets, original.resourceTypeSets.length);
-        this.metricIdTemplate = original.metricIdTemplate;
-        this.metricTags = original.metricTags == null ? null : new HashMap<>(original.metricTags);
-        this.setAvailOnShutdown = original.setAvailOnShutdown;
+        this.metricLabels = original.metricLabels == null ? null : new HashMap<>(original.metricLabels);
         this.waitFor = original.waitFor == null ? null : Arrays.copyOf(original.waitFor, original.waitFor.length);
+        this.enableStatistics = original.enableStatistics == null ? null
+                : new BooleanExpression(original.enableStatistics);
     }
 
     @Override
@@ -117,18 +108,6 @@ public class LocalDMR implements Validatable {
         }
     }
 
-    public String getTenantId() {
-        return tenantId == null ? null : tenantId.get().toString();
-    }
-
-    public void setTenantId(String tenantId) {
-        if (this.tenantId != null) {
-            this.tenantId.set(new StringValue(tenantId));
-        } else {
-            this.tenantId = new StringExpression(tenantId);
-        }
-    }
-
     public String[] getResourceTypeSets() {
         return resourceTypeSets;
     }
@@ -137,28 +116,12 @@ public class LocalDMR implements Validatable {
         this.resourceTypeSets = resourceTypeSets;
     }
 
-    public String getMetricIdTemplate() {
-        return metricIdTemplate;
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
     }
 
-    public void setMetricIdTemplate(String metricIdTemplate) {
-        this.metricIdTemplate = metricIdTemplate;
-    }
-
-    public Map<String, String> getMetricTags() {
-        return metricTags;
-    }
-
-    public void setMetricTags(Map<String, String> metricTags) {
-        this.metricTags = metricTags;
-    }
-
-    public Avail getSetAvailOnShutdown() {
-        return setAvailOnShutdown;
-    }
-
-    public void setSetAvailOnShutdown(Avail setAvailOnShutdown) {
-        this.setAvailOnShutdown = setAvailOnShutdown;
+    public void setMetricLabels(Map<String, String> metricLabels) {
+        this.metricLabels = metricLabels;
     }
 
     public WaitFor[] getWaitFor() {
@@ -167,5 +130,17 @@ public class LocalDMR implements Validatable {
 
     public void setWaitFor(WaitFor[] waitFor) {
         this.waitFor = waitFor;
+    }
+
+    public Boolean getEnableStatistics() {
+        return enableStatistics == null ? null : enableStatistics.get();
+    }
+
+    public void setEnableStatistics(Boolean enableStatistics) {
+        if (this.enableStatistics != null) {
+            this.enableStatistics.set(enableStatistics);
+        } else {
+            this.enableStatistics = new BooleanExpression(enableStatistics);
+        }
     }
 }

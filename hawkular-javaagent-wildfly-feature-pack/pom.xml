@@ -81,6 +81,59 @@
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <!-- this execution copies the standalone agent yaml to domain and enables the Domain Environment metadata -->
+          <execution>
+            <id>update-domain-yaml</id>
+            <phase>generate-resources</phase>
+            <configuration>
+              <target>
+                <!-- copy the standalone config and change it to work with the domain/host controller -->
+                <copy
+                  file="${project.build.directory}/feature-pack-resources/content/standalone/configuration/hawkular-javaagent-config.yaml"
+                  tofile="${project.build.directory}/feature-pack-resources/content/domain/configuration/hawkular-javaagent-config-domain.yaml"
+                  overwrite="true" />
+                <replaceregexp
+                  file="${project.build.directory}/feature-pack-resources/content/domain/configuration/hawkular-javaagent-config-domain.yaml"
+                  match="config-file: WF10"
+                  replace="config-file: WF10-DOMAIN"
+                  flags="s"
+                  byline="true" />
+                <replaceregexp
+                  file="${project.build.directory}/feature-pack-resources/content/domain/configuration/hawkular-javaagent-config-domain.yaml"
+                  match="mode: disabled"
+                  replace="mode: master"
+                  flags="s"
+                  byline="true" />
+                <replaceregexp
+                  file="${project.build.directory}/feature-pack-resources/content/domain/configuration/hawkular-javaagent-config-domain.yaml"
+                  match="\{jboss.server."
+                  replace="{jboss.domain."
+                  flags="s"
+                  byline="true" />
+                <!-- copy the metrics-only config for use with the slave standalone servers -->
+                <copy
+                  file="${project.build.directory}/feature-pack-resources/content/standalone/configuration/hawkular-javaagent-config-metrics-only.yaml"
+                  tofile="${project.build.directory}/feature-pack-resources/content/domain/configuration/hawkular-javaagent-config-metrics-only.yaml"
+                  overwrite="true" />
+                <replaceregexp
+                  file="${project.build.directory}/feature-pack-resources/content/domain/configuration/hawkular-javaagent-config-metrics-only.yaml"
+                  match="jboss.server.data.dir}"
+                  replace="jboss.domain.base.dir}/data"
+                  flags="s"
+                  byline="true" />
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <groupId>org.wildfly.build</groupId>
         <artifactId>wildfly-feature-pack-build-maven-plugin</artifactId>
         <executions>

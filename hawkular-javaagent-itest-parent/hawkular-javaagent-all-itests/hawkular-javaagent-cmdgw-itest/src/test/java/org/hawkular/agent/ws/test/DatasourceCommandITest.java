@@ -114,7 +114,7 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                 5000, 10);
     }
 
-    @Test(groups = { GROUP }, dependsOnGroups = { ExportJdrCommandITest.GROUP })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAddDatasource" })
     public void testAddXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
@@ -162,13 +162,12 @@ public class DatasourceCommandITest extends AbstractCommandITest {
                 5000, 10);
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testAddDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testAddXaDatasource" })
     public void testUpdateDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
         Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
         Optional<Resource> datasource = datasources.stream()
-                // TODO [lponce] name has format "Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(datasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
@@ -222,13 +221,12 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testAddXaDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateDatasource" })
     public void testUpdateXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
         Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
         Optional<Resource> datasource = datasources.stream()
-                // TODO [lponce] name has format "XA Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(xaDatasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
@@ -283,13 +281,12 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateXaDatasource" })
     public void testRemoveDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
         Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "Datasource", 0);
         Optional<Resource> datasource = datasources.stream()
-                // TODO [lponce] name has format "Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(datasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
@@ -331,13 +328,12 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
     }
 
-    @Test(groups = { GROUP }, dependsOnMethods = { "testUpdateXaDatasource" })
+    @Test(groups = { GROUP }, dependsOnMethods = { "testRemoveDatasource" })
     public void testRemoveXaDatasource() throws Throwable {
         waitForHawkularServerToBeReady();
 
         Collection<Resource> datasources = testHelper.getResourceByType(hawkularFeedId, "XA Datasource", 0);
         Optional<Resource> datasource = datasources.stream()
-                // TODO [lponce] name has format "XA Datasource [<datasource>]"
                 .filter(e -> e.getName().contains(xaDatasourceName))
                 .findFirst();
         if (!datasource.isPresent()) {
@@ -345,6 +341,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
         }
         Resource ds = datasource.get();
         ModelNode dsAddress = datasourceAddess(xaDatasourceName, true);
+
+        testHelper.printAllResources(hawkularFeedId, xaDatasourceName + " exists and will be removed");
 
         try (ModelControllerClient mcc = newHawkularModelControllerClient()) {
             assertResourceExists(mcc, dsAddress, true);
@@ -372,6 +370,8 @@ public class DatasourceCommandITest extends AbstractCommandITest {
             }
 
             assertResourceExists(mcc, dsAddress, false);
+
+            testHelper.printAllResources(hawkularFeedId, xaDatasourceName + " deleted, should be out of inventory");
 
             // this should be gone now, let's make sure it does get deleted from h-inventory
             testHelper.waitForNoResourceContaining(hawkularFeedId, "XA Datasource", xaDatasourceName,

@@ -19,8 +19,6 @@ package org.hawkular.agent.monitor.protocol;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,20 +31,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.regex.Pattern;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
-import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.api.AvailEvent;
-import org.hawkular.agent.monitor.api.AvailListener;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
-import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.AbstractEndpointConfiguration.WaitFor;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 import org.hawkular.agent.monitor.diagnostics.ProtocolDiagnostics;
-import org.hawkular.agent.monitor.inventory.AttributeLocation;
-import org.hawkular.agent.monitor.inventory.AvailManager;
-import org.hawkular.agent.monitor.inventory.AvailType;
 import org.hawkular.agent.monitor.inventory.ID;
 import org.hawkular.agent.monitor.inventory.MeasurementInstance;
 import org.hawkular.agent.monitor.inventory.MeasurementType;
@@ -61,13 +52,9 @@ import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
 import org.hawkular.agent.monitor.service.ServiceStatus;
-import org.hawkular.agent.monitor.storage.AvailDataPoint;
-import org.hawkular.agent.monitor.storage.MetricDataPoint;
-import org.hawkular.agent.monitor.storage.NumericMetricDataPoint;
-import org.hawkular.agent.monitor.storage.StringMetricDataPoint;
 import org.hawkular.agent.monitor.util.Consumer;
 import org.hawkular.agent.monitor.util.ThreadFactoryGenerator;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.hawkular.inventory.api.model.MetricUnit;
 
 import com.codahale.metrics.Timer.Context;
 
@@ -80,7 +67,7 @@ import com.codahale.metrics.Timer.Context;
  * @param <L> the type of the protocol specific location, typically a subclass of {@link NodeLocation}
  * @param <S> the protocol specific {@link Session}
  */
-public abstract class EndpointService<L, S extends Session<L>> implements SamplingService<L> {
+public abstract class EndpointService<L, S extends Session<L>> {
     private static final MsgLogger LOG = AgentLoggers.getLogger(EndpointService.class);
 
     private class InventoryListenerSupport {
@@ -92,7 +79,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 inventoryListenerRWLock.readLock().lock();
                 try {
                     LOG.debugf("Firing inventory event for [%d] removed resources", resources.size());
-                    InventoryEvent<L> event = InventoryEvent.removed(
+                    InventoryEvent<L, S> event = InventoryEvent.removed(
                             EndpointService.this,
                             getResourceManager(),
                             resources);
@@ -109,7 +96,7 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             inventoryListenerRWLock.readLock().lock();
             try {
                 LOG.debugf("Firing inventory event for discovery complete");
-                InventoryEvent<L> event = InventoryEvent.discovery(
+                InventoryEvent<L, S> event = InventoryEvent.discovery(
                         EndpointService.this,
                         getResourceManager(),
                         getResourceTypeManager(),
@@ -120,43 +107,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
                 }
             } finally {
                 inventoryListenerRWLock.readLock().unlock();
-            }
-        }
-    }
-
-    private class AvailListenerSupport {
-        private final List<AvailListener> availListeners = new ArrayList<>();
-        private final ReadWriteLock availListenerRWLock = new ReentrantReadWriteLock();
-
-        public void fireAvailStarting(Map<MeasurementInstance<L, AvailType<L>>, Avail> startingAvails) {
-            availListenerRWLock.readLock().lock();
-            try {
-                AvailEvent<L> event = AvailEvent.availStarted(
-                        EndpointService.this,
-                        getAvailManager(),
-                        startingAvails
-                );
-                for (AvailListener availListener : availListeners) {
-                    availListener.receivedEvent(event);
-                }
-            } finally {
-                availListenerRWLock.readLock().unlock();
-            }
-        }
-
-        public void fireAvailChanged(Map<MeasurementInstance<L, AvailType<L>>, Avail> changedAvails) {
-            availListenerRWLock.readLock().lock();
-            try {
-                AvailEvent<L> event = AvailEvent.availChanged(
-                        EndpointService.this,
-                        getAvailManager(),
-                        changedAvails
-                );
-                for (AvailListener availListener : availListeners) {
-                    availListener.receivedEvent(event);
-                }
-            } finally {
-                availListenerRWLock.readLock().unlock();
             }
         }
     }
@@ -207,43 +157,15 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
     }
 
-    private class AvailMeasurementResults {
-        private final Map<MeasurementInstance<L, AvailType<L>>, Avail> startingAvails = new HashMap<>();
-        private final Map<MeasurementInstance<L, AvailType<L>>, Avail> modifiedAvails = new HashMap<>();
-        private final List<ID> unchangedAvails = new ArrayList<>();
-
-        public void starting(MeasurementInstance<L, AvailType<L>> measurementInstance, Avail newAvail) {
-            startingAvails.put(measurementInstance, newAvail);
-        }
-
-        public void modified(MeasurementInstance<L, AvailType<L>> measurementInstance, Avail newAvail) {
-            modifiedAvails.put(measurementInstance, newAvail);
-        }
-
-        public void unchanged(MeasurementInstance<L, AvailType<L>> measurementInstance) {
-            unchangedAvails.add(measurementInstance.getID());
-        }
-
-        public void availMeasurementFinished() {
-            if (startingAvails.size() > 0) {
-                availListenerSupport.fireAvailStarting(startingAvails);
-            }
-            if (modifiedAvails.size() > 0) {
-                availListenerSupport.fireAvailChanged(modifiedAvails);
-            }
-        }
-    }
-
     private final MonitoredEndpoint<EndpointConfiguration> endpoint;
     private final String feedId;
     private final InventoryListenerSupport inventoryListenerSupport = new InventoryListenerSupport();
-    private final AvailListenerSupport availListenerSupport = new AvailListenerSupport();
     private final ResourceManager<L> resourceManager;
     private final ResourceTypeManager<L> resourceTypeManager;
-    private final AvailManager<L> availManager;
     private final LocationResolver<L> locationResolver;
     private final ProtocolDiagnostics diagnostics;
     private final ExecutorService fullDiscoveryScanThreadPool;
+    private final ReentrantReadWriteLock discoveryScanRWLock;
 
     protected volatile ServiceStatus status = ServiceStatus.INITIAL;
 
@@ -252,21 +174,20 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             ResourceTypeManager<L> resourceTypeManager,
             LocationResolver<L> locationResolver,
             ProtocolDiagnostics diagnostics) {
-        super();
         this.feedId = feedId;
         this.endpoint = endpoint;
         this.resourceManager = new ResourceManager<>();
         this.resourceTypeManager = resourceTypeManager;
-        this.availManager = new AvailManager<>();
         this.locationResolver = locationResolver;
         this.diagnostics = diagnostics;
+        this.discoveryScanRWLock = new ReentrantReadWriteLock();
 
         // This thread pool is used to limit the number of full discovery scans that are performed at any one time.
         // At most one full discovery scan is being performed at a single time, with at most one other full
         // discovery request queued up. Any other full discovery scan requests will be rejected because they are
         // not needed - the queued discovery scan will do it. This minimizes redundant scans being performed.
         ThreadFactory threadFactory = ThreadFactoryGenerator.generateFactory(true,
-                "Hawkular WildFly Agent Full Discovery Scan-" + endpoint.getName());
+                "Hawkular-Agent-Full-Discovery-Scan-" + endpoint.getName());
         this.fullDiscoveryScanThreadPool = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(1), threadFactory);
     }
@@ -275,21 +196,22 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         return feedId;
     }
 
-    @Override
     public MonitoredEndpoint<EndpointConfiguration> getMonitoredEndpoint() {
         return endpoint;
     }
 
+    /**
+     * Returns the resource manager which contain the internal inventory known to the agent.
+     * Be very careful with this object - if a discovery scan is running, its contents can change under you.
+     *
+     * @return resource manager with the agent's currently known inventory (this is its internal inventory)
+     */
     public ResourceManager<L> getResourceManager() {
         return resourceManager;
     }
 
     public ResourceTypeManager<L> getResourceTypeManager() {
         return resourceTypeManager;
-    }
-
-    public AvailManager<L> getAvailManager() {
-        return availManager;
     }
 
     public LocationResolver<L> getLocationResolver() {
@@ -333,38 +255,6 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
     }
 
     /**
-     * Works only before {@link #start()} or after {@link #stop()}.
-     *
-     * @param listener to remove
-     */
-    public void addAvailListener(AvailListener listener) {
-        this.availListenerSupport.availListenerRWLock.writeLock().lock();
-        try {
-            status.assertInitialOrStopped(getClass(), "addAvailListener()");
-            this.availListenerSupport.availListeners.add(listener);
-            LOG.debugf("Added avail listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
-        } finally {
-            this.availListenerSupport.availListenerRWLock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Works only before {@link #start()} or after {@link #stop()}.
-     *
-     * @param listener to remove
-     */
-    public void removeAvailListener(AvailListener listener) {
-        this.availListenerSupport.availListenerRWLock.writeLock().lock();
-        try {
-            status.assertInitialOrStopped(getClass(), "removeAvailListener()");
-            this.availListenerSupport.availListeners.remove(listener);
-            LOG.debugf("Removed avail listener [%s] for endpoint [%s]", listener, getMonitoredEndpoint());
-        } finally {
-            this.availListenerSupport.availListenerRWLock.writeLock().unlock();
-        }
-    }
-
-    /**
      * Opens a new protocl specific {@link Session} - do not forget to close it!
      *
      * @return a new {@link Session}
@@ -379,6 +269,8 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
      * as defined by {@link ResourceTypeManager#getRootResourceTypes()} and then obtain all their
      * children (recursively down to all descendents). Effectively, this discovers the full
      * resource hierarchy.
+     *
+     * This method does not block - it runs the discovery in another thread.
      */
     public void discoverAll() {
         status.assertRunning(getClass(), "discoverAll()");
@@ -386,26 +278,33 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                DiscoveryResults discoveryResults = new DiscoveryResults();
+                WriteLock lock = EndpointService.this.discoveryScanRWLock.writeLock();
+                lock.lock();
+                try {
+                    DiscoveryResults discoveryResults = new DiscoveryResults();
 
-                LOG.infoDiscoveryRequested(getMonitoredEndpoint());
-                long duration = -1;
-                try (S session = openSession()) {
-                    Set<ResourceType<L>> rootTypes = getResourceTypeManager().getRootResourceTypes();
-                    Context timer = getDiagnostics().getFullDiscoveryScanTimer().time();
-                    for (ResourceType<L> rootType : rootTypes) {
-                        discoverChildren(null, rootType, session, discoveryResults);
+                    LOG.infoDiscoveryRequested(getMonitoredEndpoint());
+                    long duration = -1;
+                    try (S session = openSession()) {
+                        Set<ResourceType<L>> rootTypes = getResourceTypeManager().getRootResourceTypes();
+                        Context timer = getDiagnostics().getFullDiscoveryScanTimer().time();
+                        for (ResourceType<L> rootType : rootTypes) {
+                            discoverChildren(null, rootType, session, discoveryResults);
+                        }
+                        long nanos = timer.stop();
+                        duration = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS);
+                    } catch (Exception e) {
+                        LOG.errorCouldNotAccess(EndpointService.this, e);
+                        discoveryResults.error(e);
                     }
-                    long nanos = timer.stop();
-                    duration = TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS);
-                } catch (Exception e) {
-                    LOG.errorCouldNotAccess(EndpointService.this, e);
-                    discoveryResults.error(e);
+
+                    getResourceManager().logTreeGraph("Discovered all resources for: " + getMonitoredEndpoint(),
+                            duration);
+
+                    discoveryResults.discoveryFinished();
+                } finally {
+                    lock.unlock();
                 }
-
-                getResourceManager().logTreeGraph("Discovered all resources for: " + getMonitoredEndpoint(), duration);
-
-                discoveryResults.discoveryFinished();
             }
         };
 
@@ -438,7 +337,9 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         try {
             sessionToUse = (session == null) ? openSession() : session;
 
-            /* FIXME: resourceManager should be write-locked here over find and add */
+            // If discoveryChildren is ever called concurrently then we need to synchronize around the
+            // resource manager's calls to findResources and addResource. Because we don't need it today,
+            // this locking is not performed. But this is a reminder for the future.
             List<Resource<L>> parents;
             if (parentLocation != null) {
                 parents = getResourceManager().findResources(parentLocation, sessionToUse.getLocationResolver());
@@ -488,227 +389,100 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
         }
     }
 
-    @Override
-    public void measureAvails(Collection<MeasurementInstance<L, AvailType<L>>> instances,
-            Consumer<AvailDataPoint> consumer) {
-
-        status.assertRunning(getClass(), "measureAvails()");
-
-        LOG.debugf("Checking [%d] avails for endpoint [%s]", instances.size(), getMonitoredEndpoint());
-
-        S session = null;
-        Driver<L> driver = null;
-
-        try {
-            session = openSession();
-            driver = session.getDriver();
-        } catch (Exception e) {
-            LOG.errorCouldNotAccess(this, e);
-        }
-
-        try {
-            AvailMeasurementResults availMeasurementResults = new AvailMeasurementResults();
-            for (MeasurementInstance<L, AvailType<L>> instance : instances) {
-                Avail avail = null;
-                if (driver != null) {
-                    AttributeLocation<L> location = instance.getAttributeLocation();
-                    try {
-                        Object o = driver.fetchAttribute(location);
-                        final Pattern pattern = instance.getType().getUpPattern();
-                        if (o instanceof List<?>) {
-                            /* aggregate */
-                            List<?> list = (List<?>) o;
-                            for (Object item : list) {
-                                Avail a = toAvail(pattern, item);
-                                if (avail == null) {
-                                    avail = a;
-                                } else {
-                                    avail = (a == Avail.DOWN) ? Avail.DOWN : avail;
-                                }
-                            }
-                        } else {
-                            avail = toAvail(instance.getType().getUpPattern(), o);
-                        }
-                    } catch (Exception e) {
-                        LOG.errorAvailCheckFailed(e);
-                        avail = Avail.DOWN;
-                    }
-                } else {
-                    avail = Avail.DOWN;
-                }
-                long ts = System.currentTimeMillis();
-                String key = instance.getAssociatedMetricId();
-                AvailDataPoint dataPoint = new AvailDataPoint(key, ts, avail,
-                        getMonitoredEndpoint().getEndpointConfiguration().getTenantId());
-                consumer.accept(dataPoint);
-
-                AvailManager.AddResult addResult = getAvailManager().addAvail(instance, avail);
-                switch (addResult.getEffect()) {
-                    case STARTING:
-                        availMeasurementResults.starting(addResult.getMeasurementInstance(), addResult.getAvail());
-                        break;
-                    case MODIFIED:
-                        availMeasurementResults.modified(addResult.getMeasurementInstance(), addResult.getAvail());
-                        break;
-                    case UNCHANGED:
-                        availMeasurementResults.unchanged(addResult.getMeasurementInstance());
-                        break;
-                    default:
-                        throw new RuntimeException("Bad effect; report this bug: " + addResult.getEffect());
-                }
-            }
-            availMeasurementResults.availMeasurementFinished();
-        } catch (Exception e) {
-            LOG.errorAvailCheckFailed(e);
-        } finally {
-            if (session != null) {
-                try {
-                    session.close();
-                } catch (IOException e) {
-                    LOG.tracef(e, "Failed to close session for endpoint [%s]", session.getEndpoint());
-                }
-            }
-        }
+    public String generateMetricFamily(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
+        return instance.getType().getMetricFamily();
     }
 
-    @Override
-    public void measureMetrics(Collection<MeasurementInstance<L, MetricType<L>>> instances,
-            Consumer<MetricDataPoint> consumer) {
+    public Map<String, String> generateMetricLabels(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
+        // Metric labels are configured in one of three places - either in the metric definition itself, or on
+        // the resource type hierarchy, or in the endpoint configuration.
+        // If labels are defined in more than one place, all the labels found in all places are associated with
+        // the metric. If, however, more than one place define the same label name, the metric definition takes precedence
+        // over the the endpoint config but the resource type labels takes precedence over all.
+        Map<String, String> generatedLabels = new HashMap<>();
+        Map<String, String> tokenizedLabels = new HashMap<>();
 
-        status.assertRunning(getClass(), "measureMetrics()");
-
-        LOG.debugf("Collecting [%d] metrics for endpoint [%s]", instances.size(), getMonitoredEndpoint());
-
-        try (S session = openSession()) {
-            Driver<L> driver = session.getDriver();
-            for (MeasurementInstance<L, MetricType<L>> instance : instances) {
-                AttributeLocation<L> location = instance.getAttributeLocation();
-                Object o = driver.fetchAttribute(location);
-                Object metricValue; // will be either a String or Double
-                if (instance.getType().getMetricType() == org.hawkular.metrics.client.common.MetricType.STRING) {
-                    StringBuilder svalue = new StringBuilder();
-                    if (o instanceof List<?>) {
-                        /* aggregate */
-                        List<?> list = (List<?>) o;
-                        for (Object item : list) {
-                            if (svalue.length() > 0) {
-                                svalue.append(",");
-                            }
-                            svalue.append(String.valueOf(item));
-                        }
-                    } else {
-                        svalue.append(String.valueOf(o));
-                    }
-                    metricValue = svalue.toString();
-                } else {
-                    double dvalue = 0;
-                    if (o instanceof List<?>) {
-                        /* aggregate */
-                        List<?> list = (List<?>) o;
-                        for (Object item : list) {
-                            double num = toDouble(item);
-                            dvalue += num;
-                        }
-                    } else {
-                        dvalue = toDouble(o);
-                    }
-                    metricValue = Double.valueOf(dvalue);
-                }
-
-                long ts = System.currentTimeMillis();
-                String key = instance.getAssociatedMetricId();
-                String tenantId = getMonitoredEndpoint().getEndpointConfiguration().getTenantId();
-                MetricDataPoint dataPoint;
-
-                if (instance.getType().getMetricType() == org.hawkular.metrics.client.common.MetricType.STRING) {
-                    dataPoint = new StringMetricDataPoint(key, ts, (String) metricValue, tenantId);
-                } else {
-                    dataPoint = new NumericMetricDataPoint(key, ts, (Double) metricValue,
-                            instance.getType().getMetricType(), tenantId);
-                }
-                consumer.accept(dataPoint);
-            }
-        } catch (Exception e) {
-            LOG.errorCouldNotAccess(this, e);
-        }
-
-    }
-
-    @Override
-    public String generateAssociatedMetricId(MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
-        // the user can configure a metric's ID in one of two places - either in the metric definition itself or
-        // in the endpoint configuration. The metric definition takes precedence in case a metric ID template
-        // is provided in both.
-        String generatedKey;
+        // first do the endpoint configuration's metric labels
         EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
-        String metricIdTemplate = instance.getType().getMetricIdTemplate();
-        if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
-            metricIdTemplate = config.getMetricIdTemplate();
-        }
-        if (metricIdTemplate == null || metricIdTemplate.isEmpty()) {
-            generatedKey = instance.getID().getIDString();
-        } else {
-            generatedKey = replaceTokens(instance, config, metricIdTemplate);
-        }
-        return generatedKey;
-    }
-
-    @Override
-    public Map<String, String> generateAssociatedMetricTags(
-            MeasurementInstance<L, ? extends MeasurementType<L>> instance) {
-        // Metric tags are configured in one of two places - either in the metric definition itself or in the endpoint
-        // configuration. If tags are defined in both places, all the tags found in both places are associated with
-        // the metric. If, however, both places define the same tag name, the metric definition takes precedence.
-        Map<String, String> generatedTags;
-        EndpointConfiguration config = getMonitoredEndpoint().getEndpointConfiguration();
-        Map<String, String> tokenizedTags = new HashMap<>();
-        if (config.getMetricTags() != null) {
-            tokenizedTags.putAll(config.getMetricTags());
-        }
-        if (instance.getType().getMetricTags() != null) {
-            tokenizedTags.putAll(instance.getType().getMetricTags());
+        if (config.getMetricLabels() != null) {
+            tokenizedLabels.putAll(config.getMetricLabels());
         }
 
-        if (tokenizedTags.isEmpty()) {
-            generatedTags = Collections.emptyMap();
-        } else {
-            generatedTags = new HashMap<>(tokenizedTags.size());
-            for (Map.Entry<String, String> tokenizedTag : tokenizedTags.entrySet()) {
-                String name = replaceTokens(instance, config, tokenizedTag.getKey());
-                String value = replaceTokens(instance, config, tokenizedTag.getValue());
-                generatedTags.put(name, value);
+        // second do the metric definitions metric labels
+        if (instance.getType().getMetricLabels() != null) {
+            tokenizedLabels.putAll(instance.getType().getMetricLabels());
+        }
+
+        if (!tokenizedLabels.isEmpty()) {
+            for (Map.Entry<String, String> tokenizedLabel : tokenizedLabels.entrySet()) {
+                String name = replaceTokens(instance.getAttributeLocation().getLocation(), instance, config,
+                        tokenizedLabel.getKey());
+                String value = replaceTokens(instance.getAttributeLocation().getLocation(), instance, config,
+                        tokenizedLabel.getValue());
+                generatedLabels.put(name, value);
             }
         }
-        return generatedTags;
+
+        // third do all metric labels for all types in the resource's ancestry
+        Resource<L> r = instance.getResource();
+        while (r != null) {
+            if (r.getResourceType().getMetricLabels() != null) {
+                for (Map.Entry<String, String> tokenizedLabel : r.getResourceType().getMetricLabels().entrySet()) {
+                    // we must use the parent resource location, not metric's resource location
+                    String name = replaceTokens(r.getLocation(), instance, config, tokenizedLabel.getKey());
+                    String value = replaceTokens(r.getLocation(), instance, config, tokenizedLabel.getValue());
+                    generatedLabels.put(name, value);
+                }
+            }
+            r = r.getParent();
+        }
+
+        return generatedLabels;
     }
 
-    private String replaceTokens(MeasurementInstance<L, ?> instance, EndpointConfiguration config, String string) {
-        MeasurementUnit units = null;
+    private String replaceTokens(L location, MeasurementInstance<L, ?> instance, EndpointConfiguration config,
+            String string) {
+        MetricUnit units = null;
         if (instance.getType() instanceof MetricType) {
             units = ((MetricType<?>) instance.getType()).getMetricUnits();
         }
 
-        return string
+        // replace additional types of tokens that are supported
+        string = string
                 .replaceAll("%FeedId", getFeedId())
                 .replaceAll("%ManagedServerName", config.getName())
                 .replaceAll("%ResourceName", instance.getResource().getName().getNameString())
-                .replaceAll("%ResourceID", instance.getResource().getID().getIDString())
+                .replaceAll("%AttributeName", instance.getAttributeLocation().getAttribute())
                 .replaceAll("%MetricTypeName", instance.getType().getName().getNameString())
-                .replaceAll("%MetricTypeID", instance.getType().getID().getIDString())
-                .replaceAll("%MetricTypeUnits", units == null ? "" : units.toString())
-                .replaceAll("%MetricInstanceID", instance.getID().getIDString());
+                .replaceAll("%MetricTypeUnits", units == null ? "" : units.toString());
+
+        // this replaces any positional tokens that might exist in the string (like "%1", "%key%", "%-", etc).
+        string = getLocationResolver().applyTemplate(string, location, config.getName());
+
+        return string;
     }
 
     /**
      * Remove resources matching the given {@code location} and all their direct and indirect descendant resources.
+     *
+     * Note that this method may block if a discovery scan is currently in progress. The removal will occur when
+     * the discovery scan finishes - only then will this method return.
      *
      * @param location a location that can contain wildcards
      */
     public void removeResources(L location) {
         status.assertRunning(getClass(), "removeResources()");
         try (S session = openSession()) {
-            List<Resource<L>> removed = getResourceManager().removeResources(location, session.getLocationResolver());
-            inventoryListenerSupport.fireResourcesRemoved(removed);
+            // we must not alter the resource manager while a discovery scan is in progress
+            WriteLock lock = EndpointService.this.discoveryScanRWLock.writeLock();
+            lock.lock();
+            try {
+                List<Resource<L>> removed = getResourceManager().removeResources(location,
+                        session.getLocationResolver());
+                inventoryListenerSupport.fireResourcesRemoved(removed);
+            } finally {
+                lock.unlock();
+            }
         } catch (Exception e) {
             LOG.errorCouldNotAccess(this, e);
         }
@@ -734,9 +508,18 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             } while (!ready);
         }
 
+        postStart();
+
         status = ServiceStatus.RUNNING;
 
         LOG.debugf("Started [%s]", toString());
+    }
+
+    /**
+     * Let subclasses perform some stuff after the service is ready and about to start.
+     */
+    protected void postStart() {
+        // no-op
     }
 
     public void stop() {
@@ -806,34 +589,5 @@ public abstract class EndpointService<L, S extends Session<L>> implements Sampli
             return false;
         }
         return true;
-    }
-
-    private double toDouble(Object valueObject) {
-        double value;
-        if (valueObject == null) {
-            value = Double.NaN;
-        } else if (valueObject instanceof Number) {
-            value = ((Number) valueObject).doubleValue();
-        } else {
-            value = Double.valueOf(valueObject.toString());
-        }
-        return value;
-    }
-
-    private Avail toAvail(Pattern pattern, Object value) {
-        if (pattern == null) {
-            if (value instanceof Boolean) {
-                return (Boolean) value ? Avail.UP : Avail.DOWN;
-            } else if (value instanceof String) {
-                return AvailType.getDefaultUpPattern().matcher((String) value).matches() ? Avail.UP : Avail.DOWN;
-            } else if (value instanceof Number) {
-                return ((Number) value).intValue() == 0 ? Avail.DOWN : Avail.UP;
-            } else {
-                throw new RuntimeException(
-                        "Cannot handle an availability value of type [" + value.getClass().getName() + "]");
-            }
-        } else {
-            return pattern.matcher(String.valueOf(value)).matches() ? Avail.UP : Avail.DOWN;
-        }
     }
 }

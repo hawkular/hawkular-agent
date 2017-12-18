@@ -18,6 +18,7 @@ package org.hawkular.agent.monitor.storage;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryStorage;
+import org.hawkular.agent.monitor.protocol.Session;
 
 /**
  * A proxy that delegates to a {@link StorageAdapter}.
@@ -34,7 +35,7 @@ public class InventoryStorageProxy implements InventoryStorage {
     }
 
     @Override
-    public <L> void receivedEvent(InventoryEvent<L> event) {
+    public <L, S extends Session<L>> void receivedEvent(InventoryEvent<L, S> event) {
         if (storageAdapter == null) {
             throw new IllegalStateException("Storage infrastructure is not ready yet");
         }

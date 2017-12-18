@@ -35,7 +35,7 @@
     <hawkular.agent.itest.staging.dir>${project.build.directory}/staging</hawkular.agent.itest.staging.dir>
     <hawkular.agent.itest.javaagent.dir>${project.build.directory}/javaagent</hawkular.agent.itest.javaagent.dir>
     <hawkular.agent.itest.hawkularserver.dir>${project.build.directory}/${project.build.finalName}</hawkular.agent.itest.hawkularserver.dir>
-    <hawkular.agent.itest.javaagent.configfile>${project.build.directory}/test-classes/javaagent-wildfly-config.yaml</hawkular.agent.itest.javaagent.configfile>
+    <hawkular.agent.itest.javaagent.configfile>${project.build.directory}/test-classes/hawkular-javaagent-itest-config.yaml</hawkular.agent.itest.javaagent.configfile>
   </properties>
 
   <dependencies>
@@ -147,14 +147,16 @@
 
         <hawkular.agent.itest.includes>**/*ITest.class</hawkular.agent.itest.includes>
 
-        <!-- do not change these two names - these are the names expected by cmdgw test utils -->
+        <!-- do not change these names - these are the names expected by itest utils -->
         <hawkular.itest.rest.user>itest-rest</hawkular.itest.rest.user>
         <hawkular.itest.rest.password>itest-rest-password</hawkular.itest.rest.password>
+        <hawkular.itest.rest.feedId>itest-rest-feed</hawkular.itest.rest.feedId>
+
+        <hawkular.itest.rest.url>http://127.0.0.1:8080</hawkular.itest.rest.url>
 
         <hawkular.agent.itest.mgmt.user>itest-admin</hawkular.agent.itest.mgmt.user>
         <hawkular.agent.itest.mgmt.password>itest-admin-password</hawkular.agent.itest.mgmt.password>
-        <hawkular.agent.itest.rest.tenantId>itest-rest-tenant</hawkular.agent.itest.rest.tenantId>
-        <hawkular.agent.itest.rest.feedId>itest-rest-feed</hawkular.agent.itest.rest.feedId>
+        <hawkular.agent.itest.discovery.scan.period>10</hawkular.agent.itest.discovery.scan.period>
 
         <hawkular.bind.address>127.0.0.1</hawkular.bind.address>
         <hawkular.port.offset>0</hawkular.port.offset>
@@ -167,10 +169,7 @@
         <hawkular.log.cmdgw>INFO</hawkular.log.cmdgw>
         <hawkular.log.inventory>INFO</hawkular.log.inventory>
         <hawkular.log.inventory.rest.requests>INFO</hawkular.log.inventory.rest.requests>
-        <hawkular.log.metrics>INFO</hawkular.log.metrics>
         <hawkular.log.nest>INFO</hawkular.log.nest>
-        <hawkular.log.datastax.driver>INFO</hawkular.log.datastax.driver>
-        <hawkular.log.cassandra>INFO</hawkular.log.cassandra>
       </properties>
 
       <build>
@@ -278,12 +277,10 @@
 
                 <hawkular.itest.rest.user>${hawkular.itest.rest.user}</hawkular.itest.rest.user>
                 <hawkular.itest.rest.password>${hawkular.itest.rest.password}</hawkular.itest.rest.password>
+                <hawkular.itest.rest.feedId>${hawkular.itest.rest.feedId}</hawkular.itest.rest.feedId>
 
                 <hawkular.agent.itest.mgmt.user>${hawkular.agent.itest.mgmt.user}</hawkular.agent.itest.mgmt.user>
                 <hawkular.agent.itest.mgmt.password>${hawkular.agent.itest.mgmt.password}</hawkular.agent.itest.mgmt.password>
-
-                <hawkular.agent.itest.rest.tenantId>${hawkular.agent.itest.rest.tenantId}</hawkular.agent.itest.rest.tenantId>
-                <hawkular.agent.itest.rest.feedId>${hawkular.agent.itest.rest.feedId}</hawkular.agent.itest.rest.feedId>
 
                 <!-- we put application in here so our test can deploy it -->
                 <hawkular.agent.itest.staging.dir>${hawkular.agent.itest.staging.dir}</hawkular.agent.itest.staging.dir>
@@ -339,6 +336,10 @@
                 <configuration>
                   <jboss-home>${project.build.directory}/${project.build.finalName}</jboss-home>
                   <port>${hawkular.management.port}</port>
+                  <env>
+                    <HAWKULAR_USER>${hawkular.itest.rest.user}</HAWKULAR_USER>
+                    <HAWKULAR_PASSWORD>${hawkular.itest.rest.password}</HAWKULAR_PASSWORD>
+                  </env>
                   <javaOpts>
                     <javaOpt>-server</javaOpt>
                     <javaOpt>-Xms64m</javaOpt>
@@ -353,7 +354,9 @@
                     <javaOpt>-Djboss.socket.binding.port-offset=${hawkular.port.offset}</javaOpt>
                     <javaOpt>-Dhawkular.rest.user=${hawkular.itest.rest.user}</javaOpt>
                     <javaOpt>-Dhawkular.rest.password=${hawkular.itest.rest.password}</javaOpt>
-                    <javaOpt>-Dhawkular.rest.tenantId=${hawkular.agent.itest.rest.tenantId}</javaOpt>
+                    <javaOpt>-Dhawkular.rest.feedId=${hawkular.itest.rest.feedId}</javaOpt>
+                    <javaOpt>-Dhawkular.rest.url=${hawkular.itest.rest.url}</javaOpt>
+                    <javaOpt>-Dhawkular.agent.auto-discovery-scan-period-secs=${hawkular.agent.itest.discovery.scan.period}</javaOpt>
                     <javaOpt>-Dhawkular.log.root=${hawkular.log.root}</javaOpt>
                     <javaOpt>-Dhawkular.log.console=${hawkular.log.console}</javaOpt>
                     <javaOpt>-Dhawkular.log.agent=${hawkular.log.agent}</javaOpt>
@@ -361,13 +364,9 @@
                     <javaOpt>-Dhawkular.log.cmdgw=${hawkular.log.cmdgw}</javaOpt>
                     <javaOpt>-Dhawkular.log.inventory=${hawkular.log.inventory}</javaOpt>
                     <javaOpt>-Dhawkular.log.inventory.rest.requests=${hawkular.log.inventory.rest.requests}</javaOpt>
-                    <javaOpt>-Dhawkular.log.metrics=${hawkular.log.metrics}</javaOpt>
                     <javaOpt>-Dhawkular.log.nest=${hawkular.log.nest}</javaOpt>
-                    <javaOpt>-Dhawkular.log.datastax.driver=${hawkular.log.datastax.driver}</javaOpt>
-                    <javaOpt>-Dhawkular.log.cassandra=${hawkular.log.cassandra}</javaOpt>
-                    <javaOpt>-Dhawkular.backend=embedded_cassandra</javaOpt>
                     <javaOpt>${debug.hawkular.argLine}</javaOpt>
-                    <javaOpt>-javaagent:${hawkular.agent.itest.javaagent.dir}/hawkular-javaagent-shaded.jar=config=${hawkular.agent.itest.javaagent.configfile},delay=30</javaOpt>
+                    <javaOpt>-javaagent:${hawkular.agent.itest.javaagent.dir}/hawkular-javaagent-shaded.jar=config=${hawkular.agent.itest.javaagent.configfile},delay=1</javaOpt>
                   </javaOpts>
                   <add-user>
                     <users>

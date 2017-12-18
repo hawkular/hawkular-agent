@@ -19,10 +19,11 @@
 subsystem:
   enabled: true
 
+metrics-exporter:
+  enabled: false
+
 storage-adapter:
-  type:      HAWKULAR
   url:       http://127.0.0.1:8080
-  tenant-id: hawkular
   username:  jdoe
   password:  password
   feed-id:   autogenerate
@@ -35,43 +36,26 @@ metric-set-dmr:
   - name: first metric d
     path: /metric=one
     attribute: attrib1
-    interval: 12345
-    time-units: milliseconds
     metric-units: megabytes
     metric-type: counter
-    metric-id-template: the template
-    metric-tags:
+    metric-family: the template
+    metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric d
     path: /metric=two
     attribute: attrib1
+    metric-family: the family
 - name: second metric set d
   metric-dmr:
   - name: third metric d
     path: /metric=three
     attribute: attrib1
+    metric-family: the family
   - name: fourth metric d
     path: /metric=four
     attribute: attrib1
-
-avail-set-dmr:
-- name: first avail set d
-  avail-dmr:
-  - name: first avail d
-    path: /metric=one
-    attribute: attrib1
-  - name: second avail d
-    path: /metric=two
-    attribute: attrib1
-- name: second avail set d
-  avail-dmr:
-  - name: third avail d
-    path: /metric=three
-    attribute: attrib1
-  - name: fourth avail d
-    path: /metric=four
-    attribute: attrib1
+    metric-family: the family
 
 resource-type-set-dmr:
 - name: first resource type set d
@@ -83,6 +67,9 @@ resource-type-set-dmr:
     - name: second resconfig d
       path: /config=two
       attribute: attrib2#subattrib2
+    metric-labels:
+      label1: label1value
+      label2: label2value
   - name: second resource type d
 - name: second resource type set d
   resource-type-dmr:
@@ -97,36 +84,23 @@ metric-set-jmx:
   - name: first metric
     object-name: domain:metric=one
     attribute: attrib1
-    interval: 12345
-    time-units: seconds
     metric-units: bytes
     metric-type: gauge
-    metric-id-template: the template
-    metric-tags:
+    metric-family: the template
+    metric-labels:
       tag1: value1
       tag2: value2
   - name: second metric
     attribute: attrib1
+    metric-family: the family
 - name: second metric set
   metric-jmx:
   - name: third metric
     attribute: attrib1
+    metric-family: the family
   - name: fourth metric
     attribute: attrib1
-
-avail-set-jmx:
-- name: first avail set
-  avail-jmx:
-  - name: first avail
-    attribute: attrib1
-  - name: second avail
-    attribute: attrib1
-- name: second avail set
-  avail-jmx:
-  - name: third avail
-    attribute: attrib1
-  - name: fourth avail
-    attribute: attrib1
+    metric-family: the family
 
 resource-type-set-jmx:
 - name: first resource type set
@@ -140,6 +114,9 @@ resource-type-set-jmx:
     - name: second resconfig
       object-name: domain:type=two
       attribute: attrib2#subattrib2
+    metric-labels:
+      label1: label1valueJMX
+      label2: label2valueJMX
   - name: second resource type
     object-name: domain:type=two
     resource-name-template: second

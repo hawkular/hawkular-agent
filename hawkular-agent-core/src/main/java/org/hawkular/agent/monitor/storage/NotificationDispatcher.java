@@ -16,26 +16,18 @@
  */
 package org.hawkular.agent.monitor.storage;
 
-import java.util.Map;
-
-import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.agent.monitor.api.AvailEvent;
-import org.hawkular.agent.monitor.api.AvailListener;
 import org.hawkular.agent.monitor.api.InventoryEvent;
 import org.hawkular.agent.monitor.api.InventoryListener;
 import org.hawkular.agent.monitor.api.NotificationPayloadBuilder;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
-import org.hawkular.agent.monitor.inventory.AvailType;
-import org.hawkular.agent.monitor.inventory.MeasurementInstance;
-import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.log.AgentLoggers;
 import org.hawkular.agent.monitor.log.MsgLogger;
+import org.hawkular.agent.monitor.protocol.Session;
 import org.hawkular.client.api.NotificationType;
 
 /**
  * @author Jay Shaughnessy
  */
-public class NotificationDispatcher implements InventoryListener, AvailListener {
+public class NotificationDispatcher implements InventoryListener {
 
     private static final MsgLogger log = AgentLoggers.getLogger(NotificationDispatcher.class);
     StorageAdapter storageAdapter;
@@ -46,7 +38,8 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
         this.feedId = feedId;
     }
 
-    @Override public <L> void receivedEvent(InventoryEvent<L> event) {
+    @Override
+    public <L, S extends Session<L>> void receivedEvent(InventoryEvent<L, S> event) {
         event.getAddedOrModified().stream()
                 .filter(r -> r.getResourceType().getNotifications().contains(NotificationType.RESOURCE_ADDED))
                 .forEach(r -> {
@@ -59,37 +52,6 @@ public class NotificationDispatcher implements InventoryListener, AvailListener 
                         storageAdapter.store(b, 0);
                     } catch (Exception e) {
                         log.errorFailedToCreateNotification(e, NotificationType.RESOURCE_ADDED.name());
-                    }
-                });
-    }
-
-    @Override
-    public <L> void receivedEvent(AvailEvent<L> event) {
-        MonitoredEndpoint<EndpointConfiguration> endpoint = event.getSamplingService().getMonitoredEndpoint();
-        String endpointTenantId = endpoint.getEndpointConfiguration().getTenantId();
-        String tenantId = (null != endpointTenantId) ? endpointTenantId
-                : storageAdapter.getStorageAdapterConfiguration().getTenantId();
-
-        processAvailEvents(event.getChanged(), NotificationType.AVAIL_CHANGE, tenantId);
-        processAvailEvents(event.getStarted(), NotificationType.AVAIL_STARTING, tenantId);
-    }
-
-    private <L> void processAvailEvents(Map<MeasurementInstance<L, AvailType<L>>, Avail> avails,
-                                NotificationType notificationType, String tenantId) {
-        avails.keySet().stream()
-                .filter(mi -> mi.getResource().getResourceType().getNotifications().contains(notificationType))
-                .forEach(mi ->  {
-                    try {
-                        NotificationPayloadBuilder b = storageAdapter.createNotificationPayloadBuilder();
-                        b.addNotificationType(notificationType);
-                        b.addProperty("feedId", this.feedId);
-                        b.addProperty("resourceType", mi.getResource().getResourceType().getName().getNameString());
-                        b.addProperty("resourceId", mi.getResource().getID().getIDString());
-                        b.addProperty("availType", mi.getType().getName().getNameString());
-                        b.addProperty("newAvail", avails.get(mi).name());
-                        storageAdapter.store(b, 0);
-                    } catch (Exception e) {
-                        log.errorFailedToCreateNotification(e, notificationType.name());
                     }
                 });
     }

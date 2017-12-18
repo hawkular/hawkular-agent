@@ -20,9 +20,8 @@ import java.io.File;
 import java.net.URL;
 
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.DiagnosticsReportTo;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
-import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.StorageReportTo;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.MetricsExporterConfiguration.Mode;
 import org.hawkular.agent.monitor.inventory.Name;
 import org.junit.Assert;
 import org.junit.Test;
@@ -76,19 +75,19 @@ public class ConfigConverterTest {
     public void testEmpty() throws Exception {
         Configuration config = loadTestConfigFile("/empty.yaml");
         AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
-        Assert.assertFalse(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
+        Assert.assertEquals("empty", agentConfig.getGlobalConfiguration().getTypeVersion());
     }
 
     @Test
     public void testRealConfig() throws Exception {
-        Configuration config = loadTestConfigFile("/real-config.yaml");
+        Configuration config = loadTestConfigFile("/wildfly10/hawkular-javaagent-config.yaml");
         AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
         Assert.assertTrue(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
     }
 
     @Test
     public void testRealConfigEAP6() throws Exception {
-        Configuration config = loadTestConfigFile("/real-config-eap6.yaml");
+        Configuration config = loadTestConfigFile("/eap6/hawkular-javaagent-config.yaml");
         AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
         Assert.assertTrue(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
     }
@@ -108,12 +107,16 @@ public class ConfigConverterTest {
         Assert.assertTrue(agentConfig.getGlobalConfiguration().isSubsystemEnabled());
 
         Assert.assertEquals(111, agentConfig.getGlobalConfiguration().getAutoDiscoveryScanPeriodSeconds());
-        Assert.assertEquals(222, agentConfig.getGlobalConfiguration().getMinCollectionIntervalSeconds());
-        Assert.assertEquals(333, agentConfig.getGlobalConfiguration().getPingDispatcherPeriodSeconds());
 
-        Assert.assertEquals(StorageReportTo.METRICS, agentConfig.getStorageAdapter().getType());
+        Assert.assertEquals(true, agentConfig.getMetricsExporterConfiguration().isEnabled());
+        Assert.assertEquals("thehost", agentConfig.getMetricsExporterConfiguration().getHost());
+        Assert.assertEquals(12345, agentConfig.getMetricsExporterConfiguration().getPort());
+        Assert.assertEquals("exporter", agentConfig.getMetricsExporterConfiguration().getConfigDir());
+        Assert.assertEquals("config.yaml", agentConfig.getMetricsExporterConfiguration().getConfigFile());
+        Assert.assertEquals(Mode.slave, agentConfig.getMetricsExporterConfiguration().getProxyMode());
+        Assert.assertEquals("proxy/data/dir", agentConfig.getMetricsExporterConfiguration().getProxyDataDir());
+
         Assert.assertEquals("http://hawkular:8181", agentConfig.getStorageAdapter().getUrl());
-        Assert.assertEquals("custom tenant", agentConfig.getStorageAdapter().getTenantId());
         Assert.assertEquals("the user", agentConfig.getStorageAdapter().getUsername());
         Assert.assertEquals("the pass", agentConfig.getStorageAdapter().getPassword());
         Assert.assertEquals("h-server", agentConfig.getStorageAdapter().getSecurityRealm());
@@ -121,7 +124,6 @@ public class ConfigConverterTest {
         Assert.assertNull(agentConfig.getStorageAdapter().getKeystorePassword());
         Assert.assertEquals("the feed", agentConfig.getStorageAdapter().getFeedId());
 
-        Assert.assertEquals(DiagnosticsReportTo.LOG, agentConfig.getDiagnostics().getReportTo());
         Assert.assertEquals(5, agentConfig.getDiagnostics().getInterval());
 
         EndpointConfiguration localDmr = agentConfig.getDmrConfiguration().getEndpoints().get("Test Local DMR");
@@ -153,9 +155,6 @@ public class ConfigConverterTest {
         EndpointConfiguration remoteJmx2 = agentConfig.getJmxConfiguration().getEndpoints().get("Test Remote JMX 2");
         Assert.assertEquals(true, remoteJmx2.isEnabled());
         Assert.assertEquals(0, remoteJmx2.getWaitForResources().size());
-
-        EndpointConfiguration platform = agentConfig.getPlatformConfiguration().getEndpoints().get("platform");
-        Assert.assertEquals(true, platform.isEnabled());
     }
 
     @Test
@@ -165,6 +164,24 @@ public class ConfigConverterTest {
             Assert.fail("Should have failed due to a bad notification name");
         } catch (Exception ok) {
         }
+    }
+
+    @Test
+    public void testTypeVersion() throws Exception {
+        Configuration config = loadTestConfigFile("/all-resource-type-sets-with-type-version.yaml");
+        AgentCoreEngineConfiguration agentConfig = new ConfigConverter(config).convert();
+        Assert.assertNotNull(agentConfig.getDmrConfiguration()
+                .getTypeSets()
+                .getResourceTypeSets()
+                .get(new Name("dmr type set 1"))
+                .getTypeMap()
+                .get(new Name("dmr type 1 EAPX")));
+        Assert.assertNotNull(agentConfig.getDmrConfiguration()
+                .getTypeSets()
+                .getResourceTypeSets()
+                .get(new Name("dmr type set 1"))
+                .getTypeMap()
+                .get(new Name("dmr type 2 EAPX")));
     }
 
     private Configuration loadTestConfigFile(String path) throws Exception {

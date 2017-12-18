@@ -26,11 +26,6 @@
     <standalone template="configuration/standalone/template.xml" subsystems="configuration/standalone/hawkular-javaagent-itest-subsystems.xml" output-file="standalone/configuration/standalone.xml" />
   </config>
 
-  <copy-artifacts>
-    <copy-artifact artifact="org.hawkular.metrics:hawkular-metrics-component-dist" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-metrics.ear" />
-    <copy-artifact artifact="org.hawkular.commons:hawkular-commons-embedded-cassandra-war" to-location="modules/system/layers/hawkular/org/hawkular/nest/main/deployments/hawkular-commons-embedded-cassandra-war.war" />
-  </copy-artifacts>
-
   <file-permissions>
     <permission value="755">
       <filter pattern="*.sh" include="true"/>

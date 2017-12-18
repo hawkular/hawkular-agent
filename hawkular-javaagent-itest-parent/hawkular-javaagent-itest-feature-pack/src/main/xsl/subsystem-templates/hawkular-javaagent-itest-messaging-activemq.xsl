@@ -25,14 +25,8 @@
     <xsl:copy>
       <xsl:apply-templates select="node()|comment()|@*" />
     </xsl:copy>
-    <jms-queue name="hawkular/metrics/gauges/new" entries="java:/queue/hawkular/metrics/gauges/new java:jboss/exported/queue/hawkular/metrics/gauges/new"/>
-    <jms-queue name="hawkular/metrics/counters/new" entries="java:/queue/hawkular/metrics/counters/new java:jboss/exported/queue/hawkular/metrics/counters/new"/>
-    <jms-queue name="hawkular/metrics/availability/new" entries="java:/queue/hawkular/metrics/availability/new java:jboss/exported/queue/hawkular/metrics/availability/new"/>
-
     <jms-topic name="HawkularInventoryChanges" entries="java:/topic/HawkularInventoryChanges"/>
     <jms-topic name="HawkularCommandEvent" entries="java:/topic/HawkularCommandEvent"/>
-    <jms-topic name="HawkularAvailData" entries="java:/topic/HawkularAvailData java:jboss/exported/topic/HawkularAvailData"/>
-    <jms-topic name="HawkularMetricData" entries="java:/topic/HawkularMetricData java:jboss/exported/topic/HawkularMetricData"/>
     <jms-topic name="HawkularQueue" entries="java:/queue/HawkularQueue"/>
     <jms-topic name="HawkularTopic" entries="java:/topic/HawkularTopic"/>
   </xsl:template>

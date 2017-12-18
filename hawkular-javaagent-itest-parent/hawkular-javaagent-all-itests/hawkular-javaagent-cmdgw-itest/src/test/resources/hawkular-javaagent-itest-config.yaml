@@ -1,0 +1,196 @@
+#
+# Copyright 2015-2017 Red Hat, Inc. and/or its affiliates
+# and other contributors as indicated by the @author tags.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+subsystem:
+  enabled: "${hawkular.agent.enabled:true}"
+  immutable: "${hawkular.agent.immutable:false}"
+  in-container: "${hawkular.agent.in-container:false}"
+  auto-discovery-scan-period-secs: ${hawkular.agent.auto-discovery-scan-period-secs:600}
+  type-version: WF10
+
+metrics-exporter:
+  enabled: true
+  host: ${hawkular.agent.metrics.host,jboss.bind.address:127.0.0.1}
+  port: ${hawkular.agent.metrics.port:9779}
+  config-dir: ${jboss.server.config.dir}
+  config-file: WF10
+  proxy:
+    mode: disabled
+    data-dir: ${jboss.server.data.dir}/hawkular-metrics-exporter
+
+diagnostics:
+  enabled: true
+  interval: 1
+  time-units: minutes
+
+storage-adapter:
+  feed-id: "${hawkular.rest.feedId:autogenerate}"
+  url: "${hawkular.rest.url:http://hawkular-server:8080}"
+  username: "${env.HAWKULAR_USER,hawkular.rest.username}"
+  password: "${env.HAWKULAR_PASSWORD,hawkular.rest.password}"
+
+resource-type-set-jmx:
+- name: For Integration Test
+  resource-type-jmx:
+  - name: Simple ITest MBean
+    resource-name-template: "Simple ITest MBean"
+    object-name: org.hawkular.agent.itest:type=simple
+    resource-config-jmx:
+    - name: Immutable
+      attribute: Immutable
+    - name: TestString
+      attribute: TestString
+    - name: TestIntegerPrimitive
+      attribute: TestIntegerPrimitive
+    - name: TestInteger
+      attribute: TestInteger
+    - name: TestBooleanPrimitive
+      attribute: TestBooleanPrimitive
+    - name: TestBoolean
+      attribute: TestBoolean
+    - name: TestLongPrimitive
+      attribute: TestLongPrimitive
+    - name: TestLong
+      attribute: TestLong
+    - name: TestDoublePrimitive
+      attribute: TestDoublePrimitive
+    - name: TestDouble
+      attribute: TestDouble
+    - name: TestFloatPrimitive
+      attribute: TestFloatPrimitive
+    - name: TestFloat
+      attribute: TestFloat
+    - name: TestShortPrimitive
+      attribute: TestShortPrimitive
+    - name: TestShort
+      attribute: TestShort
+    - name: TestCharPrimitive
+      attribute: TestCharPrimitive
+    - name: TestChar
+      attribute: TestChar
+    - name: TestBytePrimitive
+      attribute: TestBytePrimitive
+    - name: TestByte
+      attribute: TestByte
+    operation-jmx:
+    - name: testOperationNoParams
+      internal-name: testOperationNoParams
+    - name: testOperation
+      internal-name: testOperation
+      params:
+      - name: s
+        type: String
+        #default-value: "yaml default"
+      - name: i
+        type: Integer
+        #default-value: "111"
+      - name: b
+        type: Boolean
+        #default-value: "false"
+      - name: l
+        type: Long
+        #default-value: "222"
+      - name: d
+        type: Double
+        #default-value: "3.33"
+      - name: f
+        type: Float
+        #default-value: "4.44"
+      - name: h
+        type: Short
+        #default-value: "5"
+      - name: c
+        type: Character
+        #default-value: "x"
+      - name: y
+        type: Byte
+    - name: testOperationPrimitive
+      internal-name: testOperationPrimitive
+      params:
+      - name: s
+        type: string
+        default-value: "yaml default"
+      - name: i
+        type: int
+        default-value: "111"
+      - name: b
+        type: bool
+        default-value: "false"
+      - name: l
+        type: long
+        default-value: "222"
+      - name: d
+        type: double
+        default-value: "3.33"
+      - name: f
+        type: float
+        default-value: "4.44"
+      - name: h
+        type: short
+        default-value: "5"
+      - name: c
+        type: char
+        default-value: "x"
+      - name: y
+        type: byte
+
+# MANAGED SERVERS
+
+managed-servers:
+  local-dmr:
+    name: Local DMR UNUSED
+    enabled: false
+    wait-for:
+    - name: /
+    metric-labels:
+      feed_id: "%FeedId"
+    enable-statistics: false
+
+  local-jmx:
+    name: Local JMX
+    enabled: true
+    wait-for:
+    - name: java.lang:type=Runtime
+    metric-labels:
+      feed_id: "%FeedId"
+
+  remote-dmr:
+  - name: Local DMR
+    enabled: true
+    host: 127.0.0.1
+    port: 9990
+    username: itest-admin
+    password: itest-admin-password
+    wait-for:
+    - name: /
+    metric-labels:
+      feed_id: "%FeedId"
+    enable-statistics: false
+
+  remote-jmx:
+  - name: Remote JMX
+    enabled: true
+    url: http://127.0.0.1:8080/jolokia-war
+    wait-for:
+    - name: java.lang:type=Runtime
+    metric-labels:
+      feed_id: "%FeedId"
+
+platform:
+  enabled: true
+  #machine-id: my-machine-id-here

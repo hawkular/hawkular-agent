@@ -23,9 +23,13 @@ public interface JavaAgentMXBean {
 
     // JMX Attributes
 
+    String getVersion();
+
     boolean getImmutable();
 
     boolean getInContainer();
+
+    String getMetricsEndpoints();
 
     // JMX Operations
     void start();

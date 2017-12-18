@@ -1,0 +1,213 @@
+```
+# General Agent Settings
+subsystem:
+  # If false, the agent will not start at all.
+  enabled: "true"
+  # A periodic full discovery scan is performed every N seconds.
+  auto-discovery-scan-period-secs: "600"
+  # If true, the agent will not perform tasks that change configuration for any resource
+  immutable: "false"
+  # If true, the agent is assumed to be running in a container (such as a docker container).
+  in-container: "false"
+  # Determines what metadata files the agent should pull down from the server (e.g. "WF10", "EAP6")
+  type-version: null
+
+# For internal debugging metrics
+diagnostics:
+  # If true, internal diagnostics will be collected
+  enabled: true
+  # interval/time-units is the period of time to elapse before a debug diagnostic report is logged
+  interval: 5
+  time-units: "minutes"
+
+# Details about the operating system/platform that is to be monitored.
+# This section is responsible for enabling JMX MBeans that are used for monitoring
+# platform-specific resources.
+platform:
+  # If false, no platform resources will be available to be monitored
+  enabled: "true"
+  # If enabled, memory usage will be monitored
+  memory:
+    enabled: "true"
+  # If enabled, all CPUs will be monitored
+  processors:
+    enabled: "true"
+  # If enabled, all mounted file stores will be monitored
+  file-stores:
+    enabled: "true"
+  # If enabled, all power sources like batteries and AC adapters will be monitored
+  power-sources:
+    enabled: "false"
+  # Helps to uniquely identify the machine where the agent is running.
+  # You can also set this via the system property “hawkular.agent.machine.id”.
+  # If not set, its value will come from the file “/etc/machine-id”.
+  machine-id: null
+  # Help to uniquely identify the container where the agent is running.
+  # You can also set this via the system property “hawkular.agent.container.id”.
+  # If not set, its value will be derived from a line found within “/proc/self/cgroup”.
+  container-id: null
+
+# Defines truststores and keystores that may be used to access secure endpoints
+security-realm:
+- name: security-realm-name
+  keystore-path: "/keystore/path"
+  keystore-password: "keystore password"
+  key-password: null
+  keystore-type: "jks"
+  key-manager-algorithm: "SunX509"
+  trust-manager-algorithm: "PKIX"
+  ssl-protocol: "TLSv1"
+
+# The endpoint that the Prometheus server will scrape to collect metrics
+metrics-exporter:
+  # If true, a metrics exporter will be started within the agent
+  enabled: "false"
+  # The host where the metrics exporter is bound. This is the host that Prometheus will scrape.
+  host: “127.0.0.1”
+  # The port that the metrics exporter is listening to. This is the port that Prometheus will scrape.
+  port: "9779"
+  # Use mainly for WildFly domain mode, this defines the metrics exporter proxy mode.
+  # The directory where the metrics exporter configuration file is stored after being downloaded from the server
+  config-dir: "."
+  # Determines what metrics exporter configuration file the agent should pull down from the server (e.g. "WF10", "EAP6")
+  config-file: null
+  # The proxy section is used to allow a master to proxy the metrics exporter endpoint information
+  # to Prometheus. This is usually only required with WildFly domain mode when the slave servers
+  # have agents that are in metrics-only mode.
+  proxy:
+    # When disabled proxy mode is turned off. If ‘master’ then the data directory will be scanned
+    # for  files that are created by proxies in slave mode. If ‘slave’ then this proxy will write
+    # data to a file in the data directory. These proxy files created by the slaves are read by the
+    # master which is in turn sent up to the Hawkular Server to Prometheus can be informed about
+    # those endpoints. This ensures Prometheus will scrape the endpoints of the slaves.
+    mode: "disabled"
+    # The directory where the slave files are written
+    data-dir: "/where/proxy/files/go"
+    # Helps to determine what additional labels Prometheus should attach to all metrics it scrapes
+    # from the slave endpoints. Because this proxy mode is normally only used with WildFly domain mode,
+    # the default value is usually what you want and so you normally don’t have to set this.
+    metric-labels-expression: "jboss.node.name|([^:]+)[:]?(.*)?|domain_host,domain_server"
+
+# Information on the Hawkular Services server that the agent communicates with
+storage-adapter:
+  # Unused
+  type: "HAWKULAR"
+  # The URL of the Hawkular Services server
+  url: "http://127.0.0.1:8080"
+  # The credentials the agent uses to connect to the Hawkular Services server
+  username: null
+  password: null
+  # The feed ID the agent uses to identify itself with Hawkular Inventory.
+  # If “autogenerate” the agent will look at several system properties or environment variables
+  # to determine its feed ID - in this order, these define the feed ID:
+  #   jboss.server.management.uuid
+  #   jboss.node.name
+  #   jboss.host.name
+  #   jboss.server.name
+  #   jboss.qualified.host.name
+  #   HOSTNAME (environment variable)
+  #   COMPUTERNAME (environment variable)
+  # If none of those system properties or environment variables are set, the feed ID will be the
+  # hostname as known to the Java JVM.
+  feed-id: "autogenerate"
+  # If the Hawkular Services server requires SSL this provides the necessary certificates.
+  security-realm: null
+
+# Defines metric and resource type sets for WildFly-based managed servers
+metric-set-dmr: ...
+resource-type-set-dmr: ...
+
+# Defines metric and resource type sets for JMX-based managed servers
+metric-set-jmx: ...
+resource-type-set-jmx: ...
+
+# Defines the different managed servers the agent is to monitor.
+Managed-servers:
+  # A convenience definition that is just like remote-dmr except it assumes some defaults
+  # for a typical WildFly Server running locally (e.g. host is 127.0.0.1)
+  local-dmr:
+    name: "Local WildFly"
+    enabled: "false"
+    # If specified, you can explicitly indicate what resource types are to be monitored in this
+    # server. If not specified, all enabled DMR resource type sets are used.
+    resource-type-sets:
+    - "DMR Resource Type Set Name 1"
+    # If defined, these are labels that all metrics should have
+    metric-labels:
+      label_name1: "value1"
+    # If defined, these resources in the WildFly Server must exist before the agent starts
+    # monitoring this server. The default is empty set - but below is an example.
+    wait-for:
+    - name: "/"
+    # If true, the agent will try to turn on all statistics enabled flags in the WildFly subsystems.
+    enable-statistics: "true"
+  # A convenience definition that is just like remote-jmx except it monitors MBeans
+  # in a local MBean Server (by default, the platform MBean Server).
+  # for a typical WildFly Server running locally (e.g. host is 127.0.0.1)
+  local-jmx:
+    name: "Local JMX"
+    enabled: "false"
+    # If specified, you can explicitly indicate what resource types are to be monitored in this
+    # server. If not specified, all enabled JMX resource type sets are used.
+    resource-type-sets:
+    - "JMX Resource Type Set Name 1"
+    # If defined, these are labels that all metrics should have
+    metric-labels:
+      label_name1: "value1"
+    mbean-server-name: "some-mbs-name"
+    # If defined, these resources in the JMX MBean Server must exist before the agent starts
+    # monitoring this server. The default is empty set - but below is an example.
+    wait-for:
+    - name: "java.lang:type=Runtime"
+  remote-dmr:
+  - name: "Remote WildFly"
+    enabled: "false"
+    # The protocol used to talk to WildFly management interface. If not defined, this is
+    # ‘https-remoting” if use-ssl=true and ‘http-remoting’ if use-ssl=false.
+    protocol: null
+    # The host that the WildFly management interface is bound to
+    host: "localhost"
+    # The port that the WildFly management interface is listening to
+    port: "9999”
+    # The credentials used to connect to the WildFly management interface
+    username: null
+    password: null
+    # Determines if SSL should be used when connecting to the WildFly management interface
+    use-ssl: true
+    # Provides the certificates if SSL should be used when connecting to the WildFly management interface
+    security-realm: null
+    # If specified, you can explicitly indicate what resource types are to be monitored in this
+    # server. If not specified, all enabled DMR resource type sets are used.
+    resource-type-sets:
+    - "DMR Resource Type Set Name 1"
+    # If defined, these are labels that all metrics should have
+    metric-labels:
+      label_name1: "value1"
+    # If defined, these resources in the WildFly Server must exist before the agent starts
+    # monitoring this server.
+    wait-for:
+    - name: "/"
+    # If true, the agent will try to turn on all statistics enabled flags in the WildFly subsystems.
+    enable-statistics: "true"
+  remote-jmx:
+  - name: "Remote JMX"
+    enabled: "false"
+    # The URL to the Jolokia REST endpoint that exposes the remote JMX MBean Server
+    url: "http://localhost:8080/jolokia-war"
+    # The credentials used to connect to the Jolokia REST endpoint
+    username: null
+    password: null
+    # Provides the certificates if SSL should be used when connecting to the Jolokia REST endpoint
+    security-realm: null
+    # If specified, you can explicitly indicate what resource types are to be monitored in this
+    # server. If not specified, all enabled JMX resource type sets are used.
+    resource-type-sets:
+    - "JMX Resource Type Set Name 1"
+    # If defined, these are labels that all metrics should have
+    metric-labels:
+      label_name1: "value1"
+    # If defined, these resources in the JMX MBean Server must exist before the agent starts
+    # monitoring this server. The default is empty set - but below is an example.
+    wait-for:
+    - name: "java.lang:type=Runtime"
+```

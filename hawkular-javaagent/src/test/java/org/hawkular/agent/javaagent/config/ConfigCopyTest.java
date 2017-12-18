@@ -36,16 +36,14 @@ public class ConfigCopyTest {
 
     @Test
     public void testRealConfig() throws Exception {
-        Configuration config = loadTestConfigFile("/real-config.yaml");
+        Configuration config = loadTestConfigFile("/wildfly10/hawkular-javaagent-config.yaml");
         Configuration clone = new Configuration(config);
         Assert.assertEquals(clone.getSubsystem().getEnabled(), config.getSubsystem().getEnabled());
         Assert.assertEquals(clone.getStorageAdapter().getUrl(), config.getStorageAdapter().getUrl());
         Assert.assertEquals(clone.getDiagnostics().getEnabled(), config.getDiagnostics().getEnabled());
         Assert.assertEquals(clone.getDmrMetricSets().length, config.getDmrMetricSets().length);
-        Assert.assertEquals(clone.getDmrAvailSets().length, config.getDmrAvailSets().length);
         Assert.assertEquals(clone.getDmrResourceTypeSets().length, config.getDmrResourceTypeSets().length);
         Assert.assertEquals(clone.getJmxMetricSets().length, config.getJmxMetricSets().length);
-        Assert.assertEquals(clone.getJmxAvailSets().length, config.getJmxAvailSets().length);
         Assert.assertEquals(clone.getJmxResourceTypeSets().length, config.getJmxResourceTypeSets().length);
         Assert.assertEquals(clone.getManagedServers().getLocalDmr().getName(),
                 config.getManagedServers().getLocalDmr().getName());
@@ -53,8 +51,7 @@ public class ConfigCopyTest {
                 config.getManagedServers().getLocalJmx().getName());
         Assert.assertEquals(clone.getManagedServers().getRemoteDmrs()[0].getName(),
                 config.getManagedServers().getRemoteDmrs()[0].getName());
-        Assert.assertEquals(clone.getManagedServers().getRemoteJmxs()[0].getName(),
-                config.getManagedServers().getRemoteJmxs()[0].getName());
+        Assert.assertNull(clone.getManagedServers().getRemoteJmxs());
         Assert.assertEquals(clone.getPlatform().getEnabled(), config.getPlatform().getEnabled());
         Assert.assertEquals(clone.getPlatform().getFileStores().getEnabled(),
                 config.getPlatform().getFileStores().getEnabled());
@@ -64,6 +61,8 @@ public class ConfigCopyTest {
                 config.getPlatform().getProcessors().getEnabled());
         Assert.assertEquals(clone.getPlatform().getPowerSources().getEnabled(),
                 config.getPlatform().getPowerSources().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getMachineId(), config.getPlatform().getMachineId());
+        Assert.assertEquals(clone.getPlatform().getContainerId(), config.getPlatform().getContainerId());
     }
 
     @Test
@@ -71,13 +70,22 @@ public class ConfigCopyTest {
         Configuration config = loadTestConfigFile("/test-convert.yaml");
         Configuration clone = new Configuration(config);
         Assert.assertEquals(clone.getSubsystem().getEnabled(), config.getSubsystem().getEnabled());
+        Assert.assertEquals(clone.getMetricsExporter().getEnabled(), config.getMetricsExporter().getEnabled());
+        Assert.assertEquals(clone.getMetricsExporter().getHost(), config.getMetricsExporter().getHost());
+        Assert.assertEquals(clone.getMetricsExporter().getPort(), config.getMetricsExporter().getPort());
+        Assert.assertEquals(clone.getMetricsExporter().getConfigDir(), config.getMetricsExporter().getConfigDir());
+        Assert.assertEquals(clone.getMetricsExporter().getConfigFile(), config.getMetricsExporter().getConfigFile());
+        Assert.assertEquals(clone.getMetricsExporter().getProxy().getMode(),
+                config.getMetricsExporter().getProxy().getMode());
+        Assert.assertEquals(clone.getMetricsExporter().getProxy().getDataDir(),
+                config.getMetricsExporter().getProxy().getDataDir());
+        Assert.assertEquals(clone.getMetricsExporter().getProxy().getMetricLabelsExpression(),
+                config.getMetricsExporter().getProxy().getMetricLabelsExpression());
         Assert.assertEquals(clone.getStorageAdapter().getUrl(), config.getStorageAdapter().getUrl());
         Assert.assertEquals(clone.getDiagnostics().getEnabled(), config.getDiagnostics().getEnabled());
         Assert.assertEquals(clone.getDmrMetricSets().length, config.getDmrMetricSets().length);
-        Assert.assertEquals(clone.getDmrAvailSets().length, config.getDmrAvailSets().length);
         Assert.assertEquals(clone.getDmrResourceTypeSets().length, config.getDmrResourceTypeSets().length);
         Assert.assertEquals(clone.getJmxMetricSets().length, config.getJmxMetricSets().length);
-        Assert.assertEquals(clone.getJmxAvailSets().length, config.getJmxAvailSets().length);
         Assert.assertEquals(clone.getJmxResourceTypeSets().length, config.getJmxResourceTypeSets().length);
         Assert.assertEquals(clone.getManagedServers().getLocalDmr().getName(),
                 config.getManagedServers().getLocalDmr().getName());
@@ -96,6 +104,8 @@ public class ConfigCopyTest {
                 config.getPlatform().getProcessors().getEnabled());
         Assert.assertEquals(clone.getPlatform().getPowerSources().getEnabled(),
                 config.getPlatform().getPowerSources().getEnabled());
+        Assert.assertEquals(clone.getPlatform().getMachineId(), config.getPlatform().getMachineId());
+        Assert.assertEquals(clone.getPlatform().getContainerId(), config.getPlatform().getContainerId());
     }
 
     private Configuration loadTestConfigFile(String path) throws Exception {

@@ -16,16 +16,21 @@
  */
 package org.hawkular.agent.javaagent.config;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 
-import org.hawkular.agent.monitor.api.Avail;
-import org.hawkular.metrics.client.common.MetricType;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
+import org.hawkular.agent.monitor.inventory.SupportedMetricType;
+import org.hawkular.inventory.api.model.MetricUnit;
+import org.jboss.util.file.Files;
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ConfigManagerTest {
 
@@ -64,23 +69,6 @@ public class ConfigManagerTest {
         dmrMetricSets[1].getDmrMetrics()[0].setName("dmr metric 2");
         dmrMetricSets[1].getDmrMetrics()[1] = new DMRMetric();
         dmrMetricSets[1].getDmrMetrics()[1].setName("dmr metric 3");
-
-        DMRAvailSet[] dmrAvailSets = new DMRAvailSet[2];
-        config.setDmrAvailSets(dmrAvailSets);
-        dmrAvailSets[0] = new DMRAvailSet();
-        dmrAvailSets[0].setName("dmr avail set 0");
-        dmrAvailSets[0].setDmrAvails(new DMRAvail[2]);
-        dmrAvailSets[0].getDmrAvails()[0] = new DMRAvail();
-        dmrAvailSets[0].getDmrAvails()[0].setName("dmr avail 0");
-        dmrAvailSets[0].getDmrAvails()[1] = new DMRAvail();
-        dmrAvailSets[0].getDmrAvails()[1].setName("dmr avail 1");
-        dmrAvailSets[1] = new DMRAvailSet();
-        dmrAvailSets[1].setName("dmr avail set 1");
-        dmrAvailSets[1].setDmrAvails(new DMRAvail[2]);
-        dmrAvailSets[1].getDmrAvails()[0] = new DMRAvail();
-        dmrAvailSets[1].getDmrAvails()[0].setName("dmr avail 2");
-        dmrAvailSets[1].getDmrAvails()[1] = new DMRAvail();
-        dmrAvailSets[1].getDmrAvails()[1].setName("dmr avail 3");
 
         DMRResourceTypeSet[] dmrResourceTypeSets = new DMRResourceTypeSet[2];
         config.setDmrResourceTypeSets(dmrResourceTypeSets);
@@ -123,23 +111,6 @@ public class ConfigManagerTest {
         jmxMetricSets[1].getJmxMetrics()[0].setName("jmx metric 2");
         jmxMetricSets[1].getJmxMetrics()[1] = new JMXMetric();
         jmxMetricSets[1].getJmxMetrics()[1].setName("jmx metric 3");
-
-        JMXAvailSet[] jmxAvailSets = new JMXAvailSet[2];
-        config.setJmxAvailSets(jmxAvailSets);
-        jmxAvailSets[0] = new JMXAvailSet();
-        jmxAvailSets[0].setName("jmx avail set 0");
-        jmxAvailSets[0].setJmxAvails(new JMXAvail[2]);
-        jmxAvailSets[0].getJmxAvails()[0] = new JMXAvail();
-        jmxAvailSets[0].getJmxAvails()[0].setName("jmx avail 0");
-        jmxAvailSets[0].getJmxAvails()[1] = new JMXAvail();
-        jmxAvailSets[0].getJmxAvails()[1].setName("jmx avail 1");
-        jmxAvailSets[1] = new JMXAvailSet();
-        jmxAvailSets[1].setName("jmx avail set 1");
-        jmxAvailSets[1].setJmxAvails(new JMXAvail[2]);
-        jmxAvailSets[1].getJmxAvails()[0] = new JMXAvail();
-        jmxAvailSets[1].getJmxAvails()[0].setName("jmx avail 2");
-        jmxAvailSets[1].getJmxAvails()[1] = new JMXAvail();
-        jmxAvailSets[1].getJmxAvails()[1].setName("jmx avail 3");
 
         JMXResourceTypeSet[] jmxResourceTypeSets = new JMXResourceTypeSet[2];
         config.setJmxResourceTypeSets(jmxResourceTypeSets);
@@ -191,22 +162,22 @@ public class ConfigManagerTest {
     }
 
     @Test
-    public void testFullConfigDmr() throws Exception {
+    public void testFullConfigDmrFromFile() throws Exception {
         File file = loadTestConfigFile("/test-config.yaml");
         ConfigManager configManager = new ConfigManager(file);
         Configuration config = configManager.getConfiguration(false);
         Assert.assertTrue(configManager.hasConfiguration());
+        testFullConfigDmr(config);
+    }
 
+    private void testFullConfigDmr(Configuration config) throws Exception {
         Assert.assertEquals(2, config.getDmrMetricSets().length);
-        Assert.assertEquals(2, config.getDmrAvailSets().length);
         Assert.assertEquals(2, config.getDmrResourceTypeSets().length);
 
         Assert.assertEquals(2, config.getDmrMetricSets()[0].getDmrMetrics().length);
-        Assert.assertEquals(2, config.getDmrAvailSets()[0].getDmrAvails().length);
         Assert.assertEquals(2, config.getDmrResourceTypeSets()[0].getDmrResourceTypes().length);
 
         Assert.assertEquals(2, config.getDmrMetricSets()[1].getDmrMetrics().length);
-        Assert.assertEquals(2, config.getDmrAvailSets()[1].getDmrAvails().length);
         Assert.assertEquals(2, config.getDmrResourceTypeSets()[1].getDmrResourceTypes().length);
 
         Assert.assertEquals("first metric set d", config.getDmrMetricSets()[0].getName());
@@ -216,14 +187,6 @@ public class ConfigManagerTest {
         Assert.assertEquals("second metric d", config.getDmrMetricSets()[0].getDmrMetrics()[1].getName());
         Assert.assertEquals("third metric d", config.getDmrMetricSets()[1].getDmrMetrics()[0].getName());
         Assert.assertEquals("fourth metric d", config.getDmrMetricSets()[1].getDmrMetrics()[1].getName());
-
-        Assert.assertEquals("first avail set d", config.getDmrAvailSets()[0].getName());
-        Assert.assertEquals("second avail set d", config.getDmrAvailSets()[1].getName());
-
-        Assert.assertEquals("first avail d", config.getDmrAvailSets()[0].getDmrAvails()[0].getName());
-        Assert.assertEquals("second avail d", config.getDmrAvailSets()[0].getDmrAvails()[1].getName());
-        Assert.assertEquals("third avail d", config.getDmrAvailSets()[1].getDmrAvails()[0].getName());
-        Assert.assertEquals("fourth avail d", config.getDmrAvailSets()[1].getDmrAvails()[1].getName());
 
         Assert.assertEquals("first resource type set d", config.getDmrResourceTypeSets()[0].getName());
         Assert.assertEquals("second resource type set d", config.getDmrResourceTypeSets()[1].getName());
@@ -237,16 +200,24 @@ public class ConfigManagerTest {
         Assert.assertEquals("fourth resource type d",
                 config.getDmrResourceTypeSets()[1].getDmrResourceTypes()[1].getName());
 
+        Assert.assertEquals(2,
+                config.getDmrResourceTypeSets()[0].getDmrResourceTypes()[0].getMetricLabels().size());
+        Assert.assertEquals("label1value",
+                config.getDmrResourceTypeSets()[0].getDmrResourceTypes()[0].getMetricLabels().get("label1"));
+        Assert.assertEquals("label2value",
+                config.getDmrResourceTypeSets()[0].getDmrResourceTypes()[0].getMetricLabels().get("label2"));
+        Assert.assertEquals(0,
+                config.getDmrResourceTypeSets()[0].getDmrResourceTypes()[1].getMetricLabels().size());
+
         Assert.assertEquals("/metric=one", config.getDmrMetricSets()[0].getDmrMetrics()[0].getPath());
         Assert.assertEquals("attrib1", config.getDmrMetricSets()[0].getDmrMetrics()[0].getAttribute());
-        Assert.assertEquals(12345, config.getDmrMetricSets()[0].getDmrMetrics()[0].getInterval().intValue());
-        Assert.assertEquals(TimeUnits.milliseconds, config.getDmrMetricSets()[0].getDmrMetrics()[0].getTimeUnits());
-        Assert.assertEquals(MeasurementUnit.MEGABYTES,
+        Assert.assertEquals(MetricUnit.MEGABYTES,
                 config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricUnits());
-        Assert.assertEquals(MetricType.COUNTER, config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricType());
-        Assert.assertEquals("the template", config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricIdTemplate());
+        Assert.assertEquals(SupportedMetricType.COUNTER,
+                config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricType());
+        Assert.assertEquals("the template", config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricFamily());
         Assert.assertEquals("{tag1=value1, tag2=value2}",
-                config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricTags().toString());
+                config.getDmrMetricSets()[0].getDmrMetrics()[0].getMetricLabels().toString());
 
         Assert.assertEquals(2,
                 config.getDmrResourceTypeSets()[0].getDmrResourceTypes()[0].getDmrResourceConfigs().length);
@@ -271,22 +242,22 @@ public class ConfigManagerTest {
     }
 
     @Test
-    public void testFullConfigJmx() throws Exception {
+    public void testFullConfigJmxFromFile() throws Exception {
         File file = loadTestConfigFile("/test-config.yaml");
         ConfigManager configManager = new ConfigManager(file);
         Configuration config = configManager.getConfiguration(false);
         Assert.assertTrue(configManager.hasConfiguration());
+        testFullConfigJmx(config);
+    }
 
+    private void testFullConfigJmx(Configuration config) throws Exception {
         Assert.assertEquals(2, config.getJmxMetricSets().length);
-        Assert.assertEquals(2, config.getJmxAvailSets().length);
         Assert.assertEquals(2, config.getJmxResourceTypeSets().length);
 
         Assert.assertEquals(2, config.getJmxMetricSets()[0].getJmxMetrics().length);
-        Assert.assertEquals(2, config.getJmxAvailSets()[0].getJmxAvails().length);
         Assert.assertEquals(2, config.getJmxResourceTypeSets()[0].getJmxResourceTypes().length);
 
         Assert.assertEquals(2, config.getJmxMetricSets()[1].getJmxMetrics().length);
-        Assert.assertEquals(2, config.getJmxAvailSets()[1].getJmxAvails().length);
         Assert.assertEquals(2, config.getJmxResourceTypeSets()[1].getJmxResourceTypes().length);
 
         Assert.assertEquals("first metric set", config.getJmxMetricSets()[0].getName());
@@ -296,14 +267,6 @@ public class ConfigManagerTest {
         Assert.assertEquals("second metric", config.getJmxMetricSets()[0].getJmxMetrics()[1].getName());
         Assert.assertEquals("third metric", config.getJmxMetricSets()[1].getJmxMetrics()[0].getName());
         Assert.assertEquals("fourth metric", config.getJmxMetricSets()[1].getJmxMetrics()[1].getName());
-
-        Assert.assertEquals("first avail set", config.getJmxAvailSets()[0].getName());
-        Assert.assertEquals("second avail set", config.getJmxAvailSets()[1].getName());
-
-        Assert.assertEquals("first avail", config.getJmxAvailSets()[0].getJmxAvails()[0].getName());
-        Assert.assertEquals("second avail", config.getJmxAvailSets()[0].getJmxAvails()[1].getName());
-        Assert.assertEquals("third avail", config.getJmxAvailSets()[1].getJmxAvails()[0].getName());
-        Assert.assertEquals("fourth avail", config.getJmxAvailSets()[1].getJmxAvails()[1].getName());
 
         Assert.assertEquals("first resource type set", config.getJmxResourceTypeSets()[0].getName());
         Assert.assertEquals("second resource type set", config.getJmxResourceTypeSets()[1].getName());
@@ -317,15 +280,23 @@ public class ConfigManagerTest {
         Assert.assertEquals("fourth resource type",
                 config.getJmxResourceTypeSets()[1].getJmxResourceTypes()[1].getName());
 
+        Assert.assertEquals(2,
+                config.getJmxResourceTypeSets()[0].getJmxResourceTypes()[0].getMetricLabels().size());
+        Assert.assertEquals("label1valueJMX",
+                config.getJmxResourceTypeSets()[0].getJmxResourceTypes()[0].getMetricLabels().get("label1"));
+        Assert.assertEquals("label2valueJMX",
+                config.getJmxResourceTypeSets()[0].getJmxResourceTypes()[0].getMetricLabels().get("label2"));
+        Assert.assertEquals(0,
+                config.getJmxResourceTypeSets()[0].getJmxResourceTypes()[1].getMetricLabels().size());
+
         Assert.assertEquals("domain:metric=one", config.getJmxMetricSets()[0].getJmxMetrics()[0].getObjectName());
         Assert.assertEquals("attrib1", config.getJmxMetricSets()[0].getJmxMetrics()[0].getAttribute());
-        Assert.assertEquals(12345, config.getJmxMetricSets()[0].getJmxMetrics()[0].getInterval().intValue());
-        Assert.assertEquals(TimeUnits.seconds, config.getJmxMetricSets()[0].getJmxMetrics()[0].getTimeUnits());
-        Assert.assertEquals(MeasurementUnit.BYTES, config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricUnits());
-        Assert.assertEquals(MetricType.GAUGE, config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricType());
-        Assert.assertEquals("the template", config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricIdTemplate());
+        Assert.assertEquals(MetricUnit.BYTES, config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricUnits());
+        Assert.assertEquals(SupportedMetricType.GAUGE,
+                config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricType());
+        Assert.assertEquals("the template", config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricFamily());
         Assert.assertEquals("{tag1=value1, tag2=value2}",
-                config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricTags().toString());
+                config.getJmxMetricSets()[0].getJmxMetrics()[0].getMetricLabels().toString());
 
         Assert.assertEquals(2,
                 config.getJmxResourceTypeSets()[0].getJmxResourceTypes()[0].getJmxResourceConfigs().length);
@@ -351,6 +322,109 @@ public class ConfigManagerTest {
     }
 
     @Test
+    public void testFullConfigFromOverlay() throws Exception {
+        // get a full configuration object - we'll use it as an overlay
+        File file = loadTestConfigFile("/test-config.yaml");
+        Configuration fullConfig = new ConfigManager(file).getConfiguration(false);
+
+        // overwrite the config manager with all inventory metadata emptied out
+        Configuration emptyConfig = new Configuration();
+        emptyConfig.setSubsystem(fullConfig.getSubsystem());
+        emptyConfig.setManagedServers(fullConfig.getManagedServers());
+        ConfigManager configManager = new ConfigManager(file);
+        configManager.updateConfiguration(emptyConfig, true); // back it up so we can restore it in finally block
+        try {
+            Assert.assertNull(configManager.getConfiguration().getDmrMetricSets());
+            Assert.assertNull(configManager.getConfiguration().getDmrResourceTypeSets());
+            Assert.assertNull(configManager.getConfiguration().getJmxMetricSets());
+            Assert.assertNull(configManager.getConfiguration().getJmxResourceTypeSets());
+
+            // now overlay the empty config with the full config and test that it has everything expected
+            InputStream stream = new ByteArrayInputStream(new ObjectMapper().writeValueAsBytes(fullConfig));
+            configManager.overlayConfiguration(stream, false, false);
+            testFullConfigDmr(configManager.getConfiguration());
+            testFullConfigJmx(configManager.getConfiguration());
+        } finally {
+            // put the test file back the way it was so other tests can work with it
+            Files.copy(new File(file.getAbsolutePath() + ".bak"), file);
+        }
+    }
+
+    @Test
+    public void testConfigAppendFromOverlay() throws Exception {
+        // this tests that existing types remain - overlay just gets added to them
+
+        File file1 = loadTestConfigFile("/test-overlay1.yaml");
+        ConfigManager configManager = new ConfigManager(file1);
+        Configuration config1 = configManager.getConfiguration(false);
+
+        // overwrite the config manager with all inventory metadata emptied out
+        try {
+            Assert.assertEquals(1, config1.getDmrMetricSets().length);
+            Assert.assertEquals(1, config1.getDmrResourceTypeSets().length);
+            Assert.assertEquals(1, config1.getJmxMetricSets().length);
+            Assert.assertEquals(1, config1.getJmxResourceTypeSets().length);
+
+            // now overlay a new config over the original config and test that it has everything expected
+            File file2 = loadTestConfigFile("/test-overlay2.yaml");
+            Configuration config2 = new ConfigManager(file2).getConfiguration(true);
+            InputStream stream = new ByteArrayInputStream(new ObjectMapper().writeValueAsBytes(config2));
+            configManager.overlayConfiguration(stream, true, true);
+            Configuration newConfig = configManager.getConfiguration();
+            Assert.assertEquals(2, newConfig.getDmrMetricSets().length);
+            Assert.assertEquals(2, newConfig.getDmrResourceTypeSets().length);
+            Assert.assertEquals(2, newConfig.getJmxMetricSets().length);
+            Assert.assertEquals(2, newConfig.getJmxResourceTypeSets().length);
+        } finally {
+            // put the test file back the way it was so other tests can work with it
+            Files.copy(new File(file1.getAbsolutePath() + ".bak"), file1);
+        }
+    }
+
+    @Test
+    public void testOverlayWithAllResourceTypes() throws Exception {
+        // this tests overlaying config with managed servers not setting resource types sets
+        // which means the managed servers should use all defined type sets
+
+        File file1 = loadTestConfigFile("/test-overlay-all-resource-types-1.yaml");
+        ConfigManager configManager = new ConfigManager(file1);
+        Configuration config1 = configManager.getConfiguration(false);
+
+        // overwrite the config manager with all inventory metadata emptied out
+        try {
+            Assert.assertEquals(1, config1.getDmrMetricSets().length);
+            Assert.assertEquals(2, config1.getDmrResourceTypeSets().length);
+            Assert.assertEquals(1, config1.getJmxMetricSets().length);
+            Assert.assertEquals(2, config1.getJmxResourceTypeSets().length);
+
+            // now overlay a new config over the original config and test that it has everything expected
+            File file2 = loadTestConfigFile("/test-overlay-all-resource-types-2.yaml");
+            Configuration config2 = new ConfigManager(file2).getConfiguration(true);
+            InputStream stream = new ByteArrayInputStream(new ObjectMapper().writeValueAsBytes(config2));
+            configManager.overlayConfiguration(stream, true, true);
+            Configuration newConfig = configManager.getConfiguration();
+            newConfig.validate();
+            Assert.assertEquals(2, newConfig.getDmrMetricSets().length);
+            Assert.assertEquals(4, newConfig.getDmrResourceTypeSets().length);
+            Assert.assertEquals(2, newConfig.getJmxMetricSets().length);
+            Assert.assertEquals(4, newConfig.getJmxResourceTypeSets().length);
+
+            Assert.assertNull(newConfig.getManagedServers().getLocalDmr().getResourceTypeSets());
+            Assert.assertNull(newConfig.getManagedServers().getLocalJmx().getResourceTypeSets());
+
+            AgentCoreEngineConfiguration coreConfig = new ConfigConverter(newConfig).convert();
+            Assert.assertEquals(2, coreConfig.getDmrConfiguration().getEndpoints().values().iterator().next()
+                    .getResourceTypeSets().size());
+            Assert.assertEquals(2, coreConfig.getJmxConfiguration().getEndpoints().values().iterator().next()
+                    .getResourceTypeSets().size());
+
+        } finally {
+            // put the test file back the way it was so other tests can work with it
+            Files.copy(new File(file1.getAbsolutePath() + ".bak"), file1);
+        }
+    }
+
+    @Test
     public void testDefaults() {
         // subsystem
         Subsystem s = new Subsystem();
@@ -360,8 +434,7 @@ public class ConfigManagerTest {
         // storage adapter
         StorageAdapter sa = new StorageAdapter();
         Assert.assertEquals(StorageAdapter.Type.HAWKULAR, sa.getType());
-        Assert.assertEquals("hawkular", sa.getTenantId());
-        Assert.assertEquals("/hawkular/metrics/", sa.getMetricsContext());
+        Assert.assertEquals("/hawkular/inventory/", sa.getInventoryContext());
         Assert.assertEquals("/hawkular/command-gateway/", sa.getFeedcommContext());
         Assert.assertEquals(10, sa.getConnectTimeoutSecs().intValue());
         Assert.assertEquals(120, sa.getReadTimeoutSecs().intValue());
@@ -369,24 +442,17 @@ public class ConfigManagerTest {
         // platform
         Platform p = new Platform();
         Assert.assertEquals(false, p.getEnabled());
-        Assert.assertEquals(5, p.getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getTimeUnits());
 
         Assert.assertEquals(true, p.getMemory().getEnabled());
-        Assert.assertEquals(5, p.getMemory().getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getMemory().getTimeUnits());
 
         Assert.assertEquals(true, p.getFileStores().getEnabled());
-        Assert.assertEquals(5, p.getFileStores().getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getFileStores().getTimeUnits());
 
         Assert.assertEquals(true, p.getProcessors().getEnabled());
-        Assert.assertEquals(5, p.getProcessors().getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getProcessors().getTimeUnits());
 
         Assert.assertEquals(false, p.getPowerSources().getEnabled());
-        Assert.assertEquals(5, p.getPowerSources().getInterval().intValue());
-        Assert.assertEquals(TimeUnits.minutes, p.getPowerSources().getTimeUnits());
+
+        Assert.assertEquals(null, p.getMachineId());
+        Assert.assertEquals(null, p.getContainerId());
 
         // managed servers
         LocalDMR ldmr = new LocalDMR();
@@ -471,12 +537,11 @@ public class ConfigManagerTest {
         // storage-adapter
         Assert.assertEquals(StorageAdapter.Type.HAWKULAR, config.getStorageAdapter().getType());
         Assert.assertEquals("http://127.0.0.1:8080", config.getStorageAdapter().getUrl());
-        Assert.assertEquals("hawkular", config.getStorageAdapter().getTenantId());
         Assert.assertEquals(expectedStorageAdapterUsername, config.getStorageAdapter().getUsername());
         Assert.assertEquals("password", config.getStorageAdapter().getPassword());
         Assert.assertEquals("autogenerate", config.getStorageAdapter().getFeedId());
         Assert.assertEquals("h-server-security-realm", config.getStorageAdapter().getSecurityRealmName());
-        Assert.assertEquals("/my-metrics", config.getStorageAdapter().getMetricsContext());
+        Assert.assertEquals("/my-inventory", config.getStorageAdapter().getInventoryContext());
         Assert.assertEquals("/my-feedcomm", config.getStorageAdapter().getFeedcommContext());
         Assert.assertEquals(Integer.valueOf(123), config.getStorageAdapter().getConnectTimeoutSecs());
         Assert.assertEquals(Integer.valueOf(456), config.getStorageAdapter().getReadTimeoutSecs());
@@ -485,73 +550,52 @@ public class ConfigManagerTest {
         LocalDMR ldmr = config.getManagedServers().getLocalDmr();
         Assert.assertEquals("Local WildFly", ldmr.getName());
         Assert.assertEquals(Boolean.FALSE, ldmr.getEnabled());
-        Assert.assertEquals("local wildfly tenant", ldmr.getTenantId());
         Assert.assertEquals("LocalTypeSet1", ldmr.getResourceTypeSets()[0]);
         Assert.assertEquals("TypeSet2", ldmr.getResourceTypeSets()[1]);
-        Assert.assertEquals("local feed id is %FeedId and metric name is %MetricName", ldmr.getMetricIdTemplate());
-        Assert.assertEquals(2, ldmr.getMetricTags().size());
-        Assert.assertEquals("val1", ldmr.getMetricTags().get("localdmrtag1"));
-        Assert.assertEquals("val2", ldmr.getMetricTags().get("dmrtag2"));
-        Assert.assertEquals(Avail.DOWN, ldmr.getSetAvailOnShutdown());
+        Assert.assertEquals(2, ldmr.getMetricLabels().size());
+        Assert.assertEquals("val1", ldmr.getMetricLabels().get("localdmrtag1"));
+        Assert.assertEquals("val2", ldmr.getMetricLabels().get("dmrtag2"));
+        Assert.assertEquals(Boolean.TRUE, ldmr.getEnableStatistics());
 
         // managed-servers - local jmx
         LocalJMX ljmx = config.getManagedServers().getLocalJmx();
         Assert.assertEquals("Local JMX", ljmx.getName());
         Assert.assertEquals(Boolean.FALSE, ljmx.getEnabled());
-        Assert.assertEquals("jmx local wildfly tenant", ljmx.getTenantId());
         Assert.assertEquals("jmx LocalTypeSet1", ljmx.getResourceTypeSets()[0]);
         Assert.assertEquals("jmx TypeSet2", ljmx.getResourceTypeSets()[1]);
-        Assert.assertEquals("jmx local feed id is %FeedId and metric name is %MetricName", ljmx.getMetricIdTemplate());
-        Assert.assertEquals(2, ljmx.getMetricTags().size());
-        Assert.assertEquals("val1", ljmx.getMetricTags().get("localjmxtag1"));
-        Assert.assertEquals("val2", ljmx.getMetricTags().get("jmxtag2"));
-        Assert.assertEquals(Avail.UNKNOWN, ljmx.getSetAvailOnShutdown());
+        Assert.assertEquals(2, ljmx.getMetricLabels().size());
+        Assert.assertEquals("val1", ljmx.getMetricLabels().get("localjmxtag1"));
+        Assert.assertEquals("val2", ljmx.getMetricLabels().get("jmxtag2"));
         Assert.assertEquals("some-mbs-name", ljmx.getMbeanServerName());
 
         // managed-servers - remote dmr
         RemoteDMR rdmr = config.getManagedServers().getRemoteDmrs()[0];
         Assert.assertEquals("Remote WildFly", rdmr.getName());
         Assert.assertEquals(Boolean.FALSE, rdmr.getEnabled());
-        Assert.assertEquals("remote wildfly tenant", rdmr.getTenantId());
         Assert.assertEquals("RemoteTypeSet1", rdmr.getResourceTypeSets()[0]);
         Assert.assertEquals("TypeSet2", rdmr.getResourceTypeSets()[1]);
-        Assert.assertEquals("remote feed id is %FeedId and metric name is %MetricName", rdmr.getMetricIdTemplate());
-        Assert.assertEquals(2, rdmr.getMetricTags().size());
-        Assert.assertEquals("val1", rdmr.getMetricTags().get("remotedmrtag1"));
-        Assert.assertEquals("val2", rdmr.getMetricTags().get("dmrtag2"));
-        Assert.assertEquals(Avail.DOWN, rdmr.getSetAvailOnShutdown());
+        Assert.assertEquals(2, rdmr.getMetricLabels().size());
+        Assert.assertEquals("val1", rdmr.getMetricLabels().get("remotedmrtag1"));
+        Assert.assertEquals("val2", rdmr.getMetricLabels().get("dmrtag2"));
+        Assert.assertEquals(Boolean.FALSE, rdmr.getEnableStatistics());
 
         // managed-servers - remote jmx
         RemoteJMX rjmx = config.getManagedServers().getRemoteJmxs()[0];
         Assert.assertEquals("Remote JMX", rjmx.getName());
         Assert.assertEquals(Boolean.FALSE, rjmx.getEnabled());
-        Assert.assertEquals("jmx remote wildfly tenant", rjmx.getTenantId());
         Assert.assertEquals("jmx RemoteTypeSet1", rjmx.getResourceTypeSets()[0]);
         Assert.assertEquals("jmx TypeSet2", rjmx.getResourceTypeSets()[1]);
-        Assert.assertEquals("jmx remote feed id is %FeedId and metric name is %MetricName",
-                rjmx.getMetricIdTemplate());
-        Assert.assertEquals(2, rjmx.getMetricTags().size());
-        Assert.assertEquals("val1", rjmx.getMetricTags().get("remotejmxtag1"));
-        Assert.assertEquals("val2", rjmx.getMetricTags().get("jmxtag2"));
-        Assert.assertEquals(Avail.UNKNOWN, rjmx.getSetAvailOnShutdown());
+        Assert.assertEquals(2, rjmx.getMetricLabels().size());
+        Assert.assertEquals("val1", rjmx.getMetricLabels().get("remotejmxtag1"));
+        Assert.assertEquals("val2", rjmx.getMetricLabels().get("jmxtag2"));
 
         // platform
         Assert.assertEquals(true, config.getPlatform().getEnabled());
-        Assert.assertEquals(Integer.valueOf(1234), config.getPlatform().getInterval());
-        Assert.assertEquals(TimeUnits.seconds, config.getPlatform().getTimeUnits());
         Assert.assertEquals("my-machine-id-here", config.getPlatform().getMachineId());
         Assert.assertEquals("my-container-id-here", config.getPlatform().getContainerId());
         Assert.assertEquals(Boolean.TRUE, config.getPlatform().getFileStores().getEnabled());
-        Assert.assertEquals(Integer.valueOf(5000), config.getPlatform().getFileStores().getInterval());
-        Assert.assertEquals(TimeUnits.milliseconds, config.getPlatform().getFileStores().getTimeUnits());
         Assert.assertEquals(Boolean.TRUE, config.getPlatform().getMemory().getEnabled());
-        Assert.assertEquals(Integer.valueOf(30), config.getPlatform().getMemory().getInterval());
-        Assert.assertEquals(TimeUnits.seconds, config.getPlatform().getMemory().getTimeUnits());
         Assert.assertEquals(Boolean.TRUE, config.getPlatform().getProcessors().getEnabled());
-        Assert.assertEquals(Integer.valueOf(1), config.getPlatform().getProcessors().getInterval());
-        Assert.assertEquals(TimeUnits.minutes, config.getPlatform().getProcessors().getTimeUnits());
         Assert.assertEquals(Boolean.FALSE, config.getPlatform().getPowerSources().getEnabled());
-        Assert.assertEquals(Integer.valueOf(5), config.getPlatform().getPowerSources().getInterval());
-        Assert.assertEquals(TimeUnits.minutes, config.getPlatform().getPowerSources().getTimeUnits());
     }
 }

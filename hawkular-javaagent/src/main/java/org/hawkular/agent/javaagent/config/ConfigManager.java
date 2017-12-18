@@ -19,6 +19,7 @@ package org.hawkular.agent.javaagent.config;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -127,6 +128,50 @@ public class ConfigManager {
         try {
             save(this.configFile, config, createBackup);
             this.configuration = new Configuration(config);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Overlays the current configuration with the configuration found in the given input stream and writes the
+     * new config to the {@link #getConfigFile() file}, overwriting the previous content of the file.
+     *
+     * This overlays a config on top of the old config - it isn't a blanket overwrite.
+     * Only inventory metadata related configuration is overlaid. Old configuration settings that are
+     * not related to inventory metadata are not overlaid.
+     *
+     * @param configStream the overlay configuration is found in the given input stream.
+     *                     Caller is responsible for closing it.
+     * @param save if true, the new config is saved over the original
+     * @param createBackup if true a .bak file is copied from the original as a backup (ignored if save==false)
+     * @throws Exception if the new configuration cannot be written to the file
+     */
+    public void overlayConfiguration(InputStream configStream, boolean save, boolean createBackup) throws Exception {
+        if (configStream == null) {
+            throw new IllegalArgumentException("config must not be null");
+        }
+        Lock lock = this.configurationLock.writeLock();
+        lock.lock();
+        try {
+            ObjectMapper mapper = createObjectMapper();
+            Configuration overlayConfig = mapper.readValue(configStream, Configuration.class);
+
+            Configuration newConfig = new Configuration(this.configuration);
+            newConfig.addDmrMetricSets(overlayConfig.getDmrMetricSets());
+            newConfig.addDmrResourceTypeSets(overlayConfig.getDmrResourceTypeSets());
+            newConfig.addJmxMetricSets(overlayConfig.getJmxMetricSets());
+            newConfig.addJmxResourceTypeSets(overlayConfig.getJmxResourceTypeSets());
+
+            // make sure the new config is OK
+            newConfig.validate();
+
+            if (save) {
+                // keep in mind, if multiple agents share the config (aka domain mode) they clobber each other
+                save(this.configFile, newConfig, createBackup);
+            }
+
+            this.configuration = new Configuration(newConfig);
         } finally {
             lock.unlock();
         }

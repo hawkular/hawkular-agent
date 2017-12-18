@@ -27,16 +27,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.hawkular.agent.monitor.api.InventoryEvent;
-import org.hawkular.agent.monitor.api.SamplingService;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration;
 import org.hawkular.agent.monitor.diagnostics.Diagnostics;
 import org.hawkular.agent.monitor.diagnostics.DiagnosticsImpl;
 import org.hawkular.agent.monitor.inventory.AttributeLocation;
 import org.hawkular.agent.monitor.inventory.ID;
-import org.hawkular.agent.monitor.inventory.Interval;
 import org.hawkular.agent.monitor.inventory.MetricType;
 import org.hawkular.agent.monitor.inventory.MonitoredEndpoint;
 import org.hawkular.agent.monitor.inventory.Name;
@@ -44,7 +41,9 @@ import org.hawkular.agent.monitor.inventory.Resource;
 import org.hawkular.agent.monitor.inventory.ResourceManager;
 import org.hawkular.agent.monitor.inventory.ResourceType;
 import org.hawkular.agent.monitor.inventory.ResourceTypeManager;
-import org.jboss.as.controller.client.helpers.MeasurementUnit;
+import org.hawkular.agent.monitor.inventory.SupportedMetricType;
+import org.hawkular.agent.monitor.protocol.EndpointService;
+import org.hawkular.inventory.api.model.MetricUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,7 +66,7 @@ public class AsyncInventoryStorageTest {
     private AgentCoreEngineConfiguration.StorageAdapterConfiguration config;
     private HttpClientBuilder httpClientBuilder;
     private Diagnostics diagnostics;
-    private SamplingService<AnyLocation> samplingService;
+    private EndpointService<AnyLocation, ?> endpointService;
     private ResourceManager<AnyLocation> resourceManager;
     private ResourceTypeManager<AnyLocation> resourceTypeManager;
     private final List<String> collectedPostCalls = new ArrayList<>();
@@ -77,9 +76,9 @@ public class AsyncInventoryStorageTest {
             new ID("mt1"),
             new Name("Metric type 1"),
             new AttributeLocation<>(new AnyLocation(""), "foo"),
-            new Interval(60, TimeUnit.SECONDS),
-            MeasurementUnit.CELSIUS,
-            org.hawkular.metrics.client.common.MetricType.GAUGE,
+            MetricUnit.CELSIUS,
+            SupportedMetricType.GAUGE,
+            null,
             null,
             null);
     private final ResourceType<AnyLocation> RT_1 = ResourceType.<AnyLocation> builder()
@@ -119,12 +118,11 @@ public class AsyncInventoryStorageTest {
         // Mock SamplingService > MonitoredEndpoint > EndpointConfiguration
         AgentCoreEngineConfiguration.EndpointConfiguration endpointConfiguration
                 = mock(AgentCoreEngineConfiguration.EndpointConfiguration.class);
-        when(endpointConfiguration.getTenantId()).thenReturn("tenant_id");
         when(endpointConfiguration.getName()).thenReturn("");
         MonitoredEndpoint<AgentCoreEngineConfiguration.EndpointConfiguration> endpoint = MonitoredEndpoint.of(
                 endpointConfiguration, null);
-        samplingService = mock(SamplingService.class);
-        when(samplingService.getMonitoredEndpoint()).thenReturn(endpoint);
+        endpointService = mock(EndpointService.class);
+        when(endpointService.getMonitoredEndpoint()).thenReturn(endpoint);
 
         // ResourceManager and ResourceTypeManager
         resourceManager = new ResourceManager<>();
@@ -174,7 +172,7 @@ public class AsyncInventoryStorageTest {
     @Test
     public void testDiscoverySequence() throws InterruptedException {
         storage.receivedEvent(InventoryEvent.discovery(
-                samplingService,
+                endpointService,
                 resourceManager,
                 resourceTypeManager,
                 resourceManager.getResourcesBreadthFirst(),
@@ -193,7 +191,7 @@ public class AsyncInventoryStorageTest {
 
         // Next run with no discovered resource
         storage.receivedEvent(InventoryEvent.discovery(
-                samplingService,
+                endpointService,
                 resourceManager,
                 resourceTypeManager,
                 Collections.emptyList(),
@@ -216,7 +214,7 @@ public class AsyncInventoryStorageTest {
                 .build();
         resourceManager.addResource(r3);
         storage.receivedEvent(InventoryEvent.discovery(
-                samplingService,
+                endpointService,
                 resourceManager,
                 resourceTypeManager,
                 Collections.singletonList(r3),
@@ -235,7 +233,7 @@ public class AsyncInventoryStorageTest {
         // Next run with removed R_1
         resourceManager.removeResource(R_1);
         storage.receivedEvent(InventoryEvent.discovery(
-                samplingService,
+                endpointService,
                 resourceManager,
                 resourceTypeManager,
                 Collections.emptyList(),
@@ -253,7 +251,7 @@ public class AsyncInventoryStorageTest {
         // Next run with removed r3
         resourceManager.removeResource(r3);
         storage.receivedEvent(InventoryEvent.discovery(
-                samplingService,
+                endpointService,
                 resourceManager,
                 resourceTypeManager,
                 Collections.emptyList(),
@@ -272,7 +270,7 @@ public class AsyncInventoryStorageTest {
     public void testNonDiscoverySequence() {
         // Initial discovery
         storage.receivedEvent(InventoryEvent.discovery(
-                samplingService,
+                endpointService,
                 resourceManager,
                 resourceTypeManager,
                 resourceManager.getResourcesBreadthFirst(),
@@ -291,7 +289,7 @@ public class AsyncInventoryStorageTest {
                 .build();
         resourceManager.addResource(r3);
         storage.receivedEvent(InventoryEvent.addedOrModified(
-                samplingService,
+                endpointService,
                 resourceManager,
                 Collections.singletonList(r3)));
         Assert.assertEquals("Unexpected DELETE calls: " + collectedDeleteCalls, 0, collectedDeleteCalls.size());
@@ -301,7 +299,7 @@ public class AsyncInventoryStorageTest {
         // Next run with removed R_1
         resourceManager.removeResource(R_1);
         storage.receivedEvent(InventoryEvent.removed(
-                samplingService,
+                endpointService,
                 resourceManager,
                 Collections.singletonList(R_1)));
         expectCalls(collectedDeleteCalls,
@@ -311,7 +309,7 @@ public class AsyncInventoryStorageTest {
         // Next run with removed r3
         resourceManager.removeResource(r3);
         storage.receivedEvent(InventoryEvent.removed(
-                samplingService,
+                endpointService,
                 resourceManager,
                 Collections.singletonList(r3)));
         expectCalls(collectedDeleteCalls,

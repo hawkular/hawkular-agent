@@ -30,7 +30,7 @@ public abstract class AbstractCommandITest extends AbstractITest {
         waitForAgentViaJMX();
 
         Resource agentResource = testHelper.waitForResourceContaining(
-                hawkularFeedId, "Hawkular WildFly Agent", null, 5000, 10);
+                hawkularFeedId, "Hawkular Java Agent", null, 5000, 10);
 
         String req = "ExecuteOperationRequest={\"authentication\":" + authentication + ", "
                 + "\"feedId\":\"" + agentResource.getFeedId() + "\","

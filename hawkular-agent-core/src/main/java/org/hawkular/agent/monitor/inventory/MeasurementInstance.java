@@ -16,22 +16,21 @@
  */
 package org.hawkular.agent.monitor.inventory;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
+
 /**
  * A measurement instance that can be used to represent either numeric metric data or availability data.
- *
- * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
  * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}
  * @param <T> the measurement type
  */
 public final class MeasurementInstance<L, T extends MeasurementType<L>> extends Instance<L, T> {
 
-    /**
-     * If this property exists in {@link #getProperties()} then this is the metric ID that represents
-     * the data for this measurement instance as it is found in Hawkular Metrics storage. If this
-     * property doesn't exist, you can assume the metric ID is the same as the ID of this measurement instance.
-     */
-    private static final String METRIC_ID_PROPERTY = "hawkular-metric-id";
+    private String metricFamily;
+    private Map<String, String> metricLabels;
 
     public MeasurementInstance(ID id, Name name, AttributeLocation<L> attributeLocation, T type) {
         super(id, name, attributeLocation, type);
@@ -40,51 +39,79 @@ public final class MeasurementInstance<L, T extends MeasurementType<L>> extends 
     // copy-constructor
     public MeasurementInstance(MeasurementInstance<L, T> copy, boolean disown) {
         super(copy, disown);
+    }
 
-        if (copy.getProperties().containsKey(METRIC_ID_PROPERTY)) {
-            this.addProperty(METRIC_ID_PROPERTY, copy.getProperties().get(METRIC_ID_PROPERTY));
+    /**
+     * @return this name of the metric family of this metric - paired with the {@link #getMetricLabels() labels}
+     *         the unique timeseries can be identified.
+     *
+     * @see EndpointConfiguration#getMetricFamily()
+     * @see MeasurementInstance#getUniqueMetricId()
+     */
+    public String getMetricFamily() {
+        return metricFamily;
+    }
+
+    public void setMetricFamily(String metricFamily) {
+        this.metricFamily = metricFamily;
+    }
+
+    /**
+     * @return labels that are associated with this metric instance. May be empty.
+     *
+     * @see EndpointConfiguration#getMetricLabels()
+     * @see MeasurementInstance#getUniqueMetricId()
+     */
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
+    }
+
+    public void setMetricLabels(Map<String, String> metricLabels) {
+        if (metricLabels == null) {
+            this.metricLabels = new HashMap<>();
+        } else {
+            this.metricLabels = new HashMap<>(metricLabels);
         }
     }
 
     /**
-     * This returns this instance's associated metric ID. A metric ID is that ID which is used
-     * to store the metric data associated with this measurement instance into Hawkular Metrics.
+     * Returns the actual expression that is to be used to evaluate the metric value.
+     * This takes the optional {@link MeasurementType#getMetricExpression()} and returns
+     * a non-null expression with the $metric token replaced appropriately. Note that if
+     * {@link MeasurementType#getMetricExpression()} returns null, then it will be
+     * assumed "$metric" and this method will return that expression resolved.
      *
-     * There is an explicit rule that all clients must follow - if a measurement instance has a
-     * property called {@value #METRIC_ID_PROPERTY} then that ID must be used when storing
-     * and retrieving metric data associated with this measurement instance. If there is no such
-     * property, then the implicit rule takes effect, and that is the metric ID to be used will
-     * be the same as the {@link #getID() id} of this measurement instance.
+     * $metric is resolved as: family{labelName1="labelValue1", ...}
+     * If this metric instance has no labels, $metric is resolved simply as the family name.
      *
-     * This method follows those rules - if there is such a property, its value is returned;
-     * otherwise this instance's ID string is returned.
-     *
-     * @return the metric ID that should be used to read/write metric data from/to Hawkular Metrics
+     * @return the resolved expression used to evaluate the metric value.
      */
-    public String getAssociatedMetricId() {
-        Object property = getProperties().get(METRIC_ID_PROPERTY);
-        if (property != null) {
-            return property.toString();
-        } else {
-            return getID().getIDString();
+    public String resolveExpression() {
+        String expr = getType().getMetricExpression();
+        if (expr == null || expr.isEmpty()) {
+            expr = "$metric";
         }
-    }
+        if (expr.contains("$metric")) {
+            StringBuilder metricString = new StringBuilder();
+            if (getMetricFamily() != null) {
+                metricString.append(getMetricFamily());
+            }
+            if (getMetricLabels() != null && !getMetricLabels().isEmpty()) {
+                String comma = "";
+                metricString.append("{");
+                for (Map.Entry<String, String> label : getMetricLabels().entrySet()) {
+                    metricString.append(comma)
+                            .append(label.getKey())
+                            .append("=\"")
+                            .append(label.getValue())
+                            .append("\"");
+                    comma = ",";
+                }
+                metricString.append("}");
+            }
+            expr = expr.replace("$metric", metricString.toString());
+        }
 
-    /**
-     * This tells this instance what its metric ID should be. A metric ID is that ID which is used
-     * to store the metric data associated with this measurement instance into Hawkular Metrics.
-     * See {@link #getAssociatedMetricId()} for more details.
-     *
-     * @param metricId the metric ID to be associated with this measurement instance. If this is
-     *                 null or empty, the metric ID will be assumed to be the same as this instance's ID.
-     */
-    public void setAssociatedMetricId(String metricId) {
-        // Note that if the metric ID is the same as this instance's ID, then the implicit rule is in force,
-        // so there is no need to actually add the metric ID property.
-        if (metricId == null || metricId.isEmpty() || metricId.equals(getID().getIDString())) {
-            removeProperty(METRIC_ID_PROPERTY);
-        } else {
-            addProperty(METRIC_ID_PROPERTY, metricId);
-        }
+        return expr;
     }
 }

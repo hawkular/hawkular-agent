@@ -22,65 +22,70 @@ import java.util.Map;
 import org.hawkular.agent.monitor.config.AgentCoreEngineConfiguration.EndpointConfiguration;
 
 /**
- * A common superclass for {@link AvailType} and {@link MetricType}.
+ * A superclass for {@link MetricType} and any other types of metrics that might be needed
+ * (perhaps an "availability metric" type in the future?).
  *
- * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @param <L> the type of the protocol specific location typically a subclass of {@link NodeLocation}
  */
 public class MeasurementType<L> extends AttributeLocationProvider<L> {
 
-    private final org.hawkular.metrics.client.common.MetricType metricType;
-    private final Interval interval;
-    private final String metricIdTemplate;
-    private final Map<String, String> metricTags;
+    private final SupportedMetricType metricType;
+    private final String metricFamily;
+    private final Map<String, String> metricLabels;
+    private final String metricExpression;
 
-    public MeasurementType(ID id, Name name, org.hawkular.metrics.client.common.MetricType metricType,
-            AttributeLocation<L> location, Interval interval, String metricIdTemplate,
-            Map<String, String> metricTags) {
+    public MeasurementType(
+            ID id,
+            Name name,
+            SupportedMetricType metricType,
+            AttributeLocation<L> location,
+            String metricFamily,
+            Map<String, String> metricLabels,
+            String metricExpression) {
         super(id, name, location);
         this.metricType = metricType;
-        this.interval = interval;
-        this.metricIdTemplate = metricIdTemplate;
-        this.metricTags = (metricTags != null) ? Collections.unmodifiableMap(metricTags) : Collections.emptyMap();
+        this.metricFamily = metricFamily;
+        this.metricLabels = (metricLabels != null) ? Collections.unmodifiableMap(metricLabels)
+                : Collections.emptyMap();
+        this.metricExpression = metricExpression;
     }
 
-    public org.hawkular.metrics.client.common.MetricType getMetricType() {
+    public SupportedMetricType getMetricType() {
         return metricType;
     }
 
     /**
-     * @return how often should instances of this type be measured
-     */
-    public Interval getInterval() {
-        return interval;
-    }
-
-    /**
-     * @return true if collection is disabled for this MeasurementType
-     */
-    public boolean isDisabled() {
-        return interval.seconds() <= 0;
-    }
-
-    /**
-     * @return if not null, this should be used to generate the Hawkular Metrics metric ID
-     *         for all instances of this measurement type.
+     * @return this name of the metric family of all metrics of this measurement type
      *
-     * @see EndpointConfiguration#getMetricIdTemplate()
-     * @see MeasurementInstance#getAssociatedMetricId()
+     * @see MeasurementInstance#getMetricFamily()
      */
-    public String getMetricIdTemplate() {
-        return metricIdTemplate;
+    public String getMetricFamily() {
+        return metricFamily;
     }
 
     /**
-     * @return Defines what Hawkular Metrics tags should be generated for all instances of this measurement type.
-     *         May be empty.
+     * @return Defines what the labels are associated for all instances of this measurement type. May be empty.
      *
-     * @see EndpointConfiguration#getMetricTags()
+     * @see EndpointConfiguration#getMetricLabels()
+     * @see MeasurementInstance#getMetricLabels()
      */
-    public Map<String, String> getMetricTags() {
-        return metricTags;
+    public Map<String, String> getMetricLabels() {
+        return metricLabels;
     }
 
+    /**
+     * This is an optional metric expression that is to be used to evaluate the metric value.
+     *
+     * An expression should include the token "$metric" which is meant to be replaced with
+     * the true expression "family{labels...}" or just "family" if there are no labels associated
+     * with this metric. See {@link MeasurementInstance#resolveExpression()} for the method that
+     * can do this for you.
+     *
+     * If not specified (i.e. if null is returned), caller should assume "$metric".
+     *
+     * @return an optional metric expression that is to be used to evaluate the metric value.
+     */
+    public String getMetricExpression() {
+        return metricExpression;
+    }
 }
